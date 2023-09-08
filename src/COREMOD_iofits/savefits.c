@@ -121,10 +121,10 @@ errno_t saveFITS_opt_trunc(
 
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
-           inputimname,
-           outputFITSname,
-           outputbitpix,
-           truncate);
+                     inputimname,
+                     outputFITSname,
+                     outputbitpix,
+                     truncate);
 
     COREMOD_iofits_data.FITSIO_status = 0;
 
@@ -175,109 +175,24 @@ errno_t saveFITS_opt_trunc(
     // default
     int     bitpix = FLOAT_IMG;
 
-    switch( outputbitpix )
+    if(outputbitpix == BYTE_IMG || outputbitpix == SBYTE_IMG ||
+            outputbitpix == SHORT_IMG || outputbitpix == USHORT_IMG ||
+            outputbitpix == LONG_IMG || outputbitpix == ULONG_IMG ||
+            outputbitpix == LONGLONG_IMG || outputbitpix == ULONGLONG_IMG ||
+            outputbitpix == FLOAT_IMG || outputbitpix == DOUBLE_IMG)
     {
-    case 8:
-        bitpix = BYTE_IMG;
-        DEBUG_TRACEPOINT("    output data type: BYTE_IMG\n");
-        break;
-    case 10:
-        bitpix = SBYTE_IMG;
-        DEBUG_TRACEPOINT("    output data type: SBYTE_IMG\n");
-        break;
-
-    case 16:
-        bitpix = SHORT_IMG;
-        DEBUG_TRACEPOINT("    output data type: SHORT_IMG\n");
-        break;
-    case 20:
-        bitpix = USHORT_IMG;
-        DEBUG_TRACEPOINT("    output data type: USHORT_IMG\n");
-        break;
-
-    case 32:
-        bitpix = LONG_IMG;
-        DEBUG_TRACEPOINT("    output data type: LONG_IMG\n");
-        break;
-    case 40:
-        bitpix = ULONG_IMG;
-        DEBUG_TRACEPOINT("    output data type: ULONG_IMG\n");
-        break;
-
-    case 64:
-        bitpix = LONGLONG_IMG;
-        DEBUG_TRACEPOINT("    output data type: LONGLONG_IMG\n");
-        break;
-    case 80:
-        bitpix = ULONGLONG_IMG;
-        DEBUG_TRACEPOINT("    output data type: ULONGLONG_IMG\n");
-        break;
-
-    case -32:
-        bitpix = FLOAT_IMG;
-        DEBUG_TRACEPOINT("    output data type: FLOAT_IMG\n");
-        break;
-    case -64:
-        bitpix = DOUBLE_IMG;
-        DEBUG_TRACEPOINT("    output data type: DOUBLE_IMG\n");
-        break;
+        bitpix = outputbitpix;
+        DEBUG_TRACEPOINT("    output data type: %d\n", outputbitpix);
     }
 
     if(outputbitpix == 0)
     {
-        // match input
-        switch(datatype)
+        int bitpix_from_datatype = ImageStreamIO_FITSIObitpix(datatype);
+        if(bitpix_from_datatype != -1) // in-band error -1
         {
-
-        case _DATATYPE_INT8:
-            bitpix = SBYTE_IMG;
-            break;
-
-        case _DATATYPE_UINT8:
-            bitpix = BYTE_IMG;
-            break;
-
-        case _DATATYPE_INT16:
-            bitpix = SHORT_IMG;
-            break;
-
-        case _DATATYPE_UINT16:
-            bitpix = USHORT_IMG;
-            break;
-
-        case _DATATYPE_INT32:
-            bitpix = LONG_IMG;
-            break;
-
-        case _DATATYPE_UINT32:
-            bitpix = ULONG_IMG;
-            break;
-
-        case _DATATYPE_INT64:
-            bitpix = LONGLONG_IMG;
-            break;
-
-        case _DATATYPE_UINT64:
-            bitpix = ULONGLONG_IMG;
-            break;
-
-        case _DATATYPE_FLOAT:
-            bitpix = FLOAT_IMG;
-            break;
-
-
-        case _DATATYPE_DOUBLE:
-            bitpix = DOUBLE_IMG;
-            break;
-
-        default:
-            bitpix = FLOAT_IMG;
-            break;
-
+            bitpix = bitpix_from_datatype;
         }
     }
-
-
 
     DEBUG_TRACEPOINT("%d -> bitpix = %d\n", outputbitpix, bitpix);
     fflush(stdout);
@@ -340,7 +255,7 @@ errno_t saveFITS_opt_trunc(
         if(is_fits_file(importheaderfile) == 1)
         {
             DEBUG_TRACEPOINT("Importing FITS header entries from : %s\n",
-                   importheaderfile);
+                             importheaderfile);
 
             fitsfile *fptr_header = NULL;
             int       nkeys;
@@ -466,72 +381,72 @@ errno_t saveFITS_opt_trunc(
             char tmpkwvalstr[81];
             switch(imgin.im->kw[kw].type)
             {
-            case 'L':
-                DEBUG_TRACEPOINT("writing keyword [L] %-8s= %20ld / %s\n",
-                       imgin.im->kw[kw].name,
-                       imgin.im->kw[kw].value.numl,
-                       imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr,
-                                TLONG,
-                                imgin.im->kw[kw].name,
-                                &imgin.im->kw[kw].value.numl,
-                                imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                kwcnt++;
-                break;
-
-            case 'D':
-                DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
-                       imgin.im->kw[kw].name,
-                       imgin.im->kw[kw].value.numf,
-                       imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr,
-                                TDOUBLE,
-                                imgin.im->kw[kw].name,
-                                &imgin.im->kw[kw].value.numf,
-                                imgin.im->kw[kw].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                kwcnt++;
-                break;
-
-            case 'S':
-                snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
-                DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
-                       imgin.im->kw[kw].name,
-                       tmpkwvalstr,
-                       imgin.im->kw[kw].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
-                if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
-                        (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
-                {
-                    // Booleans through magic strings
-                    int tmpval_is_true =
-                        strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
+                case 'L':
+                    DEBUG_TRACEPOINT("writing keyword [L] %-8s= %20ld / %s\n",
+                                     imgin.im->kw[kw].name,
+                                     imgin.im->kw[kw].value.numl,
+                                     imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
                     fits_update_key(fptr,
-                                    TLOGICAL,
+                                    TLONG,
                                     imgin.im->kw[kw].name,
-                                    &tmpval_is_true,
+                                    &imgin.im->kw[kw].value.numl,
                                     imgin.im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
-                }
-                else
-                {
-                    // Normal string
+                    kwcnt++;
+                    break;
+
+                case 'D':
+                    DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
+                                     imgin.im->kw[kw].name,
+                                     imgin.im->kw[kw].value.numf,
+                                     imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
                     fits_update_key(fptr,
-                                    TSTRING,
+                                    TDOUBLE,
                                     imgin.im->kw[kw].name,
-                                    imgin.im->kw[kw].value.valstr,
+                                    &imgin.im->kw[kw].value.numf,
                                     imgin.im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
-                }
-                kwcnt++;
-                break;
+                    kwcnt++;
+                    break;
 
-            default:
-                break;
+                case 'S':
+                    snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
+                    DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
+                                     imgin.im->kw[kw].name,
+                                     tmpkwvalstr,
+                                     imgin.im->kw[kw].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
+                    if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
+                            (strncmp("'#FALSE#'", tmpkwvalstr, 9) == 0))
+                    {
+                        // Booleans through magic strings
+                        int tmpval_is_true =
+                            strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
+                        fits_update_key(fptr,
+                                        TLOGICAL,
+                                        imgin.im->kw[kw].name,
+                                        &tmpval_is_true,
+                                        imgin.im->kw[kw].comment,
+                                        &COREMOD_iofits_data.FITSIO_status);
+                    }
+                    else
+                    {
+                        // Normal string
+                        fits_update_key(fptr,
+                                        TSTRING,
+                                        imgin.im->kw[kw].name,
+                                        imgin.im->kw[kw].value.valstr,
+                                        imgin.im->kw[kw].comment,
+                                        &COREMOD_iofits_data.FITSIO_status);
+                    }
+                    kwcnt++;
+                    break;
+
+                default:
+                    break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -548,53 +463,53 @@ errno_t saveFITS_opt_trunc(
     if((kwarraysize > 0) && (kwarray != NULL))
     {
         DEBUG_TRACEPOINT("----------- NUMBER CUSTOM KW = %d ---------------\n",
-               kwarraysize);
+                         kwarraysize);
         for(int kwi = 0; kwi < kwarraysize; kwi++)
         {
             char tmpkwvalstr[81];
             switch(kwarray[kwi].type)
             {
-            case 'L':
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr,
-                                TLONG,
-                                kwarray[kwi].name,
-                                &kwarray[kwi].value.numl,
-                                kwarray[kwi].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                break;
+                case 'L':
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_update_key(fptr,
+                                    TLONG,
+                                    kwarray[kwi].name,
+                                    &kwarray[kwi].value.numl,
+                                    kwarray[kwi].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    break;
 
-            case 'D':
-                COREMOD_iofits_data.FITSIO_status = 0;
-                DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
-                       kwarray[kwi].name,
-                       kwarray[kwi].value.numf,
-                       kwarray[kwi].comment);
-                fits_update_key(fptr,
-                                TDOUBLE,
-                                kwarray[kwi].name,
-                                &kwarray[kwi].value.numf,
-                                kwarray[kwi].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                break;
+                case 'D':
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
+                                     kwarray[kwi].name,
+                                     kwarray[kwi].value.numf,
+                                     kwarray[kwi].comment);
+                    fits_update_key(fptr,
+                                    TDOUBLE,
+                                    kwarray[kwi].name,
+                                    &kwarray[kwi].value.numf,
+                                    kwarray[kwi].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    break;
 
-            case 'S':
-                snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
-                DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
-                       kwarray[kwi].name,
-                       tmpkwvalstr,
-                       kwarray[kwi].comment);
-                COREMOD_iofits_data.FITSIO_status = 0;
-                fits_update_key(fptr,
-                                TSTRING,
-                                kwarray[kwi].name,
-                                kwarray[kwi].value.valstr,
-                                kwarray[kwi].comment,
-                                &COREMOD_iofits_data.FITSIO_status);
-                break;
+                case 'S':
+                    snprintf(tmpkwvalstr, 81, "'%s'", kwarray[kwi].value.valstr);
+                    DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
+                                     kwarray[kwi].name,
+                                     tmpkwvalstr,
+                                     kwarray[kwi].comment);
+                    COREMOD_iofits_data.FITSIO_status = 0;
+                    fits_update_key(fptr,
+                                    TSTRING,
+                                    kwarray[kwi].name,
+                                    kwarray[kwi].value.valstr,
+                                    kwarray[kwi].comment,
+                                    &COREMOD_iofits_data.FITSIO_status);
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
             }
 
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
@@ -607,44 +522,49 @@ errno_t saveFITS_opt_trunc(
     }
 
     // default (for floats, signed)
-    float bscaleval = 1.0;
-    float bzeroval  = 0.0;
+    double bscaleval_d = 1.0;
+    int64_t bzeroval_l = 0L;
+    uint64_t bzeroval_ul = 0UL;
 
     int     FITSIOdatatype = ImageStreamIO_FITSIOdatatype(datatype);
-    switch ( FITSIOdatatype )
+    switch(FITSIOdatatype)
     {
-    case TBYTE :
-        bzeroval  = 128.0;
-        break;
+        // The standard specifies TSBYTE to be bzero-offset
+        // and TBYTE to be bzero = 0
+        case TSBYTE :
+            // This would underflow in a uint64_t
+            bzeroval_l  = -128L;
+            break;
 
-    case TUSHORT :
-        bzeroval  = 32768.0;
-        break;
+        case TUSHORT :
+            bzeroval_ul  = 32768UL;
+            break;
 
-    case TUINT :
-        bzeroval  = 2147483648.0;
-        break;
+        case TUINT :
+            bzeroval_ul  = 2147483648UL;
+            break;
 
-    case TULONG :
-        bzeroval  = 4294967296.0*2147483648.0;
-        break;
-
+        case TULONG :
+            // This would overflow in a int64_t. We need UL here.
+            bzeroval_ul  = 4294967296UL * 2147483648UL;
+            break;
     }
 
-
     fits_update_key(fptr,
-                    TFLOAT,
+                    TDOUBLE,
                     "BSCALE",
-                    &bscaleval,
+                    &bscaleval_d,
                     "Real=fits-value*BSCALE+BZERO",
                     &COREMOD_iofits_data.FITSIO_status);
+    // We must write BZERO as some integer type
+    // If float, the addition may cause an auto-cast into
+    // a floating type on the file-reader side.
     fits_update_key(fptr,
-                    TFLOAT,
+                    FITSIOdatatype == TSBYTE ? TLONG : TULONG,
                     "BZERO",
-                    &bzeroval,
+                    FITSIOdatatype == TSBYTE ? (void *)&bzeroval_l : (void *)&bzeroval_ul,
                     "Real=fits-value*BSCALE+BZERO",
                     &COREMOD_iofits_data.FITSIO_status);
-
 
     long fpixel                       = 1;
     COREMOD_iofits_data.FITSIO_status = 0;
@@ -691,15 +611,6 @@ errno_t saveFITS_opt_trunc(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
 
 
 
