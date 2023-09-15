@@ -588,22 +588,22 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
                 img.datatype = _DATATYPE_DOUBLE;
             }
 
-/*            if(pch[0] == 'k')
-            {
-                int nbkw;
-                sscanf(pch, "k%d", &nbkw);
-                printf("    %d keywords\n", nbkw);
-                img.NBkw = nbkw;
-            }
+            /*            if(pch[0] == 'k')
+                        {
+                            int nbkw;
+                            sscanf(pch, "k%d", &nbkw);
+                            printf("    %d keywords\n", nbkw);
+                            img.NBkw = nbkw;
+                        }
 
-            if(pch[0] == 'c')
-            {
-                int cbsize;
-                sscanf(pch, "c%d", &cbsize);
-                printf("    %d circular buffer size\n", cbsize);
-                img.CBsize = cbsize;
-            }
-*/
+                        if(pch[0] == 'c')
+                        {
+                            int cbsize;
+                            sscanf(pch, "c%d", &cbsize);
+                            printf("    %d circular buffer size\n", cbsize);
+                            img.CBsize = cbsize;
+                        }
+            */
             pch = strtok(NULL, ">");
             nbword++;
         }
@@ -1085,7 +1085,7 @@ static inline uint64_t IMGIDmdcompare(
  */
 static inline IMGID
 stream_connect(
-    char * __restrict imname
+    char *__restrict imname
 )
 {
     IMGID img = mkIMGID_from_name(imname);
@@ -1096,84 +1096,6 @@ stream_connect(
         // try to connect to shared memory if not in local memory already
         read_sharedmem_image(imname);
         resolveIMGID(&img, ERRMODE_WARN);
-    }
-
-    return img;
-}
-
-
-
-
-
-
-
-/**
- * @brief Connnect to stream or create if doesn't exist
- *
- * If stream exists but has wrong size type, recreate
- *
- * @param imname  stream name
- * @param xsize   x size
- * @param ysize   y size
- * @return IMGID
- */
-static inline IMGID
-stream_connect_create_2Df32(
-    char * __restrict imname,
-    uint32_t xsize,
-    uint32_t ysize
-)
-{
-    IMGID img = mkIMGID_from_name(imname);
-    resolveIMGID(&img, ERRMODE_WARN);
-
-    if(img.ID == -1)
-    {
-        // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname);
-        resolveIMGID(&img, ERRMODE_WARN);
-    }
-
-    if(img.ID != -1)
-    {
-        // if in local memory,
-        // create blank img for comparison
-        IMGID imgc      = makeIMGID_blank();
-        imgc.datatype   = _DATATYPE_FLOAT;
-        imgc.naxis      = 2;
-        imgc.size[0]    = xsize;
-        imgc.size[1]    = ysize;
-        imgc.NBkw       = NB_KEYWNODE_MAX;
-        uint64_t imgerr = IMGIDcompare(img, imgc);
-        printf("%lu errors\n", imgerr);
-
-        // if doesn't pass test, erase from local memory
-        if(imgerr != 0)
-        {
-            delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
-            img.ID = -1;
-        }
-    }
-
-    // if not in local memory, (re)-create
-    if(img.ID == -1)
-    {
-        uint32_t arraytmp[2];
-
-        arraytmp[0] = xsize;
-        arraytmp[1] = ysize;
-
-        create_image_ID(imname, 2, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-    }
-
-
-    if(img.ID != -1)
-    {
-        imageID ID    = img.ID;
-        img.im        = &data.image[ID];
-        img.md        = data.image[ID].md;
-        img.createcnt = data.image[ID].createcnt;
-        updateIMGIDcreationparams(&img);
     }
 
     return img;
@@ -1181,7 +1103,7 @@ stream_connect_create_2Df32(
 
 
 static inline IMGID stream_connect_create_2D(
-    char * __restrict imname,
+    char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint8_t  datatype
@@ -1243,9 +1165,6 @@ static inline IMGID stream_connect_create_2D(
     return img;
 }
 
-
-
-
 /**
  * @brief Connnect to stream or create if doesn't exist
  *
@@ -1254,85 +1173,26 @@ static inline IMGID stream_connect_create_2D(
  * @param imname  stream name
  * @param xsize   x size
  * @param ysize   y size
- * @param zsize   z size
  * @return IMGID
  */
-static inline IMGID stream_connect_create_3Df32(
-    char * __restrict imname,
+static inline IMGID
+stream_connect_create_2Df32(
+    char *__restrict imname,
     uint32_t xsize,
-    uint32_t ysize,
-    uint32_t zsize)
+    uint32_t ysize
+)
 {
-    printf("Running stream_connect_create_3Df32\n");
-    IMGID img = mkIMGID_from_name(imname);
-    resolveIMGID(&img, ERRMODE_WARN);
-
-
-    if(img.ID == -1)
-    {
-        // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname);
-        resolveIMGID(&img, ERRMODE_WARN);
-    }
-
-    if(img.ID != -1)
-    {
-        // if in local memory,
-        // create blank img for comparison
-        IMGID imgc      = makeIMGID_blank();
-        imgc.datatype   = _DATATYPE_FLOAT;
-        imgc.naxis      = 3;
-        imgc.size[0]    = xsize;
-        imgc.size[1]    = ysize;
-        imgc.size[2]    = zsize;
-        imgc.NBkw       = NB_KEYWNODE_MAX;
-        uint64_t imgerr = IMGIDcompare(img, imgc);
-        printf("%lu errors\n", imgerr);
-
-        // if doesn't pass test, erase from local memory
-        if(imgerr != 0)
-        {
-            delete_image_ID(imname, DELETE_IMAGE_ERRMODE_WARNING);
-            img.ID = -1;
-        }
-    }
-
-    // if not in local memory, (re)-create
-    if(img.ID == -1)
-    {
-        uint32_t arraytmp[3];
-
-        arraytmp[0] = xsize;
-        arraytmp[1] = ysize;
-        arraytmp[2] = zsize;
-
-        create_image_ID(imname, 3, arraytmp, _DATATYPE_FLOAT, 1, NB_KEYWNODE_MAX, 0, &img.ID);
-    }
-
-
-    if(img.ID != -1)
-    {
-        imageID ID    = img.ID;
-        img.im        = &data.image[ID];
-        img.md        = data.image[ID].md;
-        img.createcnt = data.image[ID].createcnt;
-        updateIMGIDcreationparams(&img);
-    }
-
-    return img;
+    return stream_connect_create_2D(imname, xsize, ysize, _DATATYPE_FLOAT);
 }
 
-
-
 static inline IMGID stream_connect_create_3D(
-    char * __restrict imname,
+    char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize,
     uint8_t  datatype
 )
 {
-    printf("Running stream_connect_create_3Df32\n");
     IMGID img = mkIMGID_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN);
 
@@ -1391,6 +1251,26 @@ static inline IMGID stream_connect_create_3D(
     }
 
     return img;
+}
+
+/**
+ * @brief Connnect to stream or create if doesn't exist
+ *
+ * If stream exists but has wrong size type, recreate
+ *
+ * @param imname  stream name
+ * @param xsize   x size
+ * @param ysize   y size
+ * @param zsize   z size
+ * @return IMGID
+ */
+static inline IMGID stream_connect_create_3Df32(
+    char *__restrict imname,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize)
+{
+    return stream_connect_create_3D(imname, xsize, ysize, zsize, _DATATYPE_FLOAT);
 }
 
 
