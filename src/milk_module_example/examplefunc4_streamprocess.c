@@ -173,7 +173,10 @@ static errno_t help_function()
 
 
 
-static errno_t streamprocess(IMGID inimg, IMGID outimg)
+static errno_t streamprocess(
+    IMGID inimg,
+    IMGID outimg
+)
 {
     DEBUG_TRACE_FSTART();
     // custom stream process function code
@@ -208,10 +211,20 @@ static errno_t compute_function()
         // procinfo is accessible here
     }
 
+    // If custom initialization with access to procinfo is not required
+    // then replace
+    // INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+    // INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    // With :
+    // INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
         streamprocess(inimg, outimg);
+
+        // stream is updated here, and not in the function called above, so that multiple
+        // the above function can be chained with others
         processinfo_update_output_stream(processinfo, outimg.ID);
 
     }

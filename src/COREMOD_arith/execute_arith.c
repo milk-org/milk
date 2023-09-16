@@ -23,7 +23,7 @@
 #include "image_stats.h"
 #include "image_total.h"
 #include "imfunctions.h"
-#include "set_pixel.h"
+
 
 #define ARITHTOKENTYPE_UNKNOWN  0
 #define ARITHTOKENTYPE_NOTEXIST 1 // non-existing variable or image
