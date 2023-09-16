@@ -75,9 +75,9 @@ static errno_t help_function()
 
 errno_t image_set_2Dpix(
     IMGID    inimg,
+    double   value,
     uint32_t colindex,
-    uint32_t rowindex,
-    double   value
+    uint32_t rowindex
 )
 {
     DEBUG_TRACE_FSTART();
@@ -159,7 +159,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        image_set_2Dpix(inimg, *colindex, *rowindex, *pixval);
+        image_set_2Dpix(inimg, *pixval, *colindex, *rowindex);
         processinfo_update_output_stream(processinfo, inimg.ID);
 
     }

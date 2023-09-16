@@ -3,8 +3,8 @@
 
 errno_t image_set_row(
     IMGID    inimg,
-    uint32_t rowindex,
-    double   value
+    double   value,
+    uint32_t rowindex
 );
 
 errno_t CLIADDCMD_COREMOD_arith__imset_row();
