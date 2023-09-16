@@ -65,8 +65,8 @@ static errno_t help_function()
 
 errno_t image_set_row(
     IMGID    inimg,
-    uint32_t rowindex,
-    double   value
+    double   value,
+    uint32_t rowindex
 )
 {
     DEBUG_TRACE_FSTART();
@@ -184,7 +184,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        image_set_row(inimg, *rowindex, *pixval);
+        image_set_row(inimg, *pixval, *rowindex);
         processinfo_update_output_stream(processinfo, inimg.ID);
 
     }

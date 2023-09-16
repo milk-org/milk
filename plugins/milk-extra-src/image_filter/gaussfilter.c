@@ -76,7 +76,7 @@ imageID gauss_filter(
     imageID  ID;
     imageID  IDout;
     imageID  IDtmp;
-    float   *array;
+
     long     ii, jj, kk;
     long     naxes[3];
     long     naxis;
@@ -106,6 +106,8 @@ imageID gauss_filter(
         filtersizec = data.image[ID].md[0].size[1] / 2 - 1;
     }
 
+
+    float   *__restrict array;
     array = (float *) malloc((2 * filtersizec + 1) * sizeof(float));
     if(array == NULL)
     {
@@ -201,12 +203,8 @@ imageID gauss_filter(
 
         for(ii = 0; ii < naxes[0]; ii++)
         {
-            //   printf("A jj : 0 -> %ld/%ld\n", naxes[1]-(2*filtersizec+1), naxes[1]);
-            //   fflush(stdout);
             for(jj = 0; jj < naxes[1] - (2 * filtersizec + 1); jj++)
             {
-                //       printf("00: %ld/%ld\n", k*naxes[0]*naxes[1]+(jj+filtersizec)*naxes[0]+ii, naxes[0]*naxes[1]*naxes[2]);
-                //       printf("01: %ld/%ld\n", (jj+j)*naxes[0]+ii, naxes[0]*naxes[1]);
                 fflush(stdout);
                 for(j = 0; j < (2 * filtersizec + 1); j++)
                 {
@@ -218,8 +216,6 @@ imageID gauss_filter(
                 }
             }
 
-            //    printf("B jj : 0 -> %d/%ld\n", filtersizec, naxes[1]);
-            //    fflush(stdout);
             for(jj = 0; jj < filtersizec; jj++)
             {
                 tot  = 0.0;
@@ -230,9 +226,6 @@ imageID gauss_filter(
                 }
                 for(j = filtersizec - jj; j < jmax; j++)
                 {
-                    //           printf("02: %ld/%ld\n", k*naxes[0]*naxes[1]+jj*naxes[0]+ii, naxes[0]*naxes[1]*naxes[2]);
-                    //           printf("03: %ld/%ld\n", (jj-filtersizec+j)*naxes[0]+ii, naxes[0]*naxes[1]);
-                    fflush(stdout);
                     data.image[IDout].array.F[k * naxes[0] * naxes[1] +
                                               jj * naxes[0] + ii] +=
                                                   array[j] *
@@ -266,7 +259,6 @@ imageID gauss_filter(
         }
     }
 
-    //  save_fl_fits("gtmp","gtmp");
     delete_image_ID("gtmp", DELETE_IMAGE_ERRMODE_WARNING);
 
     free(array);
