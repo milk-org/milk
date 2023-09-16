@@ -18,24 +18,13 @@ typedef struct
     int      *CBsize;
 } LOCVAR_INIMG2D;
 
-// Local variables pointers
-//static LOCVAR_INIMG2D inim;
-//static LOCVAR_OUTIMG2D outim;
-//static float *sigmaval;
-//static int *filtsizeval;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
 imageID gauss_filter(const char *__restrict ID_name,
                      const char *__restrict out_name,
                      float sigma,
                      int   filter_size);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
 
 static errno_t gauss_filter_cli()
 {
@@ -56,9 +45,7 @@ static errno_t gauss_filter_cli()
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+
 
 errno_t gaussfilter_addCLIcmd()
 {
@@ -75,10 +62,16 @@ errno_t gaussfilter_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-imageID gauss_filter(const char *__restrict ID_name,
-                     const char *__restrict out_name,
-                     float sigma,
-                     int   filter_size)
+
+
+
+
+imageID gauss_filter(
+    const char *__restrict ID_name,
+    const char *__restrict out_name,
+    float sigma,
+    int   filter_size
+)
 {
     imageID  ID;
     imageID  IDout;
@@ -125,7 +118,14 @@ imageID gauss_filter(const char *__restrict ID_name,
         naxes[2] = 1;
     }
     copy_image_ID(ID_name, out_name, 0);
-    arith_image_zero(out_name);
+
+    {
+        IMGID outimg = mkIMGID_from_name(out_name);
+        resolveIMGID(&outimg, ERRMODE_ABORT);
+        image_setzero(outimg);
+    }
+
+
     create_2Dimage_ID("gtmp", naxes[0], naxes[1], &IDtmp);
     //  copy_image_ID(ID_name,"gtmp", 0);
     // arith_image_zero("gtmp");
@@ -274,10 +274,14 @@ imageID gauss_filter(const char *__restrict ID_name,
     return IDout;
 }
 
-imageID gauss_3Dfilter(const char *__restrict ID_name,
-                       const char *__restrict out_name,
-                       float sigma,
-                       int   filter_size)
+
+
+imageID gauss_3Dfilter(
+    const char *__restrict ID_name,
+    const char *__restrict out_name,
+    float sigma,
+    int   filter_size
+)
 {
     imageID ID;
     imageID IDout;
@@ -302,9 +306,20 @@ imageID gauss_3Dfilter(const char *__restrict ID_name,
     naxes[2] = data.image[ID].md[0].size[2];
 
     copy_image_ID(ID_name, out_name, 0);
-    arith_image_zero(out_name);
+    {
+        IMGID outimg = mkIMGID_from_name(out_name);
+        resolveIMGID(&outimg, ERRMODE_ABORT);
+        image_setzero(outimg);
+    }
+
     copy_image_ID(ID_name, "gtmp", 0);
-    arith_image_zero("gtmp");
+
+    {
+        IMGID imggtmp = mkIMGID_from_name("gtmp");
+        resolveIMGID(&imggtmp, ERRMODE_ABORT);
+        image_setzero(imggtmp);
+    }
+
     copy_image_ID("gtmp", "gtmp1", 0);
     IDtmp  = image_ID("gtmp");
     IDtmp1 = image_ID("gtmp1");
