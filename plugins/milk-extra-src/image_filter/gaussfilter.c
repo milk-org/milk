@@ -73,25 +73,20 @@ imageID gauss_filter(
     int   filter_size
 )
 {
-    imageID  ID;
     imageID  IDout;
     imageID  IDtmp;
 
-    long     ii, jj, kk;
     long     naxes[3];
     long     naxis;
-    long     i, j, k;
-    float    sum;
-    double   tot;
-    long     jmax;
     uint32_t filtersizec;
 
-    // printf("sigma = %f\n",sigma);
-    // printf("filter size = %d\n",filtersizec);
 
-    ID    = image_ID(ID_name);
+
+
+    imageID ID    = image_ID(ID_name);
+
     naxis = data.image[ID].md[0].naxis;
-    for(kk = 0; kk < naxis; kk++)
+    for(int kk = 0; kk < naxis; kk++)
     {
         naxes[kk] = data.image[ID].md[0].size[kk];
     }
@@ -105,6 +100,7 @@ imageID gauss_filter(
     {
         filtersizec = data.image[ID].md[0].size[1] / 2 - 1;
     }
+
 
 
     float   *__restrict array;
@@ -135,32 +131,34 @@ imageID gauss_filter(
     // IDtmp = image_ID("gtmp");
     IDout = image_ID(out_name);
 
-    sum = 0.0;
-    for(i = 0; i < (2 * filtersizec + 1); i++)
+
     {
-        array[i] =
-            exp(-((i - filtersizec) * (i - filtersizec)) / sigma / sigma);
-        sum += array[i];
+        float sum = 0.0;
+        for(int i = 0; i < (2 * filtersizec + 1); i++)
+        {
+            array[i] =
+                exp(-((i - filtersizec) * (i - filtersizec)) / sigma / sigma);
+            sum += array[i];
+        }
+
+        for(int i = 0; i < (2 * filtersizec + 1); i++)
+        {
+            array[i] /= sum;
+        }
     }
 
-    for(i = 0; i < (2 * filtersizec + 1); i++)
+    for(uint32_t k = 0; k < naxes[2]; k++)
     {
-        array[i] /= sum;
-        //    printf("%ld %f\n",i,array[i]);
-    }
-
-    for(k = 0; k < naxes[2]; k++)
-    {
-        for(ii = 0; ii < naxes[0] * naxes[1]; ii++)
+        for(uint64_t ii = 0; ii < naxes[0] * naxes[1]; ii++)
         {
             data.image[IDtmp].array.F[ii] = 0.0;
         }
 
-        for(jj = 0; jj < naxes[1]; jj++)
+        for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
-            for(ii = 0; ii < naxes[0] - (2 * filtersizec + 1); ii++)
+            for(long ii = 0; ii < naxes[0] - (2 * filtersizec + 1); ii++)
             {
-                for(i = 0; i < (2 * filtersizec + 1); i++)
+                for(int i = 0; i < (2 * filtersizec + 1); i++)
                 {
                     data.image[IDtmp]
                     .array.F[jj * naxes[0] + (ii + filtersizec)] +=
@@ -169,10 +167,10 @@ imageID gauss_filter(
                                                jj * naxes[0] + (ii + i)];
                 }
             }
-            for(ii = 0; ii < filtersizec; ii++)
+            for(uint32_t ii = 0; ii < filtersizec; ii++)
             {
-                tot = 0.0;
-                for(i = filtersizec - ii; i < (2 * filtersizec + 1); i++)
+                double tot = 0.0;
+                for(int i = filtersizec - ii; i < (2 * filtersizec + 1); i++)
                 {
                     data.image[IDtmp].array.F[jj * naxes[0] + ii] +=
                         array[i] *
@@ -183,10 +181,10 @@ imageID gauss_filter(
                 }
                 data.image[IDtmp].array.F[jj * naxes[0] + ii] /= tot;
             }
-            for(ii = naxes[0] - filtersizec - 1; ii < naxes[0]; ii++)
+            for(long ii = naxes[0] - filtersizec - 1; ii < naxes[0]; ii++)
             {
-                tot = 0.0;
-                for(i = 0; i < (2 * filtersizec + 1) -
+                double tot = 0.0;
+                for(int i = 0; i < (2 * filtersizec + 1) -
                         (ii - naxes[0] + filtersizec + 1);
                         i++)
                 {
@@ -201,12 +199,11 @@ imageID gauss_filter(
             }
         }
 
-        for(ii = 0; ii < naxes[0]; ii++)
+        for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            for(jj = 0; jj < naxes[1] - (2 * filtersizec + 1); jj++)
+            for(long jj = 0; jj < naxes[1] - (2 * filtersizec + 1); jj++)
             {
-                fflush(stdout);
-                for(j = 0; j < (2 * filtersizec + 1); j++)
+                for(int j = 0; j < (2 * filtersizec + 1); j++)
                 {
                     data.image[IDout]
                     .array.F[k * naxes[0] * naxes[1] +
@@ -216,15 +213,15 @@ imageID gauss_filter(
                 }
             }
 
-            for(jj = 0; jj < filtersizec; jj++)
+            for(long jj = 0; jj < filtersizec; jj++)
             {
-                tot  = 0.0;
-                jmax = (2 * filtersizec + 1);
+                double tot  = 0.0;
+                long jmax = (2 * filtersizec + 1);
                 if(jj - filtersizec + jmax > naxes[1])
                 {
                     jmax = naxes[1] - jj + filtersizec;
                 }
-                for(j = filtersizec - jj; j < jmax; j++)
+                for(int j = filtersizec - jj; j < jmax; j++)
                 {
                     data.image[IDout].array.F[k * naxes[0] * naxes[1] +
                                               jj * naxes[0] + ii] +=
@@ -238,10 +235,10 @@ imageID gauss_filter(
                     tot;
             }
 
-            for(jj = naxes[1] - filtersizec - 1; jj < naxes[1]; jj++)
+            for(long jj = naxes[1] - filtersizec - 1; jj < naxes[1]; jj++)
             {
-                tot = 0.0;
-                for(j = 0; j < (2 * filtersizec + 1) -
+                double tot = 0.0;
+                for(int j = 0; j < (2 * filtersizec + 1) -
                         (jj - naxes[1] + filtersizec + 1);
                         j++)
                 {
@@ -279,12 +276,10 @@ imageID gauss_3Dfilter(
     imageID IDout;
     imageID IDtmp;
     imageID IDtmp1;
-    float  *array;
-    long    ii, jj, kk;
     long    naxes[3];
-    int     i, j, k;
-    float   sum;
 
+
+    float *__restrict array;
     array = (float *) malloc((2 * filter_size + 1) * sizeof(float));
     if(array == NULL)
     {
@@ -317,24 +312,26 @@ imageID gauss_3Dfilter(
     IDtmp1 = image_ID("gtmp1");
     IDout  = image_ID(out_name);
 
-    sum = 0.0;
-    for(i = 0; i < (2 * filter_size + 1); i++)
     {
-        array[i] =
-            exp(-((i - filter_size) * (i - filter_size)) / sigma / sigma);
-        sum += array[i];
+        float sum = 0.0;
+        for(int i = 0; i < (2 * filter_size + 1); i++)
+        {
+            array[i] =
+                exp(-((i - filter_size) * (i - filter_size)) / sigma / sigma);
+            sum += array[i];
+        }
+
+        for(int i = 0; i < (2 * filter_size + 1); i++)
+        {
+            array[i] /= sum;
+        }
     }
 
-    for(i = 0; i < (2 * filter_size + 1); i++)
-    {
-        array[i] /= sum;
-    }
-
-    for(kk = 0; kk < naxes[2]; kk++)
-        for(jj = 0; jj < naxes[1]; jj++)
-            for(ii = 0; ii < naxes[0] - (2 * filter_size + 1); ii++)
+    for(long kk = 0; kk < naxes[2]; kk++)
+        for(long jj = 0; jj < naxes[1]; jj++)
+            for(long ii = 0; ii < naxes[0] - (2 * filter_size + 1); ii++)
             {
-                for(i = 0; i < (2 * filter_size + 1); i++)
+                for(int i = 0; i < (2 * filter_size + 1); i++)
                 {
                     data.image[IDtmp]
                     .array.F[kk * naxes[0] * naxes[1] + jj * naxes[0] +
@@ -345,11 +342,11 @@ imageID gauss_3Dfilter(
                 }
             }
 
-    for(kk = 0; kk < naxes[2]; kk++)
-        for(ii = 0; ii < naxes[0]; ii++)
-            for(jj = 0; jj < naxes[1] - (2 * filter_size + 1); jj++)
+    for(long kk = 0; kk < naxes[2]; kk++)
+        for(long ii = 0; ii < naxes[0]; ii++)
+            for(long jj = 0; jj < naxes[1] - (2 * filter_size + 1); jj++)
             {
-                for(j = 0; j < (2 * filter_size + 1); j++)
+                for(int j = 0; j < (2 * filter_size + 1); j++)
                 {
                     data.image[IDtmp1]
                     .array.F[kk * naxes[0] * naxes[1] +
@@ -360,11 +357,11 @@ imageID gauss_3Dfilter(
                 }
             }
 
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
-            for(kk = 0; kk < naxes[2] - (2 * filter_size + 1); kk++)
+    for(long ii = 0; ii < naxes[0]; ii++)
+        for(long jj = 0; jj < naxes[1]; jj++)
+            for(long kk = 0; kk < naxes[2] - (2 * filter_size + 1); kk++)
             {
-                for(k = 0; k < (2 * filter_size + 1); k++)
+                for(int k = 0; k < (2 * filter_size + 1); k++)
                 {
                     data.image[IDout]
                     .array.F[(kk + filter_size) * naxes[0] * naxes[1] +
