@@ -281,7 +281,10 @@ errno_t delete_image(
  * DELETE_IMAGE_ERRMODE_EXIT
  *
  */
-errno_t delete_image_ID(const char *__restrict imname, int errmode)
+errno_t delete_image_ID(
+    const char *__restrict imname,
+    int errmode
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -301,7 +304,9 @@ errno_t delete_image_ID(const char *__restrict imname, int errmode)
 
 
 // delete all images with a prefix
-errno_t delete_image_ID_prefix(const char *prefix)
+errno_t delete_image_ID_prefix(
+    const char *prefix
+)
 {
     imageID i;
 

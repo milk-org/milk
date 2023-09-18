@@ -431,10 +431,10 @@ errno_t functionparameter_CTRLscreen(
 
 
 
-        printf("%d function parameter structure(s) imported, %ld parameters\n",
+        /*printf("%d function parameter structure(s) imported, %ld parameters\n",
                fpsCTRLvar.NBfps,
                NBpindex);
-        fflush(stdout);
+        fflush(stdout);*/
     }
 
 
