@@ -13,13 +13,4 @@ else
     echo ""
 fi
 
-PATCHFN=patch_cacao_lapacke_optional.txt
-( [ -r  "./$PATCHFN" ] \
-  && cd plugins/cacao-src/computeCalib/ \
-  && PATCHPATH="../../../$PATCHFN" \
-  && [ -r  "$PATCHPATH" ] \
-  && patch -s --reject-file=- -f -p 2 < "$PATCHPATH" \
-  && echo "Successfully patched CACAO computeCalib/CMakeList.txt" \
-  || echo "Failed to patch CACAO computeCalib/CMakeList.txt" \
-  || true
-)
+
