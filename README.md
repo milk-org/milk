@@ -35,7 +35,6 @@ Module inclues key frameworks :
 ```bash
 git clone https://github.com/milk-org/milk.git
 cd milk
-./fetch_milk_dev.sh
 ```
 
 ## Compile
