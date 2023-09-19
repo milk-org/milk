@@ -227,7 +227,7 @@ typedef int errno_t;
             abort();                                                           \
         }                                                                      \
         data.testpoint.line = __LINE__;                                        \
-        clock_gettime(CLOCK_REALTIME, &data.testpoint.time);                   \
+        clock_gettime(CLOCK_MILK, &data.testpoint.time);                   \
     } while (0)
 
 /**
@@ -353,7 +353,7 @@ typedef int errno_t;
             abort();                                                           \
         }                                                                      \
         data.testpoint.line = __LINE__;                                        \
-        clock_gettime(CLOCK_REALTIME, &data.testpoint.time);                   \
+        clock_gettime(CLOCK_MILK, &data.testpoint.time);                   \
         slen = snprintf(data.testpoint.msg,                                    \
                         STRINGMAXLEN_FUNCTIONARGS,                             \
                         __VA_ARGS__);                                          \
