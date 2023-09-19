@@ -27,3 +27,6 @@ plugins/milk-extra-src/OpticsMaterials
 plugins/milk-extra-src/WFpropagate
 
 *-code-workspace
+
+
+*.egg-info
