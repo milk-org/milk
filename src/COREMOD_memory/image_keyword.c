@@ -14,7 +14,9 @@ long image_write_keyword_L(const char *IDname,
                            long        value,
                            const char *comment);
 
-long image_list_keywords(const char *IDname);
+long image_list_keywords(
+    const char * __restrict IDname
+);
 
 // ==========================================
 // command line interface wrapper functions
@@ -78,6 +80,9 @@ errno_t image_keyword_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+
+
+
 long image_write_keyword_L(const char *IDname,
                            const char *kname,
                            long        value,
@@ -111,6 +116,8 @@ long image_write_keyword_L(const char *IDname,
 
     return kw0;
 }
+
+
 
 long image_write_keyword_D(const char *IDname,
                            const char *kname,
@@ -184,39 +191,49 @@ long image_write_keyword_S(const char *IDname,
     return kw0;
 }
 
-imageID image_list_keywords(const char *IDname)
+
+imageID image_list_keywords(
+    const char * __restrict IDname
+)
 {
     imageID ID;
     long    kw;
 
     ID = image_ID(IDname);
 
-    for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    int kwcnt = 0;
+    for(kw = 0; kw < data.image[ID].md->NBkw; kw++)
     {
-        if(data.image[ID].kw[kw].type == 'L')
+
+        switch (data.image[ID].kw[kw].type)
         {
+        case 'L' :
             printf("%18s  %20ld %s\n",
                    data.image[ID].kw[kw].name,
                    data.image[ID].kw[kw].value.numl,
                    data.image[ID].kw[kw].comment);
-        }
-        if(data.image[ID].kw[kw].type == 'D')
-        {
+            kwcnt ++;
+            break;
+
+        case 'D' :
             printf("%18s  %20lf %s\n",
                    data.image[ID].kw[kw].name,
                    data.image[ID].kw[kw].value.numf,
                    data.image[ID].kw[kw].comment);
-        }
-        if(data.image[ID].kw[kw].type == 'S')
-        {
+            kwcnt ++;
+            break;
+
+        case 'S' :
             printf("%18s  %20s %s\n",
                    data.image[ID].kw[kw].name,
                    data.image[ID].kw[kw].value.valstr,
                    data.image[ID].kw[kw].comment);
+            kwcnt ++;
+            break;
         }
-        //	if(data.image[ID].kw[kw].type=='N')
-        //	printf("-------------\n");
     }
+
+    printf("%d / %d keywords set\n", kwcnt,  data.image[ID].md->NBkw);
 
     return ID;
 }
