@@ -17,6 +17,7 @@ typedef int errno_t;
 #endif
 
 #include "CommandLineInterface/CLIcore/CLIcore_signals.h"
+#include "CommandLineInterface/timeutils.h"
 
 // error mode
 // defines function behavior on error
@@ -227,7 +228,7 @@ typedef int errno_t;
             abort();                                                           \
         }                                                                      \
         data.testpoint.line = __LINE__;                                        \
-        clock_gettime(CLOCK_MILK, &data.testpoint.time);                   \
+        clock_gettime(CLOCK_MILK, &data.testpoint.time);                       \
     } while (0)
 
 /**
