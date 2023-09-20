@@ -149,6 +149,8 @@ errno_t functionparameter_scan_fps(
         {
             char *pch = strstr(dir->d_name, ".fps.shm");
 
+            DEBUG_TRACEPOINT("Processing fps file %s\n", dir->d_name);
+
             int matchOK = 0;
 
             // name filtering
@@ -354,7 +356,7 @@ errno_t functionparameter_scan_fps(
 
 
 
-
+                DEBUG_TRACEPOINT("A tracepoint here (%s); fpskeep = %d\n", dir->d_name, fpskeep);
                 if(fpskeep == 1)
                 {
 
@@ -378,6 +380,7 @@ errno_t functionparameter_scan_fps(
                                 // scan existing nodes looking for match
                                 for(kwnindex = 0; kwnindex < NBkwn; kwnindex++)
                                 {
+                                    
                                     if(keywnode[kwnindex].keywordlevel ==
                                             level) // levels have to match
                                     {
@@ -458,11 +461,7 @@ errno_t functionparameter_scan_fps(
                                     if(verbose > 0)
                                     {
                                         printf(
-                                            "CREATI"
-                                            "NG "
-                                            "NODE "
-                                            "%d ",
-                                            kwnindex);
+                                            "CREATING NODE %d ", kwnindex);
                                     }
                                     keywnode[kwnindex].keywordlevel = level;
 
@@ -489,29 +488,24 @@ errno_t functionparameter_scan_fps(
                                                    tmpstring);
                                         }
                                     }
+
                                     if(verbose > 0)
                                     {
-                                        printf(
-                                            "   %d "
-                                            "%d\n",
+                                        printf("   %d %d -- %s\n",
                                             keywnode[kwnindex].keywordlevel,
-                                            fps[fpsindex]
-                                            .parray[pindex0]
-                                            .keywordlevel);
+                                            fps[fpsindex].parray[pindex0].keywordlevel,
+                                            keywnode[kwnindex].keywordfull);
                                     }
 
                                     if(keywnode[kwnindex].keywordlevel ==
                                             fps[fpsindex].parray[pindex0].keywordlevel)
                                     {
-                                        //									strcpy(keywnode[kwnindex].keywordfull, fps[fpsindex].parray[i].keywordfull);
-
                                         keywnode[kwnindex].leaf     = 1;
                                         keywnode[kwnindex].fpsindex = fpsindex;
                                         keywnode[kwnindex].pindex   = pindex0;
                                     }
                                     else
                                     {
-
                                         keywnode[kwnindex].leaf     = 0;
                                         keywnode[kwnindex].fpsindex = fpsindex;
                                         keywnode[kwnindex].pindex   = 0;
@@ -525,6 +519,8 @@ errno_t functionparameter_scan_fps(
                         }
                     }
                 }
+
+                DEBUG_TRACEPOINT("Another tracepoint %s\n", dir->d_name);
 
                 if(verbose > 0)
                 {
