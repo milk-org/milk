@@ -35,6 +35,8 @@ long function_parameter_struct_connect(
     int fpsconnectmode
 )
 {
+    DEBUG_TRACEPOINT("Launching function_parameter_struct_connect for %s", name);
+
     int  stringmaxlen = 500;
     char SM_fname[stringmaxlen];
     int  SM_fd; // shared memory file descriptor
@@ -106,7 +108,7 @@ long function_parameter_struct_connect(
     {
         PRINT_ERROR("snprintf error");
     }
-    DEBUG_TRACEPOINT("File : %s\n", SM_fname);
+    DEBUG_TRACEPOINT("File: %s\n", SM_fname);
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1)
     {
@@ -117,6 +119,7 @@ long function_parameter_struct_connect(
     {
         fps->SMfd = SM_fd;
     }
+    DEBUG_TRACEPOINT("File: %s - attempting mapping\n", SM_fname);
 
     struct stat file_stat;
     fstat(SM_fd, &file_stat);
@@ -135,6 +138,8 @@ long function_parameter_struct_connect(
         fflush(stdout);
         exit(EXIT_FAILURE);
     }
+
+    DEBUG_TRACEPOINT("File: %s - attempting connect\n", SM_fname);
 
     if(fpsconnectmode == FPSCONNECT_CONF)
     {
@@ -156,6 +161,8 @@ long function_parameter_struct_connect(
     NBparamMAX = fps->md->NBparamMAX;
     printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
     fflush(stdout);
+
+    DEBUG_TRACEPOINT("File: %s - successful connect.\n", SM_fname);
 
     // decompose full name into pname and indices
     int   NBi = 0;
@@ -195,6 +202,8 @@ long function_parameter_struct_connect(
         pch = strtok(NULL, "-");
     }
 
+    DEBUG_TRACEPOINT("File: %s - Successful fps parse.\n", SM_fname);
+
     fps->md->NBnameindex = NBi;
 
     // count active parameters
@@ -207,7 +216,8 @@ long function_parameter_struct_connect(
         }
     }
     fps->NBparamActive = pactivecnt;
-
+    
+    DEBUG_TRACEPOINT("File: %s - Successful parameter count.\n", SM_fname);
     //function_parameter_printlist(fps->parray, NBparamMAX);
 
     if((fpsconnectmode == FPSCONNECT_CONF) ||
@@ -225,6 +235,7 @@ long function_parameter_struct_connect(
             }
         }
     }
+    DEBUG_TRACEPOINT("File: %s - Successful LoadStream.\n", SM_fname);
 
     // if available, get process settings from FPS entries
     if(fpsconnectmode == FPSCONNECT_RUN)
@@ -384,6 +395,7 @@ long function_parameter_struct_connect(
             }
         }
     }
+    DEBUG_TRACEPOINT("File: %s - Successful termination of function_parameter_struct_connect.\n", SM_fname);
 
     return (NBparamMAX);
 }
