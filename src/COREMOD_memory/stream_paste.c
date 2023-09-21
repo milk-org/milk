@@ -137,7 +137,7 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
             }
             else
             {
-                sem_wait(data.image[ID0].semptr[semtrig0]);
+                ImageStreamIO_semwait(data.image+ID0, semtrig0);
             }
             Xoffset = 0;
             IDin    = 0;
@@ -156,7 +156,7 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
             }
             else
             {
-                sem_wait(data.image[ID1].semptr[semtrig1]);
+                ImageStreamIO_semwait(data.image+ID1, semtrig1);
             }
             Xoffset = xsize;
             IDin    = 1;
