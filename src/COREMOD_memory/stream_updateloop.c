@@ -517,7 +517,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         }
         else
         {
-            sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
+            ImageStreamIO_semwait(data.image+IDsync, sync_semwaitindex);
         }
 
         if(loopCTRLexit == 1)
@@ -632,7 +632,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     while(1)
     {
-        sem_wait(data.image[IDsync].semptr[sync_semwaitindex]);
+        ImageStreamIO_semwait(data.image+IDsync, sync_semwaitindex);
 
         kk++;
         if(kk == period)  // UPDATE
