@@ -1292,7 +1292,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         clock_gettime(CLOCK_MILK, &t0);
         if(LOOPmode == 1)
         {
-            sem_wait(data.image[IDin].semptr[semtrig]);
+            ImageStreamIO_semwait(data.image+IDin, semtrig);
         }
 
         /// *STEP: Copy IDin to IDincp*
@@ -1755,7 +1755,7 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
         abort();
     }
 
-    while(sem_trywait(data.image[IDin].semptr[semtrig]) == 0)
+    while(ImageStreamIO_semtrywait(data.image+IDin, semtrig) == 0)
     {
     }
     while(1)
@@ -1784,7 +1784,7 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
                         inarray[kk * NBpix_in + ii];
                 }
 
-        sem_wait(data.image[IDin].semptr[semtrig]);
+        ImageStreamIO_semwait(data.image+IDin, semtrig);
 
         // write new input in inarray vector
         for(uint32_t ii = 0; ii < NBpix_in; ii++)
@@ -2280,7 +2280,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         //	printf("iter %5ld / %5ld", iter, NBiter);
         //	fflush(stdout);
 
-        sem_wait(data.image[IDmodevalIN].semptr[semtrig]);
+        ImageStreamIO_semwait(data.image+IDmodevalIN, semtrig);
         //	printf("\n");
         //	fflush(stdout);
 
