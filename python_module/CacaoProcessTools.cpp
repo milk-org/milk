@@ -18,8 +18,13 @@ int fps_value_to_key(pyFps             &cls,
                      const FPS_type     fps_type,
                      py::object         value)
 {
-    switch(fps_type)
+    FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
+
+    switch(switch_fps_type)
     {
+        case FPS_type::ONOFF:
+            return functionparameter_SetParamValue_ONOFF(cls,
+                    key.c_str(), py::bool_(value));
         case FPS_type::INT32:
         case FPS_type::UINT32:
         case FPS_type::INT64:
@@ -36,6 +41,11 @@ int fps_value_to_key(pyFps             &cls,
                     key.c_str(),
                     py::float_(value));
         case FPS_type::STRING:
+        case FPS_type::STREAMNAME:
+        case FPS_type::DIRNAME:
+        case FPS_type::EXECFILENAME:
+        case FPS_type::FILENAME:
+        case FPS_type::FITSFILENAME:
             return functionparameter_SetParamValue_STRING(
                        cls,
                        key.c_str(),
@@ -50,6 +60,8 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch(fps_type)
     {
+        case FPS_type::ONOFF:
+            return py::bool_(functionparameter_GetParamValue_ONOFF(cls, key.c_str()));
         case FPS_type::INT32:
         case FPS_type::UINT32:
         case FPS_type::INT64:
@@ -63,6 +75,11 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
             return py::float_(
                        functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
         case FPS_type::STRING:
+        case FPS_type::STREAMNAME:
+        case FPS_type::DIRNAME:
+        case FPS_type::EXECFILENAME:
+        case FPS_type::FILENAME:
+        case FPS_type::FITSFILENAME:
             return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
         default:
             return py::none();
@@ -405,6 +422,20 @@ Parameters:
         .def("get_levelKeys", &pyFps::get_levelKeys)
 
         .def(
+            "get_param_value_onoff",
+            [](pyFps &cls, std::string key) {
+                return functionparameter_GetParamValue_ONOFF(cls, key.c_str());
+            },
+            R"pbdoc(Get the boolean value of the FPS key
+
+Parameters:
+    key     [in]: Parameter name
+Return:
+    ret      [out]: parameter value
+)pbdoc",
+            py::arg("key"))
+
+        .def(
             "get_param_value_int",
             [](pyFps &cls, std::string key) {
                 return functionparameter_GetParamValue_INT64(cls, key.c_str());
@@ -460,7 +491,23 @@ Return:
     ret      [out]: parameter value
 )pbdoc",
             py::arg("key"))
+        .def(
+            "set_param_value_onoff",
+            [](pyFps &cls, std::string key, std::string value) {
+                return functionparameter_SetParamValue_ONOFF(cls,
+                                                             key.c_str(),
+                                                             std::stol(value));
+            },
+            R"pbdoc(Set the boolean value of the FPS key
 
+Parameters:
+    key     [in]: Parameter name
+    value   [in]: Parameter value
+Return:
+    ret      [out]: error code
+)pbdoc",
+            py::arg("key"),
+            py::arg("value"))
         .def(
             "set_param_value_int",
             [](pyFps &cls, std::string key, std::string value) {
