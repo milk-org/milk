@@ -29,7 +29,7 @@
 #include "processinfo.h"
 #include "processtools_trigger.h"
 
-#define PROCESSINFOLISTSIZE 10000
+#define PROCESSINFOLISTSIZE 50000
 
 #define MAXNBSUBPROCESS 50
 #define MAXNBCPU        100
