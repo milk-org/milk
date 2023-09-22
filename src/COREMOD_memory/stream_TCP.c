@@ -810,14 +810,17 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd[0].name);
+    ID = image_ID(imgmd->name);
+    printf("ID: %ld\n", ID);
+
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd[0].name);
+        ID = read_sharedmem_image(imgmd->name);
+        printf("ID: %ld\n", ID);
     }
 
-    img_p = &data.image[ID];
+    // img_p = &data.image[ID]; // Of course that doesn't fucking work if ID is -1.
 
     list_image_ID();
 
@@ -826,7 +829,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         OKim = 0;
     }
     else
-    {
+    {   
         OKim = 1;
         if(imgmd[0].naxis != img_p->md[0].naxis)
         {
@@ -845,22 +848,18 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             OKim = 0;
         }
 
+        if(TCPTRANSFERKW == 1 && imgmd->NBkw > img_p->md->NBkw) {
+                OKim = 0;
+        }
+
         if(OKim == 0)
         {
-            delete_image_ID(imgmd[0].name, DELETE_IMAGE_ERRMODE_WARNING);
+            // This actually nukes img_p, but leaves imgmd unscathed.
+            delete_image_ID(imgmd->name, DELETE_IMAGE_ERRMODE_WARNING);
             ID = -1;
         }
     }
 
-    int nbkw = 0;
-    if(TCPTRANSFERKW == 1)
-    {
-        nbkw = imgmd[0].NBkw;
-        if(imgmd[0].NBkw != img_p->md[0].NBkw)
-        {
-            OKim = 0;
-        }
-    }
 
     if(OKim == 0)
     {
@@ -874,9 +873,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                         0,
                         &ID);
         printf("Created image stream %s - shared = %d\n",
-               imgmd[0].name,
-               imgmd[0].shared);
-        printf("Size = %d,%d\n", imgmd[0].size[0], imgmd[0].size[1]);
+        // OKim is now OK. Re-point img_p
+        img_p = &data.image[ID];
     }
     else
     {
@@ -940,8 +938,11 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
     else
     {
-        framesizefull = framesize1 + nbkw * sizeof(IMAGE_KEYWORD);
+        // Warning img_p->md->NBkw may be > imgmd->NBkw.
+        // Use the correct one.
+        framesizefull = framesize1 + imgmd->NBkw * sizeof(IMAGE_KEYWORD);
     }
+    printf("image frame size full (img + md + kw) = %ld\n", framesizefull);
 
     buff = (char *) malloc(sizeof(char) * framesizefull);
 
@@ -978,8 +979,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             recv_bytes = recv(fds_client, socket_flush_buff, framesizefull, MSG_DONTWAIT);
             printf("TCP recv buffer flush. %ld stray bytes.\n", recv_bytes);
         }
-        if(recv_bytes >
-                0)    // Will be -1 if we got 0 bytes at the last iteration above
+        if(recv_bytes > 0)    // Will be -1 if we got 0 bytes at the last iteration above
         {
             recv_bytes = recv(fds_client, socket_flush_buff, framesizefull - recv_bytes,
                               MSG_WAITALL);
