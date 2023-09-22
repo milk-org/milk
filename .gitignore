@@ -30,3 +30,4 @@ plugins/milk-extra-src/WFpropagate
 
 
 *.egg-info
+.eggs/
