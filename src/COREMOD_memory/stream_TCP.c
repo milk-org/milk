@@ -373,31 +373,31 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     if(loopOK == 1)
     {
-        xsize    = img_p->md[0].size[0];
-        ysize    = img_p->md[0].size[1];
+        xsize    = img_p->md->size[0];
+        ysize    = img_p->md->size[1];
         NBslices = 1;
-        if(img_p->md[0].naxis > 2)
-            if(img_p->md[0].size[2] > 1)
+        if(img_p->md->naxis > 2)
+            if(img_p->md->size[2] > 1)
             {
-                NBslices = img_p->md[0].size[2];
+                NBslices = img_p->md->size[2];
             }
     }
 
     if(loopOK == 1)
     {
-        framesize = ImageStreamIO_typesize(img_p->md[0].datatype) * xsize * ysize;
+        framesize = ImageStreamIO_typesize(img_p->md->datatype) * xsize * ysize;
 
         printf("IMAGE FRAME SIZE = %ld\n", framesize);
         fflush(stdout);
 
-        if(-1 == ImageStreamIO_checktype(img_p->md[0].datatype, 0))
+        if(-1 == ImageStreamIO_checktype(img_p->md->datatype, 0))
         {
             printf("ERROR: WRONG DATA TYPE\n");
             snprintf(errmsg,
                      200,
                      "WRONG DATA TYPE data type = %d\n",
-                     img_p->md[0].datatype);
-            printf("data type = %d\n", img_p->md[0].datatype);
+                     img_p->md->datatype);
+            printf("data type = %d\n", img_p->md->datatype);
             processinfo_error(processinfo, errmsg);
             loopOK = 0;
         }
@@ -417,7 +417,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         else
         {
             framesizeall =
-                framesize1 + img_p->md[0].NBkw * sizeof(IMAGE_KEYWORD);
+                framesize1 + img_p->md->NBkw * sizeof(IMAGE_KEYWORD);
         }
 
         buff = (char *) malloc(sizeof(char) * framesizeall);
@@ -427,11 +427,11 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         oldslice = 0;
         //sockOK = 1;
-        printf("sem = %d\n", img_p->md[0].sem);
+        printf("sem = %d\n", img_p->md->sem);
         fflush(stdout);
     }
 
-    if((img_p->md[0].sem == 0) || (mode == 1))
+    if((img_p->md->sem == 0) || (mode == 1))
     {
         processinfo_WriteMessage(processinfo, "sync using counter");
         UseSem = 0;
@@ -455,11 +455,11 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
         if(UseSem == 0)  // use counter
         {
-            while(img_p->md[0].cnt0 == cnt)  // test if new frame exists
+            while(img_p->md->cnt0 == cnt)  // test if new frame exists
             {
                 usleep(5);
             }
-            cnt  = img_p->md[0].cnt0;
+            cnt  = img_p->md->cnt0;
             semr = 0;
         }
         else
@@ -504,10 +504,10 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
             if(semr == 0)
             {
-                frame_md[0].cnt0 = img_p->md[0].cnt0;
-                frame_md[0].cnt1 = img_p->md[0].cnt1;
+                frame_md->cnt0 = img_p->md->cnt0;
+                frame_md->cnt1 = img_p->md->cnt1;
 
-                slice = img_p->md[0].cnt1;
+                slice = img_p->md->cnt1;
                 if(slice > oldslice + 1)
                 {
                     slice = oldslice + 1;
@@ -522,12 +522,12 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     slice = 0;
                 }
 
-                frame_md[0].cnt1 = slice;
+                frame_md->cnt1 = slice;
 
                 ptr1 =
                     ptr0 +
                     framesize *
-                    slice; //img_p->md[0].cnt1; // frame that was just written
+                    slice; //img_p->md->cnt1; // frame that was just written
                 memcpy(buff, ptr1, framesize);
                 memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
 
@@ -535,7 +535,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 {
                     memcpy(buff + framesize1,
                            (char *) img_p->kw,
-                           img_p->md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                           img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 rs = send(fds_client, buff, framesizeall, 0);
@@ -803,7 +803,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(data.processinfo == 1)
     {
         char msgstring[200];
-        snprintf(msgstring, 200, "Receiving stream %s", imgmd[0].name);
+        snprintf(msgstring, 200, "Receiving stream %s", imgmd->name);
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
@@ -829,27 +829,29 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         OKim = 0;
     }
     else
-    {   
+    {
+        img_p = &data.image[ID];
         OKim = 1;
-        if(imgmd[0].naxis != img_p->md[0].naxis)
+        if(imgmd->naxis != img_p->md->naxis)
         {
             OKim = 0;
         }
         if(OKim == 1)
         {
-            for(axis = 0; axis < imgmd[0].naxis; axis++)
-                if(imgmd[0].size[axis] != img_p->md[0].size[axis])
+            for(axis = 0; axis < imgmd->naxis; axis++)
+                if(imgmd->size[axis] != img_p->md->size[axis])
                 {
                     OKim = 0;
                 }
         }
-        if(imgmd[0].datatype != img_p->md[0].datatype)
+        if(imgmd->datatype != img_p->md->datatype)
         {
             OKim = 0;
         }
 
-        if(TCPTRANSFERKW == 1 && imgmd->NBkw > img_p->md->NBkw) {
-                OKim = 0;
+        if(TCPTRANSFERKW == 1 && imgmd->NBkw > img_p->md->NBkw)
+        {
+            OKim = 0;
         }
 
         if(OKim == 0)
@@ -863,45 +865,49 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     if(OKim == 0)
     {
-        printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
-        create_image_ID(imgmd[0].name,
-                        imgmd[0].naxis,
-                        imgmd[0].size,
-                        imgmd[0].datatype,
-                        imgmd[0].shared,
-                        nbkw,
+        printf("IMAGE %s HAS TO BE CREATED\n", imgmd->name);
+        fflush(stdout);
+        create_image_ID(imgmd->name,
+                        imgmd->naxis,
+                        imgmd->size,
+                        imgmd->datatype,
+                        imgmd->shared,
+                        imgmd->NBkw,
                         0,
                         &ID);
         printf("Created image stream %s - shared = %d\n",
+               imgmd->name,
+               imgmd->shared);
+        printf("Size = %d,%d\n", imgmd->size[0], imgmd->size[1]);
         // OKim is now OK. Re-point img_p
         img_p = &data.image[ID];
     }
     else
     {
-        printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
+        printf("REUSING EXISTING IMAGE %s\n", imgmd->name);
     }
 
-    xsize    = img_p->md[0].size[0];
-    ysize    = img_p->md[0].size[1];
+    xsize    = img_p->md->size[0];
+    ysize    = img_p->md->size[1];
     NBslices = 1;
-    if(img_p->md[0].naxis > 2)
-        if(img_p->md[0].size[2] > 1)
+    if(img_p->md->naxis > 2)
+        if(img_p->md->size[2] > 1)
         {
-            NBslices = img_p->md[0].size[2];
+            NBslices = img_p->md->size[2];
         }
 
     char typestring[8];
 
-    if(ImageStreamIO_checktype(img_p->md[0].datatype, 0) == -1)
+    if(ImageStreamIO_checktype(img_p->md->datatype, 0) == -1)
     {
         printf("ERROR: WRONG DATA TYPE\n");
         snprintf(typestring, 8, "%s", "ERR");
         exit(0);
     }
-    framesize = ImageStreamIO_typesize(img_p->md[0].datatype) * xsize * ysize;
+    framesize = ImageStreamIO_typesize(img_p->md->datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
-    snprintf(typestring, 8, "%s", ImageStreamIO_typename(img_p->md[0].datatype));
+    snprintf(typestring, 8, "%s", ImageStreamIO_typename(img_p->md->datatype));
 
     ptr0 = (char *) img_p->array.raw;
 
@@ -912,7 +918,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(msgstring,
                  200,
                  "<- %s [%d x %d x %ld] %s",
-                 imgmd[0].name,
+                 imgmd->name,
                  (int) xsize,
                  (int) ysize,
                  NBslices,
@@ -920,7 +926,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(processinfo->description,
                  200,
                  "%s %dx%dx%ld %s",
-                 imgmd[0].name,
+                 imgmd->name,
                  (int) xsize,
                  (int) ysize,
                  NBslices,
@@ -979,7 +985,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             recv_bytes = recv(fds_client, socket_flush_buff, framesizefull, MSG_DONTWAIT);
             printf("TCP recv buffer flush. %ld stray bytes.\n", recv_bytes);
         }
-        if(recv_bytes > 0)    // Will be -1 if we got 0 bytes at the last iteration above
+        if(recv_bytes >
+                0)    // Will be -1 if we got 0 bytes at the last iteration above
         {
             recv_bytes = recv(fds_client, socket_flush_buff, framesizefull - recv_bytes,
                               MSG_WAITALL);
@@ -1031,12 +1038,12 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         {
             frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
 
-            img_p->md[0].cnt1 = frame_md[0].cnt1;
+            img_p->md->cnt1 = frame_md->cnt1;
 
             // copy pixel data
             if(NBslices > 1)
             {
-                memcpy(ptr0 + framesize * frame_md[0].cnt1, buff, framesize);
+                memcpy(ptr0 + framesize * frame_md->cnt1, buff, framesize);
             }
             else
             {
@@ -1048,19 +1055,19 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                 // copy kw
                 memcpy(img_p->kw,
                        (IMAGE_KEYWORD *)(buff + framesize1),
-                       nbkw * sizeof(IMAGE_KEYWORD));
+                       img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
             }
 
-            frameincr = (long) frame_md[0].cnt0 - cnt0previous;
+            frameincr = (long) frame_md->cnt0 - cnt0previous;
             if(frameincr > 1)
             {
                 printf("Skipped %ld frame(s) at index %ld %ld\n",
                        frameincr - 1,
-                       (long)(frame_md[0].cnt0),
-                       (long)(frame_md[0].cnt1));
+                       (long)(frame_md->cnt0),
+                       (long)(frame_md->cnt1));
             }
 
-            cnt0previous = frame_md[0].cnt0;
+            cnt0previous = frame_md->cnt0;
 
             if(monitorindex == monitorinterval)
             {
@@ -1068,13 +1075,13 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                     "[%5ld]  input %20ld (+ %8ld) output %20ld (+ "
                     "%8ld)\n",
                     monitorloopindex,
-                    frame_md[0].cnt0,
-                    frame_md[0].cnt0 - minputcnt,
-                    img_p->md[0].cnt0,
-                    img_p->md[0].cnt0 - moutputcnt);
+                    frame_md->cnt0,
+                    frame_md->cnt0 - minputcnt,
+                    img_p->md->cnt0,
+                    img_p->md->cnt0 - moutputcnt);
 
-                minputcnt  = frame_md[0].cnt0;
-                moutputcnt = img_p->md[0].cnt0;
+                minputcnt  = frame_md->cnt0;
+                moutputcnt = img_p->md->cnt0;
 
                 monitorloopindex++;
                 monitorindex = 0;
@@ -1082,8 +1089,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             monitorindex++;
 
-            img_p->md[0].cnt0++;
-            for(semnb = 0; semnb < img_p->md[0].sem; semnb++)
+            img_p->md->cnt0++;
+            for(semnb = 0; semnb < img_p->md->sem; semnb++)
             {
                 semval = ImageStreamIO_semvalue(img_p, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
