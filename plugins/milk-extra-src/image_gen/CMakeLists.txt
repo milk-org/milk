@@ -7,11 +7,13 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
 	mkrandomim.c
+	voronoi.c
 )
 
 
 set(INCLUDEFILES
 	mkrandomim.h
+	voronoi.h
 )
 
 
