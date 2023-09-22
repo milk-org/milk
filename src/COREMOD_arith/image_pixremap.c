@@ -27,7 +27,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG,
         ".insname",
-        "input name",
+        "input image name",
         "inim",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &insname,
@@ -36,7 +36,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG,
         ".masksname",
-        "mask stream name",
+        "mapping image name",
         "maskim",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &mapsname,
@@ -45,7 +45,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG,
         ".outsname",
-        "output stream name",
+        "output image name",
         "outim",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &outsname,
@@ -96,8 +96,8 @@ static errno_t compute_function()
     uint32_t ysize = imgmap.md->size[1];
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
-    IMGID imgout = stream_connect_create_2Df32(outsname, xsize, ysize);
-
+    IMGID imgout =
+        stream_connect_create_2D(outsname, xsize, ysize, imgin.md->datatype);
 
     // build mapping table
     //
@@ -106,7 +106,7 @@ static errno_t compute_function()
     {
         int64_t pixindex = imgmap.im->array.SI64[ii];
         if ( ( pixindex > -1 )
-        && ( pixindex < insize) )
+                && ( pixindex < insize) )
         {
             nbpix ++;
         }
@@ -122,10 +122,81 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        for(uint64_t pixi=0; pixi<nbpix; pixi++)
+        switch ( imgin.md->datatype)
         {
-            imgout.im->array.F[map_outpixindex[pixi]] = imgout.im->array.F[map_inpixindex[pixi]];
+        case _DATATYPE_FLOAT:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.F[map_outpixindex[pixi]] = imgout.im->array.F[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_DOUBLE:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.D[map_outpixindex[pixi]] = imgout.im->array.D[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_INT8:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.SI8[map_outpixindex[pixi]] = imgout.im->array.SI8[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_UINT8:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.UI8[map_outpixindex[pixi]] = imgout.im->array.UI8[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_INT16:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.SI16[map_outpixindex[pixi]] = imgout.im->array.SI16[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_UINT16:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.UI16[map_outpixindex[pixi]] = imgout.im->array.UI16[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_INT32:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.SI32[map_outpixindex[pixi]] = imgout.im->array.SI32[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_UINT32:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.UI32[map_outpixindex[pixi]] = imgout.im->array.UI32[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_INT64:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.SI64[map_outpixindex[pixi]] = imgout.im->array.SI64[map_inpixindex[pixi]];
+            }
+            break;
+
+        case _DATATYPE_UINT64:
+            for(uint64_t pixi=0; pixi<nbpix; pixi++)
+            {
+                imgout.im->array.UI64[map_outpixindex[pixi]] = imgout.im->array.UI64[map_inpixindex[pixi]];
+            }
+            break;
         }
+
+
+
         processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
