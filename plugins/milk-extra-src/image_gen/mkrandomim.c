@@ -6,12 +6,17 @@
 
 // Local variables pointers
 static LOCVAR_OUTIMG2D outim;
-static uint32_t          *distrib;
+
+
+static uint32_t       *distrib;
 
 
 static CLICMDARGDEF farg[] =
 {
-    FARG_OUTIM2D(outim),
+    FARG_OUTIM_NAME(outim),
+    FARG_OUTIM_SHARED(outim),
+    FARG_OUTIM_XSIZE(outim),
+    FARG_OUTIM_YSIZE(outim),
     {
         CLIARG_UINT32,
         ".distrib",
@@ -73,7 +78,6 @@ static imageID make_image_random(
     // Create image if needed
     imcreateIMGID(img);
 
-
     // openMP is slow when calling gsl random number generator : do not use openMP here
     if(pdf == 0)
     {
@@ -118,25 +122,40 @@ static errno_t compute_function()
     DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
     IMGID img  = makeIMGID_2D(outim.name, *outim.xsize, *outim.ysize);
     img.shared = *outim.shared;
-    img.NBkw   = *outim.NBkw;
-    img.CBsize = *outim.CBsize;
+    //img.NBkw   = *outim.NBkw;
+    //img.CBsize = *outim.CBsize;
+
+    printf("NBkw   = %d\n", img.NBkw);
+    printf("CBsize = %d\n", img.CBsize);
+
+
+
 
     // Create image if needed
     imcreateIMGID(&img);
 
+
+    list_image_ID();
+
+/*
     image_keyword_addS(img, "MILKFUNC", "mkrandomim", "MILK function");
     image_keyword_addL(img,
                        "RNDPDF",
                        (long)(*distrib),
                        "random value distribution");
-
+*/
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+
+
+
 
     make_image_random(&img, *distrib);
 
     DEBUG_TRACEPOINT("update output ID %ld", img.ID);
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
