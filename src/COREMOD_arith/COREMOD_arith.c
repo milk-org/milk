@@ -62,6 +62,7 @@
 #include "image_setzero.h"
 
 #include "image_pixremap.h"
+#include "image_pixunmap.h"
 
 #include "image_total.h"
 #include "imfunctions.h"
@@ -103,6 +104,7 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_arith__imsetzero();
 
     CLIADDCMD_COREMODE_arith__pixremap();
+    CLIADDCMD_COREMODE_arith__pixunmap();
 
     return RETURN_SUCCESS;
 }
