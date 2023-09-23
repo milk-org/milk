@@ -74,67 +74,95 @@ typedef struct
     uint32_t  *CBsize;
 } LOCVAR_OUTIMG2D;
 
+
+#define FARG_OUTIM_NAME(imkey)     \
+    {CLIARG_STR,                   \
+     "." #imkey ".name",           \
+     "output image",               \
+     #imkey,                       \
+     CLIARG_VISIBLE_DEFAULT,       \
+     (void **) &imkey.name,        \
+     NULL}
+
+#define FARG_OUTIM_XSIZE(imkey)    \
+        {CLIARG_UINT32,            \
+         "." #imkey ".xsize",      \
+         "x size",                 \
+         "256",                    \
+         CLIARG_VISIBLE_DEFAULT,   \
+         (void **) &imkey.xsize,   \
+         NULL}
+
+#define FARG_OUTIM_YSIZE(imkey)    \
+        {CLIARG_UINT32,            \
+         "." #imkey ".ysize",      \
+         "y size",                 \
+         "256",                    \
+         CLIARG_VISIBLE_DEFAULT,   \
+         (void **) &imkey.ysize,   \
+         NULL}
+
+
+#define FARG_OUTIM_SHARED(imkey)   \
+        {CLIARG_UINT32,            \
+         "." #imkey ".shared",     \
+         "shared flag",            \
+         "0",                      \
+         CLIARG_HIDDEN_DEFAULT,    \
+         (void **) &imkey.shared,  \
+         NULL}
+
+
+#define FARG_OUTIM_NBKW(imkey)     \
+        {CLIARG_UINT32,            \
+         "." #imkey ".NBkw",       \
+         "number keywords",        \
+         "10",                     \
+         CLIARG_HIDDEN_DEFAULT,    \
+         (void **) &imkey.NBkw,    \
+         NULL}
+
+
+#define FARG_OUTIM_CBSIZE(imkey)   \
+        {CLIARG_UINT32,            \
+         "." #imkey ".CBsize",     \
+         "circ buffer size",       \
+         "0",                      \
+         CLIARG_HIDDEN_DEFAULT,    \
+         (void **) &imkey.CBsize,  \
+         NULL}
+
+
+
+
 /** @brief Template for ouput image argument to CLI function
  *
  */
-#define FARG_OUTIM2D(imkey)                                                    \
-    {CLIARG_STR,                                                               \
-     "." #imkey ".name",                                                       \
-     "output image",                                                           \
-     #imkey,                                                                   \
-     CLIARG_VISIBLE_DEFAULT,                                                   \
-     (void **) &imkey.name,                                                    \
-     NULL},                                                                    \
-        {CLIARG_UINT32,                                                        \
-         "." #imkey ".xsize",                                                  \
-         "x size",                                                             \
-         "256",                                                                \
-         CLIARG_VISIBLE_DEFAULT,                                               \
-         (void **) &imkey.xsize,                                               \
-         NULL},                                                                \
-        {CLIARG_UINT32,                                                        \
-         "." #imkey ".ysize",                                                  \
-         "y size",                                                             \
-         "256",                                                                \
-         CLIARG_VISIBLE_DEFAULT,                                               \
-         (void **) &imkey.ysize,                                               \
-         NULL},                                                                \
-        {CLIARG_UINT32,                                                        \
-         "." #imkey ".shared",                                                 \
-         "shared flag",                                                        \
-         "0",                                                                  \
-         CLIARG_HIDDEN_DEFAULT,                                                \
-         (void **) &imkey.shared,                                              \
-         NULL},                                                                \
-        {CLIARG_UINT32,                                                        \
-         "." #imkey ".NBkw",                                                   \
-         "number keywords",                                                    \
-         "10",                                                                 \
-         CLIARG_HIDDEN_DEFAULT,                                                \
-         (void **) &imkey.NBkw,                                                \
-         NULL},                                                                \
-    {                                                                          \
-        CLIARG_UINT32, "." #imkey ".CBsize", "circ buffer size", "0",          \
-            CLIARG_HIDDEN_DEFAULT, (void **) &imkey.CBsize, NULL               \
-    }
+#define FARG_OUTIM2D(imkey)     \
+    FARG_OUTIM_NAME(imkey),     \
+    FARG_OUTIM_XSIZE(imkey),    \
+    FARG_OUTIM_YSIZE(imkey),    \
+    FARG_OUTIM_SHARED(imkey),   \
+    FARG_OUTIM_NBKW(imkey),     \
+    FARG_OUTIM_CBSIZE(imkey)
 
 
 
 // connect to and/or create output 2D image/stream
 //
-#define FARG_OUTIM2DCREATE(imkey, img, data_type)                               \
+#define FARG_OUTIM2DCREATE(imkey, img, data_type)                              \
         IMGID img = mkIMGID_from_name(imkey.name);                             \
         img.shared = *imkey.shared;                                            \
-        img.NBkw   = *imkey.NBkw;                                                \
+        img.NBkw   = *imkey.NBkw;                                              \
         img.CBsize = *imkey.CBsize;                                            \
         if(*imkey.shared == 1) {                                               \
           img = stream_connect_create_2D(imkey.name, *imkey.xsize, *imkey.ysize, data_type); \
         } else {                                                               \
-          img.naxis = 2;\
-          img.size[0] = *imkey.xsize;\
-          img.size[1] = *imkey.ysize;\
-          img.datatype = data_type;\
-          createimagefromIMGID(&img);                                           \
+          img.naxis = 2;                                                       \
+          img.size[0] = *imkey.xsize;                                          \
+          img.size[1] = *imkey.ysize;                                          \
+          img.datatype = data_type;                                            \
+          createimagefromIMGID(&img);                                          \
         }                                                                      \
         imcreateIMGID(&img);
 
