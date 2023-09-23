@@ -23,8 +23,8 @@
 
 static char *inimname;
 
+static LOCVAR_OUTIMG2D outim;
 
-static char *outimname;
 
 static uint32_t *cntindex;
 static long      fpi_cntindex = -1;
@@ -51,15 +51,7 @@ static CLICMDARGDEF farg[] =
         (void **) &inimname,
         NULL
     },
-    {
-        CLIARG_IMG,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
+    FARG_OUTIM2D(outim),
     {
         CLIARG_UINT32,
         ".cntindex",
@@ -174,15 +166,20 @@ static errno_t help_function()
 
 
 static errno_t streamprocess(
-    IMGID inimg,
-    IMGID outimg
+    IMGID *inimg,
+    IMGID *outimg
 )
 {
     DEBUG_TRACE_FSTART();
     // custom stream process function code
 
-    (void) inimg;
-    (void) outimg;
+
+    // resolve imgpos
+    resolveIMGID(inimg, ERRMODE_ABORT);
+
+    // Create output image if needed
+    imcreateIMGID(outimg);
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -198,8 +195,11 @@ static errno_t compute_function()
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-    IMGID outimg = mkIMGID_from_name(outimname);
-    resolveIMGID(&outimg, ERRMODE_ABORT);
+    // link/create output image/stream
+    FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
+
+
+
 
     printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -221,7 +221,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        streamprocess(inimg, outimg);
+        streamprocess(&inimg, &outimg);
 
         // stream is updated here, and not in the function called above, so that multiple
         // the above function can be chained with others
