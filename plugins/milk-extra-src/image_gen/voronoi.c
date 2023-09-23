@@ -4,9 +4,9 @@
 
 
 // input points positions, ASCII file
-static char *inptspos_fname;
+static char *inpos;
 
-static char *outimname;
+static LOCVAR_OUTIMG2D outim;
 
 static uint32_t *xsize;
 static long      fpi_xsize = -1;
@@ -25,41 +25,15 @@ static long      fpi_gapsize = -1;
 static CLICMDARGDEF farg[] =
 {
     {
-        CLIARG_STR,
-        ".ptpos_fname",
+        CLIARG_IMG,
+        ".inpos",
         "points positions, filename",
         "pts.dat",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &inptspos_fname,
+        (void **) &inpos,
         NULL
     },
-    {
-        CLIARG_IMG,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".xsize",
-        "output x size",
-        "100",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &xsize,
-        &fpi_xsize
-    },
-    {
-        CLIARG_UINT32,
-        ".ysize",
-        "output y size",
-        "100",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &ysize,
-        &fpi_ysize
-    },
+    FARG_OUTIM2D(outim),
     {
         CLIARG_FLOAT32,
         ".radius",
@@ -103,9 +77,10 @@ static errno_t help_function()
 /**
  * Create Voronoi map
  *
- * filename is an ASCII file defining points
+ * imgptspos holds ponts posistions
+ * size coords x nbpt
+ * for 100 points, 2D, this will be 2*100
  *
- * First line is number of point
  *
  * Each following line is a point, with following format:
  * index x y
@@ -115,178 +90,62 @@ static errno_t help_function()
  */
 imageID
 image_gen_make_voronoi_map(
-    const char *filename,
-    const char *IDout_name,
-    uint32_t    xsize,
-    uint32_t    ysize,
+    IMGID *imgpos,
+    IMGID *imgout,
     float radius, // maximum radius of each Voronoi zone
     float maxsep  // gap between Voronoi zones
 )
 {
+    // resolve imgpos
+    resolveIMGID(imgpos, ERRMODE_ABORT);
+
+    // Create output image if needed
+    imcreateIMGID(imgout);
 
 
-    // Read input ASCII file
-    //
-    long  NBpt;
-    uint32_t * __restrict vpt_index;
-    float * __restrict vpt_x;
-    float * __restrict vpt_y;
-    {
-        FILE *fp;
-        fp = fopen(filename, "r");
-        if(fp == NULL)
-        {
-            printf("file %s not found\n", filename);
-            return 1;
-        }
-
-        {
-            int fscanfcnt = fscanf(fp, "%ld", &NBpt);
-            if(fscanfcnt == EOF)
-            {
-                if(ferror(fp))
-                {
-                    perror("fscanf");
-                }
-                else
-                {
-                    fprintf(stderr,
-                            "Error: fscanf reached end of file, no matching "
-                            "characters, no matching failure\n");
-                }
-                exit(EXIT_FAILURE);
-            }
-            else if(fscanfcnt != 2)
-            {
-                fprintf(stderr,
-                        "Error: fscanf successfully matched and assigned %i input "
-                        "items, 2 expected\n",
-                        fscanfcnt);
-                exit(EXIT_FAILURE);
-            }
-        }
+    uint32_t xsize = imgout->md->size[0];
+    uint32_t ysize = imgout->md->size[1];
+    uint64_t xysize = xsize * ysize;
+    uint32_t NBpt = imgpos->md->size[1];
 
 
-        printf("Loading %ld points\n", NBpt);
-
-        vpt_index = (uint32_t *) malloc(sizeof(uint32_t) * NBpt);
-        if(vpt_index == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
-
-        vpt_x = (float *) malloc(sizeof(float) * NBpt);
-        if(vpt_x == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
-
-        vpt_y = (float *) malloc(sizeof(float) * NBpt);
-        if(vpt_y == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
-
-        for(int pt = 0; pt < NBpt; pt++)
-        {
-            int fscanfcnt =
-                fscanf(fp, "%u %f %f\n", &vpt_index[pt], &vpt_x[pt], &vpt_y[pt]);
-            if(fscanfcnt == EOF)
-            {
-                if(ferror(fp))
-                {
-                    perror("fscanf");
-                }
-                else
-                {
-                    fprintf(stderr,
-                            "Error: fscanf reached end of file, no matching "
-                            "characters, no matching failure\n");
-                }
-                exit(EXIT_FAILURE);
-            }
-            else if(fscanfcnt != 3)
-            {
-                fprintf(stderr,
-                        "Error: fscanf successfully matched and assigned %i input "
-                        "items, 3 expected\n",
-                        fscanfcnt);
-                exit(EXIT_FAILURE);
-            }
-        }
-
-        fclose(fp);
-    }
-
-
-
-    // Create output image
-    imageID   IDout;
-    {
-        uint32_t *sizearray;
-        uint8_t naxis = 2;
-        sizearray = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-        if(sizearray == NULL)
-        {
-            PRINT_ERROR("malloc returns NULL pointer");
-            abort();
-        }
-
-        sizearray[0] = xsize;
-        sizearray[1] = ysize;
-        create_image_ID(IDout_name,
-                        naxis,
-                        sizearray,
-                        _DATATYPE_INT32,
-                        0,
-                        0,
-                        0,
-                        &IDout);
-        free(sizearray);
-    }
-
-
-
-
+    //printf("%u points\n", NBpt);
 
     int64_t * __restrict nearest_index;
-    float   * __restrict nearest_distance;
+    float   * __restrict nearest_distance2;
     int64_t * __restrict nextnearest_index;
-    float   * __restrict nextnearest_distance;
+    float   * __restrict nextnearest_distance2;
     int     * __restrict gapim;
 
-    nearest_index = (int64_t *) malloc(sizeof(int64_t) * xsize * ysize);
+    nearest_index = (int64_t *) malloc(sizeof(int64_t) * xysize);
     if(nearest_index == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    nearest_distance = (float *) malloc(sizeof(float) * xsize * ysize);
-    if(nearest_distance == NULL)
+    nearest_distance2 = (float *) malloc(sizeof(float) * xysize);
+    if(nearest_distance2 == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    nextnearest_index = (int64_t *) malloc(sizeof(int64_t) * xsize * ysize);
+    nextnearest_index = (int64_t *) malloc(sizeof(int64_t) * xysize);
     if(nextnearest_index == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    nextnearest_distance = (float *) malloc(sizeof(float) * xsize * ysize);
-    if(nextnearest_distance == NULL)
+    nextnearest_distance2 = (float *) malloc(sizeof(float) * xysize);
+    if(nextnearest_distance2 == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
         abort();
     }
 
-    gapim = (int *) malloc(sizeof(int) * xsize * ysize);
+    gapim = (int *) malloc(sizeof(int) * xysize);
     if(gapim == NULL)
     {
         PRINT_ERROR("malloc returns NULL pointer");
@@ -295,48 +154,49 @@ image_gen_make_voronoi_map(
 
     // initialize arrays
     float bigval = 1.0e20;
-    for(uint64_t ii = 0; ii < xsize * ysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         nearest_index[ii]                = -1;
-        nearest_distance[ii]             = bigval;
+        nearest_distance2[ii]            = bigval;
         nextnearest_index[ii]            = -1;
-        nextnearest_distance[ii]         = bigval;
-        data.image[IDout].array.SI32[ii] = -1;
+        nextnearest_distance2[ii]        = bigval;
+        imgout->im->array.SI32[ii]       = -1;
     }
 
     for(uint32_t ii = 0; ii < xsize; ii++)
         for(uint32_t jj = 0; jj < ysize; jj++)
         {
             int   pindex = jj * xsize + ii;
-            float x      = 1.0 * ii / xsize;
-            float y      = 1.0 * jj / ysize;
+            float x      = 2.0 * ii / xsize - 1.0;
+            float y      = 2.0 * jj / ysize - 1.0;
 
             for(int pt = 0; pt < NBpt; pt++)
             {
-                float dx = x - vpt_x[pt];
-                float dy = y - vpt_y[pt];
+                float dx = x - imgpos->im->array.F[ 2*pt ];
+                float dy = y - imgpos->im->array.F[ 2*pt + 1 ];
 
-                float dist = sqrt(dx * dx + dy * dy);
+                float dist2 = dx * dx + dy * dy;
 
-                if(dist < nearest_distance[pindex])
+                if(dist2 < nearest_distance2[pindex])
                 {
                     nextnearest_index[pindex]    = nearest_index[pindex];
-                    nextnearest_distance[pindex] = nearest_distance[pindex];
+                    nextnearest_distance2[pindex] = nearest_distance2[pindex];
 
                     nearest_index[pindex]    = pt;
-                    nearest_distance[pindex] = dist;
+                    nearest_distance2[pindex] = dist2;
                 }
-                else if(dist < nextnearest_distance[pindex])
+                else if(dist2 < nextnearest_distance2[pindex])
                 {
                     nextnearest_index[pindex]    = pt;
-                    nextnearest_distance[pindex] = dist;
+                    nextnearest_distance2[pindex] = dist2;
                 }
             }
-            if((nearest_distance[pindex] < radius))
+            if((nearest_distance2[pindex] < radius*radius))
             {
-                data.image[IDout].array.SI32[pindex] = nearest_index[pindex];
+                imgout->im->array.SI32[pindex] = nearest_index[pindex];
             }
         }
+
 
     // add gap
     int gapsizepix = (int)(maxsep * xsize);
@@ -361,14 +221,14 @@ image_gen_make_voronoi_map(
             int pindexmp = (jj - gapsizepix) * xsize + ii + gapsizepix;
             int pindexmm = (jj - gapsizepix) * xsize + ii - gapsizepix;
 
-            int32_t pv0p = data.image[IDout].array.SI32[pindex0p];
-            int32_t pv0m = data.image[IDout].array.SI32[pindex0m];
-            int32_t pvp0 = data.image[IDout].array.SI32[pindexp0];
-            int32_t pvm0 = data.image[IDout].array.SI32[pindexm0];
-            int32_t pvpp = data.image[IDout].array.SI32[pindexpp];
-            int32_t pvpm = data.image[IDout].array.SI32[pindexpm];
-            int32_t pvmp = data.image[IDout].array.SI32[pindexmp];
-            int32_t pvmm = data.image[IDout].array.SI32[pindexmm];
+            int32_t pv0p = imgout->im->array.SI32[pindex0p];
+            int32_t pv0m = imgout->im->array.SI32[pindex0m];
+            int32_t pvp0 = imgout->im->array.SI32[pindexp0];
+            int32_t pvm0 = imgout->im->array.SI32[pindexm0];
+            int32_t pvpp = imgout->im->array.SI32[pindexpp];
+            int32_t pvpm = imgout->im->array.SI32[pindexpm];
+            int32_t pvmp = imgout->im->array.SI32[pindexmp];
+            int32_t pvmm = imgout->im->array.SI32[pindexmm];
 
             gapim[pindex0] = 1;
 
@@ -385,22 +245,21 @@ image_gen_make_voronoi_map(
             int pindex = jj * xsize + ii;
             if(gapim[pindex] == 0)
             {
-                data.image[IDout].array.SI32[pindex] = -1;
+                imgout->im->array.SI32[pindex] = -1;
             }
         }
 
-    free(vpt_index);
-    free(vpt_x);
-    free(vpt_y);
 
     free(nearest_index);
-    free(nearest_distance);
+    free(nearest_distance2);
     free(nextnearest_index);
-    free(nextnearest_distance);
+    free(nextnearest_distance2);
 
     free(gapim);
 
-    return (IDout);
+
+
+    return (imgout->ID);
 }
 
 
@@ -413,24 +272,27 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+    IMGID imgpos = mkIMGID_from_name(inpos);
+    resolveIMGID(&imgpos, ERRMODE_ABORT);
+
+    // link/create output image/stream
+    FARG_OUTIM2DCREATE(outim, imgout, _DATATYPE_INT32);
+
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     {
 
-
         image_gen_make_voronoi_map(
-            inptspos_fname,
-            outimname,
-            *xsize,
-            *ysize,
+            &imgpos,
+            &imgout,
             *radius, // maximum radius of each Voronoi zone
             *gapsize  // gap between Voronoi zones
         );
 
 
-        // stream is updated here, and not in the function called above, so that multiple
-        // the above function can be chained with others
-        //processinfo_update_output_stream(processinfo, outimg.ID);
+
+        processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
