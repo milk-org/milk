@@ -11,6 +11,7 @@ set(SOURCEFILES
 	image_cropmask.c
 	image_merge3D.c
 	image_pixremap.c
+	image_pixunmap.c
 	image_set_1Dpixrange.c
 	image_set_2Dpix.c
 	image_set_col.c
@@ -35,6 +36,7 @@ set(INCLUDEFILES
 	image_cropmask.h
 	image_merge3D.h
 	image_pixremap.h
+	image_pixunmap.h
 	image_set_1Dpixrange.h
 	image_set_2Dpix.h
 	image_set_col.h
