@@ -58,11 +58,17 @@ typedef struct
             CLIARG_VISIBLE_DEFAULT, (void **) &imkey.name                      \
     }
 
+
+
+
+
+
 typedef struct
 {
     char     *name;
     uint32_t *xsize;
     uint32_t *ysize;
+    uint32_t *datatype;
     uint32_t  *shared;
     uint32_t  *NBkw;
     uint32_t  *CBsize;
@@ -112,6 +118,31 @@ typedef struct
             CLIARG_HIDDEN_DEFAULT, (void **) &imkey.CBsize, NULL               \
     }
 
+
+
+// connect to and/or create output 2D image/stream
+//
+#define FARG_OUTIM2DCREATE(imkey, img, data_type)                               \
+        IMGID img = mkIMGID_from_name(imkey.name);                             \
+        img.shared = *imkey.shared;                                            \
+        img.NBkw   = *imkey.NBkw;                                                \
+        img.CBsize = *imkey.CBsize;                                            \
+        if(*imkey.shared == 1) {                                               \
+          img = stream_connect_create_2D(imkey.name, *imkey.xsize, *imkey.ysize, data_type); \
+        } else {                                                               \
+          img.naxis = 2;\
+          img.size[0] = *imkey.xsize;\
+          img.size[1] = *imkey.ysize;\
+          img.datatype = data_type;\
+          createimagefromIMGID(&img);                                           \
+        }                                                                      \
+        imcreateIMGID(&img);
+
+
+
+
+
+
 // binding between variables and function args/params
 #define STD_FARG_LINKfunction                                                  \
     for (int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF));     \
@@ -125,6 +156,18 @@ typedef struct
             *(farg[argi].indexptr) = fpsi;                                     \
         }                                                                      \
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** @brief Standard Function call wrapper
  *
@@ -651,8 +694,11 @@ static inline IMGID makeIMGID_blank()
 
 
 
-static inline IMGID makeIMGID_2D(CONST_WORD name, uint32_t xsize,
-                                 uint32_t ysize)
+static inline IMGID makeIMGID_2D(
+    CONST_WORD name,
+    uint32_t xsize,
+    uint32_t ysize
+)
 {
     IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 2;
@@ -662,8 +708,12 @@ static inline IMGID makeIMGID_2D(CONST_WORD name, uint32_t xsize,
     return img;
 }
 
-static inline IMGID makeIMGID_3D(CONST_WORD name, uint32_t xsize,
-                                 uint32_t ysize, uint32_t zsize)
+static inline IMGID makeIMGID_3D(
+    CONST_WORD name,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize
+)
 {
     IMGID img   = mkIMGID_from_name(name);
     img.naxis   = 3;
@@ -677,7 +727,10 @@ static inline IMGID makeIMGID_3D(CONST_WORD name, uint32_t xsize,
 
 
 
-static inline int copyIMGID(IMGID *imgin, IMGID *imgout)
+static inline int copyIMGID(
+    IMGID *imgin,
+    IMGID *imgout
+)
 {
     imgout->datatype = imgin->datatype;
     imgout->shared   = imgin->shared;
@@ -823,12 +876,16 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
  * ERRMODE_FAIL : error
  * ERRMODE_ABORT : abort
  */
-static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
+static inline imageID resolveIMGID(
+    IMGID *img,
+    int ERRMODE
+)
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used
-    if(img->ID == -1 || (img->createcnt != data.image[img->ID].createcnt) ||
-            (data.image[img->ID].used != 1))
+    if( (img->ID == -1)
+            || (img->createcnt != data.image[img->ID].createcnt)
+            || (data.image[img->ID].used != 1))
     {
         img->ID = image_ID(img->name);
         if(img->ID > -1)  // Resolve success !
@@ -836,11 +893,14 @@ static inline imageID resolveIMGID(IMGID *img, int ERRMODE)
             img->im        = &data.image[img->ID];
             img->md        = &data.image[img->ID].md[0];
             img->createcnt = data.image[img->ID].createcnt;
+
             // Populate the IMGID from the imageID metadata
             updateIMGIDcreationparams(img);
         }
     }
 
+    // if still unresolved
+    //
     if(img->ID == -1)
     {
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
