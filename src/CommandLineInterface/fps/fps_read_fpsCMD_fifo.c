@@ -5,10 +5,14 @@
 #include "CommandLineInterface/CLIcore.h"
 
 // fill up task list from fifo submissions
+//
 
-int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
-                                       FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-                                       FPSCTRL_TASK_QUEUE *fpsctrlqueuelist)
+
+int functionparameter_read_fpsCMD_fifo(
+    int                 fpsCTRLfifofd,
+    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist
+)
 {
     int   cmdcnt     = 0;
     char *FPScmdline = NULL;
@@ -102,7 +106,7 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
                     cmdFOUND = 1;
                 }
 
-                // set wait on run ON
+                // set task counter to zero
                 if((cmdFOUND == 0) && (strncmp(FPScmdline,
                                                "taskcntzero",
                                                strlen("taskcntzero")) == 0))
@@ -129,7 +133,7 @@ int functionparameter_read_fpsCMD_fifo(int                 fpsCTRLfifofd,
                     }
                 }
 
-                // Set queue priority
+                // Set current queue priority
                 if((cmdFOUND == 0) &&
                         (strncmp(FPScmdline, "setqprio", strlen("setqprio")) == 0))
                 {

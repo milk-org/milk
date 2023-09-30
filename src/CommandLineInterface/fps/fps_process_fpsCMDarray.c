@@ -13,18 +13,20 @@
  * Tasks are arranged in execution queues.
  * Each task belongs to a single queue.
  *
- * This function is run by functionparameter_CTRLscreen() at regular intervals to probe queues and run pending tasks.
+ * This function is run by functionparameter_CTRLscreen() at regular intervals to probe queues
+ * and run pending tasks.
  * If a task is found, it is executed by calling functionparameter_FPSprocess_cmdline()
  *
  * Each queue has a priority index.
  *
  * RULES :
- * - priorities are associated to queues, not individual tasks: changing a queue priority affects all tasks in the queue
+ * - priorities are associated to queues, not individual tasks: changing a queue priority affects
+ * all tasks in the queue
  * - If queue priority = 0, no task is executed in the queue: it is paused
  * - Task order within a queue must be respected. Execution order is submission order (FIFO)
  * - Tasks can overlap if they belong to separate queues and have the same priority
  * - A running task waiting to be completed cannot block tasks in other queues
- * - If two tasks are ready with the same priority, the one in the lower queue will be launched
+ * - If two tasks are ready with the same priority, the one in the lower queue index will be launched
  *
  * CONVENTIONS AND GUIDELINES :
  * - queue #0 is the main queue
@@ -33,11 +35,12 @@
  * - Return to queue 0 when done working in other queues
  */
 
-int function_parameter_process_fpsCMDarray(FPSCTRL_TASK_ENTRY *fpsctrltasklist,
-        FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
-        KEYWORD_TREE_NODE  *keywnode,
-        FPSCTRL_PROCESS_VARS *fpsCTRLvar,
-        FUNCTION_PARAMETER_STRUCT *fps)
+int function_parameter_process_fpsCMDarray(
+    FPSCTRL_TASK_ENTRY *fpsctrltasklist,
+    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist,
+    KEYWORD_TREE_NODE  *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    FUNCTION_PARAMETER_STRUCT *fps)
 {
     // queue has no task
     int QUEUE_NOTASK = -1;
