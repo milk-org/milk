@@ -505,19 +505,21 @@ errno_t functionparameter_CTRLscreen(
         {
             // put input commands from fifo into the task queue
             int fcnt =
-                functionparameter_read_fpsCMD_fifo(fpsCTRLvar.fpsCTRLfifofd,
-                                                   fpsctrltasklist,
-                                                   fpsctrlqueuelist);
+                functionparameter_read_fpsCMD_fifo(
+                    fpsCTRLvar.fpsCTRLfifofd,
+                    fpsctrltasklist,
+                    fpsctrlqueuelist);
 
             DEBUG_TRACEPOINT(" ");
 
             // execute next command in the queue
             int taskflag =
-                function_parameter_process_fpsCMDarray(fpsctrltasklist,
-                        fpsctrlqueuelist,
-                        keywnode,
-                        &fpsCTRLvar,
-                        data.fpsarray);
+                function_parameter_process_fpsCMDarray(
+                    fpsctrltasklist,
+                    fpsctrlqueuelist,
+                    keywnode,
+                    &fpsCTRLvar,
+                    data.fpsarray);
 
             if(taskflag > 0)  // task has been performed
             {
