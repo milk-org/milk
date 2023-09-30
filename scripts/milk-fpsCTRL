@@ -17,6 +17,8 @@ Connects to $MILK_SHM_DIR/*.fps.shm shared memory structures
 
 $(tput bold) ENVIRONMENT VARIABLES $(tput sgr0)
 
+    MILK_FPS_LOGFILE            output logfile for milk-fpsCTRL
+
 Filtering to only display matching FPSs :
     FPS_FILTSTRING_NAME         name
     FPS_FILTSTRING_KEYWORD      keyword
