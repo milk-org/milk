@@ -56,7 +56,9 @@ set(INCLUDEFILES
 	SingularValueDecomp_mkU.h
 )
 
-
+set(SCRIPTS
+    scripts/milk-modes-project
+)
 
 
 
@@ -145,3 +147,4 @@ message("---------------------------------------")
 
 install(TARGETS ${LIBNAME} DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+install(PROGRAMS ${SCRIPTS} DESTINATION bin)

@@ -76,7 +76,7 @@ static CLICMDARGDEF farg[] =
     {
         CLIARG_IMG,
         ".matB",
-        "output matrix B",
+        "input matrix B",
         "matA",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &inmatB,
@@ -132,6 +132,7 @@ static CLICMDDATA CLIcmddata =
 static errno_t help_function()
 {
     printf("CPU or GPU matrix-matrix multiplication\n");
+    printf("Single precision only\n");
 
     return RETURN_SUCCESS;
 }

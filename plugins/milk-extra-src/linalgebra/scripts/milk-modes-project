@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+MSdescr="Linear projection of modesA onto space defined by modesB"
+
+MSextdescr="Project modesA (image cube) onto modesB (image cube)
+Neither modesA nor modesB are assumed to be orthogonal
+
+Main steps:
+- Perform PCA on modesB to build an orthonormal basis B
+- Decompose modesA according to basis B (decomposition coefficients are mcoeff)
+- Use mcoeff and basis B to reconstruct projection of modesA onto modesB
+- Compute the residual of the reconstruction = modesA - reconstruction
+
+Output:
+- projection
+- reconstruction
+"
+
+source milk-script-std-config
+
+RequiredCommands=( milk-all )
+RequiredFiles=()
+RequiredDirs=()
+
+
+MSarg+=( "inmodesA:string:input modes to be decomposed" )
+MSarg+=( "inmodesB:string:modes onto which to decompose" )
+MSarg+=( "SVDlim:float:SVD limit" )
+MSarg+=( "outimrec:string:reconstruction (projection)" )
+MSarg+=( "outimres:string:residual" )
+
+GPUindex="-1"
+MSopt+=( "g:gpu:setgpu:GPU[int]:GPU index, -1 for CPU" )
+function setgpu() {
+	GPUindex="$1"
+}
+
+
+source milk-argparse
+
+
+immA="${inputMSargARRAY[0]}"
+immB="${inputMSargARRAY[1]}"
+svdlim="${inputMSargARRAY[2]}"
+outimrec="${inputMSargARRAY[3]}"
+outimres="${inputMSargARRAY[4]}"
+
+milk-all << EOF
+loadfits "$immA" modesA
+loadfits "$immB" modesB
+linalg.compSVD .GPUdevice ${GPUindex}
+linalg.compSVD modesB svdU svdS svdV ${svdlim}
+listim
+linalg.sgemm .GPUdevice ${GPUindex}
+linalg.sgemm .transpA 1
+linalg.sgemm modesA svdU mcoeff
+linalg.sgemm .transpA 0
+linalg.sgemm .transpB 1
+linalg.sgemm svdU mcoeff imrec
+saveFITS imrec "$outimrec"
+imres=modesA-imrec
+saveFITS imres "$outimres"
+exitCLI
+EOF
+
+

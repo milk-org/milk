@@ -53,7 +53,7 @@ while IFS= read -r filename; do
       echo "loadfits \"${filename}\" inimmerge${i}" >> $SF
       echo "immerge mergedim inimmerge${i} mergedim1 ${mergeaxis}" >> $SF
       echo "rm mergedim" >> $SF
-      echo "mv mergedim1 mergedim" >> $SF      
+      echo "mv mergedim1 mergedim" >> $SF
     fi
     ((i=i+1))
     initmerge=1
