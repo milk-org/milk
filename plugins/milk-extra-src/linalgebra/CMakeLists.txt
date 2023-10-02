@@ -5,6 +5,7 @@ set(SRCNAME "linalgebra")
 
 set(SOURCEFILES
 	${SRCNAME}.c
+	basis_rotate_match.c
 	cublas_Coeff2Map_Loop.c
 	linalgebrainit.c
 	cublas_linalgebratest.c
@@ -31,6 +32,7 @@ set(SOURCEFILES
 
 set(INCLUDEFILES
 	${SRCNAME}.h
+	basis_rotate_match.h
 	cublas_Coeff2Map_Loop.h
 	linalgebra_types.h
 	linalgebrainit.h

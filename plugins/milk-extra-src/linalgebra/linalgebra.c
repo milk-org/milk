@@ -21,6 +21,7 @@
 
 #include "linalgebra_types.h"
 
+#include "basis_rotate_match.h"
 #include "cublas_Coeff2Map_Loop.h"
 #include "MVMextractModes.h"
 #include "magma_MatMatMult_testPseudoInverse.h"
@@ -92,6 +93,8 @@ static errno_t init_module_CLI()
 
     linalgebrainit_addCLIcmd();
     linalgebratest_addCLIcmd();
+
+    CLIADDCMD_linalgebra__basis_rotate_match();
 
     CLIADDCMD_linalgebra__PCAdecomp();
 
