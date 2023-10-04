@@ -54,8 +54,8 @@ void *streamCTRL_scan(
 
     while(streaminfoproc->loop == 1)
     {
-        EXECUTE_SYSTEM_COMMAND("echo \" \" >> IDlog.txt");
-        EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopSTART\" >> IDlog.txt", scaniter);
+        //EXECUTE_SYSTEM_COMMAND("echo \" \" >> IDlog.txt");
+        //EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopSTART\" >> IDlog.txt", scaniter);
 
         long NBsindex = 0;
 
@@ -89,7 +89,7 @@ void *streamCTRL_scan(
                                 streaminfoproc->filter,
                                 streaminfoproc->namefilter);
 
-        EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
+        //EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
 
         // write stream list to file if applicable
         // ususally used for debugging only
@@ -138,10 +138,10 @@ void *streamCTRL_scan(
             // Check if already in memory
             //
             ID = image_ID_from_images(images, streaminfo[sindex].sname);
-            EXECUTE_SYSTEM_COMMAND("echo \"  %ld %s : ID = %ld\" >> IDlog.txt",
+            /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld %s : ID = %ld\" >> IDlog.txt",
                                    sindex,
                                    streaminfo[sindex].sname,
-                                   ID);
+                                   ID);*/
 
             // if not in local memory, try to connect to stream
             //
@@ -154,8 +154,8 @@ void *streamCTRL_scan(
                 {
                     return NULL;
                 }
-                EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
-                                       sindex, ID);
+                /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
+                                       sindex, ID);*/
 
 
                 streaminfo[sindex].ISIOretval =
@@ -189,8 +189,8 @@ void *streamCTRL_scan(
 
                 if(streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS )
                 {
-                    EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO OK\" >> IDlog.txt",
-                                           sindex);
+                    /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO OK\" >> IDlog.txt",
+                                           sindex);*/
 
                     float gainv = 1.0;
                     if(firstIter == 0)
@@ -207,11 +207,11 @@ void *streamCTRL_scan(
                     streaminfo[sindex].cnt0 = images[ID].md->cnt0;
                     streaminfo[sindex].datatype = images[ID].md->datatype;
                 }
-                else
+                /*else
                 {
                     EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO NOTOK\" >> IDlog.txt",
                                            sindex);
-                }
+                }*/
             }
 
             streaminfo[sindex].ID = ID;
@@ -403,7 +403,7 @@ void *streamCTRL_scan(
         streaminfoproc->NBstream = NBsindex;
         streaminfoproc->loopcnt++;
 
-        EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);
+        //EXECUTE_SYSTEM_COMMAND("echo \"[%ld] loopEND\" >> IDlog.txt", scaniter);
         scaniter++;
 
 
