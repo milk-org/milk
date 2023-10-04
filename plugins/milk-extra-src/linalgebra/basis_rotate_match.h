@@ -4,7 +4,8 @@
 
 errno_t compute_basis_rotate_match(
     IMGID imginAB,
-    IMGID *imgArot
+    IMGID *imgArot,
+    int optmode
 );
 
 errno_t CLIADDCMD_linalgebra__basis_rotate_match();
