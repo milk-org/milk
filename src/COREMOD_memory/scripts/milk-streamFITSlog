@@ -31,7 +31,7 @@ MSextdescr="
 List of actions:
 	pstart  start log process
 	pstop   stop log process
-	kill    kill log process and tmux   
+	kill    kill log process and tmux
 	on      set logging ON
 	off     set logging OFF
 	offc    set logging OFF after cube complete
@@ -234,7 +234,7 @@ function runupdatesfps()
 		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
 		mkdir -p ${fulllogdir}
 	fi
-	
+
 	if [ $update_cubesize == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 	fi
@@ -262,8 +262,8 @@ function runupdatesfps()
 	if [ $update_cset == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
 	fi
-	
-	
+
+
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 }
 
@@ -272,7 +272,7 @@ function logresetdefault()
 {
 	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
-	
+
 }
 
 
@@ -323,13 +323,15 @@ EOF
 	echo "found fifo -> continuing"
 
 	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
-
 	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	
+
 	echo "echo \"setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}\" >> ${fifoname}"
 	echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
-	
+
+	ecoh "echo \"confwupdate streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
+
+	echo "echo \"runstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
 fi
 
