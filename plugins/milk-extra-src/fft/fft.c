@@ -21,6 +21,9 @@
 #include "testfftspeed.h"
 #include "wisdom.h"
 
+#include "pup2foc.h"
+
+
 // auto-generate libinit_<modulename>
 // initialize INITSTATUS_<modulename>
 INIT_MODULE_LIB(fft)
@@ -48,6 +51,8 @@ static errno_t init_module_CLI()
     testfftspeed_addCLIcmd();
     ffttranslate_addCLIcmd();
     fftcorrelation_addCLIcmd();
+
+    CLIADDCMD_milk_fft__pup2foc();
 
     return RETURN_SUCCESS;
 }
