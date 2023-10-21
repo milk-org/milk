@@ -4,7 +4,7 @@
 Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.svg)](https://github.com/milk-org/milk/tree/master)
 
 | Branch    | Build   | Docker Deployment    |  Activity   |
-|-------------|-------------|-------------|-------------|-------------|
+|-------------|-------------|-------------|-------------|
 **main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
 **dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
 
