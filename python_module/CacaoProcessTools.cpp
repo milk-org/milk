@@ -18,7 +18,8 @@ int fps_value_to_key(pyFps             &cls,
                      const FPS_type     fps_type,
                      py::object         value)
 {
-    FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(key) : fps_type;
+    FPS_type switch_fps_type = fps_type == FPS_type::AUTO ? cls.keys(
+                                   key) : fps_type;
 
     switch(switch_fps_type)
     {
@@ -418,6 +419,7 @@ Parameters:
 
         .def("get_status", &pyFps::get_status)
         .def("set_status", &pyFps::set_status)
+        .def("disconnect", &pyFps::disconnect)
 
         .def("get_levelKeys", &pyFps::get_levelKeys)
 
