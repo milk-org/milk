@@ -20,7 +20,7 @@ set(SOURCEFILES
 	fft_structure_function.c
 	init_fftwplan.c
 	permut.c
-	pupfft.c
+	pup2foc.c
 	testfftspeed.c
 	wisdom.c
 )
@@ -36,7 +36,7 @@ set(INCLUDEFILES
 	fft_structure_function.h
 	init_fftwplan.h
 	permut.h
-	pupfft.h
+	pup2foc.h
 	testfftspeed.h
 	wisdom.h
 )
