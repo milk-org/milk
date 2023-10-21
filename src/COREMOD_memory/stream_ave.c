@@ -11,6 +11,8 @@ static char *inimname;
 
 
 static char *outimave;
+static uint32_t *outimshared;
+
 static char *outimrms;
 
 
@@ -45,6 +47,15 @@ static CLICMDARGDEF farg[] =
         "out1",
         CLIARG_VISIBLE_DEFAULT,
         (void **) &outimave,
+        NULL
+    },
+    {
+        CLIARG_UINT32,
+        ".out_shared",
+        "output shared flag",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &outimshared,
         NULL
     },
     {
@@ -151,7 +162,7 @@ static errno_t compute_function()
     uint64_t xysize = xsize * ysize;
 
     IMGID outimgave  = makeIMGID_2D(outimave, xsize, ysize);
-    outimgave.shared = 1;
+    outimgave.shared = *outimshared;
 
     if((*compave) == 1)
     {
