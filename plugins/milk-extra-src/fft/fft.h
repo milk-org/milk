@@ -12,7 +12,7 @@ void __attribute__((constructor)) libinit_fft();
 #include "fft/fftzoom.h"
 #include "fft/init_fftwplan.h"
 #include "fft/permut.h"
-#include "fft/pupfft.h"
+#include "fft/pup2foc.h"
 #include "fft/testfftspeed.h"
 #include "fft/wisdom.h"
 
