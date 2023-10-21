@@ -11,6 +11,7 @@ extern "C"
 #include "fps/fps_CONFstop.h"
 #include "fps/fps_RUNstart.h"
 #include "fps/fps_RUNstop.h"
+#include "fps/fps_tmux.h"
 #include "processtools.h"
 }
 
@@ -126,7 +127,13 @@ class pyFps
      * @brief Destroy the py Fps object
      *
      */
-    ~pyFps() = default;
+    ~pyFps()
+    {
+        if(fps_.SMfd != -1)
+        {
+            function_parameter_struct_disconnect(&fps_);
+        }
+    }
 
     FUNCTION_PARAMETER_STRUCT *operator->()
     {
@@ -182,6 +189,14 @@ class pyFps
         return function_parameter_struct_connect(name_.c_str(), &fps_,
                 FPSCONNECT_SIMPLE);
     };
+
+    /**
+     * @brief Release the mmaped file and fd.
+     */
+    int disconnect()
+    {
+        return function_parameter_struct_disconnect(&fps_);
+    }
 
     /**
      * @brief Add parameter to database with default settings
@@ -285,6 +300,16 @@ class pyFps
     errno_t RUNexit()
     {
         return function_parameter_RUNexit(&fps_);
+    }
+
+    errno_t TMUXstart()
+    {
+        return functionparameter_FPS_tmux_init(&fps_);
+    }
+
+    errno_t TMUXstop()
+    {
+        return functionparameter_FPS_tmux_kill(&fps_);
     }
 };
 

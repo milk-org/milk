@@ -257,12 +257,13 @@ static errno_t customCONFsetup()
         data.fpsptr->parray[fpi_lastcubeON].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_nextcube].fpflag |= FPFLAG_WRITERUN;
 
-        data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
+        //data.fpsptr->parray[fpi_savedirname].fpflag |= FPFLAG_WRITERUN;
 
-        data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
+        // Disabled. Causes undefined behavior.
+        //data.fpsptr->parray[fpi_cubesize].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxfilecnt].fpflag |= FPFLAG_WRITERUN;
         data.fpsptr->parray[fpi_maxframecnt].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
+        //data.fpsptr->parray[fpi_compressON].fpflag |= FPFLAG_WRITERUN;
 
         data.fpsptr->parray[fpi_writerRTprio].fpflag |= FPFLAG_WRITERUN;
     }
@@ -547,14 +548,6 @@ static void *save_telemetry_fits_function(
 }
 
 
-
-
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -566,7 +559,8 @@ static errno_t compute_function()
     // 1: print statements outside fast loop
     // 2: print everything
 
-    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE*) malloc(sizeof(STREAMSAVE_THREAD_MESSAGE));
+    STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(
+                                          STREAMSAVE_THREAD_MESSAGE));
 
 
     IMGID inimg = mkIMGID_from_name(streamname);
@@ -613,7 +607,7 @@ static errno_t compute_function()
     // copy keywords
     {
         printf("Cppying %d keywords\n", inimg.md->NBkw);
-        if( inimg.md->NBkw > 0 )
+        if(inimg.md->NBkw > 0)
         {
             memcpy(imgbuff0.im->kw,
                    inimg.im->kw,
@@ -655,19 +649,21 @@ static errno_t compute_function()
     int saveON_last = (*saveON);
 
     char FITSffilename[STRINGMAXLEN_FULLFILENAME];
-    strcpy(FITSffilename,"null");
+    strcpy(FITSffilename, "null");
 
     char ASCIITIMEffilename[STRINGMAXLEN_FULLFILENAME];
-    strcpy(ASCIITIMEffilename,"null");
+    strcpy(ASCIITIMEffilename, "null");
 
 
 
     // array are zsize * 2 long to hold double buffer
     //
-    double * array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    double * array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
-    uint64_t * array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
-    uint64_t * array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) * (*cubesize) * 2);
+    double *array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    double *array_aqtime = (double *) malloc(sizeof(double) * (*cubesize) * 2);
+    uint64_t *array_cnt0   = (uint64_t *) malloc(sizeof(uint64_t) *
+                             (*cubesize) * 2);
+    uint64_t *array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) *
+                             (*cubesize) * 2);
 
 
 
@@ -688,19 +684,19 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
+        if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             printf("------------ TIMEOUT\n");
         }
         else
         {
-            if( lastcnt0 != inimg.md->cnt0)
+            if(lastcnt0 != inimg.md->cnt0)
             {
                 // new frame has arrived
                 IsNewFrame = 1;
 
-              //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
-              //  fflush(stdout);
+                //  printf("<<<<<<<<<<<<<<<<<<<< RECEIVED NEW FRAME %ld >>>>>>>>>>>>>>>>\n", inimg.md->cnt0);
+                //  fflush(stdout);
 
                 lastcnt0 = inimg.md->cnt0;
             }
@@ -710,10 +706,10 @@ static errno_t compute_function()
                 IsNewFrame = 0;
             }
 
-            if( IsNewFrame == 1 )
+            if(IsNewFrame == 1)
             {
 
-                if( (saveON_last == 0) && ((*saveON) == 1) )
+                if((saveON_last == 0) && ((*saveON) == 1))
                 {
                     // We just turned on saving
                     lastcube = 0;
@@ -723,7 +719,7 @@ static errno_t compute_function()
 
 
 
-                if ((*framecnt) >= (*maxframecnt))
+                if((*framecnt) >= (*maxframecnt))
                 {
                     // we've logged the requested number of frames
                     (*saveON) = 0;
@@ -731,7 +727,7 @@ static errno_t compute_function()
                 }
 
 
-                if ((*filecnt) >= (*maxfilecnt)-1 )
+                if((*filecnt) >= (*maxfilecnt) - 1)
                 {
                     // last cube
                     lastcube = 1;
@@ -741,7 +737,7 @@ static errno_t compute_function()
 
 
 
-                if ( (*saveON) == 1 )
+                if((*saveON) == 1)
                 {
                     if((*frameindex) == 0)
                     {
@@ -795,7 +791,7 @@ static errno_t compute_function()
 
                     // timing buffer index
                     {
-                        long tindex = (*frameindex) + buffindex*(*cubesize);
+                        long tindex = (*frameindex) + buffindex * (*cubesize);
                         {
                             array_cnt0[tindex] = inimg.md->cnt0;
                             array_cnt1[tindex] = inimg.md->cnt1;
@@ -822,8 +818,8 @@ static errno_t compute_function()
 
                     {
 
-                       // printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
-                       // fflush(stdout);
+                        // printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                        // fflush(stdout);
 
 
                         long framesize = typesize * xsize * ysize;
@@ -832,7 +828,7 @@ static errno_t compute_function()
                         char *ptr0;   // source image data, after offset
 
                         ptr0_0 = (char *) inimg.im->array.raw;
-                        if( inimg.md->naxis == 3)
+                        if(inimg.md->naxis == 3)
                         {
                             // this is a rolling buffer
                             ptr0 = ptr0_0 + framesize * inimg.md->cnt1;
@@ -845,7 +841,7 @@ static errno_t compute_function()
 
                         char *ptr1_0; // destination image data
                         char *ptr1;   // destination image data, after offset
-                        if(buffindex == 0 )
+                        if(buffindex == 0)
                         {
                             ptr1_0 = (char *) imgbuff0.im->array.raw;
                         }
@@ -886,35 +882,29 @@ static errno_t compute_function()
 
         int SaveCube = 0;
 
-        if( (*frameindex) >= (*cubesize) )
+        if((*frameindex) >= (*cubesize))
         {
             // cube is full
             SaveCube = 1;
         }
 
-        if( (saveON_last == 1) && ((*saveON) == 0) )
+        if((saveON_last == 1) && ((*saveON) == 0))
         {
             // We just turned off saving
             SaveCube = 1;
         }
 
-        if( (*nextcube) == 1)
+        if((*nextcube) == 1)
         {
             (*nextcube) = 0;
             data.fpsptr->parray[fpi_nextcube].fpflag &= ~FPFLAG_ONOFF;
             SaveCube = 1;
         }
 
-        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
+        if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             SaveCube = 1;
         }
-
-
-
-
-
-
 
         if(SaveCube == 1)
         {
@@ -923,13 +913,14 @@ static errno_t compute_function()
                 // Saving buffer to filesystem
                 //
 
-                printf("SAVING %5ld FRAMES of BUFFER %d to FILE %s\n", (*frameindex), buffindex, FITSffilename);
+                printf("SAVING %5ld FRAMES of BUFFER %d to FILE %s\n", (*frameindex), buffindex,
+                       FITSffilename);
                 fflush(stdout);
 
 
                 // update buffer content
 
-                if(buffindex == 0 )
+                if(buffindex == 0)
                 {
                     memcpy(imgbuff0.im->kw,
                            inimg.im->kw,
@@ -966,7 +957,7 @@ static errno_t compute_function()
                     }
 
 
-                    if(buffindex == 0 )
+                    if(buffindex == 0)
                     {
                         strcpy(tmsg->iname, imgbuff0.md->name);
                         tmsg->arrayindex  = array_cnt0;
@@ -991,7 +982,7 @@ static errno_t compute_function()
                                    streamname);
 
 
-                    if ( (*compressON) == 0 )
+                    if((*compressON) == 0)
                     {
                         strcpy(tmsg->compress_string, "");
                     }
@@ -1062,8 +1053,6 @@ static errno_t compute_function()
 
 
                 }
-
-
                 SaveCube = 0;
             }
 
@@ -1071,7 +1060,7 @@ static errno_t compute_function()
 
             // report buffer is ready
             //
-            if(buffindex == 0 )
+            if(buffindex == 0)
             {
                 processinfo_update_output_stream(processinfo, imgbuff0.ID);
             }
@@ -1102,9 +1091,7 @@ static errno_t compute_function()
             }
         }
 
-
         saveON_last = (*saveON);
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

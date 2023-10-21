@@ -30,8 +30,9 @@ cd ${milkFITSloggerdir}
 MSextdescr="
 List of actions:
 	pstart  start log process
-	pstop   stop log process
-	kill    kill log process and tmux   
+	rstop   stop log RUN process
+	rstart  start log RUN process
+	kill    kill log process and tmux
 	on      set logging ON
 	off     set logging OFF
 	offc    set logging OFF after cube complete
@@ -234,7 +235,7 @@ function runupdatesfps()
 		echo "setval streamFITSlog-${STREAMNAME}.dirname ${fulllogdir}" >> ${fifoname}
 		mkdir -p ${fulllogdir}
 	fi
-	
+
 	if [ $update_cubesize == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 	fi
@@ -262,8 +263,8 @@ function runupdatesfps()
 	if [ $update_cset == 1 ]; then
 		echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
 	fi
-	
-	
+
+
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 }
 
@@ -272,7 +273,7 @@ function logresetdefault()
 {
 	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
 	echo "setval streamFITSlog-${STREAMNAME}.cubesize ${cubesize}" >> ${fifoname}
-	
+
 }
 
 
@@ -323,13 +324,15 @@ EOF
 	echo "found fifo -> continuing"
 
 	echo "echo \"confstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
-
 	echo "confstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
-	
+
 	echo "echo \"setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}\" >> ${fifoname}"
 	echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
-	
+
+	ecoh "echo \"confwupdate streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
+
+	echo "echo \"runstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
 fi
 
@@ -341,9 +344,14 @@ if [ ${ACTION} == "set" ]; then
 fi
 
 
+if [ ${ACTION} == "rstart" ]; then
+	echo "action = rstart"
+	ACTIONOK=1
+	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	runupdatesfps
+fi
 
-
-if [ ${ACTION} == "pstop" ]; then
+if [ ${ACTION} == "rstop" ]; then
 	echo "action = pstop"
 	ACTIONOK=1
 	echo "runstop streamFITSlog-${STREAMNAME}" >> ${fifoname}
@@ -390,7 +398,6 @@ if [ ${ACTION} == "kill" ]; then
 	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff0.im.shm
 	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff1.im.shm
 fi
-
 
 
 if [ ${ACTION} == "get" ]; then
