@@ -1263,7 +1263,7 @@ errno_t arith_img_function_2_1(
     uint64_t nbpix2 = 1;
     for ( uint8_t axis = 0; axis < outimg->naxis; axis++)
     {
-        printf("Checking axis %u\n", axis);
+        //printf("Checking axis %u\n", axis);
 
         in1expand[axis] = 1;
         in2expand[axis] = 1;
@@ -1298,14 +1298,14 @@ errno_t arith_img_function_2_1(
             if( size1 == 1 )
             {
                 in1expand[axis] = 0;
-                printf("Expanding im1 axis %d to %u\n", axis, size2);
+                //printf("Expanding im1 axis %d to %u\n", axis, size2);
                 outimg->size[axis] = size2;
 
             }
             else if ( size2 == 1)
             {
                 in2expand[axis] = 0;
-                printf("Expanding im2 axis %d to %u\n", axis, size1);
+                //printf("Expanding im2 axis %d to %u\n", axis, size1);
                 outimg->size[axis] = size1;
             }
             else
@@ -1316,7 +1316,7 @@ errno_t arith_img_function_2_1(
             }
         }
 
-        printf("    size   %5u  %5u   %5u\n", size1, size2, outimg->size[axis]);
+        //printf("    size   %5u  %5u   %5u\n", size1, size2, outimg->size[axis]);
 
         nbpix *= outimg->size[axis];
     }
