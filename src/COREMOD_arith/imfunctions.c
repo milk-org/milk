@@ -1555,10 +1555,6 @@ errno_t arith_image_function_2_1(
     double (*pt2function)(double, double)
 )
 {
-    printf("%s %d\n", __FILE__, __LINE__);
-    fflush(stdout);
-
-
     IMGID inimg1 = mkIMGID_from_name(ID_name1);
     resolveIMGID(&inimg1, ERRMODE_ABORT);
 
@@ -1566,9 +1562,6 @@ errno_t arith_image_function_2_1(
     resolveIMGID(&inimg2, ERRMODE_ABORT);
 
     IMGID outimg = mkIMGID_from_name(ID_out);
-
-    printf("%s %d\n", __FILE__, __LINE__);
-    fflush(stdout);
 
     arith_img_function_2_1(
         inimg1,
