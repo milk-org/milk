@@ -1217,2991 +1217,390 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
+
+
 /* ------------------------------------------------------------------------- */
 /* image, image  -> image                                                    */
 /* ------------------------------------------------------------------------- */
 
-errno_t arith_image_function_2_1(const char *ID_name1,
-                                 const char *ID_name2,
-                                 const char *ID_out,
-                                 double (*pt2function)(double, double))
+errno_t arith_img_function_2_1(
+    IMGID inimg1,
+    IMGID inimg2,
+    IMGID *outimg,
+    double (*pt2function)(double, double)
+)
 {
-    imageID   ID1;
-    imageID   ID2;
-    imageID   IDout;
-    long      ii, kk;
-    uint32_t *naxes  = NULL; // input, output
-    uint32_t *naxes2 = NULL;
-    long      nelement1, nelement2, nelement;
-    uint8_t   naxis, naxis2;
-    uint8_t   datatype1, datatype2, datatypeout;
+    DEBUG_TRACE_FSTART();
 
-    int  op3D2Dto3D = 0; // 3D image, 2D image -> 3D image
-    long xysize;
+    resolveIMGID(&inimg1, ERRMODE_ABORT);
+    resolveIMGID(&inimg2, ERRMODE_ABORT);
 
-    ID1 = image_ID(ID_name1);
-    ID2 = image_ID(ID_name2);
 
-    //list_image_ID(); //TEST
-    DEBUG_TRACEPOINT("%s  IDs : %ld %ld\n", __FUNCTION__, ID1, ID2);
-
-    if(ID1 == -1)
+    resolveIMGID(outimg, ERRMODE_NULL);
+    if( outimg->ID == -1)
     {
-        PRINT_WARNING("Image %s does not exist: cannot proceed\n", ID_name1);
-        return 1;
+        copyIMGID(&inimg1, outimg);
     }
 
-    if(ID2 == -1)
+    // toggles to 1 if image sizes are incompatible
+    int axiserror = 0;
+
+    // output naxis is max of inputs
+    outimg->naxis = inimg1.md->naxis;
+    if ( inimg2.md->naxis > inimg1.md->naxis )
     {
-        PRINT_WARNING("Image %s does not exist: cannot proceed\n", ID_name2);
-        return 1;
+        outimg->naxis = inimg2.md->naxis;
     }
 
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
-    naxis     = data.image[ID1].md[0].naxis;
-    naxis2    = data.image[ID2].md[0].naxis;
+    // axis expansion flags
+    int in1expand[3];
+    int in2expand[3];
 
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL)
+    // check which coordinate needs to be expanded in computation
+    //
+    uint64_t nbpix = 1;
+    uint64_t nbpix1 = 1;
+    uint64_t nbpix2 = 1;
+    for ( uint8_t axis = 0; axis < outimg->naxis; axis++)
     {
-        PRINT_ERROR("malloc() error");
-        abort();
-    }
+        printf("Checking axis %u\n", axis);
 
-    naxes2 = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes2 == NULL)
-    {
-        PRINT_ERROR("malloc() error");
-        abort();
-    }
+        in1expand[axis] = 1;
+        in2expand[axis] = 1;
 
-    for(uint8_t i = 0; i < naxis; i++)
-    {
-        naxes[i] = data.image[ID1].md[0].size[i];
-    }
-    for(uint8_t i = 0; i < naxis2; i++)
-    {
-        naxes2[i] = data.image[ID2].md[0].size[i];
-    }
+        // convention: size=1 if > naxis
 
-    datatypeout = _DATATYPE_FLOAT; // default
-
-    // other cases
-
-    // DOUBLE * -> DOUBLE
-    if(datatype1 == _DATATYPE_DOUBLE)
-    {
-        datatypeout = _DATATYPE_DOUBLE;
-    }
-
-    // * DOUBLE -> DOUBLE
-    if(datatype2 == _DATATYPE_DOUBLE)
-    {
-        datatypeout = _DATATYPE_DOUBLE;
-    }
-
-    create_image_ID(ID_out,
-                    naxis,
-                    naxes,
-                    datatypeout,
-                    data.SHARED_DFT,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
-
-    nelement1 = data.image[ID1].md[0].nelement;
-    nelement2 = data.image[ID2].md[0].nelement;
-
-    // test if 3D 2D -> 3D operation
-
-    op3D2Dto3D = 0;
-    xysize     = 0;
-    if((naxis == 3) && (naxis2 == 2))
-    {
-        DEBUG_TRACEPOINT("naxes:  %ld %ld     %ld %ld\n",
-               (long) naxes[0],
-               (long) naxes2[0],
-               (long) naxes[1],
-               (long) naxes2[1]);
-        if((naxes[0] == naxes2[0]) && (naxes[1] == naxes2[1]))
-        {
-            op3D2Dto3D = 1;
-            xysize     = naxes[0] * naxes[1];
-            DEBUG_TRACEPOINT("input : 3D im, 2D im -> output : 3D im\n");
-            //list_image_ID();
-        }
-    }
-
-    nelement = nelement1;
-    if(op3D2Dto3D == 0)
-        if(nelement1 != nelement2)
-        {
-            PRINT_ERROR(
-                "images %s and %s have different number of elements ( %ld "
-                "%ld )\n",
-                ID_name1,
-                ID_name2,
-                nelement1,
-                nelement2);
-            exit(0);
-        }
-
-    //# ifdef _OPENMP
-    //    #pragma omp parallel if (nelement>OMP_NELEMENT_LIMIT)
-    //    {
-    //# endif
-
-    // ID1 datatype  UINT8
-    if(datatype1 == _DATATYPE_UINT8)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // UINT8 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // UINT8 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // UINT8 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // UINT8 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // UINT8 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // UINT8 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // UINT8 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // UINT8 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // UINT8 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // UINT8 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.UI8[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI8[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  UINT16
-
-    if(datatype1 == _DATATYPE_UINT16)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // UINT16 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // UINT16 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // UINT16 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // UINT16 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // UINT16 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // UINT16 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // UINT16 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // UINT16 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // UINT16 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // UINT16 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.UI16[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI16[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  UINT32
-    if(datatype1 == _DATATYPE_UINT32)
-    {
-
-        if(datatype2 == _DATATYPE_UINT8)  // UINT32 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // UINT32 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // UINT32 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // UINT32 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // UINT32 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // UINT32 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // UINT32 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // UINT32 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // UINT32 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // UINT32 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.UI32[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI32[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  UINT64
-    if(datatype1 == _DATATYPE_UINT64)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // UINT64 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // UINT64 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // UINT64 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // UINT64 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // UINT64 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // UINT64 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // UINT64 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // UINT64 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // UINT64 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // UINT64 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.UI64[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.UI64[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  INT8
-
-    if(datatype1 == _DATATYPE_INT8)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // INT8 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // INT8 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // INT8 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // INT8 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // INT8 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // INT8 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // INT8 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // INT8 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // INT8 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // INT8 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.SI8[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI8[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  INT16
-
-    if(datatype1 == _DATATYPE_INT16)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // INT16 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // INT16 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // INT16 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // INT16 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // INT16 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // INT16 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // INT16 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // INT16 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // INT16 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // INT16 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.SI16[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI16[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  INT32
-
-    if(datatype1 == _DATATYPE_INT32)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // INT32 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // INT32 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // INT32 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // INT32 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // INT32 INT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // INT32 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // INT32 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // INT32 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // INT32 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // INT32 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.SI32[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI32[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  INT64
-    if(datatype1 == _DATATYPE_INT64)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // INT64 UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // INT64 UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // INT64 UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // INT64 UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // INT64 INT8 -> FLOAT
+        uint32_t size1;
+        if(axis < inimg1.md->naxis)
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // INT64 INT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // INT64 INT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // INT64 INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // INT64 FLOAT -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // INT64 DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.SI64[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.SI64[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
-    }
-
-    // ID1 datatype  FLOAT
-    if(datatype1 == _DATATYPE_FLOAT)
-    {
-        if(datatype2 == _DATATYPE_UINT8)  // FLOAT UINT8 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT16)  // FLOAT UINT16 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT32)  // FLOAT UINT32 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // FLOAT UINT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
+            size1 = inimg1.md->size[axis];
         }
-
-        if(datatype2 == _DATATYPE_INT8)  // FLOAT INT8 -> FLOAT
+        else
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
+            size1 = 1;
         }
+        nbpix1 *= size1;
 
-        if(datatype2 == _DATATYPE_INT16)  // FLOAT INT16 -> FLOAT
+        uint32_t size2;
+        if(axis < inimg2.md->naxis)
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
+            size2 = inimg2.md->size[axis];
         }
-
-        if(datatype2 == _DATATYPE_INT32)  // FLOAT INT32 -> FLOAT
+        else
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
+            size2 = 1;
         }
-
-        if(datatype2 == _DATATYPE_INT64)  // FLOAT INT64 -> FLOAT
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
+        nbpix2 *= size2;
 
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
 
-        if(datatype2 == _DATATYPE_FLOAT)  // FLOAT FLOAT -> FLOAT
+        if( size1 != size2 )
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
+            if( size1 == 1 )
             {
-                //# ifdef _OPENMP
-                //                #pragma omp for
-                //# endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
+                in1expand[axis] = 0;
+                printf("Expanding im1 axis %d to %u\n", axis, size2);
+                outimg->size[axis] = size2;
+
+            }
+            else if ( size2 == 1)
+            {
+                in2expand[axis] = 0;
+                printf("Expanding im2 axis %d to %u\n", axis, size1);
+                outimg->size[axis] = size1;
+            }
+            else
+            {
+                axiserror = 1;
+                PRINT_ERROR("axis %d size %u and %u incompatible", axis, size1, size2);
+                abort();
             }
         }
 
-        if(datatype2 == _DATATYPE_DOUBLE)  // FLOAT DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function((double)(data.image[ID1].array.F[ii]),
-                                    data.image[ID2].array.D[ii]);
-                }
+        printf("    size   %5u  %5u   %5u\n", size1, size2, outimg->size[axis]);
 
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                (double)(data.image[ID1]
-                                         .array.F[kk * xysize + ii]),
-                                data.image[ID2].array.D[ii]);
-                    }
-        }
+        nbpix *= outimg->size[axis];
     }
-
-    // ID1 datatype  DOUBLE
-
-    if(datatype1 == _DATATYPE_DOUBLE)
+    for ( uint8_t axis = outimg->naxis; axis<3; axis++)
     {
-        if(datatype2 == _DATATYPE_UINT8)  // DOUBLE UINT8 -> DOUBLE
+        // convention
+        outimg->size[axis] = 1;
+        in1expand[axis] = 1;
+        in2expand[axis] = 1;
+    }
+
+
+    outimg->datatype = _DATATYPE_FLOAT; // default
+    // other cases
+
+    // DOUBLE * -> DOUBLE
+    if(inimg1.md->datatype == _DATATYPE_DOUBLE)
+    {
+        outimg->datatype = _DATATYPE_DOUBLE;
+    }
+
+    // * DOUBLE -> DOUBLE
+    if(inimg2.md->datatype == _DATATYPE_DOUBLE)
+    {
+        outimg->datatype = _DATATYPE_DOUBLE;
+    }
+
+    createimagefromIMGID(outimg);
+
+
+    // build mapping between output and input pixel indices
+
+    uint64_t * __restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+    uint64_t * __restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
+
+    for ( uint32_t ii = 0; ii < outimg->size[0]; ii++ )
+    {
+        uint32_t ii1 = ii * in1expand[0];
+        uint32_t ii2 = ii * in2expand[0];
+
+        for ( uint32_t jj = 0; jj < outimg->size[1]; jj++ )
         {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.UI8[ii]));
-                }
+            uint32_t jj1 = jj * in1expand[1];
+            uint32_t jj2 = jj * in2expand[1];
 
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.UI8[ii]));
-                    }
-        }
+            for ( uint32_t kk = 0; kk < outimg->size[2]; kk++ )
+            {
+                uint64_t outpixi = ii;
+                outpixi +=  jj * outimg->size[0];
+                outpixi +=  kk * outimg->size[1] * outimg->size[0];
 
-        if(datatype2 == _DATATYPE_UINT16)  // DOUBLE UINT16 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.UI16[ii]));
-                }
+                uint32_t kk1 = kk * in1expand[2];
+                uint32_t kk2 = kk * in2expand[2];
 
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.UI16[ii]));
-                    }
-        }
+                inpix1[outpixi] =  kk1 * inimg1.md->size[1] * inimg1.md->size[0];
+                inpix1[outpixi] += jj1 * inimg1.md->size[0];
+                inpix1[outpixi] += ii1;
 
-        if(datatype2 == _DATATYPE_UINT32)  // DOUBLE UINT32 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.UI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.UI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_UINT64)  // DOUBLE UINT64 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.UI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.UI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT8)  // DOUBLE INT8 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.SI8[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.SI8[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT16)  // DOUBLE INT16 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.SI16[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.SI16[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT32)  // DOUBLE INT32 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.SI32[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.SI32[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_INT64)  // DOUBLE INT64 -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.SI64[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.SI64[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_FLOAT)  // DOUBLE FLOAT -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.F[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    (double)(data.image[ID2].array.F[ii]));
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.F[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                (double)(data.image[ID2].array.F[ii]));
-                    }
-        }
-
-        if(datatype2 == _DATATYPE_DOUBLE)  // DOUBLE DOUBLE -> DOUBLE
-        {
-            if(op3D2Dto3D == 0)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(ii = 0; ii < nelement; ii++)
-                {
-                    data.image[IDout].array.D[ii] =
-                        pt2function(data.image[ID1].array.D[ii],
-                                    data.image[ID2].array.D[ii]);
-                }
-
-            if(op3D2Dto3D == 1)
-#ifdef _OPENMP
-                #pragma omp for
-#endif
-                for(kk = 0; kk < naxes[2]; kk++)
-                    for(ii = 0; ii < xysize; ii++)
-                    {
-                        data.image[IDout].array.D[kk * xysize + ii] =
-                            pt2function(
-                                data.image[ID1].array.D[kk * xysize + ii],
-                                data.image[ID2].array.D[ii]);
-                    }
+                inpix2[outpixi] =  kk2 * inimg2.md->size[1] * inimg2.md->size[0];
+                inpix2[outpixi] += jj2 * inimg2.md->size[0];
+                inpix2[outpixi] += ii2;
+            }
         }
     }
 
-    //# ifdef _OPENMP
-    //    }
-    //# endif
 
-    free(naxes);
-    free(naxes2);
+
+    // TYPE CONVERSION TO DOUBLES
+
+    double * ptr1array;
+    int ptr1allocate = 0;
+    if ( inimg1.md->datatype == _DATATYPE_DOUBLE )
+    {
+        ptr1array = inimg1.im->array.D;
+    }
+    else
+    {
+        ptr1allocate = 1;
+        ptr1array = (double *) malloc(sizeof(double) * nbpix1);
+
+        if(inimg1.md->datatype == _DATATYPE_UINT8) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.UI8[inpix1[ii]]);
+        }
+        if(inimg1.md->datatype == _DATATYPE_INT8) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.SI8[inpix1[ii]]);
+        }
+
+        if(inimg1.md->datatype == _DATATYPE_UINT16) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.UI16[inpix1[ii]]);
+        }
+        if(inimg1.md->datatype == _DATATYPE_INT16) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.SI16[inpix1[ii]]);
+        }
+
+        if(inimg1.md->datatype == _DATATYPE_UINT32) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.UI32[inpix1[ii]]);
+        }
+        if(inimg1.md->datatype == _DATATYPE_INT32) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.SI32[inpix1[ii]]);
+        }
+
+        if(inimg1.md->datatype == _DATATYPE_UINT64) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.UI64[inpix1[ii]]);
+        }
+        if(inimg1.md->datatype == _DATATYPE_INT64) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.SI64[inpix1[ii]]);
+        }
+
+        if(inimg1.md->datatype == _DATATYPE_FLOAT) {
+            for(uint64_t ii = 0; ii < nbpix1; ii++)
+                ptr1array[ii] = (double) (inimg1.im->array.F[inpix1[ii]]);
+        }
+    }
+
+
+
+
+
+
+    double * ptr2array;
+    int ptr2allocate = 0;
+    if ( inimg2.md->datatype == _DATATYPE_DOUBLE )
+    {
+        ptr2array = inimg2.im->array.D;
+    }
+    else
+    {
+        ptr2allocate = 1;
+        ptr2array = (double *) malloc(sizeof(double) * nbpix2);
+
+        if(inimg2.md->datatype == _DATATYPE_UINT8) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.UI8[inpix1[ii]]);
+        }
+        if(inimg2.md->datatype == _DATATYPE_INT8) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.SI8[inpix1[ii]]);
+        }
+
+        if(inimg2.md->datatype == _DATATYPE_UINT16) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.UI16[inpix1[ii]]);
+        }
+        if(inimg2.md->datatype == _DATATYPE_INT16) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.SI16[inpix1[ii]]);
+        }
+
+        if(inimg2.md->datatype == _DATATYPE_UINT32) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.UI32[inpix1[ii]]);
+        }
+        if(inimg2.md->datatype == _DATATYPE_INT32) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.SI32[inpix1[ii]]);
+        }
+
+        if(inimg2.md->datatype == _DATATYPE_UINT64) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.UI64[inpix1[ii]]);
+        }
+        if(inimg2.md->datatype == _DATATYPE_INT64) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.SI64[inpix1[ii]]);
+        }
+
+        if(inimg2.md->datatype == _DATATYPE_FLOAT) {
+            for(uint64_t ii = 0; ii < nbpix2; ii++)
+                ptr2array[ii] = (double) (inimg2.im->array.F[inpix1[ii]]);
+        }
+    }
+
+
+
+    if ( outimg->datatype == _DATATYPE_FLOAT )
+    {
+        for(uint64_t ii = 0; ii < nbpix; ii++ )
+        {
+            outimg->im->array.F[ii] =
+                pt2function( ptr1array[inpix1[ii]],
+                             ptr2array[inpix2[ii]] );
+        }
+    }
+
+
+    if ( outimg->datatype == _DATATYPE_DOUBLE )
+    {
+        for(uint64_t ii = 0; ii < nbpix; ii++ )
+        {
+            outimg->im->array.D[ii] =
+                pt2function( ptr1array[inpix1[ii]],
+                             ptr2array[inpix2[ii]] );
+        }
+    }
+
+
+    if(ptr1allocate == 1)
+    {
+        free(ptr1array);
+    }
+
+    if(ptr2allocate == 1)
+    {
+        free(ptr2array);
+    }
+
+
+    free(inpix1);
+    free(inpix2);
+
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+/* ------------------------------------------------------------------------- */
+/* image, image  -> image                                                    */
+/* ------------------------------------------------------------------------- */
+
+errno_t arith_image_function_2_1(
+    const char *ID_name1,
+    const char *ID_name2,
+    const char *ID_out,
+    double (*pt2function)(double, double)
+)
+{
+    printf("%s %d\n", __FILE__, __LINE__);
+    fflush(stdout);
+
+
+    IMGID inimg1 = mkIMGID_from_name(ID_name1);
+    resolveIMGID(&inimg1, ERRMODE_ABORT);
+
+    IMGID inimg2 = mkIMGID_from_name(ID_name2);
+    resolveIMGID(&inimg2, ERRMODE_ABORT);
+
+    IMGID outimg = mkIMGID_from_name(ID_out);
+
+    printf("%s %d\n", __FILE__, __LINE__);
+    fflush(stdout);
+
+    arith_img_function_2_1(
+        inimg1,
+        inimg2,
+        &outimg,
+        pt2function
+    );
 
     return RETURN_SUCCESS;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 errno_t arith_image_function_2_1_inplace_byID(
-    imageID ID1, imageID ID2, double (*pt2function)(double, double))
+    imageID ID1,
+    imageID ID2,
+    double (*pt2function)(double, double)
+)
 {
     long    ii;
     long    nelement1, nelement2, nelement;
@@ -4540,9 +1939,13 @@ errno_t arith_image_function_2_1_inplace_byID(
     return EXIT_SUCCESS;
 }
 
-errno_t arith_image_function_2_1_inplace(const char *ID_name1,
-        const char *ID_name2,
-        double (*pt2function)(double, double))
+
+
+
+errno_t arith_image_function_2_1_inplace(
+    const char *ID_name1,
+    const char *ID_name2,
+    double (*pt2function)(double, double))
 {
     imageID ID1;
     imageID ID2;
