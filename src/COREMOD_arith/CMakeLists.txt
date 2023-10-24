@@ -10,6 +10,7 @@ set(SOURCEFILES
 	image_crop.c
 	image_cropmask.c
 	image_merge3D.c
+	image_norm.c
 	image_pixremap.c
 	image_pixunmap.c
 	image_set_1Dpixrange.c
@@ -35,6 +36,7 @@ set(INCLUDEFILES
 	image_crop.h
 	image_cropmask.h
 	image_merge3D.h
+	image_norm.h
 	image_pixremap.h
 	image_pixunmap.h
 	image_set_1Dpixrange.h
