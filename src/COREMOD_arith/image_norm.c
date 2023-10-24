@@ -176,7 +176,7 @@ errno_t image_slicenorm(
 
     for( uint32_t ii=0; ii < sizescan[sliceaxis]; ii++ )
     {
-        printf("morm %3u : %lf\n", ii, normarray[ii]);
+        //printf("morm %3u : %lf\n", ii, normarray[ii]);
         outimg->im->array.F[ii] = sqrt(normarray[ii]);
     }
 
