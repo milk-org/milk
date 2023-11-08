@@ -15,6 +15,7 @@ set(SOURCEFILES
 	GPU_loop_MultMat_setup.c
 	GPU_SVD_computeControlMatrix.c
 	GPUloadCmat.c
+	GramSchmidt.c
 	magma_compute_SVDpseudoInverse_SVD.c
 	magma_compute_SVDpseudoInverse.c
 	magma_MatMatMult_testPseudoInverse.c
@@ -43,6 +44,7 @@ set(INCLUDEFILES
 	GPU_loop_MultMat_setup.h
 	GPU_SVD_computeControlMatrix.h
 	GPUloadCmat.h
+	GramSchmidt.h
 	magma_compute_SVDpseudoInverse_SVD.h
 	magma_compute_SVDpseudoInverse.h
 	magma_MatMatMult_testPseudoInverse.h
