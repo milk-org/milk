@@ -298,10 +298,10 @@ errno_t linopt_imtools_makeCPAmodes(
 
     for(uint32_t ii = 0; ii < sizex; ii++)
     {
-        float x = (1.0 * ii - xcenter + 0.5) / radius;
+        float x = (1.0 * ii - xcenter ) / radius;
         for(uint32_t jj = 0; jj < sizey; jj++)
         {
-            float y = (1.0 * jj - ycenter + 0.5) / radius;
+            float y = (1.0 * jj - ycenter ) / radius;
             float r = sqrt(x * x + y * y);
             data.image[IDx].array.F[jj * sizex + ii] = x;
             data.image[IDy].array.F[jj * sizex + ii] = y;

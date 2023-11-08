@@ -23,6 +23,7 @@
 
 #include "basis_rotate_match.h"
 #include "cublas_Coeff2Map_Loop.h"
+#include "GramSchmidt.h"
 #include "MVMextractModes.h"
 #include "magma_MatMatMult_testPseudoInverse.h"
 #include "cublas_linalgebra_MVMextractModesLoop.h"
@@ -95,6 +96,7 @@ static errno_t init_module_CLI()
     linalgebratest_addCLIcmd();
 
     CLIADDCMD_linalgebra__basis_rotate_match();
+    CLIADDCMD_linalgebra__GramSchmidt();
 
     CLIADDCMD_linalgebra__PCAdecomp();
 

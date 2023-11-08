@@ -127,6 +127,10 @@ errno_t compute_basis_rotate_match(
 
     double diagVal_lim_step;
 
+
+    // lower triangular
+    //
+
     while( loopOK == 1 )
     {
         // Initialize: set Arot to identity matrix
@@ -153,6 +157,16 @@ errno_t compute_basis_rotate_match(
         int incrcnt = 0; // incremented
         int proccnt = 0; // processed
 
+        int TriangMode = 0; // lower triang
+        if(optmode == 3)
+        {
+            TriangMode = 1; // upper triang
+        }
+
+
+
+
+
         // loop over target vectors
         int m1 = 0;
         for( int iB = 0; iB < Bdim; iB++)
@@ -161,11 +175,15 @@ errno_t compute_basis_rotate_match(
             // start from last mode
             int modei = Adim-1;
 
-            // iB is target vector index
+            // i0 is target vector index
             // m1 is goal mode
 
             // to be maximized
-            int aindex = m1*Bdim + iB;
+            // diagonal element if not skipping (m1 = i0)
+            //
+            int aindex;
+            aindex = m1*Bdim + iB;
+
 
 
             int procflag = 0; // toggles to 1 if processed
@@ -177,6 +195,8 @@ errno_t compute_basis_rotate_match(
 
                 // to be minimized
                 int bindex = modei*Bdim + iB;
+
+
                 double valb = matAB[bindex];
 
 
@@ -185,7 +205,7 @@ errno_t compute_basis_rotate_match(
                 double theta = atan2(-valb, vala);
 
 
-                // apply rotation between modes numbers modei and iB
+                // apply rotation between modes numbers modei and i0
                 //
                 //printf("rotation %d %d  angle %f\n", iB, modei, theta);
                 for(uint32_t ii=0; ii<Bdim; ii++)
@@ -201,6 +221,7 @@ errno_t compute_basis_rotate_match(
                     matAB[modei*Bdim + ii] = vbr;
                 }
 
+
                 for(uint32_t ii=0; ii<Adim; ii++)
                 {
                     // apply rotation to rotation matrix
@@ -211,6 +232,9 @@ errno_t compute_basis_rotate_match(
                     Arot[m1*Adim + ii] = var;
                     Arot[modei*Adim + ii] = vbr;
                 }
+
+
+
                 modei --;
             }
             //printf("\n");
@@ -279,13 +303,18 @@ errno_t compute_basis_rotate_match(
 
 
 
+
+
+
     if(optmode == 2)
     {
         loopiter = 0;
-        loopiterMax = 200;
+        loopiterMax = 20000;
 
-        double alphap = 4.0;
-        double dangle = 0.05;
+        double alphap = 2.0;
+        double alphalim = 0.05;
+
+        double dangle = 0.5;
 
         // temp storate for vects to be swapped
 
@@ -316,17 +345,42 @@ errno_t compute_basis_rotate_match(
             }
             printf("iter %4d  val = %g\n", loopiter, optall);
 
-            for ( int n0 = 0; n0 < Adim; n0++ )
+            for ( int n0 = 0; n0 < Adim; n0++) //Adim; n0++ )
             {
                 for ( int n1 = n0+1; n1 < Adim; n1++ )
                 {
                     // testing rotation n0 n1, dangle
 
                     // ref value
-                    double optval = 0.0;
+                    double optvalN0 = 0.0; // to be minimized
+                    double optvalD0 = 0.0; // to be maximized
+                    double optval0 = 0.0; // equal o optvalN/optvalD - ratio to be minimized
 
-                    double optvalpos = 0.0;
-                    double optvalneg = 0.0;
+                    double optvalN1 = 0.0; // to be minimized
+                    double optvalD1 = 0.0; // to be maximized
+                    double optval1 = 0.0; // equal o optvalN/optvalD - ratio to be minimized
+
+
+
+                    double optvalpos0 = 0.0;
+                    double optvalNpos0 = 0.0;
+                    double optvalDpos0 = 0.0;
+
+                    double optvalpos1 = 0.0;
+                    double optvalNpos1 = 0.0;
+                    double optvalDpos1 = 0.0;
+
+
+
+                    double optvalneg0 = 0.0;
+                    double optvalNneg0 = 0.0;
+                    double optvalDneg0 = 0.0;
+
+                    double optvalneg1 = 0.0;
+                    double optvalNneg1 = 0.0;
+                    double optvalDneg1 = 0.0;
+
+
 
 
                     for(uint32_t ii=0; ii<Bdim; ii++)
@@ -338,12 +392,54 @@ errno_t compute_basis_rotate_match(
                         double v0 = matAB[n0*Bdim + ii];
                         double v1 = matAB[n1*Bdim + ii];
 
+                        double dx0 = x-y0;
+                        double dx1 = x-y1;
 
-                        double dcoeff0 = pow(fabs(x-y0), alphap);
-                        double dcoeff1 = pow(fabs(x-y1), alphap);
+                        double dcoeff0 = 0.0;
+                        //if ( ii > n0 )
+                        if ( dx0 > 0 )
+                        {
+                            dcoeff0 = pow(dx0, alphap);
+                            //dcoeff0 = ii-n0;
+                        }
+                        if(dcoeff0 > alphalim)
+                        {
+                            dcoeff0 = alphalim;
+                        }
 
-                        optval += dcoeff0 * fabs(v0);
-                        optval += dcoeff1 * fabs(v1);
+
+                        double dcoeff1 = 0.0;
+                        //if ( ii > n1 )
+                        if ( dx1 > 0 )
+                        {
+                            dcoeff1 = pow(dx1, alphap);
+                            //dcoeff1 = ii-n1;
+                        }
+                        if(dcoeff1 > alphalim)
+                        {
+                            dcoeff1 = alphalim;
+                        }
+
+
+
+                        optvalN0 += dcoeff0 * v0*v0;
+                        optvalN1 += dcoeff1 * v1*v1;
+
+                        // maximize sum squared of coefficitents to the left (and including) diagonal
+                        // this ensures the target modes are represented
+                        //if(ii <= n0)
+                        if ( dx0 < 0.0 )
+                        {
+                            optvalD0 += v0*v0;
+                            //printf("    %4d  optval1D  += %g (%g)  -> %g\n", ii, v0*v0, v0, optvalD);
+                        }
+                        //if(ii <= n1)
+                        if ( dx1 < 0.0 )
+                        {
+                            optvalD1 += v1*v1;
+                            //printf("    %4d  optval1D  += %g (%g)  -> %g\n", ii, v1*v1, v1, optvalD);
+                        }
+
 
                         // perform rotation, weite to n0array and n1array
                         n0arraypos[ii] = v0 * cos(dangle) - v1 * sin(dangle);
@@ -352,14 +448,50 @@ errno_t compute_basis_rotate_match(
                         n0arrayneg[ii] = v0 * cos(dangle) + v1 * sin(dangle);
                         n1arrayneg[ii] = - v0 * sin(dangle) + v1 * cos(dangle);
 
-                        optvalpos += dcoeff0 * fabs(n0arraypos[ii]);
-                        optvalpos += dcoeff1 * fabs(n1arraypos[ii]);
+                        optvalNpos0 += dcoeff0 * n0arraypos[ii] * n0arraypos[ii];
+                        optvalNpos1 += dcoeff1 * n1arraypos[ii] * n1arraypos[ii];
+                        if ( dx0 < 0.0 )
+                        {
+                            optvalDpos0 += n0arraypos[ii] * n0arraypos[ii];
+                        }
+                        if ( dx1 < 0.0 )
+                        {
+                            optvalDpos1 += n1arraypos[ii] * n1arraypos[ii];
+                        }
 
-                        optvalneg += dcoeff0 * fabs(n0arrayneg[ii]);
-                        optvalneg += dcoeff1 * fabs(n1arrayneg[ii]);
+
+                        optvalNneg0 += dcoeff0 * n0arrayneg[ii] * n0arrayneg[ii];
+                        optvalNneg1 += dcoeff1 * n1arrayneg[ii] * n1arrayneg[ii];
+                        if ( dx0 < 0.0 )
+                        {
+                            optvalDneg0 += n0arrayneg[ii] * n0arrayneg[ii];
+                        }
+                        if ( dx1 < 0.0 )
+                        {
+                            optvalDneg1 += n1arrayneg[ii] * n1arrayneg[ii];
+                        }
                     }
+                    double epsN = 1e-8;
+                    double epsD = 1e-16;// avoid division by zero
 
-                    //printf("[%3d - %3d]  %lf  %lf  %lf\n", n0, n1, optvalneg, optval, optvalpos);
+                    optval0 = (optvalN0 + epsN) / (optvalD0 + epsD);
+                    optvalpos0 = (optvalNpos0 + epsN) / (optvalDpos0 + epsD);
+                    optvalneg0 = (optvalNneg0 + epsN) / (optvalDneg0 + epsD);
+
+                    optval1 = (optvalN1 + epsN) / (optvalD1 + epsD);
+                    optvalpos1 = (optvalNpos1 + epsN) / (optvalDpos1 + epsD);
+                    optvalneg1 = (optvalNneg1 + epsN) / (optvalDneg1 + epsD);
+
+                    // quantity to be minimized
+                    double n0coeff = 1.0; ///pow(1.0+n0, 2.0);
+                    double n1coeff = 1.0; ///pow(1.0+n1, 2.0);
+
+                    double optval = optval0*n0coeff;// + optval1*n1coeff;
+                    double optvalneg = optvalneg0*n0coeff;// + optvalneg1*n1coeff;
+                    double optvalpos = optvalpos0*n0coeff;// + optvalpos1*n1coeff;
+
+
+                    //printf("     [%3d - %3d]  %g  %g  %g\n", n0, n1, optvalneg, optval, optvalpos);
 
                     double optrotangle = 0.0;
                     if(optvalneg < optval)
@@ -432,10 +564,10 @@ errno_t compute_basis_rotate_match(
                 }
 
             }
-            printf("     [%5ld  %5ld  %5ld]  %f\n", cntneg, cntmid, cntpos, dangle);
+            printf("     [%5ld  %5ld  %5ld]  %g\n", cntneg, cntmid, cntpos, dangle);
             if( cntmid > 30*(cntpos+cntneg) )
             {
-                dangle *= 0.8;
+                dangle *= 0.99;
             }
 
 

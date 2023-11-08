@@ -710,6 +710,7 @@ static errno_t compute_function()
             imgU,
             imgeval,
             imgevec,
+            0,
             (*SVDeps),
             10000000,
             GPUdev,

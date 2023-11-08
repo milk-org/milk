@@ -47,6 +47,12 @@ static long  fpi_outS;
 static char *outV;
 static long  fpi_outV;
 
+// if V is 3D, set Vdim0 to its size[0]
+// otherwise leave at 0
+static uint32_t *Vdim0;
+static long   fpi_Vdim0;
+
+
 static float *svdlim;
 static long   fpi_svdlim;
 
@@ -102,6 +108,15 @@ static CLICMDARGDEF farg[] =
         CLIARG_VISIBLE_DEFAULT,
         (void **) &outV,
         &fpi_outV
+    },
+    {
+        CLIARG_UINT32,
+        ".Vdim0",
+        "first dimension of V if 3D, 0 if 2D",
+        "0",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &Vdim0,
+        &fpi_Vdim0
     },
     {
         // Singular Value Decomposition limit
@@ -230,6 +245,7 @@ errno_t compute_SVD(
     IMGID    imgU,
     IMGID    imgS,
     IMGID    imgV,
+    uint32_t Vdim0,
     float    SVlimit,
     uint32_t SVDmaxNBmode,
     int      GPUdev,
@@ -421,9 +437,19 @@ errno_t compute_SVD(
 
             if( imgV.ID == -1)
             {
-                imgV.naxis = 2;
-                imgV.size[0] = inNdim;
-                imgV.size[1] = NBmode; //inNdim;
+                if( Vdim0 == 0)
+                {
+                    imgV.naxis = 2;
+                    imgV.size[0] = inNdim;
+                    imgV.size[1] = NBmode; //inNdim;
+                }
+                else
+                {
+                    imgV.naxis = 3;
+                    imgV.size[0] = Vdim0;
+                    imgV.size[1] = inNdim/Vdim0;
+                    imgV.size[2] = NBmode; //inNdim;
+                }
                 createimagefromIMGID(&imgV);
             }
         }
@@ -677,7 +703,7 @@ static errno_t compute_function()
     {
 
 
-        compute_SVD(imginM, imgU, imgS, imgV, *svdlim, *maxNBmode, *GPUdevice, *compmode);
+        compute_SVD(imginM, imgU, imgS, imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode);
 
 
     }

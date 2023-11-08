@@ -253,7 +253,15 @@ errno_t computeSGEMM(
         Ndim1 = inB_Mdim1;
     }
 
-    //printf("T %d %d  -> SGEMM  M=%d, N=%d, K=%d\n", TranspA, TranspB, Mdim, Ndim, Kdim);
+    printf("T %d %d  -> SGEMM  M=%d,(%d %d)  N=%d, (%d %d) K=%d\n",
+           TranspA, TranspB, Mdim, Mdim0, Mdim1, Ndim, Ndim0, Ndim1, Kdim);
+    printf("INPUT A  M %5d (%5d %5d)   x N %5d (%5d %5d)\n",
+           inA_Mdim, inA_Mdim0, inA_Mdim1,
+           inA_Ndim, inA_Ndim0, inA_Ndim1);
+    printf("INPUT B  M %5d (%5d %5d)   x N %5d (%5d %5d)\n",
+           inB_Mdim, inB_Mdim0, inB_Mdim1,
+           inB_Ndim, inB_Ndim0, inB_Ndim1);
+
 
 
     // Create output
@@ -277,6 +285,9 @@ errno_t computeSGEMM(
         outimg->size[1] = Mdim1;
         outimg->size[2] = outNdim;
     }
+
+    printf("OUTPUT  M %d   N %d  (%d %d %d)\n", outMdim, outNdim, outimg->size[0], outimg->size[1], outimg->size[2]);
+
     outimg->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(outimg);
 
