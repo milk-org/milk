@@ -53,6 +53,7 @@
 #include "image_cropmask.h"
 #include "image_dxdy.h"
 #include "image_norm.h"
+#include "image_slicenormalize.h"
 #include "image_merge3D.h"
 #include "image_stats.h"
 
@@ -97,6 +98,7 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_arith__image_merge();
 
     CLIADDCMD_COREMOD_arith__image_normslice();
+    CLIADDCMD_COREMOD_arith__image_slicenormalize();
 
     CLIADDCMD_COREMODE_arith__cropmask();
 

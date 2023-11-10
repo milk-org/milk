@@ -18,6 +18,7 @@ set(SOURCEFILES
 	image_set_col.c
 	image_set_row.c
 	image_setzero.c
+	image_slicenormalize.c
 	image_stats.c
 	image_total.c
 	image_dxdy.c
@@ -44,6 +45,7 @@ set(INCLUDEFILES
 	image_set_col.h
 	image_set_row.h
 	image_setzero.h
+	image_slicenormalize.h
 	image_stats.h
 	image_total.h
 	image_dxdy.h
