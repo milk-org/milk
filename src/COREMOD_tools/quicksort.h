@@ -51,6 +51,14 @@ void quick_sort_ushort(
     unsigned long count
 );
 
+void qs2(
+    double       * __restrict array,
+    double       * __restrict array1,
+    unsigned long left,
+    unsigned long right
+);
+
+
 void qs3(
     double       * __restrict array,
     double       * __restrict array1,
@@ -65,6 +73,12 @@ void qs3_double(
     double       * __restrict array2,
     unsigned long left,
     unsigned long right
+);
+
+void quick_sort2(
+    double       * __restrict array,
+    double       * __restrict array1,
+    unsigned long count
 );
 
 void quick_sort3(
