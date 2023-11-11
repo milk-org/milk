@@ -14,6 +14,8 @@ static long  fpi_inmodes;
 static char *outmodes;
 static long  fpi_outmodes;
 
+static char *auxmat;
+static long  fpi_auxmat;;
 
 static int32_t *GPUdevice;
 static long     fpi_GPUdevice;
@@ -39,6 +41,15 @@ static CLICMDARGDEF farg[] =
         CLIARG_VISIBLE_DEFAULT,
         (void **) &outmodes,
         &fpi_outmodes
+    },
+    {
+        CLIARG_STR,
+        ".auxmat",
+        "optional aux matrix, co-transformed",
+        "auxmat",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &auxmat,
+        &fpi_auxmat
     },
     {
         // using GPU (99 : no GPU, otherwise GPU device)
@@ -67,13 +78,20 @@ static errno_t help_function()
 }
 
 
+
+
 errno_t GramSchmidt(
     IMGID imginm,
     IMGID *imgoutm,
+    IMGID imgaux,
     int GPUdev
 )
 {
     DEBUG_TRACE_FSTART();
+
+    resolveIMGID(&imginm, ERRMODE_ABORT);
+
+    resolveIMGID(&imgaux, ERRMODE_WARN);
 
 
     // Compute cross product on input
@@ -130,14 +148,21 @@ errno_t GramSchmidt(
 
             float vcoeff = xpval / sqrsum0;
 
-            printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
+            //printf("  %5u  %5u   %f\n", kk, kk0, vcoeff);
 
             for( uint32_t ii=0; ii<xysize; ii++)
             {
                 imgoutm->im->array.F[ kk*xysize + ii] -= vcoeff * imgoutm->im->array.F[ kk0*xysize + ii];
             }
-        }
 
+            if ( imgaux.ID != -1)
+            {
+                for( uint32_t ii=0; ii<xysize; ii++)
+                {
+                    imgaux.im->array.F[ kk*xysize + ii] -= vcoeff * imgaux.im->array.F[ kk0*xysize + ii];
+                }
+            }
+        }
     }
 
 
@@ -146,6 +171,8 @@ errno_t GramSchmidt(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+
 
 
 
@@ -162,17 +189,17 @@ static errno_t compute_function()
 
     IMGID imgoutm  = mkIMGID_from_name(outmodes);
 
+    IMGID imgaux = mkIMGID_from_name(auxmat);
+    resolveIMGID(&imgaux, ERRMODE_WARN);
+
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
-
-        GramSchmidt(imginm, &imgoutm, *GPUdevice);
-
-
+        GramSchmidt(imginm, &imgoutm, imgaux, *GPUdevice);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
