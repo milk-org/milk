@@ -100,7 +100,6 @@ static CLICMDARGDEF farg[] =
         (void **) &transpB,
         &fpi_transpB
     },
-
     {
         CLIARG_STR,
         ".outM",
@@ -136,6 +135,9 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
+
+
+
 
 
 errno_t computeSGEMM(
