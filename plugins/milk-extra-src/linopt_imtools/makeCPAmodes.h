@@ -3,7 +3,7 @@
 
 errno_t CLIADDCMD_linopt_imtools__makeCPAmodes();
 
-errno_t linopt_imtools_makeCPAmodes(const char *ID_name,
+errno_t linopt_imtools_makeCPAmodes(IMGID *imgoutm,
                                     long        size,
                                     float       rCPAmin,
                                     float       rCPAmax,
@@ -12,6 +12,10 @@ errno_t linopt_imtools_makeCPAmodes(const char *ID_name,
                                     float       radius,
                                     float       radfactlim,
                                     int         writeMfile,
-                                    long       *outNBmax);
+                                    long       *outNBmax,
+                                    IMGID       imgmask,
+                                    float       extrfactor,
+                                    float       extroffset
+                                   );
 
 #endif
