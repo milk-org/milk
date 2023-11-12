@@ -1501,6 +1501,7 @@ errno_t arith_img_function_2_1(
 
     if ( outimg->datatype == _DATATYPE_FLOAT )
     {
+        printf("RUN FUNCTION - float, %lu pix\n", nbpix);
         for(uint64_t ii = 0; ii < nbpix; ii++ )
         {
             outimg->im->array.F[ii] =
@@ -1512,6 +1513,7 @@ errno_t arith_img_function_2_1(
 
     if ( outimg->datatype == _DATATYPE_DOUBLE )
     {
+        printf("RUN FUNCTION - double, %lu pix\n", nbpix);
         for(uint64_t ii = 0; ii < nbpix; ii++ )
         {
             outimg->im->array.D[ii] =

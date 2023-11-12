@@ -672,6 +672,41 @@ errno_t compute_SVD(
     }
 
 
+    // Compute un-normalized modes V
+    // Singular Values included in modes V
+    //
+    if ( imgV.ID != -1 )
+    {
+        // un-normalized modes
+        IMGID imgvnmodes = mkIMGID_from_name("SVDvnmodes");
+        imgvnmodes.naxis = imgV.md->naxis;
+        imgvnmodes.datatype = imgV.md->datatype;
+        imgvnmodes.size[0] = imgV.md->size[0];
+        imgvnmodes.size[1] = imgV.md->size[1];
+        imgvnmodes.size[2] = imgV.md->size[2];
+        createimagefromIMGID(&imgvnmodes);
+
+        int lastaxis = imgvnmodes.naxis-1;
+        long framesize = imgvnmodes.size[0];
+        if(lastaxis==2)
+        {
+            framesize *= imgvnmodes.size[1];
+        }
+
+        for(int kk=0; kk<imgvnmodes.size[lastaxis]; kk++)
+        {
+            float mfact = imgS.im->array.F[kk];
+            for(long ii=0; ii<framesize; ii++)
+            {
+                imgvnmodes.im->array.F[kk*framesize+ii] = imgV.im->array.F[kk*framesize+ii] / mfact;
+            }
+        }
+
+        //IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
+    }
+
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

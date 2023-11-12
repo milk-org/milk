@@ -15,6 +15,11 @@ static char *outimname;
 static uint32_t *sliceaxis;
 static long      fpi_sliceaxis = -1;
 
+static char *auxin;
+
+static uint64_t *modeRMS;
+
+
 
 static CLICMDARGDEF farg[] =
 {
@@ -54,6 +59,24 @@ static CLICMDARGDEF farg[] =
         (void **) &sliceaxis,
         &fpi_sliceaxis
     },
+    {
+        CLIARG_IMG,
+        ".auxin",
+        "auxillary input image, in-place update",
+        "auxin",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &auxin,
+        NULL
+    },
+    {
+        CLIARG_ONOFF,
+        ".RMS",
+        "output RMS=1 over mask",
+        "OFF",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &modeRMS,
+        NULL
+    }
 };
 
 
@@ -83,13 +106,17 @@ errno_t image_slicenormalize(
     IMGID inimg,
     IMGID maskimg,
     IMGID *outimg,
-    uint8_t sliceaxis
+    uint8_t sliceaxis,
+    IMGID imgaux,
+    int modeRMS
 )
 {
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(&inimg, ERRMODE_ABORT);
     resolveIMGID(&maskimg, ERRMODE_ABORT);
+
+    resolveIMGID(&imgaux, ERRMODE_NULL);
 
 
     resolveIMGID(outimg, ERRMODE_NULL);
@@ -118,6 +145,28 @@ errno_t image_slicenormalize(
     {
         sizescan[1] = 1;
     }
+
+
+    // aux input image
+    //
+    uint32_t auxsizescan[3];
+    if (imgaux.ID != -1 )
+    {
+        auxsizescan[0] = imgaux.md->size[0];
+        auxsizescan[1] = imgaux.md->size[1];
+        auxsizescan[2] = imgaux.md->size[2];
+        if( imgaux.md->naxis < 3 )
+        {
+            auxsizescan[2] = 1;
+        }
+        if( imgaux.md->naxis < 2 )
+        {
+            auxsizescan[1] = 1;
+        }
+    }
+
+
+
 
     // mask image
     //
@@ -236,9 +285,16 @@ errno_t image_slicenormalize(
             normarray[ii] = sqrt( normarray[ii] );
         }
         //printf("slize %3u : cnt=%lf  av=%lf  %lf\n", ii, maskcntarray[ii], avarray[ii], normarray[ii]);
+
+
+        if( modeRMS == 0 )
+        {
+            normarray[ii] *= sqrt( maskcntarray[ii] );
+        }
     }
 
-
+    // process input image
+    //
     for( uint32_t ii = 0; ii < sizescan[0]; ii++)
     {
         pixcoord[0] = ii;
@@ -293,6 +349,34 @@ errno_t image_slicenormalize(
 
 
 
+
+    if( imgaux.ID != -1 )
+    {
+        // process aux input image
+        // FLOAT only
+        // scaling only, no offset
+        //
+        for( uint32_t ii = 0; ii < auxsizescan[0]; ii++)
+        {
+            pixcoord[0] = ii;
+            for( uint32_t jj = 0; jj < auxsizescan[1]; jj++)
+            {
+                pixcoord[1] = jj;
+                for( uint32_t kk = 0; kk < auxsizescan[2]; kk++)
+                {
+                    pixcoord[2] = kk;
+
+                    uint64_t pixi = kk * auxsizescan[1] * auxsizescan[0];
+                    pixi += jj * auxsizescan[0];
+                    pixi += ii;
+
+                    imgaux.im->array.F[pixi] = imgaux.im->array.F[pixi] / normarray[pixcoord[sliceaxis]];
+                }
+            }
+        }
+    }
+
+
     free(normarray);
     free(avarray);
     free(maskcntarray);
@@ -317,6 +401,8 @@ static errno_t compute_function()
     IMGID maskimg = mkIMGID_from_name(maskimname);
     resolveIMGID(&maskimg, ERRMODE_ABORT);
 
+    IMGID imgaux = mkIMGID_from_name(auxin);
+    resolveIMGID(&imgaux, ERRMODE_WARN);
 
     IMGID outimg = mkIMGID_from_name(outimname);
 
@@ -330,7 +416,9 @@ static errno_t compute_function()
             inimg,
             maskimg,
             &outimg,
-            *sliceaxis
+            *sliceaxis,
+            imgaux,
+            *modeRMS
         );
 
         processinfo_update_output_stream(processinfo, outimg.ID);
