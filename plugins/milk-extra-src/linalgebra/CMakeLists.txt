@@ -142,7 +142,11 @@ target_link_libraries(${LIBNAME} PUBLIC ${MKL_LIBRARIES})
 target_compile_options(${LIBNAME} PUBLIC -DHAVE_MKL ${MKL_CFLAGS_OTHER})
 endif()
 
-
+if(NOT MKL_FOUND) # Need to link against actual LAPACKE
+  message("-- MKL NOT FOUND")
+  message("   LINKING LAPACKE")
+  target_link_libraries(${LIBNAME} PRIVATE lapacke)
+endif()
 
 target_link_libraries(${LIBNAME} PRIVATE CLIcore)
 
