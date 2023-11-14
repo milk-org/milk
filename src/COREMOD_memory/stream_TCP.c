@@ -1038,6 +1038,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         {
             frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
 
+            img_p->md->write = 1;
             img_p->md->cnt1 = frame_md->cnt1;
 
             // copy pixel data
@@ -1089,21 +1090,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             monitorindex++;
 
-            img_p->md->cnt0++;
-            for(semnb = 0; semnb < img_p->md->sem; semnb++)
-            {
-                semval = ImageStreamIO_semvalue(img_p, semnb);
-                if(semval < SEMAPHORE_MAXVAL)
-                {
-                    ImageStreamIO_sempost(img_p, semnb);
-                }
-            }
-
-            sem_getvalue(img_p->semlog, &semval);
-            if(semval < 2)
-            {
-                sem_post(img_p->semlog);
-            }
+            processinfo_update_output_stream(processinfo, ID);
         }
 
         if(socketOpen == 0)
