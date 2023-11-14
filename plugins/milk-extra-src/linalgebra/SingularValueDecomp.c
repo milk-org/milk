@@ -696,9 +696,10 @@ errno_t compute_SVD(
         for(int kk=0; kk<imgvnmodes.size[lastaxis]; kk++)
         {
             float mfact = imgS.im->array.F[kk];
+            //printf("mfact %4d = %f\n", kk, mfact);
             for(long ii=0; ii<framesize; ii++)
             {
-                imgvnmodes.im->array.F[kk*framesize+ii] = imgV.im->array.F[kk*framesize+ii] / mfact;
+                imgvnmodes.im->array.F[kk*framesize+ii] = imgV.im->array.F[kk*framesize+ii] * mfact;
             }
         }
 

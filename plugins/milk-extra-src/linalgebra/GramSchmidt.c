@@ -95,8 +95,9 @@ errno_t GramSchmidt(
 
 
     // Compute cross product on input
-    IMGID imginxp  = mkIMGID_from_name("_outxp");
-    computeSGEMM(imginm, imginm, &imginxp, 1, 0, GPUdev);
+    //
+    //IMGID imginxp  = mkIMGID_from_name("_outxp");
+    //computeSGEMM(imginm, imginm, &imginxp, 1, 0, GPUdev);
 
 
     // Create output
@@ -118,11 +119,25 @@ errno_t GramSchmidt(
         zsize = imginm.md->size[1];
     }
 
+    uint32_t xysizeaux = 0;
+    if ( imgaux.ID != -1)
+    {
+        xysizeaux = imgaux.md->size[0];
+        if(imginm.md->naxis == 3)
+        {
+            xysizeaux *= imgaux.md->size[1];
+        }
+    }
+
+
     printf("xysize = %u, zsize = %u\n", xysize, zsize);
 
+    printf("\n");
     for ( uint32_t kk=0; kk<zsize; kk++ )
     {
-        // initializatoin
+        printf("\rGS mode %6u / %6u     ", kk, zsize);
+
+        // initialization
         memcpy( &imgoutm->im->array.F[kk*xysize], &imginm.im->array.F[kk*xysize], sizeof(float)*xysize);
 
         for ( uint32_t kk0 = 0; kk0 < kk; kk0++ )
@@ -157,13 +172,14 @@ errno_t GramSchmidt(
 
             if ( imgaux.ID != -1)
             {
-                for( uint32_t ii=0; ii<xysize; ii++)
+                for( uint32_t ii=0; ii<xysizeaux; ii++)
                 {
-                    imgaux.im->array.F[ kk*xysize + ii] -= vcoeff * imgaux.im->array.F[ kk0*xysize + ii];
+                    imgaux.im->array.F[ kk*xysizeaux + ii] -= vcoeff * imgaux.im->array.F[ kk0*xysizeaux + ii];
                 }
             }
         }
     }
+    printf("\n");
 
 
     list_image_ID();
