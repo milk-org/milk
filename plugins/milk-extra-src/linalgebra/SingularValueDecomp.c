@@ -277,7 +277,7 @@ errno_t compute_SVD(
     {
         //printf("inMdim   : %d\n", imgin.md->size[0]);
         inMdim = imgin.md->size[0];
-        inMdim0 = imgin.md->size[1];
+        inMdim0 = imgin.md->size[0];
         inMdim1 = 1;
 
         //printf("inNdim    : %d\n", imgin.md->size[1]);

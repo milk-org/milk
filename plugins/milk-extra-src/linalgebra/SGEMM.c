@@ -159,9 +159,12 @@ errno_t computeSGEMM(
     int inA_Mdim;
     int inA_Mdim0;
     int inA_Mdim1;
+    int inA_Mdim1_active = 1; // is axis used ?
+
     int inA_Ndim;
     int inA_Ndim0;
     int inA_Ndim1;
+    int inA_Ndim1_active = 1; // is axis used ?
 
     if(imginA.md->naxis == 3)
     {
@@ -169,32 +172,39 @@ errno_t computeSGEMM(
         inA_Mdim = imginA.md->size[0] * imginA.md->size[1];
         inA_Mdim0 = imginA.md->size[0];
         inA_Mdim1 = imginA.md->size[1];
+        inA_Mdim1_active = 1;
 
         //printf("inA_Ndim    : %d\n", imginA.md->size[2]);
         inA_Ndim = imginA.md->size[2];
         inA_Ndim0 = imginA.md->size[2];
         inA_Ndim1 = 1;
+        inA_Ndim1_active = 0;
     }
     else
     {
         //printf("inA_Mdim   : %d\n", imginA.md->size[0]);
         inA_Mdim = imginA.md->size[0];
-        inA_Mdim0 = imginA.md->size[1];
+        inA_Mdim0 = imginA.md->size[0];
         inA_Mdim1 = 1;
+        inA_Mdim1_active = 0;
 
         //printf("inNdim    : %d\n", imginA.md->size[1]);
         inA_Ndim = imginA.md->size[1];
         inA_Ndim0 = imginA.md->size[1];
         inA_Ndim1 = 1;
+        inA_Ndim1_active = 0;
     }
 
 
     int inB_Mdim;
     int inB_Mdim0;
     int inB_Mdim1;
+    int inB_Mdim1_active = 1;
+
     int inB_Ndim;
     int inB_Ndim0;
     int inB_Ndim1;
+    int inB_Ndim1_active = 1;
 
     if(imginB.md->naxis == 3)
     {
@@ -202,23 +212,27 @@ errno_t computeSGEMM(
         inB_Mdim = imginB.md->size[0] * imginB.md->size[1];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = imginB.md->size[1];
+        inB_Mdim1_active = 1;
 
         //printf("inB_Ndim    : %d\n", imginB.md->size[2]);
         inB_Ndim = imginB.md->size[2];
         inB_Ndim0 = imginB.md->size[2];
         inB_Ndim1 = 1;
+        inB_Ndim1_active = 0;
     }
     else
     {
         //printf("inB_Mdim   : %d\n", imginB.md->size[0]);
         inB_Mdim = imginB.md->size[0];
-        inB_Mdim0 = imginB.md->size[1];
+        inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = 1;
+        inB_Mdim1_active = 0;
 
         //printf("inB_Ndim    : %d\n", imginB.md->size[1]);
         inB_Ndim = imginB.md->size[1];
         inB_Ndim0 = imginB.md->size[1];
         inB_Ndim1 = 1;
+        inB_Ndim1_active = 0;
     }
 
 
@@ -226,16 +240,21 @@ errno_t computeSGEMM(
     int Mdim, Ndim, Kdim;
     int Mdim0, Ndim0, Kdim0;
     int Mdim1, Ndim1, Kdim1;
+    int Mdim1_active = 1;
+    int Ndim1_active = 1;
 
 
     // if no transpose
     Mdim = inA_Mdim;
     Mdim0 = inA_Mdim0;
     Mdim1 = inA_Mdim1;
+    Mdim1_active = inA_Mdim1_active;
+
 
     Ndim  = inB_Ndim;
     Ndim0 = inB_Ndim0;
     Ndim1 = inB_Ndim1;
+    Ndim1_active = inB_Ndim1_active;
 
     Kdim = inA_Ndim;
 
@@ -244,6 +263,7 @@ errno_t computeSGEMM(
         Mdim = inA_Ndim;
         Mdim0 = inA_Ndim0;
         Mdim1 = inA_Ndim1;
+        Mdim1_active = inA_Ndim1_active;
 
         Kdim = inA_Mdim;
 
@@ -253,6 +273,7 @@ errno_t computeSGEMM(
         Ndim  = inB_Mdim;
         Ndim0 = inB_Mdim0;
         Ndim1 = inB_Mdim1;
+        Ndim1_active = inB_Mdim1_active;
     }
 
     printf("T %d %d  -> SGEMM  M=%d,(%d %d)  N=%d, (%d %d) K=%d\n",
@@ -270,7 +291,7 @@ errno_t computeSGEMM(
     //
     int outMdim = Mdim;
     int outNdim = Ndim;
-    if( Mdim1 == 1)
+    if( Mdim1_active == 0 )
     {
         // 2D output
         outimg->naxis = 2;
