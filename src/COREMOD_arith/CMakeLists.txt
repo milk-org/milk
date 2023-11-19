@@ -21,6 +21,7 @@ set(SOURCEFILES
 	image_slicenormalize.c
 	image_stats.c
 	image_total.c
+	image_unfold.c
 	image_dxdy.c
 	imfunctions.c
 	mathfuncs.c
@@ -48,6 +49,7 @@ set(INCLUDEFILES
 	image_slicenormalize.h
 	image_stats.h
 	image_total.h
+	image_unfold.h
 	image_dxdy.h
 	imfunctions.h
 	mathfuncs.h

@@ -62,6 +62,7 @@
 #include "image_set_col.h"
 #include "image_set_row.h"
 #include "image_setzero.h"
+#include "image_unfold.h"
 
 #include "image_pixremap.h"
 #include "image_pixunmap.h"
@@ -110,6 +111,8 @@ static errno_t init_module_CLI()
 
     CLIADDCMD_COREMODE_arith__pixremap();
     CLIADDCMD_COREMODE_arith__pixunmap();
+
+    CLIADDCMD_COREMOD_arith__image_unfold();
 
     return RETURN_SUCCESS;
 }
