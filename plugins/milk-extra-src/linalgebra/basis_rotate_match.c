@@ -312,7 +312,7 @@ errno_t compute_basis_rotate_match(
 
         double alphap = 1.0;
         double dangle = 1.0;
-        double posSideAmp = 5.0;
+        double posSideAmp = 10.0;
 
         // temp storate for vects to be swapped
 
