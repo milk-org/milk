@@ -153,7 +153,7 @@ if(NOT MKL_FOUND)
     else()
        message("-- MKL NOT FOUND")
        message("   LINKING LAPACKE")
-       list(APPEND LINKLIBS lapacke)    
+       target_link_libraries(${LIBNAME} PRIVATE lapacke)
     endif()
 
 endif()
