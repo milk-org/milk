@@ -142,10 +142,20 @@ target_link_libraries(${LIBNAME} PUBLIC ${MKL_LIBRARIES})
 target_compile_options(${LIBNAME} PUBLIC -DHAVE_MKL ${MKL_CFLAGS_OTHER})
 endif()
 
-if(NOT MKL_FOUND) # Need to link against actual LAPACKE
-  message("-- MKL NOT FOUND")
-  message("   LINKING LAPACKE")
-  target_link_libraries(${LIBNAME} PRIVATE lapacke)
+#If not using MKL, check if OpenBLAS has lapacke symbols.  Include lapacke if not.
+if(NOT MKL_FOUND)
+
+    check_library_exists(openblas LAPACKE_sgemlq "" DONT_NEED_LAPACKE)
+
+    if(DONT_NEED_LAPACKE)
+       message("-- MKL NOT FOUND")
+       message("   LINKING OpenBLAS")
+    else()
+       message("-- MKL NOT FOUND")
+       message("   LINKING LAPACKE")
+       list(APPEND LINKLIBS lapacke)    
+    endif()
+
 endif()
 
 target_link_libraries(${LIBNAME} PRIVATE CLIcore)
