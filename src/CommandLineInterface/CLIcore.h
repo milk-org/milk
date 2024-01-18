@@ -32,7 +32,9 @@ typedef int errno_t;
 #endif
 
 #include <errno.h>
+#ifdef USE_FFTW3
 #include <fftw3.h>
+#endif
 #ifdef USE_GSL
 #include <gsl/gsl_rng.h> // for random numbers
 #else
