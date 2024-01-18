@@ -350,6 +350,7 @@ static errno_t runCLI_initialize()
         PRINT_ERROR("seteuid error");
     }
 
+#ifdef USE_GSL
     // Initialize random-number generator
     //
     const gsl_rng_type *rndgenType;
@@ -358,6 +359,7 @@ static errno_t runCLI_initialize()
     rndgenType  = gsl_rng_rand; // not as good but ~10x faster fast
     data.rndgen = gsl_rng_alloc(rndgenType);
     gsl_rng_set(data.rndgen, time(NULL));
+#endif
 
     // warm up
     //for(i=0; i<10; i++)
@@ -1057,8 +1059,11 @@ static void runCLI_free()
 
 #endif
     //  free(data.cmd);
+
+#ifdef USE_GSL
     DEBUG_TRACEPOINT("free data.rndgen");
     gsl_rng_free(data.rndgen);
+#endif
 }
 
 int user_function()

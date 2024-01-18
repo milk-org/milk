@@ -9,11 +9,11 @@ option(python_module "Compile Python Wrappers" OFF)
 project(CLIcore C)
 
 find_package(PkgConfig REQUIRED)
-find_package(GSL QUIET REQUIRED)
-pkg_check_modules(FFTW REQUIRED fftw3)
-pkg_check_modules(FFTWF REQUIRED fftw3f)
 pkg_check_modules(NCURSES REQUIRED ncurses)
+pkg_check_modules(FFTW fftw3)
+pkg_check_modules(FFTWF fftw3f)
 find_package(OpenMP)
+find_package(GSL)
 
 pkg_check_modules(HWLOC hwloc)
 
@@ -123,13 +123,21 @@ if(${CFITSIO_FOUND})
   target_include_directories(CLIcore PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
-target_include_directories(CLIcore
-                PUBLIC ${GSL_INCLUDE_DIRS}
-                      ${FFTW_INCLUDE_DIRS}
-                      ${FFTWF_INCLUDE_DIRS})
+if(${GSL_FOUND})
+  target_compile_definitions(CLIcore PUBLIC USE_GSL=1)
+  target_include_directories(CLIcore PUBLIC ${GSL_INCLUDE_DIRS})
+endif()
 
-target_compile_options(CLIcore
-                        PUBLIC ${FFTW_CFLAGS_OTHER} ${FFTWF_CFLAGS_OTHER})
+if(${FFTW_FOUND})
+  target_compile_definitions(CLIcore PUBLIC USE_FFTW3=1)
+  target_include_directories(CLIcore PUBLIC
+                             ${FFTW_INCLUDE_DIRS}
+                             ${FFTWF_INCLUDE_DIRS})
+  target_compile_options(CLIcore PUBLIC 
+                         ${FFTW_CFLAGS_OTHER} 
+                         ${FFTWF_CFLAGS_OTHER})
+endif()
+
 if (OPENMP_C_FOUND)
   message("Found OpenMP")
   target_link_libraries(CLIcore PUBLIC OpenMP::OpenMP_C)
@@ -139,9 +147,9 @@ endif()
 target_link_libraries(CLIcore
                       PUBLIC m
                               readline
-                              ${CFITSIO_LIBRARIES}
                               dl
                               rt
+                              ${CFITSIO_LIBRARIES}
                               ${GSL_LIBRARIES}
                               ${FFTW_LIBRARIES}
                               ${FFTWF_LIBRARIES}
