@@ -9,11 +9,11 @@ option(python_module "Compile Python Wrappers" OFF)
 project(CLIcore C)
 
 find_package(PkgConfig REQUIRED)
-find_package(GSL QUIET REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
 pkg_check_modules(NCURSES REQUIRED ncurses)
 find_package(OpenMP)
+find_package(GSL)
 
 pkg_check_modules(HWLOC hwloc)
 
@@ -121,6 +121,10 @@ if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})
   target_compile_definitions(CLIcore PUBLIC USE_CFITSIO=1)
   target_include_directories(CLIcore PUBLIC ${CFITSIO_INCLUDE_DIRS})
+endif()
+
+if(${GSL_FOUND})
+  target_compile_definitions(CLIcore PUBLIC USE_GSL=1)
 endif()
 
 target_include_directories(CLIcore
