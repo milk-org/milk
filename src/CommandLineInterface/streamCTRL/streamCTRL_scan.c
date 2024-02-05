@@ -143,8 +143,15 @@ void *streamCTRL_scan(
                                    streaminfo[sindex].sname,
                                    ID);*/
 
+            // Check if the inode exists but has been externally overwritten
+            if(ID != -1
+                    && ImageStreamIO_check_image_inode(&images[ID]) == IMAGESTREAMIO_INODE)
+            {
+                ImageStreamIO_closeIm(&images[ID]);
+                ID = -1;
+            }
+
             // if not in local memory, try to connect to stream
-            //
             if(ID == -1)
             {
                 // if not in memory, try to load
@@ -168,7 +175,7 @@ void *streamCTRL_scan(
                 images[ID].used = 1;
                 // keep track of name
                 strncpy(images[ID].name, streaminfo[sindex].sname, STRINGMAXLEN_IMAGE_NAME - 1);
-                images[ID].name[STRINGMAXLEN_IMAGE_NAME-1] = '\0';
+                images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
                 streaminfo[sindex].deltacnt0          = 1;
                 streaminfo[sindex].updatevalue        = 1.0;
@@ -178,7 +185,7 @@ void *streamCTRL_scan(
             {
                 // if in memory, check if image data has been loaded
                 //
-                if ( images[ID].array.raw == NULL )
+                if(images[ID].array.raw == NULL)
                 {
                     streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
                 }
@@ -187,7 +194,7 @@ void *streamCTRL_scan(
                     streaminfo[sindex].ISIOretval = IMAGESTREAMIO_SUCCESS;
                 }
 
-                if(streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS )
+                if(streaminfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS)
                 {
                     /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld  ISIO OK\" >> IDlog.txt",
                                            sindex);*/
