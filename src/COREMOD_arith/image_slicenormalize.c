@@ -120,7 +120,7 @@ errno_t image_slicenormalize(
 
 
     resolveIMGID(outimg, ERRMODE_NULL);
-    if( outimg->ID == -1)
+    if(outimg->ID == -1)
     {
         copyIMGID(&inimg, outimg);
     }
@@ -137,11 +137,11 @@ errno_t image_slicenormalize(
     sizescan[0] = inimg.md->size[0];
     sizescan[1] = inimg.md->size[1];
     sizescan[2] = inimg.md->size[2];
-    if( inimg.md->naxis < 3 )
+    if(inimg.md->naxis < 3)
     {
         sizescan[2] = 1;
     }
-    if( inimg.md->naxis < 2 )
+    if(inimg.md->naxis < 2)
     {
         sizescan[1] = 1;
     }
@@ -150,16 +150,16 @@ errno_t image_slicenormalize(
     // aux input image
     //
     uint32_t auxsizescan[3];
-    if (imgaux.ID != -1 )
+    if(imgaux.ID != -1)
     {
         auxsizescan[0] = imgaux.md->size[0];
         auxsizescan[1] = imgaux.md->size[1];
         auxsizescan[2] = imgaux.md->size[2];
-        if( imgaux.md->naxis < 3 )
+        if(imgaux.md->naxis < 3)
         {
             auxsizescan[2] = 1;
         }
-        if( imgaux.md->naxis < 2 )
+        if(imgaux.md->naxis < 2)
         {
             auxsizescan[1] = 1;
         }
@@ -185,20 +185,23 @@ errno_t image_slicenormalize(
 
 
 
-    double * __restrict normarray = (double*) malloc(sizeof(double) * sizescan[sliceaxis]);
-    for( uint32_t ii=0; ii<inimg.md->size[sliceaxis]; ii++)
+    double *__restrict normarray = (double *) malloc(sizeof(
+                                       double) * sizescan[sliceaxis]);
+    for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
     {
         normarray[ii] = 0.0;
     }
 
-    double * __restrict avarray = (double*) malloc(sizeof(double) * sizescan[sliceaxis]);
-    for( uint32_t ii=0; ii<inimg.md->size[sliceaxis]; ii++)
+    double *__restrict avarray = (double *) malloc(sizeof(double) *
+                                 sizescan[sliceaxis]);
+    for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
     {
         avarray[ii] = 0.0;
     }
 
-    double * __restrict maskcntarray = (double*) malloc(sizeof(double) * sizescan[sliceaxis]);
-    for( uint32_t ii=0; ii<inimg.md->size[sliceaxis]; ii++)
+    double *__restrict maskcntarray = (double *) malloc(sizeof(
+                                          double) * sizescan[sliceaxis]);
+    for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
     {
         maskcntarray[ii] = 0.0;
     }
@@ -207,17 +210,17 @@ errno_t image_slicenormalize(
     uint32_t pixcoord[3];
 
 
-    for( uint32_t ii = 0; ii < sizescan[0]; ii++)
+    for(uint32_t ii = 0; ii < sizescan[0]; ii++)
     {
         pixcoord[0] = ii;
         uint32_t iim = ii * sizemmask[0];
 
-        for( uint32_t jj = 0; jj < sizescan[1]; jj++)
+        for(uint32_t jj = 0; jj < sizescan[1]; jj++)
         {
             pixcoord[1] = jj;
             uint32_t jjm = jj * sizemmask[1];
 
-            for( uint32_t kk = 0; kk < sizescan[2]; kk++)
+            for(uint32_t kk = 0; kk < sizescan[2]; kk++)
             {
                 pixcoord[2] = kk;
                 uint32_t kkm = kk * sizemmask[2];
@@ -233,40 +236,40 @@ errno_t image_slicenormalize(
 
                 double valm; // masked value
 
-                switch ( inimg.datatype )
+                switch(inimg.datatype)
                 {
-                case _DATATYPE_UINT8 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.UI8[pixi];
-                    break;
-                case _DATATYPE_INT8 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.SI8[pixi];
-                    break;
-                case _DATATYPE_UINT16 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.UI16[pixi];
-                    break;
-                case _DATATYPE_INT16 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.SI16[pixi];
-                    break;
-                case _DATATYPE_UINT32 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.UI32[pixi];
-                    break;
-                case _DATATYPE_INT32 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.SI32[pixi];
-                    break;
-                case _DATATYPE_UINT64 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.UI64[pixi];
-                    break;
-                case _DATATYPE_INT64 :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.SI64[pixi];
-                    break;
-                case _DATATYPE_FLOAT :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.F[pixi];
-                    break;
-                case _DATATYPE_DOUBLE :
-                    valm = maskimg.im->array.F[pixim] * inimg.im->array.D[pixi];
-                    break;
+                    case _DATATYPE_UINT8 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI8[pixi];
+                        break;
+                    case _DATATYPE_INT8 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI8[pixi];
+                        break;
+                    case _DATATYPE_UINT16 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI16[pixi];
+                        break;
+                    case _DATATYPE_INT16 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI16[pixi];
+                        break;
+                    case _DATATYPE_UINT32 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI32[pixi];
+                        break;
+                    case _DATATYPE_INT32 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI32[pixi];
+                        break;
+                    case _DATATYPE_UINT64 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI64[pixi];
+                        break;
+                    case _DATATYPE_INT64 :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI64[pixi];
+                        break;
+                    case _DATATYPE_FLOAT :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.F[pixi];
+                        break;
+                    case _DATATYPE_DOUBLE :
+                        valm = maskimg.im->array.F[pixim] * inimg.im->array.D[pixi];
+                        break;
                 }
-                normarray[pixcoord[sliceaxis]] += valm*valm;
+                normarray[pixcoord[sliceaxis]] += valm * valm;
                 avarray[pixcoord[sliceaxis]] += valm;
                 maskcntarray[pixcoord[sliceaxis]] += maskimg.im->array.F[pixim];
             }
@@ -274,34 +277,35 @@ errno_t image_slicenormalize(
     }
 
 
-    for( uint32_t ii=0; ii < sizescan[sliceaxis]; ii++ )
+    for(uint32_t ii = 0; ii < sizescan[sliceaxis]; ii++)
     {
         avarray[ii] /= maskcntarray[ii];
 
         normarray[ii] /= maskcntarray[ii];
-        normarray[ii] -= avarray[ii]*avarray[ii];
+        // REMOVED FROM DEF BEHAVIOR: no mean sub.
+        // normarray[ii] -= avarray[ii]*avarray[ii];
         if(normarray[ii] > 0.0)
         {
-            normarray[ii] = sqrt( normarray[ii] );
+            normarray[ii] = sqrt(normarray[ii]);
         }
-        //printf("slize %3u : cnt=%lf  av=%lf  %lf\n", ii, maskcntarray[ii], avarray[ii], normarray[ii]);
+        // printf("slice %3u : cnt=%lf  av=%lf  std=%lf\n", ii, maskcntarray[ii], avarray[ii], normarray[ii]);
 
 
-        if( modeRMS == 0 )
+        if(modeRMS == 0)
         {
-            normarray[ii] *= sqrt( maskcntarray[ii] );
+            normarray[ii] *= sqrt(maskcntarray[ii]);
         }
     }
 
     // process input image
     //
-    for( uint32_t ii = 0; ii < sizescan[0]; ii++)
+    for(uint32_t ii = 0; ii < sizescan[0]; ii++)
     {
         pixcoord[0] = ii;
-        for( uint32_t jj = 0; jj < sizescan[1]; jj++)
+        for(uint32_t jj = 0; jj < sizescan[1]; jj++)
         {
             pixcoord[1] = jj;
-            for( uint32_t kk = 0; kk < sizescan[2]; kk++)
+            for(uint32_t kk = 0; kk < sizescan[2]; kk++)
             {
                 pixcoord[2] = kk;
 
@@ -310,38 +314,52 @@ errno_t image_slicenormalize(
                 pixi += ii;
 
 
-                switch ( inimg.datatype )
+                switch(inimg.datatype)
                 {
-                case _DATATYPE_UINT8 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI8[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_INT8 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.SI8[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_UINT16 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI16[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_INT16 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.SI16[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_UINT32 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI32[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_INT32 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.SI32[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_UINT64 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI64[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_INT64 :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.SI64[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_FLOAT :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.F[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
-                case _DATATYPE_DOUBLE :
-                    outimg->im->array.F[pixi] = (1.0*inimg.im->array.D[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    break;
+                    // REMOVED FROM DEF BEHAVIOR: no mean sub.
+                    // case _DATATYPE_UINT8 :
+                    //     outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI8[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
+                    //     break;
+                    case _DATATYPE_UINT8 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI8[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_INT8 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI8[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_UINT16 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI16[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_INT16 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI16[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_UINT32 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI32[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_INT32 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI32[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_UINT64 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI64[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_INT64 :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI64[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_FLOAT :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.F[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
+                    case _DATATYPE_DOUBLE :
+                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.D[pixi]) /
+                                                    normarray[pixcoord[sliceaxis]];
+                        break;
                 }
             }
         }
@@ -350,19 +368,19 @@ errno_t image_slicenormalize(
 
 
 
-    if( imgaux.ID != -1 )
+    if(imgaux.ID != -1)
     {
         // process aux input image
         // FLOAT only
         // scaling only, no offset
         //
-        for( uint32_t ii = 0; ii < auxsizescan[0]; ii++)
+        for(uint32_t ii = 0; ii < auxsizescan[0]; ii++)
         {
             pixcoord[0] = ii;
-            for( uint32_t jj = 0; jj < auxsizescan[1]; jj++)
+            for(uint32_t jj = 0; jj < auxsizescan[1]; jj++)
             {
                 pixcoord[1] = jj;
-                for( uint32_t kk = 0; kk < auxsizescan[2]; kk++)
+                for(uint32_t kk = 0; kk < auxsizescan[2]; kk++)
                 {
                     pixcoord[2] = kk;
 
@@ -370,7 +388,8 @@ errno_t image_slicenormalize(
                     pixi += jj * auxsizescan[0];
                     pixi += ii;
 
-                    imgaux.im->array.F[pixi] = imgaux.im->array.F[pixi] / normarray[pixcoord[sliceaxis]];
+                    imgaux.im->array.F[pixi] = imgaux.im->array.F[pixi] /
+                                               normarray[pixcoord[sliceaxis]];
                 }
             }
         }
