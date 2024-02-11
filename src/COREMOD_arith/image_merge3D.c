@@ -198,7 +198,7 @@ errno_t image_marge(
 
         case _DATATYPE_DOUBLE :
             memcpy(&outimg->im->array.D[0], &inimg0.im->array.D[0], sizeof(double)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.D[inimg0.md->nelement], &inimg1.im->array.D, sizeof(double)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.D[inimg0.md->nelement], &inimg1.im->array.D[0], sizeof(double)*inimg1.md->nelement);
             break;
 
         default:
