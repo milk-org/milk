@@ -623,7 +623,15 @@ errno_t functionparameter_CTRLscreen(
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
                 getFPSlogfname(logfname);
-                TUI_printfw("    OUTPUT LOG       :  %s", logfname);
+                int flagFPSoutlog = get_FLAG_FPSOUTLOG();
+                if ( flagFPSoutlog == 0 )
+                {
+                    TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED", flagFPSoutlog);
+                }
+                else
+                {
+                    TUI_printfw("    OUTPUT LOG   [%2d] :  %s", flagFPSoutlog, logfname);
+                }
                 TUI_newline();
             }
             DEBUG_TRACEPOINT(" ");
