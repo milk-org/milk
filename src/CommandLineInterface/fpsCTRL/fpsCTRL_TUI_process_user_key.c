@@ -87,6 +87,13 @@ int fpsCTRL_TUI_process_user_key(
         break;
 
 
+    case 'g':
+        set_FLAG_FPSOUTLOG(0);
+        break;
+    case 'G':
+        set_FLAG_FPSOUTLOG(1);
+        break;
+
 
     case 'v':
         fpsCTRLvar->fpsCTRL_DisplayVerbose = 0;
