@@ -162,6 +162,8 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("R / CTRL+r", "start/stop (R)UN process");
     print_help_entry("l", "list all entries");
     print_help_entry("f", "export fps content to datadir file");
+    print_help_entry("g", "FPS log OFF");
+    print_help_entry("G", "FPS log ON");
     print_help_entry(">", "export fpsdatadir values to fpsconfdir");
     print_help_entry("<", "import/load values from fpsconfdir to fps");
     print_help_entry("P", "(P)rocess input file \"confscript\"");
@@ -626,7 +628,7 @@ errno_t functionparameter_CTRLscreen(
                 int flagFPSoutlog = get_FLAG_FPSOUTLOG();
                 if ( flagFPSoutlog == 0 )
                 {
-                    TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED", flagFPSoutlog);
+                    TUI_printfw("    OUTPUT LOG   [%2d] : DISABLED (G/g to toggle ON/OFF)", flagFPSoutlog);
                 }
                 else
                 {
