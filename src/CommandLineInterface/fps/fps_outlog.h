@@ -6,6 +6,13 @@
 #ifndef FPS_OUTLOG_H
 #define FPS_OUTLOG_H
 
+
+int get_FLAG_FPSOUTLOG();
+
+errno_t set_FLAG_FPSOUTLOG(int val);
+
+
+
 errno_t getFPSlogfname(
     char *logfname
 );

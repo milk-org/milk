@@ -19,7 +19,7 @@ static int FLAG_FPSOUTLOG = -1;
 static char *fps_customfilename;
 
 
-static errno_t get_FLAG_FPSOUTLOG()
+int get_FLAG_FPSOUTLOG()
 {
 
     if( FLAG_FPSOUTLOG == -1 )
@@ -41,8 +41,18 @@ static errno_t get_FLAG_FPSOUTLOG()
         }
     }
 
+    return FLAG_FPSOUTLOG;
+}
+
+
+
+errno_t set_FLAG_FPSOUTLOG(int val)
+{
+    FLAG_FPSOUTLOG = val;
+
     return RETURN_SUCCESS;
 }
+
 
 
 
@@ -89,8 +99,7 @@ errno_t functionparameter_outlog_file(
 {
     //get_FLAG_FPSOUTLOG();
 
-    //if ( FLAG_FPSOUTLOG )
-    //{
+
     // Get GMT time
     struct timespec tnow;
     time_t          now;
@@ -114,7 +123,6 @@ errno_t functionparameter_outlog_file(
 
     fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
     fflush(fpout);
-    //}
 
     return RETURN_SUCCESS;
 }
