@@ -89,32 +89,32 @@ errno_t functionparameter_outlog_file(
 {
     //get_FLAG_FPSOUTLOG();
 
-    if ( FLAG_FPSOUTLOG )
-    {
-        // Get GMT time
-        struct timespec tnow;
-        time_t          now;
+    //if ( FLAG_FPSOUTLOG )
+    //{
+    // Get GMT time
+    struct timespec tnow;
+    time_t          now;
 
-        clock_gettime(CLOCK_MILK, &tnow);
-        now = tnow.tv_sec;
-        struct tm *uttime;
-        uttime = gmtime(&now);
+    clock_gettime(CLOCK_MILK, &tnow);
+    now = tnow.tv_sec;
+    struct tm *uttime;
+    uttime = gmtime(&now);
 
-        char timestring[TIMESTRINGLEN];
-        SNPRINTF_CHECK(timestring,
-                       TIMESTRINGLEN,
-                       "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
-                       1900 + uttime->tm_year,
-                       1 + uttime->tm_mon,
-                       uttime->tm_mday,
-                       uttime->tm_hour,
-                       uttime->tm_min,
-                       uttime->tm_sec,
-                       tnow.tv_nsec);
+    char timestring[TIMESTRINGLEN];
+    SNPRINTF_CHECK(timestring,
+                   TIMESTRINGLEN,
+                   "%04d-%02d-%02dT%02d:%02d:%02d.%09ld",
+                   1900 + uttime->tm_year,
+                   1 + uttime->tm_mon,
+                   uttime->tm_mday,
+                   uttime->tm_hour,
+                   uttime->tm_min,
+                   uttime->tm_sec,
+                   tnow.tv_nsec);
 
-        fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
-        fflush(fpout);
-    }
+    fprintf(fpout, "%s %ld.%09ld  %-12s %s\n", timestring, tnow.tv_sec, tnow.tv_nsec, keyw, msgstring);
+    fflush(fpout);
+    //}
 
     return RETURN_SUCCESS;
 }
