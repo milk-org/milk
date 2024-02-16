@@ -25,6 +25,7 @@ set(SOURCEFILES
 	cublas_PCA.c
 	printGPUMATMULTCONF.c
 	MVMextractModes.c
+	Qexpand.c
 	SGEMM.c
 	SingularValueDecomp.c
 	SingularValueDecomp_mkM.c
@@ -54,6 +55,7 @@ set(INCLUDEFILES
 	cublas_PCA.h
 	printGPUMATMULTCONF.h
 	MVMextractModes.h
+	Qexpand.h
 	SGEMM.h
 	SingularValueDecomp.h
 	SingularValueDecomp_mkM.h
