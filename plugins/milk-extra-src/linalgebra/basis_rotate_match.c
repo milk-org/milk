@@ -536,16 +536,17 @@ errno_t compute_basis_rotate_match(
             // sort by effective index
             quick_sort2l(AmodeBeff, iarray, Adim);
 
+            /*
             {
                 char fname[STRINGMAXLEN_FILENAME];
-                WRITE_FILENAME(fname, "Beff.%04d.dat", loopiter);
+                WRITE_FILENAME(fname, "./compfCM/Beff.%04d.dat", loopiter);
                 FILE * fpBeff = fopen(fname, "w");
                 for( int iia = 0; iia < Adim; iia++ )
                 {
                     fprintf(fpBeff, "%4d %16f  %4ld\n", iia, AmodeBeff[iia], iarray[iia]);
                 }
                 fclose(fpBeff);
-            }
+            }*/
 
 
             if ( loopiter == loopiterMax-1 )
