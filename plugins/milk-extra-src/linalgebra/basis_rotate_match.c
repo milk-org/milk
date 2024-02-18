@@ -311,8 +311,11 @@ errno_t compute_basis_rotate_match(
         loopiterMax = 1000;
 
         double alphap = 1.0;
+
         double dangle = 1.0;
-        double danglemin = 0.0001;
+        double danglemin = 0.001;
+        double danglemfact = 0.97;
+
         double posSideAmp = 10.0;
 
         // temp storate for vects to be swapped
@@ -506,7 +509,7 @@ errno_t compute_basis_rotate_match(
             printf("     [%5ld  %5ld  %5ld]  %g\n", cntneg, cntmid, cntpos, dangle);
             if( cntmid > 100.0*(cntpos+cntneg) )
             {
-                dangle *= 0.98;
+                dangle *= danglemfact;
             }
 
 
