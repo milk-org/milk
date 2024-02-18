@@ -312,6 +312,7 @@ errno_t compute_basis_rotate_match(
 
         double alphap = 1.0;
         double dangle = 1.0;
+        double danglemin = 0.0001;
         double posSideAmp = 10.0;
 
         // temp storate for vects to be swapped
@@ -333,7 +334,7 @@ errno_t compute_basis_rotate_match(
         }
 
 
-        while ( loopiter < loopiterMax )
+        while ( ( loopiter < loopiterMax ) && ( dangle > danglemin) )
         {
             long cntpos = 0;
             long cntneg = 0;
@@ -355,7 +356,7 @@ errno_t compute_basis_rotate_match(
                     optall += dcoeff * matAB[iia*Bdim + iib] * dcoeff * matAB[iia*Bdim + iib];
                 }
             }
-            printf("iter %4d / %4d   dangle = %f  val = %g\n", loopiter, loopiterMax, dangle, optall);
+            printf("iter %4d / %4d   dangle = %f / %f  val = %g\n", loopiter, loopiterMax, dangle, danglemin, optall);
 
             for ( int n0 = 0; n0 < Adim; n0++)
             {
