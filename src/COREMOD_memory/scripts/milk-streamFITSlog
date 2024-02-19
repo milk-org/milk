@@ -47,9 +47,11 @@ Logs stream to filesystem as FITS cubes.
 
 ====== EXAMPLE USE ============
 
-Start logging process for stream sname, 1000-deep cubes :
+To start logging process for stream sname, 1000-deep cubes :
 
 $> $(basename $0) -d \"/mnt/log\" -z 1000 sname pstart
+$> $(basename $0) sname on
+
 
 Files will appear in: /mnt/log/YYYYMMDD/sname
 where TTTMMDD is the current UT day (${daystring}) and sname is the stream name.
