@@ -28,6 +28,11 @@ cd ${milkFITSloggerdir}
 
 
 MSextdescr="
+Log stream to disk as FITS cubes.
+
+Logging processes are running in tmux session ${TMUXNAME}. 
+User can connect to tmux session to control logging processes.
+
 List of actions:
 	pstart  start log process
 	rstop   stop log RUN process
@@ -39,10 +44,13 @@ List of actions:
 	set     set parameters, no other action
 
 Logs stream to filesystem as FITS cubes.
-Example use:
 
-Start logging process, 1000-deep cubes :
-$> $(basename $0) -d \"/mnt/log\" -z 1000  sname pstart
+====== EXAMPLE USE ============
+
+Start logging process for stream sname, 1000-deep cubes :
+
+$> $(basename $0) -d \"/mnt/log\" -z 1000 sname pstart
+
 Files will appear in: /mnt/log/YYYYMMDD/sname
 where TTTMMDD is the current UT day (${daystring}) and sname is the stream name.
 
@@ -329,7 +337,7 @@ EOF
 	echo "echo \"setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}\" >> ${fifoname}"
 	echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
 
-	ecoh "echo \"confwupdate streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
+	echo "echo \"confwupdate streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 
 	echo "echo \"runstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
