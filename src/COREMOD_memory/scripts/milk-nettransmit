@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+MSdescr="Transmit SHM over network (TCP or UDP)"
+
+source milk-script-std-config
+
+TRANSMIT=0
+TARGET_IP=""
+STREAM_NAME=""
+
+USE_UDP=0
+PORT="1"
+
+CPUSET="system"
+RTPRIO=0
+
+datestring="$(date -u +'%Y-%m-%dT%H:%M:%S.%NZ')"
+daystring="$(date -u +'%Y%m%d')"
+
+MSextdescr="
+Transfer a SHM over the network.
+Sender and receiver ends. Use TCP or UDP.
+
+"
+
+RequiredCommands=( milk )
+RequiredFiles=( )
+RequiredDirs=( )
+
+# Options
+MSarg+=( "port:int:Port number" )
+
+MSopt+=( "s:stream:set_stream_name:stream_name[str]:Set stream name (for transmit)." )
+function set_stream_name() {
+    STREAM_NAME="$1"
+}
+MSopt+=( "T:transmit:set_transmit:target_ip[str]:Set in transmit mode (default is receive)." )
+function set_transmit() {
+    TRANSMIT=1
+    TARGET_IP="$1"
+}
+MSopt+=( "U:udp:set_udp::Use UDP (default is TCP)." )
+function set_udp() {
+    USE_UDP=1
+}
+MSopt+=( "c:cset:set_cset:cset[string]:set CPUset (default is system)." )
+function set_cset() {
+    CPUSET="$1"
+}
+MSopt+=( "p:prio:set_prio:prio[int]:Set RT priority [default 30]." )
+function set_prio() {
+    RTPRIO="$1"
+}
+
+source milk-argparse
+PORT="${inputMSargARRAY[0]}"
+
+echo "STREAM_NAME : ${STREAM_NAME}"
+echo "TRANSMIT    : ${TRANSMIT}"
+echo "UDP         : ${USE_UDP}"
+echo "CPUSET      : ${CPUSET}"
+echo "RTPRIO      : ${RTPRIO}"
+echo "PORT        : ${PORT}"
+echo "IP          : ${TARGET_IP}"
+
+if [ ${TRANSMIT} -eq 1 ]; then
+    if [[ "${STREAM_NAME}" ==  "" ]]; then
+        echo "ERROR: must provide -s <stream_name> for transmit [-T]."
+        exit 12
+    fi
+fi
+
+if [ ${USE_UDP} -eq 1 ]; then
+    milk_send_function="imudptransmit"
+    milk_receive_function="imudpreceive"
+else
+    milk_send_function="imnetwtransmit"
+    milk_receive_function="imnetwreceive"
+fi
+
+if [ ${TRANSMIT} -eq 1 ]; then # TRANSMIT
+    pname="netw-transmit-${STREAM_NAME}-${PORT}"
+    MILK_QUIET=1 OMP_NUM_THREADS=1 milk -n ${pname} << EOF
+csetpmove ${CPUSET}
+rtprio ${RTPRIO}
+reashmim ${STREAM_NAME}
+${milk_send_function} ${STREAM_NAME} ${TARGET_IP} ${PORT} 0 ${RTPRIO}
+exitCLI
+EOF
+else # RECEIVE
+    pname="netw-receive-${PORT}"
+    MILK_QUIET=1 OMP_NUM_THREADS=1 milk -n ${pname} << EOF
+csetpmove ${CPUSET}
+rtprio ${RTPRIO}
+${milk_receive_function} ${PORT} 0 ${RTPRIO}
+exitCLI
+EOF
+fi

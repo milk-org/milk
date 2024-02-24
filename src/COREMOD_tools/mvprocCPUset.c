@@ -8,11 +8,14 @@
 // Forward declaration(s)
 // ==========================================
 
+int COREMOD_TOOLS_mvProcRTPrio(const int rtprio);
+
 int COREMOD_TOOLS_mvProcTset(const char *tsetspec);
 
 int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec);
 
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
+
 
 int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
                                   const char *csetname,
@@ -21,6 +24,20 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
+
+errno_t COREMOD_TOOLS_mvProcRTPrio_cli()
+{
+    if(0 + CLI_checkarg(1, CLIARG_LONG) == 0)
+    {
+        COREMOD_TOOLS_mvProcRTPrio(data.cmdargtoken[1].val.numl);
+
+        return CLICMD_SUCCESS;
+    }
+    else
+    {
+        return CLICMD_INVALID_ARG;
+    }
+}
 
 errno_t COREMOD_TOOLS_mvProcTset_cli()
 {
@@ -87,8 +104,15 @@ errno_t COREMOD_TOOLS_mvProcCPUsetExt_cli()
 // Register CLI command(s)
 // ==========================================
 
-errno_t mvprocTset_addCLIcmd()
+errno_t cpuset_utils_addCLIcmd()
 {
+    RegisterCLIcommand("rtprio",
+                       __FILE__,
+                       COREMOD_TOOLS_mvProcRTPrio_cli,
+                       "Set current process SCHED_FIFO priority",
+                       "<prio>",
+                       "rtprio <prio>",
+                       "int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)");
     RegisterCLIcommand("tsetpmove",
                        __FILE__,
                        COREMOD_TOOLS_mvProcTset_cli,
@@ -96,26 +120,13 @@ errno_t mvprocTset_addCLIcmd()
                        "<taskset spec list>",
                        "tsetpmove realtime",
                        "int COREMOD_TOOLS_mvProcTset(const char *tsetspec)");
-
-    return RETURN_SUCCESS;
-}
-
-errno_t mvprocTsetExt_addCLIcmd()
-{
-    RegisterCLIcommand(
-        "tsetpmoveext",
-        __FILE__,
-        COREMOD_TOOLS_mvProcTsetExt_cli,
-        "Assign taskset for any process",
-        "<PID> <taskset spec list>",
-        "tsetpmoveext 33659 1-5",
-        "int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)");
-
-    return RETURN_SUCCESS;
-}
-
-errno_t mvprocCPUset_addCLIcmd()
-{
+    RegisterCLIcommand("tsetpmoveext",
+                       __FILE__,
+                       COREMOD_TOOLS_mvProcTsetExt_cli,
+                       "Assign taskset for any process",
+                       "<PID> <taskset spec list>",
+                       "tsetpmoveext 33659 1-5",
+                       "int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)");
     RegisterCLIcommand("csetpmove",
                        __FILE__,
                        COREMOD_TOOLS_mvProcCPUset_cli,
@@ -123,12 +134,6 @@ errno_t mvprocCPUset_addCLIcmd()
                        "<CPU set name>",
                        "csetpmove realtime",
                        "int COREMOD_TOOLS_mvProcCPUset(const char *csetname)");
-
-    return RETURN_SUCCESS;
-}
-
-errno_t mvprocCPUsetExt_addCLIcmd()
-{
     RegisterCLIcommand("csetandprioext",
                        __FILE__,
                        COREMOD_TOOLS_mvProcCPUsetExt_cli,
@@ -140,6 +145,34 @@ errno_t mvprocCPUsetExt_addCLIcmd()
                        "char *csetname, const int rtprio)");
 
     return RETURN_SUCCESS;
+}
+
+int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
+{
+    if(rtprio <= 0)
+    {
+        PRINT_WARNING("Invoking RT prio with rtprio %d <= 0; skipping.", rtprio);
+        return EXIT_SUCCESS;
+    }
+
+    char command[200];
+
+    if(seteuid(data.euid) != 0 ||
+            setuid(data.euid) != 0) // This goes up to maximum privileges
+    {
+        PRINT_ERROR("seteuid/setuid error");
+    }
+
+    sprintf(command, "chrt -f -p %d %d\n", rtprio, getpid());
+    printf("Executing command: %s\n", command);
+
+    EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
+
+    if(setresuid(data.ruid, data.ruid, data.euid) !=
+            0) // Go back to normal privileges
+    {
+        PRINT_ERROR("seteuid error");
+    }
 }
 
 int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
@@ -257,5 +290,5 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
         PRINT_ERROR("seteuid error");
     }
 
-    return (0);
+    return 0;
 }
