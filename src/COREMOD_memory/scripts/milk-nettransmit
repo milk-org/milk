@@ -83,7 +83,7 @@ if [ ${TRANSMIT} -eq 1 ]; then # TRANSMIT
     MILK_QUIET=1 OMP_NUM_THREADS=1 milk -n ${pname} << EOF
 csetpmove ${CPUSET}
 rtprio ${RTPRIO}
-reashmim ${STREAM_NAME}
+readshmim ${STREAM_NAME}
 ${milk_send_function} ${STREAM_NAME} ${TARGET_IP} ${PORT} 0 ${RTPRIO}
 exitCLI
 EOF
