@@ -46,7 +46,7 @@ set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_tools
 
 # test that commands are registered
 
-list(APPEND commandlist "tsetpmove" "tsetpmoveext" "csetpmove" "csetandprioext" "writef2file" "dispim3d" "ctsmstats")
+list(APPEND commandlist "rtprio" "tsetpmove" "tsetpmoveext" "csetpmove" "csetandprioext" "writef2file" "dispim3d" "ctsmstats")
 
 foreach(CLIcmdname IN LISTS commandlist)
 

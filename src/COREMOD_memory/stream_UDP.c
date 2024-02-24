@@ -568,7 +568,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     // create UDP socket
-    if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         printf("ERROR creating socket\n");
         if(data.processinfo == 1)
