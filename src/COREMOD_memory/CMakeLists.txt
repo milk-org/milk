@@ -122,6 +122,7 @@ set(INCLUDEFILES
 
 # list scripts that should be installed on system
 set(SCRIPTFILES
+  scripts/milk-nettransmit
 	scripts/milk-rmshmim
 	scripts/milk-shmimave
 	scripts/milk-shmimpurge

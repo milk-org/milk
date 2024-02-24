@@ -2,11 +2,9 @@
  * @file mvprocCPUset.h
  */
 
-errno_t mvprocTset_addCLIcmd();
-errno_t mvprocTsetExt_addCLIcmd();
-errno_t mvprocCPUset_addCLIcmd();
-errno_t mvprocCPUsetExt_addCLIcmd();
+errno_t cpuset_utils_addCLIcmd();
 
+int COREMOD_TOOLS_mvProcRTPrio(const int rtprio);
 int COREMOD_TOOLS_mvProcTset(const char *tsetspec);
 int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec);
 int COREMOD_TOOLS_mvProcCPUset(const char *csetname);
