@@ -23,10 +23,8 @@ INIT_MODULE_LIB(COREMOD_tools)
 
 static errno_t init_module_CLI()
 {
-    mvprocTset_addCLIcmd();
-    mvprocTsetExt_addCLIcmd();
-    mvprocCPUset_addCLIcmd();
-    mvprocCPUsetExt_addCLIcmd();
+    cpuset_utils_addCLIcmd();
+
     fileutils_addCLIcmd();
     imdisplay3d_addCLIcmd();
     statusstat_addCLIcmd();

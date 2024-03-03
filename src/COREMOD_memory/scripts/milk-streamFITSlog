@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
 MSdescr="log stream to disk as FITS files"
 
 source milk-script-std-config
@@ -30,7 +33,7 @@ cd ${milkFITSloggerdir}
 MSextdescr="
 Log stream to disk as FITS cubes.
 
-Logging processes are running in tmux session ${TMUXNAME}. 
+Logging processes are running in tmux session ${TMUXNAME}.
 User can connect to tmux session to control logging processes.
 
 List of actions:
