@@ -318,26 +318,26 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             }
             ts.tv_sec += 2;
 
-            semr = ImageStreamIO_semtimedwait(data.image+ID, semtrig, &ts);
+            semr = ImageStreamIO_semtimedwait(data.image + ID, semtrig, &ts);
 
             if(iter == 0)
             {
                 processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
+                semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
                 int semvalcnt = semval;
                 for(scnt = 0; scnt < semvalcnt; scnt++)
                 {
-                    semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
+                    semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
                     printf("sem = %d\n", semval);
                     fflush(stdout);
-                    ImageStreamIO_semtrywait(data.image+ID, semtrig);
+                    ImageStreamIO_semtrywait(data.image + ID, semtrig);
                 }
                 printf("done\n");
                 fflush(stdout);
 
-                semval = ImageStreamIO_semvalue(data.image+ID, semtrig);
+                semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
@@ -568,7 +568,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     // create UDP socket
-    if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         printf("ERROR creating socket\n");
         if(data.processinfo == 1)
@@ -815,7 +815,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     long first_dgram_bytes = n_udp_dgrams == 1 ? last_dgram_chunk + 2 :
                              DGRAM_CHUNK_SIZE + 2;
     long this_dgram_bytes;
-    int abort_frame;
+    int abort_frame = 1; // Initial sync
 
 
     while(loopOK == 1)
@@ -838,41 +838,72 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             }
         }
 
-        // Resync to a 0-zth datagram if necessary
-        abort_frame = 0;
-        for(int n_dgram_wait = 0; n_dgram_wait < MAX_DATAGRAM_WAIT; ++n_dgram_wait)
-        {
-            recvsize = recvfrom(fds_server, buff_udp, first_dgram_bytes, 0,
-                                (struct sockaddr *)&sock_client, &slen_client);
-            if(recvsize < 0 || n_dgram_wait == MAX_DATAGRAM_WAIT - 1)
-            {
-                printf("ERROR recvfrom`()\n");
-                socketOpen = 0;
-                break;
-            }
-
-            if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
-            {
-                memcpy(buff, buff_udp + 2, first_dgram_bytes - 2);
-                break;
-            }
-        }
-
-
-
         if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))
         {
             processinfo_exec_start(processinfo);
         }
 
-        if(recvsize == 0)
+        // recvfrom should return a zero-th datagram.
+
+        if(abort_frame)
         {
-            socketOpen = 0;
+            // Purge buffer and resync to a 0-th datagram if necessary
+            // This while will terminate when MSG_DONTWAIT causes a
+            // errno = EAGAIN / EWOULDBLOCK, meaning the queue is empty.
+            while(recvfrom(fds_server, buff_udp, first_dgram_bytes, MSG_DONTWAIT,
+                           (struct sockaddr *)&sock_client, &slen_client) >= 0) {}
+            // Now give ourselves a chance to grab a clean 0-th datagram.
+            for(int n_dgram_wait = 0; n_dgram_wait < MAX_DATAGRAM_WAIT; ++n_dgram_wait)
+            {
+                recvsize = recvfrom(fds_server, buff_udp, first_dgram_bytes, 0,
+                                    (struct sockaddr *)&sock_client, &slen_client);
+                if(recvsize < 0 || n_dgram_wait == MAX_DATAGRAM_WAIT - 1)
+                {
+                    printf("ERROR recvfrom() @ A [%d - %s]\n", errno, strerror(errno));
+                    loopOK = 0;
+                    socketOpen = 0;
+                    break; // This should be a double break...
+                }
+
+
+                if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
+                {
+                    printf("-- Resync achieved after %d datagrams.\n", n_dgram_wait);
+                    abort_frame = 0;
+                    break;
+                }
+            }
+
+        }
+        else
+        {
+            // Normal operation
+            if(recvfrom(fds_server, buff_udp, first_dgram_bytes, 0,
+                        (struct sockaddr *)&sock_client, &slen_client) < 0)
+            {
+                printf("ERROR recvfrom() @ B [%d - %s]\n", errno, strerror(errno));
+                loopOK = 0;
+                socketOpen = 0;
+                break;
+            }
         }
 
-        if(socketOpen == 1)
+        if(socketOpen == 1 && loopOK == 1)
         {
-            // We already have the first datagram.
+            if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
+            {
+                // 0-th datagram is legit, memcpy it.
+                memcpy(buff, buff_udp + 2, first_dgram_bytes - 2);
+            }
+            else
+            {
+                // abort frame and go again
+                abort_frame = 1;
+                printf("Aborting frame at datagram 0.\n");
+                continue;
+            }
+
+            // Now we have the first datagram.
 
             // Weak copy although we now have all the metadata in buff
             imgmd_remote = (IMAGE_METADATA *)(ptr_buff_metadata);
@@ -963,10 +994,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             data.image[ID].md[0].cnt0++;
             for(semnb = 0; semnb < data.image[ID].md[0].sem; semnb++)
             {
-                semval = ImageStreamIO_semvalue(data.image+ID, semnb);
+                semval = ImageStreamIO_semvalue(data.image + ID, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image+ID, semnb);
+                    ImageStreamIO_sempost(data.image + ID, semnb);
                 }
             }
 
