@@ -167,7 +167,7 @@ errno_t load_fits(
             }
         }
 
-        printf("fileOK = %d\n", fileOK);
+        //printf("fileOK = %d\n", fileOK);
 
 
 
@@ -225,30 +225,25 @@ errno_t load_fits(
     // Keywords
     int nbFITSkeys = 0;
 
-    int status = 0;
-    fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
-    FITSIO_CHECK_ERROR(status,
-                       errmode,
-                       "fits_get_hdrspace error on %s",
-                       file_name);
-    printf("    nbFITSkeys = %d\n", nbFITSkeys);
+    {
+        int status = 0;
+        fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
+        FITSIO_CHECK_ERROR(status,
+                           errmode,
+                           "fits_get_hdrspace error on %s",
+                           file_name);
+        //printf("    nbFITSkeys = %d\n", nbFITSkeys);
+    }
 
 
 
 
     {
-        int status;
+        int status = 0;
 
         fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment, &status);
         FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
         DEBUG_TRACEPOINT("naxis = %ld  %d", naxis);
-
-
-        fits_read_key(fptr, TLONG, "BITPIX", &bitpixl, comment, &status);
-        FITSIO_CHECK_ERROR(status, errmode, "File %s has no BITPIX", file_name);
-
-        //printf(" NAXIS = %ld  BITPIX = %ld\n", naxis, bitpixl);
-        //printf("    nbFITSkeys = %d\n", nbFITSkeys);
     }
 
 
