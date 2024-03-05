@@ -167,7 +167,7 @@ errno_t load_fits(
             }
         }
 
-        //printf("fileOK = %d\n", fileOK);
+        printf("fileOK = %d\n", fileOK);
 
 
 
@@ -224,15 +224,15 @@ errno_t load_fits(
 
     // Keywords
     int nbFITSkeys = 0;
-    {
-        int status = 0;
-        fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
-        FITSIO_CHECK_ERROR(status,
-                           errmode,
-                           "fits_get_hdrspace error on %s",
-                           file_name);
-        //printf("    nbFITSkeys = %d\n", nbFITSkeys);
-    }
+
+    int status = 0;
+    fits_get_hdrspace(fptr, &nbFITSkeys, NULL, &status);
+    FITSIO_CHECK_ERROR(status,
+                       errmode,
+                       "fits_get_hdrspace error on %s",
+                       file_name);
+    printf("    nbFITSkeys = %d\n", nbFITSkeys);
+
 
 
 
@@ -528,7 +528,7 @@ errno_t load_fits(
 
     IMGID img = makesetIMGID(ID_name, ID);
 
-    // keywords to ignore
+// keywords to ignore
     char *keywordignore[] = {"BITPIX",
                              "NAXIS",
                              "SIMPLE",
@@ -543,7 +543,7 @@ errno_t load_fits(
                              "BZERO",
                              0
                             };
-    //printf("%d FITS keywords detected\n", nbFITSkeys);
+//printf("%d FITS keywords detected\n", nbFITSkeys);
     for(int kwnum = 0; kwnum < nbFITSkeys; kwnum++)
     {
         char keyname[9];
