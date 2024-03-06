@@ -1280,6 +1280,11 @@ static errno_t compute_function()
     free(modevalarray);
     free(modevalarrayref);
 
+    if(use_mask)
+    {
+        free(masked_pix);
+    }
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
