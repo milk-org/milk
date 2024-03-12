@@ -330,6 +330,7 @@ install(PROGRAMS
 			scripts/milk-check
 			scripts/milk-cubeslice2shm
 			scripts/milk-exec
+      scripts/milk-fpslist-addentry
 			scripts/milk-streamCTRL
 			scripts/milk-procCTRL
 			scripts/milk-fpsCTRL
