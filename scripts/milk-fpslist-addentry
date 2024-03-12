@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+
+
+if [ "${FPSLISTADD_MODE}" = "info" ]; then
+
+	if [ "${FPSKWval}" = "ON" ]; then
+	  printf "\e[1;102;30m ON  \e[0m  "
+	else
+	  printf " OFF   "
+	fi
+
+	printf "\e[1;34m[${FPSKWname}]\e[0m ( ${fpsfcall} -> ${fpsfname} ) ${fpsdescr}\n"
+#	echo "    ${fpsdescr}"
+#	echo "    Name   : ${fpsfname}"
+#	echo "    Call   : ${fpsfcall}"
+
+else
+
+
+if [ -z ${FPSLISTADDSCRIPT+x} ]; then
+	printf "Adding \e[1;34m${FPSKWname}\e[0m:
+script should be sourced by a deployment script setting variable FPSLISTADDSCRIPT,
+and also have the following variables defined:\n"
+    printf "    FPSKWname   : FPS Keyword name\n"
+    printf "    FPSKWval    : FPS keyword value, "ON" for adding the entry\n"
+    printf "    fpsfcall    : Function call\n"
+    printf "    fpsarg0     : Arguments\n"
+    printf "    fpsdescr    : Short description\n"
+    printf "Run this script with FPSLISTADD_MODE set to \"info\" to print above variable values\n"
+else
+
+
+	if [ "${FPSKWval}" = "ON" ]; then
+
+		echolog "ON  ${FPSKWname}"
+
+		if grep -q "${fpsfname}" fpslist.txt
+		then
+			echolog "Process ${fpsfname} already registered - skipping"
+		else
+			echolog "Adding process ${fpsfname}"
+
+            fpsentry_addmodules
+
+			echo "${fpsname}           ${fpsfcall}     ${fpsarg0}" >> fpslist.txt
+
+			addfpscmdheader
+
+			fpsentry_addcmds
+
+		fi
+	else
+		echolog "OFF ${FPSKWname}"
+	fi
+
+
+fi # end of if [ -z ${FPSLISTADDSCRIPT+x} ]
+
+
+fi
