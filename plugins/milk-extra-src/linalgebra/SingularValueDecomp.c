@@ -254,6 +254,14 @@ errno_t compute_SVD(
 {
     DEBUG_TRACE_FSTART();
 
+    // check if images already exist
+    //
+    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgU, ERRMODE_NULL);
+    resolveIMGID(&imgS, ERRMODE_NULL);
+    resolveIMGID(&imgV, ERRMODE_NULL);
+
+
 
     // input dimensions
     // input matrix is inMdim x inNdim, column-major
@@ -498,13 +506,6 @@ errno_t compute_SVD(
 
 
 
-
-
-
-
-
-
-
     if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
     {
         // create mU (if inMshape_tall)
@@ -537,7 +538,6 @@ errno_t compute_SVD(
         }
 
 
-
         // normalize cols of imgmMsvec
         // Report number of modes kept
         //
@@ -563,15 +563,12 @@ errno_t compute_SVD(
 
 
 
-
-
         // Compute pseudo-inverse
         //
         if( (compSVDmode & COMPSVD_COMP_PSINV) )
         {
             // assumes tall matrix
             //
-
             IMGID imgmNsvec1 = mkIMGID_from_name("matNtemp");
             if( imgmNsvec1.ID == -1)
             {
@@ -582,7 +579,6 @@ errno_t compute_SVD(
 
                 createimagefromIMGID(&imgmNsvec1);
             }
-
 
             // multiply by inverse of singular values
             //
@@ -617,8 +613,6 @@ errno_t compute_SVD(
             }
 
 
-
-
             // Check inverse
             //
             if( (compSVDmode & COMPSVD_COMP_CHECKPSINV) )
@@ -635,14 +629,13 @@ errno_t compute_SVD(
 
     }
 
-
-
     // Compute un-normalized modes U
     // Singular Values included in modes U
     //
     if ( imgU.ID != -1 )
     {
         // un-normalized modes
+        delete_image_ID("SVDunmodes", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgunmodes = mkIMGID_from_name("SVDunmodes");
         imgunmodes.naxis = imgU.md->naxis;
         imgunmodes.datatype = imgU.md->datatype;
@@ -667,6 +660,7 @@ errno_t compute_SVD(
             }
         }
 
+        delete_image_ID("SVDinrec", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID iminrec = mkIMGID_from_name("SVDinrec");
         computeSGEMM(imgunmodes, imgV, &iminrec, 0, 1, GPUdev);
     }
@@ -678,6 +672,7 @@ errno_t compute_SVD(
     if ( imgV.ID != -1 )
     {
         // un-normalized modes
+        delete_image_ID("SVDvnmodes", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgvnmodes = mkIMGID_from_name("SVDvnmodes");
         imgvnmodes.naxis = imgV.md->naxis;
         imgvnmodes.datatype = imgV.md->datatype;
@@ -706,7 +701,6 @@ errno_t compute_SVD(
         //IMGID iminrec = mkIMGID_from_name("SVDinrec");
         //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
     }
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
