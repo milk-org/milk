@@ -686,16 +686,16 @@ static errno_t compute_function()
         //int sampledim = imgin.md->size[1];
 
         // eigenvectors array
+        delete_image_ID("eigenvec", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgevec = mkIMGID_from_name("eigenvec");
 
         // eigenvalues array
+        delete_image_ID("eigenval", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgeval = mkIMGID_from_name("eigenval");
 
         // eigenvalues array
+        delete_image_ID("matU", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgU = mkIMGID_from_name("matU");
-
-        printf("========== %5d ===========\n", __LINE__);
-        fflush(stdout);
 
 
         int GPUdev = 0;
