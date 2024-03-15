@@ -49,8 +49,8 @@ long fpi_nmax;
 static char *insname;
 long fpi_insname;
 
-static char *masksname;
-long fpi_masksname;
+static char *inmasksname;
+long fpi_inmasksname;
 
 static char *immodes;
 long fpi_immodes;
@@ -109,12 +109,12 @@ static CLICMDARGDEF farg[] =
     },
     {
         CLIARG_STREAM,
-        ".masksname",
-        "mask stream name",
+        ".inmasksname",
+        "nput mask stream name",
         "inV",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &masksname,
-        &fpi_masksname
+        (void **) &inmasksname,
+        &fpi_inmasksname
     },
     {
         CLIARG_STREAM,
@@ -326,7 +326,7 @@ static errno_t compute_function()
     uint32_t * mask_idx = NULL; //Array holding the indices of the 1 pixels
     float * masked_pix = NULL; //Array to hold the pixel values
 
-    IMGID imgmask = mkIMGID_from_name(masksname);
+    IMGID imgmask = mkIMGID_from_name(inmasksname);
     if(resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
