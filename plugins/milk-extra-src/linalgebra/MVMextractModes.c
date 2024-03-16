@@ -49,6 +49,9 @@ long fpi_nmax;
 static char *insname;
 long fpi_insname;
 
+static char *inmasksname;
+long fpi_inmasksname;
+
 static char *immodes;
 long fpi_immodes;
 
@@ -103,6 +106,15 @@ static CLICMDARGDEF farg[] =
         CLIARG_VISIBLE_DEFAULT,
         (void **) &insname,
         &fpi_insname
+    },
+    {
+        CLIARG_STREAM,
+        ".inmasksname",
+        "nput mask stream name",
+        "inV",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inmasksname,
+        &fpi_inmasksname
     },
     {
         CLIARG_STREAM,
@@ -307,6 +319,58 @@ static errno_t compute_function()
     resolveIMGID(&imgin, ERRMODE_ABORT);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     long m = imgin.md->size[0] * imgin.md->size[1];
+
+    // CONNECT TO MASK STREAM
+    int use_mask = 0; //flag indicating that the mask is being used
+    uint32_t mask_npix = 0; //The number of 1 pixels in the mask
+    uint32_t * mask_idx = NULL; //Array holding the indices of the 1 pixels
+    float * masked_pix = NULL; //Array to hold the pixel values
+
+    IMGID imgmask = mkIMGID_from_name(inmasksname);
+    if(resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
+    {
+        printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
+        if(imgmask.md->size[0] == imgin.md->size[0] && imgmask.md->size[1] == imgin.md->size[1])
+        {
+            use_mask = 1;
+        }
+    }
+
+    //use_mask = 0; //for testing
+
+    //setup the mask 
+    if(use_mask)
+    {
+        for(long n=0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
+        {
+            if(imgmask.im->array.F[n] == 1)
+            {
+                ++mask_npix;
+            }
+        }
+
+        mask_idx = (uint32_t *) malloc( mask_npix * sizeof(long));
+        masked_pix = (float *) malloc( mask_npix * sizeof(float));
+        long nn = 0;
+        for(long n=0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
+        {
+            if(imgmask.im->array.F[n] == 1)
+            {
+                mask_idx[nn] = n;
+                ++nn;
+            }
+        }
+
+        printf("Mask has : %u pixels (%f%%)\n", mask_npix, (100.0*mask_npix)/(imgmask.md->size[0]*imgmask.md->size[1]));
+    }
+    else
+    {
+        //Just use full image
+        mask_npix = imgin.md->size[0]*imgin.md->size[1];
+        printf("No mask using : %u pixels (%f%%)\n", mask_npix, (100.0*mask_npix)/(imgin.md->size[0]*imgin.md->size[1]));
+    }
+
+
 
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
@@ -602,8 +666,34 @@ static errno_t compute_function()
             printf(" done\n");
             fflush(stdout);
 
+            long matsz;
+            float * modesmat;
+
+            if(use_mask)
+            {
+                //reformat the matrix using the mask
+                matsz = mask_npix * NBmodes;
+                modesmat = (float *) malloc(sizeof(float)*mask_npix * data.image[IDmodes].md->size[2]);
+
+                uint32_t nrows = data.image[IDmodes].md->size[2];
+                uint32_t ncols = data.image[IDmodes].md->size[0]*data.image[IDmodes].md->size[1];
+                
+                for(uint32_t rr = 0; rr < nrows; ++rr)
+                {
+                    for(uint32_t cc = 0; cc < mask_npix; ++cc)
+                    {
+                        modesmat[rr*mask_npix + cc] = data.image[IDmodes].array.F[rr*ncols + mask_idx[cc]];
+                    }
+                } 
+            }
+            else
+            {
+                matsz = m * NBmodes;
+                modesmat = data.image[IDmodes].array.F;
+            }
+
             // load modes to GPU
-            cudaStat = cudaMalloc((void **)&d_modes, sizeof(float) * m * NBmodes);
+            cudaStat = cudaMalloc((void **)&d_modes, sizeof(float) * matsz);
             if(cudaStat != cudaSuccess)
             {
                 printf("cudaMalloc d_modes returned error code %d, line %d\n",
@@ -613,10 +703,16 @@ static errno_t compute_function()
             }
 
             cudaStat = cudaMemcpy(d_modes,
-                                  data.image[IDmodes].array.F,
-                                  sizeof(float) * m * NBmodes,
+                                  modesmat,
+                                  sizeof(float) * matsz,
                                   cudaMemcpyHostToDevice);
             // cudaStat = cudaMemcpy(d_modes, imgmodes.im->array.F, sizeof(float) * m * NBmodes, cudaMemcpyHostToDevice);
+
+            if(use_mask)
+            {
+                free(modesmat);
+            }
+
             if(cudaStat != cudaSuccess)
             {
                 printf("cudaMemcpy returned error code %d, line %d\n",
@@ -624,6 +720,7 @@ static errno_t compute_function()
                        __LINE__);
                 exit(EXIT_FAILURE);
             }
+
 
             // create d_in
             cudaStat = cudaMalloc((void **)&d_in, sizeof(float) * m);
@@ -849,7 +946,7 @@ static errno_t compute_function()
         }
     }
 
-    printf(" m       = %ld\n", m);
+    printf(" m       = %u\n", mask_npix);
     printf(" n       = %ld\n", n);
     printf(" NBmodes = %ld\n", NBmodes);
 
@@ -1001,16 +1098,38 @@ static errno_t compute_function()
             // load in_stream to GPU
             if(initref == 0)
             {
+                if(use_mask == 1)
+                {
+                    for(uint32_t cc = 0; cc < mask_npix; ++cc)
+                    {
+                        masked_pix[cc] = data.image[IDinref].array.F[mask_idx[cc]];
+                    }
+                }
+                else
+                {
+                    masked_pix = data.image[IDinref].array.F;
+                }
                 cudaStat = cudaMemcpy(d_in,
-                                      data.image[IDinref].array.F,
-                                      sizeof(float) * m,
+                                      masked_pix,
+                                      sizeof(float) * mask_npix,
                                       cudaMemcpyHostToDevice);
             }
             else
             {
+                if(use_mask == 1)
+                {
+                    for(uint32_t cc = 0; cc < mask_npix; ++cc)
+                    {
+                        masked_pix[cc] = imgin.im->array.F[mask_idx[cc]];
+                    }
+                }
+                else
+                {
+                    masked_pix = imgin.im->array.F;
+                }
                 cudaStat = cudaMemcpy(d_in,
-                                      imgin.im->array.F,
-                                      sizeof(float) * m,
+                                      masked_pix,
+                                      sizeof(float) * mask_npix,
                                       cudaMemcpyHostToDevice);
             }
 
@@ -1039,11 +1158,11 @@ static errno_t compute_function()
             // compute
             cublas_status = cublasSgemv(cublasH,
                                         CUBLAS_OP_T,
-                                        m,
+                                        mask_npix,
                                         NBmodes,
                                         &alpha,
                                         d_modes,
-                                        m,
+                                        mask_npix,
                                         d_in,
                                         1,
                                         &beta,
@@ -1160,6 +1279,11 @@ static errno_t compute_function()
     free(normcoeff);
     free(modevalarray);
     free(modevalarrayref);
+
+    if(use_mask)
+    {
+        free(masked_pix);
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
