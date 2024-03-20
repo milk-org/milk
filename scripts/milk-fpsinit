@@ -281,7 +281,9 @@ done
 echo ""
 echo "TASKS TO BE PERFORMED :"
 
-
+if [ -f "fpsinit.newFPS.log" ]; then
+  rm fpsinit.newFPS.log
+fi
 
 for i in "${!FPSNAMEARRAY[@]}"; do
   if [ "$i" = "${FPSINDEX}" ] || [ "ALL" = "${FPSINDEX}" ]; then
@@ -319,6 +321,7 @@ for i in "${!FPSNAMEARRAY[@]}"; do
 
     if [ "${INITREADYARRAY[$i]}" = "ready" ]; then
       printf "  (re-)CREATING  %20s   output log: %s/%s\n" "${FPSNAMEARRAY[$i]}" "$(pwd)" "${pname}.${FPSNAMEARRAY[$i]}.log"
+      echo "${FPSNAMEARRAY[$i]}" >> fpsinit.newFPS.log
 
       if [ ${TESTMODE} == 0 ]; then
 
