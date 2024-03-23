@@ -11,7 +11,12 @@
 #define TIMESTRINGLEN 32
 
 // handles leap seconds better than CLOCK_REALTIME
-#define CLOCK_MILK CLOCK_TAI
+// Really we should go get CLOCK_ISIO here
+#ifdef CLOCK_TAI
+    #define CLOCK_MILK CLOCK_TAI
+#else
+    #define CLOCK_MILK CLOCK_REALTIME
+#endif
 #define TZ_MILK_STR "HST" // Name of timezone to use in FITS headers.
 #define TZ_MILK_UTC_OFF -36000.0 // Offset east of UTC in seconds for TZ_MILK_STR
 
