@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
 
+# Check if FPS is present
+FPSEXISTS="OFF"
+fpsfilename="${MILK_SHM_DIR}/${fpsfname}.fps.shm"
+if [ -f ${fpsfilename} ]; then
+  FPSEXISTS="ON"
+fi
 
 if [ "${FPSLISTADD_MODE}" = "info" ]; then
 
@@ -10,12 +16,27 @@ if [ "${FPSLISTADD_MODE}" = "info" ]; then
 	  printf " OFF   "
 	fi
 
+	if [ "${FPSEXISTS}" = "ON" ]; then
+	  printf "\e[1;102;30m FPS  \e[0m  "
+	else
+	  printf " ---    "
+	fi
+
 	printf "\e[1;34m[${FPSKWname}]\e[0m ( ${fpsfcall} -> ${fpsfname} ) ${fpsdescr}\n"
 #	echo "    ${fpsdescr}"
 #	echo "    Name   : ${fpsfname}"
 #	echo "    Call   : ${fpsfcall}"
 
 else
+
+
+
+WRITEFPSCMDS="ON"
+if [ "${FPSLISTADD_MODE}" = "update" ]; then
+  if [ "${FPSEXISTS}" = "ON" ]; then
+    WRITEFPSCMDS="OFF"
+  fi
+fi
 
 
 if [ -z ${FPSLISTADDSCRIPT+x} ]; then
@@ -37,17 +58,17 @@ else
 
 		if grep -q "${fpsfname}" fpslist.txt
 		then
-			echolog "Process ${fpsfname} already registered - skipping"
+			echolog "CU ${fpsfname} already registered - skipping"
 		else
-			echolog "Adding process ${fpsfname}"
+			echolog "Registering CU ${fpsfname}"
 
             fpsentry_addmodules
-
 			echo "${fpsname}           ${fpsfcall}     ${fpsarg0}" >> fpslist.txt
-
-			addfpscmdheader
-
-			fpsentry_addcmds
+			
+			if [ $WRITEFPSCMDS = "ON" ]; then
+			  addfpscmdheader
+			  fpsentry_addcmds
+			fi
 
 		fi
 	else
