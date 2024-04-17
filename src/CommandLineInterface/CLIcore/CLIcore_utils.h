@@ -407,6 +407,11 @@ typedef struct
             processloopOK = processinfo_loopstep(processinfo);                 \
             DEBUG_TRACEPOINT("waitoninputstream");                             \
             processinfo_waitoninputstream(processinfo);                        \
+            if (processinfo->triggerstatus != PROCESSINFO_TRIGGERSTATUS_RECEIVED)   \
+            {                                                                  \
+                /* Don't execute loop at all upon semaphore timeout */         \
+                continue;                                                      \
+            }                                                                  \
             DEBUG_TRACEPOINT("exec_start");                                    \
             processinfo_exec_start(processinfo);                               \
         }                                                                      \
@@ -911,7 +916,7 @@ static inline imageID resolveIMGID(
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used
-    if( (img->ID == -1)
+    if((img->ID == -1)
             || (img->createcnt != data.image[img->ID].createcnt)
             || (data.image[img->ID].used != 1))
     {

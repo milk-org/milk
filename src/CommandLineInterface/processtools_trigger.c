@@ -261,8 +261,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
             // this should only run once, returning semr = -1 with errno = EAGAIN
             // otherwise, we're potentially missing frames
             DEBUG_TRACEPOINT("sem_trywait %ld", processinfo->triggerstreamID);
-            semr = ImageStreamIO_semtrywait(data.image+processinfo->triggerstreamID
-                               ,processinfo->triggersem);
+            semr = ImageStreamIO_semtrywait(data.image + processinfo->triggerstreamID
+                                            , processinfo->triggersem);
             if(semr == 0)
             {
                 processinfo->triggermissedframe++;
@@ -285,9 +285,9 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                 ts.tv_sec++;
             }
 
-            semr = ImageStreamIO_semtimedwait(data.image+processinfo->triggerstreamID
-                                 ,processinfo->triggersem,
-                                 &ts);
+            semr = ImageStreamIO_semtimedwait(data.image + processinfo->triggerstreamID
+                                              , processinfo->triggersem,
+                                              &ts);
             if(semr == -1)
             {
                 if(errno == ETIMEDOUT)
@@ -297,14 +297,9 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                     tmpstatus = PROCESSINFO_TRIGGERSTATUS_TIMEDOUT;
                 }
             }
-
-            // measure time spent waiting for input
-            // get current time
-            struct timespec ts1;
-            if(clock_gettime(CLOCK_MILK, &ts1) == -1)
+            else
             {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
+                tmpstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
             }
         }
 
