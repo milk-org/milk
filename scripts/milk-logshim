@@ -186,8 +186,8 @@ milk-streamFITSlog $1 on
 
 
 exit
-#csetpmove ${CPUset}
 milk -n $pname << EOF
+csetpmove ${CPUset}
 shmimstreamlog $1 $2 "$3"
 exit
 EOF
