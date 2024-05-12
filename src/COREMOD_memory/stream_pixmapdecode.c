@@ -339,10 +339,15 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     processinfo_loopstart(
         processinfo); // Notify processinfo that we are entering loop
 
+    printf("cnt0: %d; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+    fflush(stdout);
+
     // long loopcnt = 0;
     while(loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
+        printf("cnt0: %d; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+        fflush(stdout);
 
         if(data.image[IDin].md[0].sem == 0)
         {
@@ -368,10 +373,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
             if(processinfo->loopcnt == 0)
             {
-                semval = ImageStreamIO_semvalue(data.image+IDin, in_semwaitindex);
+                semval = ImageStreamIO_semvalue(data.image + IDin, in_semwaitindex);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
-                    ImageStreamIO_semtrywait(data.image+IDin, in_semwaitindex);
+                    ImageStreamIO_semtrywait(data.image + IDin, in_semwaitindex);
                 }
             }
         }
@@ -436,16 +441,16 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 data.image[IDout].md[0].cnt1 = slice;
 
-                semval = ImageStreamIO_semvalue(data.image+IDout, 2);
+                semval = ImageStreamIO_semvalue(data.image + IDout, 2);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image+IDout, 2);
+                    ImageStreamIO_sempost(data.image + IDout, 2);
                 }
 
-                semval = ImageStreamIO_semvalue(data.image+IDout, 3);
+                semval = ImageStreamIO_semvalue(data.image + IDout, 3);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image+IDout, 3);
+                    ImageStreamIO_sempost(data.image + IDout, 3);
                 }
 
                 data.image[IDout].md[0].write = 0;
