@@ -302,9 +302,7 @@ errno_t linopt_imtools_makeCPAmodes(
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", ID_name);
 
-    float  *CPAxarray;
-    float  *CPAyarray;
-    float  *CPArarray;
+
     long    NBfrequ;
     float   eps;
     FILE   *fp;
@@ -459,92 +457,116 @@ errno_t linopt_imtools_makeCPAmodes(
     printf("CPA: max = %f   delta = %f\n", CPAmax, deltaCPA);
     fflush(stdout);
     NBfrequ = 0;
-    for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
-        for(float CPAy = -CPAmax; CPAy < CPAmax; CPAy += deltaCPA)
+
+    {
+        int initCPAx = 0;
+        for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
         {
-            float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
-            if(CPAr>0.001) // excluding piston from array
+            int initCPAy = 0;
+            for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
+                if(CPAr>0.001) // excluding piston from array
                 {
-                    NBfrequ++;
+                    if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                    {
+                        //printf("%5ld  CORE  : %f %f\n", NBfrequ, CPAx, CPAy);
+                        NBfrequ++;
+
+
+                        if( initCPAx == 1 ) // not on the x=0 line
+                        {
+                            if( initCPAy == 1 ) // not on the y=0 line
+                            {
+                                NBfrequ++;
+                            }
+                        }
+
+                    }
                 }
+                initCPAy = 1;
             }
+            initCPAx = 1; // no longer on x=0 line
         }
+    }
     printf("%ld spatial frequencies\n", NBfrequ);
+
+
+
+
+
+
+
 
     DEBUG_TRACEPOINT("NBfrequ = %ld", NBfrequ);
 
-    CPAxarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float * CPAxarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPAxarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    CPAyarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float * CPAyarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPAyarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    CPArarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float * CPArarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPArarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    NBfrequ = 0;
-    //ydist = 2.0*deltaCPA;
-    //y0 = 0.0;
-    for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
-    {
-        for(float CPAy = 0; CPAy < CPAmax; CPAy += deltaCPA)
-        {
-            float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
-            if(CPAr>0.001) // excluding piston from array
-            {
-                CPAxarray[NBfrequ] = CPAx;
-                CPAyarray[NBfrequ] = CPAy;
-                CPArarray[NBfrequ] = CPAr;
-                if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
-                {
-                    NBfrequ++;
-                }
-            }
-        }
 
-        if(CPAx > eps)
+    NBfrequ = 0;
+    {
+        int initCPAx = 0;
+        for(float CPAx = 0; CPAx < CPAmax; CPAx += deltaCPA)
         {
-            for(float CPAy = -deltaCPA; CPAy > -CPAmax; CPAy -= deltaCPA)
+            int initCPAy = 0;
+            for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
                 float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
-                CPAxarray[NBfrequ] = CPAx;
-                CPAyarray[NBfrequ] = CPAy;
-                CPArarray[NBfrequ] = CPAr;
-                if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                if(CPAr>0.001) // excluding piston from array
                 {
-                    NBfrequ++;
+                    if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                    {
+                        printf("%5ld  CORE  : %+f %+f   %6.3f\n", NBfrequ, CPAx, CPAy, CPAr);
+                        CPAxarray[NBfrequ] = CPAx;
+                        CPAyarray[NBfrequ] = CPAy;
+                        CPArarray[NBfrequ] = CPAr;
+                        NBfrequ ++;
+                        if( initCPAx == 1 ) // not on the x=0 line
+                        {
+                            if( initCPAy == 1 ) // not on the y=0 line
+                            {
+                                CPAxarray[NBfrequ] = CPAx;
+                                CPAyarray[NBfrequ] = -CPAy;
+                                CPArarray[NBfrequ] = CPAr;
+                                printf("%5ld  EXTRA : %+f %+f   %6.3f\n", NBfrequ, CPAx, -CPAy, CPAr);
+                                NBfrequ ++;
+                            }
+                        }
+                    }
                 }
+                initCPAy = 1;
             }
+            initCPAx = 1; // no longer on x=0 line
         }
     }
     printf("%ld spatial frequencies\n", NBfrequ);
 
-//  for(k1=0;k1<NBfrequ;k1++)
-//printf("%ld %f %f %f\n", k1, CPAxarray[k1], CPAyarray[k1], CPArarray[k1]);
-
-//  printf("sorting\n");
-// fflush(stdout);
 
     quick_sort3_float(CPArarray, CPAxarray, CPAyarray, NBfrequ);
 
-// 2 modes (sin, cos) per frequency
+    // 2 modes (sin, cos) per frequency
     long NBmax = NBfrequ * 2;
-    if ( rCPAmin < 0.0 )
+    /*if ( rCPAmin < 0.0 )
     {
         // piston term included
         NBmax = NBfrequ * 2 + 1;
-    }
+    }*/
 
     printf("%ld modes\n", NBmax);
 
@@ -556,12 +578,12 @@ errno_t linopt_imtools_makeCPAmodes(
     imgoutm->size[2] = NBmax;
     createimagefromIMGID(imgoutm);
 
-//    imageID ID;
-//    FUNC_CHECK_RETURN(create_3Dimage_ID(ID_name, sizex, sizey, NBmax, &ID));
+
 
 
     if(writeMfile == 1)
     {
+        printf("Writing ouput file ModesExpr_CPA.txt\n");
         fp = fopen("ModesExpr_CPA.txt", "w");
         fprintf(fp, "# size       = %u %u\n", sizex, sizey);
         fprintf(fp, "# CPAmax     = %f\n", CPAmax);
@@ -658,28 +680,28 @@ errno_t linopt_imtools_makeCPAmodes(
     list_image_ID();
 
 
-// CPA array index
+    // CPA array index
     long k1 = 0;
 
-// cube slice index
+    // cube slice index
     long k  = 0;
 
-    if ( rCPAmin <= 0.0 )
-    {
-        // mode 0 (piston) included
-
-        data.image[IDfreq].array.F[0] = 0.0;
-        for(uint32_t ii = 0; ii < sizexy; ii++)
+    /*    if ( rCPAmin <= 0.0 )
         {
-            float r = imgr.im->array.F[ii];
-            if(r < radfactlim)
-            {
-                imgoutm->im->array.F[ii] = 1.0;
-            }
-        }
-        k ++;
-    }
+            // mode 0 (piston) included
 
+            data.image[IDfreq].array.F[0] = 0.0;
+            for(uint32_t ii = 0; ii < sizexy; ii++)
+            {
+                float r = imgr.im->array.F[ii];
+                if(r < radfactlim)
+                {
+                    imgoutm->im->array.F[ii] = 1.0;
+                }
+            }
+            k ++;
+        }
+    */
 
     while(k < NBmax)
     {
@@ -715,8 +737,9 @@ errno_t linopt_imtools_makeCPAmodes(
             float x                           = imgx.im->array.F[ii];
             float y                           = imgy.im->array.F[ii];
             float r                           = imgr.im->array.F[ii];
-            data.image[IDfreq].array.F[k] = frequency;
-            data.image[IDfreq].array.F[k+1]     = frequency;
+
+            data.image[IDfreq].array.F[k]    = frequency;
+            data.image[IDfreq].array.F[k+1]  = frequency;
             if(r < radfactlim)
             {
                 // attenuation factor for extrapolation
@@ -747,6 +770,7 @@ errno_t linopt_imtools_makeCPAmodes(
         k += 2;
         k1++;
     }
+
 
     DEBUG_TRACEPOINT("free memory");
 
