@@ -1011,6 +1011,7 @@ static errno_t compute_function()
 
         if(((*GPUindex) < 0) || (*GPUindex == 99))
         {
+            // using CPU
 
 #ifdef BLASLIB
             struct timespec t0, t1;
@@ -1086,6 +1087,9 @@ static errno_t compute_function()
                     imgout.im->array.F[jj] += imgmodes.im->array.F[index] * imgin.im->array.F[ii];
                 }
             }
+
+
+
 #endif
             processinfo_update_output_stream(processinfo, imgout.ID);
         }
@@ -1237,8 +1241,6 @@ static errno_t compute_function()
                                       d_modeval,
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
-
-                printf("BETAMODE = %d\n", BETAMODE);
 
                 if(BETAMODE == 0)
                 {
