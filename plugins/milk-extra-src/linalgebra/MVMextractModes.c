@@ -338,7 +338,8 @@ static errno_t compute_function()
 
     //use_mask = 0; //for testing
 
-    //setup the mask 
+    //setup the mask
+    //
     if(use_mask)
     {
         for(long n=0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
@@ -677,14 +678,14 @@ static errno_t compute_function()
 
                 uint32_t nrows = data.image[IDmodes].md->size[2];
                 uint32_t ncols = data.image[IDmodes].md->size[0]*data.image[IDmodes].md->size[1];
-                
+
                 for(uint32_t rr = 0; rr < nrows; ++rr)
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
                         modesmat[rr*mask_npix + cc] = data.image[IDmodes].array.F[rr*ncols + mask_idx[cc]];
                     }
-                } 
+                }
             }
             else
             {
@@ -1236,6 +1237,8 @@ static errno_t compute_function()
                                       d_modeval,
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
+
+                printf("BETAMODE = %d\n", BETAMODE);
 
                 if(BETAMODE == 0)
                 {
