@@ -532,7 +532,7 @@ errno_t linopt_imtools_makeCPAmodes(
                 {
                     if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
                     {
-                        printf("%5ld  CORE  : %+f %+f   %6.3f\n", NBfrequ, CPAx, CPAy, CPAr);
+                        //printf("%5ld  CORE  : %+f %+f   %6.3f\n", NBfrequ, CPAx, CPAy, CPAr);
                         CPAxarray[NBfrequ] = CPAx;
                         CPAyarray[NBfrequ] = CPAy;
                         CPArarray[NBfrequ] = CPAr;
@@ -544,7 +544,7 @@ errno_t linopt_imtools_makeCPAmodes(
                                 CPAxarray[NBfrequ] = CPAx;
                                 CPAyarray[NBfrequ] = -CPAy;
                                 CPArarray[NBfrequ] = CPAr;
-                                printf("%5ld  EXTRA : %+f %+f   %6.3f\n", NBfrequ, CPAx, -CPAy, CPAr);
+                                //printf("%5ld  EXTRA : %+f %+f   %6.3f\n", NBfrequ, CPAx, -CPAy, CPAr);
                                 NBfrequ ++;
                             }
                         }
