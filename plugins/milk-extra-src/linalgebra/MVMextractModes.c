@@ -452,7 +452,7 @@ static errno_t compute_function()
     else
     {
         //
-        // Expand from DM to WFS
+        // Expand
         // Remap to new matrix tmpmodes
         //
 
@@ -544,47 +544,11 @@ static errno_t compute_function()
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
 
-    /*
-       // try to connect to local memory
-       IMGID imgout = mkIMGID_from_name(outcoeff);
-       resolveIMGID(&imgout, ERRMODE_WARN);
-       imageID ID_modeval = imgout.ID;
+    // Local working copy of output
+    float *outarray = (float*) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
 
 
-       if(imgout.ID != -1)
-       {
-           // if in local memory,
-           // create blank img for comparison
-           IMGID imgc = makeIMGID_blank();
-           imgc.datatype = _DATATYPE_FLOAT;
-           imgc.naxis = 2;
-           imgc.size[0] = arraytmp[0];
-           imgc.size[1] = arraytmp[1];
-           uint64_t imgerr = IMGIDcompare(imgout, imgc);
-           printf("%lu errors\n", imgerr);
-
-           // if doesn't pass test, erase from local memory
-           if(imgerr != 0)
-           {
-               delete_image_ID(outcoeff, DELETE_IMAGE_ERRMODE_WARNING);
-               imgout.ID = -1;
-           }
-       }
-
-       // if not in local memory, (re)-create
-       if(imgout.ID == -1)
-       {
-           create_image_ID(outcoeff,
-                           2,
-                           arraytmp,
-                           _DATATYPE_FLOAT,
-                           1,
-                           0,
-                           0,
-                           &ID_modeval);
-       }
-    */
     MODEVALCOMPUTE = 1;
 
     free(arraytmp);
@@ -1018,19 +982,13 @@ static errno_t compute_function()
             clock_gettime(CLOCK_MILK, &t0);
             processinfo_WriteMessage_fmt(processinfo, "imgout %s ID %d", imgout.md->name,
                                          imgout.ID);
-            if(imgout.ID == -1)
-            {
-                list_image_ID();
-            }
-            data.image[imgout.ID].md->write = 1;
-
             {
                 float beta = 0.0;
 
                 if(imgoutref.ID != -1)
                 {
                     beta = 1.0;
-                    memcpy(imgout.im->array.F, imgoutref.im->array.F, sizeof(float)*n);
+                    memcpy(outarray, imgoutref.im->array.F, sizeof(float)*n);
                 }
 
                 if(*axmode == 1)
@@ -1039,7 +997,7 @@ static errno_t compute_function()
                                 CblasNoTrans, (int) n, (int) m,
                                 1.0, ColMajorMatrix, (int) n,
                                 imgin.im->array.F, 1, beta,
-                                imgout.im->array.F, 1);
+                                outarray, 1);
                 }
                 else
                 {
@@ -1047,7 +1005,7 @@ static errno_t compute_function()
                                 CblasNoTrans, (int) n, (int) m,
                                 1.0, ColMajorMatrix, (int) n,
                                 imgin.im->array.F, 1, beta,
-                                imgout.im->array.F, 1);
+                                outarray, 1);
                 }
 
                 clock_gettime(CLOCK_MILK, &t1);
@@ -1071,11 +1029,9 @@ static errno_t compute_function()
                 nmax1 = n;
             }
 
-            data.image[imgout.ID].md[0].write = 1;
-
             for(int jj = 0; jj < n; jj++)
             {
-                imgout.im->array.F[jj] = 0.0;
+                outarray[jj] = 0.0;
             }
 
 
@@ -1084,17 +1040,20 @@ static errno_t compute_function()
                 for(int jj = 0; jj < n; jj++)
                 {
                     int index = ii * n + jj;
-                    imgout.im->array.F[jj] += imgmodes.im->array.F[index] * imgin.im->array.F[ii];
+                    outarray[jj] += imgmodes.im->array.F[index] * imgin.im->array.F[ii];
                 }
             }
 
-
-
 #endif
+
+            // update output
+            data.image[imgout.ID].md->write = 1;
+            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
             processinfo_update_output_stream(processinfo, imgout.ID);
         }
         else
         {
+            // running on GPU
 #ifdef HAVE_CUDA
 
             struct timespec t0, t1;
@@ -1156,9 +1115,6 @@ static errno_t compute_function()
                                       cudaMemcpyHostToDevice);
             }
 
-            // cudaMemset ( d_in, 0, sizeof(float) *  m); //TBE
-            // cudaMemset ( d_modes, 0, sizeof(float) *  m * NBmodes); //TBE
-            // cudaMemset ( d_modeval, 0, sizeof(float) * NBmodes); //TBE
 
             // compute
             cublas_status = cublasSgemv(cublasH,
@@ -1278,6 +1234,8 @@ static errno_t compute_function()
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    free(outarray);
 
     free(ColMajorMatrix);
 
