@@ -1048,7 +1048,11 @@ static errno_t compute_function()
 
             // update output
             data.image[imgout.ID].md->write = 1;
-            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
+            for(int jj = 0; jj < n; jj++)
+            {
+                imgout.im->array.F[jj] = outarray[jj]/normcoeff[jj];
+            }
+//            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
             processinfo_update_output_stream(processinfo, imgout.ID);
         }
         else
@@ -1211,7 +1215,7 @@ static errno_t compute_function()
                 else
                     for(long k = 0; k < NBmodes; k++)
                     {
-                        imgout.im->array.F[k] = modevalarray[k];
+                        imgout.im->array.F[k] = modevalarray[k] / normcoeff[k];
                     }
 
 
