@@ -493,6 +493,10 @@ static errno_t compute_function()
 
     if((*MODENORM) == 1)
     {
+        // In this mode, the input modes are normalized to unity (vector 2-norm)
+        // norm is computed here
+
+
         // compute normalization coeffs
         for(long k = 0; k < NBmodes; k++)
         {
@@ -535,8 +539,8 @@ static errno_t compute_function()
     }
     else
     {
-        arraytmp[0] = data.image[IDrefout].md[0].size[0];
-        arraytmp[1] = data.image[IDrefout].md[0].size[1];
+        arraytmp[0] = data.image[IDrefout].md->size[0];
+        arraytmp[1] = data.image[IDrefout].md->size[1];
     }
 
 
@@ -915,7 +919,6 @@ static errno_t compute_function()
     printf(" n       = %ld\n", n);
     printf(" NBmodes = %ld\n", NBmodes);
 
-    int BETAMODE = 0;
     float alpha = 1.0;
     float beta = 0.0;
     uint64_t refindex = 0;
@@ -1050,7 +1053,7 @@ static errno_t compute_function()
             data.image[imgout.ID].md->write = 1;
             for(int jj = 0; jj < n; jj++)
             {
-                imgout.im->array.F[jj] = outarray[jj]/normcoeff[jj];
+                imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
             }
 //            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
             processinfo_update_output_stream(processinfo, imgout.ID);
@@ -1109,16 +1112,6 @@ static errno_t compute_function()
                        __LINE__);
                 exit(EXIT_FAILURE);
             }
-
-            if(BETAMODE == 1)
-            {
-                beta = -1.0;
-                cudaStat = cudaMemcpy(d_modeval,
-                                      modevalarrayref,
-                                      sizeof(float) * NBmodes,
-                                      cudaMemcpyHostToDevice);
-            }
-
 
             // compute
             cublas_status = cublasSgemv(cublasH,
@@ -1186,14 +1179,6 @@ static errno_t compute_function()
                         modevalarrayref[k] -= data.image[IDrefout].array.F[k];
                     }
 
-                if((INNORMMODE == 0) && (MODENORM == 0))
-                {
-                    BETAMODE = 1; // include ref subtraction in GPU operation
-                }
-                else
-                {
-                    BETAMODE = 0;
-                }
             }
             else
             {
@@ -1202,21 +1187,15 @@ static errno_t compute_function()
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
 
-                if(BETAMODE == 0)
+
+                for(long k = 0; k < NBmodes; k++)
                 {
-                    for(long k = 0; k < NBmodes; k++)
-                    {
-                        imgout.im->array.F[k] =
-                            (modevalarray[k] / data.image[IDintot].array.F[0] -
-                             modevalarrayref[k]) /
-                            normcoeff[k];
-                    }
+                    imgout.im->array.F[k] =
+                        (modevalarray[k] / data.image[IDintot].array.F[0] -
+                         modevalarrayref[k]) /
+                        normcoeff[k];
                 }
-                else
-                    for(long k = 0; k < NBmodes; k++)
-                    {
-                        imgout.im->array.F[k] = modevalarray[k] / normcoeff[k];
-                    }
+
 
 
 
