@@ -59,6 +59,7 @@
 
 #include "image_set_1Dpixrange.h"
 #include "image_set_2Dpix.h"
+#include "image_set_axes.h"
 #include "image_set_col.h"
 #include "image_set_row.h"
 #include "image_setzero.h"
@@ -105,6 +106,7 @@ static errno_t init_module_CLI()
 
     CLIADDCMD_COREMOD_arith__imset_1Dpixrange();
     CLIADDCMD_COREMOD_arith__imset_2Dpix();
+    CLIADDCMD_COREMOD_arith__imset_axes();
     CLIADDCMD_COREMOD_arith__imset_col();
     CLIADDCMD_COREMOD_arith__imset_row();
     CLIADDCMD_COREMOD_arith__imsetzero();
