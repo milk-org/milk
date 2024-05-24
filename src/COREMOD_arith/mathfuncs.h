@@ -3,6 +3,11 @@
  *
  */
 
+
+#ifndef COREMOD_MODULE_ARITH_MATHFUNCS_H
+#define COREMOD_MODULE_ARITH_MATHFUNCS_H
+
+
 double Pacos(double a);
 
 double Pasin(double a);
@@ -78,3 +83,5 @@ complex_float CPsub_CF_CF(complex_float a, complex_float b);
 complex_float CPmult_CF_CF(complex_float a, complex_float b);
 
 complex_float CPdiv_CF_CF(complex_float a, complex_float b);
+
+#endif
