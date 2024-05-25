@@ -347,6 +347,7 @@ EOF
 
 	echo "echo \"runstart streamFITSlog-${STREAMNAME}\" >> ${fifoname}"
 	echo "runstart streamFITSlog-${STREAMNAME}" >> ${fifoname}
+	echo "rescan" >> ${fifoname}
 fi
 
 
