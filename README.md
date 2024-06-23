@@ -21,10 +21,19 @@ Code metrics (dev branch) :
 
 # Milk
 
-milk-core for **milk** package.
+milk-core for **milk** package
 
 
-Module inclues key frameworks :
+### _Looking for something else?_
+[CACAO Github repository](https://www.github.com/cacao-org/cacao) | [CACAO Documentation](https://cacao-org.github.io/docs/)
+
+[ImageStreamIO core library](https://www.github.com/milk-org/imagestreamio)
+
+[pyMilk bindings](https://www.github.com/milk-org/pymilk)
+
+## Contents
+
+Module includes key frameworks :
 
 - **image streams** : low-latency shared memory streams
 - **processinfo** : process management and control
