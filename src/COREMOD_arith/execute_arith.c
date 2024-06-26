@@ -1954,7 +1954,7 @@ int execute_arith(const char *cmd1)
                     }
                     else
                     {
-                        //		  printf("Running percentile args = %s %f\n",word[i+2],data.variable[variable_ID(word[i+4])].value.f);
+                        printf("Running percentile args = %s %f\n",word[i+2],data.variable[variable_ID(word[i+4])].value.f);
                         tmp_prec = arith_image_percentile(
                                        word[highest_priority_index + 2],
                                        (double) data
