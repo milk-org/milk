@@ -681,6 +681,9 @@ static errno_t compute_function()
     int IsNewFrame = 0;
 
 
+    printf("Start loop\n");
+    fflush(stdout);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
