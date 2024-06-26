@@ -366,40 +366,17 @@ int execute_arith(const char *cmd1)
         switch(cmd[i])
         {
 
-            case '+':
-            case '-':
-                if((i>1) &&((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
-                        (isdigit(cmd[i - 2])) && (isdigit(cmd[i + 1])))
-                {
-                    // + or - is part of exponent
-                    word[w][l] = cmd[i];
-                    l++;
-                }
-                else
-                {
-                    if(l > 0)
-                    {
-                        word[w][l] = '\0';
-                        w++;
-                    }
-                    l          = 0;
-                    word[w][l] = cmd[i];
-                    word[w][1] = '\0';
-                    if(i < (signed)(strlen(cmd) - 1))
-                    {
-                        w++;
-                    }
-                    l = 0;
-                }
-                break;
-
-            case '*':
-            case '/':
-            case '^':
-            case '(':
-            case ')':
-            case '=':
-            case ',':
+        case '+':
+        case '-':
+            if((i>1) &&((cmd[i - 1] == 'e') || (cmd[i - 1] == 'E')) &&
+                    (isdigit(cmd[i - 2])) && (isdigit(cmd[i + 1])))
+            {
+                // + or - is part of exponent
+                word[w][l] = cmd[i];
+                l++;
+            }
+            else
+            {
                 if(l > 0)
                 {
                     word[w][l] = '\0';
@@ -413,22 +390,45 @@ int execute_arith(const char *cmd1)
                     w++;
                 }
                 l = 0;
-                break;
+            }
+            break;
 
-            case ' ':
+        case '*':
+        case '/':
+        case '^':
+        case '(':
+        case ')':
+        case '=':
+        case ',':
+            if(l > 0)
+            {
                 word[w][l] = '\0';
                 w++;
-                l = 0;
+            }
+            l          = 0;
+            word[w][l] = cmd[i];
+            word[w][1] = '\0';
+            if(i < (signed)(strlen(cmd) - 1))
+            {
+                w++;
+            }
+            l = 0;
+            break;
 
-                /*word[w][l] = '\0';
-                                                  w++;
-                                                  l = 0;*/
-                break;
+        case ' ':
+            word[w][l] = '\0';
+            w++;
+            l = 0;
 
-            default:
-                word[w][l] = cmd[i];
-                l++;
-                break;
+            /*word[w][l] = '\0';
+                                              w++;
+                                              l = 0;*/
+            break;
+
+        default:
+            word[w][l] = cmd[i];
+            l++;
+            break;
         }
     }
 
@@ -1954,7 +1954,12 @@ int execute_arith(const char *cmd1)
                     }
                     else
                     {
-                        printf("Running percentile args = %s %f\n",word[i+2],data.variable[variable_ID(word[i+4])].value.f);
+                        printf("Running percentile args = %s  %f\n",
+                               word[highest_priority_index + 2],
+                               (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f
+                               );
+
+
                         tmp_prec = arith_image_percentile(
                                        word[highest_priority_index + 2],
                                        (double) data
