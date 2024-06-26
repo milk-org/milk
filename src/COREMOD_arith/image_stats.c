@@ -424,6 +424,8 @@ double arith_image_percentile(const char *ID_name, double fraction)
 
     nelement = data.image[ID].md[0].nelement;
 
+    printf("IMAGE PERC %f, %ld pix\n", fraction, nelement);//TBE
+
     void *array_raw = malloc(ImageStreamIO_typesize(datatype) * nelement);
     if(array_raw == NULL)
     {
@@ -439,7 +441,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
         case _DATATYPE_FLOAT:
             arrayF = array_raw;
             quick_sort_float(arrayF, nelement);
-            value = 0.0;//(double) arrayF[(long)(fraction * nelement)];
+            value = (double) arrayF[(long)(fraction * nelement)];
             break;
 
         case _DATATYPE_DOUBLE:

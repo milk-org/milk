@@ -681,12 +681,23 @@ static errno_t compute_function()
     int IsNewFrame = 0;
 
 
+    printf("Start loop\n");
+    fflush(stdout);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
+
+        printf("Start loop\n");
+        fflush(stdout);
+
+        printf("triggerstatus = %d\n", processinfo->triggerstatus);
+        fflush(stdout);
+
 
         if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             printf("------------ TIMEOUT\n");
+            fflush(stdout);
         }
         else
         {
@@ -705,6 +716,10 @@ static errno_t compute_function()
                 // same frame as before
                 IsNewFrame = 0;
             }
+
+
+            printf("IsNewFrame %d\n", IsNewFrame);
+            fflush(stdout);
 
             if(IsNewFrame == 1)
             {
@@ -735,7 +750,8 @@ static errno_t compute_function()
 
 
 
-
+                printf("saveON %d\n", (int) (*saveON));
+                fflush(stdout);
 
                 if((*saveON) == 1)
                 {
@@ -818,8 +834,8 @@ static errno_t compute_function()
 
                     {
 
-                        // printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
-                        // fflush(stdout);
+                        printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
+                        fflush(stdout);
 
 
                         long framesize = typesize * xsize * ysize;
@@ -1093,7 +1109,13 @@ static errno_t compute_function()
 
         saveON_last = (*saveON);
     }
+
+    printf("END loop\n");
+    fflush(stdout);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    printf("END loop\n");
+    fflush(stdout);
 
     free(array_time);
     free(array_aqtime);
