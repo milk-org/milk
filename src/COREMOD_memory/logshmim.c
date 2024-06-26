@@ -690,9 +690,14 @@ static errno_t compute_function()
         printf("Start loop\n");
         fflush(stdout);
 
+        printf("triggerstatus = %d\n", processinfo->triggerstatus);
+        fflush(stdout);
+
+
         if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             printf("------------ TIMEOUT\n");
+            fflush(stdout);
         }
         else
         {
