@@ -1974,6 +1974,7 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "trunc") == 0)
                 {
+                    printf("Image trunction\n");
                     if((word_type[highest_priority_index + 2] ==
                             ARITHTOKENTYPE_IMAGE) &&
                             (word_type[highest_priority_index + 4] == 2) &&
