@@ -128,7 +128,7 @@ errno_t processinfo_waitoninputstream_init(
         }
         if(trigID == -1)
         {
-            printf("trigID not valud: %ld\n", trigID);
+            printf("trigID not valid: %ld\n", trigID);
 
             FUNC_RETURN_FAILURE("invalid image ID %ld", trigID);
         }
