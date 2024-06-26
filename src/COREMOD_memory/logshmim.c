@@ -687,6 +687,9 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
+        printf("Start loop\n");
+        fflush(stdout);
+
         if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
             printf("------------ TIMEOUT\n");
@@ -742,7 +745,7 @@ static errno_t compute_function()
 
 
 
-                printf("saveON %d\n", *saveON);
+                printf("saveON %d\n", (int) (*saveON));
                 fflush(stdout);
 
                 if((*saveON) == 1)
@@ -1101,7 +1104,13 @@ static errno_t compute_function()
 
         saveON_last = (*saveON);
     }
+
+    printf("END loop\n");
+    fflush(stdout);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    printf("END loop\n");
+    fflush(stdout);
 
     free(array_time);
     free(array_aqtime);
