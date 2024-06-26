@@ -709,6 +709,10 @@ static errno_t compute_function()
                 IsNewFrame = 0;
             }
 
+
+            printf("IsNewFrame %d\n", IsNewFrame);
+            fflush(stdout);
+
             if(IsNewFrame == 1)
             {
 
@@ -738,7 +742,8 @@ static errno_t compute_function()
 
 
 
-
+                printf("saveON %d\n", *saveON);
+                fflush(stdout);
 
                 if((*saveON) == 1)
                 {
