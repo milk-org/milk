@@ -38,6 +38,8 @@ imageID image_ID(const char *name)
         }
     }
 
+    printf("IMAGE ID for %s is %ld\n", name, tmpID);
+
     DEBUG_TRACEPOINT("FOUT %s -> %ld", name, tmpID);
     DEBUG_TRACE_FEXIT();
     return tmpID;
