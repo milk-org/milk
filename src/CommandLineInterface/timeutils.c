@@ -282,7 +282,7 @@ char *timedouble_to_UTC_timeofdaystring(double timedouble)
     double tdoublenow = 1.0 * tsnow.tv_sec + 1.0e-9 * tsnow.tv_nsec;
     printf("TIME double NOW : %lf\n", tdoublenow);
 
-    printf("DATE: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
+    printf("DATE from timedouble_to_UTC_timeofdaystring: %04d-%02d-%02d  %02d:%02d:%02d  %05.2f\n",
            1900 + timetm->tm_year,
            1 + timetm->tm_mon,
            1 + timetm->tm_mday,
