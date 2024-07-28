@@ -768,6 +768,15 @@ static errno_t compute_function()
                         struct tm      *uttimeStart;
                         t           = time(NULL);
                         uttimeStart = gmtime(&t);
+
+                        char hrminstring[6];
+                        sprintf(hrminstring, "%02d:%02d", uttimeStart->tm_hour, uttimeStart->tm_min);
+                        printf("hrmin: %s\n", hrminstring);
+
+
+
+
+
                         struct timespec timenowStart;
                         clock_gettime(CLOCK_MILK, &timenowStart);
 
