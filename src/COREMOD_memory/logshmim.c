@@ -687,11 +687,11 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        printf("Start loop\n");
-        fflush(stdout);
+        //printf("Start loop\n");
+        //fflush(stdout);
 
-        printf("triggerstatus = %d\n", processinfo->triggerstatus);
-        fflush(stdout);
+        //printf("triggerstatus = %d\n", processinfo->triggerstatus);
+        //fflush(stdout);
 
 
         if(processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
@@ -718,8 +718,8 @@ static errno_t compute_function()
             }
 
 
-            printf("IsNewFrame %d\n", IsNewFrame);
-            fflush(stdout);
+            //printf("IsNewFrame %d\n", IsNewFrame);
+            //fflush(stdout);
 
             if(IsNewFrame == 1)
             {
@@ -750,8 +750,8 @@ static errno_t compute_function()
 
 
 
-                printf("saveON %d\n", (int) (*saveON));
-                fflush(stdout);
+                //printf("saveON %d\n", (int) (*saveON));
+                //fflush(stdout);
 
                 if((*saveON) == 1)
                 {
