@@ -774,18 +774,14 @@ static errno_t compute_function()
                         printf("hrmin: %s\n", hrminstring);
 
 
-
-
-
                         struct timespec timenowStart;
                         clock_gettime(CLOCK_MILK, &timenowStart);
 
                         WRITE_FULLFILENAME(FITSffilename,
-                                           "%s/%s_%02d:%02d:%02ld.%09ld.fits",
+                                           "%s/%s_%s:%02ld.%09ld.fits",
                                            savedirname,
                                            streamname,
-                                           uttimeStart->tm_hour,
-                                           uttimeStart->tm_min,
+                                           hrminstring,
                                            timenowStart.tv_sec % 60,
                                            timenowStart.tv_nsec);
 
@@ -796,11 +792,10 @@ static errno_t compute_function()
 
 
                         WRITE_FULLFILENAME(ASCIITIMEffilename,
-                                           "%s/%s_%02d:%02d:%02ld.%09ld.txt",
+                                           "%s/%s_%s:%02ld.%09ld.txt",
                                            savedirname,
                                            streamname,
-                                           uttimeStart->tm_hour,
-                                           uttimeStart->tm_min,
+                                           hrminstring,
                                            timenowStart.tv_sec % 60,
                                            timenowStart.tv_nsec);
 
