@@ -1110,12 +1110,12 @@ static errno_t compute_function()
         saveON_last = (*saveON);
     }
 
-    printf("END loop\n");
-    fflush(stdout);
+    //printf("END loop\n");
+    //fflush(stdout);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-    printf("END loop\n");
-    fflush(stdout);
+    //printf("END loop\n");
+    //fflush(stdout);
 
     free(array_time);
     free(array_aqtime);
