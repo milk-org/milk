@@ -62,6 +62,8 @@ option ( INSTALLMAKEDEFAULT "Make this installation the system default" OFF )
 # turn VERBOSE ON
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
+
+set(CMAKE_LINK_DEPENDS_NO_SHARED true)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/milk-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 
 
@@ -365,4 +367,3 @@ install(PROGRAMS
 # ====================================
 
 include(CTest)
-
