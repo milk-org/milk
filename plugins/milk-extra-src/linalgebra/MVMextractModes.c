@@ -336,6 +336,8 @@ static errno_t compute_function()
         }
     }
 
+    printf("USE MASK = %d\n", use_mask);
+
     //use_mask = 0; //for testing
 
     //setup the mask
