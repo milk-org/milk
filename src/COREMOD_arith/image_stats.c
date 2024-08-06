@@ -424,7 +424,6 @@ double arith_image_percentile(const char *ID_name, double fraction)
 
     nelement = data.image[ID].md[0].nelement;
 
-    printf("IMAGE PERC %f, %ld pix\n", fraction, nelement);//TBE
 
     void *array_raw = malloc(ImageStreamIO_typesize(datatype) * nelement);
     if(array_raw == NULL)
