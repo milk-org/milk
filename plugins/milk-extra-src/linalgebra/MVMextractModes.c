@@ -968,10 +968,12 @@ static errno_t compute_function()
     if( imgin.md->datatype == _DATATYPE_FLOAT )
     {
         imginfloatptr = imgin.im->array.F;
+        printf("INPUT type = FLOAT  - no type conversion required\n");
     }
     else
     {
         imginfloatptr = (float*) malloc(sizeof(float) * imgin.md->size[0] * imgin.md->size[1] );
+        printf("INPUT not float -> type conversion to float enabled\n");
     }
 
 
