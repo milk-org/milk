@@ -858,8 +858,8 @@ static errno_t compute_function()
         }
         else
         {
-            if((data.image[IDprocrms].md[0].size[0] != NBmodes) ||
-                    (data.image[IDprocrms].md[0].size[1] != NBaveSTEP))
+            if((data.image[IDprocrms].md->size[0] != NBmodes) ||
+                    (data.image[IDprocrms].md->size[1] != NBaveSTEP))
             {
                 imOK = 0;
                 delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -961,6 +961,20 @@ static errno_t compute_function()
         memcpy(ColMajorMatrix, imgmodes.im->array.F, sizeof(float)*m * n);
     }
 
+
+    float * imginfloatptr = NULL;
+
+
+    if( imgin.md->datatype == _DATATYPE_FLOAT )
+    {
+        imginfloatptr = imgin.im->array.F;
+    }
+    else
+    {
+        imginfloatptr = (float*) malloc(sizeof(float) * imgin.md->size[0] * imgin.md->size[1] );
+    }
+
+
     printf(">>> START MVM loop\n");
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
@@ -969,10 +983,10 @@ static errno_t compute_function()
         // Are we computing a new reference ?
         // if yes, set initref to 0 (reference is NOT initialized)
         //
-        if(refindex != data.image[IDinref].md[0].cnt0)
+        if(refindex != data.image[IDinref].md->cnt0)
         {
             initref = 0;
-            refindex = data.image[IDinref].md[0].cnt0;
+            refindex = data.image[IDinref].md->cnt0;
         }
 
 
@@ -994,12 +1008,91 @@ static errno_t compute_function()
                     memcpy(outarray, imgoutref.im->array.F, sizeof(float)*n);
                 }
 
+
+
+                if( imgin.md->datatype != _DATATYPE_FLOAT )
+                {
+                    imginfloatptr = imgin.im->array.F;
+
+
+                    // type conversion (if needed)
+                    switch (imgin.md->datatype )
+                    {
+                    case _DATATYPE_DOUBLE:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.D[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_UINT8:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.UI8[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_INT8:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.SI8[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_UINT16:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.UI16[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_INT16:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.SI16[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_UINT32:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.UI32[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_INT32:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.SI32[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_UINT64:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.UI64[ii];
+                        }
+                        break;
+
+                    case _DATATYPE_INT64:
+                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        {
+                            imginfloatptr[ii] = (float) imgin.im->array.SI64[ii];
+                        }
+                        break;
+
+
+                    }
+                }
+
+
+
                 if(*axmode == 1)
                 {
                     cblas_sgemv(CblasColMajor,
                                 CblasNoTrans, (int) n, (int) m,
                                 1.0, ColMajorMatrix, (int) n,
-                                imgin.im->array.F, 1, beta,
+                                imginfloatptr, 1, beta,
                                 outarray, 1);
                 }
                 else
@@ -1007,7 +1100,7 @@ static errno_t compute_function()
                     cblas_sgemv(CblasColMajor,
                                 CblasNoTrans, (int) n, (int) m,
                                 1.0, ColMajorMatrix, (int) n,
-                                imgin.im->array.F, 1, beta,
+                                imginfloatptr, 1, beta,
                                 outarray, 1);
                 }
 
@@ -1225,6 +1318,14 @@ static errno_t compute_function()
     free(normcoeff);
     free(modevalarray);
     free(modevalarrayref);
+
+
+    if( imgin.md->datatype != _DATATYPE_FLOAT )
+    {
+        free(imginfloatptr);
+    }
+
+
 
     if(use_mask)
     {
