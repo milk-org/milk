@@ -1138,7 +1138,7 @@ static errno_t compute_function()
                 for(int jj = 0; jj < n; jj++)
                 {
                     int index = ii * n + jj;
-                    outarray[jj] += imgmodes.im->array.F[index] * imgin.im->array.F[ii];
+                    outarray[jj] += imgmodes.im->array.F[index] * imginfloatptr[ii];
                 }
             }
 
@@ -1186,12 +1186,12 @@ static errno_t compute_function()
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        masked_pix[cc] = imgin.im->array.F[mask_idx[cc]];
+                        masked_pix[cc] = imginfloatptr[mask_idx[cc]];
                     }
                 }
                 else
                 {
-                    masked_pix = imgin.im->array.F;
+                    masked_pix = imginfloatptr;
                 }
                 cudaStat = cudaMemcpy(d_in,
                                       masked_pix,
