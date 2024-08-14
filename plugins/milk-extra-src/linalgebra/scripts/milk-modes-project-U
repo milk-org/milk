@@ -24,7 +24,6 @@ RequiredDirs=()
 
 MSarg+=( "inmodesA:string:input modes to be decomposed" )
 MSarg+=( "inmodesB:string:modes onto which to decompose" )
-MSarg+=( "SVDlim:float:SVD limit" )
 MSarg+=( "outimrec:string:reconstruction (projection)" )
 MSarg+=( "outimres:string:residual" )
 
