@@ -50,7 +50,7 @@ linalg.sgemm .transpA 1
 linalg.sgemm modesA modesB mcoeff
 linalg.sgemm .transpA 0
 linalg.sgemm .transpB 1
-linalg.sgemm svdU mcoeff imrec
+linalg.sgemm modesB mcoeff imrec
 saveFITS imrec "$outimrec"
 imres=modesA-imrec
 saveFITS imres "$outimres"
