@@ -64,6 +64,7 @@ set(INCLUDEFILES
 
 set(SCRIPTS
     scripts/milk-modes-project
+	scripts/milk-modes-project-U
 )
 
 
