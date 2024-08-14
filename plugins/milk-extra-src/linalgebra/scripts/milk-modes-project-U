@@ -45,6 +45,7 @@ outimres="${inputMSargARRAY[3]}"
 milk-all << EOF
 loadfits "$immA" modesA
 loadfits "$immB" modesB
+set3Daxes modesB 0 0 0
 linalg.sgemm .GPUdevice ${GPUindex}
 linalg.sgemm .transpA 1
 linalg.sgemm modesA modesB mcoeff

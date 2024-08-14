@@ -15,7 +15,7 @@ set(SOURCEFILES
 	image_pixunmap.c
 	image_set_1Dpixrange.c
 	image_set_2Dpix.c
-	image_set_axes.c
+	image_set_3Daxes.c
 	image_set_col.c
 	image_set_row.c
 	image_setzero.c
@@ -44,7 +44,7 @@ set(INCLUDEFILES
 	image_pixunmap.h
 	image_set_1Dpixrange.h
 	image_set_2Dpix.h
-	image_set_axes.h
+	image_set_3Daxes.h
 	image_set_col.h
 	image_set_row.h
 	image_setzero.h

@@ -58,8 +58,8 @@ static CLICMDARGDEF farg[] =
 
 static CLICMDDATA CLIcmddata =
 {
-    "setaxes",
-    "set image axes size",
+    "set3Daxes",
+    "set 3D image axes size",
     CLICMD_FIELDS_DEFAULTS
 };
 
@@ -75,7 +75,7 @@ static errno_t help_function()
 
 
 
-errno_t image_set_axes(
+errno_t image_set_3Daxes(
     IMGID    inimg,
     uint32_t imsize0,
     uint32_t imsize1,
@@ -88,27 +88,59 @@ errno_t image_set_axes(
 
     long nelem = inimg.md->nelement;
 
-    long nelemout = imsize0;
-    nelemout *= imsize1;
-    if(imsize2 != 0)
+    // if size=0, adopt input size
+
+
+
+
+    uint32_t imsize0c = imsize0;
+    if(imsize0 == 0)
     {
-        nelemout *= imsize2;
+        imsize0c =  inimg.md->size[0];
     }
 
-    if(nelemout == nelem)
+
+    uint32_t imsize1c = imsize1;
+    if(imsize1 == 0)
     {
-        inimg.md->size[0] = imsize0;
-        inimg.md->size[1] = imsize1;
-        if(imsize2 == 0)
+        if (inimg.md->naxis < 2)
         {
-            inimg.md->size[2] = 1;
-            inimg.md->naxis = 2;
+            // if 1D image, promote to 3D with size1 = 1
+            imsize1c = 1;
         }
         else
         {
-            inimg.md->size[2] = imsize2;
-            inimg.md->naxis = 3;
+            imsize1c =  inimg.md->size[1];
         }
+    }
+
+    uint32_t imsize2c = imsize2;
+    if(imsize2 == 0)
+    {
+        if (inimg.md->naxis < 3)
+        {
+            // if 1D or 2D image, promote to 3D with size1 = 1
+            imsize2c = 1;
+        }
+        else
+        {
+            imsize2c =  inimg.md->size[2];
+        }
+    }
+
+
+
+    long nelemout = imsize0c;
+    nelemout *= imsize1c;
+    nelemout *= imsize2c;
+
+
+    if(nelemout == nelem)
+    {
+        inimg.md->naxis = 3;
+        inimg.md->size[0] = imsize0c;
+        inimg.md->size[1] = imsize1c;
+        inimg.md->size[2] = imsize2c;
     }
     else
     {
@@ -130,10 +162,9 @@ static errno_t compute_function()
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        image_set_axes(inimg, *size0, *size1, *size2);
+        image_set_3Daxes(inimg, *size0, *size1, *size2);
         processinfo_update_output_stream(processinfo, inimg.ID);
 
     }
@@ -153,7 +184,7 @@ INSERT_STD_FPSCLIfunctions
 
 // Register function in CLI
 errno_t
-CLIADDCMD_COREMOD_arith__imset_axes()
+CLIADDCMD_COREMOD_arith__imset_3Daxes()
 {
     INSERT_STD_CLIREGISTERFUNC
 
