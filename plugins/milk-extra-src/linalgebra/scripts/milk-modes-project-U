@@ -39,9 +39,8 @@ source milk-argparse
 
 immA="${inputMSargARRAY[0]}"
 immB="${inputMSargARRAY[1]}"
-svdlim="${inputMSargARRAY[2]}"
-outimrec="${inputMSargARRAY[3]}"
-outimres="${inputMSargARRAY[4]}"
+outimrec="${inputMSargARRAY[2]}"
+outimres="${inputMSargARRAY[3]}"
 
 milk-all << EOF
 loadfits "$immA" modesA
