@@ -48,6 +48,7 @@ outimres="${inputMSargARRAY[4]}"
 milk-all << EOF
 loadfits "$immA" modesA
 loadfits "$immB" modesB
+set3Daxes modesB 0 0 0
 linalg.compSVD .GPUdevice ${GPUindex}
 linalg.compSVD modesB svdU svdS svdV ${svdlim}
 listim
