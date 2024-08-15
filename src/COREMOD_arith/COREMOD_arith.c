@@ -50,7 +50,10 @@
 //#include "COREMOD_arith/COREMOD_arith.h"
 
 #include "image_crop.h"
-#include "image_cropmask.h"
+//#include "image_cropmask.h"
+#include "image_crop2D.h"
+
+
 #include "image_dxdy.h"
 #include "image_norm.h"
 #include "image_slicenormalize.h"
@@ -102,7 +105,8 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_arith__image_normslice();
     CLIADDCMD_COREMOD_arith__image_slicenormalize();
 
-    CLIADDCMD_COREMODE_arith__cropmask();
+    //CLIADDCMD_COREMODE_arith__cropmask();
+    CLIADDCMD_COREMODE_arith__crop2D();
 
     CLIADDCMD_COREMOD_arith__imset_1Dpixrange();
     CLIADDCMD_COREMOD_arith__imset_2Dpix();

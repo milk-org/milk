@@ -54,10 +54,10 @@ echo ${streamin}
 MILK_QUIET=1 milk << EOF
 readshmim ${streamin}
 # Activate processinfo
-cropmask ..procinfo 1
-cropmask ..loopcntMax -1
-cropmask ..triggermode 3
-cropmask ..triggersname ${streamin}
-cropmask ${streamin} null ${streamout} ${x0} ${dx} ${y0} ${dy}
+crop2D ..procinfo 1
+crop2D ..loopcntMax -1
+crop2D ..triggermode 3
+crop2D ..triggersname ${streamin}
+crop2D ${streamin} ${streamout} ${x0} ${dx} ${y0} ${dy}
 exitCLI
 EOF
