@@ -146,7 +146,8 @@ static errno_t compute_function()
     resolveIMGID(&imgin, ERRMODE_ABORT);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
-    IMGID imgout = stream_connect_create_2Df32(outsname, *cropxsize, *cropysize);
+    IMGID imgout = stream_connect_create_2D(outsname, *cropxsize, *cropysize, imgin.md->datatype);
+
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
 
@@ -160,9 +161,70 @@ static errno_t compute_function()
             uint64_t indjj = jj + (*cropystart);
             indjj *=  imgin.md->size[0];
 
-            memcpy( &imgout.im->array.F[ jj * (*cropxsize)],
-                    &imgin.im->array.F[ indjj + (*cropxstart) ],
-                    *cropxsize * SIZEOF_DATATYPE_FLOAT);
+
+            switch (imgin.md->datatype)
+            {
+            case _DATATYPE_FLOAT:
+                memcpy( &imgout.im->array.F[ jj * (*cropxsize)],
+                        &imgin.im->array.F[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_FLOAT);
+                break;
+
+            case _DATATYPE_DOUBLE:
+                memcpy( &imgout.im->array.D[ jj * (*cropxsize)],
+                        &imgin.im->array.D[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_DOUBLE);
+                break;
+
+            case _DATATYPE_UINT8:
+                memcpy( &imgout.im->array.UI8[ jj * (*cropxsize)],
+                        &imgin.im->array.UI8[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_UINT8);
+                break;
+
+            case _DATATYPE_UINT16:
+                memcpy( &imgout.im->array.UI16[ jj * (*cropxsize)],
+                        &imgin.im->array.UI16[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_UINT16);
+                break;
+
+            case _DATATYPE_UINT32:
+                memcpy( &imgout.im->array.UI32[ jj * (*cropxsize)],
+                        &imgin.im->array.UI32[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_UINT32);
+                break;
+
+            case _DATATYPE_UINT64:
+                memcpy( &imgout.im->array.UI64[ jj * (*cropxsize)],
+                        &imgin.im->array.UI64[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_UINT64);
+                break;
+
+            case _DATATYPE_INT8:
+                memcpy( &imgout.im->array.SI8[ jj * (*cropxsize)],
+                        &imgin.im->array.SI8[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_INT8);
+                break;
+
+            case _DATATYPE_INT16:
+                memcpy( &imgout.im->array.SI16[ jj * (*cropxsize)],
+                        &imgin.im->array.SI16[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_INT16);
+                break;
+
+            case _DATATYPE_INT32:
+                memcpy( &imgout.im->array.SI32[ jj * (*cropxsize)],
+                        &imgin.im->array.SI32[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_INT32);
+                break;
+
+            case _DATATYPE_INT64:
+                memcpy( &imgout.im->array.SI64[ jj * (*cropxsize)],
+                        &imgin.im->array.SI64[ indjj + (*cropxstart) ],
+                        *cropxsize * SIZEOF_DATATYPE_INT64);
+                break;
+
+            }
 
         }
         processinfo_update_output_stream(processinfo, imgout.ID);
