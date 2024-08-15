@@ -533,7 +533,7 @@ static errno_t compute_function()
                         case _DATATYPE_FLOAT:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.F[ (*wcropypos[cropwindow] + jj) * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.F[ (*wcropypos[cropwindow] + jj) * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.F[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -541,7 +541,7 @@ static errno_t compute_function()
                         case _DATATYPE_DOUBLE:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.D[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.D[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.D[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -549,7 +549,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT8:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.UI8[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.UI8[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -557,7 +557,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT16:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.UI16[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.UI16[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -565,7 +565,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT32:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.UI32[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.UI32[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -573,7 +573,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT64:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.UI64[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.UI64[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -581,7 +581,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT8:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.SI8[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.SI8[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -589,7 +589,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT16:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.SI16[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.SI16[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -597,7 +597,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT32:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.SI32[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow]) + (*wcropxpos[cropwindow] + ii)] +=
+                                imgout.im->array.SI32[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
                                     imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -605,7 +605,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT64:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                imgout.im->array.SI64[ (*wcropypos[cropwindow] + jj)  * (*wcropxsize[cropwindow])+ (*wcropxpos[cropwindow]  + ii)] +=
+                                imgout.im->array.SI64[ (*wcropypos[cropwindow] + jj)  * (*outxsize)+ (*wcropxpos[cropwindow]  + ii)] +=
                                     imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
