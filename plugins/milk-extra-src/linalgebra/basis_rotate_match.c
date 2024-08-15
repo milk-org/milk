@@ -158,11 +158,7 @@ errno_t compute_basis_rotate_match(
         int incrcnt = 0; // incremented
         int proccnt = 0; // processed
 
-        int TriangMode = 0; // lower triang
-        if(optmode == 3)
-        {
-            TriangMode = 1; // upper triang
-        }
+
 
 
 
@@ -308,15 +304,18 @@ errno_t compute_basis_rotate_match(
     if(optmode == 2)
     {
         loopiter = 0;
-        loopiterMax = 1000;
+        loopiterMax = 100;
 
         double alphap = 1.0;
 
         double dangle = 1.0;
-        double danglemin = 0.001;
-        double danglemfact = 0.97;
+        double danglegain = 0.8;
 
-        double posSideAmp = 10.0;
+        double danglemin = 0.001;
+        double danglemfact = 0.7;
+
+        double negSideAmp = 0.0;
+        double posSideAmp = 1.0;
 
         // temp storate for vects to be swapped
 
@@ -343,23 +342,37 @@ errno_t compute_basis_rotate_match(
             long cntneg = 0;
             long cntmid = 0;
 
+
+            // measure quality metric (optall)
+            //
             double optall = 0.0;
             for( int iia = 0; iia < Adim; iia++ )
             {
+                // x0 generally > 1
+                // x0 tracks diagonal
                 double x0 = AmodeBeff[iia] / Adim;
+
                 for( int iib = 0; iib < Bdim; iib++ )
                 {
+                    // dx0 is distance to "diagonal"
                     double x  = 1.0*iib / Adim;
                     double dx0 = x-x0;
+
+
                     double dcoeff = pow(dx0*dx0, alphap);
                     if( dx0 > 0.0 )
                     {
                         dcoeff *= posSideAmp;
                     }
+                    else
+                    {
+                        dcoeff *= negSideAmp;
+                    }
                     optall += dcoeff * matAB[iia*Bdim + iib] * dcoeff * matAB[iia*Bdim + iib];
                 }
             }
             printf("iter %4d / %4d   dangle = %f / %f  val = %g\n", loopiter, loopiterMax, dangle, danglemin, optall);
+
 
             for ( int n0 = 0; n0 < Adim; n0++)
             {
@@ -368,8 +381,9 @@ errno_t compute_basis_rotate_match(
                     // testing rotation n0 n1, dangle
 
                     // ref value
-                    double optval0  = 0.0; // to be minimized
-                    double optval1  = 0.0; // to be minimized
+                    // sum of optval0 and optval1 to be minimized
+                    double optval0  = 0.0;
+                    double optval1  = 0.0;
 
                     double optvalpos0  = 0.0;
                     double optvalpos1  = 0.0;
@@ -394,23 +408,43 @@ errno_t compute_basis_rotate_match(
                         double dcoeff0 = pow(dx0*dx0, alphap);
                         double dcoeff1 = pow(dx1*dx1, alphap);
 
-                        if( dx0 > 0.0 )
-                        {
-                            dcoeff0 *= posSideAmp;
-                        }
-                        if( dx1 > 0.0 )
-                        {
-                            dcoeff1 *= posSideAmp;
-                        }
-
-
-
                         double v0 = matAB[n0*Bdim + ii];
                         double v1 = matAB[n1*Bdim + ii];
 
+                        double wcoeff0 = 0.0;
+                        double wcoeff1 = 0.0;
+
+                        if( dx0 > 0.0 )
+                        {
+                            dcoeff0 *= posSideAmp;
+                            wcoeff0 += posSideAmp * fabs(v0);
+                        }
+                        else
+                        {
+                            dcoeff0 *= negSideAmp;
+                            wcoeff0 += negSideAmp * fabs(v0);
+                        }
+
+                        if( dx1 > 0.0 )
+                        {
+                            dcoeff1 *= posSideAmp;
+                            wcoeff1 += posSideAmp * fabs(v1);
+                        }
+                        else
+                        {
+                            dcoeff1 *= negSideAmp;
+                            wcoeff1 += negSideAmp * fabs(v1);
+                        }
+
+                        //wcoeff = pow(wcoeff, 4.0);
+                        wcoeff0 = 1.0;
+                        wcoeff1 = 1.0;
+
+
+
                         // optimization metric without rotation
-                        optval0 += dcoeff0 * v0*v0;
-                        optval1 += dcoeff1 * v1*v1;
+                        optval0 += wcoeff0 * dcoeff0 * v0*v0;
+                        optval1 += wcoeff1 * dcoeff1 * v1*v1;
 
                         // perform rotation, weite to n0array and n1array
                         n0arraypos[ii] = v0 * cos(dangle) - v1 * sin(dangle);
@@ -420,12 +454,12 @@ errno_t compute_basis_rotate_match(
                         n1arrayneg[ii] = - v0 * sin(dangle) + v1 * cos(dangle);
 
                         // optimization metric with positive rotation
-                        optvalpos0 += dcoeff0 * n0arraypos[ii] * n0arraypos[ii];
-                        optvalpos1 += dcoeff1 * n1arraypos[ii] * n1arraypos[ii];
+                        optvalpos0 += wcoeff0 * dcoeff0 * n0arraypos[ii] * n0arraypos[ii];
+                        optvalpos1 += wcoeff1 * dcoeff1 * n1arraypos[ii] * n1arraypos[ii];
 
                         // optimization metric with negative rotation
-                        optvalneg0 += dcoeff0 * n0arrayneg[ii] * n0arrayneg[ii];
-                        optvalneg1 += dcoeff1 * n1arrayneg[ii] * n1arrayneg[ii];
+                        optvalneg0 += wcoeff0 * dcoeff0 * n0arrayneg[ii] * n0arrayneg[ii];
+                        optvalneg1 += wcoeff1 * dcoeff1 * n1arrayneg[ii] * n1arrayneg[ii];
 
                     }
                     double optval = optval0 + optval1;
@@ -439,13 +473,13 @@ errno_t compute_basis_rotate_match(
                     if(optvalneg < optval)
                     {
                         // rotate neg
-                        optrotangle = -dangle;
+                        optrotangle = -dangle * danglegain;
                         cntneg++;
                     }
                     else if(optvalpos < optval)
                     {
                         // rotate pos
-                        optrotangle = dangle;
+                        optrotangle = dangle * danglegain;
                         cntpos++;
                     }
                     else
@@ -466,11 +500,11 @@ errno_t compute_basis_rotate_match(
 
                         if( optrotangle > dangle )
                         {
-                            optrotangle = dangle;
+                            optrotangle = dangle * danglegain;
                         }
                         if( optrotangle < -dangle )
                         {
-                            optrotangle = -dangle;
+                            optrotangle = -dangle * danglegain;
                         }
 
                         //optrotangle = 0.0;
@@ -506,8 +540,8 @@ errno_t compute_basis_rotate_match(
                 }
 
             }
-            printf("     [%5ld  %5ld  %5ld]  %g\n", cntneg, cntmid, cntpos, dangle);
-            if( cntmid > 100.0*(cntpos+cntneg) )
+            printf("     [%5ld  %5ld  %5ld] %8.6f -> %8.6f\n", cntneg, cntmid, cntpos, 1.0*cntmid/(cntmid+cntpos+cntneg), dangle);
+            if( 1.0*cntmid/(cntmid+cntpos+cntneg) > 0.999 )
             {
                 dangle *= danglemfact;
             }
@@ -517,6 +551,7 @@ errno_t compute_basis_rotate_match(
 
 
             // Measure, for each A mode, the effective index of B modes
+            // AmodeBeff[iia] has to be > iia
             //
             long * iarray = (long *) malloc(sizeof(long) * Adim);
             for( int iia = 0; iia < Adim; iia++ )
@@ -536,17 +571,23 @@ errno_t compute_basis_rotate_match(
             // sort by effective index
             quick_sort2l(AmodeBeff, iarray, Adim);
 
-            /*
+
             {
                 char fname[STRINGMAXLEN_FILENAME];
                 WRITE_FILENAME(fname, "./compfCM/Beff.%04d.dat", loopiter);
                 FILE * fpBeff = fopen(fname, "w");
                 for( int iia = 0; iia < Adim; iia++ )
                 {
+                    if(AmodeBeff[iia] < iia)
+                    {
+                        AmodeBeff[iia] = iia;
+                    }
                     fprintf(fpBeff, "%4d %16f  %4ld\n", iia, AmodeBeff[iia], iarray[iia]);
                 }
                 fclose(fpBeff);
-            }*/
+            }
+
+
 
 
             if ( loopiter == loopiterMax-1 )

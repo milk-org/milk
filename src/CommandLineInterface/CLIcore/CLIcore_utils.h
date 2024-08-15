@@ -312,8 +312,8 @@ typedef struct
     int          processloopOK = 1;                                            \
     PROCESSINFO *processinfo   = NULL;                                         \
     /* set default timeout to 2 sec */                                         \
-    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 0;                        \
-    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 1000000;                  \
+    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                        \
+    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                        \
     if (data.fpsptr != NULL)                                                   \
     { /* If FPS mode, then FPS settings override defaults*/                    \
         /* data.fpsptr->cmset entries are read by fps_connect */               \

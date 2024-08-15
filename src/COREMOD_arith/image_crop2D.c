@@ -8,24 +8,24 @@
 
 
 static char *cropinsname;
-long fpi_cropinsname;
+static long fpi_cropinsname;
 
 static char *outsname;
-long fpi_outsname;
+static long fpi_outsname;
 
 
 static uint32_t *cropxstart;
-long fpi_cropxstart;
+static long fpi_cropxstart;
 
 static uint32_t *cropxsize;
-long fpi_cropxsize;
+static long fpi_cropxsize;
 
 
 static uint32_t *cropystart;
-long fpi_cropystart;
+static long fpi_cropystart;
 
 static uint32_t *cropysize;
-long fpi_cropysize;
+static long fpi_cropysize;
 
 
 

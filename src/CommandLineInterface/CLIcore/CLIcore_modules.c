@@ -533,6 +533,7 @@ uint32_t RegisterCLIcmd(
                 STRINGMAXLEN_MODULE_NAME - 1);
     }
 
+
     DEBUG_TRACEPOINT("settingsrcfile to %s", CLIcmddata.sourcefilename);
     strncpy(data.cmd[data.NBcmd].srcfile, CLIcmddata.sourcefilename,
             STRINGMAXLEN_CMD_SRCFILE - 1);
@@ -540,12 +541,14 @@ uint32_t RegisterCLIcmd(
     strncpy(data.cmd[data.NBcmd].info, CLIcmddata.description,
             STRINGMAXLEN_CMD_INFO - 1);
 
+
     // assemble argument syntax string for help
     char argstring[STRINGMAXLEN_CMD_SYNTAX];
     CLIhelp_make_argstring(CLIcmddata.funcfpscliarg,
                            CLIcmddata.nbarg,
                            argstring);
     strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
+
 
     // assemble example string for help
     char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
@@ -556,8 +559,10 @@ uint32_t RegisterCLIcmd(
     strncpy(data.cmd[data.NBcmd].example, cmdexamplestring,
             STRINGMAXLEN_CMD_EXAMPLE - 1);
 
+
     strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--",
             STRINGMAXLEN_CMD_CCALL - 1);
+
 
     DEBUG_TRACEPOINT(
         "define arguments to CLI function from content of "
