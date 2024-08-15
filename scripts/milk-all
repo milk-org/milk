@@ -1,3 +1,25 @@
 #!/usr/bin/env bash
 
-MILKCLI_APPNAME="milk-all" MILKCLI_ADD_LIBS="$MILKCLI_ADD_LIBS;milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milkmoduleexample,milkpsf,milkstatistic,milkZernikePolyn" milk "$@"
+MSdescr="milk with all installed modules"
+
+
+modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milkmoduleexample,milkpsf,milkstatistic,milkZernikePolyn"
+
+# Extended description
+MSextdescr="Loads modules:
+$modulelist
+"
+
+source milk-script-std-config
+
+
+
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
+
+source milk-argparse
+
+
+
+MILKCLI_APPNAME="milk-all" MILKCLI_ADD_LIBS="${MILKCLI_ADD_LIBS-};${modulelist}" milk "$@"

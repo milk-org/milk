@@ -12,7 +12,7 @@
 MSdescr="measure semaphore latency"
 
 # Extended description
-MSdescr="creates 2 streams and 2 processes
+MSextdescr="creates 2 streams and 2 processes
 process AB waits on imA, pokes imB
 process BA waits on imB, pokes imA
 "
@@ -40,9 +40,8 @@ MSarg+=( "nbloop:int:number of loop interations" )
 
 # parse arguments
 source milk-argparse
+
 NBLOOP="${inputMSargARRAY[0]}"
-
-
 
 
 SEMTRIG="3"
