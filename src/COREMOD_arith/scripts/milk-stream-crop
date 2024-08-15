@@ -49,7 +49,7 @@ dx="${inputMSargARRAY[3]}"
 y0="${inputMSargARRAY[4]}"
 dy="${inputMSargARRAY[5]}"
 
-echo ${streamname}
+echo ${streamin}
 
 MILK_QUIET=1 milk << EOF
 readshmim ${streamin}
