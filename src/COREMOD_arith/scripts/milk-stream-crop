@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample for details
+
+
+# script 1-line description
+MSdescr="crop stream"
+
+# Extended description
+MSdescr="crop existing stream
+"
+
+# standard configuration
+#
+source milk-script-std-config
+
+# prerequisites
+#
+RequiredCommands=( milk )
+RequiredFiles=()
+RequiredDirs=()
+
+
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "sin:string:input stream name" )
+MSarg+=( "sout:string:output stream name" )
+
+MSarg+=( "x0:integer:x start" )
+MSarg+=( "dx:integer:x size" )
+MSarg+=( "y0:integer:y start" )
+MSarg+=( "dy:integer:y size" )
+
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:description"
+
+
+# parse arguments
+source milk-argparse
+streamin="${inputMSargARRAY[0]}"
+streamout="${inputMSargARRAY[1]}"
+
+x0="${inputMSargARRAY[2]}"
+dx="${inputMSargARRAY[3]}"
+y0="${inputMSargARRAY[4]}"
+dy="${inputMSargARRAY[5]}"
+
+echo ${streamname}
+
+MILK_QUIET=1 milk << EOF
+readshmim ${streamin}
+# Activate processinfo
+cropmask ..procinfo 1
+cropmask ..loopcntMax -1
+cropmask ..triggermode 3
+cropmask ..triggersname ${streamin}
+cropmask ${streamin} null ${x0} ${dx} ${y0} ${dy} ${streamout}
+exitCLI
+EOF

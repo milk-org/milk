@@ -66,6 +66,7 @@ set(INCLUDEFILES
 set(SCRIPTS
     scripts/milk-fpslistadd-WFSCROPMASK
 	scripts/milk-fpslistadd-SCICROPMASK
+	scripts/milk-stream-crop
 )
 
 
