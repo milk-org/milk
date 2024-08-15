@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 
+# This script uses milk-argparse
+# See template milk-scriptexample in module milk_module_example for template and instructions
+
+
 MSdescr="list milk- scripts"
 
 MSextdescr="List milk scripts
 
 Scan system for milk- commands
-
 "
 
 source milk-script-std-config
@@ -34,7 +37,20 @@ NC='\033[0m' # No Color
 
 echo "LIST OF MILK COMMANDS :"
 
+excludestring=("milk-argparse" "milk-check" "milk-cr2tofits" "milk-isio-scan" "milk-fpslist-addentry" "milk-logshim" "milk-logshimkill" "milk-logshimoff" "milk-logshimon" "milk-makecsetandrt" "milk-rmshmim" "milk-shm2FITSloop" "milk-shm2FITS" "milk-shmimmon" "milk-shmimpurge")
+
 for cmd in $CMDLIST; do
+
+EXCLUDE=0
+for exclcmd in ${excludestring[@]}; do
+  if [ "${exclcmd}" = "${cmd}" ]; then
+  #pathstring="$(which ${cmd})"
+  #printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "${pathstring}"
+  EXCLUDE=1
+  fi
+done
+
+
 	if [ "${PRINTPATH}" = "1" ]; then
 		pathstring="$(which ${cmd})"
 		printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "${pathstring}"
@@ -42,8 +58,12 @@ for cmd in $CMDLIST; do
 		filename="$(which ${cmd})"
 		datestring="$(date -r $filename '+%Y-%m-%dT%H:%M:%SZ')"
 		CMDLISTOUT+="$(printf "%s  %s;" "${datestring}" "$cmd")"
-	else
+	else 
+		if [ "${EXCLUDE}" = "0" ]; then
 		helpline=$( $cmd -hs | head -n 1 )
+		else
+		helpline=""
+		fi
 		printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "$helpline"
 	fi
 
