@@ -8,7 +8,7 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 set(SOURCEFILES
 	${SRCNAME}.c
 	image_crop.c
-	image_cropmask.c
+	image_crop2D.c
 	image_merge3D.c
 	image_norm.c
 	image_pixremap.c
@@ -37,6 +37,7 @@ set(SOURCEFILES
 set(INCLUDEFILES
 	${SRCNAME}.h
 	image_crop.h
+	image_crop2D.h
 	image_cropmask.h
 	image_merge3D.h
 	image_norm.h

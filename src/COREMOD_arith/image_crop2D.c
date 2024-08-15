@@ -1,14 +1,14 @@
+/**
+ * @file    image_crop2D.c
+ * @brief   crop 2D function
+ *
+ *
+ */
 #include "CommandLineInterface/CLIcore.h"
 
 
-
-
-static char *masksname;
-long fpi_masksname;
-
-
-static char *cminsname;
-long fpi_cminsname;
+static char *cropinsname;
+long fpi_cropinsname;
 
 static char *outsname;
 long fpi_outsname;
@@ -41,20 +41,11 @@ static CLICMDARGDEF farg[] =
         "input stream name",
         "inim",
         CLIARG_VISIBLE_DEFAULT,
-        (void **) &cminsname,
-        &fpi_cminsname
+        (void **) &cropinsname,
+        &fpi_cropinsname
     },
     {
-        CLIARG_IMG,
-        ".masksname",
-        "mask stream name",
-        "maskim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &masksname,
-        &fpi_masksname
-    },
-    {
-        CLIARG_IMG,
+        CLIARG_STR,
         ".outsname",
         "output stream name",
         "outim",
@@ -109,7 +100,7 @@ static errno_t customCONFsetup()
 {
     if(data.fpsptr != NULL)
     {
-        data.fpsptr->parray[fpi_cminsname].fpflag |=
+        data.fpsptr->parray[fpi_cropinsname].fpflag |=
             FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
     }
 
@@ -131,7 +122,7 @@ static errno_t customCONFcheck()
 
 static CLICMDDATA CLIcmddata =
 {
-    "cropmask", "crop and mask image", CLICMD_FIELDS_DEFAULTS
+    "crop2D", "crop 2D image", CLICMD_FIELDS_DEFAULTS
 };
 
 // detailed help
@@ -151,14 +142,8 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     // CONNECT TO INPUT STREAM
-    IMGID imgin = mkIMGID_from_name(cminsname);
+    IMGID imgin = mkIMGID_from_name(cropinsname);
     resolveIMGID(&imgin, ERRMODE_ABORT);
-    printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
-    //long m = imgin.md->size[0] * imgin.md->size[1];
-
-
-    // CONNNECT TO OR CREATE MASK STREAM
-    IMGID imgmask = stream_connect_create_2Df32(masksname, *cropxsize, *cropysize);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outsname, *cropxsize, *cropysize);
@@ -174,12 +159,11 @@ static errno_t compute_function()
         {
             uint64_t indjj = jj + (*cropystart);
             indjj *=  imgin.md->size[0];
-            for(uint32_t ii = 0; ii < *cropxsize; ii++)
-            {
-                imgout.im->array.F[ jj * (*cropxsize) + ii ]
-                = imgmask.im->array.F[ jj * (*cropxsize) + ii ]
-                * imgin.im->array.F[ indjj + ii + (*cropxstart) ];
-            }
+
+            memcpy( &imgout.im->array.F[ jj * (*cropxsize)],
+                    &imgin.im->array.F[ indjj + (*cropxstart) ],
+                    *cropxsize * SIZEOF_DATATYPE_FLOAT);
+
         }
         processinfo_update_output_stream(processinfo, imgout.ID);
 
@@ -201,7 +185,7 @@ INSERT_STD_FPSCLIfunctions
 
 // Register function in CLI
 errno_t
-CLIADDCMD_COREMODE_arith__cropmask()
+CLIADDCMD_COREMODE_arith__crop2D()
 {
 
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
