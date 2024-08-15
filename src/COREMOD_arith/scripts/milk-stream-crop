@@ -58,6 +58,6 @@ cropmask ..procinfo 1
 cropmask ..loopcntMax -1
 cropmask ..triggermode 3
 cropmask ..triggersname ${streamin}
-cropmask ${streamin} null ${x0} ${dx} ${y0} ${dy} ${streamout}
+cropmask ${streamin} null ${streamout} ${x0} ${dx} ${y0} ${dy}
 exitCLI
 EOF
