@@ -124,7 +124,7 @@ extern int C_ERRNO; // C errno (from errno.h)
         exit(0);                                                               \
     }
 
-#define NB_ARG_MAX 20
+#define NB_ARG_MAX 100
 
 //
 //  ************ lib module init **********************************

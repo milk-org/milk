@@ -1084,8 +1084,6 @@ static errno_t compute_function()
                             imginfloatptr[ii] = (float) imgin.im->array.SI64[ii];
                         }
                         break;
-
-
                     }
                 }
 

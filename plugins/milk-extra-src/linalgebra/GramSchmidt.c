@@ -149,7 +149,7 @@ errno_t GramSchmidt(
             double sqrsum0 = 0.0;
 
             // square sum v1
-            double sqrsum1= 0.0;
+            double sqrsum1 = 0.0;
 
             for( uint32_t ii=0; ii<xysize; ii++)
             {
