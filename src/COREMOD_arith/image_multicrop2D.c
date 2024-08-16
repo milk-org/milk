@@ -447,6 +447,8 @@ static errno_t compute_function()
                     jjmax = imgin.md->size[1] - *wcropystart[cropwindow];
                 }
 
+                printf("iimax %5d jjmax %5d\n", iimax, jjmax);
+
 
 
                 for(uint32_t jj = 0; jj < jjmax; jj++)
