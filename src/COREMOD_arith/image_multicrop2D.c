@@ -465,61 +465,61 @@ static errno_t compute_function()
                         switch (imgin.md->datatype)
                         {
                         case _DATATYPE_FLOAT:
-                            memcpy( &imgout.im->array.F[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.F[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.F[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_FLOAT);
                             break;
 
                         case _DATATYPE_DOUBLE:
-                            memcpy( &imgout.im->array.D[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.D[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.D[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_DOUBLE);
                             break;
 
                         case _DATATYPE_UINT8:
-                            memcpy( &imgout.im->array.UI8[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.UI8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT8);
                             break;
 
                         case _DATATYPE_UINT16:
-                            memcpy( &imgout.im->array.UI16[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.UI16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT16);
                             break;
 
                         case _DATATYPE_UINT32:
-                            memcpy( &imgout.im->array.UI32[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.UI32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT32);
                             break;
 
                         case _DATATYPE_UINT64:
-                            memcpy( &imgout.im->array.UI64[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.UI64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT64);
                             break;
 
                         case _DATATYPE_INT8:
-                            memcpy( &imgout.im->array.SI8[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.SI8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT8);
                             break;
 
                         case _DATATYPE_INT16:
-                            memcpy( &imgout.im->array.SI16[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.SI16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT16);
                             break;
 
                         case _DATATYPE_INT32:
-                            memcpy( &imgout.im->array.SI32[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.SI32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT32);
                             break;
 
                         case _DATATYPE_INT64:
-                            memcpy( &imgout.im->array.SI64[ jj * (*wcropxsize[cropwindow])],
+                            memcpy( &imgout.im->array.SI64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT64);
                             break;
