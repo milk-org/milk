@@ -431,6 +431,7 @@ static errno_t compute_function()
             break;
         }
 
+        printf("LINE %5d\n", __LINE__);
 
 
         for(int cropwindow=0; cropwindow < MAXNB_CROPWINDOW ; cropwindow++)
@@ -461,7 +462,7 @@ static errno_t compute_function()
                 }
 
 
-
+printf("LINE %5d\n", __LINE__);
 
                 for(uint32_t jj = 0; jj < jjmax; jj++)
                 {
@@ -626,6 +627,7 @@ static errno_t compute_function()
             }
         }
 
+printf("LINE %5d\n", __LINE__);
 
         switch (imgin.md->datatype)
         {
