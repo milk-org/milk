@@ -335,6 +335,17 @@ static errno_t compute_function()
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2D(outsname, *outxsize, *outysize, imgin.md->datatype);
 
+    // temporary array
+    float    *tmparrayf;
+    double   *tmparrayd;
+    uint8_t  *tmparrayui8;
+    uint16_t *tmparrayui16;
+    uint32_t *tmparrayui32;
+    uint64_t *tmparrayui64;
+    int8_t   *tmparraysi8;
+    int16_t  *tmparraysi16;
+    int32_t  *tmparraysi32;
+    int64_t  *tmparraysi64;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
 
@@ -347,75 +358,77 @@ static errno_t compute_function()
         switch (imgin.md->datatype)
         {
         case _DATATYPE_FLOAT:
+            tmparrayf = (float*) malloc(sizeof(float) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.F[ii] = 0.0;
+                tmparrayf[ii] = 0.0;
             }
             break;
 
         case _DATATYPE_DOUBLE:
+            tmparrayd = (double*) malloc(sizeof(double) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.D[ii] = 0.0;
+                tmparrayd[ii] = 0.0;
             }
             break;
 
         case _DATATYPE_UINT8:
+            tmparrayui8 = (uint8_t*) malloc(sizeof(uint8_t) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.UI8[ii] = 0;
+                tmparrayui8[ii] = 0;
             }
             break;
 
         case _DATATYPE_UINT16:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.UI16[ii] = 0;
+                tmparrayui16[ii] = 0;
             }
             break;
 
         case _DATATYPE_UINT32:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.UI32[ii] = 0;
+                tmparrayui32[ii] = 0;
             }
             break;
 
         case _DATATYPE_UINT64:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.UI64[ii] = 0;
+                tmparrayui64[ii] = 0;
             }
             break;
 
         case _DATATYPE_INT8:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.SI8[ii] = 0;
+                tmparraysi8[ii] = 0;
             }
             break;
 
         case _DATATYPE_INT16:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.SI16[ii] = 0;
+                tmparraysi16[ii] = 0;
             }
             break;
 
         case _DATATYPE_INT32:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.SI32[ii] = 0;
+                tmparraysi32[ii] = 0;
             }
             break;
 
         case _DATATYPE_INT64:
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
-                imgout.im->array.SI64[ii] = 0;
+                tmparraysi64[ii] = 0;
             }
             break;
-
         }
 
 
@@ -461,61 +474,61 @@ static errno_t compute_function()
                         switch (imgin.md->datatype)
                         {
                         case _DATATYPE_FLOAT:
-                            memcpy( &imgout.im->array.F[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayf[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.F[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_FLOAT);
                             break;
 
                         case _DATATYPE_DOUBLE:
-                            memcpy( &imgout.im->array.D[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayd[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.D[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_DOUBLE);
                             break;
 
                         case _DATATYPE_UINT8:
-                            memcpy( &imgout.im->array.UI8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayui8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT8);
                             break;
 
                         case _DATATYPE_UINT16:
-                            memcpy( &imgout.im->array.UI16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayui16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT16);
                             break;
 
                         case _DATATYPE_UINT32:
-                            memcpy( &imgout.im->array.UI32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayui32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT32);
                             break;
 
                         case _DATATYPE_UINT64:
-                            memcpy( &imgout.im->array.UI64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparrayui64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_UINT64);
                             break;
 
                         case _DATATYPE_INT8:
-                            memcpy( &imgout.im->array.SI8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparraysi8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT8);
                             break;
 
                         case _DATATYPE_INT16:
-                            memcpy( &imgout.im->array.SI16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparraysi16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT16);
                             break;
 
                         case _DATATYPE_INT32:
-                            memcpy( &imgout.im->array.SI32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparraysi32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT32);
                             break;
 
                         case _DATATYPE_INT64:
-                            memcpy( &imgout.im->array.SI64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
+                            memcpy( &tmparraysi64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
                                     &imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow]) ],
                                     iimax * SIZEOF_DATATYPE_INT64);
                             break;
@@ -612,10 +625,98 @@ static errno_t compute_function()
                 }
             }
         }
+
+
+        switch (imgin.md->datatype)
+        {
+        case _DATATYPE_FLOAT:
+            memcpy(imgout.im->array.F, tmparrayf, sizeof(float) * (*outxsize) * (*outysize) );
+            break;
+
+        case _DATATYPE_DOUBLE:
+            memcpy(imgout.im->array.D, tmparrayd, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_UINT8:
+            memcpy(imgout.im->array.UI8, tmparrayui8, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_UINT16:
+            memcpy(imgout.im->array.UI16, tmparrayui16, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_UINT32:
+            memcpy(imgout.im->array.UI32, tmparrayui32, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_UINT64:
+            memcpy(imgout.im->array.UI64, tmparrayui64, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_INT8:
+            memcpy(imgout.im->array.SI8, tmparraysi8, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_INT16:
+            memcpy(imgout.im->array.SI16, tmparraysi16, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_INT32:
+            memcpy(imgout.im->array.SI32, tmparraysi32, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+
+        case _DATATYPE_INT64:
+            memcpy(imgout.im->array.SI64, tmparraysi64, sizeof(float) * (*outxsize) * (*outysize));
+            break;
+        }
         processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    switch (imgin.md->datatype)
+    {
+    case _DATATYPE_FLOAT:
+        free(tmparrayf);
+        break;
+
+    case _DATATYPE_DOUBLE:
+        free(tmparrayd);
+        break;
+
+    case _DATATYPE_UINT8:
+        free(tmparrayui8);
+        break;
+
+    case _DATATYPE_UINT16:
+        free(tmparrayui16);
+        break;
+
+    case _DATATYPE_UINT32:
+        free(tmparrayui32);
+        break;
+
+    case _DATATYPE_UINT64:
+        free(tmparrayui64);
+        break;
+
+    case _DATATYPE_INT8:
+        free(tmparraysi8);
+        break;
+
+    case _DATATYPE_INT16:
+        free(tmparraysi16);
+        break;
+
+    case _DATATYPE_INT32:
+        free(tmparraysi32);
+        break;
+
+    case _DATATYPE_INT64:
+        free(tmparraysi64);
+        break;
+    }
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
