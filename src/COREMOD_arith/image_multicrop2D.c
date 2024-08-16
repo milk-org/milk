@@ -335,6 +335,8 @@ static errno_t compute_function()
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2D(outsname, *outxsize, *outysize, imgin.md->datatype);
 
+    printf("LINE %5d\n", __LINE__);
+
     // temporary array
     float    *tmparrayf;
     double   *tmparrayd;
@@ -351,6 +353,56 @@ static errno_t compute_function()
 
 
 
+
+    // allocate array memory
+    switch (imgin.md->datatype)
+    {
+    case _DATATYPE_FLOAT:
+        tmparrayf = (float*) malloc(sizeof(float) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_DOUBLE:
+        tmparrayd = (double*) malloc(sizeof(double) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_UINT8:
+        tmparrayui8 = (uint8_t*) malloc(sizeof(uint8_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_UINT16:
+        tmparrayui16 = (uint16_t*) malloc(sizeof(uint16_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_UINT32:
+        tmparrayui32 = (uint32_t*) malloc(sizeof(uint32_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_UINT64:
+        tmparrayui64 = (uint64_t*) malloc(sizeof(uint64_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_INT8:
+        tmparraysi8 = (int8_t*) malloc(sizeof(int8_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_INT16:
+        tmparraysi16 = (int16_t*) malloc(sizeof(int16_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_INT32:
+        tmparraysi32 = (int32_t*) malloc(sizeof(int32_t) * (*outxsize) * (*outysize) );
+        break;
+
+    case _DATATYPE_INT64:
+        tmparraysi64 = (int64_t*) malloc(sizeof(int64_t) * (*outxsize) * (*outysize) );
+        break;
+    }
+
+
+
+
+
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
@@ -358,7 +410,6 @@ static errno_t compute_function()
         switch (imgin.md->datatype)
         {
         case _DATATYPE_FLOAT:
-            tmparrayf = (float*) malloc(sizeof(float) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
                 tmparrayf[ii] = 0.0;
@@ -366,7 +417,6 @@ static errno_t compute_function()
             break;
 
         case _DATATYPE_DOUBLE:
-            tmparrayd = (double*) malloc(sizeof(double) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
                 tmparrayd[ii] = 0.0;
@@ -374,7 +424,6 @@ static errno_t compute_function()
             break;
 
         case _DATATYPE_UINT8:
-            tmparrayui8 = (uint8_t*) malloc(sizeof(uint8_t) * (*outxsize) * (*outysize) );
             for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
             {
                 tmparrayui8[ii] = 0;
@@ -462,7 +511,7 @@ static errno_t compute_function()
                 }
 
 
-printf("LINE %5d\n", __LINE__);
+                printf("LINE %5d\n", __LINE__);
 
                 for(uint32_t jj = 0; jj < jjmax; jj++)
                 {
@@ -627,7 +676,7 @@ printf("LINE %5d\n", __LINE__);
             }
         }
 
-printf("LINE %5d\n", __LINE__);
+        printf("LINE %5d\n", __LINE__);
 
         switch (imgin.md->datatype)
         {
