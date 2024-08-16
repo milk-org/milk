@@ -486,6 +486,8 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+    // input
+
     IMGID imginA = mkIMGID_from_name(inmatA);
     resolveIMGID(&imginA, ERRMODE_ABORT);
 
@@ -493,6 +495,8 @@ static errno_t compute_function()
     resolveIMGID(&imginB, ERRMODE_ABORT);
 
 
+
+    // output
 
     IMGID imgM  = mkIMGID_from_name(outM);
 
