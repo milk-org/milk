@@ -60,6 +60,11 @@ static long fpi_wcropystart[MAXNB_CROPWINDOW];
 static uint32_t *wcropysize[MAXNB_CROPWINDOW];
 static long fpi_wcropysize[MAXNB_CROPWINDOW];
 
+// binning
+static uint32_t *wbinfact[MAXNB_CROPWINDOW];
+static long fpi_wbinfact[MAXNB_CROPWINDOW];
+
+
 
 // output position
 
@@ -165,6 +170,29 @@ static long fpi_wcropypos[MAXNB_CROPWINDOW];
         &fpi_wcropypos[wn]\
     }
 
+#define CROPWINDOWBINFACT(wn) \
+    {\
+        CLIARG_UINT32,\
+        ".w"#wn".cropbinfact",\
+        "binning factor",\
+        "1",\
+        CLIARG_HIDDEN_DEFAULT,\
+        (void **) &wbinfact[wn],\
+        &fpi_wbinfact[wn]\
+    }
+
+
+#define CROPWPARAMS(wn) \
+    CROPWINDOWONOFF(wn),\
+    CROPWINDOWADDMODE(wn),\
+    CROPWINDOWXSTART(wn),\
+    CROPWINDOWXSIZE(wn),\
+    CROPWINDOWYSTART(wn),\
+    CROPWINDOWYSIZE(wn),\
+    CROPWINDOWXPOS(wn),\
+    CROPWINDOWYPOS(wn),\
+    CROPWINDOWBINFACT(wn)
+
 
 
 static CLICMDARGDEF farg[] =
@@ -205,78 +233,16 @@ static CLICMDARGDEF farg[] =
         (void **) &outysize,
         &fpi_outysize
     },
-    CROPWINDOWONOFF(00),
-    CROPWINDOWADDMODE(00),
-    CROPWINDOWXSTART(00),
-    CROPWINDOWXSIZE(00),
-    CROPWINDOWYSTART(00),
-    CROPWINDOWYSIZE(00),
-    CROPWINDOWXPOS(00),
-    CROPWINDOWYPOS(00),
-
-    CROPWINDOWONOFF(01),
-    CROPWINDOWADDMODE(01),
-    CROPWINDOWXSTART(01),
-    CROPWINDOWXSIZE(01),
-    CROPWINDOWYSTART(01),
-    CROPWINDOWYSIZE(01),
-    CROPWINDOWXPOS(01),
-    CROPWINDOWYPOS(01),
-
-    CROPWINDOWONOFF(02),
-    CROPWINDOWADDMODE(02),
-    CROPWINDOWXSTART(02),
-    CROPWINDOWXSIZE(02),
-    CROPWINDOWYSTART(02),
-    CROPWINDOWYSIZE(02),
-    CROPWINDOWXPOS(02),
-    CROPWINDOWYPOS(02),
-
-    CROPWINDOWONOFF(03),
-    CROPWINDOWADDMODE(03),
-    CROPWINDOWXSTART(03),
-    CROPWINDOWXSIZE(03),
-    CROPWINDOWYSTART(03),
-    CROPWINDOWYSIZE(03),
-    CROPWINDOWXPOS(03),
-    CROPWINDOWYPOS(03),
-
-    CROPWINDOWONOFF(04),
-    CROPWINDOWADDMODE(04),
-    CROPWINDOWXSTART(04),
-    CROPWINDOWXSIZE(04),
-    CROPWINDOWYSTART(04),
-    CROPWINDOWYSIZE(04),
-    CROPWINDOWXPOS(04),
-    CROPWINDOWYPOS(04),
-
-    CROPWINDOWONOFF(05),
-    CROPWINDOWADDMODE(05),
-    CROPWINDOWXSTART(05),
-    CROPWINDOWXSIZE(05),
-    CROPWINDOWYSTART(05),
-    CROPWINDOWYSIZE(05),
-    CROPWINDOWXPOS(05),
-    CROPWINDOWYPOS(05),
-
-    CROPWINDOWONOFF(06),
-    CROPWINDOWADDMODE(06),
-    CROPWINDOWXSTART(06),
-    CROPWINDOWXSIZE(06),
-    CROPWINDOWYSTART(06),
-    CROPWINDOWYSIZE(06),
-    CROPWINDOWXPOS(06),
-    CROPWINDOWYPOS(06),
-
-    CROPWINDOWONOFF(07),
-    CROPWINDOWADDMODE(07),
-    CROPWINDOWXSTART(07),
-    CROPWINDOWXSIZE(07),
-    CROPWINDOWYSTART(07),
-    CROPWINDOWYSIZE(07),
-    CROPWINDOWXPOS(07),
-    CROPWINDOWYPOS(07)
+    CROPWPARAMS(00),
+    CROPWPARAMS(01),
+    CROPWPARAMS(02),
+    CROPWPARAMS(03),
+    CROPWPARAMS(04),
+    CROPWPARAMS(05),
+    CROPWPARAMS(06),
+    CROPWPARAMS(07)
 };
+
 
 
 
@@ -585,7 +551,7 @@ static errno_t compute_function()
                         case _DATATYPE_FLOAT:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayf[ (*wcropypos[cropwindow] + jj) * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayf[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow])) * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.F[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -593,7 +559,7 @@ static errno_t compute_function()
                         case _DATATYPE_DOUBLE:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayd[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayd[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.D[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -601,7 +567,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT8:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayui8[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayui8[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -609,7 +575,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT16:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayui16[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayui16[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -617,7 +583,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT32:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayui32[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayui32[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -625,7 +591,7 @@ static errno_t compute_function()
                         case _DATATYPE_UINT64:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparrayui64[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparrayui64[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -633,7 +599,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT8:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparraysi8[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparraysi8[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -641,7 +607,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT16:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparraysi16[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparraysi16[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -649,7 +615,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT32:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparraysi32[ (*wcropypos[cropwindow] + jj)  * (*outxsize) + (*wcropxpos[cropwindow] + ii)] +=
+                                tmparraysi32[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;
@@ -657,7 +623,7 @@ static errno_t compute_function()
                         case _DATATYPE_INT64:
                             for(int ii=0; ii< iimax; ii++)
                             {
-                                tmparraysi64[ (*wcropypos[cropwindow] + jj)  * (*outxsize)+ (*wcropxpos[cropwindow]  + ii)] +=
+                                tmparraysi64[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize)+ (*wcropxpos[cropwindow]  + ii/(*wbinfact[cropwindow]))] +=
                                     imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow] + ii)];
                             }
                             break;

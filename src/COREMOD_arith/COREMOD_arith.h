@@ -25,6 +25,7 @@
 #include "COREMOD_arith/image_set_row.h"
 #include "COREMOD_arith/image_set_1Dpixrange.h"
 #include "COREMOD_arith/image_set_2Dpix.h"
+#include "COREMOD_arith/image_vecmult.h"
 
 
 //imageID arith_make_slopexy(const char *ID_name, long l1,long l2, double sx, double sy);
