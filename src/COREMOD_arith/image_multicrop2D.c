@@ -335,8 +335,6 @@ static errno_t compute_function()
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2D(outsname, *outxsize, *outysize, imgin.md->datatype);
 
-    printf("LINE %5d\n", __LINE__);
-
     // temporary array
     float    *tmparrayf;
     double   *tmparrayd;
@@ -480,8 +478,6 @@ static errno_t compute_function()
             break;
         }
 
-        printf("LINE %5d\n", __LINE__);
-
 
         for(int cropwindow=0; cropwindow < MAXNB_CROPWINDOW ; cropwindow++)
         {
@@ -511,7 +507,6 @@ static errno_t compute_function()
                 }
 
 
-                printf("LINE %5d\n", __LINE__);
 
                 for(uint32_t jj = 0; jj < jjmax; jj++)
                 {
@@ -676,7 +671,6 @@ static errno_t compute_function()
             }
         }
 
-        printf("LINE %5d\n", __LINE__);
 
         switch (imgin.md->datatype)
         {
