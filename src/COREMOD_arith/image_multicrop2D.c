@@ -425,18 +425,15 @@ static errno_t compute_function()
             if ( *wactive[cropwindow] == 1)
             {
                 uint32_t iimax = *wcropxsize[cropwindow];
-                printf("%d  iimax %5d\n", __LINE__, iimax);
                 if ( iimax +  *wcropxpos[cropwindow] > (*outxsize))
                 {
                     iimax = (*outxsize) - *wcropxpos[cropwindow];
                 }
-                printf("%d  iimax %5d\n", __LINE__, iimax);
 
                 if ( iimax + *wcropxstart[cropwindow] > imgin.md->size[0])
                 {
                     iimax = imgin.md->size[0] - *wcropxstart[cropwindow];
                 }
-                printf("%d  iimax %5d\n", __LINE__, iimax);
 
 
                 uint32_t jjmax = *wcropysize[cropwindow];
@@ -450,7 +447,6 @@ static errno_t compute_function()
                     jjmax = imgin.md->size[1] - *wcropystart[cropwindow];
                 }
 
-                printf("iimax %5d jjmax %5d\n", iimax, jjmax);
 
 
 
