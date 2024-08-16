@@ -424,19 +424,6 @@ static errno_t compute_function()
         {
             if ( *wactive[cropwindow] == 1)
             {
-                uint32_t jjmax = *wcropysize[cropwindow];
-                if ( jjmax +  *wcropystart[cropwindow] > (*outysize))
-                {
-                    jjmax = (*outysize) - *wcropystart[cropwindow];
-                }
-
-                if ( jjmax + *wcropypos[cropwindow] > imgin.md->size[1])
-                {
-                    jjmax = imgin.md->size[1] - *wcropypos[cropwindow];
-                }
-
-
-
                 uint32_t iimax = *wcropxsize[cropwindow];
                 if ( iimax +  *wcropxpos[cropwindow] > (*outxsize))
                 {
@@ -448,6 +435,17 @@ static errno_t compute_function()
                     iimax = imgin.md->size[0] - *wcropxstart[cropwindow];
                 }
 
+
+                uint32_t jjmax = *wcropysize[cropwindow];
+                if ( jjmax +  *wcropypos[cropwindow] > (*outysize))
+                {
+                    jjmax = (*outysize) - *wcropypos[cropwindow];
+                }
+
+                if ( jjmax + *wcropystart[cropwindow] > imgin.md->size[1])
+                {
+                    jjmax = imgin.md->size[1] - *wcropystart[cropwindow];
+                }
 
 
 
