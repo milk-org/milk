@@ -527,6 +527,7 @@ static errno_t compute_function()
                     }
                     else  // add pixels
                     {
+                        printf("iimax %5d  jimax %5d\n", iimax, jjmax);
                         switch (imgin.md->datatype)
                         {
 
