@@ -166,6 +166,6 @@ target_link_libraries(${LIBNAME} PRIVATE CLIcore)
 message("---------------------------------------")
 
 
-install(TARGETS ${LIBNAME} DESTINATION lib)
+install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)

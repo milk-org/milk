@@ -127,10 +127,11 @@ if(${CFITSIO_FOUND})
   target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 
-target_include_directories(${LIBNAME} PUBLIC ${PROJECT_SOURCE_DIR}/..)
+target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+											$<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES})
 
-install(TARGETS ${LIBNAME} DESTINATION lib)
+install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
