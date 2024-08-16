@@ -496,6 +496,45 @@ errno_t compute_SVD(
         }
 
 
+
+        // store singular values
+        delete_image_ID("SV", DELETE_IMAGE_ERRMODE_IGNORE);
+        IMGID imgSV = mkIMGID_from_name("SV");
+        imgSV.naxis = 2;
+        imgSV.datatype = _DATATYPE_FLOAT;
+        imgSV.size[0] = NBmode;
+        imgSV.size[1] = 1;
+        createimagefromIMGID(&imgSV);
+        for(int k=0; k<NBmode; k++)
+        {
+            float sval = imgS.im->array.F[k];
+            imgSV.im->array.F[k] = sval;
+        }
+
+
+        // store inv of singular values
+        delete_image_ID("SVinv", DELETE_IMAGE_ERRMODE_IGNORE);
+        IMGID imgSVinv = mkIMGID_from_name("SVinv");
+        imgSVinv.naxis = 2;
+        imgSVinv.datatype = _DATATYPE_FLOAT;
+        imgSVinv.size[0] = NBmode;
+        imgSVinv.size[1] = 1;
+        createimagefromIMGID(&imgSVinv);
+        for(int k=0; k<NBmode; k++)
+        {
+            float normfact = 0.0;
+            float sval = imgS.im->array.F[k];
+            float svaln = sval / svalmax;
+            if( svaln > SVlimit )
+            {
+                imgSVinv.im->array.F[k] = 1.0 / sval;
+            }
+            else
+            {
+                imgSVinv.im->array.F[k] = 0.0;
+            }
+        }
+
         free(d);
         free(e);
         free(t);
@@ -503,6 +542,12 @@ errno_t compute_SVD(
         // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
     }
     delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
+
+
+
+
+
+
 
 
 
@@ -590,7 +635,6 @@ errno_t compute_SVD(
                 if( svaln > SVlimit )
                 {
                     normfact = 1.0 / sval;
-
                 }
 
                 for(uint32_t ii=0; ii < Ndim; ii++)
@@ -731,15 +775,9 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
-
         compute_SVD(imginM, imgU, imgS, imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode);
-
-
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

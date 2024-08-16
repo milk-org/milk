@@ -78,6 +78,10 @@
 #include "image_arith__im_f__im.h"
 #include "image_arith__im_f_f__im.h"
 #include "image_arith__im_im__im.h"
+
+#include "image_vecmult.h"
+
+
 #include "mathfuncs.h"
 
 #include "execute_arith.h"
@@ -120,6 +124,8 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMODE_arith__pixunmap();
 
     CLIADDCMD_COREMOD_arith__image_unfold();
+
+    CLIADDCMD_COREMODE_arith__image_vecmult();
 
     return RETURN_SUCCESS;
 }

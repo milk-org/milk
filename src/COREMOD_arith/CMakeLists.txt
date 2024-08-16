@@ -24,6 +24,7 @@ set(SOURCEFILES
 	image_stats.c
 	image_total.c
 	image_unfold.c
+	image_vecmult.c
 	image_dxdy.c
 	imfunctions.c
 	mathfuncs.c
@@ -55,6 +56,7 @@ set(INCLUDEFILES
 	image_stats.h
 	image_total.h
 	image_unfold.h
+	image_vecmult.h
 	image_dxdy.h
 	imfunctions.h
 	mathfuncs.h
