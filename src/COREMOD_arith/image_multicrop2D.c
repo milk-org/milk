@@ -696,39 +696,39 @@ static errno_t compute_function()
             break;
 
         case _DATATYPE_DOUBLE:
-            memcpy(imgout.im->array.D, tmparrayd, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.D, tmparrayd, sizeof(double) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_UINT8:
-            memcpy(imgout.im->array.UI8, tmparrayui8, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.UI8, tmparrayui8, sizeof(uint8_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_UINT16:
-            memcpy(imgout.im->array.UI16, tmparrayui16, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.UI16, tmparrayui16, sizeof(uint16_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_UINT32:
-            memcpy(imgout.im->array.UI32, tmparrayui32, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.UI32, tmparrayui32, sizeof(uint32_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_UINT64:
-            memcpy(imgout.im->array.UI64, tmparrayui64, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.UI64, tmparrayui64, sizeof(uint64_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_INT8:
-            memcpy(imgout.im->array.SI8, tmparraysi8, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.SI8, tmparraysi8, sizeof(int8_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_INT16:
-            memcpy(imgout.im->array.SI16, tmparraysi16, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.SI16, tmparraysi16, sizeof(int16_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_INT32:
-            memcpy(imgout.im->array.SI32, tmparraysi32, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.SI32, tmparraysi32, sizeof(int32_t) * (*outxsize) * (*outysize));
             break;
 
         case _DATATYPE_INT64:
-            memcpy(imgout.im->array.SI64, tmparraysi64, sizeof(float) * (*outxsize) * (*outysize));
+            memcpy(imgout.im->array.SI64, tmparraysi64, sizeof(int64_t) * (*outxsize) * (*outysize));
             break;
         }
         processinfo_update_output_stream(processinfo, imgout.ID);
