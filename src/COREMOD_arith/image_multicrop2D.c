@@ -398,7 +398,8 @@ static errno_t compute_function()
 
 
 
-
+    printf("--------- %5d\n", __LINE__);
+    fflush(stdout);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
@@ -478,6 +479,9 @@ static errno_t compute_function()
             break;
         }
 
+        printf("--------- %5d\n", __LINE__);
+        fflush(stdout);
+
 
         for(int cropwindow=0; cropwindow < MAXNB_CROPWINDOW ; cropwindow++)
         {
@@ -516,6 +520,9 @@ static errno_t compute_function()
 
                     if ( *waddmode[cropwindow] == 0 )
                     {
+                        printf("--------- %5d\n", __LINE__);
+                        fflush(stdout);
+
                         switch (imgin.md->datatype)
                         {
                         case _DATATYPE_FLOAT:
@@ -579,9 +586,14 @@ static errno_t compute_function()
                             break;
 
                         }
+                        printf("--------- %5d\n", __LINE__);
+                        fflush(stdout);
                     }
                     else  // add pixels
                     {
+                        printf("--------- %5d\n", __LINE__);
+                        fflush(stdout);
+
                         switch (imgin.md->datatype)
                         {
 
@@ -666,11 +678,16 @@ static errno_t compute_function()
                             break;
                         }
 
+                        printf("--------- %5d\n", __LINE__);
+                        fflush(stdout);
+
                     }
                 }
             }
         }
 
+        printf("--------- %5d\n", __LINE__);
+        fflush(stdout);
 
         switch (imgin.md->datatype)
         {
@@ -715,6 +732,9 @@ static errno_t compute_function()
             break;
         }
         processinfo_update_output_stream(processinfo, imgout.ID);
+
+        printf("--------- %5d\n", __LINE__);
+        fflush(stdout);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
