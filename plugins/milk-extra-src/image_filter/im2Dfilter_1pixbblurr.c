@@ -224,7 +224,7 @@ static errno_t imfilter_im2D_1pixblurr(
     for ( int iter=0; iter < NBiter; iter++)
     {
 
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim1[ii] = 0.0;
         }
