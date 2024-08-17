@@ -138,8 +138,6 @@ static errno_t imfilter_im2D_1pixblurr(
     float coeff2 = amp*amp; // corner pixels (x4)
     float coeff0 = 1.0 - 4.0*(coeff1 + coeff2); // central pixel
 
-    printf("amp = %f   NBiter = %d\n", amp, NBiter);
-
 
 
     // temp arrays
