@@ -138,21 +138,7 @@ static errno_t imfilter_im2D_1pixblurr(
     float coeff2 = amp*amp; // corner pixels (x4)
     float coeff0 = 1.0 - 4.0*(coeff1 + coeff2); // central pixel
 
-
-    float kernel[3][3];
-
-    kernel[1][1] = coeff0;
-
-    kernel[0][1] = coeff1;
-    kernel[2][1] = coeff1;
-    kernel[1][0] = coeff1;
-    kernel[1][2] = coeff1;
-
-    kernel[0][0] = coeff2;
-    kernel[0][2] = coeff2;
-    kernel[2][0] = coeff2;
-    kernel[2][2] = coeff2;
-
+    printf("amp = %f   NBiter = %d\n", amp, NBiter);
 
 
 
@@ -236,8 +222,8 @@ static errno_t imfilter_im2D_1pixblurr(
         break;
     }
 
-/*
-    for ( int iter=0; iter < *NBloop; iter++)
+
+    for ( int iter=0; iter < NBiter; iter++)
     {
 
         for(uint32_t ii=1; ii<xsize*ysize; ii++)
@@ -267,7 +253,7 @@ static errno_t imfilter_im2D_1pixblurr(
         }
         memcpy(tmpfim0, tmpfim1, sizeof(float)*xsize*ysize);
     }
-*/
+
     memcpy(imgout->im->array.F, tmpfim0, sizeof(float)*xsize*ysize);
 
     free(tmpfim0);
