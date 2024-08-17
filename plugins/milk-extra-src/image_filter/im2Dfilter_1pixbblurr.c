@@ -237,26 +237,37 @@ static errno_t imfilter_im2D_1pixblurr(
     }
 
 
-
-
-    for(uint32_t ii=1; ii<xsize-1; ii++)
+    for ( int iter=0; iter < *NBloop; iter++)
     {
-        for(uint32_t jj=1; jj<ysize-1; jj++)
+
+        for(uint32_t ii=1; ii<xsize*ysize; ii++)
         {
-
-            tmpfim1[ (jj)*xsize + ii ] += coeff0 * tmpfim0[jj*xsize+ii];
-
-            tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * tmpfim0[jj*xsize+ii];
-            tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * tmpfim0[jj*xsize+ii];
-            tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * tmpfim0[jj*xsize+ii];
-            tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * tmpfim0[jj*xsize+ii];
-
-            tmpfim1[ (jj)*xsize + ii+1 ] += coeff2 * tmpfim0[jj*xsize+ii];
+            tmpfim1[ii] = 0.0;
         }
+        for(uint32_t ii=1; ii<xsize-1; ii++)
+        {
+            for(uint32_t jj=1; jj<ysize-1; jj++)
+            {
+                float pixval = tmpfim0[jj*xsize+ii];
+
+                tmpfim1[ (jj)*xsize + ii ] += coeff0 * pixval;
+
+                tmpfim1[ (jj)*xsize + ii+1 ] += coeff1 * pixval;
+                tmpfim1[ (jj)*xsize + ii-1 ] += coeff1 * pixval;
+                tmpfim1[ (jj+1)*xsize + ii ] += coeff1 * pixval;
+                tmpfim1[ (jj-1)*xsize + ii ] += coeff1 * pixval;
+
+
+                tmpfim1[ (jj+1)*xsize + ii+1 ] += coeff2 * pixval;
+                tmpfim1[ (jj+1)*xsize + ii-1 ] += coeff2 * pixval;
+                tmpfim1[ (jj-1)*xsize + ii+1 ] += coeff2 * pixval;
+                tmpfim1[ (jj-1)*xsize + ii-1 ] += coeff2 * pixval;
+            }
+        }
+        memcpy(tmpfim0, tmpfim1, sizeof(float)*xsize*ysize);
     }
 
-
-    memcpy(imgout->im->array.F, tmpfim1, sizeof(float)*xsize*ysize);
+    memcpy(imgout->im->array.F, tmpfim0, sizeof(float)*xsize*ysize);
 
     free(tmpfim0);
     free(tmpfim1);
