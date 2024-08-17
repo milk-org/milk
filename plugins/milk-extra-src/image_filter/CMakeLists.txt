@@ -13,6 +13,7 @@ set(SOURCEFILES
 	fit2DcosKernel.c
 	fit2Dcossin.c
 	gaussfilter.c
+	im2Dfilter_1pixbblurr.c
 	medianfilter.c
 	percentile_interpolation.c
 )
@@ -24,6 +25,7 @@ set(INCLUDEFILES
 	fit1D.h
 	fit2DcosKernel.h
 	fit2Dcossin.h
+	im2Dfilter_1pixbblurr.h
 	gaussfilter.h
 	medianfilter.h
 	percentile_interpolation.h
