@@ -236,7 +236,7 @@ static errno_t imfilter_im2D_1pixblurr(
         break;
     }
 
-
+/*
     for ( int iter=0; iter < *NBloop; iter++)
     {
 
@@ -244,6 +244,7 @@ static errno_t imfilter_im2D_1pixblurr(
         {
             tmpfim1[ii] = 0.0;
         }
+
         for(uint32_t ii=1; ii<xsize-1; ii++)
         {
             for(uint32_t jj=1; jj<ysize-1; jj++)
@@ -266,7 +267,7 @@ static errno_t imfilter_im2D_1pixblurr(
         }
         memcpy(tmpfim0, tmpfim1, sizeof(float)*xsize*ysize);
     }
-
+*/
     memcpy(imgout->im->array.F, tmpfim0, sizeof(float)*xsize*ysize);
 
     free(tmpfim0);
