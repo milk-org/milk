@@ -52,7 +52,7 @@ static CLICMDARGDEF farg[] =
         ".blurramp",
         "value of side pixs (total = 1 for 3 pix)",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &blurramp,
         &fpi_blurramp
     },
@@ -61,7 +61,7 @@ static CLICMDARGDEF farg[] =
         ".axis",
         "number of times operation is performed",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        CLIARG_VISIBLE_DEFAULT,
         (void **) &NBloop,
         &fpi_NBloop
     }
