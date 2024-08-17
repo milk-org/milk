@@ -150,70 +150,70 @@ static errno_t imfilter_im2D_1pixblurr(
     switch (imgin.md->datatype)
     {
     case _DATATYPE_FLOAT:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.F[ii];
         }
         break;
 
     case _DATATYPE_DOUBLE:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.D[ii];
         }
         break;
 
     case _DATATYPE_UINT8:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.UI8[ii];
         }
         break;
 
     case _DATATYPE_UINT16:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.UI16[ii];
         }
         break;
 
     case _DATATYPE_UINT32:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.UI32[ii];
         }
         break;
 
     case _DATATYPE_UINT64:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.UI64[ii];
         }
         break;
 
     case _DATATYPE_INT8:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.SI8[ii];
         }
         break;
 
     case _DATATYPE_INT16:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.SI16[ii];
         }
         break;
 
     case _DATATYPE_INT32:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.SI32[ii];
         }
         break;
 
     case _DATATYPE_INT64:
-        for(uint32_t ii=1; ii<xsize*ysize; ii++)
+        for(uint32_t ii=0; ii<xsize*ysize; ii++)
         {
             tmpfim0[ii] = imgin.im->array.SI64[ii];
         }
