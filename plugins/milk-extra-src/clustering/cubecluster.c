@@ -35,7 +35,8 @@ static char *farg_outdname;
 
 // List of arguments to function
 //
-static CLICMDARGDEF farg[] = {{
+static CLICMDARGDEF farg[] = {
+    {
         CLIARG_IMG,
         ".in_name",
         "input image cube",
@@ -195,7 +196,12 @@ findleafnode(CLUSTERTREE *ctree, double *datavec, long *nodeindex)
 }
 
 static errno_t
-findleaf(CLUSTERTREE *ctree, double *datavec, long CFindex, long *leafindex)
+findleaf(
+    CLUSTERTREE *ctree,
+    double *datavec,
+    long CFindex,
+    long *leafindex
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -263,7 +269,12 @@ findleaf(CLUSTERTREE *ctree, double *datavec, long CFindex, long *leafindex)
     return RETURN_SUCCESS;
 }
 
-static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
+
+
+static errno_t imcube_makecluster(
+    IMGID img,
+    const char *__restrict outdname
+)
 {
     // entering function, updating trace accordingly
     DEBUG_TRACE_FSTART();
@@ -304,6 +315,8 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
         printf("Mask image loaded\n");
     }
 
+
+
     // build pixmap to load input images in vectors
     float maskeps = 1.0e-5; // threshold below which pixels are ignored
     long  pixcnt  = 0;
@@ -339,9 +352,10 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
         }
     }
 
+
     CLUSTERTREE ctree; // cluster tree
 
-    ctree.NBCF         = 10000;
+    ctree.NBCF         = 10000; // number of cluster features
     ctree.B            = 10; // max number of branches out of node
     ctree.L            = 10; // max numbers of CF entries in leaf node
     ctree.noise2offset = 2.0e10;
@@ -376,11 +390,14 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
     long NBframe = zsize;
 
     // keeping track of leaf CF index for each frame
+    // each frame belongs to a CF
     long *frameleafCFindex = (long *) malloc(sizeof(long) * NBframe);
     if(frameleafCFindex == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
+
+
 
     long framecnt = 0;
     for(long frame = 0; frame < NBframe; frame++)
@@ -389,7 +406,8 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
 
         FUNC_CHECK_RETURN(ctree_check(&ctree));
 
-        // Load image data into vector
+        // Load image data into vector datarray
+        //
         long double ssqr     = 0.0;
         long double ssqrdiff = 0.0;
         for(long ii = 0; ii < CF_npix; ii++)
@@ -407,12 +425,12 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
         if(ssqrdiff < 1.0e-6 * ssqr)
         {
             // duplicate, skip
-            /*printf("\n skipping ID %5ld frame %5ld  :  %16Lg  %16Lg -> %16Lg   \n",
+            printf("\n skipping ID %5ld frame %5ld  :  %16Lg  %16Lg -> %16Lg   \n",
                    img.ID, frame,
                    ssqrdiff,
                    ssqr,
                    ssqrdiff/ssqr);
-                   */
+
             frameskip = 1;
         }
         if(frame == 0)
@@ -426,12 +444,12 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
                    img.ID,
                    frame,
                    CF_npix);
-            /*printf("---------------- %16Lg  %16Lg -> %16Lg\n",
+            printf("---------------- %16Lg  %16Lg -> %16Lg\n",
                    ssqrdiff,
                    ssqr,
-                   ssqrdiff/ssqr);*/
+                   ssqrdiff/ssqr);
 
-            //printf("    SSWR = %g\n", (double) ssqr);
+            printf("    SSQR = %g\n", (double) ssqr);
 
             // INITIALIZATION
             if(frame == 0)
@@ -741,6 +759,7 @@ static errno_t imcube_makecluster(IMGID img, const char *__restrict outdname)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
 
 // Wrapper function, used by all CLI calls
 // Defines how local variables are fed to computation code

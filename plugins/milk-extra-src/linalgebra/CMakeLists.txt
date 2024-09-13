@@ -63,6 +63,7 @@ set(INCLUDEFILES
 )
 
 set(SCRIPTS
+	scripts/milk-linmap-calib
     scripts/milk-modes-project
 	scripts/milk-modes-project-U
 )
