@@ -56,7 +56,8 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 # Convention: the main souce file is named <libname>.c
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+											$<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
 if(USE_CUDA)
@@ -87,6 +88,6 @@ target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA -DHAVE_MAGMA -DUSE_MAGMA)
 endif(USE_MAGMA)
 
 
-install(TARGETS ${LIBNAME} DESTINATION lib)
+install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})

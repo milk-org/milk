@@ -278,7 +278,9 @@ set(PROGRAM_PERMISSIONS_DEFAULT
     WORLD_READ WORLD_EXECUTE)
 
 
-install(TARGETS milk DESTINATION bin PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+install(TARGETS milk
+      DESTINATION bin
+      PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
 
 
 
@@ -293,6 +295,53 @@ if(INSTALLMAKEDEFAULT)
     ")
 endif(INSTALLMAKEDEFAULT)
 
+
+# =======================================
+# CONFIG.CMAKE
+# =======================================
+
+set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include
+    CACHE PATH "Location of header files" )
+set(LIBRARY_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/lib
+    CACHE PATH "Location of libraries" )
+
+# Export the targets to a file for use in the Config.cmake file
+install(EXPORT ${PROJECT_NAME}Targets
+    FILE "${PROJECT_NAME}Targets.cmake"
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION lib/cmake
+)
+
+# Set alias for collective milk::milk_all target as well
+add_library(${PROJECT_NAME}_all INTERFACE)
+target_link_libraries(${PROJECT_NAME}_all INTERFACE ${libname})
+target_include_directories(${PROJECT_NAME}_all INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include>
+)
+install(TARGETS ${PROJECT_NAME}_all EXPORT milkTargets)
+
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION lib/cmake
+    PATH_VARS INCLUDE_INSTALL_DIR LIBRARY_INSTALL_DIR
+)
+
+# Install the Config.cmake and ConfigVersion.cmake files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION lib/cmake
+)
 
 
 # =======================================
