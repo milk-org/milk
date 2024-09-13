@@ -316,6 +316,180 @@ errno_t computeSGEMM(
 
 
 
+    float *imarrayA;
+    float *imarrayB;
+
+    // copy input to d_immatA
+    // perform type conversion to float if needed
+    //
+    if (imginA.md->datatype == _DATATYPE_FLOAT )
+    {
+        imarrayA = imginA.im->array.F;
+    }
+    else
+    {
+        // type conversion required
+        //
+        imarrayA = (float*) malloc(sizeof(float)*imginA.md->nelement);
+
+        switch (imginA.md->datatype)
+        {
+        case _DATATYPE_DOUBLE:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.D[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT8:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.UI8[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT16:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.UI16[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT32:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.UI32[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT64:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.UI64[ii];
+            }
+            break;
+
+        case _DATATYPE_INT8:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.SI8[ii];
+            }
+            break;
+
+        case _DATATYPE_INT16:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.SI16[ii];
+            }
+            break;
+
+        case _DATATYPE_INT32:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.SI32[ii];
+            }
+            break;
+
+        case _DATATYPE_INT64:
+            for(uint32_t ii=0; ii<imginA.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginA.im->array.SI64[ii];
+            }
+            break;
+        }
+    }
+
+
+    // copy input to d_immatA
+    // perform type conversion to float if needed
+    //
+    if (imginB.md->datatype == _DATATYPE_FLOAT )
+    {
+        imarrayB = imginB.im->array.F;
+    }
+    else
+    {
+        // type conversion required
+        //
+        imarrayB = (float*) malloc(sizeof(float)*imginB.md->nelement);
+
+        switch (imginB.md->datatype)
+        {
+        case _DATATYPE_DOUBLE:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.D[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT8:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.UI8[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT16:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.UI16[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT32:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.UI32[ii];
+            }
+            break;
+
+        case _DATATYPE_UINT64:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.UI64[ii];
+            }
+            break;
+
+        case _DATATYPE_INT8:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.SI8[ii];
+            }
+            break;
+
+        case _DATATYPE_INT16:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.SI16[ii];
+            }
+            break;
+
+        case _DATATYPE_INT32:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.SI32[ii];
+            }
+            break;
+
+        case _DATATYPE_INT64:
+            for(uint32_t ii=0; ii<imginB.md->nelement; ii++)
+            {
+                imarrayA[ii] = imginB.im->array.SI64[ii];
+            }
+            break;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -342,16 +516,15 @@ errno_t computeSGEMM(
         }
 
 
+
         {
-            cudaError_t stat = cudaMemcpy(d_inmatA, imginA.im->array.F, imginA.md->nelement * sizeof(float),
+            cudaError_t stat = cudaMemcpy(d_inmatA, imarrayA, imginA.md->nelement * sizeof(float),
                                           cudaMemcpyHostToDevice);
             if (stat != cudaSuccess) {
                 printf ("cudaMemcpy failed\n");
                 return EXIT_FAILURE;
             }
         }
-
-
 
 
         float *d_inmatB;
@@ -366,13 +539,14 @@ errno_t computeSGEMM(
 
 
         {
-            cudaError_t stat = cudaMemcpy(d_inmatB, imginB.im->array.F, imginB.md->nelement * sizeof(float),
+            cudaError_t stat = cudaMemcpy(d_inmatB, imarrayB, imginB.md->nelement * sizeof(float),
                                           cudaMemcpyHostToDevice);
             if (stat != cudaSuccess) {
                 printf ("cudaMemcpy failed\n");
                 return EXIT_FAILURE;
             }
         }
+
 
 
 
@@ -467,11 +641,22 @@ errno_t computeSGEMM(
 
         cblas_sgemm(CblasColMajor, OPA, OPB,
                     Mdim, Ndim, Kdim, 1.0,
-                    imginA.im->array.F, inA_Mdim,
-                    imginB.im->array.F, inB_Mdim,
+                    imarrayA, inA_Mdim,
+                    imarrayB, inB_Mdim,
                     0.0, outimg->im->array.F, outMdim);
     }
 
+
+
+    if (imginA.md->datatype == _DATATYPE_FLOAT )
+    {
+        free(imarrayA);
+    }
+
+    if (imginB.md->datatype == _DATATYPE_FLOAT )
+    {
+        free(imarrayB);
+    }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
