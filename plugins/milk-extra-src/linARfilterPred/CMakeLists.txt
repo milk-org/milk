@@ -85,5 +85,5 @@ target_link_libraries(${LIBNAME} PRIVATE CLIcore)
 
 
 
-install(TARGETS ${LIBNAME} DESTINATION lib)
+install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})

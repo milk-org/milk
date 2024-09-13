@@ -339,14 +339,14 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     processinfo_loopstart(
         processinfo); // Notify processinfo that we are entering loop
 
-    printf("cnt0: %d; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+    printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
     fflush(stdout);
 
     // long loopcnt = 0;
     while(loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
-        printf("cnt0: %d; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+        printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
         fflush(stdout);
 
         if(data.image[IDin].md[0].sem == 0)

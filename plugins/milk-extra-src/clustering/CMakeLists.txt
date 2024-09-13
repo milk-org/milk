@@ -57,11 +57,14 @@ project(lib_${LIBNAME}_project)
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
-target_include_directories(${LIBNAME} PUBLIC ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+											$<INSTALL_INTERFACE:include>
+											$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+											$<INSTALL_INTERFACE:include/${SRCNAME}>)
 
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
-install(TARGETS ${LIBNAME} DESTINATION lib)
+install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)

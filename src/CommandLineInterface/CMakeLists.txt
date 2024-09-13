@@ -153,7 +153,8 @@ if(${HWLOC_FOUND})
   target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
 endif()
 target_include_directories(CLIcore
-                           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                           PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                  $<INSTALL_INTERFACE:include/${SRCNAME}>
                                   ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
                                   ${HWLOC_INCLUDE_DIR} ${NCURSES_INCLUDE_DIR})
 target_compile_options(CLIcore PUBLIC)
@@ -169,7 +170,7 @@ if(${python_module})
   add_subdirectory(python_module)
 endif()
 
-install(TARGETS CLIcore DESTINATION lib)
+install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 
 
 install(FILES CLIcore.h
