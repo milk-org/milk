@@ -646,14 +646,15 @@ errno_t computeSGEMM(
                     0.0, outimg->im->array.F, outMdim);
     }
 
+    printf("Freeing float arrays\n");
+    fflush(stdout);
 
-
-    if (imginA.md->datatype == _DATATYPE_FLOAT )
+    if (imginA.md->datatype != _DATATYPE_FLOAT )
     {
         free(imarrayA);
     }
 
-    if (imginB.md->datatype == _DATATYPE_FLOAT )
+    if (imginB.md->datatype != _DATATYPE_FLOAT )
     {
         free(imarrayB);
     }
