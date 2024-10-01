@@ -9,6 +9,8 @@ local
 _tmplist.txt
 .vscode
 
+Testing/
+
 #
 # ignore all plugins by default
 #
