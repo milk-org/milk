@@ -10,6 +10,7 @@ set(SOURCEFILES
 	image_crop.c
 	image_crop2D.c
 	image_multicrop2D.c
+	image_cropmask.c
 	image_merge3D.c
 	image_norm.c
 	image_pixremap.c
