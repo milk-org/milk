@@ -192,27 +192,27 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
             switch(errno)
             {
 
-                case EINTR:
-                    printf(
-                        "    sem_wait call was interrupted by a signal "
-                        "handler\n");
-                    break;
+            case EINTR:
+                printf(
+                    "    sem_wait call was interrupted by a signal "
+                    "handler\n");
+                break;
 
-                case EINVAL:
-                    printf("    not a valid semaphore\n");
-                    break;
+            case EINVAL:
+                printf("    not a valid semaphore\n");
+                break;
 
-                case EAGAIN:
-                    printf(
-                        "    The operation could not be performed "
-                        "without blocking (i.e., the semaphore "
-                        "currently has "
-                        "the value zero)\n");
-                    break;
+            case EAGAIN:
+                printf(
+                    "    The operation could not be performed "
+                    "without blocking (i.e., the semaphore "
+                    "currently has "
+                    "the value zero)\n");
+                break;
 
-                default:
-                    printf("    ERROR: unknown code %d\n", rv);
-                    break;
+            default:
+                printf("    ERROR: unknown code %d\n", rv);
+                break;
             }
         }
         else
@@ -1090,6 +1090,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             monitorindex++;
 
+            // Carry cnt0 to streamproctrace
+            img_p->streamproctrace[0].cnt0 = img_p->md->cnt0;
             processinfo_update_output_stream(processinfo, ID);
         }
 
