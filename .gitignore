@@ -1,5 +1,7 @@
 build
 _build
+build_debug
+install_debug
 src/config.h
 src/milk_config.h
 local
