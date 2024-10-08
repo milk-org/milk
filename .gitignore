@@ -1,11 +1,15 @@
 build
 _build
+build_debug
+install_debug
 src/config.h
 src/milk_config.h
 local
 
 _tmplist.txt
 .vscode
+
+Testing/
 
 #
 # ignore all plugins by default

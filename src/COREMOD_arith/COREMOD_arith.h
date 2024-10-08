@@ -14,6 +14,7 @@
 #include "COREMOD_arith/image_crop.h"
 #include "COREMOD_arith/image_crop2D.h"
 #include "COREMOD_arith/image_multicrop2D.h"
+#include "COREMOD_arith/image_cropmask.h"
 #include "COREMOD_arith/image_dxdy.h"
 #include "COREMOD_arith/image_merge3D.h"
 #include "COREMOD_arith/image_stats.h"

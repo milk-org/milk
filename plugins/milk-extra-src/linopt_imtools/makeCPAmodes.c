@@ -300,7 +300,6 @@ errno_t linopt_imtools_makeCPAmodes(
 )
 {
     DEBUG_TRACE_FSTART();
-    DEBUG_TRACEPOINT("FARG %s", ID_name);
 
 
     long    NBfrequ;
@@ -351,10 +350,10 @@ errno_t linopt_imtools_makeCPAmodes(
 
     for(uint32_t ii = 0; ii < sizex; ii++)
     {
-        float x = (1.0 * ii - xcenter ) / radius;
+        float x = (1.0 * ii - xcenter) / radius;
         for(uint32_t jj = 0; jj < sizey; jj++)
         {
-            float y = (1.0 * jj - ycenter ) / radius;
+            float y = (1.0 * jj - ycenter) / radius;
             float r = sqrt(x * x + y * y);
             imgx.im->array.F[jj * sizex + ii] = x;
             imgy.im->array.F[jj * sizex + ii] = y;
@@ -370,7 +369,7 @@ errno_t linopt_imtools_makeCPAmodes(
 
     IMGID imgpixdist = mkIMGID_from_name("pixdist");
 
-    if( imgmask.ID != -1)
+    if(imgmask.ID != -1)
     {
         MASKext = 1;
         printf("processing mask\n");
@@ -389,7 +388,7 @@ errno_t linopt_imtools_makeCPAmodes(
         long NBmaskpix = 0;
         for(uint32_t ii = 0; ii < sizexy; ii++)
         {
-            if( imgmask.im->array.F[ii] > 0.5)
+            if(imgmask.im->array.F[ii] > 0.5)
             {
                 NBmaskpix ++;
             }
@@ -398,14 +397,14 @@ errno_t linopt_imtools_makeCPAmodes(
         printf("mask has %ld active pixels\n", NBmaskpix);
         fflush(stdout);
 
-        float * maskx = (float*) malloc(sizeof(float)*NBmaskpix);
-        float * masky = (float*) malloc(sizeof(float)*NBmaskpix);
+        float *maskx = (float *) malloc(sizeof(float) * NBmaskpix);
+        float *masky = (float *) malloc(sizeof(float) * NBmaskpix);
 
         {
             long mpix = 0;
             for(uint32_t ii = 0; ii < sizexy; ii++)
             {
-                if( imgmask.im->array.F[ii] > 0.5)
+                if(imgmask.im->array.F[ii] > 0.5)
                 {
                     maskx[mpix] = imgx.im->array.F[ii];
                     masky[mpix] = imgy.im->array.F[ii];
@@ -419,9 +418,9 @@ errno_t linopt_imtools_makeCPAmodes(
         fflush(stdout);
 
 
-        for(uint32_t ii0 = 0; ii0 < sizex*sizey; ii0++)
+        for(uint32_t ii0 = 0; ii0 < sizex * sizey; ii0++)
         {
-            if( imgmask.im->array.F[ii0] > 0.5 )
+            if(imgmask.im->array.F[ii0] > 0.5)
             {
                 imgpixdist.im->array.F[ii0] = 0.0;
             }
@@ -436,10 +435,10 @@ errno_t linopt_imtools_makeCPAmodes(
                 {
                     float dx = x0 - maskx[mpix];
                     float dy = y0 - masky[mpix];
-                    float dr2 = dx*dx + dy*dy;
+                    float dr2 = dx * dx + dy * dy;
                     float dr = sqrt(dr2);
 
-                    if( dr < imgpixdist.im->array.F[ii0] )
+                    if(dr < imgpixdist.im->array.F[ii0])
                     {
                         imgpixdist.im->array.F[ii0] = dr;
                     }
@@ -465,18 +464,18 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
-                if(CPAr>0.001) // excluding piston from array
+                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                if(CPAr > 0.001) // excluding piston from array
                 {
-                    if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                    if((CPAr > rCPAmin) && (CPAr < rCPAmax))
                     {
                         //printf("%5ld  CORE  : %f %f\n", NBfrequ, CPAx, CPAy);
                         NBfrequ++;
 
 
-                        if( initCPAx == 1 ) // not on the x=0 line
+                        if(initCPAx == 1)   // not on the x=0 line
                         {
-                            if( initCPAy == 1 ) // not on the y=0 line
+                            if(initCPAy == 1)   // not on the y=0 line
                             {
                                 NBfrequ++;
                             }
@@ -500,19 +499,19 @@ errno_t linopt_imtools_makeCPAmodes(
 
     DEBUG_TRACEPOINT("NBfrequ = %ld", NBfrequ);
 
-    float * CPAxarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float *CPAxarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPAxarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    float * CPAyarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float *CPAyarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPAyarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    float * CPArarray = (float *) malloc(sizeof(float) * NBfrequ);
+    float *CPArarray = (float *) malloc(sizeof(float) * NBfrequ);
     if(CPArarray == NULL)
     {
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
@@ -527,19 +526,19 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx*CPAx + CPAy*CPAy);
-                if(CPAr>0.001) // excluding piston from array
+                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                if(CPAr > 0.001) // excluding piston from array
                 {
-                    if( (CPAr > rCPAmin) && (CPAr < rCPAmax))
+                    if((CPAr > rCPAmin) && (CPAr < rCPAmax))
                     {
                         //printf("%5ld  CORE  : %+f %+f   %6.3f\n", NBfrequ, CPAx, CPAy, CPAr);
                         CPAxarray[NBfrequ] = CPAx;
                         CPAyarray[NBfrequ] = CPAy;
                         CPArarray[NBfrequ] = CPAr;
                         NBfrequ ++;
-                        if( initCPAx == 1 ) // not on the x=0 line
+                        if(initCPAx == 1)   // not on the x=0 line
                         {
-                            if( initCPAy == 1 ) // not on the y=0 line
+                            if(initCPAy == 1)   // not on the y=0 line
                             {
                                 CPAxarray[NBfrequ] = CPAx;
                                 CPAyarray[NBfrequ] = -CPAy;
@@ -672,11 +671,6 @@ errno_t linopt_imtools_makeCPAmodes(
     FUNC_CHECK_RETURN(create_2Dimage_ID("cpamodesfreq", NBmax, 1, &IDfreq));
 
     DEBUG_TRACEPOINT("IDfreq %ld", IDfreq);
-    DEBUG_TRACEPOINT("IDx %ld", IDx);
-    DEBUG_TRACEPOINT("IDy %ld", IDy);
-    DEBUG_TRACEPOINT("IDr %ld", IDr);
-    DEBUG_TRACEPOINT("ID %ld", ID);
-    DEBUG_TRACEPOINT("size2 %ld", size2);
     list_image_ID();
 
 
@@ -739,15 +733,16 @@ errno_t linopt_imtools_makeCPAmodes(
             float r                           = imgr.im->array.F[ii];
 
             data.image[IDfreq].array.F[k]    = frequency;
-            data.image[IDfreq].array.F[k+1]  = frequency;
+            data.image[IDfreq].array.F[k + 1]  = frequency;
             if(r < radfactlim)
             {
                 // attenuation factor for extrapolation
                 float afact = 1.0;
-                if( MASKext == 1 )
+                if(MASKext == 1)
                 {
                     float pdist = imgpixdist.im->array.F[ii];
-                    float afact0 = 1.0 + extroffset - pdist * sqrt(CPAx*CPAx + CPAy*CPAy) * M_PI / extrfactor;
+                    float afact0 = 1.0 + extroffset - pdist * sqrt(CPAx * CPAx + CPAy * CPAy) *
+                                   M_PI / extrfactor;
                     if(afact0 > 1.0)
                     {
                         afact0 = 1.0;
@@ -757,13 +752,13 @@ errno_t linopt_imtools_makeCPAmodes(
                         afact0 = 0.0;
                     }
                     //afact0 = 0.5;
-                    afact = 0.5 * (cos( (1.0-afact0)*M_PI) + 1.0);
+                    afact = 0.5 * (cos((1.0 - afact0) * M_PI) + 1.0);
                 }
 
                 imgoutm->im->array.F[(k) * sizexy + ii] =
                     fampl * afact * cos(M_PI * (x * CPAx + y * CPAy));
 
-                imgoutm->im->array.F[(k+1) * sizexy + ii] =
+                imgoutm->im->array.F[(k + 1) * sizexy + ii] =
                     fampl * afact * sin(M_PI * (x * CPAx + y * CPAy));
             }
         }

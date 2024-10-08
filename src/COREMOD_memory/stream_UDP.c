@@ -481,6 +481,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     char           *buff; // socket-side complete buffer
     char           *buff_udp; // socket-side datagram buffer
     buff_udp = (char *) malloc(sizeof(char) * DGRAM_CHUNK_SIZE + 2);
+    char           *bigbuff_1MB; // socket-side datagram buffer
+    bigbuff_1MB = (char *) malloc(sizeof(char) * 1024 * 1024);
 
     // Datagrams
     long            n_udp_dgrams;
@@ -793,6 +795,13 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     n_udp_dgrams = framesizefull / DGRAM_CHUNK_SIZE + 1;
     last_dgram_chunk = framesizefull % DGRAM_CHUNK_SIZE;
 
+    {
+        int total_udp_size = 3 * ((n_udp_dgrams - 1) * (DGRAM_CHUNK_SIZE + 2) +
+                                  last_dgram_chunk + 2);
+        setsockopt(fds_server, SOL_SOCKET, SO_SNDBUF, &total_udp_size,
+                   sizeof(total_udp_size));
+    }
+
     if(data.processinfo == 1)
     {
         //notify processinfo that we are entering loop
@@ -850,8 +859,13 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             // Purge buffer and resync to a 0-th datagram if necessary
             // This while will terminate when MSG_DONTWAIT causes a
             // errno = EAGAIN / EWOULDBLOCK, meaning the queue is empty.
-            while(recvfrom(fds_server, buff_udp, first_dgram_bytes, MSG_DONTWAIT,
-                           (struct sockaddr *)&sock_client, &slen_client) >= 0) {}
+            int sz;
+            while((sz = recvfrom(fds_server, bigbuff_1MB, 1024 * 1024, MSG_DONTWAIT,
+                                 (struct sockaddr *)&sock_client, &slen_client)) >= 0)
+            {
+                printf("Urrrrgh. -- %d\n", sz);
+                fflush(stdout);
+            }
             // Now give ourselves a chance to grab a clean 0-th datagram.
             for(int n_dgram_wait = 0; n_dgram_wait < MAX_DATAGRAM_WAIT; ++n_dgram_wait)
             {
@@ -862,7 +876,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     printf("ERROR recvfrom() @ A [%d - %s]\n", errno, strerror(errno));
                     loopOK = 0;
                     socketOpen = 0;
-                    break; // This should be a double break...
+                    break; // This should be a double break... loopOK = 0 should cover.
                 }
 
 
@@ -871,6 +885,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     printf("-- Resync achieved after %d datagrams.\n", n_dgram_wait);
                     abort_frame = 0;
                     break;
+                }
+                else
+                {
+                    printf("MMMMMMhhhhhh.\n");
+                    fflush(stdout);
                 }
             }
 

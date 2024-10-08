@@ -176,14 +176,16 @@ static errno_t streamCTRL_keyinput_process(
             sindex = sTUIparam.ssindex[sTUIparam.dindexSelected];
             DEBUG_TRACEPOINT("removing stream sindex = %ld", sindex);
 
-            if( streamCTRLdata->sinfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS )
+            if(streamCTRLdata->sinfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS)
             {
-                ImageStreamIO_destroyIm(&streamCTRLdata->images[streamCTRLdata->sinfo[sindex].ID]);
+                ImageStreamIO_destroyIm(
+                    &streamCTRLdata->images[streamCTRLdata->sinfo[sindex].ID]);
             }
             else
             {
                 char fname[512];
-                ImageStreamIO_filename(fname, sizeof(fname), streamCTRLdata->sinfo[sindex].sname);
+                ImageStreamIO_filename(fname, sizeof(fname),
+                                       streamCTRLdata->sinfo[sindex].sname);
                 remove(fname);
             }
 
@@ -194,7 +196,8 @@ static errno_t streamCTRL_keyinput_process(
     // ============ SCANNING
 
     case '{': // slower scan update
-        streamCTRLdata->streaminfoproc->twaitus = (int)(1.2 * streamCTRLdata->streaminfoproc->twaitus);
+        streamCTRLdata->streaminfoproc->twaitus = (int)(1.2 *
+                streamCTRLdata->streaminfoproc->twaitus);
         if(streamCTRLdata->streaminfoproc->twaitus > 1000000)
         {
             streamCTRLdata->streaminfoproc->twaitus = 1000000;
@@ -985,7 +988,7 @@ errno_t streamCTRL_CTRLscreen()
                 DEBUG_TRACEPOINT(" ");
 
 
-                if ( streaminfo[sindex].ISIOretval != IMAGESTREAMIO_SUCCESS )
+                if(streaminfo[sindex].ISIOretval != IMAGESTREAMIO_SUCCESS)
                 {
                     if(DisplayFlag == 1)
                     {
@@ -1008,7 +1011,7 @@ errno_t streamCTRL_CTRLscreen()
                         screenprint_unsetcolor(4);
                         TUI_printfw("  ");
 
-                        switch ( streaminfo[sindex].ISIOretval )
+                        switch(streaminfo[sindex].ISIOretval)
                         {
                         case IMAGESTREAMIO_FILEOPEN :
                             TUI_printfw("cannot open file");
@@ -1097,7 +1100,7 @@ errno_t streamCTRL_CTRLscreen()
                     }
                     else
                     {
-                        DEBUG_TRACEPOINT("%d, %s, ID = %ld, used = %d, name= %s, %d %d",
+                        DEBUG_TRACEPOINT("%d, %s, ID = %ld, used = %d, name= %s, ISIOcode= %d (OK = %d)",
                                          sindex,
                                          streaminfo[sindex].sname,
                                          streaminfo[sindex].ID,
@@ -1376,7 +1379,7 @@ errno_t streamCTRL_CTRLscreen()
                                         : 3;
                             for(s = 0; s < max_s; s++)
                             {
-                                int semval = ImageStreamIO_semvalue(streamCTRLimages+ID, s);
+                                int semval = ImageStreamIO_semvalue(streamCTRLimages + ID, s);
                                 snprintf(string, stringlen, " %7d", semval);
                                 TUI_printfw(string);
                             }
