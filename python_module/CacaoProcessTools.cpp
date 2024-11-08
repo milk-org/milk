@@ -23,36 +23,36 @@ int fps_value_to_key(pyFps             &cls,
 
     switch(switch_fps_type)
     {
-        case FPS_type::ONOFF:
-            return functionparameter_SetParamValue_ONOFF(cls,
-                    key.c_str(), py::bool_(value));
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return functionparameter_SetParamValue_INT64(cls,
-                    key.c_str(),
-                    py::int_(value));
-        case FPS_type::FLOAT32:
-            return functionparameter_SetParamValue_FLOAT32(cls,
-                    key.c_str(),
-                    py::float_(value));
-        case FPS_type::FLOAT64:
-            return functionparameter_SetParamValue_FLOAT64(cls,
-                    key.c_str(),
-                    py::float_(value));
-        case FPS_type::STRING:
-        case FPS_type::STREAMNAME:
-        case FPS_type::DIRNAME:
-        case FPS_type::EXECFILENAME:
-        case FPS_type::FILENAME:
-        case FPS_type::FITSFILENAME:
-            return functionparameter_SetParamValue_STRING(
-                       cls,
-                       key.c_str(),
-                       std::string(py::str(value)).c_str());
-        default:
-            return EXIT_FAILURE;
+    case FPS_type::ONOFF:
+        return functionparameter_SetParamValue_ONOFF(cls,
+                key.c_str(), py::bool_(value));
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+        return functionparameter_SetParamValue_INT64(cls,
+                key.c_str(),
+                py::int_(value));
+    case FPS_type::FLOAT32:
+        return functionparameter_SetParamValue_FLOAT32(cls,
+                key.c_str(),
+                py::float_(value));
+    case FPS_type::FLOAT64:
+        return functionparameter_SetParamValue_FLOAT64(cls,
+                key.c_str(),
+                py::float_(value));
+    case FPS_type::STRING:
+    case FPS_type::STREAMNAME:
+    case FPS_type::DIRNAME:
+    case FPS_type::EXECFILENAME:
+    case FPS_type::FILENAME:
+    case FPS_type::FITSFILENAME:
+        return functionparameter_SetParamValue_STRING(
+                   cls,
+                   key.c_str(),
+                   std::string(py::str(value)).c_str());
+    default:
+        return EXIT_FAILURE;
     }
 }
 
@@ -61,29 +61,29 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch(fps_type)
     {
-        case FPS_type::ONOFF:
-            return py::bool_(functionparameter_GetParamValue_ONOFF(cls, key.c_str()));
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return py::int_(
-                       functionparameter_GetParamValue_INT64(cls, key.c_str()));
-        case FPS_type::FLOAT32:
-            return py::float_(
-                       functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
-        case FPS_type::FLOAT64:
-            return py::float_(
-                       functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
-        case FPS_type::STRING:
-        case FPS_type::STREAMNAME:
-        case FPS_type::DIRNAME:
-        case FPS_type::EXECFILENAME:
-        case FPS_type::FILENAME:
-        case FPS_type::FITSFILENAME:
-            return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
-        default:
-            return py::none();
+    case FPS_type::ONOFF:
+        return py::bool_(functionparameter_GetParamValue_ONOFF(cls, key.c_str()));
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+    case FPS_type::UINT64:
+        return py::int_(
+                   functionparameter_GetParamValue_INT64(cls, key.c_str()));
+    case FPS_type::FLOAT32:
+        return py::float_(
+                   functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
+    case FPS_type::FLOAT64:
+        return py::float_(
+                   functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
+    case FPS_type::STRING:
+    case FPS_type::STREAMNAME:
+    case FPS_type::DIRNAME:
+    case FPS_type::EXECFILENAME:
+    case FPS_type::FILENAME:
+    case FPS_type::FITSFILENAME:
+        return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+    default:
+        return py::none();
     }
 }
 
@@ -410,12 +410,24 @@ If entry already exists, do not modify it
 
 Parameters:
     name     [in]:  the name of the shared memory file to connect
-    create   [in]:  flag for creating of shared memory identifier
-    NBparamMAX   [in]:  Max number of parameters
 )pbdoc",
              py::arg("entry_name"),
              py::arg("entry_desc"),
              py::arg("fptype"))
+
+	    .def("add_entry",
+             &pyFps::add_entry_w_flags,
+             R"pbdoc(Add parameter to database with custom flags
+
+If entry already exists, do not modify it
+
+Parameters:
+    name     [in]:  the name of the shared memory file to connect
+)pbdoc",
+             py::arg("entry_name"),
+             py::arg("entry_desc"),
+             py::arg("fptype"),
+	         py::arg("fpflag"))
 
         .def("get_status", &pyFps::get_status)
         .def("set_status", &pyFps::set_status)
