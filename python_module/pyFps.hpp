@@ -221,7 +221,10 @@ class pyFps
                   uint32_t fptype)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
-        return function_parameter_add_entry(&fps_, entry_name.c_str(),
+        // We need to prepend a . to entry to abide by FPS conventions
+        // See fps_add_entry.c
+        std::string preprended = "." + entry_name;
+        return function_parameter_add_entry(&fps_, preprended.c_str(),
                                             entry_desc.c_str(), fptype,
                                             FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
     }
@@ -241,6 +244,7 @@ class pyFps
                           uint32_t fptype, uint64_t fpflag)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
+        std::string preprended = "." + entry_name;
         return function_parameter_add_entry(&fps_, entry_name.c_str(),
                                             entry_desc.c_str(), fptype,
                                             fpflag, nullptr, nullptr);
