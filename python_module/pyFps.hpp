@@ -58,6 +58,15 @@ enum FPS_type : uint32_t
     FPSNAME      = FPTYPE_FPSNAME,
 };
 
+enum FPS_flags : uint64_t
+{
+    // There are many more
+    DEFAULT_INPUT         = FPFLAG_DEFAULT_INPUT,
+    DEFAULT_OUTPUT        = FPFLAG_DEFAULT_OUTPUT,
+    DEFAULT_INPUT_STREAM  = FPFLAG_DEFAULT_INPUT_STREAM,
+    DEFAULT_OUTPUT_STREAM = FPFLAG_DEFAULT_OUTPUT_STREAM,
+};
+
 class pyFps
 {
     std::string name_;
@@ -215,6 +224,26 @@ class pyFps
         return function_parameter_add_entry(&fps_, entry_name.c_str(),
                                             entry_desc.c_str(), fptype,
                                             FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
+    }
+
+    /**
+     * @brief Add parameter to database with generic settings
+     *
+     * If entry already exists, do not modify it
+     *
+     * @param entry_name : entry name
+     * @param entry_desc : entry description
+     * @param fptype : entry type ("int","double","float","string")
+     * @param fpflag : entry flags
+     * @return int
+     */
+    int add_entry_w_flags(std::string entry_name, std::string entry_desc,
+                          uint32_t fptype, uint64_t fpflag)
+    {
+        keys_[entry_name] = static_cast<FPS_type>(fptype);
+        return function_parameter_add_entry(&fps_, entry_name.c_str(),
+                                            entry_desc.c_str(), fptype,
+                                            fpflag, nullptr, nullptr);
     }
 
     /**
