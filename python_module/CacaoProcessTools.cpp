@@ -154,6 +154,14 @@ PYBIND11_MODULE(CacaoProcessTools, m)
         .value("FPSNAME", FPS_type::FPSNAME)
         .export_values();
 
+    py::enum_<FPS_flags>(m, "FPS_flags")
+	.value("DEFAULT_INPUT", FPS_flags::DEFAULT_INPUT)
+	.value("DEFAULT_OUTPUT", FPS_flags::DEFAULT_OUTPUT)
+	.value("DEFAULT_INPUT_STREAM", FPS_flags::DEFAULT_INPUT_STREAM)
+	.value("DEFAULT_OUTPUT_STREAM", FPS_flags::DEFAULT_OUTPUT_STREAM)
+	.export_values();
+
+
     py::class_<timespec>(m, "timespec")
         .def(py::init<time_t, long>())
         .def_readwrite("tv_sec", &timespec::tv_sec)
@@ -410,6 +418,8 @@ If entry already exists, do not modify it
 
 Parameters:
     name     [in]:  the name of the shared memory file to connect
+    comment  [in]:  description
+    fptype   [in]:  datatype
 )pbdoc",
              py::arg("entry_name"),
              py::arg("entry_desc"),
@@ -423,6 +433,9 @@ If entry already exists, do not modify it
 
 Parameters:
     name     [in]:  the name of the shared memory file to connect
+    comment  [in]:  description
+    fptype   [in]:  datatype
+    fpflag   [in]:  fps flags
 )pbdoc",
              py::arg("entry_name"),
              py::arg("entry_desc"),
