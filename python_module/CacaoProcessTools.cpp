@@ -159,6 +159,7 @@ PYBIND11_MODULE(CacaoProcessTools, m)
 	.value("DEFAULT_OUTPUT", FPS_flags::DEFAULT_OUTPUT)
 	.value("DEFAULT_INPUT_STREAM", FPS_flags::DEFAULT_INPUT_STREAM)
 	.value("DEFAULT_OUTPUT_STREAM", FPS_flags::DEFAULT_OUTPUT_STREAM)
+    .value("DEFAULT_STATUS", FPS_flags::DEFAULT_STATUS)
 	.export_values();
 
 
