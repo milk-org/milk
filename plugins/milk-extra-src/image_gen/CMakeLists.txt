@@ -19,6 +19,7 @@ set(INCLUDEFILES
 
 set(LINKLIBS
 	CLIcore
+	milkstatistic
 )
 
 # DEFAULT SETTINGS
