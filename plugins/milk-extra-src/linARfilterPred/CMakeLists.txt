@@ -36,13 +36,9 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 
 if(USE_CUDA)
-find_package(CUDA 9.0 REQUIRED)
-message(STATUS "Found CUDA ${CUDA_VERSION_STRING} at ${CUDA_TOOLKIT_ROOT_DIR}")
-message("---- CUDA_INCLUDE_DIRS = ${CUDA_INCLUDE_DIRS}")
-message("---- CUDA_LIBRARIES    = ${CUDA_LIBRARIES}" )
-target_include_directories(${LIBNAME} PUBLIC ${CUDA_INCLUDE_DIRS})
-target_link_libraries(${LIBNAME} PRIVATE ${CUDA_LIBRARIES})
-target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
+	find_package(CUDAToolkit 9.0 REQUIRED)
+	target_include_directories(${LIBNAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+	target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
 endif(USE_CUDA)
 
 
