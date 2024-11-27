@@ -752,6 +752,7 @@ Return:
         // }))
         .def_readonly("name", &FUNCTION_PARAMETER_STRUCT_MD::name)
         .def_readonly("description", &FUNCTION_PARAMETER_STRUCT_MD::description)
+        .def_readonly("kwarray", &FUNCTION_PARAMETER_STRUCT_MD::keywordarray)
         .def_readonly("workdir", &FUNCTION_PARAMETER_STRUCT_MD::workdir)
         .def_readonly("datadir", &FUNCTION_PARAMETER_STRUCT_MD::datadir)
         .def_readonly("confdir", &FUNCTION_PARAMETER_STRUCT_MD::confdir)
