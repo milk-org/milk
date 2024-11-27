@@ -24,22 +24,20 @@ int fps_value_to_key(pyFps             &cls,
     switch(switch_fps_type)
     {
     case FPS_type::ONOFF:
-        return functionparameter_SetParamValue_ONOFF(cls,
-                key.c_str(), py::bool_(value));
+        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(),
+                py::bool_(value));
     case FPS_type::INT32:
     case FPS_type::UINT32:
     case FPS_type::INT64:
+        return functionparameter_SetParamValue_INT64(cls, key.c_str(), py::int_(value));
     case FPS_type::UINT64:
-        return functionparameter_SetParamValue_INT64(cls,
-                key.c_str(),
+        return functionparameter_SetParamValue_UINT64(cls, key.c_str(),
                 py::int_(value));
     case FPS_type::FLOAT32:
-        return functionparameter_SetParamValue_FLOAT32(cls,
-                key.c_str(),
+        return functionparameter_SetParamValue_FLOAT32(cls, key.c_str(),
                 py::float_(value));
     case FPS_type::FLOAT64:
-        return functionparameter_SetParamValue_FLOAT64(cls,
-                key.c_str(),
+        return functionparameter_SetParamValue_FLOAT64(cls, key.c_str(),
                 py::float_(value));
     case FPS_type::STRING:
     case FPS_type::STREAMNAME:
@@ -66,9 +64,11 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
     case FPS_type::INT32:
     case FPS_type::UINT32:
     case FPS_type::INT64:
-    case FPS_type::UINT64:
         return py::int_(
                    functionparameter_GetParamValue_INT64(cls, key.c_str()));
+    case FPS_type::UINT64:
+        return py::int_(
+                   functionparameter_GetParamValue_UINT64(cls, key.c_str()));
     case FPS_type::FLOAT32:
         return py::float_(
                    functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
