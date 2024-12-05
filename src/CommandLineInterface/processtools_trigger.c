@@ -238,7 +238,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         return RETURN_SUCCESS;
     }
 
-    if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)
+    if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
+            processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
         int semr;
         int tmpstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
