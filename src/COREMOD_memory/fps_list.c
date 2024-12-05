@@ -91,8 +91,7 @@ errno_t fps_list()
         if(strstr(de->d_name, ".fps.shm") != NULL)
         {
             char fpsname[100];
-            int  slen  = strlen(de->d_name);
-            int  slen1 = slen - strlen(".fps.shm");
+            int  slen1 = 100 - strlen(".fps.shm");
 
             strncpy(fpsname, de->d_name, slen1);
             fpsname[slen1] = '\0';
