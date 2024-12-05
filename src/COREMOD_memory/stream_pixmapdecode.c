@@ -346,7 +346,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     while(loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
-        printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+        //printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
         fflush(stdout);
 
         if(data.image[IDin].md[0].sem == 0)
@@ -435,12 +435,12 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 if(slice == NBslice - 1)
                 {
-                    COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                    data.image[IDout].md[0].cnt0++;
+                    processinfo_update_output_stream(processinfo, IDout);
                 }
 
                 data.image[IDout].md[0].cnt1 = slice;
 
+                // Whatever hacks these are to manage slicey business?
                 semval = ImageStreamIO_semvalue(data.image + IDout, 2);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
