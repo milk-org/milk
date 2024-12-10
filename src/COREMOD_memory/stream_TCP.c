@@ -21,9 +21,12 @@ static int TCPTRANSFERKW = 1;
 
 typedef struct
 {
+    long magic;
     long cnt0;
     long cnt1;
 } TCP_BUFFER_METADATA;
+
+long FRAME_MD_MAGIC = 0x12341234ff; // Doesn't matter.
 
 // ==========================================
 // Forward declaration(s)
@@ -265,8 +268,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     int             slice, oldslice;
     int             NBslices;
 
-    TCP_BUFFER_METADATA *frame_md;
-    long                 framesize1; // pixel data + metadata
+    TCP_BUFFER_METADATA frame_md = {0};
+    long                framesize1; // pixel data + metadata
     long  framesizeall; // total frame size : pixel data + metadata + kw
     char *buff;         // transmit buffer
 
@@ -406,8 +409,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     if(loopOK == 1)
     {
         ptr0 = (char *) img_p->array.raw;
-
-        frame_md = (TCP_BUFFER_METADATA *) malloc(sizeof(TCP_BUFFER_METADATA));
         framesize1 = framesize + sizeof(TCP_BUFFER_METADATA);
 
         if(TCPTRANSFERKW == 0)
@@ -504,8 +505,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
             if(semr == 0)
             {
-                frame_md->cnt0 = img_p->md->cnt0;
-                frame_md->cnt1 = img_p->md->cnt1;
+                frame_md.magic = FRAME_MD_MAGIC;
+                frame_md.cnt0 = img_p->md->cnt0;
+                frame_md.cnt1 = img_p->md->cnt1;
 
                 slice = img_p->md->cnt1;
                 if(slice > oldslice + 1)
@@ -522,14 +524,15 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     slice = 0;
                 }
 
-                frame_md->cnt1 = slice;
+                frame_md.cnt1 = slice;
 
                 ptr1 =
                     ptr0 +
                     framesize *
                     slice; //img_p->md->cnt1; // frame that was just written
                 memcpy(buff, ptr1, framesize);
-                memcpy(buff + framesize, frame_md, sizeof(TCP_BUFFER_METADATA));
+                *(TCP_BUFFER_METADATA *)(buff + framesize) = frame_md;
+                //memcpy(buff + framesize, &frame_md, sizeof());
 
                 if(TCPTRANSFERKW == 1)
                 {
@@ -582,8 +585,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     printf("port %d closed\n", port);
     fflush(stdout);
 
-    free(frame_md);
-
     return ID;
 }
 
@@ -623,10 +624,10 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     imgmd = (IMAGE_METADATA *) malloc(sizeof(IMAGE_METADATA));
 
-    TCP_BUFFER_METADATA *frame_md;
+    TCP_BUFFER_METADATA *frame_md_p;
     long                 framesize1;    // pixel data + metadata
     long                 framesizefull; // pixel data + metadata + kw
-    char                *buff;          // buffer
+    char                 *buff;          // buffer
 
     //size_t flushsize;
     char *socket_flush_buff;
@@ -952,7 +953,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     buff = (char *) malloc(sizeof(char) * framesizefull);
 
-    frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
+    frame_md_p = (TCP_BUFFER_METADATA *)(buff + framesize);
 
     if(data.processinfo == 1)
     {
@@ -1036,15 +1037,21 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
         if(socketOpen == 1)
         {
-            frame_md = (TCP_BUFFER_METADATA *)(buff + framesize);
+            frame_md_p = (TCP_BUFFER_METADATA *)(buff + framesize);
+            if(frame_md_p->magic != FRAME_MD_MAGIC)
+            {
+                printf("Bad magic! Looping fast.\n");
+                continue;
+            }
 
             img_p->md->write = 1;
-            img_p->md->cnt1 = frame_md->cnt1;
+            img_p->md->cnt1 = frame_md_p->cnt1;
+
 
             // copy pixel data
             if(NBslices > 1)
             {
-                memcpy(ptr0 + framesize * frame_md->cnt1, buff, framesize);
+                memcpy(ptr0 + framesize * frame_md_p->cnt1, buff, framesize);
             }
             else
             {
@@ -1059,16 +1066,16 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                        img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
             }
 
-            frameincr = (long) frame_md->cnt0 - cnt0previous;
+            frameincr = (long) frame_md_p->cnt0 - cnt0previous;
             if(frameincr > 1)
             {
                 printf("Skipped %ld frame(s) at index %ld %ld\n",
                        frameincr - 1,
-                       (long)(frame_md->cnt0),
-                       (long)(frame_md->cnt1));
+                       (long)(frame_md_p->cnt0),
+                       (long)(frame_md_p->cnt1));
             }
 
-            cnt0previous = frame_md->cnt0;
+            cnt0previous = frame_md_p->cnt0;
 
             if(monitorindex == monitorinterval)
             {
@@ -1076,12 +1083,12 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                     "[%5ld]  input %20ld (+ %8ld) output %20ld (+ "
                     "%8ld)\n",
                     monitorloopindex,
-                    frame_md->cnt0,
-                    frame_md->cnt0 - minputcnt,
+                    frame_md_p->cnt0,
+                    frame_md_p->cnt0 - minputcnt,
                     img_p->md->cnt0,
                     img_p->md->cnt0 - moutputcnt);
 
-                minputcnt  = frame_md->cnt0;
+                minputcnt  = frame_md_p->cnt0;
                 moutputcnt = img_p->md->cnt0;
 
                 monitorloopindex++;
