@@ -323,14 +323,15 @@ static errno_t compute_function()
     // CONNECT TO MASK STREAM
     int use_mask = 0; //flag indicating that the mask is being used
     uint32_t mask_npix = 0; //The number of 1 pixels in the mask
-    uint32_t * mask_idx = NULL; //Array holding the indices of the 1 pixels
-    float * masked_pix = NULL; //Array to hold the pixel values
+    uint32_t *mask_idx = NULL;  //Array holding the indices of the 1 pixels
+    float *masked_pix = NULL;  //Array to hold the pixel values
 
     IMGID imgmask = mkIMGID_from_name(inmasksname);
     if(resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
-        if(imgmask.md->size[0] == imgin.md->size[0] && imgmask.md->size[1] == imgin.md->size[1])
+        if(imgmask.md->size[0] == imgin.md->size[0]
+                && imgmask.md->size[1] == imgin.md->size[1])
         {
             use_mask = 1;
         }
@@ -344,7 +345,7 @@ static errno_t compute_function()
     //
     if(use_mask)
     {
-        for(long n=0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
+        for(long n = 0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
         {
             if(imgmask.im->array.F[n] == 1)
             {
@@ -352,10 +353,10 @@ static errno_t compute_function()
             }
         }
 
-        mask_idx = (uint32_t *) malloc( mask_npix * sizeof(long));
-        masked_pix = (float *) malloc( mask_npix * sizeof(float));
+        mask_idx = (uint32_t *) malloc(mask_npix * sizeof(long));
+        masked_pix = (float *) malloc(mask_npix * sizeof(float));
         long nn = 0;
-        for(long n=0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
+        for(long n = 0; n < imgmask.md->size[0]*imgmask.md->size[1]; ++n)
         {
             if(imgmask.im->array.F[n] == 1)
             {
@@ -364,13 +365,15 @@ static errno_t compute_function()
             }
         }
 
-        printf("Mask has : %u pixels (%f%%)\n", mask_npix, (100.0*mask_npix)/(imgmask.md->size[0]*imgmask.md->size[1]));
+        printf("Mask has : %u pixels (%f%%)\n", mask_npix,
+               (100.0 * mask_npix) / (imgmask.md->size[0]*imgmask.md->size[1]));
     }
     else
     {
         //Just use full image
-        mask_npix = imgin.md->size[0]*imgin.md->size[1];
-        printf("No mask using : %u pixels (%f%%)\n", mask_npix, (100.0*mask_npix)/(imgin.md->size[0]*imgin.md->size[1]));
+        mask_npix = imgin.md->size[0] * imgin.md->size[1];
+        printf("No mask using : %u pixels (%f%%)\n", mask_npix,
+               (100.0 * mask_npix) / (imgin.md->size[0]*imgin.md->size[1]));
     }
 
 
@@ -424,7 +427,12 @@ static errno_t compute_function()
     IMGID imgmodes = mkIMGID_from_name(immodes);
     resolveIMGID(&imgmodes, ERRMODE_ABORT);
 
-
+    // Could this be IMGIDcompare?
+    if(imgmodes.md->datatype != _DATATYPE_FLOAT)
+    {
+        PRINT_ERROR("Cannot operate with modes other than FP32!!!s");
+        abort();
+    }
 
     printf("Modes stream size : %u %u\n",
            imgmodes.md->size[0],
@@ -551,7 +559,7 @@ static errno_t compute_function()
     IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
 
     // Local working copy of output
-    float *outarray = (float*) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
+    float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
 
 
@@ -638,22 +646,25 @@ static errno_t compute_function()
             fflush(stdout);
 
             long matsz;
-            float * modesmat;
+            float *modesmat;
 
             if(use_mask)
             {
                 //reformat the matrix using the mask
                 matsz = mask_npix * NBmodes;
-                modesmat = (float *) malloc(sizeof(float)*mask_npix * data.image[IDmodes].md->size[2]);
+                modesmat = (float *) malloc(sizeof(float) * mask_npix *
+                                            data.image[IDmodes].md->size[2]);
 
                 uint32_t nrows = data.image[IDmodes].md->size[2];
-                uint32_t ncols = data.image[IDmodes].md->size[0]*data.image[IDmodes].md->size[1];
+                uint32_t ncols = data.image[IDmodes].md->size[0] *
+                                 data.image[IDmodes].md->size[1];
 
                 for(uint32_t rr = 0; rr < nrows; ++rr)
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        modesmat[rr*mask_npix + cc] = data.image[IDmodes].array.F[rr*ncols + mask_idx[cc]];
+                        modesmat[rr * mask_npix + cc] = data.image[IDmodes].array.F[rr * ncols +
+                                                        mask_idx[cc]];
                     }
                 }
             }
@@ -964,17 +975,18 @@ static errno_t compute_function()
     }
 
 
-    float * imginfloatptr = NULL;
+    float *imginfloatptr = NULL;
 
 
-    if( imgin.md->datatype == _DATATYPE_FLOAT )
+    if(imgin.md->datatype == _DATATYPE_FLOAT)
     {
         imginfloatptr = imgin.im->array.F;
         printf("INPUT type = FLOAT  - no type conversion required\n");
     }
     else
     {
-        imginfloatptr = (float*) malloc(sizeof(float) * imgin.md->size[0] * imgin.md->size[1] );
+        imginfloatptr = (float *) malloc(sizeof(float) * imgin.md->size[0] *
+                                         imgin.md->size[1]);
         printf("INPUT not float -> type conversion to float enabled\n");
     }
 
@@ -1014,72 +1026,72 @@ static errno_t compute_function()
 
 
 
-                if( imgin.md->datatype != _DATATYPE_FLOAT )
+                if(imgin.md->datatype != _DATATYPE_FLOAT)
                 {
                     imginfloatptr = imgin.im->array.F;
 
 
                     // type conversion (if needed)
-                    switch (imgin.md->datatype )
+                    switch(imgin.md->datatype)
                     {
                     case _DATATYPE_DOUBLE:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.D[ii];
                         }
                         break;
 
                     case _DATATYPE_UINT8:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.UI8[ii];
                         }
                         break;
 
                     case _DATATYPE_INT8:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.SI8[ii];
                         }
                         break;
 
                     case _DATATYPE_UINT16:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.UI16[ii];
                         }
                         break;
 
                     case _DATATYPE_INT16:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.SI16[ii];
                         }
                         break;
 
                     case _DATATYPE_UINT32:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.UI32[ii];
                         }
                         break;
 
                     case _DATATYPE_INT32:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.SI32[ii];
                         }
                         break;
 
                     case _DATATYPE_UINT64:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.UI64[ii];
                         }
                         break;
 
                     case _DATATYPE_INT64:
-                        for(int ii=0; ii<imgin.md->size[0] * imgin.md->size[1]; ii++)
+                        for(int ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
                         {
                             imginfloatptr[ii] = (float) imgin.im->array.SI64[ii];
                         }
@@ -1322,7 +1334,7 @@ static errno_t compute_function()
     free(modevalarrayref);
 
 
-    if( imgin.md->datatype != _DATATYPE_FLOAT )
+    if(imgin.md->datatype != _DATATYPE_FLOAT)
     {
         free(imginfloatptr);
     }

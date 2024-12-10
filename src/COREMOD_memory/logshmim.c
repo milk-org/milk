@@ -566,9 +566,19 @@ static errno_t compute_function()
     IMGID inimg = mkIMGID_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
+    if(inimg.md->naxis == 3)
+    {
+        PRINT_ERROR("streamFITSlog with 3D data is NOT supported");
+    }
+
     uint32_t xsize = inimg.md->size[0];
     uint32_t ysize = inimg.md->size[1];
+    if(inimg.md->naxis == 1)
+    {
+        ysize = 1; // For 1D data, it's likely size[1] is initialized to 0, which will cause trouble.
+    }
     uint32_t zsize = (*cubesize);
+
     uint8_t datatype = inimg.md->datatype;
 
 
