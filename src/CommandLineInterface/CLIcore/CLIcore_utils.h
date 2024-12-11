@@ -407,9 +407,12 @@ typedef struct
             processloopOK = processinfo_loopstep(processinfo);                 \
             DEBUG_TRACEPOINT("waitoninputstream");                             \
             processinfo_waitoninputstream(processinfo);                        \
-            if (processinfo->triggerstatus != PROCESSINFO_TRIGGERSTATUS_RECEIVED)   \
+            if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT && \
+                processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)      \
             {                                                                  \
                 /* Don't execute loop at all upon semaphore timeout */         \
+                /* Except if the trigger is SEMAPHORE_PROP_TIMEOUTS */         \
+                /* in which case we avoid this block and keep going */         \
                 continue;                                                      \
             }                                                                  \
             DEBUG_TRACEPOINT("exec_start");                                    \
@@ -938,24 +941,12 @@ static inline imageID resolveIMGID(
     {
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            printf("ERROR: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
-                   (char) 27,
-                   1,
-                   31,
-                   img->name,
-                   (char) 27,
-                   0);
+            PRINT_ERROR("Cannot resolve image %s\n", img->name);
             abort();
         }
         else if(ERRMODE == ERRMODE_WARN)
         {
-            printf("WARNING: %c[%d;%dm Cannot resolve image %s %c[%d;m\n",
-                   (char) 27,
-                   1,
-                   35,
-                   img->name,
-                   (char) 27,
-                   0);
+            PRINT_WARNING("Cannot resolve image %s\n", img->name);
         }
     }
 
