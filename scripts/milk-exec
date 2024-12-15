@@ -4,7 +4,7 @@
 MSdescr="execute milk command"
 
 MSextdescr="Execute command string within milk command line interface (CLI).
-Multiple commands separated by : character"
+Multiple commands separated by ; character"
 
 source milk-script-std-config
 
