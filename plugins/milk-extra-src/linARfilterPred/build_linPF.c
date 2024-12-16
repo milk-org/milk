@@ -31,16 +31,17 @@
 
 #include "linalgebra/SingularValueDecomp.h"
 
+/*
 #ifdef HAVE_CUDA
-#include <cublas_v2.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
-#include <cusolverDn.h>
-#include <device_types.h>
-#include <pthread.h>
-#include "linalgebra/linalgebra.h"
+  #include <cublas_v2.h>
+  #include <cuda_runtime.h>
+  #include <cuda_runtime_api.h>
+  #include <cusolverDn.h>
+  #include <device_types.h>
+  #include <pthread.h>
+  #include "linalgebra/linalgebra.h"
 #endif
-
+*/
 
 static char *inname;
 
@@ -703,7 +704,8 @@ static errno_t compute_function()
         // set flag to compute SVD-based pseudoinverse
         // stored as psinv
         //
-        uint64_t SVDflag = COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
+        uint64_t SVDflag =
+            COMPSVD_COMP_PSINV; // | COMPSVD_COMP_CHECKPSINV; // COMPSVD_SKIP_BIGMAT;
 
         compute_SVD(
             imgin,
@@ -719,17 +721,17 @@ static errno_t compute_function()
 
 
         list_image_ID();
-/*
-        save_fits("PFmatD", "SVD_PFmatD.fits");
-        save_fits("matU", "SVD_matU.fits");
-        save_fits("eigenvec", "SVD_eigenvec.fits");
+        /*
+                save_fits("PFmatD", "SVD_PFmatD.fits");
+                save_fits("matU", "SVD_matU.fits");
+                save_fits("eigenvec", "SVD_eigenvec.fits");
 
-        save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
-        save_fits("PFmatC", "SVD_PFmatC.fits");
+                save_fits("PF_VTmat", "SVD_PF_VTmat.fits");
+                save_fits("PFmatC", "SVD_PFmatC.fits");
 
-        save_fits("psinv", "SVD_psinv.fits");
-        save_fits("psinvcheck", "SVD_psinvcheck.fits");
-*/
+                save_fits("psinv", "SVD_psinv.fits");
+                save_fits("psinvcheck", "SVD_psinvcheck.fits");
+        */
     }
 
 
@@ -771,14 +773,15 @@ static errno_t compute_function()
         uint32_t PForderval = *PForder;
 
         // transpost of matC for speed
-        float *matCtrans = (float*) malloc(sizeof(float)*data.image[IDmatC].md->nelement);
+        float *matCtrans = (float *) malloc(sizeof(float) *
+                                            data.image[IDmatC].md->nelement);
 
         for(long ii = 0; ii < data.image[IDmatC].md->size[0]; ii++)
         {
             for(long jj = 0; jj < data.image[IDmatC].md->size[1]; jj++)
             {
-                matCtrans[ii*data.image[IDmatC].md->size[1] + jj] =
-                    data.image[IDmatC].array.F[jj*data.image[IDmatC].md->size[0] + ii];
+                matCtrans[ii * data.image[IDmatC].md->size[1] + jj] =
+                    data.image[IDmatC].array.F[jj * data.image[IDmatC].md->size[0] + ii];
             }
         }
 

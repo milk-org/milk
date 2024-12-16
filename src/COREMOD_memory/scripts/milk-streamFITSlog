@@ -309,7 +309,7 @@ milk << EOF
 readshmim ${STREAMNAME}
 streamFITSlog ..procinfo 1
 streamFITSlog ..loopcntMax -1
-streamFITSlog ..triggermode 3
+streamFITSlog ..triggermode 5
 streamFITSlog ..triggersname ${STREAMNAME}
 streamFITSlog ..triggertimeout ${cubetimeout}
 streamFITSlog ..RTprio ${realtimeprio}

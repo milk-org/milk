@@ -23,36 +23,34 @@ int fps_value_to_key(pyFps             &cls,
 
     switch(switch_fps_type)
     {
-        case FPS_type::ONOFF:
-            return functionparameter_SetParamValue_ONOFF(cls,
-                    key.c_str(), py::bool_(value));
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return functionparameter_SetParamValue_INT64(cls,
-                    key.c_str(),
-                    py::int_(value));
-        case FPS_type::FLOAT32:
-            return functionparameter_SetParamValue_FLOAT32(cls,
-                    key.c_str(),
-                    py::float_(value));
-        case FPS_type::FLOAT64:
-            return functionparameter_SetParamValue_FLOAT64(cls,
-                    key.c_str(),
-                    py::float_(value));
-        case FPS_type::STRING:
-        case FPS_type::STREAMNAME:
-        case FPS_type::DIRNAME:
-        case FPS_type::EXECFILENAME:
-        case FPS_type::FILENAME:
-        case FPS_type::FITSFILENAME:
-            return functionparameter_SetParamValue_STRING(
-                       cls,
-                       key.c_str(),
-                       std::string(py::str(value)).c_str());
-        default:
-            return EXIT_FAILURE;
+    case FPS_type::ONOFF:
+        return functionparameter_SetParamValue_ONOFF(cls, key.c_str(),
+                py::bool_(value));
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+        return functionparameter_SetParamValue_INT64(cls, key.c_str(), py::int_(value));
+    case FPS_type::UINT64:
+        return functionparameter_SetParamValue_UINT64(cls, key.c_str(),
+                py::int_(value));
+    case FPS_type::FLOAT32:
+        return functionparameter_SetParamValue_FLOAT32(cls, key.c_str(),
+                py::float_(value));
+    case FPS_type::FLOAT64:
+        return functionparameter_SetParamValue_FLOAT64(cls, key.c_str(),
+                py::float_(value));
+    case FPS_type::STRING:
+    case FPS_type::STREAMNAME:
+    case FPS_type::DIRNAME:
+    case FPS_type::EXECFILENAME:
+    case FPS_type::FILENAME:
+    case FPS_type::FITSFILENAME:
+        return functionparameter_SetParamValue_STRING(
+                   cls,
+                   key.c_str(),
+                   std::string(py::str(value)).c_str());
+    default:
+        return EXIT_FAILURE;
     }
 }
 
@@ -61,29 +59,31 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
 {
     switch(fps_type)
     {
-        case FPS_type::ONOFF:
-            return py::bool_(functionparameter_GetParamValue_ONOFF(cls, key.c_str()));
-        case FPS_type::INT32:
-        case FPS_type::UINT32:
-        case FPS_type::INT64:
-        case FPS_type::UINT64:
-            return py::int_(
-                       functionparameter_GetParamValue_INT64(cls, key.c_str()));
-        case FPS_type::FLOAT32:
-            return py::float_(
-                       functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
-        case FPS_type::FLOAT64:
-            return py::float_(
-                       functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
-        case FPS_type::STRING:
-        case FPS_type::STREAMNAME:
-        case FPS_type::DIRNAME:
-        case FPS_type::EXECFILENAME:
-        case FPS_type::FILENAME:
-        case FPS_type::FITSFILENAME:
-            return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
-        default:
-            return py::none();
+    case FPS_type::ONOFF:
+        return py::bool_(functionparameter_GetParamValue_ONOFF(cls, key.c_str()));
+    case FPS_type::INT32:
+    case FPS_type::UINT32:
+    case FPS_type::INT64:
+        return py::int_(
+                   functionparameter_GetParamValue_INT64(cls, key.c_str()));
+    case FPS_type::UINT64:
+        return py::int_(
+                   functionparameter_GetParamValue_UINT64(cls, key.c_str()));
+    case FPS_type::FLOAT32:
+        return py::float_(
+                   functionparameter_GetParamValue_FLOAT32(cls, key.c_str()));
+    case FPS_type::FLOAT64:
+        return py::float_(
+                   functionparameter_GetParamValue_FLOAT64(cls, key.c_str()));
+    case FPS_type::STRING:
+    case FPS_type::STREAMNAME:
+    case FPS_type::DIRNAME:
+    case FPS_type::EXECFILENAME:
+    case FPS_type::FILENAME:
+    case FPS_type::FITSFILENAME:
+        return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+    default:
+        return py::none();
     }
 }
 
@@ -153,6 +153,15 @@ PYBIND11_MODULE(CacaoProcessTools, m)
         .value("PROCESS", FPS_type::PROCESS)
         .value("FPSNAME", FPS_type::FPSNAME)
         .export_values();
+
+    py::enum_<FPS_flags>(m, "FPS_flags")
+	.value("DEFAULT_INPUT", FPS_flags::DEFAULT_INPUT)
+	.value("DEFAULT_OUTPUT", FPS_flags::DEFAULT_OUTPUT)
+	.value("DEFAULT_INPUT_STREAM", FPS_flags::DEFAULT_INPUT_STREAM)
+	.value("DEFAULT_OUTPUT_STREAM", FPS_flags::DEFAULT_OUTPUT_STREAM)
+    .value("DEFAULT_STATUS", FPS_flags::DEFAULT_STATUS)
+	.export_values();
+
 
     py::class_<timespec>(m, "timespec")
         .def(py::init<time_t, long>())
@@ -410,12 +419,29 @@ If entry already exists, do not modify it
 
 Parameters:
     name     [in]:  the name of the shared memory file to connect
-    create   [in]:  flag for creating of shared memory identifier
-    NBparamMAX   [in]:  Max number of parameters
+    comment  [in]:  description
+    fptype   [in]:  datatype
 )pbdoc",
              py::arg("entry_name"),
              py::arg("entry_desc"),
              py::arg("fptype"))
+
+	    .def("add_entry",
+             &pyFps::add_entry_w_flags,
+             R"pbdoc(Add parameter to database with custom flags
+
+If entry already exists, do not modify it
+
+Parameters:
+    name     [in]:  the name of the shared memory file to connect
+    comment  [in]:  description
+    fptype   [in]:  datatype
+    fpflag   [in]:  fps flags
+)pbdoc",
+             py::arg("entry_name"),
+             py::arg("entry_desc"),
+             py::arg("fptype"),
+	         py::arg("fpflag"))
 
         .def("get_status", &pyFps::get_status)
         .def("set_status", &pyFps::set_status)
@@ -726,6 +752,7 @@ Return:
         // }))
         .def_readonly("name", &FUNCTION_PARAMETER_STRUCT_MD::name)
         .def_readonly("description", &FUNCTION_PARAMETER_STRUCT_MD::description)
+        .def_readonly("kwarray", &FUNCTION_PARAMETER_STRUCT_MD::keywordarray)
         .def_readonly("workdir", &FUNCTION_PARAMETER_STRUCT_MD::workdir)
         .def_readonly("datadir", &FUNCTION_PARAMETER_STRUCT_MD::datadir)
         .def_readonly("confdir", &FUNCTION_PARAMETER_STRUCT_MD::confdir)
