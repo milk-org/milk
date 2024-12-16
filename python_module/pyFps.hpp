@@ -65,6 +65,7 @@ enum FPS_flags : uint64_t
     DEFAULT_OUTPUT        = FPFLAG_DEFAULT_OUTPUT,
     DEFAULT_INPUT_STREAM  = FPFLAG_DEFAULT_INPUT_STREAM,
     DEFAULT_OUTPUT_STREAM = FPFLAG_DEFAULT_OUTPUT_STREAM,
+    DEFAULT_STATUS        = FPFLAG_DEFAULT_STATUS,
 };
 
 class pyFps
@@ -221,7 +222,10 @@ class pyFps
                   uint32_t fptype)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
-        return function_parameter_add_entry(&fps_, entry_name.c_str(),
+        // We need to prepend a . to entry to abide by FPS conventions
+        // See fps_add_entry.c
+        std::string prepended = "." + entry_name;
+        return function_parameter_add_entry(&fps_, prepended.c_str(),
                                             entry_desc.c_str(), fptype,
                                             FPFLAG_DEFAULT_INPUT, nullptr, nullptr);
     }
@@ -241,7 +245,8 @@ class pyFps
                           uint32_t fptype, uint64_t fpflag)
     {
         keys_[entry_name] = static_cast<FPS_type>(fptype);
-        return function_parameter_add_entry(&fps_, entry_name.c_str(),
+        std::string prepended = "." + entry_name;
+        return function_parameter_add_entry(&fps_, prepended.c_str(),
                                             entry_desc.c_str(), fptype,
                                             fpflag, nullptr, nullptr);
     }

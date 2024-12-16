@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.17)
 
 project(milk LANGUAGES C)
 
@@ -17,25 +17,29 @@ include(CheckLanguage)
 # =======================================
 
 # options
+option(DEBUG  "Enable Debug        library" OFF)
+if(DEBUG)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
 option(USE_CUDA  "Use CUDA        library" OFF)
 option(USE_MAGMA "Use MAGMA       library" OFF)
 
 if(USE_CUDA)
-#find_package(CUDA 9.0 REQUIRED)
-check_language(CUDA)
-if(CMAKE_CUDA_COMPILER)
-  enable_language(CUDA)
-else()
-  #message(FATAL_ERROR "No CUDA support")
-  message(WARNING "No CUDA support found")
-  set(CMAKE_CUDA_COMPILER "/usr/bin/nvcc")
-  message(" setting CMAKE_CUDA_COMPILER to ${CMAKE_CUDA_COMPILER}")
-endif()
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+  else()
+    #message(FATAL_ERROR "No CUDA support")
+    message(WARNING "No CUDA support found")
+    set(CMAKE_CUDA_COMPILER "/usr/bin/nvcc")
+    message(" setting CMAKE_CUDA_COMPILER to ${CMAKE_CUDA_COMPILER}")
+  endif()
 endif(USE_CUDA)
 
 
 
-
+find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 #find_package(MKL CONFIG)
 
@@ -213,11 +217,11 @@ execute_process(COMMAND bash -c "find ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 
 string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
-string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
-if (NOT ${lsrcdir} EQUAL "")
-message("ADDING SUBDIR = ${lsrcdir}")
-add_subdirectory ( ${lsrcdir} )
-endif()
+  string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
+  if (NOT ${lsrcdir} EQUAL "")
+    message("ADDING SUBDIR = ${lsrcdir}")
+    add_subdirectory ( ${lsrcdir} )
+  endif()
 endforeach()
 
 # add example module
@@ -235,14 +239,16 @@ add_executable(milk src/CLImain.c)
 set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/milk/issues\\\"" )
 
 
-target_link_libraries (milk PUBLIC
-${libname}
-)
-
+target_link_libraries(milk PUBLIC ${libname})
 
 if(USE_CUDA)
-target_link_libraries (milk PUBLIC ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES})
-set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
+  # Link CUDA globally to the executable rather than per module.
+  find_package(CUDAToolkit 9.0 REQUIRED)
+  target_link_libraries(milk PUBLIC CUDA::toolkit
+                             PUBLIC CUDA::cusolver
+                             PUBLIC CUDA::cudart
+                             PUBLIC CUDA::cublas)
+  set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
 
 
@@ -290,7 +296,7 @@ install(TARGETS milk
 
 set(CMAKE_INSTALL_PREFIX_LINK "/usr/local/${PROJECT_NAME}")
 if(INSTALLMAKEDEFAULT)
-    install(CODE "
+  install(CODE "
     EXECUTE_PROCESS(COMMAND ln -snf ${CMAKE_INSTALL_PREFIX} ${CMAKE_INSTALL_PREFIX_LINK})
     ")
 endif(INSTALLMAKEDEFAULT)
@@ -371,7 +377,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/milk_config.h
 
 
 if(build_python_module)
-add_subdirectory (python_module)
+  add_subdirectory (python_module)
 endif()
 
 install(TARGETS CLIcore DESTINATION bin)
