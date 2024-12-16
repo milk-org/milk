@@ -9,6 +9,7 @@
 #define _MILKDEBUGTOOLS_H
 
 #include <errno.h>
+#include <string.h>
 
 // define (custom) types for function return value
 

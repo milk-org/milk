@@ -60,33 +60,6 @@ target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_S
 											$<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
-if(USE_CUDA)
-find_package(CUDA 9.0 REQUIRED)
-message(STATUS "Found CUDA ${CUDA_VERSION_STRING} at ${CUDA_TOOLKIT_ROOT_DIR}")
-message("---- CUDA_INCLUDE_DIRS   = ${CUDA_INCLUDE_DIRS}")
-message("---- CUDA_LIBRARIES      = ${CUDA_LIBRARIES} ${CUDA_cusolver_LIBRARY}" )
-message("---- CUDA_CUBLAS_LIBRARIES    = ${CUDA_CUBLAS_LIBRARIES}" )
-target_include_directories(${LIBNAME} PUBLIC ${CUDA_INCLUDE_DIRS})
-target_link_libraries(${LIBNAME} PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY})
-target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
-endif(USE_CUDA)
-
-
-
-if(USE_MAGMA)
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(MAGMA REQUIRED magma)
-message("---- MAGMA_LIBRARY_DIRS =  ${MAGMA_LIBRARY_DIRS}")
-message("---- MAGMA_LIBRARIES    =  ${MAGMA_LIBRARIES}" )
-message("---- MAGMA_CFLAGS_OTHER =  ${MAGMA_CFLAGS_OTHER}" )
-target_include_directories(${LIBNAME} PUBLIC ${MAGMA_INCLUDE_DIRS})
-target_link_directories(${LIBNAME} PUBLIC ${MAGMA_LIBRARY_DIRS})
-target_link_libraries(${LIBNAME} PRIVATE ${MAGMA_LIBRARIES})
-target_compile_options(${LIBNAME} PRIVATE ${MAGMA_CFLAGS_OTHER})
-target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA -DHAVE_MAGMA -DUSE_MAGMA)
-#target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA -DHAVE_MAGMA -DUSE_MAGMA)
-endif(USE_MAGMA)
-
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
