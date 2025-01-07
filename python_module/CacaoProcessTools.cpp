@@ -611,7 +611,10 @@ Return:
                                [](pyFps &cls) {
                                    return cls.keys();
                                })
-
+        .def("signal_update",
+             &pyFps::signal_update,
+             R"pbdoc(Send update signal to FPS
+)pbdoc")
         .def("CONFstart",
              &pyFps::CONFstart,
              R"pbdoc(FPS start CONF process
