@@ -13,6 +13,7 @@ find_package(GSL QUIET REQUIRED)
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
 pkg_check_modules(NCURSES REQUIRED ncurses)
+pkg_check_modules(READLINE REQUIRED readline)
 find_package(OpenMP)
 
 pkg_check_modules(HWLOC hwloc)
@@ -187,7 +188,7 @@ install(FILES CLIcore.h
               standalone_dependencies.h
               timeutils.h
               DESTINATION include/${SRCNAME})
-              
+
 install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_checkargs.h
               CLIcore/CLIcore_datainit.h
@@ -198,7 +199,7 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_signals.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
-              
+
 install(FILES fps/fps_CONFstart.h
               fps/fps_CONFstop.h
               fps/fps_FPCONFexit.h
@@ -235,7 +236,7 @@ install(FILES fps/fps_CONFstart.h
               fps/fps_tmux.h
               fps/fps_userinputsetparamvalue.h
               DESTINATION include/${SRCNAME}/fps)
-              
+
 install(FILES fpsCTRL/fpsCTRL_FPSdisplay.h
               fpsCTRL/fpsCTRL_TUI.h
               fpsCTRL/fpsCTRL_TUI_process_user_key.h
@@ -243,14 +244,14 @@ install(FILES fpsCTRL/fpsCTRL_FPSdisplay.h
               fpsCTRL/print_nodeinfo.h
               fpsCTRL/scheduler_display.h
               DESTINATION include/${SRCNAME}/fpsCTRL)
-              
+
 install(FILES procCTRL/procCTRL_GetCPUloads.h
               procCTRL/procCTRL_GetNumberCPUs.h
               procCTRL/procCTRL_PIDcollectSystemInfo.h
               procCTRL/procCTRL_TUI.h
               procCTRL/procCTRL_processinfo_scan.h
               DESTINATION include/${SRCNAME}/procCTRL)
-              
+
 install(FILES processinfo/processinfo_SIGexit.h
               processinfo/processinfo_WriteMessage.h
               processinfo/processinfo_exec_end.h
@@ -263,9 +264,9 @@ install(FILES processinfo/processinfo_SIGexit.h
               processinfo/processinfo_shm_link.h
               processinfo/processinfo_shm_list_create.h
               processinfo/processinfo_signals.h
-              processinfo/processinfo_update_output_stream.h              
+              processinfo/processinfo_update_output_stream.h
               DESTINATION include/${SRCNAME}/processinfo)
-              
+
 install(FILES streamCTRL/streamCTRL_TUI.h
               DESTINATION include/${SRCNAME}/streamCTRL)
 
@@ -281,7 +282,3 @@ add_test (NAME milklistim COMMAND milk-exec "listim")
 set_property (TEST milklistim PROPERTY LABELS "CLI")
 set_tests_properties(milklistim PROPERTIES TIMEOUT 1)
 set_property (TEST milklistim PROPERTY PASS_REGULAR_EXPRESSION "0 image")
-
-
-
-
