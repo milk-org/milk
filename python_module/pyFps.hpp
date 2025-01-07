@@ -297,6 +297,12 @@ class pyFps
         return levelKeys;
     }
 
+    void signal_update()
+    {
+        fps_.md->signal |=
+            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+    }
+
     errno_t CONFstart()
     {
         return functionparameter_CONFstart(&fps_);
