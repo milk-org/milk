@@ -16,9 +16,6 @@
 #include "imfunctions.h"
 #include "mathfuncs.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
 int arith_image_trunc(const char *ID_name,
                       double      f1,

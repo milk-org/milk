@@ -16,6 +16,7 @@
 #include "imfunctions.h"
 #include "mathfuncs.h"
 
+
 int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out)
 {
     arith_image_function_1f_1(ID_name, f1, ID_out, &Pfmod);

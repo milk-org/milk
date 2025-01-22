@@ -2100,6 +2100,9 @@ int arith_image_function_1f_1(const char *ID_name,
     uint8_t   datatype, datatypeout;
     long      i;
 
+
+    printf("%s [%d] f1=%f\n", __FILE__, __LINE__, f1);//TBE
+
     ID       = image_ID(ID_name);
     datatype = data.image[ID].md[0].datatype;
     naxis    = data.image[ID].md[0].naxis;
@@ -2112,7 +2115,7 @@ int arith_image_function_1f_1(const char *ID_name,
 
     for(i = 0; i < naxis; i++)
     {
-        naxes[i] = data.image[ID].md[0].size[i];
+        naxes[i] = data.image[ID].md->size[i];
     }
 
     datatypeout = _DATATYPE_FLOAT;
@@ -2131,7 +2134,7 @@ int arith_image_function_1f_1(const char *ID_name,
                     &IDout);
 
     free(naxes);
-    nelement = data.image[ID].md[0].nelement;
+    nelement = data.image[ID].md->nelement;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
