@@ -90,14 +90,7 @@ double Pfmod(double a, double b)
 
 double Ppow(double a, double b)
 {
-    if(b > 0)
-    {
-        return ((double) pow(a, b));
-    }
-    else
-    {
-        return ((double) pow(a, -b));
-    }
+    return ((double) pow(a, b));
 }
 
 double Padd(double a, double b)

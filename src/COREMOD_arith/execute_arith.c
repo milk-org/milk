@@ -36,8 +36,7 @@
 #define ARITHTOKENTYPE_FUNCTION 8
 #define ARITHTOKENTYPE_EQUAL    9
 #define ARITHTOKENTYPE_IMAGE    10
-#define ARITHTOKENTYPE_MULTFUNC                                                \
-    11 // function of several variables/images, returning one variable/image
+#define ARITHTOKENTYPE_MULTFUNC 11 // function of several variables/images, returning one variable/image
 
 int isoperand(const char *word)
 {
@@ -690,7 +689,7 @@ int execute_arith(const char *cmd1)
                     parlevel--;
                 }
                 if((word_type[i] == 4) || (word_type[i] == 8) ||
-                        (word_type[i] == 11))
+                        (word_type[i] == ARITHTOKENTYPE_MULTFUNC))
                 {
                     par_level[i] = parlevel;
                     if(word_type[i] == ARITHTOKENTYPE_FUNCTION)
@@ -771,56 +770,38 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "+") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_prec =
-                            data.variable[variable_ID(
-                                              word[highest_priority_index - 1])]
-                            .value.f +
-                            data.variable[variable_ID(
-                                              word[highest_priority_index + 1])]
-                            .value.f;
+                            data.variable[variable_ID(word[highest_priority_index - 1])].value.f +
+                            data.variable[variable_ID(word[highest_priority_index + 1])].value.f;
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_cstadd(
                             word[highest_priority_index + 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index - 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstadd(
                             word[highest_priority_index - 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_add(word[highest_priority_index - 1],
                                         word[highest_priority_index + 1],
@@ -832,26 +813,19 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "-") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_prec =
-                            data.variable[variable_ID(
-                                              word[highest_priority_index - 1])]
-                            .value.f -
-                            data.variable[variable_ID(
-                                              word[highest_priority_index + 1])]
-                            .value.f;
+                            data.variable[variable_ID(word[highest_priority_index - 1])].value.f -
+                            data.variable[variable_ID(word[highest_priority_index + 1])].value.f;
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         CREATE_IMAGENAME(name1,
                                          "_tmp1%d_%d",
@@ -859,34 +833,27 @@ int execute_arith(const char *cmd1)
                                          (int) getpid());
                         arith_image_cstsub(
                             word[highest_priority_index + 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index - 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                             name1);
                         arith_image_cstmult(name1, (double) -1.0, name);
                         delete_image_ID(name1, DELETE_IMAGE_ERRMODE_WARNING);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == 2))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstsub(
                             word[highest_priority_index - 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_sub(word[highest_priority_index - 1],
                                         word[highest_priority_index + 1],
@@ -898,53 +865,38 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "*") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_prec =
-                            data.variable[variable_ID(
-                                              word[highest_priority_index - 1])]
-                            .value.f *
-                            data.variable[variable_ID(
-                                              word[highest_priority_index + 1])]
-                            .value.f;
+                            data.variable[variable_ID(word[highest_priority_index - 1])].value.f *
+                            data.variable[variable_ID(word[highest_priority_index + 1])].value.f;
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_cstmult(
                             word[highest_priority_index + 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index - 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == 10) &&
-                            (word_type[highest_priority_index + 1] == 2))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstmult(
                             word[highest_priority_index - 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == 10) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_mult(word[highest_priority_index - 1],
                                          word[highest_priority_index + 1],
@@ -956,54 +908,42 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "/") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_prec =
-                            data.variable[variable_ID(
-                                              word[highest_priority_index - 1])]
-                            .value.f /
-                            data.variable[variable_ID(
-                                              word[highest_priority_index + 1])]
-                            .value.f;
+                            data.variable[variable_ID(word[highest_priority_index - 1])].value.f /
+                            data.variable[variable_ID(word[highest_priority_index + 1])].value.f;
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         //    printf("CASE 1\n");
                         arith_image_cstdiv1(
                             word[highest_priority_index + 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index - 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == 10) &&
-                            (word_type[highest_priority_index + 1] == 2))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstdiv(
                             word[highest_priority_index - 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == 10) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_div(word[highest_priority_index - 1],
                                         word[highest_priority_index + 1],
@@ -1011,47 +951,34 @@ int execute_arith(const char *cmd1)
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
+
                 }
 
                 if(strcmp(word[highest_priority_index], "^") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] == 2) &&
-                            (word_type[highest_priority_index + 1] == 2))
+
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
-                        if(data.variable[variable_ID(
-                                             word[highest_priority_index + 1])]
-                                .value.f < 0)
+                        if(data.variable[variable_ID(word[highest_priority_index + 1])].value.f < 0)
                         {
                             tmp_prec =
-                                pow(data
-                                    .variable[variable_ID(
-                                                  word[highest_priority_index - 1])]
-                                    .value.f,
-                                    -data
-                                    .variable[variable_ID(
-                                                  word[highest_priority_index + 1])]
-                                    .value.f);
+                                pow(data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
+                                    -data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                             tmp_prec = 1.0 / tmp_prec;
                         }
                         else
                         {
                             tmp_prec =
-                                pow(data
-                                    .variable[variable_ID(
-                                                  word[highest_priority_index - 1])]
-                                    .value.f,
-                                    data
-                                    .variable[variable_ID(
-                                                  word[highest_priority_index + 1])]
-                                    .value.f);
+                                pow(data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
+                                    data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         }
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] == 2) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         CREATE_IMAGENAME(name1,
                                          "_tmp1%d_%d",
@@ -1059,10 +986,7 @@ int execute_arith(const char *cmd1)
                                          (int) getpid());
                         arith_image_cstadd(
                             word[highest_priority_index + 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index - 1])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index - 1])].value.f,
                             name1);
                         arith_image_pow(name1,
                                         word[highest_priority_index + 1],
@@ -1071,25 +995,17 @@ int execute_arith(const char *cmd1)
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_VARIABLE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstpow(
                             word[highest_priority_index - 1],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 1])]
-                            .value.f,
-                            name);
+                            (double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f,name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_pow(word[highest_priority_index - 1],
                                         word[highest_priority_index + 1],
@@ -1109,7 +1025,7 @@ int execute_arith(const char *cmd1)
                 nbword = nbword - 2;
             }
 
-            if(word_type[highest_priority_index] == 8)
+            if(word_type[highest_priority_index] == ARITHTOKENTYPE_FUNCTION)
             {
                 CREATE_IMAGENAME(name,
                                  "_tmp%d_%d",
@@ -1118,18 +1034,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "acos") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = acos(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = acos(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_acos(word[highest_priority_index + 1],
                                          name);
@@ -1140,18 +1052,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "asin") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = asin(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = asin(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_asin(word[highest_priority_index + 1],
                                          name);
@@ -1162,40 +1070,32 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "atan") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = atan(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = atan(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_atan(word[highest_priority_index + 1],
                                          name);
                         tmp_name_index++;
-                        type = 10;
+                        type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "ceil") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = (double) ceil(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = (double) ceil(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_ceil(word[highest_priority_index + 1],
                                          name);
@@ -1206,18 +1106,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "cos") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = cos(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = cos(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_cos(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1227,18 +1123,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "cosh") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = cosh(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = cosh(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_cosh(word[highest_priority_index + 1],
                                          name);
@@ -1249,18 +1141,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "exp") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = exp(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = exp(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_exp(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1270,18 +1158,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "fabs") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = fabs(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = fabs(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_fabs(word[highest_priority_index + 1],
                                          name);
@@ -1292,18 +1176,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "floor") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = floor(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = floor(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_floor(word[highest_priority_index + 1],
                                           name);
@@ -1314,83 +1194,74 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "imedian") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         tmp_prec = arith_image_median(
                                        word[highest_priority_index + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "itot") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         tmp_prec =
                             arith_image_total(word[highest_priority_index + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "imean") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         tmp_prec =
                             arith_image_mean(word[highest_priority_index + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "imin") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         tmp_prec =
                             arith_image_min(word[highest_priority_index + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "imax") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         tmp_prec =
                             arith_image_max(word[highest_priority_index + 1]);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "ln") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = log(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = log(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_ln(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1400,18 +1271,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "log") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = log10(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = log10(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_log(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1421,21 +1288,16 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "sqrt") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = sqrt(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = sqrt(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_sqrt(word[highest_priority_index + 1],
-                                         name);
+                        arith_image_sqrt(word[highest_priority_index + 1], name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1443,18 +1305,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "sin") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = sin(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = sin(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_sin(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1464,21 +1322,16 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "sinh") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = sinh(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = sinh(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_sinh(word[highest_priority_index + 1],
-                                         name);
+                        arith_image_sinh(word[highest_priority_index + 1], name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1486,18 +1339,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "tan") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = tan(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = tan(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_tan(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1507,18 +1356,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "tanh") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = tanh(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 1])]
-                                       .value.f);
+                        tmp_prec = tanh(data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_tanh(word[highest_priority_index + 1],
                                          name);
@@ -1529,22 +1374,17 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "posi") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
                         tmp_prec =
-                            Ppositive((double) data
-                                      .variable[variable_ID(
-                                                    word[highest_priority_index + 1])]
-                                      .value.f);
+                            Ppositive((double) data.variable[variable_ID(word[highest_priority_index + 1])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if(word_type[highest_priority_index + 1] ==
-                            ARITHTOKENTYPE_IMAGE)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_positive(word[highest_priority_index + 1],
-                                             name);
+                        arith_image_positive(word[highest_priority_index + 1], name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1552,14 +1392,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "imdx") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
                         PRINT_ERROR(
                             "Function imdx only applicable "
                             "on images");
                         exit(0);
                     }
-                    if(word_type[highest_priority_index + 1] == 10)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_dx(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1569,14 +1409,14 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "imdy") == 0)
                 {
-                    if(word_type[highest_priority_index + 1] == 2)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
                     {
                         PRINT_ERROR(
                             "Function imdy only applicable "
                             "on images");
                         exit(0);
                     }
-                    if(word_type[highest_priority_index + 1] == 10)
+                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
                         arith_image_dy(word[highest_priority_index + 1], name);
                         tmp_name_index++;
@@ -1594,7 +1434,7 @@ int execute_arith(const char *cmd1)
                 nbword = nbword - 1;
             }
 
-            if(word_type[highest_priority_index] == 11)
+            if(word_type[highest_priority_index] == ARITHTOKENTYPE_MULTFUNC)
             {
                 nbvarinput = isfunction_sev_var(word[highest_priority_index]);
                 CREATE_IMAGENAME(name,
@@ -1604,43 +1444,33 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "fmod") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == 2) &&
-                            (word_type[highest_priority_index + 4] == 2))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_prec = fmod(
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 2])]
-                                       .value.f,
-                                       data.variable[variable_ID(
-                                                         word[highest_priority_index + 4])]
-                                       .value.f);
+                                       data.variable[variable_ID( word[highest_priority_index + 2])].value.f,
+                                       data.variable[variable_ID(word[highest_priority_index + 4])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index + 2] == 2) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         printf("function not available\n");
                     }
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == 2))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstfmod(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] == 10) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_fmod(word[highest_priority_index + 2],
                                          word[highest_priority_index + 4],
@@ -1652,66 +1482,45 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "min") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == 2) &&
-                            (word_type[highest_priority_index + 4] == 2))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
                     {
-                        if(data.variable[variable_ID(
-                                             word[highest_priority_index + 2])]
-                                .value.f <
-                                data.variable[variable_ID(
-                                                  word[highest_priority_index + 4])]
-                                .value.f)
+                        if(data.variable[variable_ID(word[highest_priority_index + 2])].value.f <
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f)
                         {
                             tmp_prec =
-                                data
-                                .variable[variable_ID(
-                                              word[highest_priority_index + 2])]
-                                .value.f;
+                                data.variable[variable_ID(word[highest_priority_index + 2])].value.f;
                         }
                         else
                         {
                             tmp_prec =
-                                data
-                                .variable[variable_ID(
-                                              word[highest_priority_index + 4])]
-                                .value.f;
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f;
                         }
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index + 2] == 2) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_cstminv(
                             word[highest_priority_index + 4],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 2])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 2])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == 2))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstminv(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
-                            name);
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_minv(word[highest_priority_index + 2],
                                          word[highest_priority_index + 4],
@@ -1723,69 +1532,46 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "max") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
-                        if(data.variable[variable_ID(
-                                             word[highest_priority_index + 2])]
-                                .value.f >
-                                data.variable[variable_ID(
-                                                  word[highest_priority_index + 4])]
-                                .value.f)
+                        if(data.variable[variable_ID(word[highest_priority_index + 2])].value.f >
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f)
                         {
                             tmp_prec =
-                                data
-                                .variable[variable_ID(
-                                              word[highest_priority_index + 2])]
-                                .value.f;
+                                data.variable[variable_ID(word[highest_priority_index + 2])].value.f;
                         }
                         else
                         {
                             tmp_prec =
-                                data
-                                .variable[variable_ID(
-                                              word[highest_priority_index + 4])]
-                                .value.f;
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f;
                         }
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_cstmaxv(
                             word[highest_priority_index + 4],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 2])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 2])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == 2))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
                     {
                         arith_image_cstmaxv(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_maxv(word[highest_priority_index + 2],
                                          word[highest_priority_index + 4],
@@ -1797,17 +1583,11 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "testlt") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
-                        if(data.variable[variable_ID(
-                                             word[highest_priority_index + 2])]
-                                .value.f >
-                                data.variable[variable_ID(
-                                                  word[highest_priority_index + 4])]
-                                .value.f)
+                        if(data.variable[variable_ID(word[highest_priority_index + 2])].value.f >
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f)
                         {
                             tmp_prec = 0.0;
                         }
@@ -1819,40 +1599,28 @@ int execute_arith(const char *cmd1)
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_csttestmt(
                             word[highest_priority_index + 4],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 2])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 2])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_csttestlt(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_testlt(word[highest_priority_index + 2],
                                            word[highest_priority_index + 4],
@@ -1872,17 +1640,11 @@ int execute_arith(const char *cmd1)
                 {
                     printf("Image testmt\n");
 
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
-                        if(data.variable[variable_ID(
-                                             word[highest_priority_index + 2])]
-                                .value.f >
-                                data.variable[variable_ID(
-                                                  word[highest_priority_index + 4])]
-                                .value.f)
+                        if(data.variable[variable_ID(word[highest_priority_index + 2])].value.f >
+                                data.variable[variable_ID(word[highest_priority_index + 4])].value.f)
                         {
                             tmp_prec = 1.0;
                         }
@@ -1894,40 +1656,28 @@ int execute_arith(const char *cmd1)
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_csttestlt(
                             word[highest_priority_index + 4],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 2])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 2])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_csttestmt(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,
                             name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] ==
-                             ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] ==
-                             ARITHTOKENTYPE_IMAGE))
+                    else if((word_type[highest_priority_index + 2] ==  ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
                     {
                         arith_image_testmt(word[highest_priority_index + 2],
                                            word[highest_priority_index + 4],
@@ -1945,9 +1695,7 @@ int execute_arith(const char *cmd1)
 
                 if(strcmp(word[highest_priority_index], "perc") == 0)
                 {
-                    //	      printf("%d %d\n",word_type[i+2],word_type[i+4]);
-                    if((word_type[highest_priority_index + 2] !=
-                            ARITHTOKENTYPE_IMAGE) ||
+                    if((word_type[highest_priority_index + 2] != ARITHTOKENTYPE_IMAGE) ||
                             (word_type[highest_priority_index + 4] != 2))
                     {
                         PRINT_ERROR(
@@ -1959,40 +1707,30 @@ int execute_arith(const char *cmd1)
                         printf("Running percentile args = %s  %f\n",
                                word[highest_priority_index + 2],
                                (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f
-                               );
+                              );
 
 
                         tmp_prec = arith_image_percentile(
                                        word[highest_priority_index + 2],
-                                       (double) data
-                                       .variable[variable_ID(
-                                                     word[highest_priority_index + 4])]
-                                       .value.f);
+                                       (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
-                        type = 2;
+                        type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
 
                 if(strcmp(word[highest_priority_index], "trunc") == 0)
                 {
                     printf("Image trunction\n");
-                    if((word_type[highest_priority_index + 2] ==
-                            ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == 2) &&
-                            (word_type[highest_priority_index + 6] == 2))
+                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
+                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE) &&
+                            (word_type[highest_priority_index + 6] == ARITHTOKENTYPE_VARIABLE))
                     {
                         tmp_name_index++;
                         arith_image_trunc(
                             word[highest_priority_index + 2],
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 4])]
-                            .value.f,
-                            (double) data
-                            .variable[variable_ID(
-                                          word[highest_priority_index + 6])]
-                            .value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 4])].value.f,
+                            (double) data.variable[variable_ID(word[highest_priority_index + 6])].value.f,
                             name);
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -2006,9 +1744,7 @@ int execute_arith(const char *cmd1)
 
                 strcpy(word[highest_priority_index], name);
                 word_type[highest_priority_index] = type;
-                for(j = highest_priority_index + 1;
-                        j < nbword - (nbvarinput * 2 + 1);
-                        j++)
+                for(j = highest_priority_index + 1; j < nbword - (nbvarinput * 2 + 1); j++)
                 {
                     strcpy(word[j], word[j + (nbvarinput * 2 + 1)]);
                     word_type[j] = word_type[j + (nbvarinput * 2 + 1)];
@@ -2055,7 +1791,7 @@ int execute_arith(const char *cmd1)
                     delete_image_ID(word[0], DELETE_IMAGE_ERRMODE_WARNING);
                 }
 
-                if(word_type[2] == 2)
+                if(word_type[2] == ARITHTOKENTYPE_VARIABLE)
                 {
                     create_variable_ID(
                         word[0],
@@ -2063,7 +1799,7 @@ int execute_arith(const char *cmd1)
                     printf("%.20g\n",
                            data.variable[variable_ID(word[2])].value.f);
                 }
-                if(word_type[2] == 10)
+                if(word_type[2] == ARITHTOKENTYPE_IMAGE)
                 {
                     chname_image_ID(word[2], word[0]);
                 }
