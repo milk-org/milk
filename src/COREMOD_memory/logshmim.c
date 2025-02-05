@@ -1077,6 +1077,11 @@ static errno_t compute_function()
 
                 }
                 SaveCube = 0;
+
+                // increment counters
+                //
+                (*frameindex) = 0;
+                (*filecnt) ++;
             }
 
 
@@ -1091,12 +1096,6 @@ static errno_t compute_function()
             {
                 processinfo_update_output_stream(processinfo, imgbuff1.ID);
             }
-
-
-            // increment counters
-            //
-            (*frameindex) = 0;
-            (*filecnt) ++;
 
             buffindex ++;
             if(buffindex > 1)
