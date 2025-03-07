@@ -130,7 +130,7 @@ class pyFps
             }
             read_keys();
         }
-        std::cout << "FPS connected" << std::endl;
+        //std::cout << "FPS connected" << std::endl;
     }
 
     /**
