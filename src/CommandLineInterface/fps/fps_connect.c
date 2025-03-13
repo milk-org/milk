@@ -48,7 +48,7 @@ long function_parameter_struct_connect(
 
 
 
-    if( data.FPS_TIMESTAMP == 0 )
+    if(data.FPS_TIMESTAMP == 0)
     {
         {
             struct timespec tnow = {0};
@@ -56,7 +56,7 @@ long function_parameter_struct_connect(
             data.FPS_TIMESTAMP = tnow.tv_sec;
         }
 
-        switch( fpsconnectmode )
+        switch(fpsconnectmode)
         {
 
         case FPSCONNECT_CONF:
@@ -159,8 +159,8 @@ long function_parameter_struct_connect(
 
     //	NBparam = (int) (file_stat.st_size / sizeof(FUNCTION_PARAMETER));
     NBparamMAX = fps->md->NBparamMAX;
-    printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
-    fflush(stdout);
+    //printf("    Connected to %s, %ld entries\n", SM_fname, NBparamMAX);
+    //fflush(stdout);
 
     DEBUG_TRACEPOINT("File: %s - successful connect.\n", SM_fname);
 
@@ -216,7 +216,7 @@ long function_parameter_struct_connect(
         }
     }
     fps->NBparamActive = pactivecnt;
-    
+
     DEBUG_TRACEPOINT("File: %s - Successful parameter count.\n", SM_fname);
     //function_parameter_printlist(fps->parray, NBparamMAX);
 
@@ -395,7 +395,8 @@ long function_parameter_struct_connect(
             }
         }
     }
-    DEBUG_TRACEPOINT("File: %s - Successful termination of function_parameter_struct_connect.\n", SM_fname);
+    DEBUG_TRACEPOINT("File: %s - Successful termination of function_parameter_struct_connect.\n",
+                     SM_fname);
 
     return (NBparamMAX);
 }
