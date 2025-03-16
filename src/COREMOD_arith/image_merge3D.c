@@ -139,9 +139,13 @@ errno_t image_marge(
 
     createimagefromIMGID(outimg);
 
+    list_image_ID();
+    printf(">>>>>>>>>>>>>>>>>> LINE %d\n", __LINE__);
+
 
     if ( mergeaxis == outimg->naxis-1 )
     {
+        printf(">>>>>>>>>>>>>>>>>> LINE %d\n", __LINE__);
         // we can simply memcpy
 
         switch ( outimg->datatype )
@@ -149,45 +153,45 @@ errno_t image_marge(
 
         case _DATATYPE_UINT8 :
             memcpy(&outimg->im->array.UI8[0], &inimg0.im->array.UI8[0], sizeof(uint8_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.UI8[inimg0.md->nelement], &inimg1.im->array.UI8, sizeof(uint8_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.UI8[inimg0.md->nelement], &inimg1.im->array.UI8[0], sizeof(uint8_t)*inimg1.md->nelement);
             break;
 
         case _DATATYPE_INT8 :
             memcpy(&outimg->im->array.SI8[0], &inimg0.im->array.SI8[0], sizeof(int8_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.SI8[inimg0.md->nelement], &inimg1.im->array.SI8, sizeof(int8_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.SI8[inimg0.md->nelement], &inimg1.im->array.SI8[0], sizeof(int8_t)*inimg1.md->nelement);
             break;
 
 
         case _DATATYPE_UINT16 :
             memcpy(&outimg->im->array.UI16[0], &inimg0.im->array.UI16[0], sizeof(uint16_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.UI16[inimg0.md->nelement], &inimg1.im->array.UI16, sizeof(uint16_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.UI16[inimg0.md->nelement], &inimg1.im->array.UI16[0], sizeof(uint16_t)*inimg1.md->nelement);
             break;
 
         case _DATATYPE_INT16 :
             memcpy(&outimg->im->array.SI16[0], &inimg0.im->array.SI16[0], sizeof(int16_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.SI16[inimg0.md->nelement], &inimg1.im->array.SI16, sizeof(int16_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.SI16[inimg0.md->nelement], &inimg1.im->array.SI16[0], sizeof(int16_t)*inimg1.md->nelement);
             break;
 
 
         case _DATATYPE_UINT32 :
             memcpy(&outimg->im->array.UI32[0], &inimg0.im->array.UI32[0], sizeof(uint32_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.UI32[inimg0.md->nelement], &inimg1.im->array.UI32, sizeof(uint32_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.UI32[inimg0.md->nelement], &inimg1.im->array.UI32[0], sizeof(uint32_t)*inimg1.md->nelement);
             break;
 
         case _DATATYPE_INT32 :
             memcpy(&outimg->im->array.SI32[0], &inimg0.im->array.SI32[0], sizeof(int32_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.SI32[inimg0.md->nelement], &inimg1.im->array.SI32, sizeof(int32_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.SI32[inimg0.md->nelement], &inimg1.im->array.SI32[0], sizeof(int32_t)*inimg1.md->nelement);
             break;
 
 
         case _DATATYPE_UINT64 :
             memcpy(&outimg->im->array.UI64[0], &inimg0.im->array.UI64[0], sizeof(uint64_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.UI64[inimg0.md->nelement], &inimg1.im->array.UI64, sizeof(uint64_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.UI64[inimg0.md->nelement], &inimg1.im->array.UI64[0], sizeof(uint64_t)*inimg1.md->nelement);
             break;
 
         case _DATATYPE_INT64 :
             memcpy(&outimg->im->array.SI64[0], &inimg0.im->array.SI64[0], sizeof(int64_t)*inimg0.md->nelement);
-            memcpy(&outimg->im->array.SI64[inimg0.md->nelement], &inimg1.im->array.SI64, sizeof(int64_t)*inimg1.md->nelement);
+            memcpy(&outimg->im->array.SI64[inimg0.md->nelement], &inimg1.im->array.SI64[0], sizeof(int64_t)*inimg1.md->nelement);
             break;
 
         case _DATATYPE_FLOAT :
@@ -205,9 +209,11 @@ errno_t image_marge(
             PRINT_ERROR("datatype %u not supported", outimg->datatype );
             abort();
         }
+        printf(">>>>>>>>>>>>>>>>>> LINE %d\n", __LINE__);
     }
     else
     {
+        printf(">>>>>>>>>>>>>>>>>> LINE %d\n", __LINE__);
         // block size for memcpy in number of pixel
 
         uint64_t blocksize_out = outimg->size[0];
