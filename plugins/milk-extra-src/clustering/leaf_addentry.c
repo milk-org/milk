@@ -5,7 +5,7 @@
 #include "addvector_to_CF.h"
 
 // log all debug trace points to file
-#define DEBUGLOG
+//#define DEBUGLOG
 
 /**
  * @brief Add entry to leaf
@@ -25,10 +25,16 @@ errno_t leaf_addentry(CLUSTERTREE *ctree,
     DEBUG_TRACE_FSTART();
 
     long cfi = lCFindex;
+#ifdef DEBUGPRINT
+    printf("[%5d %s] trying to add vector to cfi %ld\n", __LINE__, __func__, cfi);
+#endif
     while(cfi != -1)
     {
         addvector_to_CF(ctree, datavec, ssqr, 1, cfi, addOK);
 
+#ifdef DEBUGPRINT
+        printf("[%5d %s] addOK = %d\n", __LINE__, __func__, *addOK);
+#endif
         if(*addOK == 1)
         {
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
@@ -39,6 +45,7 @@ errno_t leaf_addentry(CLUSTERTREE *ctree,
         {
             cfi = -1;
         }
+
     }
 
     DEBUG_TRACE_FEXIT();

@@ -7,7 +7,7 @@
 
 // a LEAF node has leaves
 #define CLUSTER_CF_TYPE_LEAF     3
-#define CLUSTER_CF_TYPE_LEAFNODE 4
+//#define CLUSTER_CF_TYPE_LEAFNODE 4
 
 // CF needs to be recomputed
 #define CLUSTER_CF_STATUS_UPDATE  0x0001
@@ -24,9 +24,6 @@ typedef struct
     int NBchild;
     // child index, -1 if no child
     long *childindex;
-
-    int   NBleaf;
-    long *leafindex;
 
     // index of parent. -1 if no parent
     long parentindex;
@@ -65,7 +62,6 @@ typedef struct
     long long cdistnegcnt; // number of neg distance
 
     long nbnode;
-    long nbleafnode;
     long nbleaf;
     long nbleafsingle;
 

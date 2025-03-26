@@ -2,12 +2,18 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
-errno_t addvector_to_CF(CLUSTERTREE *ctree,
-                        double      *datavec,
-                        long double  ssqr,
-                        long         N,
-                        long         CFindex,
-                        int         *addOK)
+#include <math.h>
+
+//#define DEBUGPRINT
+
+errno_t addvector_to_CF(
+    CLUSTERTREE *ctree,
+    double      *datavec,
+    long double  ssqr,
+    long         N,
+    long         CFindex,
+    int         *addOK
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -29,6 +35,13 @@ errno_t addvector_to_CF(CLUSTERTREE *ctree,
     long double tmpv1   = ssq1 / N1;
     long double tmpv2   = sum2 / (N1 * N1);
     double      radius2 = tmpv1 - tmpv2;
+
+
+    // Check cluster radius
+
+#ifdef DEBUGPRINT
+    printf("[%5d %s]  NEW CLUSTER RADIUS = %8lf / %8lf = %8lf\n", __LINE__, __func__, sqrt(radius2),  ctree->T, sqrt(radius2)/ctree->T);
+#endif
 
     if((radius2 < ctree->T * ctree->T) || (*addOK == 1))
     {
@@ -55,8 +68,19 @@ errno_t addvector_to_CF(CLUSTERTREE *ctree,
     return RETURN_SUCCESS;
 }
 
+
+
+
+
+
+
 errno_t subvector_to_CF(
-    CLUSTERTREE *ctree, double *datavec, long double ssqr, long N, long CFindex)
+    CLUSTERTREE *ctree,
+    double *datavec,
+    long double ssqr,
+    long N, long
+    CFindex
+)
 {
     DEBUG_TRACE_FSTART();
 

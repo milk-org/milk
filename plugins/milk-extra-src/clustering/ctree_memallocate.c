@@ -30,12 +30,12 @@ errno_t ctree_memallocate(CLUSTERTREE *ctree)
             FUNC_RETURN_FAILURE("malloc error");
         }
 
-        ctree->CFarray[CFindex].leafindex =
+        /*ctree->CFarray[CFindex].leafindex =
             (long *) malloc(sizeof(long) * (ctree->L + 1));
         if(ctree->CFarray[CFindex].leafindex == NULL)
         {
             FUNC_RETURN_FAILURE("malloc error");
-        }
+        }*/
 
         ctree->CFarray[CFindex].datasumvec =
             (double *) malloc(sizeof(double) * ctree->npix);

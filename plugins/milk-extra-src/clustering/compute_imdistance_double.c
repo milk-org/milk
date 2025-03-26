@@ -20,14 +20,18 @@ errno_t compute_imdistance_double(CLUSTERTREE *ctree,
 
     static long double minnoise2_val = -1.0;
 
-    //printf("Computing distance over %ld elements  %ld %ld\n", NBelem, N1, N2);
-    //fflush(stdout);
+#ifdef DEBUGPRINT
+    printf("[compute_imdistance_double]   Computing distance over %ld elements  %ld %ld\n", ctree->npix, N1, N2);
+#endif
 
     for(long ii = 0; ii < ctree->npix; ii++)
     {
         double tmpv = vec1[ii] / N1 - vec2[ii] / N2;
         dist2 += tmpv * tmpv;
     }
+#ifdef DEBUGPRINT
+    printf("[compute_imdistance_double]   dist2 = %lf\n", (double) dist2);
+#endif
 
     // keep track of minimum N-corrected distance encountered
     // assuming uncorrelated noise, distance2 is
@@ -55,7 +59,9 @@ errno_t compute_imdistance_double(CLUSTERTREE *ctree,
 
     *distval = (double) sqrt(dist2);
 
-    //printf("    -> %g\n", *distval);
+#ifdef DEBUGPRINT
+    printf("[compute_imdistance_double]    -> %g\n", *distval);
+#endif
 
     cdist2_sum += dist2;
     cdist2_cnt++;
