@@ -89,6 +89,7 @@ static errno_t compute_function()
     uint32_t ysize = imgmap.md->size[1];
 
     // link/create output image/stream
+    // output size is same as input size (default)
 
     IMGID imgout = mkIMGID_from_name(outim.name);
     imgout.shared = *outim.shared;
