@@ -32,7 +32,9 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
         droptree(ctree);
     }
 
+#ifdef DEBUGPRINT
     printCFtree(ctree);
+#endif
 
     // compute distances within leaf node
     double maxdist = 0.0;
@@ -41,17 +43,18 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     long nCF; // number of CF entries to split
     switch(ctree->CFarray[CFindex].type)
     {
-        case CLUSTER_CF_TYPE_LEAFNODE:
-            nCF = ctree->CFarray[CFindex].NBleaf;
-            break;
+    /*        case CLUSTER_CF_TYPE_LEAFNODE:
+                nCF = ctree->CFarray[CFindex].NBleaf;
+                break;
+    */
 
-        case CLUSTER_CF_TYPE_NODE:
-            nCF = ctree->CFarray[CFindex].NBchild;
-            break;
+    case CLUSTER_CF_TYPE_NODE:
+        nCF = ctree->CFarray[CFindex].NBchild;
+        break;
 
-        default:
-            FUNC_RETURN_FAILURE("type = %d not valid",
-                                ctree->CFarray[CFindex].type);
+    default:
+        FUNC_RETURN_FAILURE("type = %d not valid",
+                            ctree->CFarray[CFindex].type);
     }
 
     long *subCFarray = (long *) malloc(sizeof(long) * nCF);
@@ -59,7 +62,9 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     {
         FUNC_RETURN_FAILURE("malloc error");
     }
-    if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
+
+
+    /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
     {
         for(long i = 0; i < nCF; i++)
         {
@@ -67,12 +72,12 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
         }
     }
     else
+    {*/
+    for(long i = 0; i < nCF; i++)
     {
-        for(long i = 0; i < nCF; i++)
-        {
-            subCFarray[i] = ctree->CFarray[CFindex].childindex[i];
-        }
+        subCFarray[i] = ctree->CFarray[CFindex].childindex[i];
     }
+    //}
 
     double *distarray = (double *) malloc(sizeof(double) * nCF * nCF);
     if(distarray == NULL)
@@ -163,13 +168,13 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
     for(int subindex = 0; subindex < nCF; subindex++)
     {
 
-        DEBUG_TRACEPOINT("(LEAF)NODE %2d  %12g %12g -> ADD TO (LEAF)NODE %ld",
+        DEBUG_TRACEPOINT("NODE %2d  %12g %12g -> ADD TO NODE %ld",
                          subindex,
                          distarray[maxdistindex0 * nCF + subindex],
                          distarray[maxdistindex1 * nCF + subindex],
                          destCF[subindex]);
 
-        if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
+        /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
         {
             FUNC_CHECK_RETURN(
                 leafnode_attachleaf(ctree,
@@ -177,12 +182,12 @@ errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
                                     destCF[subindex]));
         }
         else
-        {
-            FUNC_CHECK_RETURN(
-                node_attachnode(ctree,
-                                ctree->CFarray[CFindex].childindex[subindex],
-                                destCF[subindex]));
-        }
+        {*/
+        FUNC_CHECK_RETURN(
+            node_attachnode(ctree,
+                            ctree->CFarray[CFindex].childindex[subindex],
+                            destCF[subindex]));
+//        }
     }
 
     free(destCF);

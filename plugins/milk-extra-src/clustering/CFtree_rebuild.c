@@ -13,26 +13,46 @@
 #include "printCFtree.h"
 #include "split_CF_node.h"
 
-errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
+
+
+//#define DEBUGPRINT
+
+
+errno_t CFtree_rebuild(
+    CLUSTERTREE *ctree,
+    long *frameleafCFindex,
+    long NBframe
+)
 {
     DEBUG_TRACE_FSTART();
 
     // MERGE LEAVES
 
+
+
+    printf("REBUILDING\n");
+
     ctree->nbnode       = 0;
-    ctree->nbleafnode   = 0;
     ctree->nbleaf       = 0;
     ctree->nbleafsingle = 0;
+    int maxlevel = 0;
     for(long cfi = 0; cfi < ctree->NBCF; cfi++)
     {
-        switch(ctree->CFarray[cfi].type)
+        if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
         {
+            if(ctree->CFarray[cfi].level > maxlevel)
+            {
+                maxlevel = ctree->CFarray[cfi].level;
+            }
+
+            switch(ctree->CFarray[cfi].type)
+            {
             case CLUSTER_CF_TYPE_NODE:
                 ctree->nbnode++;
-                break;
-
-            case CLUSTER_CF_TYPE_LEAFNODE:
-                ctree->nbleafnode++;
+                if(ctree->CFarray[cfi].level > maxlevel)
+                {
+                    maxlevel = ctree->CFarray[cfi].level;
+                }
                 break;
 
             case CLUSTER_CF_TYPE_LEAF:
@@ -40,18 +60,33 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
                 {
                     ctree->nbleafsingle++;
                 }
+                if(ctree->CFarray[cfi].level > maxlevel)
+                {
+                    maxlevel = ctree->CFarray[cfi].level;
+                }
                 ctree->nbleaf++;
                 break;
+            }
         }
     }
+    printf("\n");
+    printf("    max level  = %d\n", maxlevel);
     printf("    nbnode     = %5ld\n", ctree->nbnode);
-    printf("    nbleafnode = %5ld\n", ctree->nbleafnode);
     printf("    nbleaf     = %5ld (incl %ld singles)\n",
            ctree->nbleaf,
            ctree->nbleafsingle);
 
+    printf("\n");
+
+
+
+
+
+
+
     // agglomerative algorithm works by merging tips of subtrees
     // initially, tips = leafs
+    //
     long *tipCFi = (long *) malloc(sizeof(long) * ctree->nbleaf);
     if(tipCFi == NULL)
     {
@@ -59,8 +94,7 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
     }
 
     // pairwise distance between tips
-    double *tipdist =
-        (double *) malloc(sizeof(double) * ctree->nbleaf * ctree->nbleaf);
+    double *tipdist = (double *) malloc(sizeof(double) * ctree->nbleaf * ctree->nbleaf);
     if(tipdist == NULL)
     {
         FUNC_RETURN_FAILURE("malloc error");
@@ -73,32 +107,26 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
     {
         switch(ctree->CFarray[cfi].type)
         {
-            case CLUSTER_CF_TYPE_NODE:
-                //nodeCFi[nodeCFi_cnt] = cfi;
-                FUNC_CHECK_RETURN(CFmeminit(ctree, cfi, 0));
-                nodeCFi_cnt++;
-                break;
+        case CLUSTER_CF_TYPE_NODE:
+            FUNC_CHECK_RETURN(CFmeminit(ctree, cfi, 0));
+            nodeCFi_cnt++;
+            break;
 
-            case CLUSTER_CF_TYPE_LEAFNODE:
-                //nodeleafCFi[nodeleafCFi_cnt] = cfi;
-                FUNC_CHECK_RETURN(CFmeminit(ctree, cfi, 0));
-                nodeleafCFi_cnt++;
-                break;
-
-            case CLUSTER_CF_TYPE_LEAF:
-                tipCFi[leafCFi_cnt]             = cfi;
-                ctree->CFarray[cfi].parentindex = -1;
-                ctree->CFarray[cfi].level       = 0;
-                leafCFi_cnt++;
-                break;
+        case CLUSTER_CF_TYPE_LEAF:
+            tipCFi[leafCFi_cnt]             = cfi;
+            ctree->CFarray[cfi].parentindex = -1;
+            ctree->CFarray[cfi].level       = 0;
+            leafCFi_cnt++;
+            break;
         }
     }
 
     // interleaf distances
-    //imageID IDleafdist;
-    //create_2Dimage_ID("leafdist", ctree->nbleaf, ctree->nbleaf, &IDleafdist);
+    // imageID IDleafdist;
+    // create_2Dimage_ID("leafdist", ctree->nbleaf, ctree->nbleaf, &IDleafdist);
+#ifdef DEBUGPRINT
     printf("%s      Computing pairwise leaf distance matrix\n", __func__);
-
+#endif
     double maxldist = 0.0;
     for(long lf0 = 0; lf0 < ctree->nbleaf; lf0++)
     {
@@ -124,16 +152,10 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
         }
     }
 
+#ifdef DEBUGPRINT
     printf("%s      Done\n", __func__);
-    /*for(long lf0=0; lf0 < ctree->nbleaf; lf0 ++)
-    {
-        for(long lf1=0; lf1 < ctree->nbleaf; lf1 ++)
-        {
-            data.image[IDleafdist].array.F[lf1*ctree->nbleaf + lf0] =
-                tipdist[lf1*ctree->nbleaf + lf0] / ctree->T;
-        }
-    }*/
-    //save_fl_fits("leafdist", "leafdist0.fits");
+#endif
+
 
     double minleafdist = 0.0;
     int    nbmergeop   = 0;
@@ -143,8 +165,18 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
     long toptip = 0;
     while(opOK == 1)
     {
+#ifdef DEBUGPRINT
+        printf("[%5d]\n", __LINE__);
+#endif
+
         opOK = 0;
 
+
+
+
+        // identify closest pair of leafs
+        // these are candidates for being merged
+        //
         long minleafdist_lf0  = -1;
         long minleafdist_lf1  = -1;
         long minleafdist_cfi0 = -1;
@@ -170,8 +202,8 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
                         double ldist = tipdist[lf1 * ctree->nbleaf + lf0];
 
                         // add # pt regularization
-                        ldist += ctree->CFarray[cfi0].N * ctree->T;
-                        ldist += ctree->CFarray[cfi1].N * ctree->T;
+                        //ldist += ctree->CFarray[cfi0].N * ctree->T;
+                        //ldist += ctree->CFarray[cfi1].N * ctree->T;
 
                         if(ldist < minleafdist)
                         {
@@ -197,25 +229,34 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
         long cfi0      = minleafdist_cfi0;
         long cfi1      = minleafdist_cfi1;
 
-        printf(
-            "[%3ld] Minimum intertip distance  "
-            "CF %ld (N=%ld R=%6.4f)- CF %ld (N=%ld R=%6.4f) = %lf  ( dist = "
-            "%6.4f )\n",
-            lf0cnt,
-            minleafdist_cfi0,
-            ctree->CFarray[minleafdist_cfi0].N,
-            sqrt(ctree->CFarray[cfi0].radius2) / ctree->T,
-            minleafdist_cfi1,
-            ctree->CFarray[minleafdist_cfi1].N,
-            sqrt(ctree->CFarray[cfi1].radius2) / ctree->T,
-            minleafdist,
-            minleafdist / ctree->T);
+
+#ifdef DEBUGPRINT
+        /*        printf(
+                    "[%3ld] Minimum intertip distance  "
+                    "CF %ld (N=%ld R=%6.4f)- CF %ld (N=%ld R=%6.4f) = %lf  ( dist = "
+                    "%6.4f )\n",
+                    lf0cnt,
+                    minleafdist_cfi0,
+                    ctree->CFarray[minleafdist_cfi0].N,
+                    sqrt(ctree->CFarray[cfi0].radius2) / ctree->T,
+                    minleafdist_cfi1,
+                    ctree->CFarray[minleafdist_cfi1].N,
+                    sqrt(ctree->CFarray[cfi1].radius2) / ctree->T,
+                    minleafdist,
+                    minleafdist / ctree->T);
+        */
+#endif
 
         // If both tips are leat type, try to merge them into a single leaf
+        //
+        //
         if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
                 (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
         {
+
+#ifdef DEBUGPRINT
             printf("    LEAF - LEAF\n");
+#endif
 
             // Trying to merge cfi1 into cfi0
             int addOK = 0;
@@ -228,7 +269,9 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
                                               &addOK));
             if(addOK == 1)
             {
-                printf("    LEAF MERGE CF %ld into CF %ld\n", cfi1, cfi0);
+#ifdef DEBUGPRINT
+                printf("        LEAF MERGE CF %ld into CF %ld\n", cfi1, cfi0);
+#endif
                 opOK = 1;
                 nbmergeop++;
 
@@ -242,10 +285,12 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
                 }
                 // removing cfi1
                 FUNC_CHECK_RETURN(CFmeminit(ctree, cfi1, 0));
-                printf("        -> CF %ld   N =  %ld  R = %6.4f\n",
-                       cfi0,
-                       ctree->CFarray[cfi0].N,
-                       sqrt(ctree->CFarray[cfi0].radius2) / ctree->T);
+#ifdef DEBUGPRINT
+//                printf("        -> CF %ld   N =  %ld  R = %6.4f\n",
+//                       cfi0,
+//                       ctree->CFarray[cfi0].N,
+//                       sqrt(ctree->CFarray[cfi0].radius2) / ctree->T);
+#endif
 
                 lf0update = 1;
                 // discard lf1
@@ -255,22 +300,25 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
             }
             else
             {
-                printf("    INSERT IN LEAFNODE\n");
+#ifdef DEBUGPRINT
+                printf("        INSERT IN NODE\n");
+#endif
+
                 opOK = 1;
 
                 // Create empty leaf node
                 long ncfi;
                 FUNC_CHECK_RETURN(get_availableCFindex(ctree, &ncfi));
-                ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_LEAFNODE;
+                ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_NODE;  //CLUSTER_CF_TYPE_LEAFNODE;
                 ctree->CFarray[ncfi].level       = 1;
                 ctree->CFarray[ncfi].parentindex = -1;
                 ctree->CFarray[ncfi].NBchild     = 0;
-                ctree->CFarray[ncfi].NBleaf      = 0;
+                //ctree->CFarray[ncfi].NBleaf      = 0;
                 ctree->CFarray[ncfi].N           = 0;
 
                 // attach cfi0 and cfi1 to new node
-                FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi0, ncfi));
-                FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi1, ncfi));
+                FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi0, ncfi));
+                FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi1, ncfi));
 
                 // point lf0 new CF indices
                 tipCFi[lf0] = ncfi;
@@ -280,20 +328,27 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
 
                 toptip = ncfi;
             }
+#ifdef DEBUGPRINT
+            printf("    LEAF - LEAF -> DONE\n\n");
+#endif
         }
 
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAFNODE))
-        {
-            printf("    LEAF - LEAFNODE\n");
-            printf("    attach %ld to %ld\n", cfi0, cfi1);
-            opOK = 1;
-            FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi0, cfi1));
 
-            if(ctree->CFarray[cfi1].NBleaf > ctree->L)
+
+        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
+                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
+        {
+#ifdef DEBUGPRINT
+            printf("    LEAF - NODE\n");
+            printf("        attach %ld to %ld\n", cfi0, cfi1);
+#endif
+            opOK = 1;
+            FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi0, cfi1));
+
+            if(ctree->CFarray[cfi1].NBchild > ctree->B)
             {
 #ifdef DEBUGPRINT
-                printf("%s      MAX LEAF NUMBER REACHED -> SPLIT LEAFNODE\n",
+                printf("%s          MAX LEAF NUMBER REACHED -> SPLIT LEAFNODE\n",
                        __func__);
 #endif
                 long splitcfi0;
@@ -307,20 +362,24 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
             }
         }
 
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAFNODE) &&
+
+
+        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
                 (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
         {
-            printf("    LEAFNODE - LEAF\n");
-            printf("    attach %ld to %ld\n", cfi1, cfi0);
+#ifdef DEBUGPRINT
+            printf("    NODE - LEAF\n");
+            printf("        attach %ld to %ld\n", cfi1, cfi0);
+#endif
             opOK = 1;
-            FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi1, cfi0));
+            FUNC_CHECK_RETURN(node_attachleaf(ctree, cfi1, cfi0));
             toptip = cfi0;
 
-            if(ctree->CFarray[cfi0].NBleaf > ctree->L)
+            if(ctree->CFarray[cfi0].NBchild > ctree->B)
             {
 #ifdef DEBUGPRINT
                 printf(
-                    "%s      MAX LEAF NUMBER REACHED -> SPLIT LEAFNODE %ld\n",
+                    "%s         MAX BRANCH NUMBER REACHED -> SPLIT NODE %ld\n",
                     __func__,
                     cfi0);
 #endif
@@ -335,85 +394,22 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
             }
         }
 
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
-        {
-            printf("    LEAF - NODE\n");
 
-            // Create empty leaf node
-            long ncfi;
-            FUNC_CHECK_RETURN(get_availableCFindex(ctree, &ncfi));
-            ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_LEAFNODE;
-            ctree->CFarray[ncfi].level       = 1;
-            ctree->CFarray[ncfi].parentindex = -1;
-            ctree->CFarray[ncfi].NBchild     = 0;
-            ctree->CFarray[ncfi].NBleaf      = 0;
-            ctree->CFarray[ncfi].N           = 0;
-
-            // attach cfi0 to new node
-            FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi0, ncfi));
-
-            // update pointer
-            tipCFi[lf0] = ncfi;
-            cfi0        = tipCFi[lf0];
-
-            toptip = ncfi;
-        }
-
-        if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
-                (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAF))
-        {
-            printf("    NODE - LEAF\n");
-
-            // Create empty leaf node
-            long ncfi;
-            FUNC_CHECK_RETURN(get_availableCFindex(ctree, &ncfi));
-            ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_LEAFNODE;
-            ctree->CFarray[ncfi].level       = 1;
-            ctree->CFarray[ncfi].parentindex = -1;
-            ctree->CFarray[ncfi].NBchild     = 0;
-            ctree->CFarray[ncfi].NBleaf      = 0;
-            ctree->CFarray[ncfi].N           = 0;
-
-            // attach cfi1 to new node
-            FUNC_CHECK_RETURN(leafnode_attachleaf(ctree, cfi1, ncfi));
-
-            // update pointer
-            tipCFi[lf1] = ncfi;
-            cfi1        = tipCFi[lf1];
-
-            toptip = ncfi;
-        }
 
         int nodemerge = 0;
         if(opOK == 0)
         {
-            if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAFNODE) &&
-                    (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAFNODE))
-            {
-                printf("    LEAFNODE - LEAFNODE\n");
-                nodemerge = 1;
-            }
-            if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAFNODE) &&
-                    (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
-            {
-                printf("    LEAFNODE - NODE\n");
-                nodemerge = 1;
-            }
-
-            if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
-                    (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_LEAFNODE))
-            {
-                printf("    NODE - LEAFNODE\n");
-                nodemerge = 1;
-            }
             if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_NODE) &&
                     (ctree->CFarray[cfi1].type == CLUSTER_CF_TYPE_NODE))
             {
+#ifdef DEBUGPRINT
                 printf("    NODE - NODE\n");
+#endif
                 nodemerge = 1;
             }
         }
+
+
 
         if(nodemerge == 1)
         {
@@ -425,7 +421,6 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
             ctree->CFarray[ncfi].level       = 1;
             ctree->CFarray[ncfi].parentindex = -1;
             ctree->CFarray[ncfi].NBchild     = 0;
-            ctree->CFarray[ncfi].NBleaf      = 0;
             ctree->CFarray[ncfi].N           = 0;
 
             // attach cfi0 and cfi1 to new node
@@ -441,11 +436,16 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
             toptip = ncfi;
         }
 
+
+
+
+
         // update distance matrix
 
         if(lf0update == 1)
         {
             // update distances involving cfi0
+            //
             for(long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 long cfi = tipCFi[lf];
@@ -470,6 +470,7 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
         if(lf1update == 1)
         {
             // update distances involving cfi1
+            //
             for(long lf = 0; lf < ctree->nbleaf; lf++)
             {
                 long cfi = tipCFi[lf];
@@ -490,6 +491,7 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
                 }
             }
         }
+
 
         if(tipCFi[lf0] == -1)
         {
@@ -518,14 +520,11 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
         }
         save_fl_fits("leafdist", "leafdist1.fits");*/
     }
-    printf("NUMBER OF MERGE OPERATION = %d\n", nbmergeop);
 
-    printf("TOP CF INDEX = %ld\n", toptip);
+
 
     {
         int leveloffset = ctree->CFarray[toptip].level;
-        printf("level offset = %d\n", leveloffset);
-
         for(long cfi = 0; cfi < ctree->NBCF; cfi++)
         {
             if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
@@ -536,41 +535,94 @@ errno_t CFtree_rebuild(CLUSTERTREE *ctree, long *frameleafCFindex, long NBframe)
     }
     ctree->rootindex = toptip;
 
-    if(ctree->CFarray[toptip].type == CLUSTER_CF_TYPE_LEAFNODE)
-    {
-        droptree(ctree);
-    }
-
     if(ctree->CFarray[toptip].type == CLUSTER_CF_TYPE_LEAF)
     {
         droptree(ctree);
-        droptree(ctree);
     }
+
+
+//#ifdef DEBUGPRINT
+    printf("NUMBER OF MERGE OPERATION = %d\n", nbmergeop);
+    printf("TOP CF INDEX = %ld\n", toptip);
 
     {
-        // list leaves
-        printf("\n\n ---------- leaf CFs -------------------------------\n");
+        ctree->nbnode       = 0;
+        ctree->nbleaf       = 0;
+        ctree->nbleafsingle = 0;
+        int maxlevel = 0;
         for(long cfi = 0; cfi < ctree->NBCF; cfi++)
         {
-            if(ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_LEAF)
+            if(ctree->CFarray[cfi].type != CLUSTER_CF_TYPE_UNUSED)
             {
-                printf("[CF %4ld]  N= %4ld   R= %6.4f | ",
-                       cfi,
-                       ctree->CFarray[cfi].N,
-                       sqrt(ctree->CFarray[cfi].radius2) / ctree->T);
-                for(long fr = 0; fr < NBframe; fr++)
+                if(ctree->CFarray[cfi].level > maxlevel)
                 {
-                    if(frameleafCFindex[fr] == cfi)
-                    {
-                        printf(" %5ld", fr);
-                    }
+                    maxlevel = ctree->CFarray[cfi].level;
                 }
-                printf("\n");
+
+                switch(ctree->CFarray[cfi].type)
+                {
+                case CLUSTER_CF_TYPE_NODE:
+                    ctree->nbnode++;
+                    if(ctree->CFarray[cfi].level > maxlevel)
+                    {
+                        maxlevel = ctree->CFarray[cfi].level;
+                    }
+                    break;
+
+                case CLUSTER_CF_TYPE_LEAF:
+                    if(ctree->CFarray[cfi].N == 1)
+                    {
+                        ctree->nbleafsingle++;
+                    }
+                    if(ctree->CFarray[cfi].level > maxlevel)
+                    {
+                        maxlevel = ctree->CFarray[cfi].level;
+                    }
+                    ctree->nbleaf++;
+                    break;
+                }
             }
         }
+        printf("\n");
+        printf("    max level  = %d\n", maxlevel);
+        printf("    nbnode     = %5ld\n", ctree->nbnode);
+        printf("    nbleaf     = %5ld (incl %ld singles)\n",
+               ctree->nbleaf,
+               ctree->nbleafsingle);
+        printf("\n");
     }
+//#endif
 
-    FUNC_CHECK_RETURN(printCFtree(ctree));
+
+#ifdef DEBUGPRINT
+    /*    {
+            // list leaves
+            printf("\n\n ---------- leaf CFs -------------------------------\n");
+            for(long cfi = 0; cfi < ctree->NBCF; cfi++)
+            {
+                if(ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_LEAF)
+                {
+                    printf("[CF %4ld]  N= %4ld   R= %6.4f | ",
+                           cfi,
+                           ctree->CFarray[cfi].N,
+                           sqrt(ctree->CFarray[cfi].radius2) / ctree->T);
+                    for(long fr = 0; fr < NBframe; fr++)
+                    {
+                        if(frameleafCFindex[fr] == cfi)
+                        {
+                            printf(" %5ld", fr);
+                        }
+                    }
+                    printf("\n");
+                }
+            }
+        }
+    */
+#endif
+
+#ifdef DEBUGPRINT
+//    FUNC_CHECK_RETURN(printCFtree(ctree));
+#endif
 
     free(tipdist);
     free(tipCFi);
