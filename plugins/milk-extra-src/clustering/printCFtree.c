@@ -4,7 +4,13 @@
 
 #include "clustering_defs.h"
 
-errno_t printCFtree(CLUSTERTREE *ctree)
+
+
+
+
+errno_t printCFtree(
+    CLUSTERTREE *ctree
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -33,24 +39,24 @@ errno_t printCFtree(CLUSTERTREE *ctree)
 
                 switch(ctree->CFarray[CFindex].type)
                 {
-                    case CLUSTER_CF_TYPE_ROOT:
-                        printf("ROOT");
-                        break;
+                case CLUSTER_CF_TYPE_ROOT:
+                    printf("ROOT");
+                    break;
 
-                    case CLUSTER_CF_TYPE_NODE:
-                        printf("NODE");
-                        break;
+                case CLUSTER_CF_TYPE_NODE:
+                    printf("NODE");
+                    break;
 
-                    case CLUSTER_CF_TYPE_LEAF:
-                        printf("LEAF");
-                        break;
+                case CLUSTER_CF_TYPE_LEAF:
+                    printf("LEAF");
+                    break;
 
-                    case CLUSTER_CF_TYPE_LEAFNODE:
-                        printf("LFND");
-                        break;
+                /*case CLUSTER_CF_TYPE_LEAFNODE:
+                    printf("LFND");
+                    break;*/
 
-                    default:
-                        printf("????");
+                default:
+                    printf("????");
                 }
 
                 printf("  N=%5ld", ctree->CFarray[CFindex].N);
@@ -73,7 +79,7 @@ errno_t printCFtree(CLUSTERTREE *ctree)
                     printf(")");
                 }
 
-                if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
+                /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
                 {
                     printf("  %3d leaves (", ctree->CFarray[CFindex].NBleaf);
                     for(int lfi = 0; lfi < ctree->CFarray[CFindex].NBleaf;
@@ -82,7 +88,7 @@ errno_t printCFtree(CLUSTERTREE *ctree)
                         printf(" %ld", ctree->CFarray[CFindex].leafindex[lfi]);
                     }
                     printf(")");
-                }
+                }*/
 
                 printf("\n");
             }

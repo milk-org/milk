@@ -4,32 +4,52 @@
 
 #include "addvector_to_CF.h"
 
+//#define DEBUGPRINT
+
+
+
+
+
 /**
- * @brief Attach EXISITNG leaf to leafnode
+ * @brief Attach EXISITNG leaf to node
  *
  * @param ctree             clustering tree
  * @param CFindexleaf       CF index of leaf
- * @param CFindexleafnode   CF index of node to which leaf should be attached
+ * @param CFindexnode   CF index of node to which leaf should be attached
  * @return errno_t
  */
 errno_t
-leafnode_attachleaf(CLUSTERTREE *ctree, long CFindexleaf, long CFindexleafnode)
+node_attachleaf(
+    CLUSTERTREE *ctree,
+    long CFindexleaf,
+    long CFindexnode
+)
 {
     DEBUG_TRACE_FSTART();
 
-    ctree->CFarray[CFindexleafnode]
-    .leafindex[ctree->CFarray[CFindexleafnode].NBleaf] = CFindexleaf;
-    ctree->CFarray[CFindexleafnode].NBleaf++;
+#ifdef DEBUGPRINT
+        printf("node_attachleaf  %ld %ld\n", CFindexleaf, CFindexnode);
+#endif
 
-    ctree->CFarray[CFindexleaf].parentindex = CFindexleafnode;
-    ctree->CFarray[CFindexleaf].level =
-        ctree->CFarray[CFindexleafnode].level + 1;
 
-    long cfi = CFindexleafnode;
+    ctree->CFarray[CFindexnode].childindex[ctree->CFarray[CFindexnode].NBchild] = CFindexleaf;
+    ctree->CFarray[CFindexnode].NBchild++;
+
+
+
+    ctree->CFarray[CFindexleaf].parentindex = CFindexnode;
+    ctree->CFarray[CFindexleaf].level = ctree->CFarray[CFindexnode].level + 1;
+
+
+
+
+    long cfi = CFindexnode;
     while(cfi != -1)
     {
+#ifdef DEBUGPRINT
         printf("========= ADDING VECTOR TO NODE %ld (%s)\n", cfi, __FILE__);
-        fflush(stdout);
+#endif
+
 
         ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
@@ -41,19 +61,23 @@ leafnode_attachleaf(CLUSTERTREE *ctree, long CFindexleaf, long CFindexleafnode)
                         cfi,
                         &addOK);
 
+
+
+
         // move upstream to propagate change
 
         long cfip = ctree->CFarray[cfi].parentindex;
         if(cfi == cfip)
         {
+#ifdef DEBUGPRINT
             printf(" cfi %ld  cfip %ld\n", cfi, cfip);
-            fflush(stdout);
+#endif
 
             FUNC_RETURN_FAILURE(
                 "Attaching leaf %ld to node %ld: CF parent %ld points to "
                 "itself",
                 CFindexleaf,
-                CFindexleafnode,
+                CFindexnode,
                 cfi);
         }
 
