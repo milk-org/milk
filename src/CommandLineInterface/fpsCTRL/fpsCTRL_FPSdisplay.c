@@ -502,6 +502,8 @@ errno_t fpsCTRL_FPSdisplay(
                             fpsindex = keywnode[knodeindex].fpsindex;
                             pid_t pid;
 
+                            DEBUG_TRACEPOINT("fpsindex = %ld", fpsindex);
+
                             pid = data.fpsarray[fpsindex].md->confpid;
                             if((getpgid(pid) >= 0) && (pid > 0))
                             {
