@@ -630,7 +630,7 @@ static errno_t imcube_makecluster(
                 {
                     DEBUG_TRACEPOINT(
                         "Radius condition not met for leaf index %ld",
-                        leafi);
+                        lCFindex);
                     // indicate that leaf has not been added
                     lCFindex = -1;
                 }
