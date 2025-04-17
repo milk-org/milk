@@ -648,8 +648,6 @@ static errno_t imcube_makecluster(
                     printf("[%5d %s] leaf has not been added\n", __LINE__, __func__);
 #endif
 
-                    DEBUG_TRACEPOINT("Creating new leaf # %d",
-                                     ctree.CFarray[CFindex].NBleaf);
                     long nCFindex;
 #ifdef DEBUGPRINT
                     printf("[%5d %s] creating leaf\n", __LINE__, __func__);
