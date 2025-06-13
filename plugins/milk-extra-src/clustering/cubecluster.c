@@ -45,6 +45,9 @@ static long   fpi_threshold;
 static uint32_t *branchB = NULL;
 long             fpi_branchB;
 
+static uint32_t *leafposmode = NULL;
+long             fpi_leafposmode;
+
 static int64_t *optrebuild;
 static long     fpi_optrebuild = -1;
 
@@ -90,6 +93,15 @@ static CLICMDARGDEF farg[] = {
         CLIARG_HIDDEN_DEFAULT,
         (void **) &branchB,
         &fpi_branchB
+    },
+    {
+        CLIARG_UINT32,
+        ".leafposmode",
+        "leaf position mode (0:fixed, 1:dyn)",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &leafposmode,
+        &fpi_leafposmode
     },
     {
         CLIARG_ONOFF,
@@ -466,6 +478,7 @@ static errno_t imcube_makecluster(
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
+    ctree.leafposmode  = *leafposmode;   // leaf position mode, 0:static, 1:dynamic
 
     ctree.npix = CF_npix;
 
