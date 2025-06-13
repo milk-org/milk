@@ -21,6 +21,18 @@ MSextdescr="
 Transfer a SHM over the network.
 Sender and receiver ends. Use TCP or UDP.
 
+To transfer a stream from computer A to computer B, follow these steps:
+[1] If the stream does not exist on B, but already exists on A, create stream on A with same size and type as destination
+[2] Check for available nework port. To check if port 30100 is available, run:
+  netstat -lntu | grep \":30100\"
+Returns no match is port is available
+[3] Start the receive process on B:
+  $0 30100
+[4] Start the transmit process on A:
+  $0 -T XX.XX.XX.XX -s sname 30100
+where XX.XX.XX.XX is the IP number of B as seen from A.
+
+These processes usually run in a tmux session.
 "
 
 RequiredCommands=( milk )
