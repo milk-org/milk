@@ -55,6 +55,7 @@ typedef struct
     long           npix;
     int            B;       // branching parameter
     double         T;       // threshold
+    int            leafposmode; // leaf position mode. 0=static, 1=dynamic
     long           NBCF;    // number of cluster features in memory
     CLUSTERING_CF *CFarray; // pointer to cluster features
     long           rootindex;
