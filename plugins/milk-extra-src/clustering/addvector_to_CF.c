@@ -50,10 +50,21 @@ errno_t addvector_to_CF(
     printf("[%5d %s]  NEW CLUSTER RADIUS = %8lf / %8lf = %8lf\n", __LINE__, __func__, sqrt(radius2),  ctree->T, sqrt(radius2)/ctree->T);
 #endif
 
-//    if((radius2 < ctree->T * ctree->T) || (*addOK == 1))
 
+    {
+        double tval2 = 0.0;
+    if (ctree->leafposmode == 0)
+    {
+        // static
+        tval2 = dist2pos2;
+    }
+    else
+    {
+        // dynamic
+        tval2 = radius2;
+    }
 
-    if((dist2pos2 < ctree->T * ctree->T) || (*addOK == 1))
+    if((tval2 < ctree->T * ctree->T) || (*addOK == 1))
     {
         *addOK = 1;
 
@@ -74,6 +85,7 @@ errno_t addvector_to_CF(
     else
     {
         *addOK = 0;
+    }
     }
 
     DEBUG_TRACE_FEXIT();
