@@ -44,6 +44,13 @@ errno_t ctree_memallocate(CLUSTERTREE *ctree)
             FUNC_RETURN_FAILURE("malloc error");
         }
 
+        ctree->CFarray[CFindex].dataposvec =
+            (double *) malloc(sizeof(double) * ctree->npix);
+        if(ctree->CFarray[CFindex].dataposvec == NULL)
+        {
+            FUNC_RETURN_FAILURE("malloc error");
+        }
+
         ctree->CFarray[CFindex].parentindex =
             -1; // Require to avoid infinite loop in CFmeminit upstream tracking
         CFmeminit(ctree, CFindex, 0);

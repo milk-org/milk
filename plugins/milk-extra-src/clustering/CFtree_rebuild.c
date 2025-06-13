@@ -70,7 +70,7 @@ errno_t CFtree_rebuild(
         }
     }
     printf("\n");
-    printf("    max level  = %d\n", maxlevel);
+    printf("    max level  = %5d\n", maxlevel);
     printf("    nbnode     = %5ld\n", ctree->nbnode);
     printf("    nbleaf     = %5ld (incl %ld singles)\n",
            ctree->nbleaf,
@@ -247,7 +247,7 @@ errno_t CFtree_rebuild(
         */
 #endif
 
-        // If both tips are leat type, try to merge them into a single leaf
+        // If both tips are leaf type, try to merge them into a single leaf
         //
         //
         if((ctree->CFarray[cfi0].type == CLUSTER_CF_TYPE_LEAF) &&

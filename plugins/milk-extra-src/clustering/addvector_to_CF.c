@@ -37,15 +37,27 @@ errno_t addvector_to_CF(
     double      radius2 = tmpv1 - tmpv2;
 
 
+    double dist2pos2 = 0.0;
+    for(long ii = 0; ii < ctree->npix; ii++)
+    {
+        double dval = ctree->CFarray[CFindex].dataposvec[ii] - datavec[ii];
+        dist2pos2 += dval * dval;
+    }
+
     // Check cluster radius
 
 #ifdef DEBUGPRINT
     printf("[%5d %s]  NEW CLUSTER RADIUS = %8lf / %8lf = %8lf\n", __LINE__, __func__, sqrt(radius2),  ctree->T, sqrt(radius2)/ctree->T);
 #endif
 
-    if((radius2 < ctree->T * ctree->T) || (*addOK == 1))
+//    if((radius2 < ctree->T * ctree->T) || (*addOK == 1))
+
+
+    if((dist2pos2 < ctree->T * ctree->T) || (*addOK == 1))
     {
         *addOK = 1;
+
+        // if point is added, update CF stats
 
         for(long ii = 0; ii < ctree->npix; ii++)
         {
@@ -78,15 +90,15 @@ errno_t subvector_to_CF(
     CLUSTERTREE *ctree,
     double *datavec,
     long double ssqr,
-    long N, long
-    CFindex
+    long N, 
+    long CFindex
 )
 {
     DEBUG_TRACE_FSTART();
 
     ctree->CFarray[CFindex].N -= N;
 
-    // sub to vec sum
+    // subtract to vec sum
     ctree->CFarray[CFindex].sum2 = 0.0;
     for(long ii = 0; ii < ctree->npix; ii++)
     {
