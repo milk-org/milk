@@ -40,6 +40,13 @@ errno_t ctree_init(
            datavector,
            sizeof(double) * ctree->npix);
 
+    memcpy(ctree->CFarray[0].dataposvec,
+           datavector,
+           sizeof(double) * ctree->npix);
+    memcpy(ctree->CFarray[1].dataposvec,
+           datavector,
+           sizeof(double) * ctree->npix);
+
     ctree->CFarray[0].datassq = ssqr;
     ctree->CFarray[1].datassq = ssqr;
 
