@@ -28,6 +28,18 @@ typedef struct
     // index of parent. -1 if no parent
     long parentindex;
 
+    // This is the reference point defining the CF position.
+    // If the CF is not a leaf, then this is the same as datasumvec.
+    // If the CF is a lead, then it may be different from datasumvec.
+    //
+    // The criteria for belonging to a leaf is being within distance T of this point.
+    // This is the coordinate of the first point assigned to the leaf.
+    // Note: This is different from BIRCH which has this point be the average of the points in the leaf
+    // The problem with the average is that it can drift away as points are added, so clusters 
+    // could become stretched as points are added. Here we ensure that all point in a leaf cluster
+    // are within T of this unmovable point.
+    double     *dataposvec;
+
     long        N;          // number of points aggregated in node
     double     *datasumvec; // sum
     long double datassq;    // sum squared
@@ -42,8 +54,8 @@ typedef struct
 {
     long           npix;
     int            B;       // branching parameter
-    int            L;       // max number of leafs in leaf node
     double         T;       // threshold
+    int            leafposmode; // leaf position mode. 0=static, 1=dynamic
     long           NBCF;    // number of cluster features in memory
     CLUSTERING_CF *CFarray; // pointer to cluster features
     long           rootindex;

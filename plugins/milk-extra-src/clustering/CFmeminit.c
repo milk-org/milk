@@ -6,7 +6,13 @@
 #include "CFmeminit.h"
 
 
-errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
+
+
+errno_t CFmeminit(
+    CLUSTERTREE *ctree, 
+    long CFindex, 
+    uint32_t mode
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -95,6 +101,7 @@ errno_t CFmeminit(CLUSTERTREE *ctree, long CFindex, uint32_t mode)
     for(int ii = 0; ii < ctree->npix; ii++)
     {
         ctree->CFarray[CFindex].datasumvec[ii] = 0.0;
+        ctree->CFarray[CFindex].dataposvec[ii] = 0.0;
     }
 
     ctree->CFarray[CFindex].sum2    = 0.0;
