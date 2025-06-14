@@ -43,6 +43,12 @@ errno_t create_new_leaf(CLUSTERTREE *ctree,
     // cluster radius = 0 (single point)
     ctree->CFarray[CFi].radius2 = 0.0;
 
+    // for fixed leaf position
+    // will not change as points are added
+    memcpy(ctree->CFarray[CFi].dataposvec,
+           datarray,
+           sizeof(double) * ctree->npix);
+
     ctree->CFarray[CFi].status |= CLUSTER_CF_STATUS_CREATE;
 
     *CFindex = CFi;

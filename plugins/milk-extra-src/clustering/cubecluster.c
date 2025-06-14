@@ -45,11 +45,14 @@ static long   fpi_threshold;
 static uint32_t *branchB = NULL;
 long             fpi_branchB;
 
-static uint32_t *branchL = NULL;
-long             fpi_branchL;
+static uint32_t *leafposmode = NULL;
+long             fpi_leafposmode;
 
+static int64_t *optrebuild;
+static long     fpi_optrebuild = -1;
 
-
+static int64_t *optcondense;
+static long     fpi_optcondense = -1;
 
 
 // List of arguments to function
@@ -93,12 +96,30 @@ static CLICMDARGDEF farg[] = {
     },
     {
         CLIARG_UINT32,
-        ".L",
-        "branch number leaf node",
-        "10",
+        ".leafposmode",
+        "leaf position mode (0:fixed, 1:dyn)",
+        "1",
         CLIARG_HIDDEN_DEFAULT,
-        (void **) &branchL,
-        &fpi_branchL
+        (void **) &leafposmode,
+        &fpi_leafposmode
+    },
+    {
+        CLIARG_ONOFF,
+        ".opt.rebuild",
+        "rebuild tree after scan",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &optrebuild,
+        &fpi_optrebuild
+    },
+    {
+        CLIARG_ONOFF,
+        ".opt.condense",
+        "condense tree after scan",
+        "1",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &optcondense,
+        &fpi_optcondense
     }
 };
 
@@ -415,6 +436,7 @@ static errno_t imcube_makecluster(
 
 
     // build pixmap to load input images in vectors
+    //
     float maskeps = 1.0e-5; // threshold below which pixels are ignored
     long  pixcnt  = 0;
     for(uint64_t ii = 0; ii < xysize; ii++)
@@ -452,11 +474,11 @@ static errno_t imcube_makecluster(
 
     CLUSTERTREE ctree; // cluster tree
 
-    ctree.NBCF         = 20000;       // number of cluster features
-    ctree.B            = *branchB;          // max number of branches out of node
-    ctree.L            = *branchL;          // max numbers of CF entries in leaf node
-    ctree.noise2offset = 0.0;         // if very noisy image, subtract known noise
+    ctree.NBCF         = 20000;          // number of cluster features
+    ctree.B            = *branchB;       // max number of branches out of node
+    ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
+    ctree.leafposmode  = *leafposmode;   // leaf position mode, 0:static, 1:dynamic
 
     ctree.npix = CF_npix;
 
@@ -495,6 +517,10 @@ static errno_t imcube_makecluster(
     }
 
 
+
+
+    // MAIN SCAN THROUGH DATASET
+    //
 
     long framecnt = 0;
     for(long frame = 0; frame < NBframe; frame++)
@@ -575,7 +601,6 @@ static errno_t imcube_makecluster(
             {
                 long CFindex;
                 FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex));
-                //DEBUG_TRACEPOINT(
 #ifdef DEBUGPRINT
                 printf("[%5d %s] -> CF #%ld type is %d  (2=node, 3=leaf)\n",
                        __LINE__, __func__, CFindex,
@@ -585,19 +610,6 @@ static errno_t imcube_makecluster(
 
                 // we have descended the tree and are now at a leaf node
 
-                //long leafi;
-                //FUNC_CHECK_RETURN(findleaf(&ctree, datarray, CFindex, &leafi));
-
-#ifdef DEBUGPRINT
-                // printf("findleaf -> leafi %ld\n", leafi);
-#endif
-                // we have descended the tree and are now at a leaf node
-
-
-
-                //if(leafi != -1)
-                //{
-                //    long lCFindex = ctree.CFarray[CFindex].childindex[leafi];
 
                 long lCFindex = CFindex;
 
@@ -615,10 +627,6 @@ static errno_t imcube_makecluster(
 
 
 
-#ifdef DEBUGPRINT
-                printf("[%5d] %s\n", __LINE__, __FILE__);
-#endif
-
                 if(addOK == 1)
                 {
                     // leaf has been added
@@ -634,7 +642,6 @@ static errno_t imcube_makecluster(
                     // indicate that leaf has not been added
                     lCFindex = -1;
                 }
-                // }
 
 
 #ifdef DEBUGPRINT
@@ -776,13 +783,13 @@ static errno_t imcube_makecluster(
                 datarray = datarray0;
             }
 
-            int condensenop = 1;
+           /* int condensenop = 1;
             while(condensenop > 0)
             {
                 // condense = compress levels whenever possible
                 //
                 FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
-            }
+            }*/
 
 
 
@@ -797,11 +804,11 @@ static errno_t imcube_makecluster(
 
             framecnt++;
 
-            if(framecnt % 100000 == 0)
+         /*  if(framecnt % 100000 == 0)
             {
                 FUNC_CHECK_RETURN(
                     CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
-            }
+            }*/
         }
     }
 
@@ -816,12 +823,17 @@ static errno_t imcube_makecluster(
 
 
 
+
+
+ if(*optrebuild == 1)  // ON state
+ {
     printf("Rebuilding CF tree from clusters\n");
     FUNC_CHECK_RETURN(CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
+ }
 
 
-
-
+ if(*optcondense == 1)  // ON state
+ {
     printf("Condensing CF tree\n");
     int condensenop = 1;
     while(condensenop > 0)
@@ -835,6 +847,9 @@ static errno_t imcube_makecluster(
         FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
 
     }
+ }
+
+
 
 
     {
@@ -876,13 +891,14 @@ static errno_t imcube_makecluster(
             }
         }
         printf("\n");
-        printf("    max level  = %d\n", maxlevel);
+        printf("    max level  = %5d\n", maxlevel);
         printf("    nbnode     = %5ld\n", ctree.nbnode);
         printf("    nbleaf     = %5ld (incl %ld singles)\n",
                ctree.nbleaf,
                ctree.nbleafsingle);
         printf("\n");
     }
+
 
 
 #ifdef DEBUGPRINT
@@ -904,7 +920,7 @@ static errno_t imcube_makecluster(
 
     {
         char fname[STRINGMAXLEN_FILENAME];
-        WRITE_FILENAME(fname, "%s/clust.summary.dat", outdname);
+        WRITE_FILENAME(fname, "%s/clust.leafsummary.dat", outdname);
 
         FILE *fp = fopen(fname, "w");
 
@@ -947,12 +963,35 @@ static errno_t imcube_makecluster(
                     fprintf(fpleaf, "# radius2 %16g\n", (double) ctree.CFarray[CFindex].radius2);
 
 
+
+
+
+
+
                     for(long frame = 0; frame < NBframe; frame++)
                     {
                         if(frameleafCFindex[frame] == CFindex)
                         {
                             fprintf(fpleaf, "%05ld", frame);
-                            fprintf(fpleaf, "\n");
+                            double dist2 = 0.0;
+                            for(long ii = 0; ii < ctree.npix; ii++)
+                             {
+                                double dval = ctree.CFarray[CFindex].dataposvec[ii];
+                                dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
+                                dist2 = dval*dval;
+                             }
+                             fprintf(fpleaf, " %f", sqrt(dist2));
+
+                            dist2 = 0.0;
+                            for(long ii = 0; ii < ctree.npix; ii++)
+                             {
+                                double dval = ctree.CFarray[CFindex].datasumvec[ii] / ctree.CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
+                                dist2 = dval*dval;
+                             }
+                             fprintf(fpleaf, " %f", sqrt(dist2));
+
+                             fprintf(fpleaf, "\n");
                         }
                     }
 
@@ -980,9 +1019,11 @@ static errno_t imcube_makecluster(
         fprintf(fp,"# col3   CF level\n");
         fprintf(fp,"# col4   Number of point within CF\n");
         fprintf(fp,"# col5   NBchild\n");
-        fprintf(fp,"# col6   datasq\n");
-        fprintf(fp,"# col7   radius2\n");
-        fprintf(fp,"# col8   radius3/threshold\n");
+        fprintf(fp,"# col6   parent index\n");
+        fprintf(fp,"# col7   datasq\n");
+        fprintf(fp,"# col8   radius2\n");
+        fprintf(fp,"# col9   radius3/threshold\n");
+        fprintf(fp, "# [datavecpos]\n");
 
 
 
@@ -1012,16 +1053,26 @@ static errno_t imcube_makecluster(
 
 
                 fprintf(fp,
-                        "%5ld  %2d %2d  %5ld %5d    %16g %16g    %6.4f\n",
+                        "%5ld  %2d %2d  %5ld %5d %5ld  %16.3f %16.3f  %6.4f",
                         CFindex,
                         ctree.CFarray[CFindex].type,
                         ctree.CFarray[CFindex].level,
                         ctree.CFarray[CFindex].N,
                         ctree.CFarray[CFindex].NBchild,
+                        ctree.CFarray[CFindex].parentindex,
                         (double) ctree.CFarray[CFindex].datassq,
                         (double) sqrt(ctree.CFarray[CFindex].radius2),
                         (double) sqrt(ctree.CFarray[CFindex].radius2)/ctree.T
                        );
+                
+                fprintf(fp, "  [");
+                for(int ii=0; ii<10; ii++)
+                {
+                    fprintf(fp, "%4.2f/%4.2f ", ctree.CFarray[CFindex].dataposvec[ii], ctree.CFarray[CFindex].datasumvec[ii]/ctree.CFarray[CFindex].N);
+                }
+
+                fprintf(fp, "]");
+                fprintf(fp, "\n");
 
                 /*{
                     char fleafname[STRINGMAXLEN_FILENAME];
