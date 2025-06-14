@@ -22,7 +22,12 @@
  *
  * Input leaf node will be released
  */
-errno_t split_CF_node(CLUSTERTREE *ctree, long CFindex, long *CFi0, long *CFi1)
+errno_t split_CF_node(
+    CLUSTERTREE *ctree, 
+    long CFindex, 
+    long *CFi0, 
+    long *CFi1
+)
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %ld", CFindex);
