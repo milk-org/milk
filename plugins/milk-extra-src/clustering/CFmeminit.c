@@ -9,8 +9,8 @@
 
 
 errno_t CFmeminit(
-    CLUSTERTREE *ctree, 
-    long CFindex, 
+    CLUSTERTREE *ctree,
+    long CFindex,
     uint32_t mode
 )
 {

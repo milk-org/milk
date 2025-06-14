@@ -33,7 +33,7 @@
 #include "split_CF_node.h"
 
 
-//#define DEBUGPRINT
+// #define DEBUGPRINT
 
 
 static char *farg_inimname;
@@ -474,7 +474,7 @@ static errno_t imcube_makecluster(
 
     CLUSTERTREE ctree; // cluster tree
 
-    ctree.NBCF         = 20000;          // number of cluster features
+    ctree.NBCF         = 2000;          // number of cluster features
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
@@ -525,9 +525,7 @@ static errno_t imcube_makecluster(
     long framecnt = 0;
     for(long frame = 0; frame < NBframe; frame++)
     {
-#ifdef DEBUGPRINT
-        printf("PROCESSING FRAME %5ld\n", frame);
-#endif
+        DEBUG_TRACEPOINT("PROCESSING FRAME %5ld", frame);
         frameleafCFindex[frame] = -1;
 
 
@@ -535,19 +533,88 @@ static errno_t imcube_makecluster(
 
         // Load image data into vector datarray
         //
+        DEBUG_TRACEPOINT("Load image data into datarray xysize=%ld CF_npix=%ld", xysize, CF_npix);
+        list_image_ID();
         long double ssqr     = 0.0;
         long double ssqrdiff = 0.0;
-        for(long ii = 0; ii < CF_npix; ii++)
-        {
-            datarray[ii] =
-                pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
-            ssqr += datarray[ii] * datarray[ii];
 
-            double vdiff = datarray0[ii] - datarray1[ii];
-            ssqrdiff += vdiff * vdiff;
+        if ( img.im->md->datatype == _DATATYPE_FLOAT )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
+        }
+        else if ( img.im->md->datatype == _DATATYPE_DOUBLE )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.D[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
+        }
+        else if ( img.im->md->datatype == _DATATYPE_UINT16 )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.UI16[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
+        }
+        else if ( img.im->md->datatype == _DATATYPE_UINT32 )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.UI32[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
+        }
+        else if ( img.im->md->datatype == _DATATYPE_INT16 )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.SI16[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
+        }
+        else if ( img.im->md->datatype == _DATATYPE_INT32 )
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] =
+                    pixgain[ii] * img.im->array.SI32[frame * xysize + pixmap[ii]];
+                ssqr += datarray[ii] * datarray[ii];
+
+                double vdiff = datarray0[ii] - datarray1[ii];
+                ssqrdiff += vdiff * vdiff;
+            }
         }
 
+
+
         // check that vector is different from previous one to avoid duplicates
+        DEBUG_TRACEPOINT("Check for duplicate");
         int frameskip = 0;
         if(ssqrdiff < 1.0e-6 * ssqr)
         {
@@ -573,18 +640,13 @@ static errno_t imcube_makecluster(
         {
             // NOT SKIPPING
 
+
+            DEBUG_TRACEPOINT("Processing ID %ld frame %ld, %ld pix",
+                             img.ID,
+                             frame,
+                             CF_npix);
+
 #ifdef DEBUGPRINT
-            printf("Processing ID %ld frame %ld, %ld pix    \r",
-                   img.ID,
-                   frame,
-                   CF_npix);
-            printf("---------------- %16Lg  %16Lg -> %16Lg\n",
-                   ssqrdiff,
-                   ssqr,
-                   ssqrdiff/ssqr);
-
-            printf("    SSQR = %g\n", (double) ssqr);
-
             FUNC_CHECK_RETURN(printCFtree(&ctree));
 #endif
 
@@ -601,11 +663,9 @@ static errno_t imcube_makecluster(
             {
                 long CFindex;
                 FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex));
-#ifdef DEBUGPRINT
-                printf("[%5d %s] -> CF #%ld type is %d  (2=node, 3=leaf)\n",
-                       __LINE__, __func__, CFindex,
-                       ctree.CFarray[CFindex].type);
-#endif
+                DEBUG_TRACEPOINT("CF #%ld type is %d  (2=node, 3=leaf)",
+                                 CFindex,
+                                 ctree.CFarray[CFindex].type);
 
 
                 // we have descended the tree and are now at a leaf node
@@ -631,8 +691,8 @@ static errno_t imcube_makecluster(
                 {
                     // leaf has been added
                     frameleafCFindex[frame] = lCFindex;
-                    DEBUG_TRACEPOINT("Added entry to leaf index %ld",
-                                     lCFindex);
+                    DEBUG_TRACEPOINT("Added entry %ld to leaf index %ld",
+                                     frame, lCFindex);
                 }
                 else
                 {
@@ -644,29 +704,16 @@ static errno_t imcube_makecluster(
                 }
 
 
-#ifdef DEBUGPRINT
-                printf("[%5d] %s\n", __LINE__, __FILE__);
-#endif
 
                 if(lCFindex == -1)
                 {
                     // If leaf has not been added
-#ifdef DEBUGPRINT
-                    printf("[%5d %s] leaf has not been added\n", __LINE__, __func__);
-#endif
-
                     long nCFindex;
-#ifdef DEBUGPRINT
-                    printf("[%5d %s] creating leaf\n", __LINE__, __func__);
-#endif
                     FUNC_CHECK_RETURN(
                         create_new_leaf(&ctree, datarray, ssqr, &nCFindex));
 
                     frameleafCFindex[frame] = nCFindex;
 
-#ifdef DEBUGPRINT
-                    printf("[%5d %s] created leaf %ld\n", __LINE__, __func__, nCFindex);
-#endif
 
 
                     DEBUG_TRACEPOINT("CREATED LEAF at index %ld", nCFindex);
@@ -678,18 +725,11 @@ static errno_t imcube_makecluster(
                                      ctree.CFarray[CFindex].parentindex);
 
 
-#ifdef DEBUGPRINT
-                    printf("[%5d] %s\n", __LINE__, __FILE__);
-                    printf("[%5d %s] attaching leaf %ld to node %ld (parent of %ld)\n", __LINE__, __func__,
-                           nCFindex, ctree.CFarray[CFindex].parentindex, CFindex);
-#endif
+                    DEBUG_TRACEPOINT("attaching leaf %ld to node %ld (parent of %ld)\n",
+                                     nCFindex, ctree.CFarray[CFindex].parentindex, CFindex);
 
                     FUNC_CHECK_RETURN(
                         node_attachleaf(&ctree, nCFindex, ctree.CFarray[CFindex].parentindex));
-
-#ifdef DEBUGPRINT
-                    printf("[%5d] %s\n", __LINE__, __FILE__);
-#endif
 
 
                     DEBUG_TRACEPOINT("ATTACHED LEAF %ld to %ld",
@@ -783,13 +823,13 @@ static errno_t imcube_makecluster(
                 datarray = datarray0;
             }
 
-           /* int condensenop = 1;
-            while(condensenop > 0)
-            {
-                // condense = compress levels whenever possible
-                //
-                FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
-            }*/
+            /* int condensenop = 1;
+             while(condensenop > 0)
+             {
+                 // condense = compress levels whenever possible
+                 //
+                 FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
+             }*/
 
 
 
@@ -801,14 +841,16 @@ static errno_t imcube_makecluster(
             printf("\n\n\n");
 #endif
 
-
+            DEBUG_TRACEPOINT(
+                "Frame %ld processed",
+                framecnt);
             framecnt++;
 
-         /*  if(framecnt % 100000 == 0)
-            {
-                FUNC_CHECK_RETURN(
-                    CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
-            }*/
+            /*  if(framecnt % 100000 == 0)
+               {
+                   FUNC_CHECK_RETURN(
+                       CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
+               }*/
         }
     }
 
@@ -825,29 +867,29 @@ static errno_t imcube_makecluster(
 
 
 
- if(*optrebuild == 1)  // ON state
- {
-    printf("Rebuilding CF tree from clusters\n");
-    FUNC_CHECK_RETURN(CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
- }
-
-
- if(*optcondense == 1)  // ON state
- {
-    printf("Condensing CF tree\n");
-    int condensenop = 1;
-    while(condensenop > 0)
+    if(*optrebuild == 1)  // ON state
     {
-        // condense = compress levels whenever possible
-        //
-#ifdef DEBUGPRINT
-        printf("========================== CONDENSING ===========================\n");
-        printCFtree(&ctree);
-#endif
-        FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
-
+        printf("Rebuilding CF tree from clusters\n");
+        FUNC_CHECK_RETURN(CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
     }
- }
+
+
+    if(*optcondense == 1)  // ON state
+    {
+        printf("Condensing CF tree\n");
+        int condensenop = 1;
+        while(condensenop > 0)
+        {
+            // condense = compress levels whenever possible
+            //
+#ifdef DEBUGPRINT
+            printf("========================== CONDENSING ===========================\n");
+            printCFtree(&ctree);
+#endif
+            FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
+
+        }
+    }
 
 
 
@@ -975,23 +1017,23 @@ static errno_t imcube_makecluster(
                             fprintf(fpleaf, "%05ld", frame);
                             double dist2 = 0.0;
                             for(long ii = 0; ii < ctree.npix; ii++)
-                             {
+                            {
                                 double dval = ctree.CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
                                 dist2 = dval*dval;
-                             }
-                             fprintf(fpleaf, " %f", sqrt(dist2));
+                            }
+                            fprintf(fpleaf, " %f", sqrt(dist2));
 
                             dist2 = 0.0;
                             for(long ii = 0; ii < ctree.npix; ii++)
-                             {
+                            {
                                 double dval = ctree.CFarray[CFindex].datasumvec[ii] / ctree.CFarray[CFindex].N;
                                 dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
                                 dist2 = dval*dval;
-                             }
-                             fprintf(fpleaf, " %f", sqrt(dist2));
+                            }
+                            fprintf(fpleaf, " %f", sqrt(dist2));
 
-                             fprintf(fpleaf, "\n");
+                            fprintf(fpleaf, "\n");
                         }
                     }
 
@@ -1064,7 +1106,7 @@ static errno_t imcube_makecluster(
                         (double) sqrt(ctree.CFarray[CFindex].radius2),
                         (double) sqrt(ctree.CFarray[CFindex].radius2)/ctree.T
                        );
-                
+
                 fprintf(fp, "  [");
                 for(int ii=0; ii<10; ii++)
                 {
