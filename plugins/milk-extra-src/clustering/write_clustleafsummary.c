@@ -80,71 +80,107 @@ errno_t write_clustleafsummary(
 
 
 
-
-
                 for(long frame = 0; frame < NBframe; frame++)
                 {
                     if(frameleafCFindex[frame] == CFindex)
                     {
                         fprintf(fpleaf, "%05ld", frame);
-                        double dist2 = 0.0;
+                        double dist2ave = 0.0;
+                        double dist2pos = 0.0;
 
                         if ( img.im->md->datatype == _DATATYPE_FLOAT )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
                         else if ( img.im->md->datatype == _DATATYPE_DOUBLE )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.D[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.D[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
                         else if ( img.im->md->datatype == _DATATYPE_INT16 )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.SI16[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.SI16[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
                         else if ( img.im->md->datatype == _DATATYPE_INT32 )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.SI32[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.SI32[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
                         else if ( img.im->md->datatype == _DATATYPE_UINT16 )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.UI16[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.UI16[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
                         else if ( img.im->md->datatype == _DATATYPE_UINT32 )
                         {
                             for(long ii = 0; ii < ctree->npix; ii++)
                             {
+                                double dval = ctree->CFarray[CFindex].datasumvec[ii]/ctree->CFarray[CFindex].N;
+                                dval -= pixgain[ii] * img.im->array.UI32[frame * xysize + pixmap[ii]];
+                                dist2ave += dval*dval;
+                            }
+                            for(long ii = 0; ii < ctree->npix; ii++)
+                            {
                                 double dval = ctree->CFarray[CFindex].dataposvec[ii];
                                 dval -= pixgain[ii] * img.im->array.UI32[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
+                                dist2pos += dval*dval;
                             }
                         }
 
-                        fprintf(fpleaf, " %f", sqrt(dist2));
+                        fprintf(fpleaf, " %20.3f", sqrt(dist2pos));
+                        fprintf(fpleaf, " %20.3f", sqrt(dist2ave));
 
                         fprintf(fpleaf, "\n");
                     }

@@ -4,7 +4,7 @@
 
 #include <math.h>
 
-#define DEBUGPRINT
+//#define DEBUGPRINT
 
 errno_t addvector_to_CF(
     CLUSTERTREE *ctree,
@@ -41,12 +41,12 @@ errno_t addvector_to_CF(
 
 
     // compute cluster radius
-    // xa = average x = sumvec/N
-    // radius2 = sumsqr(xi-xa)/N
-    //         =  sumsqr(xi)/N - xa^2
+    // xa = average x = sumvec/N1
+    // radius2 = sumsqr(xi-xa)/N1
+    //         =  sumsqr(xi)/N1 - xa^2
     // with:
-    // tmpv1 = sumsqr(xi)/N
-    // tmpv2 = xa^2 = sum2/N/N
+    // tmpv1 = sumsqr(xi)/N1
+    // tmpv2 = xa^2 = sum2/N1/N1
 
     long double tmpv1   = ssq1 / N1;
     long double tmpv2   = sum2 / (N1 * N1);

@@ -107,11 +107,13 @@ errno_t CFtree_rebuild(
     {
         switch(ctree->CFarray[cfi].type)
         {
+        // modes are erased
         case CLUSTER_CF_TYPE_NODE:
             FUNC_CHECK_RETURN(CFmeminit(ctree, cfi, 0));
             nodeCFi_cnt++;
             break;
 
+        // build index of leafs
         case CLUSTER_CF_TYPE_LEAF:
             tipCFi[leafCFi_cnt]             = cfi;
             ctree->CFarray[cfi].parentindex = -1;

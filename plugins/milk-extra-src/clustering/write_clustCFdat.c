@@ -16,21 +16,21 @@ errno_t write_clustCFdat(
     FILE *fp = fopen(fname, "w");
 
     fprintf(fp,"# col1   CF index\n");
-    fprintf(fp,"# col2   CF type\n");
+    fprintf(fp,"# col2   CF type (2: node, 3: leaf cluster)\n");
     fprintf(fp,"# col3   CF level\n");
     fprintf(fp,"# col4   Number of point within CF\n");
     fprintf(fp,"# col5   NBchild\n");
     fprintf(fp,"# col6   parent index\n");
     fprintf(fp,"# col7   datasq\n");
-    fprintf(fp,"# col8   radius2\n");
-    fprintf(fp,"# col9   radius3/threshold\n");
+    fprintf(fp,"# col8   radius (norm2)\n");
+    fprintf(fp,"# col9   radius (norm2) / threshold\n");
 
     for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
     {
         if(ctree->CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
         {
             fprintf(fp,
-                    "%5ld  %2d %2d  %5ld %5d %5ld  %16.3f %16.3f  %6.4f",
+                    "%5ld  %2d %2d  %5ld %5d %5ld  %16.3g %16.3g  %6.4f",
                     CFindex,
                     ctree->CFarray[CFindex].type,
                     ctree->CFarray[CFindex].level,
