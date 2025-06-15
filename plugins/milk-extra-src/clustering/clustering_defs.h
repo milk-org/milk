@@ -13,6 +13,7 @@
 #define CLUSTER_CF_STATUS_UPDATE  0x0001
 #define CLUSTER_CF_STATUS_COMPUTE 0x0002
 #define CLUSTER_CF_STATUS_CREATE  0x0004
+#define CLUSTER_CF_STATUS_MEMALLOC  0x0008 // has memory been allocated ?
 
 // cluster feature
 typedef struct
@@ -41,7 +42,7 @@ typedef struct
     double     *dataposvec;
 
     long        N;          // number of points aggregated in node
-    double     *datasumvec; // sum
+    double     *datasumvec; // sum vector
     long double datassq;    // sum squared
     long double sum2;       // square norm of sumvec
     double      radius2;    // square cluster radius
@@ -81,6 +82,10 @@ typedef struct
     long nbnode;
     long nbleaf;
     long nbleafsingle;
+
+    // computation stats
+    long stat_compdistcnt; // number of distances computed
+
 
 } CLUSTERTREE;
 

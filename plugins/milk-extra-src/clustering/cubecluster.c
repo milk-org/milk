@@ -181,20 +181,6 @@ static errno_t ctree_check(CLUSTERTREE *ctree)
                         ctree->B);
                 }
             }
-
-            /*if(ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_LEAFNODE)
-            {
-                if(ctree->CFarray[cfi].NBleaf > ctree->L)
-                {
-                    FUNC_RETURN_FAILURE(
-                        "node %ld at level %d number of leaves %d exceeds "
-                        "limit %d",
-                        cfi,
-                        ctree->CFarray[cfi].level,
-                        ctree->CFarray[cfi].NBleaf,
-                        ctree->L);
-                }
-            }*/
         }
     }
 #ifdef DEBUGPRINT
@@ -298,7 +284,20 @@ static errno_t findleafnode(
 
 
 
-
+static errno_t indexpermut(
+    long *indexarray,
+    long size
+)
+{
+    for(long k0=1; k0<size; k0++)
+    {
+        long k1 = rand()%size;
+        long lval = indexarray[k0];
+        indexarray[k0] = indexarray[k1];
+        indexarray[k1] = lval;
+    }
+    return RETURN_SUCCESS;
+}
 
 
 
@@ -393,7 +392,7 @@ static errno_t imcube_makecluster(
     ctree.xsize = xsize;
     ctree.ysize = ysize;
 
-    ctree.NBCF         = 2000;          // number of cluster features
+    ctree.NBCF         = zsize;          // max number of cluster features
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
@@ -401,29 +400,17 @@ static errno_t imcube_makecluster(
 
     ctree.npix = CF_npix;
 
+
+    ctree.stat_compdistcnt = 0; // counter for distance computations
+
     // Allocate memory for CFs
     FUNC_CHECK_RETURN(ctree_memallocate(&ctree));
 
-    // storage for current input vector
-    double *datarray0 = (double *) malloc(sizeof(double) * CF_npix);
-    if(datarray0 == NULL)
-    {
-        FUNC_RETURN_FAILURE("malloc error");
-    }
-
-    // storage for previous input vector
-    double *datarray1 = (double *) malloc(sizeof(double) * CF_npix);
-    if(datarray1 == NULL)
-    {
-        FUNC_RETURN_FAILURE("malloc error");
-    }
 
     // pointer to current array
-    double *datarray;
+    double *datarray = (double*) malloc(sizeof(double)*CF_npix);
 
-    // initially, point to datarray0
-    datarray = datarray0;
-
+ 
     printf("\n");
     long NBframe = zsize;
 
@@ -436,7 +423,15 @@ static errno_t imcube_makecluster(
     }
 
 
-
+    // permut ordering
+    // index (frameC) in input cube, may be different from loop index (frame)
+    // if reading the input cube out of order
+    long * frameC = (long*) malloc(sizeof(long)*NBframe);
+    for(long frame = 0; frame < NBframe; frame++)
+    {
+        frameC[frame] = frame;
+    }
+    //indexpermut(frameC, NBframe);
 
     // MAIN SCAN THROUGH DATASET
     //
@@ -448,24 +443,22 @@ static errno_t imcube_makecluster(
         frameleafCFindex[frame] = -1;
 
 
+
         FUNC_CHECK_RETURN(ctree_check(&ctree));
+
 
         // Load image data into vector datarray
         //
         DEBUG_TRACEPOINT("Load image data into datarray xysize=%ld CF_npix=%ld", xysize, CF_npix);
         long double ssqr     = 0.0;
-        long double ssqrdiff = 0.0;
 
         if ( img.im->md->datatype == _DATATYPE_FLOAT )
         {
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.F[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
         else if ( img.im->md->datatype == _DATATYPE_DOUBLE )
@@ -473,11 +466,8 @@ static errno_t imcube_makecluster(
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.D[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.D[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
         else if ( img.im->md->datatype == _DATATYPE_UINT16 )
@@ -485,11 +475,8 @@ static errno_t imcube_makecluster(
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.UI16[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.UI16[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
         else if ( img.im->md->datatype == _DATATYPE_UINT32 )
@@ -497,11 +484,8 @@ static errno_t imcube_makecluster(
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.UI32[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.UI32[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
         else if ( img.im->md->datatype == _DATATYPE_INT16 )
@@ -509,11 +493,8 @@ static errno_t imcube_makecluster(
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.SI16[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.SI16[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
         else if ( img.im->md->datatype == _DATATYPE_INT32 )
@@ -521,150 +502,164 @@ static errno_t imcube_makecluster(
             for(long ii = 0; ii < CF_npix; ii++)
             {
                 datarray[ii] =
-                    pixgain[ii] * img.im->array.SI32[frame * xysize + pixmap[ii]];
-                ssqr += datarray[ii] * datarray[ii];
-
-                double vdiff = datarray0[ii] - datarray1[ii];
-                ssqrdiff += vdiff * vdiff;
+                    pixgain[ii] * img.im->array.SI32[frameC[frame] * xysize + pixmap[ii]];
+                ssqr += datarray[ii]*datarray[ii];
+            }
+        }
+        else
+        {
+            for(long ii = 0; ii < CF_npix; ii++)
+            {
+                datarray[ii] = 0.0;
+                ssqr += datarray[ii]*datarray[ii];
             }
         }
 
 
 
-        // check that vector is different from previous one to avoid duplicates
-        DEBUG_TRACEPOINT("Check for duplicate");
-        int frameskip = 0;
-        if(ssqrdiff < 1.0e-6 * ssqr)
-        {
-            // duplicate, skip
+
+        DEBUG_TRACEPOINT("Processing ID %ld frame %ld, %ld pix",
+                         img.ID,
+                         frame,
+                         CF_npix);
+
 #ifdef DEBUGPRINT
-            printf("\n skipping ID %5ld frame %5ld  :  %16Lg  %16Lg -> %16Lg   \n",
-                   img.ID, frame,
-                   ssqrdiff,
-                   ssqr,
-                   ssqrdiff/ssqr);
+        FUNC_CHECK_RETURN(printCFtree(&ctree));
 #endif
-            frameskip = 1;
-        }
-
-
 
         if(frame == 0)
         {
-            frameskip = 0;
+            // INITIALIZATION
+#ifdef DEBUGPRINT
+            printf("FIRST FRAME --> INITIALIZE ctree\n");
+#endif
+            ctree_init(&ctree, datarray, ssqr);
+            frameleafCFindex[0] = 1;
         }
-
-        if(frameskip == 0)
+        else
         {
-            // NOT SKIPPING
+            long CFindex;
+            FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex));
+            DEBUG_TRACEPOINT("CF #%ld type is %d  (2=node, 3=leaf)",
+                             CFindex,
+                             ctree.CFarray[CFindex].type);
 
 
-            DEBUG_TRACEPOINT("Processing ID %ld frame %ld, %ld pix",
-                             img.ID,
-                             frame,
-                             CF_npix);
+            // we have descended the tree and are now at a leaf node
 
+
+            long lCFindex = CFindex;
+
+            // only add if radius condition is met
+            int addOK = 0;
 #ifdef DEBUGPRINT
-            FUNC_CHECK_RETURN(printCFtree(&ctree));
+            printf("[%5d %s] leaf_addentry %ld\n", __LINE__, __func__, lCFindex);
 #endif
 
-            if(frame == 0)
+            FUNC_CHECK_RETURN(leaf_addentry(&ctree,
+                                            datarray,
+                                            ssqr,
+                                            lCFindex,
+                                            &addOK));
+
+
+
+            if(addOK == 1)
             {
-                // INITIALIZATION
-#ifdef DEBUGPRINT
-                printf("FIRST FRAME --> INITIALIZE ctree\n");
-#endif
-                ctree_init(&ctree, datarray, ssqr);
-                frameleafCFindex[0] = 2;
+                // leaf has been added
+                frameleafCFindex[frame] = lCFindex;
+                DEBUG_TRACEPOINT("Added entry %ld to leaf index %ld",
+                                 frame, lCFindex);
             }
             else
             {
-                long CFindex;
-                FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex));
-                DEBUG_TRACEPOINT("CF #%ld type is %d  (2=node, 3=leaf)",
-                                 CFindex,
-                                 ctree.CFarray[CFindex].type);
-
-
-                // we have descended the tree and are now at a leaf node
-
-
-                long lCFindex = CFindex;
-
-                // only add if radius condition is met
-                int addOK = 0;
-#ifdef DEBUGPRINT
-                printf("[%5d %s] leaf_addentry %ld\n", __LINE__, __func__, lCFindex);
-#endif
-
-                FUNC_CHECK_RETURN(leaf_addentry(&ctree,
-                                                datarray,
-                                                ssqr,
-                                                lCFindex,
-                                                &addOK));
+                DEBUG_TRACEPOINT(
+                    "Radius condition not met for leaf index %ld",
+                    lCFindex);
+                // indicate that leaf has not been added
+                lCFindex = -1;
+            }
 
 
 
-                if(addOK == 1)
-                {
-                    // leaf has been added
-                    frameleafCFindex[frame] = lCFindex;
-                    DEBUG_TRACEPOINT("Added entry %ld to leaf index %ld",
-                                     frame, lCFindex);
-                }
-                else
+            if(lCFindex == -1)
+            {
+                // If leaf has not been added
+                long nCFindex;
+                FUNC_CHECK_RETURN(
+                    create_new_leaf(&ctree, datarray, ssqr, &nCFindex));
+
+                frameleafCFindex[frame] = nCFindex;
+
+
+
+                DEBUG_TRACEPOINT("CREATED LEAF at index %ld", nCFindex);
+
+                // attach new leaf to parent
+
+                DEBUG_TRACEPOINT("ATTACHING LEAF %ld to %ld",
+                                 nCFindex,
+                                 ctree.CFarray[CFindex].parentindex);
+
+
+                DEBUG_TRACEPOINT("attaching leaf %ld to node %ld (parent of %ld)\n",
+                                 nCFindex, ctree.CFarray[CFindex].parentindex, CFindex);
+
+                FUNC_CHECK_RETURN(
+                    node_attachleaf(&ctree, nCFindex, ctree.CFarray[CFindex].parentindex));
+
+
+                DEBUG_TRACEPOINT("ATTACHED LEAF %ld to %ld",
+                                 nCFindex,
+                                 ctree.CFarray[CFindex].parentindex);
+
+                CFindex = ctree.CFarray[CFindex].parentindex;
+
+                if(ctree.CFarray[CFindex].NBchild == ctree.B + 1)
                 {
                     DEBUG_TRACEPOINT(
-                        "Radius condition not met for leaf index %ld",
-                        lCFindex);
-                    // indicate that leaf has not been added
-                    lCFindex = -1;
-                }
+                        "MAX BRANCH NUMBER REACHED -> SPLIT NODE");
 
-
-
-                if(lCFindex == -1)
-                {
-                    // If leaf has not been added
-                    long nCFindex;
+                    long CFi0;
+                    long CFi1;
                     FUNC_CHECK_RETURN(
-                        create_new_leaf(&ctree, datarray, ssqr, &nCFindex));
+                        split_CF_node(&ctree, CFindex, &CFi0, &CFi1));
 
-                    frameleafCFindex[frame] = nCFindex;
+                    DEBUG_TRACEPOINT("NODE %ld(%d) -> %ld(%d) %ld(%d)",
+                                     CFindex,
+                                     ctree.CFarray[CFindex].NBchild,
+                                     CFi0,
+                                     ctree.CFarray[CFi0].NBchild,
+                                     CFi1,
+                                     ctree.CFarray[CFi1].NBchild);
 
+                    // check if upstrem # children OK
+                    long upCF = ctree.CFarray[CFi0].parentindex;
 
+                    // flag equal to 1 while upstream nodes need to be split
+                    int splitupstream = 0;
 
-                    DEBUG_TRACEPOINT("CREATED LEAF at index %ld", nCFindex);
-
-                    // attach new leaf to parent
-
-                    DEBUG_TRACEPOINT("ATTACHING LEAF %ld to %ld",
-                                     nCFindex,
-                                     ctree.CFarray[CFindex].parentindex);
-
-
-                    DEBUG_TRACEPOINT("attaching leaf %ld to node %ld (parent of %ld)\n",
-                                     nCFindex, ctree.CFarray[CFindex].parentindex, CFindex);
-
-                    FUNC_CHECK_RETURN(
-                        node_attachleaf(&ctree, nCFindex, ctree.CFarray[CFindex].parentindex));
-
-
-                    DEBUG_TRACEPOINT("ATTACHED LEAF %ld to %ld",
-                                     nCFindex,
-                                     ctree.CFarray[CFindex].parentindex);
-
-                    CFindex = ctree.CFarray[CFindex].parentindex;
-
-                    if(ctree.CFarray[CFindex].NBchild == ctree.B + 1)
+                    if(ctree.CFarray[upCF].NBchild == ctree.B + 1)
                     {
-                        DEBUG_TRACEPOINT(
-                            "MAX BRANCH NUMBER REACHED -> SPLIT NODE");
+                        // if more children thn branching parameter, we nned to split
+                        splitupstream = 1;
+                    }
+                    while(splitupstream == 1)
+                    {
+                        DEBUG_TRACEPOINT("SPLITTING NODE %ld", upCF);
+
+                        if(ctree.CFarray[upCF].level == 0)
+                        {
+                            FUNC_CHECK_RETURN(droptree(&ctree));
+                            // if we're at the root, this is the last split we need to do
+                            splitupstream = 0;
+                        }
 
                         long CFi0;
                         long CFi1;
+
                         FUNC_CHECK_RETURN(
-                            split_CF_node(&ctree, CFindex, &CFi0, &CFi1));
+                            split_CF_node(&ctree, upCF, &CFi0, &CFi1));
 
                         DEBUG_TRACEPOINT("NODE %ld(%d) -> %ld(%d) %ld(%d)",
                                          CFindex,
@@ -674,113 +669,72 @@ static errno_t imcube_makecluster(
                                          CFi1,
                                          ctree.CFarray[CFi1].NBchild);
 
-                        // check if upstrem # children OK
-                        long upCF = ctree.CFarray[CFi0].parentindex;
-
-                        // flag equal to 1 while upstream nodes need to be split
-                        int splitupstream = 0;
-
-                        if(ctree.CFarray[upCF].NBchild == ctree.B + 1)
+                        upCF = ctree.CFarray[CFi0].parentindex;
+                        if(upCF != -1)
                         {
-                            // if more children thn branching parameter, we nned to split
-                            splitupstream = 1;
-                        }
-                        while(splitupstream == 1)
-                        {
-                            DEBUG_TRACEPOINT("SPLITTING NODE %ld", upCF);
-
-                            if(ctree.CFarray[upCF].level == 0)
+                            if(ctree.CFarray[upCF].NBchild == ctree.B + 1)
                             {
-                                FUNC_CHECK_RETURN(droptree(&ctree));
-                                // if we're at the root, this is the last split we need to do
-                                splitupstream = 0;
-                            }
-
-                            long CFi0;
-                            long CFi1;
-
-                            FUNC_CHECK_RETURN(
-                                split_CF_node(&ctree, upCF, &CFi0, &CFi1));
-
-                            DEBUG_TRACEPOINT("NODE %ld(%d) -> %ld(%d) %ld(%d)",
-                                             CFindex,
-                                             ctree.CFarray[CFindex].NBchild,
-                                             CFi0,
-                                             ctree.CFarray[CFi0].NBchild,
-                                             CFi1,
-                                             ctree.CFarray[CFi1].NBchild);
-
-                            upCF = ctree.CFarray[CFi0].parentindex;
-                            if(upCF != -1)
-                            {
-                                if(ctree.CFarray[upCF].NBchild == ctree.B + 1)
-                                {
-                                    splitupstream = 1;
-                                }
+                                splitupstream = 1;
                             }
                         }
                     }
                 }
             }
+        }
 
-            //printCFtree(&ctree);
+        //printCFtree(&ctree);
 
-            for(long cfi = 0; cfi < ctree.NBCF; cfi++)
-            {
-                ctree.CFarray[cfi].status = 0;
-            }
-
-            if(datarray == datarray0)
-            {
-                //printf("0 -> 1\n");
-                datarray = datarray1;
-            }
-            else
-            {
-                //printf("1 -> 0\n");
-                datarray = datarray0;
-            }
-
-            /* int condensenop = 1;
-             while(condensenop > 0)
-             {
-                 // condense = compress levels whenever possible
-                 //
-                 FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
-             }*/
+        for(long cfi = 0; cfi < ctree.NBCF; cfi++)
+        {
+            ctree.CFarray[cfi].status = 0;
+        }
 
 
+        /* int condensenop = 1;
+         while(condensenop > 0)
+         {
+             // condense = compress levels whenever possible
+             //
+             FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
+         }*/
+
+        {
+            char fname[STRINGMAXLEN_FILENAME];
+            WRITE_FILENAME(fname, "%s/clust.CF.%05ld.dat", outdname, framecnt);
+            DEBUG_TRACEPOINT("writing %s", fname);
+            write_clustCFdat(&ctree, fname);
+        }
 
 #ifdef DEBUGPRINT
-            FUNC_CHECK_RETURN(printCFtree(&ctree));
-            printf("=================================================\n");
-            printf("=================================================\n");
-            printf("=================================================\n");
-            printf("\n\n\n");
+        FUNC_CHECK_RETURN(printCFtree(&ctree));
+        printf("=================================================\n");
+        printf("=================================================\n");
+        printf("=================================================\n");
+        printf("\n\n\n");
 #endif
 
-            DEBUG_TRACEPOINT(
-                "Frame %ld processed",
-                framecnt);
-            framecnt++;
+        DEBUG_TRACEPOINT(
+            "Frame %ld processed",
+            framecnt);
+        framecnt++;
 
-            /*  if(framecnt % 100000 == 0)
-               {
-                   FUNC_CHECK_RETURN(
-                       CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
-               }*/
-        }
+        /*  if(framecnt % 100000 == 0)
+           {
+               FUNC_CHECK_RETURN(
+                   CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
+           }*/
+
     }
 
 
     printf("\n");
     printf("Processed %ld / %ld frames\n", framecnt, NBframe);
+    printf("Distance comp counter:  %ld\n", ctree.stat_compdistcnt);
 
 
 #ifdef DEBUGPRINT
     FUNC_CHECK_RETURN(printCFtree(&ctree));
 #endif
-
 
 
 
@@ -952,8 +906,6 @@ static errno_t imcube_makecluster(
     free(frameleafCFindex);
 
     printf("Freeing CF memory\n");
-    free(datarray0);
-    free(datarray1);
     free(pixmap);
     free(pixgain);
 
