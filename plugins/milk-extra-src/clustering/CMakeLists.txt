@@ -24,6 +24,9 @@ set(SOURCEFILES
 	printCFtree.c
 	split_CF_node.c
 	update_level.c
+	write_clustCFave.c
+	write_clustCFdat.c
+	write_clustleafsummary.c
 	)
 
 # list include files (.h) that should be installed on system

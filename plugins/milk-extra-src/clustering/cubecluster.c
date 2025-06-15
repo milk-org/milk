@@ -32,6 +32,9 @@
 #include "printCFtree.h"
 #include "split_CF_node.h"
 
+#include "write_clustCFdat.h"
+#include "write_clustCFave.h"
+#include "write_clustleafsummary.h"
 
 // #define DEBUGPRINT
 
@@ -205,8 +208,11 @@ static errno_t ctree_check(CLUSTERTREE *ctree)
 
 
 
-static errno_t
-findleafnode(CLUSTERTREE *ctree, double *datavec, long *nodeindex)
+static errno_t findleafnode(
+    CLUSTERTREE *ctree,
+    double *datavec,
+    long *nodeindex
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -474,6 +480,9 @@ static errno_t imcube_makecluster(
 
     CLUSTERTREE ctree; // cluster tree
 
+    ctree.xsize = xsize;
+    ctree.ysize = ysize;
+
     ctree.NBCF         = 2000;          // number of cluster features
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
@@ -534,7 +543,6 @@ static errno_t imcube_makecluster(
         // Load image data into vector datarray
         //
         DEBUG_TRACEPOINT("Load image data into datarray xysize=%ld CF_npix=%ld", xysize, CF_npix);
-        list_image_ID();
         long double ssqr     = 0.0;
         long double ssqrdiff = 0.0;
 
@@ -892,7 +900,7 @@ static errno_t imcube_makecluster(
     }
 
 
-
+    DEBUG_TRACEPOINT(" ");
 
     {
         ctree.nbnode       = 0;
@@ -949,7 +957,7 @@ static errno_t imcube_makecluster(
 #endif
 
 
-    printf("Writing output to filesystem\n");
+    DEBUG_TRACEPOINT("Writing output to filesystem");
     {
         errno = 0;
         if(mkdir(outdname, 0777) != 0 && errno != EEXIST )
@@ -958,198 +966,18 @@ static errno_t imcube_makecluster(
         }
     }
 
-
-
-    {
-        char fname[STRINGMAXLEN_FILENAME];
-        WRITE_FILENAME(fname, "%s/clust.leafsummary.dat", outdname);
-
-        FILE *fp = fopen(fname, "w");
-
-        fprintf(fp,"# col1   leaf CF index\n");
-        fprintf(fp,"# col2   Number of point within leaf CF\n");
-        fprintf(fp,"# col3   datasq\n");
-        fprintf(fp,"# col4   radius2\n");
-        fprintf(fp,"# col5   radius3/threshold\n");
-
-
-        long NBLFcluster = 0;
-        for(long CFindex = 0; CFindex < ctree.NBCF; CFindex++)
-        {
-            if(ctree.CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAF)
-            {
-                NBLFcluster++;
-
-                fprintf(fp,
-                        "%5ld %5ld %16g %16g    %6.4f\n",
-                        CFindex,
-                        ctree.CFarray[CFindex].N,
-                        (double) ctree.CFarray[CFindex].datassq,
-                        (double) sqrt(ctree.CFarray[CFindex].radius2),
-                        (double) sqrt(ctree.CFarray[CFindex].radius2) /
-                        ctree.T);
-
-                {
-                    char fleafname[STRINGMAXLEN_FILENAME];
-                    WRITE_FILENAME(fleafname,
-                                   "%s/leaf%05ld.dat",
-                                   outdname,
-                                   CFindex);
-
-                    FILE *fpleaf = fopen(fleafname, "w");
-
-                    fprintf(fpleaf, "# CFindex  %5ld\n", CFindex);
-                    fprintf(fpleaf, "# level    %5d\n", ctree.CFarray[CFindex].level);
-                    fprintf(fpleaf, "# N        %5ld\n", ctree.CFarray[CFindex].N);
-                    fprintf(fpleaf, "# datassq %16g\n", (double) ctree.CFarray[CFindex].datassq);
-                    fprintf(fpleaf, "# radius2 %16g\n", (double) ctree.CFarray[CFindex].radius2);
-
-
-
-
-
-
-
-                    for(long frame = 0; frame < NBframe; frame++)
-                    {
-                        if(frameleafCFindex[frame] == CFindex)
-                        {
-                            fprintf(fpleaf, "%05ld", frame);
-                            double dist2 = 0.0;
-                            for(long ii = 0; ii < ctree.npix; ii++)
-                            {
-                                double dval = ctree.CFarray[CFindex].dataposvec[ii];
-                                dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
-                            }
-                            fprintf(fpleaf, " %f", sqrt(dist2));
-
-                            dist2 = 0.0;
-                            for(long ii = 0; ii < ctree.npix; ii++)
-                            {
-                                double dval = ctree.CFarray[CFindex].datasumvec[ii] / ctree.CFarray[CFindex].N;
-                                dval -= pixgain[ii] * img.im->array.F[frame * xysize + pixmap[ii]];
-                                dist2 = dval*dval;
-                            }
-                            fprintf(fpleaf, " %f", sqrt(dist2));
-
-                            fprintf(fpleaf, "\n");
-                        }
-                    }
-
-                    fclose(fpleaf);
-                }
-            }
-        }
-
-        fclose(fp);
-
-        printf("NB leaf cluster = %ld\n", NBLFcluster);
-    }
-
-
-
+    write_clustleafsummary(&ctree, img, pixmap, pixgain, frameleafCFindex, NBframe,
+                           outdname);
 
     {
         char fname[STRINGMAXLEN_FILENAME];
         WRITE_FILENAME(fname, "%s/clust.CF.dat", outdname);
-
-        FILE *fp = fopen(fname, "w");
-
-        fprintf(fp,"# col1   CF index\n");
-        fprintf(fp,"# col2   CF type\n");
-        fprintf(fp,"# col3   CF level\n");
-        fprintf(fp,"# col4   Number of point within CF\n");
-        fprintf(fp,"# col5   NBchild\n");
-        fprintf(fp,"# col6   parent index\n");
-        fprintf(fp,"# col7   datasq\n");
-        fprintf(fp,"# col8   radius2\n");
-        fprintf(fp,"# col9   radius3/threshold\n");
-        fprintf(fp, "# [datavecpos]\n");
-
-
-
-        for(long CFindex = 0; CFindex < ctree.NBCF; CFindex++)
-        {
-            if(ctree.CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
-            {
-
-                {
-                    // WRITE CF ave file to disk
-
-                    IMGID imgCFave = makeIMGID_2D("CFave", xsize, ysize);
-                    createimagefromIMGID(&imgCFave);
-
-                    for(uint64_t ii = 0; ii < xysize; ii++)
-                    {
-                        imgCFave.im->array.F[ii] = ctree.CFarray[CFindex].datasumvec[ii] / ctree.CFarray[CFindex].N;
-                    }
-
-                    char name[STRINGMAXLEN_STREAMNAME];
-                    WRITE_IMAGENAME(name, "%s/CF_%03ld.fits", outdname, CFindex);
-
-                    save_fits(imgCFave.name, name);
-
-
-                }
-
-
-                fprintf(fp,
-                        "%5ld  %2d %2d  %5ld %5d %5ld  %16.3f %16.3f  %6.4f",
-                        CFindex,
-                        ctree.CFarray[CFindex].type,
-                        ctree.CFarray[CFindex].level,
-                        ctree.CFarray[CFindex].N,
-                        ctree.CFarray[CFindex].NBchild,
-                        ctree.CFarray[CFindex].parentindex,
-                        (double) ctree.CFarray[CFindex].datassq,
-                        (double) sqrt(ctree.CFarray[CFindex].radius2),
-                        (double) sqrt(ctree.CFarray[CFindex].radius2)/ctree.T
-                       );
-
-                fprintf(fp, "  [");
-                for(int ii=0; ii<10; ii++)
-                {
-                    fprintf(fp, "%4.2f/%4.2f ", ctree.CFarray[CFindex].dataposvec[ii], ctree.CFarray[CFindex].datasumvec[ii]/ctree.CFarray[CFindex].N);
-                }
-
-                fprintf(fp, "]");
-                fprintf(fp, "\n");
-
-                /*{
-                    char fleafname[STRINGMAXLEN_FILENAME];
-                    WRITE_FILENAME(fleafname,
-                                   "%s/CF%05ld.dat",
-                                   outdname,
-                                   CFindex);
-
-                    FILE *fpleaf = fopen(fleafname, "w");
-
-                    fprintf(fpleaf, "# CFindex  %5ld\n", CFindex);
-                    fprintf(fpleaf, "# level    %5d\n", ctree.CFarray[CFindex].level);
-                    fprintf(fpleaf, "# N        %5ld\n", ctree.CFarray[CFindex].N);
-                    fprintf(fpleaf, "# datassq %16g\n", (double) ctree.CFarray[CFindex].datassq);
-                    fprintf(fpleaf, "# radius2 %16g\n", (double) ctree.CFarray[CFindex].radius2);
-
-
-                    for(long frame = 0; frame < NBframe; frame++)
-                    {
-                        if(frameleafCFindex[frame] == CFindex)
-                        {
-                            fprintf(fpleaf, "%05ld", frame);
-                            fprintf(fpleaf, "\n");
-                        }
-                    }
-
-                    fclose(fpleaf);
-                }
-                */
-            }
-
-        }
-
-        fclose(fp);
+        DEBUG_TRACEPOINT("writing %s", fname);
+        write_clustCFdat(&ctree, fname);
     }
+
+    write_clustCFave(&ctree, outdname);
+
 
 
     /*
