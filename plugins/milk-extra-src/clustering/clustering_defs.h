@@ -35,7 +35,7 @@ typedef struct
     // The criteria for belonging to a leaf is being within distance T of this point.
     // This is the coordinate of the first point assigned to the leaf.
     // Note: This is different from BIRCH which has this point be the average of the points in the leaf
-    // The problem with the average is that it can drift away as points are added, so clusters 
+    // The problem with the average is that it can drift away as points are added, so clusters
     // could become stretched as points are added. Here we ensure that all point in a leaf cluster
     // are within T of this unmovable point.
     double     *dataposvec;
@@ -53,6 +53,11 @@ typedef struct
 typedef struct
 {
     long           npix;
+
+    // for 2D image representation of CFs
+    uint32_t       xsize;
+    uint32_t       ysize;
+
     int            B;       // branching parameter
     double         T;       // threshold
     int            leafposmode; // leaf position mode. 0=static, 1=dynamic
