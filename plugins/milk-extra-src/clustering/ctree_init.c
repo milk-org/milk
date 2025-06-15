@@ -1,6 +1,7 @@
-
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
+
+#include "ctree_memallocate.h"
 
 /**
  * @brief Initialize CF tree with first vector
@@ -17,18 +18,23 @@ errno_t ctree_init(
 {
     DEBUG_TRACE_FSTART();
 
+
     ctree->rootindex = 0;
 
     // root is initially a node with single child
+    CFmemallocate(ctree, 0);
     ctree->CFarray[0].type          = CLUSTER_CF_TYPE_NODE;
     ctree->CFarray[0].level         = 0;
     ctree->CFarray[0].NBchild       = 1;
     ctree->CFarray[0].childindex[0] = 1;
     ctree->CFarray[0].N             = 1;
 
+
+
     // childless leaf node, with single leaf
+    CFmemallocate(ctree, 1);
     ctree->CFarray[1].type        = CLUSTER_CF_TYPE_LEAF;
-    ctree->CFarray[1].level       = 2;
+    ctree->CFarray[1].level       = 1;
     ctree->CFarray[1].parentindex = 0;
     ctree->CFarray[1].NBchild     = 0;
     ctree->CFarray[1].N           = 1;

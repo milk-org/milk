@@ -1,7 +1,12 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
-errno_t get_availableCFindex(CLUSTERTREE *ctree, long *index)
+#include "ctree_memallocate.h"
+
+errno_t get_availableCFindex(
+    CLUSTERTREE *ctree,
+    long *index
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -17,6 +22,8 @@ errno_t get_availableCFindex(CLUSTERTREE *ctree, long *index)
     }
 
     *index = nCFindex;
+
+    CFmemallocate(ctree, nCFindex);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

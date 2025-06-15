@@ -42,25 +42,6 @@ errno_t CFmeminit(
             {
                 ctree->CFarray[cfi].NBchild--;
             }
-
-            /*long NBleaf = ctree->CFarray[cfi].NBleaf;
-            found       = 0;
-            for(int li = 0; li < NBleaf; li++)
-            {
-                if(ctree->CFarray[cfi].leafindex[li] == CFindex)
-                {
-                    found = 1;
-                }
-                if(found == 1)
-                {
-                    ctree->CFarray[cfi].leafindex[li] =
-                        ctree->CFarray[cfi].leafindex[li + 1];
-                }
-            }
-            if(found == 1)
-            {
-                ctree->CFarray[cfi].NBleaf--;
-            }*/
         }
 
         while(cfi != -1)
@@ -90,13 +71,8 @@ errno_t CFmeminit(
         ctree->CFarray[CFindex].childindex[cind] = -1;
     }
 
-    /*ctree->CFarray[CFindex].NBleaf = 0;
-    for(int cind = 0; cind < ctree->L + 1; cind++)
-    {
-        ctree->CFarray[CFindex].leafindex[cind] = -1;
-    }*/
-
     ctree->CFarray[CFindex].parentindex = -1;
+
 
     for(int ii = 0; ii < ctree->npix; ii++)
     {
