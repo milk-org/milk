@@ -58,7 +58,7 @@ errno_t addvector_to_CF(
 
             for(long ii = 0; ii < ctree->npix; ii++)
             {
-                ctree->CFarray[CFindex].datasumvec[ii] = 0.0; //sumvec[ii];
+                ctree->CFarray[CFindex].datasumvec[ii] = sumvec[ii];
             }
 
             ctree->CFarray[CFindex].N       = N1;
