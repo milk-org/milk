@@ -57,13 +57,16 @@ errno_t ctree_condense(
                 {
                     //nbchildnode++;
 #ifdef DEBUGPRINT
-                    printf("    [%ld] adding %d gchildren from %ld, type NODE\n", cfi, ctree->CFarray[cfic].NBchild, cfic);
+                    printf("    [%ld] adding CF %5ld with %2d gchildren, type NODE\n", cfi, cfic, ctree->CFarray[cfic].NBchild);
 #endif
                     int ngchi = ctree->CFarray[cfic].NBchild;
                     nbnewchild += ngchi;
                 }
                 else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
                 {
+#ifdef DEBUGPRINT
+                    printf("    [%ld] adding CF %5ld with %2d gchildren, type LEAF\n", cfi, cfic, ctree->CFarray[cfic].NBchild);
+#endif
                     //nbchildleaf++;
                     nbnewchild++;
                 }
