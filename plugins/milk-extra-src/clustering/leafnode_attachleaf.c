@@ -28,7 +28,7 @@ node_attachleaf(
     DEBUG_TRACE_FSTART();
 
 #ifdef DEBUGPRINT
-        printf("node_attachleaf  %ld %ld\n", CFindexleaf, CFindexnode);
+    printf("node_attachleaf  %ld %ld\n", CFindexleaf, CFindexnode);
 #endif
 
 
@@ -55,6 +55,7 @@ node_attachleaf(
 
         int addOK = 1; // don't test radius
         addvector_to_CF(ctree,
+                        ctree->CFarray[CFindexleaf].dataposvec,
                         ctree->CFarray[CFindexleaf].datasumvec,
                         ctree->CFarray[CFindexleaf].datassq,
                         ctree->CFarray[CFindexleaf].N,

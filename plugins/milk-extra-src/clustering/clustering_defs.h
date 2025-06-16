@@ -1,6 +1,14 @@
 #ifndef CLUSTERING_DEFS_H
 #define CLUSTERING_DEFS_H
 
+
+// are CF positions fixed or dynamic
+// if fixed, then adding points will not change the CF position
+// In Fixed mode, the CF position is ONLY allocated at creation when the first point is added
+// Fixed mode is faster
+#define CLUSTER_CFPOS_FIXED 0
+#define CLUSTER_CFPOS_DYNAMIC 1
+
 #define CLUSTER_CF_TYPE_UNUSED 0
 #define CLUSTER_CF_TYPE_ROOT   1
 #define CLUSTER_CF_TYPE_NODE   2

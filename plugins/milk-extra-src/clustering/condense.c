@@ -4,9 +4,7 @@
 #include "CFmeminit.h"
 #include "update_level.h"
 
-#define DEBUGPRINT
-
-
+//#define DEBUGPRINT
 
 
 /**

@@ -12,20 +12,20 @@
 #include "printCFtree.h"
 
 /**
- * @brief Split CF node or leafnode
+ * @brief Split CF node
  *
  * @param CFarray    CF array
- * @param CFindex    Input (leaf) node to be split
- * @param CFindex0   Output (leaf) node 0
- * @param CFindex1   Output (leaf) node 1
+ * @param CFindex    Input node to be split
+ * @param CFindex0   Output node 0
+ * @param CFindex1   Output node 1
  * @return errno_t
  *
- * Input leaf node will be released
+ * Input node will be released
  */
 errno_t split_CF_node(
-    CLUSTERTREE *ctree, 
-    long CFindex, 
-    long *CFi0, 
+    CLUSTERTREE *ctree,
+    long CFindex,
+    long *CFi0,
     long *CFi1
 )
 {
@@ -48,11 +48,6 @@ errno_t split_CF_node(
     long nCF; // number of CF entries to split
     switch(ctree->CFarray[CFindex].type)
     {
-    /*        case CLUSTER_CF_TYPE_LEAFNODE:
-                nCF = ctree->CFarray[CFindex].NBleaf;
-                break;
-    */
-
     case CLUSTER_CF_TYPE_NODE:
         nCF = ctree->CFarray[CFindex].NBchild;
         break;
@@ -69,20 +64,11 @@ errno_t split_CF_node(
     }
 
 
-    /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
-    {
-        for(long i = 0; i < nCF; i++)
-        {
-            subCFarray[i] = ctree->CFarray[CFindex].leafindex[i];
-        }
-    }
-    else
-    {*/
+
     for(long i = 0; i < nCF; i++)
     {
         subCFarray[i] = ctree->CFarray[CFindex].childindex[i];
     }
-    //}
 
     double *distarray = (double *) malloc(sizeof(double) * nCF * nCF);
     if(distarray == NULL)
@@ -126,6 +112,8 @@ errno_t split_CF_node(
 
     DEBUG_TRACEPOINT("CREATE NODES POINTING TO PARENT %ld",
                      ctree->CFarray[CFindex].parentindex);
+
+
     // create two new nodes
     // find next available CFarray index
     long CFindex0 = 0;
@@ -142,7 +130,7 @@ errno_t split_CF_node(
     FUNC_CHECK_RETURN(CFmeminit(ctree, CFindex1, 0));
     ctree->CFarray[CFindex1].type = ctree->CFarray[CFindex].type;
 
-    // leafs will be split between CFindex0 and CFindex1
+    // CFs will be split between CFindex0 and CFindex1
 
     // destination CF
     long *destCF = (long *) malloc(sizeof(long) * nCF);
@@ -179,20 +167,11 @@ errno_t split_CF_node(
                          distarray[maxdistindex1 * nCF + subindex],
                          destCF[subindex]);
 
-        /*if(ctree->CFarray[CFindex].type == CLUSTER_CF_TYPE_LEAFNODE)
-        {
-            FUNC_CHECK_RETURN(
-                leafnode_attachleaf(ctree,
-                                    ctree->CFarray[CFindex].leafindex[subindex],
-                                    destCF[subindex]));
-        }
-        else
-        {*/
+
         FUNC_CHECK_RETURN(
             node_attachnode(ctree,
                             ctree->CFarray[CFindex].childindex[subindex],
                             destCF[subindex]));
-//        }
     }
 
     free(destCF);

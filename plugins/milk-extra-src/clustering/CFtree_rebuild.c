@@ -264,6 +264,7 @@ errno_t CFtree_rebuild(
             int addOK = 0;
 
             FUNC_CHECK_RETURN(addvector_to_CF(ctree,
+                                              ctree->CFarray[cfi1].dataposvec,
                                               ctree->CFarray[cfi1].datasumvec,
                                               ctree->CFarray[cfi1].datassq,
                                               ctree->CFarray[cfi1].N,
