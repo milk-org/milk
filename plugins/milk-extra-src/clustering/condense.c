@@ -38,7 +38,7 @@ errno_t ctree_condense(
         if(ctree->CFarray[cfi].type == CLUSTER_CF_TYPE_NODE)
         {
 #ifdef DEBUGPRINT
-            printf("Inpsecting node [%ld]\n", cfi);
+            printf("\nInspecting node [%3ld] NBchild = %5d\n", cfi, ctree->CFarray[cfi].NBchild);
 #endif
             // if we were to condense this node, how many children would it have ?
             long nbnewchild = 0;
@@ -68,7 +68,9 @@ errno_t ctree_condense(
                     nbnewchild++;
                 }
             }
-
+#ifdef DEBUGPRINT
+            printf(">> node [%3ld] nbnewchild = %5ld\n", cfi, nbnewchild);
+#endif
 
 
             // If the total number of descendents is between 1 and B, we can condense (compress levels)
