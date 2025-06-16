@@ -31,8 +31,6 @@ errno_t ctree_condense(
 
 
 
-
-
     *nbop = 0;
 
     for(long cfi = 0; cfi < ctree->NBCF; cfi++)
@@ -46,16 +44,18 @@ errno_t ctree_condense(
             long nbnewchild = 0;
 
             // current number of child node and child leaf
-            long nbchildnode = 0;
-            long nbchildleaf = 0;
+            //long nbchildnode = 0;
+            //long nbchildleaf = 0;
 
             for(int chi = 0; chi < ctree->CFarray[cfi].NBchild; chi++)
             {
+                // scan children
+                // cfic is child index
                 long cfic = ctree->CFarray[cfi].childindex[chi];
 
                 if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
                 {
-                    nbchildnode++;
+                    //nbchildnode++;
 #ifdef DEBUGPRINT
                     printf("    [%ld] adding %d gchildren from %ld, type NODE\n", cfi, ctree->CFarray[cfic].NBchild, cfic);
 #endif
@@ -64,7 +64,7 @@ errno_t ctree_condense(
                 }
                 else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
                 {
-                    nbchildleaf++;
+                    //nbchildleaf++;
                     nbnewchild++;
                 }
             }
