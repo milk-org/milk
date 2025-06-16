@@ -4,12 +4,17 @@
 #include "addvector_to_CF.h"
 #include "update_level.h"
 
-errno_t node_attachnode(CLUSTERTREE *ctree, long CFindex, long CFindexupnode)
+
+// attach node CFindex to CFindexupnode
+errno_t node_attachnode(
+    CLUSTERTREE *ctree,
+    long CFindex,
+    long CFindexupnode
+)
 {
     DEBUG_TRACE_FSTART();
 
-    ctree->CFarray[CFindexupnode]
-    .childindex[ctree->CFarray[CFindexupnode].NBchild] = CFindex;
+    ctree->CFarray[CFindexupnode].childindex[ctree->CFarray[CFindexupnode].NBchild] = CFindex;
     ctree->CFarray[CFindexupnode].NBchild++;
 
     ctree->CFarray[CFindex].parentindex = CFindexupnode;
@@ -23,6 +28,7 @@ errno_t node_attachnode(CLUSTERTREE *ctree, long CFindex, long CFindexupnode)
 
             int addOK = 1; // don't test radius
             addvector_to_CF(ctree,
+                            ctree->CFarray[CFindex].dataposvec,
                             ctree->CFarray[CFindex].datasumvec,
                             ctree->CFarray[CFindex].datassq,
                             ctree->CFarray[CFindex].N,

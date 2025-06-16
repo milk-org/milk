@@ -42,14 +42,14 @@ errno_t write_clustCFdat(
                     (double) sqrt(ctree->CFarray[CFindex].radius2),
                     (double) sqrt(ctree->CFarray[CFindex].radius2)/ctree->T
                    );
-            
+
             fprintf(fp, "  ");
             for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
             {
                 long chicfi = ctree->CFarray[CFindex].childindex[chi];
                 fprintf(fp,"%ld[%d],", chicfi, ctree->CFarray[chicfi].type);
             }
-            
+
 
             fprintf(fp, "\n");
         }

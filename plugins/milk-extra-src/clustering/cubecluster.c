@@ -233,13 +233,26 @@ static errno_t findleafnode(
                    ctree->CFarray[CFindex1].N);
 #endif
 
-            FUNC_CHECK_RETURN(
-                compute_imdistance_double(ctree,
-                                          ctree->CFarray[CFindex1].datasumvec,
-                                          ctree->CFarray[CFindex1].N,
-                                          datavec,
-                                          1,
-                                          &distval));
+            if( ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
+            {
+                FUNC_CHECK_RETURN(
+                    compute_imdistance_double(ctree,
+                                              ctree->CFarray[CFindex1].datasumvec,
+                                              ctree->CFarray[CFindex1].N,
+                                              datavec,
+                                              1,
+                                              &distval));
+            }
+            else
+            {
+                FUNC_CHECK_RETURN(
+                    compute_imdistance_double(ctree,
+                                              ctree->CFarray[CFindex1].dataposvec,
+                                              1,
+                                              datavec,
+                                              1,
+                                              &distval));
+            }
 
 #ifdef DEBUGPRINT
             printf("[findleafnode]   distance value = %f\n", distval);
@@ -392,7 +405,7 @@ static errno_t imcube_makecluster(
     ctree.xsize = xsize;
     ctree.ysize = ysize;
 
-    ctree.NBCF         = zsize;          // max number of cluster features
+    ctree.NBCF         = zsize + 10;          // max number of cluster features
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
@@ -410,7 +423,7 @@ static errno_t imcube_makecluster(
     // pointer to current array
     double *datarray = (double*) malloc(sizeof(double)*CF_npix);
 
- 
+
     printf("\n");
     long NBframe = zsize;
 

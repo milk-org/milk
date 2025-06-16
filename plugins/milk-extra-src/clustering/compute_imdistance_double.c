@@ -3,6 +3,8 @@
 
 #include <math.h>
 
+
+
 errno_t compute_imdistance_double(
     CLUSTERTREE *ctree,
     double      *vec1,
