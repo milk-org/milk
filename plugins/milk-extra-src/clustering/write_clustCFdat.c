@@ -24,6 +24,7 @@ errno_t write_clustCFdat(
     fprintf(fp,"# col7   datasq\n");
     fprintf(fp,"# col8   radius (norm2)\n");
     fprintf(fp,"# col9   radius (norm2) / threshold\n");
+    fprintf(fp,"# col10  children\n");
 
     for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
     {
@@ -41,6 +42,14 @@ errno_t write_clustCFdat(
                     (double) sqrt(ctree->CFarray[CFindex].radius2),
                     (double) sqrt(ctree->CFarray[CFindex].radius2)/ctree->T
                    );
+            
+            fprintf(fp, "  ");
+            for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+            {
+                long chicfi = ctree->CFarray[CFindex].childindex[chi];
+                fprintf(fp,"%ld[%d],", chicfi, ctree->CFarray[chicfi].type);
+            }
+            
 
             fprintf(fp, "\n");
         }
