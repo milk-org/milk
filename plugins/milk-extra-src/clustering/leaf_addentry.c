@@ -30,7 +30,7 @@ errno_t leaf_addentry(CLUSTERTREE *ctree,
 #endif
     while(cfi != -1)
     {
-        addvector_to_CF(ctree, datavec, ssqr, 1, cfi, addOK);
+        addvector_to_CF(ctree, datavec, datavec, ssqr, 1, cfi, addOK);
 
 #ifdef DEBUGPRINT
         printf("[%5d %s] addOK = %d\n", __LINE__, __func__, *addOK);

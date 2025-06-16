@@ -2,6 +2,7 @@
 #define CLUSTERING__ADDVECTOR_TO_CF_H
 
 errno_t addvector_to_CF(CLUSTERTREE *ctree,
+                        double      *dataposvec,
                         double      *datavec,
                         long double  ssqr,
                         long         N,
