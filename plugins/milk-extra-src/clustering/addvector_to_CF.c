@@ -6,6 +6,49 @@
 
 //#define DEBUGPRINT
 
+
+static errno_t combCFcomp(
+    CLUSTERTREE *ctree,
+    double      *datavec,
+    long double  ssqr,
+    long         CFindex,
+    CLUSTERING_CF *combCF
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    combCF->sum2 = 0.0;
+
+    for(long ii = 0; ii < ctree->npix; ii++)
+    {
+        combCF->datasumvec[ii] = ctree->CFarray[CFindex].datasumvec[ii] + datavec[ii];
+        combCF->sum2 += combCF->datasumvec[ii] * combCF->datasumvec[ii];
+    }
+
+    // new sum squared
+    combCF->datassq = ctree->CFarray[CFindex].datassq + ssqr;
+
+    // compute cluster radius
+    // xa = average x = sumvec/N1
+    // radius2 = sumsqr(xi-xa)/N1
+    //         =  sumsqr(xi)/N1 - xa^2
+    // with:
+    // tmpv1 = sumsqr(xi)/N1
+    // tmpv2 = xa^2 = sum2/N1/N1
+    //
+    long double tmpv1   = combCF->datassq / combCF->N;
+    long double tmpv2   = combCF->sum2 / (combCF->N * combCF->N);
+    combCF->radius2 = tmpv1 - tmpv2;
+
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
 errno_t addvector_to_CF(
     CLUSTERTREE *ctree,
     double      *dataposvec,
@@ -25,14 +68,28 @@ errno_t addvector_to_CF(
         memcpy(ctree->CFarray[CFindex].dataposvec, dataposvec, sizeof(double)*ctree->npix);
     }
 
-    // new cluster nb or point
-    long   N1   = ctree->CFarray[CFindex].N + N;
 
+
+    CLUSTERING_CF combCF;
+
+
+    // new cluster nb or point
+    combCF.N = ctree->CFarray[CFindex].N + N;
 
 
 
     if (ctree->leafposmode == CLUSTER_CFPOS_FIXED)
     {
+        combCF.datasumvec = (double *) malloc(sizeof(double) * ctree->npix);
+
+        combCFcomp(
+            ctree,
+            datavec,
+            ssqr,
+            CFindex,
+            &combCF
+        );
+
 
         double dist2pos2 = 0.0;
         for(long ii = 0; ii < ctree->npix; ii++)
@@ -43,9 +100,18 @@ errno_t addvector_to_CF(
         if((dist2pos2 < ctree->T * ctree->T) || (*addOK == 1))
         {
             *addOK = 1;
-            // if point is added, update CF stats
 
-            ctree->CFarray[CFindex].N = N1;
+            // if point is added, update CF stats
+            // dynamic, update sumvec
+            for(long ii = 0; ii < ctree->npix; ii++)
+            {
+                ctree->CFarray[CFindex].datasumvec[ii] = combCF.datasumvec[ii];
+            }
+            ctree->CFarray[CFindex].datassq = combCF.datassq;
+            ctree->CFarray[CFindex].sum2    = combCF.sum2;
+            ctree->CFarray[CFindex].radius2 = combCF.radius2;
+
+            ctree->CFarray[CFindex].N = combCF.N;
         }
         else
         {
@@ -57,58 +123,39 @@ errno_t addvector_to_CF(
         // We first assume the new CF will be added the leaf cluster,
         // recomputing the cluster features sumvec and radius2
         //
-        double *sumvec = (double *) malloc(sizeof(double) * ctree->npix);
+        combCF.datasumvec = (double *) malloc(sizeof(double) * ctree->npix);
 
-        double sum2 = 0.0;
-
-        // add to vec sum
-        //
-        for(long ii = 0; ii < ctree->npix; ii++)
-        {
-            sumvec[ii] = ctree->CFarray[CFindex].datasumvec[ii] + datavec[ii];
-            sum2 += sumvec[ii] * sumvec[ii];
-        }
-
-        // new sum squared
-        long double ssq1 = ctree->CFarray[CFindex].datassq + ssqr;
-
-
-        // compute cluster radius
-        // xa = average x = sumvec/N1
-        // radius2 = sumsqr(xi-xa)/N1
-        //         =  sumsqr(xi)/N1 - xa^2
-        // with:
-        // tmpv1 = sumsqr(xi)/N1
-        // tmpv2 = xa^2 = sum2/N1/N1
-        //
-        long double tmpv1   = ssq1 / N1;
-        long double tmpv2   = sum2 / (N1 * N1);
-        double      radius2 = tmpv1 - tmpv2;
-
+        combCFcomp(
+            ctree,
+            datavec,
+            ssqr,
+            CFindex,
+            &combCF
+        );
 
         // Check cluster radius
-        if((radius2 < ctree->T * ctree->T) || (*addOK == 1))
+        if((combCF.radius2 < ctree->T * ctree->T) || (*addOK == 1))
         {
             *addOK = 1;
-
 
             // if point is added, update CF stats
             // dynamic, update sumvec
             for(long ii = 0; ii < ctree->npix; ii++)
             {
-                ctree->CFarray[CFindex].datasumvec[ii] = sumvec[ii];
+                ctree->CFarray[CFindex].datasumvec[ii] = combCF.datasumvec[ii];
             }
-            ctree->CFarray[CFindex].datassq = ssq1;
-            ctree->CFarray[CFindex].sum2    = sum2;
-            ctree->CFarray[CFindex].radius2 = radius2;
+            ctree->CFarray[CFindex].datassq = combCF.datassq;
+            ctree->CFarray[CFindex].sum2    = combCF.sum2;
+            ctree->CFarray[CFindex].radius2 = combCF.radius2;
 
-            ctree->CFarray[CFindex].N       = N1;
+
+            ctree->CFarray[CFindex].N       = combCF.N;
         }
         else
         {
             *addOK = 0;
         }
-        free(sumvec);
+        free(combCF.datasumvec);
     }
 
 
