@@ -32,6 +32,10 @@ errno_t CFtree_rebuild(
 
     printf("REBUILDING\n");
 
+
+
+    // collect current ctree stats
+    //
     ctree->nbnode       = 0;
     ctree->nbleaf       = 0;
     ctree->nbleafsingle = 0;
@@ -49,20 +53,12 @@ errno_t CFtree_rebuild(
             {
             case CLUSTER_CF_TYPE_NODE:
                 ctree->nbnode++;
-                if(ctree->CFarray[cfi].level > maxlevel)
-                {
-                    maxlevel = ctree->CFarray[cfi].level;
-                }
                 break;
 
             case CLUSTER_CF_TYPE_LEAF:
                 if(ctree->CFarray[cfi].N == 1)
                 {
                     ctree->nbleafsingle++;
-                }
-                if(ctree->CFarray[cfi].level > maxlevel)
-                {
-                    maxlevel = ctree->CFarray[cfi].level;
                 }
                 ctree->nbleaf++;
                 break;
@@ -94,6 +90,7 @@ errno_t CFtree_rebuild(
     }
 
     // pairwise distance between tips
+    //
     double *tipdist = (double *) malloc(sizeof(double) * ctree->nbleaf * ctree->nbleaf);
     if(tipdist == NULL)
     {
@@ -172,9 +169,6 @@ errno_t CFtree_rebuild(
 #endif
 
         opOK = 0;
-
-
-
 
         // identify closest pair of leafs
         // these are candidates for being merged
@@ -309,14 +303,13 @@ errno_t CFtree_rebuild(
 
                 opOK = 1;
 
-                // Create empty leaf node
+                // Create empty node ncfi
                 long ncfi;
                 FUNC_CHECK_RETURN(get_availableCFindex(ctree, &ncfi));
-                ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_NODE;  //CLUSTER_CF_TYPE_LEAFNODE;
+                ctree->CFarray[ncfi].type        = CLUSTER_CF_TYPE_NODE;
                 ctree->CFarray[ncfi].level       = 1;
                 ctree->CFarray[ncfi].parentindex = -1;
                 ctree->CFarray[ncfi].NBchild     = 0;
-                //ctree->CFarray[ncfi].NBleaf      = 0;
                 ctree->CFarray[ncfi].N           = 0;
 
                 // attach cfi0 and cfi1 to new node
