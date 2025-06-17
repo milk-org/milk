@@ -31,7 +31,7 @@ errno_t write_clustCFdat(
         if(ctree->CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
         {
             fprintf(fp,
-                    "%5ld  %2d %2d  %5ld %5d %5ld  %16.3g %16.3g  %6.4f",
+                    "%5ld  %1d %5d  %6ld %5d %5ld  %16.3g %16.3g  %6.4f",
                     CFindex,
                     ctree->CFarray[CFindex].type,
                     ctree->CFarray[CFindex].level,
