@@ -34,17 +34,6 @@ errno_t addvector_to_CF(
     if (ctree->leafposmode == CLUSTER_CFPOS_FIXED)
     {
 
-        double *sumvec = (double *) malloc(sizeof(double) * ctree->npix);
-
-        // add to vec sum
-        //
-        for(long ii = 0; ii < ctree->npix; ii++)
-        {
-            sumvec[ii] = ctree->CFarray[CFindex].datasumvec[ii] + datavec[ii];
-        }
-
-
-
         double dist2pos2 = 0.0;
         for(long ii = 0; ii < ctree->npix; ii++)
         {
@@ -56,18 +45,12 @@ errno_t addvector_to_CF(
             *addOK = 1;
             // if point is added, update CF stats
 
-            for(long ii = 0; ii < ctree->npix; ii++)
-            {
-                ctree->CFarray[CFindex].datasumvec[ii] = sumvec[ii];
-            }
-
-            ctree->CFarray[CFindex].N       = N1;
+            ctree->CFarray[CFindex].N = N1;
         }
         else
         {
             *addOK = 0;
         }
-        free(sumvec);
     }
     else
     {

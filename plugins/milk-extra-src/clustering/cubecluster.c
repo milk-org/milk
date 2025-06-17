@@ -233,7 +233,7 @@ static errno_t findleafnode(
                    ctree->CFarray[CFindex1].N);
 #endif
 
-            if( ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
+            if(ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
             {
                 FUNC_CHECK_RETURN(
                     compute_imdistance_double(ctree,
