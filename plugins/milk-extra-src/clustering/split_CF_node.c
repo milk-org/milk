@@ -84,13 +84,26 @@ errno_t split_CF_node(
         {
             long   CFindex11 = subCFarray[index1];
             double distval;
-            FUNC_CHECK_RETURN(
-                compute_imdistance_double(ctree,
-                                          ctree->CFarray[CFindex00].datasumvec,
-                                          ctree->CFarray[CFindex00].N,
-                                          ctree->CFarray[CFindex11].datasumvec,
-                                          ctree->CFarray[CFindex11].N,
-                                          &distval));
+            if ( ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
+            {
+                FUNC_CHECK_RETURN(
+                    compute_imdistance_double(ctree,
+                                              ctree->CFarray[CFindex00].datasumvec,
+                                              ctree->CFarray[CFindex00].N,
+                                              ctree->CFarray[CFindex11].datasumvec,
+                                              ctree->CFarray[CFindex11].N,
+                                              &distval));
+            }
+            else
+            {
+                FUNC_CHECK_RETURN(
+                    compute_imdistance_double(ctree,
+                                              ctree->CFarray[CFindex00].dataposvec,
+                                              1,
+                                              ctree->CFarray[CFindex11].dataposvec,
+                                              1,
+                                              &distval));
+            }
             DEBUG_TRACEPOINT("DIST %02d %02d  %g\n", index0, index1, distval);
             if(distval > maxdist)
             {
