@@ -40,7 +40,7 @@ errno_t ctree_init(
     ctree->CFarray[0].datassq = ssqr;
     ctree->CFarray[0].sum2 = ssqr;
     ctree->CFarray[0].pathcnt = 1.0;
-    ctree->CFarray[0].pathdistcompcnt = 1.0;
+    ctree->CFarray[0].pathdistcompcnt = 0.0;
 
 
     // childless leaf node, with single leaf
@@ -64,7 +64,7 @@ errno_t ctree_init(
     ctree->CFarray[1].datassq = ssqr;
     ctree->CFarray[1].sum2 = ssqr;
     ctree->CFarray[1].pathcnt = 1.0;
-    ctree->CFarray[1].pathdistcompcnt = 1.0;
+    ctree->CFarray[1].pathdistcompcnt = 0.0;
 
 
     ctree->cdist = 0.0;
