@@ -42,7 +42,7 @@ static errno_t combCFcomp(
     combCF->pathcnt = ctree->CFarray[CFindex].pathcnt + CF.pathcnt;
     combCF->pathdistcompcnt = ctree->CFarray[CFindex].pathdistcompcnt + CF.pathdistcompcnt;
 
-    printf("pathcnt:  %16f  <-  %16f  %16f\n",  combCF->pathcnt, ctree->CFarray[CFindex].pathcnt, CF.pathcnt);
+    //printf("pathcnt:  %16f  <-  [%5ld] %16f  %16f\n",  combCF->pathcnt, CFindex, ctree->CFarray[CFindex].pathcnt, CF.pathcnt);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -173,35 +173,35 @@ errno_t addCF_to_CF(
 
 errno_t subvector_to_CF(
     CLUSTERTREE *ctree,
-    double *datavec,
-    long double ssqr,
-    long N,
+    CLUSTERING_CF CF,
     long CFindex
 )
 {
     DEBUG_TRACE_FSTART();
 
-    ctree->CFarray[CFindex].N -= N;
+    ctree->CFarray[CFindex].N -= CF.N;
 
-    if(ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC )
+
+    // subtract to vec sum
+    ctree->CFarray[CFindex].sum2 = 0.0;
+    for(long ii = 0; ii < ctree->npix; ii++)
     {
-        // subtract to vec sum
-        ctree->CFarray[CFindex].sum2 = 0.0;
-        for(long ii = 0; ii < ctree->npix; ii++)
-        {
-            ctree->CFarray[CFindex].datasumvec[ii] -= datavec[ii];
-            ctree->CFarray[CFindex].sum2 += ctree->CFarray[CFindex].datasumvec[ii] *
-                                            ctree->CFarray[CFindex].datasumvec[ii];
-        }
-        ctree->CFarray[CFindex].datassq -= ssqr;
-
-        // compute cluster radius
-        long double tmpv1 =
-            ctree->CFarray[CFindex].datassq / ctree->CFarray[CFindex].N;
-        long double tmpv2 = ctree->CFarray[CFindex].sum2 /
-                            ctree->CFarray[CFindex].N / ctree->CFarray[CFindex].N;
-        ctree->CFarray[CFindex].radius2 = tmpv1 - tmpv2;
+        ctree->CFarray[CFindex].datasumvec[ii] -= CF.datasumvec[ii];
+        ctree->CFarray[CFindex].sum2 += ctree->CFarray[CFindex].datasumvec[ii] *
+                                        ctree->CFarray[CFindex].datasumvec[ii];
     }
+    ctree->CFarray[CFindex].datassq -= CF.datassq;
+
+    ctree->CFarray[CFindex].pathcnt -= CF.pathcnt;
+    ctree->CFarray[CFindex].pathdistcompcnt -= CF.pathdistcompcnt;
+
+    // recompute cluster radius
+    long double tmpv1 =
+        ctree->CFarray[CFindex].datassq / ctree->CFarray[CFindex].N;
+    long double tmpv2 = ctree->CFarray[CFindex].sum2 /
+                        ctree->CFarray[CFindex].N / ctree->CFarray[CFindex].N;
+    ctree->CFarray[CFindex].radius2 = tmpv1 - tmpv2;
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

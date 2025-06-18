@@ -7,9 +7,7 @@ errno_t addCF_to_CF(CLUSTERTREE *ctree,
                         int         *addOK);
 
 errno_t subvector_to_CF(CLUSTERTREE *ctree,
-                        double      *datavec,
-                        long double  ssqr,
-                        long         N,
+                        CLUSTERING_CF CF,
                         long         CFindex);
 
 #endif
