@@ -42,6 +42,7 @@ errno_t leaf_addentry(
         CF.dataposvec = datavec;
         CF.datassq = ssqr;
         CF.N = 1;
+        CF.pathcnt = 0.0;
         addCF_to_CF(ctree, CF, cfi, addOK);
 
 #ifdef DEBUGPRINT

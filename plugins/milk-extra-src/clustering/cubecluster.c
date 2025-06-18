@@ -17,7 +17,6 @@
 
 #include "CFmeminit.h"
 #include "CFtree_rebuild.h"
-#include "addCF_to_CF.h"
 #include "compute_imdistance_double.h"
 #include "condense.h"
 #include "create_new_leaf.h"
@@ -698,6 +697,7 @@ static errno_t imcube_makecluster(
             {
                 // scan back to root, add vector to CF along the path
                 long cfi = frameleafCFindex[frame];
+                printf(">>>>>>>>>> frame %ld, cfi %ld\n", frame, cfi);
                 while(cfi != -1)
                 {
                     ctree.CFarray[cfi].pathcnt += 1.0;
