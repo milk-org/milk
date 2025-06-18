@@ -55,6 +55,16 @@ typedef struct
     long double sum2;       // square norm of sumvec
     double      radius2;    // square cluster radius
 
+    // stats
+    // Probability that this node is on the path to solution,
+    // computed from recent searches.
+    // Not normalized.
+    // This is simlar to N, but with more weight on recent points.
+    double pathcnt;
+    // Average number of distance computations needed to find solution from this point
+    double pathdistcompcnt;
+
+
     uint32_t status; // check status flag
 
 } CLUSTERING_CF;

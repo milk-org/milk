@@ -1,11 +1,8 @@
-#ifndef CLUSTERING__ADDVECTOR_TO_CF_H
-#define CLUSTERING__ADDVECTOR_TO_CF_H
+#ifndef CLUSTERING__ADDCF_TO_CF_H
+#define CLUSTERING__ADDCF_TO_CF_H
 
-errno_t addvector_to_CF(CLUSTERTREE *ctree,
-                        double      *dataposvec,
-                        double      *datavec,
-                        long double  ssqr,
-                        long         N,
+errno_t addCF_to_CF(CLUSTERTREE *ctree,
+                        CLUSTERING_CF CF,
                         long         CFindex,
                         int         *addOK);
 

@@ -9,8 +9,7 @@
 
 static errno_t combCFcomp(
     CLUSTERTREE *ctree,
-    double      *datavec,
-    long double  ssqr,
+    CLUSTERING_CF CF,
     long         CFindex,
     CLUSTERING_CF *combCF
 )
@@ -21,12 +20,12 @@ static errno_t combCFcomp(
 
     for(long ii = 0; ii < ctree->npix; ii++)
     {
-        combCF->datasumvec[ii] = ctree->CFarray[CFindex].datasumvec[ii] + datavec[ii];
+        combCF->datasumvec[ii] = ctree->CFarray[CFindex].datasumvec[ii] + CF.datasumvec[ii];
         combCF->sum2 += combCF->datasumvec[ii] * combCF->datasumvec[ii];
     }
 
     // new sum squared
-    combCF->datassq = ctree->CFarray[CFindex].datassq + ssqr;
+    combCF->datassq = ctree->CFarray[CFindex].datassq + CF.datassq;
 
     // compute cluster radius
     // xa = average x = sumvec/N1
@@ -40,6 +39,8 @@ static errno_t combCFcomp(
     long double tmpv2   = combCF->sum2 / (combCF->N * combCF->N);
     combCF->radius2 = tmpv1 - tmpv2;
 
+    combCF->pathcnt = ctree->CFarray[CFindex].pathcnt + CF.pathcnt;
+    combCF->pathcnt = ctree->CFarray[CFindex].pathdistcompcnt + CF.pathdistcompcnt;
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -48,13 +49,11 @@ static errno_t combCFcomp(
 
 
 
-
-errno_t addvector_to_CF(
+// if adding single vector, use CF.datasumvec
+//
+errno_t addCF_to_CF(
     CLUSTERTREE *ctree,
-    double      *dataposvec,
-    double      *datavec,
-    long double  ssqr,
-    long         N,
+    CLUSTERING_CF CF,
     long         CFindex,
     int         *addOK
 )
@@ -65,17 +64,14 @@ errno_t addvector_to_CF(
     // allocate position ONLY if first entry
     if(ctree->CFarray[CFindex].N == 0)
     {
-        memcpy(ctree->CFarray[CFindex].dataposvec, dataposvec, sizeof(double)*ctree->npix);
+        memcpy(ctree->CFarray[CFindex].dataposvec, CF.dataposvec, sizeof(double)*ctree->npix);
     }
-
 
 
     CLUSTERING_CF combCF;
 
-
     // new cluster nb or point
-    combCF.N = ctree->CFarray[CFindex].N + N;
-
+    combCF.N = ctree->CFarray[CFindex].N + CF.N;
 
 
     if (ctree->leafposmode == CLUSTER_CFPOS_FIXED)
@@ -84,8 +80,7 @@ errno_t addvector_to_CF(
 
         combCFcomp(
             ctree,
-            datavec,
-            ssqr,
+            CF,
             CFindex,
             &combCF
         );
@@ -94,7 +89,7 @@ errno_t addvector_to_CF(
         double dist2pos2 = 0.0;
         for(long ii = 0; ii < ctree->npix; ii++)
         {
-            double dval = ctree->CFarray[CFindex].dataposvec[ii] - datavec[ii];
+            double dval = ctree->CFarray[CFindex].dataposvec[ii] - CF.datasumvec[ii];
             dist2pos2 += dval * dval;
         }
         if((dist2pos2 < ctree->T * ctree->T) || (*addOK == 1))
@@ -112,6 +107,9 @@ errno_t addvector_to_CF(
             ctree->CFarray[CFindex].radius2 = combCF.radius2;
 
             ctree->CFarray[CFindex].N = combCF.N;
+
+            ctree->CFarray[CFindex].pathcnt = combCF.pathcnt;
+            ctree->CFarray[CFindex].pathdistcompcnt = combCF.pathdistcompcnt;
         }
         else
         {
@@ -127,8 +125,7 @@ errno_t addvector_to_CF(
 
         combCFcomp(
             ctree,
-            datavec,
-            ssqr,
+            CF,
             CFindex,
             &combCF
         );
@@ -148,8 +145,10 @@ errno_t addvector_to_CF(
             ctree->CFarray[CFindex].sum2    = combCF.sum2;
             ctree->CFarray[CFindex].radius2 = combCF.radius2;
 
-
             ctree->CFarray[CFindex].N       = combCF.N;
+
+            ctree->CFarray[CFindex].pathcnt = combCF.pathcnt;
+            ctree->CFarray[CFindex].pathdistcompcnt = combCF.pathdistcompcnt;
         }
         else
         {
