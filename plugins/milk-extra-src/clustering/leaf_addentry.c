@@ -2,7 +2,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
-#include "addvector_to_CF.h"
+#include "addCF_to_CF.h"
 
 // log all debug trace points to file
 //#define DEBUGLOG
@@ -16,21 +16,33 @@
  * @param lCFindex
  * @return errno_t
  */
-errno_t leaf_addentry(CLUSTERTREE *ctree,
-                      double      *datavec,
-                      long double  ssqr,
-                      long         lCFindex,
-                      int         *addOK)
+errno_t leaf_addentry(
+    CLUSTERTREE *ctree,
+    double      *datavec,
+    long double  ssqr,
+    long         lCFindex,
+    int         *addOK
+)
 {
     DEBUG_TRACE_FSTART();
 
+    // index of leaf to which point should be added
     long cfi = lCFindex;
+
 #ifdef DEBUGPRINT
     printf("[%5d %s] trying to add vector to cfi %ld\n", __LINE__, __func__, cfi);
 #endif
+
+
+    // scan back to root, add vector to CF along the path
     while(cfi != -1)
     {
-        addvector_to_CF(ctree, datavec, datavec, ssqr, 1, cfi, addOK);
+        CLUSTERING_CF CF;
+        CF.datasumvec = datavec;
+        CF.dataposvec = datavec;
+        CF.datassq = ssqr;
+        CF.N = 1;
+        addCF_to_CF(ctree, CF, cfi, addOK);
 
 #ifdef DEBUGPRINT
         printf("[%5d %s] addOK = %d\n", __LINE__, __func__, *addOK);

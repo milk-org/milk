@@ -4,7 +4,7 @@
 #include "clustering_defs.h"
 
 #include "CFmeminit.h"
-#include "addvector_to_CF.h"
+#include "addCF_to_CF.h"
 #include "compute_imdistance_double.h"
 #include "droptree.h"
 #include "get_availableCFindex.h"
@@ -12,7 +12,6 @@
 #include "node_attachnode.h"
 #include "printCFtree.h"
 #include "split_CF_node.h"
-
 
 
 //#define DEBUGPRINT
@@ -257,11 +256,8 @@ errno_t CFtree_rebuild(
             // Trying to merge cfi1 into cfi0
             int addOK = 0;
 
-            FUNC_CHECK_RETURN(addvector_to_CF(ctree,
-                                              ctree->CFarray[cfi1].dataposvec,
-                                              ctree->CFarray[cfi1].datasumvec,
-                                              ctree->CFarray[cfi1].datassq,
-                                              ctree->CFarray[cfi1].N,
+            FUNC_CHECK_RETURN(addCF_to_CF(ctree,
+                                              ctree->CFarray[cfi1],
                                               cfi0,
                                               &addOK));
             if(addOK == 1)

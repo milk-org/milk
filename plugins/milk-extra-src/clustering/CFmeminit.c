@@ -1,7 +1,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
-#include "addvector_to_CF.h"
+#include "addCF_to_CF.h"
 
 #include "CFmeminit.h"
 
@@ -84,6 +84,9 @@ errno_t CFmeminit(
     ctree->CFarray[CFindex].datassq = 0.0;
     ctree->CFarray[CFindex].radius2 = 0;
     ctree->CFarray[CFindex].N       = 0;
+
+    ctree->CFarray[CFindex].pathcnt = 0.0;
+    ctree->CFarray[CFindex].pathdistcompcnt = 0.0;
 
     ctree->CFarray[CFindex].status = 0;
 

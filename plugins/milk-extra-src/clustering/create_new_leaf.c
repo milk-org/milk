@@ -49,6 +49,10 @@ errno_t create_new_leaf(CLUSTERTREE *ctree,
            datarray,
            sizeof(double) * ctree->npix);
 
+
+    ctree->CFarray[CFi].pathcnt = 0.0;
+    ctree->CFarray[CFi].pathdistcompcnt = 0.0;
+
     ctree->CFarray[CFi].status |= CLUSTER_CF_STATUS_CREATE;
 
     *CFindex = CFi;

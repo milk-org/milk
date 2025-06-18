@@ -2,7 +2,7 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "clustering_defs.h"
 
-#include "addvector_to_CF.h"
+#include "addCF_to_CF.h"
 
 //#define DEBUGPRINT
 
@@ -54,11 +54,8 @@ node_attachleaf(
         ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
         int addOK = 1; // don't test radius
-        addvector_to_CF(ctree,
-                        ctree->CFarray[CFindexleaf].dataposvec,
-                        ctree->CFarray[CFindexleaf].datasumvec,
-                        ctree->CFarray[CFindexleaf].datassq,
-                        ctree->CFarray[CFindexleaf].N,
+        addCF_to_CF(ctree,
+                        ctree->CFarray[CFindexleaf],
                         cfi,
                         &addOK);
 
