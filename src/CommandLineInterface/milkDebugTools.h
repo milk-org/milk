@@ -319,6 +319,9 @@ typedef int errno_t;
     } while (0)
 #endif
 
+
+
+
 /**
  * @ingroup debugmacro
  * @brief register trace point
@@ -384,6 +387,10 @@ typedef int errno_t;
         }                                                                      \
     } while (0)
 
+
+
+
+
 #if defined NDEBUG
 #define DEBUG_TRACEPOINT_PRINT(...)
 #else
@@ -399,6 +406,9 @@ typedef int errno_t;
     } while (0)
 #endif
 
+
+
+
 #if defined NDEBUG
 #define DEBUG_TRACEPOINT_LOG(...)
 #else
@@ -409,6 +419,8 @@ typedef int errno_t;
         write_process_log();                                                   \
     } while (0)
 #endif
+
+
 
 #if defined NDEBUG
 #define DEBUG_TRACEPOINT(...)
@@ -427,6 +439,11 @@ typedef int errno_t;
     } while (0)
 #endif
 #endif
+
+
+
+
+
 
 /*
 #if defined DEBUGLOG \

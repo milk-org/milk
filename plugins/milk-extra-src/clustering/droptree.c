@@ -32,6 +32,10 @@ errno_t droptree(CLUSTERTREE *ctree)
 
     ctree->CFarray[CFindex].level = 0;
     ctree->CFarray[CFindex].N     = ctree->CFarray[ctree->rootindex].N;
+    memcpy(ctree->CFarray[CFindex].datasumvec, ctree->CFarray[ctree->rootindex].datasumvec, sizeof(double)*ctree->npix);
+    memcpy(ctree->CFarray[CFindex].dataposvec, ctree->CFarray[ctree->rootindex].dataposvec, sizeof(double)*ctree->npix);
+    ctree->CFarray[CFindex].datassq = ctree->CFarray[ctree->rootindex].datassq;
+
     ctree->CFarray[CFindex].pathcnt = ctree->CFarray[ctree->rootindex].pathcnt;
     ctree->CFarray[CFindex].pathdistcompcnt = ctree->CFarray[ctree->rootindex].pathdistcompcnt;
 

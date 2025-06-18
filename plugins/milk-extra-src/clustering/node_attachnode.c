@@ -28,9 +28,9 @@ errno_t node_attachnode(
 
             int addOK = 1; // don't test radius
             addCF_to_CF(ctree,
-                            ctree->CFarray[CFindex],
-                            cfi,
-                            &addOK);
+                        ctree->CFarray[CFindex],
+                        cfi,
+                        &addOK);
 
             // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;
