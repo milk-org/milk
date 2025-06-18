@@ -11,6 +11,11 @@
 
 #include "printCFtree.h"
 
+
+//#define DEBUG_TRACEPOINT DEBUG_TRACEPOINT_PRINT
+//#define DEBUGPRINT
+
+
 /**
  * @brief Split CF node
  *
@@ -32,10 +37,22 @@ errno_t split_CF_node(
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %ld", CFindex);
 
+
+
+
     if(ctree->rootindex == CFindex)
     {
+        DEBUG_TRACEPOINT("Dropping tree: previous root is %ld", ctree->rootindex);
         droptree(ctree);
+        DEBUG_TRACEPOINT("Dropping tree: new root is %ld", ctree->rootindex);
     }
+
+    long parentCFindex = ctree->CFarray[CFindex].parentindex;
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
+                     parentCFindex,
+                     (double) ctree->CFarray[parentCFindex].datassq,
+                     ctree->CFarray[parentCFindex].pathcnt);
+
 
 #ifdef DEBUGPRINT
     printCFtree(ctree);
@@ -192,6 +209,12 @@ errno_t split_CF_node(
     free(distarray);
     free(subCFarray);
 
+
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
+                     parentCFindex,
+                     (double) ctree->CFarray[parentCFindex].datassq,
+                     ctree->CFarray[parentCFindex].pathcnt);
+
     // release input leafnode
     if(ctree->rootindex == CFindex)
     {
@@ -222,6 +245,10 @@ errno_t split_CF_node(
 
     DEBUG_TRACEPOINT("output nodes written to pointers\n");
 
+    DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
+                     parentCFindex,
+                     (double) ctree->CFarray[parentCFindex].datassq,
+                     ctree->CFarray[parentCFindex].pathcnt);
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

@@ -38,7 +38,7 @@
 // #define DEBUGPRINT
 
 
-#define pathprobdecay 1.0
+#define pathprobdecay 0.95
 
 
 
@@ -691,13 +691,13 @@ static errno_t imcube_makecluster(
 
 
 
-            // housekeeping
+            // housekeeping, update tracers
             // The point has been added to leaf index frameleafCFindex[frame]
             //
             {
                 // scan back to root, add vector to CF along the path
                 long cfi = frameleafCFindex[frame];
-                printf(">>>>>>>>>> frame %ld, cfi %ld\n", frame, cfi);
+                //printf(">>>>>>>>>> frame %ld, cfi %ld\n", frame, cfi);
                 while(cfi != -1)
                 {
                     ctree.CFarray[cfi].pathcnt += 1.0;

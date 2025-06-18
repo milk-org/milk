@@ -52,9 +52,7 @@ errno_t CFmeminit(
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
 
             subvector_to_CF(ctree,
-                            ctree->CFarray[CFindex].datasumvec,
-                            ctree->CFarray[CFindex].datassq,
-                            ctree->CFarray[CFindex].N,
+                            ctree->CFarray[CFindex],
                             cfi);
 
             // move upstream to propagate change

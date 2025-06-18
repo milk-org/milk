@@ -33,7 +33,7 @@ errno_t write_clustCFdat(
         if(ctree->CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
         {
             fprintf(fp,
-                    "%5ld  %1d %5d  %6ld %5d %5ld  %16.3g %16.3g  %6.4f  %8.6f",
+                    "%5ld  %1d %5d  %6ld %5d %5ld  %16.3g %16.3g  %6.4f  %12.6g",
                     CFindex,
                     ctree->CFarray[CFindex].type,
                     ctree->CFarray[CFindex].level,
@@ -43,7 +43,7 @@ errno_t write_clustCFdat(
                     (double) ctree->CFarray[CFindex].datassq,
                     (double) sqrt(ctree->CFarray[CFindex].radius2),
                     (double) sqrt(ctree->CFarray[CFindex].radius2)/ctree->T,
-                    ctree->CFarray[CFindex].pathcnt   // /ctree->CFarray[ctree->rootindex].pathcnt
+                    ctree->CFarray[CFindex].pathcnt/ctree->CFarray[ctree->rootindex].pathcnt
                    );
 
             fprintf(fp, "  ");
