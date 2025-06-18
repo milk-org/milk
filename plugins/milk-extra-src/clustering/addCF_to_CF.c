@@ -40,7 +40,9 @@ static errno_t combCFcomp(
     combCF->radius2 = tmpv1 - tmpv2;
 
     combCF->pathcnt = ctree->CFarray[CFindex].pathcnt + CF.pathcnt;
-    combCF->pathcnt = ctree->CFarray[CFindex].pathdistcompcnt + CF.pathdistcompcnt;
+    combCF->pathdistcompcnt = ctree->CFarray[CFindex].pathdistcompcnt + CF.pathdistcompcnt;
+
+    printf("pathcnt:  %16f  <-  %16f  %16f\n",  combCF->pathcnt, ctree->CFarray[CFindex].pathcnt, CF.pathcnt);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
