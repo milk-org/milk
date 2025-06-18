@@ -17,7 +17,7 @@
 
 #include "CFmeminit.h"
 #include "CFtree_rebuild.h"
-#include "addvector_to_CF.h"
+#include "addCF_to_CF.h"
 #include "compute_imdistance_double.h"
 #include "condense.h"
 #include "create_new_leaf.h"
@@ -37,6 +37,10 @@
 #include "write_clustleafsummary.h"
 
 // #define DEBUGPRINT
+
+
+#define pathprobdecay 1.0
+
 
 
 static char *farg_inimname;
@@ -609,18 +613,8 @@ static errno_t imcube_makecluster(
                 DEBUG_TRACEPOINT("CREATED LEAF at index %ld", nCFindex);
 
                 // attach new leaf to parent
-
-                DEBUG_TRACEPOINT("ATTACHING LEAF %ld to %ld",
-                                 nCFindex,
-                                 ctree.CFarray[CFindex].parentindex);
-
-
-                DEBUG_TRACEPOINT("attaching leaf %ld to node %ld (parent of %ld)\n",
-                                 nCFindex, ctree.CFarray[CFindex].parentindex, CFindex);
-
                 FUNC_CHECK_RETURN(
                     node_attachleaf(&ctree, nCFindex, ctree.CFarray[CFindex].parentindex));
-
 
                 DEBUG_TRACEPOINT("ATTACHED LEAF %ld to %ld",
                                  nCFindex,
@@ -692,7 +686,30 @@ static errno_t imcube_makecluster(
                         }
                     }
                 }
+
             }
+
+
+
+
+            // housekeeping
+            // The point has been added to leaf index frameleafCFindex[frame]
+            //
+            {
+                // scan back to root, add vector to CF along the path
+                long cfi = frameleafCFindex[frame];
+                while(cfi != -1)
+                {
+                    ctree.CFarray[cfi].pathcnt += 1.0;
+                    ctree.CFarray[cfi].pathdistcompcnt += 1.0;
+
+                    // move upstream to propagate change
+                    cfi = ctree.CFarray[cfi].parentindex;
+                }
+            }
+
+
+
         }
 
         //printCFtree(&ctree);
@@ -700,8 +717,8 @@ static errno_t imcube_makecluster(
         for(long cfi = 0; cfi < ctree.NBCF; cfi++)
         {
             ctree.CFarray[cfi].status = 0;
+            ctree.CFarray[cfi].pathcnt *= pathprobdecay;
         }
-
 
         /* int condensenop = 1;
          while(condensenop > 0)

@@ -8,7 +8,7 @@ set(SOURCEFILES
 	cubecluster.c
 	CFmeminit.c
 	CFtree_rebuild.c
-	addvector_to_CF.c
+	addCF_to_CF.c
 	compute_imdistance_double.c
 	condense.c
 	create_new_leaf.c

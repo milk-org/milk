@@ -32,6 +32,8 @@ errno_t droptree(CLUSTERTREE *ctree)
 
     ctree->CFarray[CFindex].level = 0;
     ctree->CFarray[CFindex].N     = ctree->CFarray[ctree->rootindex].N;
+    ctree->CFarray[CFindex].pathcnt = ctree->CFarray[ctree->rootindex].pathcnt;
+    ctree->CFarray[CFindex].pathdistcompcnt = ctree->CFarray[ctree->rootindex].pathdistcompcnt;
 
     ctree->CFarray[ctree->rootindex].parentindex = CFindex;
 
