@@ -28,80 +28,80 @@ errno_t ctree_condense_node(
 
     *op = 0;
 
-            // if we were to condense this node, how many children would it have ?
-            long nbnewchild = 0;
+    // if we were to condense this node, how many children would it have ?
+    long nbnewchild = 0;
 
-            for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+    for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+    {
+        // scan children
+        // cfic is child index
+        long cfic = ctree->CFarray[CFindex].childindex[chi];
+
+        if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
+        {
+            int ngchi = ctree->CFarray[cfic].NBchild;
+            nbnewchild += ngchi;
+        }
+        else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
+        {
+            nbnewchild++;
+        }
+    }
+
+    // If the total number of descendents is between 1 and B, we can condense (compress levels)
+    //
+    if((nbnewchild > 0) && (nbnewchild < ctree->B) && (nbnewchild > ctree->CFarray[CFindex].NBchild))
+    {
+        long  nchild = 0;
+        long *nchiCFI   = (long *) malloc(sizeof(long) * nbnewchild);
+        if(nchiCFI == NULL)
+        {
+            FUNC_RETURN_FAILURE("malloc error");
+        }
+
+
+        for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
+        {
+            long cfic = ctree->CFarray[CFindex].childindex[chi];
+
+            if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
             {
-                // scan children
-                // cfic is child index
-                long cfic = ctree->CFarray[CFindex].childindex[chi];
+                int ngchi = ctree->CFarray[cfic].NBchild;
+                for(int gchi = 0; gchi < ngchi; gchi++)
+                {
+                    long gchiCFindex = ctree->CFarray[cfic].childindex[gchi];
+                    nchiCFI[nchild] = gchiCFindex;
+                    nchild++;
+                }
 
-                if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
-                {
-                    int ngchi = ctree->CFarray[cfic].NBchild;
-                    nbnewchild += ngchi;
-                }
-                else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
-                {
-                    nbnewchild++;
-                }
+                // remove child
+                CFmeminit(ctree, cfic, 0);
             }
-
-            // If the total number of descendents is between 1 and B, we can condense (compress levels)
-            //
-            if((nbnewchild > 0) && (nbnewchild < ctree->B) && (nbnewchild > ctree->CFarray[CFindex].NBchild))
+            else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
             {
-                long  nchild = 0;
-                long *nchiCFI   = (long *) malloc(sizeof(long) * nbnewchild);
-                if(nchiCFI == NULL)
-                {
-                    FUNC_RETURN_FAILURE("malloc error");
-                }
-
-
-                for(int chi = 0; chi < ctree->CFarray[CFindex].NBchild; chi++)
-                {
-                    long cfic = ctree->CFarray[CFindex].childindex[chi];
-
-                    if(ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_NODE)
-                    {
-                        int ngchi = ctree->CFarray[cfic].NBchild;
-                        for(int gchi = 0; gchi < ngchi; gchi++)
-                        {
-                            long gchiCFindex = ctree->CFarray[cfic].childindex[gchi];
-                            nchiCFI[nchild] = gchiCFindex;
-                            nchild++;
-                        }
-
-                        // remove child
-                        CFmeminit(ctree, cfic, 0);
-                    }
-                    else if (ctree->CFarray[cfic].type == CLUSTER_CF_TYPE_LEAF)
-                    {
-                        nchiCFI[nchild] = cfic;
-                        nchild++;
-                    }
-                }
-
-
-                // update children
-                for(int nchi=0; nchi<nbnewchild; nchi++)
-                {
-                    ctree->CFarray[CFindex].childindex[nchi] = nchiCFI[nchi];
-                    ctree->CFarray[nchiCFI[nchi]].parentindex = CFindex;
-                }
-                // update number of child
-                ctree->CFarray[CFindex].NBchild = nbnewchild;
-
-                // update level of downstream nodes
-                update_level(ctree, CFindex);
-
-                free(nchiCFI);
-                // report that one condense operation has been done
-                *op = 1;
+                nchiCFI[nchild] = cfic;
+                nchild++;
             }
-        
+        }
+
+
+        // update children
+        for(int nchi=0; nchi<nbnewchild; nchi++)
+        {
+            ctree->CFarray[CFindex].childindex[nchi] = nchiCFI[nchi];
+            ctree->CFarray[nchiCFI[nchi]].parentindex = CFindex;
+        }
+        // update number of child
+        ctree->CFarray[CFindex].NBchild = nbnewchild;
+
+        // update level of downstream nodes
+        update_level(ctree, CFindex);
+
+        free(nchiCFI);
+        // report that one condense operation has been done
+        *op = 1;
+    }
+
 
 
     DEBUG_TRACE_FEXIT();
