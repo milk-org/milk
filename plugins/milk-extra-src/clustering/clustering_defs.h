@@ -17,6 +17,9 @@
 #define CLUSTER_CF_TYPE_LEAF     3
 //#define CLUSTER_CF_TYPE_LEAFNODE 4
 
+#define CLUSTER_CF_MAXLEVEL   4096
+
+
 // CF needs to be recomputed
 #define CLUSTER_CF_STATUS_UPDATE  0x0001
 #define CLUSTER_CF_STATUS_COMPUTE 0x0002
@@ -103,6 +106,10 @@ typedef struct
 
     // computation stats
     long stat_compdistcnt; // number of distances computed
+
+    // current path and stats along
+    long path_node[CLUSTER_CF_MAXLEVEL];
+    long path_distcompcnt[CLUSTER_CF_MAXLEVEL];
 
 
 } CLUSTERTREE;
