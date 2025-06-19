@@ -217,11 +217,18 @@ static errno_t findleafnode(
            ctree->CFarray[CFindex].NBchild);
 #endif
 
+    printf("---------------------\n");
+    long distcnt0 = ctree->stat_compdistcnt;
+    printf("  dist cnt = %5ld\n", distcnt0);
+
     while(ctree->CFarray[CFindex].NBchild > 0)
     {
         int    scaninit    = 0;
         double distvalmin  = 0;
         long   CFindexbest = 0;
+
+        ctree->path_node[level] = CFindex;
+
         for(long childi = 0; childi < ctree->CFarray[CFindex].NBchild;
                 childi++)
         {
@@ -282,6 +289,8 @@ static errno_t findleafnode(
         printf("[findleafnode]  level %3d #%4ld  %g\n", level, CFindexbest, distvalmin);
 #endif
         CFindex = CFindexbest;
+        ctree->path_distcompcnt[level] = ctree->stat_compdistcnt;
+
         level++;
     }
 
@@ -292,6 +301,21 @@ static errno_t findleafnode(
            ctree->CFarray[CFindex].NBchild);
 #endif
     *nodeindex = CFindex;
+
+    long distcnt1 = ctree->stat_compdistcnt;
+
+    for(int l=0; l<level; l++)
+    {
+        printf("    LEVEL %5d/%5d   NODE = %5ld [NBCH %5d]  CNT = %12ld\n",
+               l, level, ctree->path_node[l], ctree->CFarray[ctree->path_node[l]].NBchild,
+               ctree->path_distcompcnt[l]);
+    }
+
+    printf("   L %05d    %12ld\n", 0, ctree->path_distcompcnt[0]-distcnt0);
+    for(int l=1; l<level; l++) {
+        printf("   L %05d    %12ld\n", l, ctree->path_distcompcnt[l]-ctree->path_distcompcnt[l-1]);
+    }
+    printf("  NODE %ld\n\n", CFindex);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -448,6 +472,7 @@ static errno_t imcube_makecluster(
         frameC[frame] = frame;
     }
     //indexpermut(frameC, NBframe);
+
 
     // MAIN SCAN THROUGH DATASET
     //
@@ -708,7 +733,18 @@ static errno_t imcube_makecluster(
                 }
             }
 
+            int condensenop = 1;
+            while(condensenop > 0)
+            {
+                // condense = compress levels whenever possible
+                //
+#ifdef DEBUGPRINT
+                printf("========================== CONDENSING ===========================\n");
+                printCFtree(&ctree);
+#endif
+                FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
 
+            }
 
         }
 
