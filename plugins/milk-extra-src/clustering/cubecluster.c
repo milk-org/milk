@@ -217,9 +217,9 @@ static errno_t findleafnode(
            ctree->CFarray[CFindex].NBchild);
 #endif
 
-    printf("---------------------\n");
+    //printf("---------------------\n");
     long distcnt0 = ctree->stat_compdistcnt;
-    printf("  dist cnt = %5ld\n", distcnt0);
+    //printf("  dist cnt = %5ld\n", distcnt0);
 
     while(ctree->CFarray[CFindex].NBchild > 0)
     {
@@ -302,7 +302,7 @@ static errno_t findleafnode(
 #endif
     *nodeindex = CFindex;
 
-    long distcnt1 = ctree->stat_compdistcnt;
+    /*long distcnt1 = ctree->stat_compdistcnt;
 
     for(int l=0; l<level; l++)
     {
@@ -315,7 +315,7 @@ static errno_t findleafnode(
     for(int l=1; l<level; l++) {
         printf("   L %05d    %12ld\n", l, ctree->path_distcompcnt[l]-ctree->path_distcompcnt[l-1]);
     }
-    printf("  NODE %ld\n\n", CFindex);
+    printf("  NODE %ld\n\n", CFindex);*/
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -710,7 +710,6 @@ static errno_t imcube_makecluster(
                         }
                     }
                 }
-
             }
 
 
@@ -738,10 +737,6 @@ static errno_t imcube_makecluster(
             {
                 // condense = compress levels whenever possible
                 //
-#ifdef DEBUGPRINT
-                printf("========================== CONDENSING ===========================\n");
-                printCFtree(&ctree);
-#endif
                 FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
 
             }
