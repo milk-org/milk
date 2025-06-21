@@ -7,21 +7,16 @@
 // log all debug trace points to file
 //#define DEBUGLOG
 
-/**
- * @brief Add entry to leaf
- *
- * @param ctree
- * @param datavec
- * @param ssqr
- * @param lCFindex
- * @return errno_t
+/*
+ * Add entry to leaf
  */
 errno_t leaf_addentry(
     CLUSTERTREE *ctree,
     double      *datavec,
     long double  ssqr,
     long         lCFindex,
-    int         *addOK
+    int         *addOK,
+    double       distance
 )
 {
     DEBUG_TRACE_FSTART();
@@ -35,6 +30,7 @@ errno_t leaf_addentry(
 
 
     // scan back to root, add vector to CF along the path
+    int isleaf = 1; // will toggle to 0 when moving upstream of leaf
     while(cfi != -1)
     {
         CLUSTERING_CF CF;
@@ -51,14 +47,27 @@ errno_t leaf_addentry(
         if(*addOK == 1)
         {
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
-            // move upstream to propagate change
+           
+            if(isleaf == 1)
+            {
+                // use distance to update leaf cluster radius
+                if(distance > ctree->CFarray[cfi].radius)
+                {
+                   ctree->CFarray[cfi].radius = distance;   
+                }
+            }
+
+             // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;
+
         }
         else
         {
             cfi = -1;
         }
 
+        // indicate we are upstream of leaf cluster
+        isleaf = 0;
     }
 
     DEBUG_TRACE_FEXIT();

@@ -83,6 +83,8 @@ errno_t CFmeminit(
     ctree->CFarray[CFindex].radius2 = 0;
     ctree->CFarray[CFindex].N       = 0;
 
+    ctree->CFarray[CFindex].radius = 0.0;
+
     ctree->CFarray[CFindex].pathcnt = 0.0;
     ctree->CFarray[CFindex].pathdistcompcnt = 0.0;
 
