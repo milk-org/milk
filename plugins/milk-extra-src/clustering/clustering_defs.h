@@ -67,6 +67,8 @@ typedef struct
     // Average number of distance computations needed to find solution from this point
     double pathdistcompcnt;
 
+    // max distance from pos to point(s) within and downstream of this node
+    double radius;
 
     uint32_t status; // check status flag
 
@@ -99,9 +101,6 @@ typedef struct
 
     long long cdistcnt;    // number of distance computation
     long long cdistnegcnt; // number of neg distance
-
-    // max distance from pos to point(s) within and downstream of this node
-    double radius;
 
     long nbnode;
     long nbleaf;
