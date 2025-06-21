@@ -200,7 +200,8 @@ static errno_t ctree_check(CLUSTERTREE *ctree)
 static errno_t findleafnode(
     CLUSTERTREE *ctree,
     double *datavec,
-    long *nodeindex
+    long *nodeindex,
+    double *distance
 )
 {
     DEBUG_TRACE_FSTART();
@@ -289,6 +290,7 @@ static errno_t findleafnode(
         printf("[findleafnode]  level %3d #%4ld  %g\n", level, CFindexbest, distvalmin);
 #endif
         CFindex = CFindexbest;
+        *distance = distvalmin;
         ctree->path_distcompcnt[level] = ctree->stat_compdistcnt;
 
         level++;
@@ -580,15 +582,10 @@ static errno_t imcube_makecluster(
         else
         {
             long CFindex;
-            FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex));
-            DEBUG_TRACEPOINT("CF #%ld type is %d  (2=node, 3=leaf)",
-                             CFindex,
-                             ctree.CFarray[CFindex].type);
-
+            double distance = 0.0;
+            FUNC_CHECK_RETURN(findleafnode(&ctree, datarray, &CFindex, &distance));
 
             // we have descended the tree and are now at a leaf node
-
-
             long lCFindex = CFindex;
 
             // only add if radius condition is met
@@ -601,7 +598,8 @@ static errno_t imcube_makecluster(
                                             datarray,
                                             ssqr,
                                             lCFindex,
-                                            &addOK));
+                                            &addOK,
+                                        distance));
 
 
 
@@ -625,14 +623,13 @@ static errno_t imcube_makecluster(
 
             if(lCFindex == -1)
             {
-                // If leaf has not been added
+                // If leaf has not been added, create new leaf
+                //
                 long nCFindex;
                 FUNC_CHECK_RETURN(
                     create_new_leaf(&ctree, datarray, ssqr, &nCFindex));
 
                 frameleafCFindex[frame] = nCFindex;
-
-
 
                 DEBUG_TRACEPOINT("CREATED LEAF at index %ld", nCFindex);
 
@@ -751,13 +748,6 @@ static errno_t imcube_makecluster(
             ctree.CFarray[cfi].pathcnt *= pathprobdecay;
         }
 
-        /* int condensenop = 1;
-         while(condensenop > 0)
-         {
-             // condense = compress levels whenever possible
-             //
-             FUNC_CHECK_RETURN(ctree_condense(&ctree, &condensenop));
-         }*/
 
         {
             char fname[STRINGMAXLEN_FILENAME];
@@ -766,24 +756,12 @@ static errno_t imcube_makecluster(
             write_clustCFdat(&ctree, fname);
         }
 
-#ifdef DEBUGPRINT
-        FUNC_CHECK_RETURN(printCFtree(&ctree));
-        printf("=================================================\n");
-        printf("=================================================\n");
-        printf("=================================================\n");
-        printf("\n\n\n");
-#endif
 
         DEBUG_TRACEPOINT(
             "Frame %ld processed",
             framecnt);
         framecnt++;
 
-        /*  if(framecnt % 100000 == 0)
-           {
-               FUNC_CHECK_RETURN(
-                   CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
-           }*/
 
         /*printf("[%5ld] ROOT N=%5ld  ", frame, ctree.CFarray[ctree.rootindex].N);
         for(long ii=0; ii<10; ii++)
