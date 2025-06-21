@@ -76,6 +76,22 @@ errno_t ctree_memallocate(
         ctree->CFarray[CFindex].status = 0;
     }
 
+    // pairwise distances
+    ctree->CFCFdist = (double*) malloc(sizeof(double)*ctree->NBCF*ctree->NBCF);
+    if(ctree->CFCFdist == NULL)
+    {
+        FUNC_RETURN_FAILURE("malloc error");
+    }
+    // initialize all distances to -1.0 to indicate unknown
+    for(long CFindex0 = 0; CFindex0 < ctree->NBCF; CFindex0++)
+    {
+        for(long CFindex1 = 0; CFindex1 < ctree->NBCF; CFindex1++)
+        {
+            ctree->CFCFdist[CFindex0*ctree->NBCF + CFindex1] = -1.0;
+        }
+    }
+
+
     /*    for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
         {
 
