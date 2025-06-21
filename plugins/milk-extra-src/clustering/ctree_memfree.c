@@ -16,6 +16,7 @@ errno_t ctree_memfree(CLUSTERTREE *ctree)
         }
     }
     free(ctree->CFarray);
+    free(ctree->CFCFdist);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

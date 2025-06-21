@@ -54,6 +54,9 @@ long             fpi_branchB;
 static uint32_t *leafposmode = NULL;
 long             fpi_leafposmode;
 
+static uint32_t *NBCFmax = NULL;
+long             fpi_NBCFmax;
+
 static int64_t *optrebuild;
 static long     fpi_optrebuild = -1;
 
@@ -108,6 +111,15 @@ static CLICMDARGDEF farg[] = {
         CLIARG_HIDDEN_DEFAULT,
         (void **) &leafposmode,
         &fpi_leafposmode
+    },
+    {
+        CLIARG_UINT32,
+        ".NBCFmax",
+        "max number of CFs",
+        "2048",
+        CLIARG_HIDDEN_DEFAULT,
+        (void **) &NBCFmax,
+        &fpi_NBCFmax
     },
     {
         CLIARG_ONOFF,
@@ -434,7 +446,7 @@ static errno_t imcube_makecluster(
     ctree.xsize = xsize;
     ctree.ysize = ysize;
 
-    ctree.NBCF         = zsize + 10;          // max number of cluster features
+    ctree.NBCF         = *NBCFmax;          // max number of cluster features
     ctree.B            = *branchB;       // max number of branches out of node
     ctree.noise2offset = 0.0;            // if very noisy image, subtract known noise
     ctree.T            = *threshold;     // threshold satisfied by each CF entry of leaf node
