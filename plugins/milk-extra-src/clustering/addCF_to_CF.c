@@ -195,7 +195,7 @@ errno_t subvector_to_CF(
     ctree->CFarray[CFindex].pathcnt -= CF.pathcnt;
     ctree->CFarray[CFindex].pathdistcompcnt -= CF.pathdistcompcnt;
 
-    // recompute cluster radius
+    // recompute cluster radius2
     long double tmpv1 =
         ctree->CFarray[CFindex].datassq / ctree->CFarray[CFindex].N;
     long double tmpv2 = ctree->CFarray[CFindex].sum2 /

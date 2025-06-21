@@ -5,6 +5,7 @@ errno_t leaf_addentry(CLUSTERTREE *ctree,
                       double      *datavec,
                       long double  ssqr,
                       long         lCFindex,
-                      int         *addOK);
+                      int         *addOK,
+                      double       distance);
 
 #endif
