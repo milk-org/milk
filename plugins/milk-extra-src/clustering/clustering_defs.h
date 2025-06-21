@@ -100,6 +100,9 @@ typedef struct
     long long cdistcnt;    // number of distance computation
     long long cdistnegcnt; // number of neg distance
 
+    // max distance from pos to point(s) within and downstream of this node
+    double radius;
+
     long nbnode;
     long nbleaf;
     long nbleafsingle;
