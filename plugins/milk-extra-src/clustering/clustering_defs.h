@@ -82,11 +82,11 @@ typedef struct
     uint32_t       xsize;
     uint32_t       ysize;
 
-    int            B;       // branching parameter
-    double         T;       // threshold
+    int            B;           // branching parameter
+    double         T;           // threshold
     int            leafposmode; // leaf position mode. 0=static, 1=dynamic
-    long           NBCF;    // number of cluster features in memory
-    CLUSTERING_CF *CFarray; // pointer to cluster features
+    long           NBCF;        // number of cluster features in memory
+    CLUSTERING_CF *CFarray;     // pointer to cluster features
     long           rootindex;
 
     // correction for uncorrelated noise
@@ -113,6 +113,15 @@ typedef struct
     long path_node[CLUSTER_CF_MAXLEVEL];
     long path_distcompcnt[CLUSTER_CF_MAXLEVEL];
 
+    // Increments at each new CF allocation (node or leaf)
+    // Used as a unique identifier to a CF, ensuring no re-use
+    long CFIDcnt;
+
+    // Stores distances between CFs
+    // For fixed positions only
+    // If unknown, val set to negative
+    //
+    double *CFCFdist;
 
 } CLUSTERTREE;
 
