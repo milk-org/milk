@@ -785,6 +785,13 @@ static errno_t imcube_makecluster(
                    CFtree_rebuild(&ctree, frameleafCFindex, NBframe));
            }*/
 
+        /*printf("[%5ld] ROOT N=%5ld  ", frame, ctree.CFarray[ctree.rootindex].N);
+        for(long ii=0; ii<10; ii++)
+        {
+            printf("  %12f", ctree.CFarray[ctree.rootindex].dataposvec[ii]);
+        }
+        printf("\n");*/
+
     }
 
 
