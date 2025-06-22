@@ -22,26 +22,28 @@ errno_t write_clustCFdat(
     fprintf(fp,"# col04   Number of point within CF\n");
     fprintf(fp,"# col05   NBchild\n");
     fprintf(fp,"# col06   parent index\n");
-    fprintf(fp,"# col07   datasq\n");
-    fprintf(fp,"# col08   radius (norm2)\n");
-    fprintf(fp,"# col09   radius (norm2) / threshold\n");
-    fprintf(fp,"# col10  radius  (norm inf)\n");
-    fprintf(fp,"# col11  radius  (norm inf) / threshold\n");
-    fprintf(fp,"# col12  pathcnt\n");
-    fprintf(fp,"# col13  children\n");
+    fprintf(fp,"# col07   position source ID\n");
+    fprintf(fp,"# col08   datasq\n");
+    fprintf(fp,"# col09   radius (norm2)\n");
+    fprintf(fp,"# col10   radius (norm2) / threshold\n");
+    fprintf(fp,"# col11  radius  (norm inf)\n");
+    fprintf(fp,"# col12  radius  (norm inf) / threshold\n");
+    fprintf(fp,"# col13  pathcnt\n");
+    fprintf(fp,"# col14  children\n");
 
     for(long CFindex = 0; CFindex < ctree->NBCF; CFindex++)
     {
         if(ctree->CFarray[CFindex].type != CLUSTER_CF_TYPE_UNUSED)
         {
             fprintf(fp,
-                    "%5ld  %1d %5d  %6ld %5d %5ld  %16.3g    %16.3g %6.4f   %16.3g %6.4f   %12.6g",
+                    "%5ld  %1d %3d  %6ld %5d %5ld %5ld    %16.3g    %16.3g %6.4f   %16.3g %6.4f   %12.6g",
                     CFindex,
                     ctree->CFarray[CFindex].type,
                     ctree->CFarray[CFindex].level,
                     ctree->CFarray[CFindex].N,
                     ctree->CFarray[CFindex].NBchild,
                     ctree->CFarray[CFindex].parentindex,
+                    ctree->CFarray[CFindex].posvecsourceID,
                     (double) ctree->CFarray[CFindex].datassq,
                     (double) sqrt(ctree->CFarray[CFindex].radius2),
                     (double) sqrt(ctree->CFarray[CFindex].radius2)/ctree->T,
