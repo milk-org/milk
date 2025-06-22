@@ -52,6 +52,11 @@ typedef struct
     // are within T of this unmovable point.
     double     *dataposvec;
 
+    // If the position vector is inherited from a node or cluster, this is the index of the
+    // node/cluster from which it is derived.
+    // If not, this is set to -1.
+    long        posvecsourceID;
+
     long        N;          // number of points aggregated in node
     double     *datasumvec; // sum vector
     long double datassq;    // sum squared

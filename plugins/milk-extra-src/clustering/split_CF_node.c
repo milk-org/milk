@@ -113,13 +113,16 @@ errno_t split_CF_node(
             }
             else
             {
-                FUNC_CHECK_RETURN(
+
+                compute_CF2CF_posdistance_double(ctree, CFindex00, CFindex11, &distval);
+
+                /*FUNC_CHECK_RETURN(
                     compute_imdistance_double(ctree,
                                               ctree->CFarray[CFindex00].dataposvec,
                                               1,
                                               ctree->CFarray[CFindex11].dataposvec,
                                               1,
-                                              &distval));
+                                              &distval));*/
             }
             DEBUG_TRACEPOINT("DIST %02d %02d  %g\n", index0, index1, distval);
             if(distval > maxdist)
@@ -190,20 +193,20 @@ errno_t split_CF_node(
             cnt1++;
         }
     }
-    
 
-    // Add maxdist nodes first to ensure pos corresponds to most
+
+    // Add maxdist nodes first to ensure position corresponds to most
     // distant nodes.
     //
     FUNC_CHECK_RETURN(
-            node_attachnode(ctree,
-                            ctree->CFarray[CFindex].childindex[maxdistindex0],
-                            CFindex0));
+        node_attachnode(ctree,
+                        ctree->CFarray[CFindex].childindex[maxdistindex0],
+                        CFindex0));
 
     FUNC_CHECK_RETURN(
-            node_attachnode(ctree,
-                            ctree->CFarray[CFindex].childindex[maxdistindex1],
-                            CFindex1));
+        node_attachnode(ctree,
+                        ctree->CFarray[CFindex].childindex[maxdistindex1],
+                        CFindex1));
 
 
     for(int subindex = 0; subindex < nCF; subindex++)
@@ -211,16 +214,16 @@ errno_t split_CF_node(
         if( (subindex != maxdistindex0) && (subindex != maxdistindex1) )
         {
 
-        DEBUG_TRACEPOINT("NODE %2d  %12g %12g -> ADD TO NODE %ld",
-                         subindex,
-                         distarray[maxdistindex0 * nCF + subindex],
-                         distarray[maxdistindex1 * nCF + subindex],
-                         destCF[subindex]);
+            DEBUG_TRACEPOINT("NODE %2d  %12g %12g -> ADD TO NODE %ld",
+                             subindex,
+                             distarray[maxdistindex0 * nCF + subindex],
+                             distarray[maxdistindex1 * nCF + subindex],
+                             destCF[subindex]);
 
-        FUNC_CHECK_RETURN(
-            node_attachnode(ctree,
-                            ctree->CFarray[CFindex].childindex[subindex],
-                            destCF[subindex]));
+            FUNC_CHECK_RETURN(
+                node_attachnode(ctree,
+                                ctree->CFarray[CFindex].childindex[subindex],
+                                destCF[subindex]));
         }
     }
 

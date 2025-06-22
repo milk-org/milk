@@ -39,6 +39,7 @@ errno_t leaf_addentry(
         CF.datassq = ssqr;
         CF.N = 1;
         CF.pathcnt = 0.0;
+        CF.posvecsourceID = cfi;
         addCF_to_CF(ctree, CF, cfi, addOK);
 
 #ifdef DEBUGPRINT
@@ -47,17 +48,17 @@ errno_t leaf_addentry(
         if(*addOK == 1)
         {
             ctree->CFarray[cfi].status |= CLUSTER_CF_STATUS_UPDATE;
-           
+
             if(isleaf == 1)
             {
                 // use distance to update leaf cluster radius
                 if(distance > ctree->CFarray[cfi].radius)
                 {
-                   ctree->CFarray[cfi].radius = distance;   
+                    ctree->CFarray[cfi].radius = distance;
                 }
             }
 
-             // move upstream to propagate change
+            // move upstream to propagate change
             cfi = ctree->CFarray[cfi].parentindex;
 
         }

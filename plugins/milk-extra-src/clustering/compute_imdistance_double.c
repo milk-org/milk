@@ -4,7 +4,6 @@
 #include <math.h>
 
 
-
 errno_t compute_imdistance_double(
     CLUSTERTREE *ctree,
     double      *vec1,
@@ -79,6 +78,47 @@ errno_t compute_imdistance_double(
 
 
     ctree->stat_compdistcnt ++;
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+
+// Compute position vector distance between two CFs.
+// Will pull from pre-computed value in CFCFdist if availabe.
+//
+errno_t compute_CF2CF_posdistance_double(
+    CLUSTERTREE *ctree,
+    long         CFI0,
+    long         CFI1,
+    double      *distval
+)
+{
+    DEBUG_TRACE_FSTART();
+
+    // Get pos indices
+    long posID0 = ctree->CFarray[CFI0].posvecsourceID;
+    long posID1 = ctree->CFarray[CFI1].posvecsourceID;
+
+    // Check if distance is available
+    double dval = ctree->CFCFdist[posID0*ctree->NBCF+posID1];
+    //dval = -1.0;
+    if(dval < 0)
+    {
+        // compute distance
+        compute_imdistance_double(ctree,
+                                  ctree->CFarray[posID0].dataposvec,
+                                  1,
+                                  ctree->CFarray[posID1].dataposvec,
+                                  1,
+                                  &dval);
+        ctree->CFCFdist[posID0*ctree->NBCF+posID1] = dval;
+        ctree->CFCFdist[posID1*ctree->NBCF+posID0] = dval;
+    }
+
+    *distval = dval;
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
