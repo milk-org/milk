@@ -16,15 +16,15 @@ errno_t write_clustCFdat(
 
     FILE *fp = fopen(fname, "w");
 
-    fprintf(fp,"# col1   CF index\n");
-    fprintf(fp,"# col2   CF type (2: node, 3: leaf cluster)\n");
-    fprintf(fp,"# col3   CF level\n");
-    fprintf(fp,"# col4   Number of point within CF\n");
-    fprintf(fp,"# col5   NBchild\n");
-    fprintf(fp,"# col6   parent index\n");
-    fprintf(fp,"# col7   datasq\n");
-    fprintf(fp,"# col8   radius2 (norm2)\n");
-    fprintf(fp,"# col9   radius2 (norm2) / threshold\n");
+    fprintf(fp,"# col01   CF index\n");
+    fprintf(fp,"# col02   CF type (2: node, 3: leaf cluster)\n");
+    fprintf(fp,"# col03   CF level\n");
+    fprintf(fp,"# col04   Number of point within CF\n");
+    fprintf(fp,"# col05   NBchild\n");
+    fprintf(fp,"# col06   parent index\n");
+    fprintf(fp,"# col07   datasq\n");
+    fprintf(fp,"# col08   radius (norm2)\n");
+    fprintf(fp,"# col09   radius (norm2) / threshold\n");
     fprintf(fp,"# col10  radius  (norm inf)\n");
     fprintf(fp,"# col11  radius  (norm inf) / threshold\n");
     fprintf(fp,"# col12  pathcnt\n");
@@ -56,7 +56,6 @@ errno_t write_clustCFdat(
                 long chicfi = ctree->CFarray[CFindex].childindex[chi];
                 fprintf(fp,"%ld[%d],", chicfi, ctree->CFarray[chicfi].type);
             }
-
 
             fprintf(fp, "\n");
         }
