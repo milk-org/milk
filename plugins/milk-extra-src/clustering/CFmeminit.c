@@ -82,6 +82,14 @@ errno_t CFmeminit(
     ctree->CFarray[CFindex].datassq = 0.0;
     ctree->CFarray[CFindex].radius2 = 0;
     ctree->CFarray[CFindex].N       = 0;
+    ctree->CFarray[CFindex].posvecsourceID = -1;
+
+    for(long cfi=0; cfi<ctree->NBCF; cfi++)
+    {
+        ctree->CFCFdist[CFindex*ctree->NBCF+cfi] = -1.0;
+        ctree->CFCFdist[cfi*ctree->NBCF+CFindex] = -1.0;
+    }
+
 
     ctree->CFarray[CFindex].radius = 0.0;
 

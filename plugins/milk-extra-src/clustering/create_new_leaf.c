@@ -48,7 +48,8 @@ errno_t create_new_leaf(CLUSTERTREE *ctree,
     memcpy(ctree->CFarray[CFi].dataposvec,
            datarray,
            sizeof(double) * ctree->npix);
-
+    // position vector source ID is current CFi
+    ctree->CFarray[CFi].posvecsourceID = CFi;
 
     ctree->CFarray[CFi].pathcnt = 0.0;
     ctree->CFarray[CFi].pathdistcompcnt = 0.0;

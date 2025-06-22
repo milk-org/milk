@@ -59,6 +59,7 @@ errno_t ctree_init(
     memcpy(ctree->CFarray[1].dataposvec,
            datavector,
            sizeof(double) * ctree->npix);
+    ctree->CFarray[1].posvecsourceID = 1;
 
 
     ctree->CFarray[1].datassq = ssqr;

@@ -67,6 +67,7 @@ errno_t addCF_to_CF(
     if(ctree->CFarray[CFindex].N == 0)
     {
         memcpy(ctree->CFarray[CFindex].dataposvec, CF.dataposvec, sizeof(double)*ctree->npix);
+        ctree->CFarray[CFindex].posvecsourceID = CF.posvecsourceID;
     }
 
 
