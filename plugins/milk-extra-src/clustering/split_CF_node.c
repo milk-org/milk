@@ -21,8 +21,8 @@
  *
  * @param CFarray    CF array
  * @param CFindex    Input node to be split
- * @param CFindex0   Output node 0
- * @param CFindex1   Output node 1
+ * @param CFi0   Output node 0
+ * @param CFi1   Output node 1
  * @return errno_t
  *
  * Input node will be released
@@ -169,6 +169,9 @@ errno_t split_CF_node(
         FUNC_RETURN_FAILURE("malloc error");
     }
 
+
+    // Allocate each entry to one of the two new nodes
+    //
     long cnt0 = 0;
     long cnt1 = 0;
     for(int subindex = 0; subindex < nCF; subindex++)
@@ -187,9 +190,26 @@ errno_t split_CF_node(
             cnt1++;
         }
     }
+    
+
+    // Add maxdist nodes first to ensure pos corresponds to most
+    // distant nodes.
+    //
+    FUNC_CHECK_RETURN(
+            node_attachnode(ctree,
+                            ctree->CFarray[CFindex].childindex[maxdistindex0],
+                            CFindex0));
+
+    FUNC_CHECK_RETURN(
+            node_attachnode(ctree,
+                            ctree->CFarray[CFindex].childindex[maxdistindex1],
+                            CFindex1));
+
 
     for(int subindex = 0; subindex < nCF; subindex++)
     {
+        if( (subindex != maxdistindex0) && (subindex != maxdistindex1) )
+        {
 
         DEBUG_TRACEPOINT("NODE %2d  %12g %12g -> ADD TO NODE %ld",
                          subindex,
@@ -197,11 +217,11 @@ errno_t split_CF_node(
                          distarray[maxdistindex1 * nCF + subindex],
                          destCF[subindex]);
 
-
         FUNC_CHECK_RETURN(
             node_attachnode(ctree,
                             ctree->CFarray[CFindex].childindex[subindex],
                             destCF[subindex]));
+        }
     }
 
     free(destCF);
