@@ -245,13 +245,13 @@ static errno_t findleafnode(
         {
             double distval = 0.0;
             FUNC_CHECK_RETURN(
-               compute_imdistance_double(ctree,
-                                                  ctree->CFarray[CFindex].dataposvec,
-                                                  1,
-                                                  datavec,
-                                                  1,
-                                                  &distval));
-        
+                compute_imdistance_double(ctree,
+                                          ctree->CFarray[CFindex].dataposvec,
+                                          1,
+                                          datavec,
+                                          1,
+                                          &distval));
+
             if(distval < ctree->T)
             {
                 // last path leads to solution
@@ -263,163 +263,163 @@ static errno_t findleafnode(
 
     if(solution_reuse == 0)
     {
-    level = 0;
-    CFindex = ctree->rootindex;
-    long distcnt0 = ctree->stat_compdistcnt;
-    while(ctree->CFarray[CFindex].NBchild > 0)
-    {
-        int    scaninit    = 0;
-        double distvalmin  = 0;
-        long   CFindexbest = 0;
-
-        ctree->path_node[level] = CFindex;
-
-        // minumum and maximum possible distance from point to nodes
-        double *mindistarray = (double*) malloc(sizeof(double)*ctree->CFarray[CFindex].NBchild);
-        double *maxdistarray = (double*) malloc(sizeof(double)*ctree->CFarray[CFindex].NBchild);
-
-        distvalmin = 2.0 * ctree->T;
-        for(long childi = 0; childi < ctree->CFarray[CFindex].NBchild;
-                childi++)
+        level = 0;
+        CFindex = ctree->rootindex;
+        long distcnt0 = ctree->stat_compdistcnt;
+        while(ctree->CFarray[CFindex].NBchild > 0)
         {
-            double distval = 0.0;
+            int    scaninit    = 0;
+            double distvalmin  = 0;
+            long   CFindexbest = 0;
 
-            long CFindex1 = ctree->CFarray[CFindex].childindex[childi];
+            ctree->path_node[level] = CFindex;
 
-            // Should this point be skipped? (1:skip)
-            int skipflag = 0;
-            if(scaninit == 0)
+            // minumum and maximum possible distance from point to nodes
+            double *mindistarray = (double*) malloc(sizeof(double)*ctree->CFarray[CFindex].NBchild);
+            double *maxdistarray = (double*) malloc(sizeof(double)*ctree->CFarray[CFindex].NBchild);
+
+            distvalmin = 2.0 * ctree->T;
+            for(long childi = 0; childi < ctree->CFarray[CFindex].NBchild;
+                    childi++)
             {
-                // don't skip first one
-                skipflag = 0;
-            }
-            else
-            {
-                // Can't skip if dynamic position
-                if(ctree->leafposmode == CLUSTER_CFPOS_FIXED)
-                {
-                    // The to-be-computed distance value will be larger than mindistarray[childi]
-                    // if mindistarray[childi] is larger than distvalmin, we can skip
-                    if ( distvalmin < mindistarray[childi] ) {
-                        skipflag = 1;
-                    }
-                }
-            }
+                double distval = 0.0;
 
-            // already found good-enough solution
-            // TBD: less aggressive distance limit can be used here for nodes closer to root
-            if(distvalmin < ctree->T){
-                skipflag = 1;
-            }
+                long CFindex1 = ctree->CFarray[CFindex].childindex[childi];
 
-
-
-            if(skipflag == 0)
-            {
-                distcnt_eval++;
-                if(ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
-                {
-                    FUNC_CHECK_RETURN(
-                        compute_imdistance_double(ctree,
-                                                  ctree->CFarray[CFindex1].datasumvec,
-                                                  ctree->CFarray[CFindex1].N,
-                                                  datavec,
-                                                  1,
-                                                  &distval));
-                }
-                else
-                {
-                    FUNC_CHECK_RETURN(
-                        compute_imdistance_double(ctree,
-                                                  ctree->CFarray[CFindex1].dataposvec,
-                                                  1,
-                                                  datavec,
-                                                  1,
-                                                  &distval));
-                }
-
+                // Should this point be skipped? (1:skip)
+                int skipflag = 0;
                 if(scaninit == 0)
                 {
-                    distvalmin  = distval;
-                    CFindexbest = CFindex1;
-
-                    mindistarray[childi] = distval;
-                    maxdistarray[childi] = distval;
-
-                    for(long ci=0; ci<ctree->CFarray[CFindex].NBchild; ci++)
-                    {
-                        if(ci != childi)
-                        {
-                            long CFindex2 = ctree->CFarray[CFindex].childindex[ci];
-                            double dval;
-                            compute_CF2CF_posdistance_double(ctree, CFindex1, CFindex2, &dval);
-                            double minval = dval - distval;
-                            if(minval<0.0)
-                            {
-                                minval = 0.0;
-                            }
-                            double maxval = dval + distval;
-                            mindistarray[ci] = minval;
-                            maxdistarray[ci] = maxval;
-                        }
-                    }
-
-                    scaninit    = 1;
+                    // don't skip first one
+                    skipflag = 0;
                 }
                 else
                 {
-
-                    mindistarray[childi] = distval;
-                    maxdistarray[childi] = distval;
-
-                    for(long ci=0; ci<ctree->CFarray[CFindex].NBchild; ci++)
+                    // Can't skip if dynamic position
+                    if(ctree->leafposmode == CLUSTER_CFPOS_FIXED)
                     {
-                        if(ci != childi)
-                        {
-                            long CFindex2 = ctree->CFarray[CFindex].childindex[ci];
-                            double dval;
-                            compute_CF2CF_posdistance_double(ctree, CFindex1, CFindex2, &dval);
-                            double minval = dval - distval;
-                            if(minval<0.0)
-                            {
-                                minval = 0.0;
-                            }
-                            double maxval = dval + distval;
-                            if (minval > mindistarray[ci]) {
-                                mindistarray[ci] = minval;
-                            }
-                            if (maxval < maxdistarray[ci]) {
-                                maxdistarray[ci] = maxval;
-                            }
+                        // The to-be-computed distance value will be larger than mindistarray[childi]
+                        // if mindistarray[childi] is larger than distvalmin, we can skip
+                        if ( distvalmin < mindistarray[childi] ) {
+                            skipflag = 1;
                         }
                     }
+                }
+
+                // already found good-enough solution
+                // TBD: less aggressive distance limit can be used here for nodes closer to root
+                if(distvalmin < ctree->T) {
+                    skipflag = 1;
+                }
 
 
-                    if(distval < distvalmin)
+
+                if(skipflag == 0)
+                {
+                    distcnt_eval++;
+                    if(ctree->leafposmode == CLUSTER_CFPOS_DYNAMIC)
+                    {
+                        FUNC_CHECK_RETURN(
+                            compute_imdistance_double(ctree,
+                                                      ctree->CFarray[CFindex1].datasumvec,
+                                                      ctree->CFarray[CFindex1].N,
+                                                      datavec,
+                                                      1,
+                                                      &distval));
+                    }
+                    else
+                    {
+                        FUNC_CHECK_RETURN(
+                            compute_imdistance_double(ctree,
+                                                      ctree->CFarray[CFindex1].dataposvec,
+                                                      1,
+                                                      datavec,
+                                                      1,
+                                                      &distval));
+                    }
+
+                    if(scaninit == 0)
                     {
                         distvalmin  = distval;
                         CFindexbest = CFindex1;
+
+                        mindistarray[childi] = distval;
+                        maxdistarray[childi] = distval;
+
+                        for(long ci=0; ci<ctree->CFarray[CFindex].NBchild; ci++)
+                        {
+                            if(ci != childi)
+                            {
+                                long CFindex2 = ctree->CFarray[CFindex].childindex[ci];
+                                double dval;
+                                compute_CF2CF_posdistance_double(ctree, CFindex1, CFindex2, &dval);
+                                double minval = dval - distval;
+                                if(minval<0.0)
+                                {
+                                    minval = 0.0;
+                                }
+                                double maxval = dval + distval;
+                                mindistarray[ci] = minval;
+                                maxdistarray[ci] = maxval;
+                            }
+                        }
+
+                        scaninit    = 1;
+                    }
+                    else
+                    {
+
+                        mindistarray[childi] = distval;
+                        maxdistarray[childi] = distval;
+
+                        for(long ci=0; ci<ctree->CFarray[CFindex].NBchild; ci++)
+                        {
+                            if(ci != childi)
+                            {
+                                long CFindex2 = ctree->CFarray[CFindex].childindex[ci];
+                                double dval;
+                                compute_CF2CF_posdistance_double(ctree, CFindex1, CFindex2, &dval);
+                                double minval = dval - distval;
+                                if(minval<0.0)
+                                {
+                                    minval = 0.0;
+                                }
+                                double maxval = dval + distval;
+                                if (minval > mindistarray[ci]) {
+                                    mindistarray[ci] = minval;
+                                }
+                                if (maxval < maxdistarray[ci]) {
+                                    maxdistarray[ci] = maxval;
+                                }
+                            }
+                        }
+
+
+                        if(distval < distvalmin)
+                        {
+                            distvalmin  = distval;
+                            CFindexbest = CFindex1;
+                        }
                     }
                 }
+                else
+                {
+                    distcnt_skip++;
+                }
             }
-            else
-            {
-                distcnt_skip++;
-            }
-        }
-        free(mindistarray);
-        free(maxdistarray);
+            free(mindistarray);
+            free(maxdistarray);
 
-        //DEBUG_TRACEPOINT
+            //DEBUG_TRACEPOINT
 #ifdef DEBUGPRINT
-        printf("[findleafnode]  level %3d #%4ld  %g\n", level, CFindexbest, distvalmin);
+            printf("[findleafnode]  level %3d #%4ld  %g\n", level, CFindexbest, distvalmin);
 #endif
-        CFindex = CFindexbest;
-        *distance = distvalmin;
-        ctree->path_distcompcnt[level] = ctree->stat_compdistcnt;
+            CFindex = CFindexbest;
+            *distance = distvalmin;
+            ctree->path_distcompcnt[level] = ctree->stat_compdistcnt;
 
-        level++;
-    }
+            level++;
+        }
     }
 
     //DEBUG_TRACEPOINT
