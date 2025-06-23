@@ -218,13 +218,16 @@ static errno_t findleafnode(
 {
     DEBUG_TRACE_FSTART();
 
+    // increments each time function is executed
+    static long findleadnodecnt = 0;
+
     static long distcnt_eval = 0;
     static long distcnt_skip = 0;
 
     // find closest node descending the CFT from root
     // start at root
-    int  level   = 0;
-    long CFindex = ctree->rootindex;
+    static int  level   = 0;
+    static long CFindex = 0;
 
     //DEBUG_TRACEPOINT
 #ifdef DEBUGPRINT
@@ -233,11 +236,36 @@ static errno_t findleafnode(
            ctree->CFarray[CFindex].NBchild);
 #endif
 
-    //printf("---------------------\n");
+    // try last path first ... we may get lucky
+    //
+    int solution_reuse = 0;
+    if(findleadnodecnt != 0)
+    {
+        if(ctree->leafposmode == CLUSTER_CFPOS_FIXED)
+        {
+            double distval = 0.0;
+            FUNC_CHECK_RETURN(
+               compute_imdistance_double(ctree,
+                                                  ctree->CFarray[CFindex].dataposvec,
+                                                  1,
+                                                  datavec,
+                                                  1,
+                                                  &distval));
+        
+            if(distval < ctree->T)
+            {
+                // last path leads to solution
+                solution_reuse = 1;
+                *distance = distval;
+            }
+        }
+    }
+
+    if(solution_reuse == 0)
+    {
+    level = 0;
+    CFindex = ctree->rootindex;
     long distcnt0 = ctree->stat_compdistcnt;
-    //printf("  dist cnt = %5ld\n", distcnt0);
-
-
     while(ctree->CFarray[CFindex].NBchild > 0)
     {
         int    scaninit    = 0;
@@ -279,7 +307,7 @@ static errno_t findleafnode(
             }
 
             // already found good-enough solution
-            // TBD: less aggressive distance limit can be used here for top-level nodes
+            // TBD: less aggressive distance limit can be used here for nodes closer to root
             if(distvalmin < ctree->T){
                 skipflag = 1;
             }
@@ -392,6 +420,7 @@ static errno_t findleafnode(
 
         level++;
     }
+    }
 
     //DEBUG_TRACEPOINT
 #ifdef DEBUGPRINT
@@ -416,7 +445,9 @@ static errno_t findleafnode(
     }
     printf("  NODE %ld\n\n", CFindex);*/
 
-    printf("EVAL : %8ld   SKIP : %8ld    frac = %8.6f\n", distcnt_eval, distcnt_skip, 1.0*distcnt_eval/(distcnt_eval+distcnt_skip));
+    //printf("EVAL : %8ld   SKIP : %8ld    frac = %8.6f\n", distcnt_eval, distcnt_skip, 1.0*distcnt_eval/(distcnt_eval+distcnt_skip));
+
+    findleadnodecnt++;
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
