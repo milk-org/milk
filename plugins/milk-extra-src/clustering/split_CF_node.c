@@ -113,18 +113,8 @@ errno_t split_CF_node(
             }
             else
             {
-
                 compute_CF2CF_posdistance_double(ctree, CFindex00, CFindex11, &distval);
-
-                /*FUNC_CHECK_RETURN(
-                    compute_imdistance_double(ctree,
-                                              ctree->CFarray[CFindex00].dataposvec,
-                                              1,
-                                              ctree->CFarray[CFindex11].dataposvec,
-                                              1,
-                                              &distval));*/
             }
-            DEBUG_TRACEPOINT("DIST %02d %02d  %g\n", index0, index1, distval);
             if(distval > maxdist)
             {
                 maxdist       = distval;
@@ -183,7 +173,7 @@ errno_t split_CF_node(
     long maxN1 = 0;
     long maxNccf0 = -1;
     long maxNccf1 = -1;
-    
+
     for(int ccf = 0; ccf < nCF; ccf++)
     {
         long cfi = ctree->CFarray[CFindex].childindex[ccf];
@@ -194,7 +184,7 @@ errno_t split_CF_node(
         {
             destCF[ccf] = CFindex0;
             long N = ctree->CFarray[cfi].N;
-            if(N>maxN0){
+            if(N>maxN0) {
                 maxN0 = N;
                 maxNccf0 = ccf;
             }
@@ -204,7 +194,7 @@ errno_t split_CF_node(
         {
             destCF[ccf] = CFindex1;
             long N = ctree->CFarray[cfi].N;
-            if(N>maxN1){
+            if(N>maxN1) {
                 maxN1 = N;
                 maxNccf1 = ccf;
             }
@@ -290,7 +280,7 @@ errno_t split_CF_node(
                      parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
                      ctree->CFarray[parentCFindex].pathcnt);
-    
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
