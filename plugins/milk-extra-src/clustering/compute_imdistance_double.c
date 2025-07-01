@@ -103,7 +103,6 @@ errno_t compute_CF2CF_posdistance_double(
 
     // Check if distance is available
     double dval = ctree->CFCFdist[posID0*ctree->NBCF+posID1];
-    //dval = -1.0;
     if(dval < 0)
     {
         // compute distance
