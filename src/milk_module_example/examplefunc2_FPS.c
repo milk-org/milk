@@ -68,7 +68,9 @@ static errno_t help_function()
  * @param scalingcoeff
  * @return errno_t
  */
-static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
+static errno_t example_compute_2Dimage_total(
+    IMGID img,
+    double scalingcoeff)
 {
     DEBUG_TRACE_FSTART();
 
@@ -77,6 +79,7 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
     uint32_t xsize  = img.md->size[0];
     uint32_t ysize  = img.md->size[1];
     uint64_t xysize = xsize * ysize;
+
 
     double total = 0.0;
     for(uint64_t ii = 0; ii < xysize; ii++)
