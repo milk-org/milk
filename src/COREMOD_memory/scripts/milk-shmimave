@@ -81,6 +81,8 @@ echo "streamave ..triggersname ${streamname}" >> $SF
 echo "streamave ..triggermode 3" >> $SF
 echo "streamave ..loopcntMax ${NBframe}" >> $SF
 echo "streamave ${streamname} imave ${NBframe}" >> $SF
+
+echo "# outname: ${outname}" >> $F
 if [ "$outname" != "NULL "]; then
 echo "saveFITS imave \"${outname}\"" >> $SF
 fi
