@@ -16,16 +16,6 @@ Can write to image stream with -s option
 "
 
 
-# output image stream
-#
-SOUTNAME="NULL"
-MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
-function set_outsname() {
-	OUTSNAME="$1"
-}
-
-
-
 # standard configuration
 #
 source milk-script-std-config
@@ -48,6 +38,16 @@ MSarg+=( "outname:string:outputename (FITS or stream)" )
 
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
+
+
+# output image stream
+#
+SOUTNAME="NULL"
+MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
+function set_outsname() {
+	OUTSNAME="$1"
+}
+
 
 
 # parse arguments
