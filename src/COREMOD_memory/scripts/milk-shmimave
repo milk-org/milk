@@ -40,6 +40,16 @@ MSarg+=( "outname:string:outputename (FITS or stream)" )
 # syntax: "short:long:functioncall:args[types]:description"
 
 
+# prefered semaphore
+#
+semindex="1"
+MSopt+=( "si:semindex:set_semindex:semindex[int]:set prefered input semaphore" )
+function set_semindex() {
+	semindex="$1"
+}
+
+
+
 # output image stream
 #
 SOUTNAME="NULL"
@@ -80,6 +90,7 @@ echo "streamave ..procinfo 1" >> $SF
 echo "streamave ..triggersname ${streamname}" >> $SF
 echo "streamave ..triggermode 3" >> $SF
 echo "streamave ..loopcntMax ${NBframe}" >> $SF
+echo "streamave ?" >> $SF
 echo "streamave ${streamname} imave ${NBframe}" >> $SF
 
 echo "# outname: ${outname}" >> $SF
