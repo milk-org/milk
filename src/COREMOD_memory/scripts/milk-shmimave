@@ -68,18 +68,6 @@ outname="${inputMSargARRAY[2]}"
 
 echo ${streamname}
 
-#MILK_QUIET=1 milk << EOF
-#readshmim ${streamname}
-#streamave ..procinfo 1
-#streamave ..triggersname ${streamname}
-#streamave ..triggermode 3
-#streamave ..loopcntMax ${NBframe}
-#streamave ${streamname} imave ${NBframe}
-#saveFITS imave "${outname}"
-#exitCLI
-#EOF
-
-
 
 pname="milkshmimave"
 fifoname="milkCLIfifo.${pname}"
@@ -91,7 +79,7 @@ echo "streamave ..triggersname ${streamname}" >> $SF
 echo "streamave ..triggermode 3" >> $SF
 echo "streamave ..loopcntMax ${NBframe}" >> $SF
 echo "streamave ..semindexrequested ${semindex}" >> $SF
-echo "streamave ?" >> $SF
+#echo "streamave ?" >> $SF
 echo "streamave ${streamname} imave ${NBframe}" >> $SF
 
 echo "# outname: ${outname}" >> $SF
