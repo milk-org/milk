@@ -89,10 +89,10 @@ fi
 
 echo "# SOUTNAME: ${SOUTNAME}" >> $SF
 if [ "$SOUTNAME" != "NULL" ]; then
-echo "imcpshm imave SOUTNAME" >> $SF
+echo "imcpshm imave ${SOUTNAME}" >> $SF
 fi
 echo "exitCLI" >> $SF
 
 MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s ${SF}
 
-#rm ${SF}
+rm ${SF}
