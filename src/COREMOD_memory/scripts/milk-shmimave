@@ -83,10 +83,10 @@ echo "streamave ..loopcntMax ${NBframe}" >> $SF
 echo "streamave ${streamname} imave ${NBframe}" >> $SF
 
 echo "# outname: ${outname}" >> $SF
-if [ "$outname" != "NULL "]; then
+if [ "$outname" != "NULL" ]; then
 echo "saveFITS imave \"${outname}\"" >> $SF
 fi
-if [ "$SOUTNAME" != "NULL "]; then
+if [ "$SOUTNAME" != "NULL" ]; then
 echo "imcpshm imave SOUTNAME" >> $SF
 fi
 echo "exitCLI" >> $SF
