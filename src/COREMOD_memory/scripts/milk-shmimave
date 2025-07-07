@@ -45,7 +45,7 @@ MSarg+=( "outname:string:outputename (FITS or stream)" )
 SOUTNAME="NULL"
 MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
 function set_outsname() {
-	OUTSNAME="$1"
+	SOUTNAME="$1"
 }
 
 
