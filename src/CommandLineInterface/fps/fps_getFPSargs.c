@@ -124,6 +124,18 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             return RETURN_SUCCESS;
         }
 
+        if(strcmp(data.cmdargtoken[1].val.string, "..semindexrequested") == 0)
+        {
+            printf("Command %ld: updating semindexrequested to value %ld\n",
+                   data.cmdindex,
+                   data.cmdargtoken[2].val.numl);
+            data.cmd[data.cmdindex].cmdsettings.semindexrequested =
+                   data.cmdargtoken[2].val.numl;
+            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            return RETURN_SUCCESS;
+        }
+
+
         if(strcmp(data.cmdargtoken[1].val.string, "..triggerdelay") == 0)
         {
             double x = 0.0;
