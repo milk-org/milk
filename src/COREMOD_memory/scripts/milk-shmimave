@@ -91,4 +91,4 @@ echo "exitCLI" >> $SF
 
 MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s ${SF}
 
-rm ${SF}
+#rm ${SF}
