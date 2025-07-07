@@ -10,7 +10,21 @@ MSdescr="average stream frames"
 
 # Extended description
 MSdescr="average stream frames
+
+If output file name = NULL, do not write to filesystem
+Can write to image stream with -s option
 "
+
+
+# output image stream
+#
+SOUTNAME="NULL"
+MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
+function set_outsname() {
+	OUTSNAME=$1
+}
+
+
 
 # standard configuration
 #
@@ -30,7 +44,7 @@ RequiredDirs=()
 
 MSarg+=( "streamname:string:stream name" )
 MSarg+=( "nbave:integer:number of frames" )
-MSarg+=( "outfits:string:output FITS filename" )
+MSarg+=( "outname:string:outputename (FITS or stream)" )
 
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
@@ -40,18 +54,41 @@ MSarg+=( "outfits:string:output FITS filename" )
 source milk-argparse
 streamname="${inputMSargARRAY[0]}"
 NBframe="${inputMSargARRAY[1]}"
-outfname="${inputMSargARRAY[2]}"
+outname="${inputMSargARRAY[2]}"
 
 echo ${streamname}
 
-MILK_QUIET=1 milk << EOF
+#MILK_QUIET=1 milk << EOF
+#readshmim ${streamname}
+#streamave ..procinfo 1
+#streamave ..triggersname ${streamname}
+#streamave ..triggermode 3
+#streamave ..loopcntMax ${NBframe}
+#streamave ${streamname} imave ${NBframe}
+#saveFITS imave "${outname}"
+#exitCLI
+#EOF
 
-readshmim ${streamname}
-streamave ..procinfo 1
-streamave ..triggersname ${streamname}
-streamave ..triggermode 3
-streamave ..loopcntMax ${NBframe}
-streamave ${streamname} imave ${NBframe}
-saveFITS imave "${outfname}"
-exitCLI
-EOF
+
+
+pname="milkshmimave"
+fifoname="milkCLIfifo.${pname}"
+SF="milkCLIstartup.${pname}"
+
+echo "readshmim ${streamname}" > $SF
+echo "streamave ..procinfo 1" >> $SF
+echo "streamave ..triggersname ${streamname}" >> $SF
+echo "streamave ..triggermode 3" >> $SF
+echo "streamave ..loopcntMax ${NBframe}" >> $SF
+echo "streamave ${streamname} imave ${NBframe}" >> $SF
+if [ "$outname" != "NULL "]; then
+echo "saveFITS imave \"${outname}\"" >> $SF
+fi
+if [ "$SOUTNAME" != "NULL "]; then
+echo "imcpshm imave SOUTNAME" >> $SF
+fi
+echo "exitCLI" >> $SF
+
+MILK_QUIET=1 milk -n ${pname} -f ${fifoname} -s ${SF}
+
+rm ${SF}
