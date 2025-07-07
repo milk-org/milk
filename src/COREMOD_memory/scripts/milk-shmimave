@@ -21,7 +21,7 @@ Can write to image stream with -s option
 SOUTNAME="NULL"
 MSopt+=( "s:outsname:set_outsname:SOUTNAME[string]:set output stream name" )
 function set_outsname() {
-	OUTSNAME=$1
+	OUTSNAME="$1"
 }
 
 
@@ -86,6 +86,8 @@ echo "# outname: ${outname}" >> $SF
 if [ "$outname" != "NULL" ]; then
 echo "saveFITS imave \"${outname}\"" >> $SF
 fi
+
+echo "# SOUTNAME: ${SOUTNAME}" >> $SF
 if [ "$SOUTNAME" != "NULL" ]; then
 echo "imcpshm imave SOUTNAME" >> $SF
 fi
