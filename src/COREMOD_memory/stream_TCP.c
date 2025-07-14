@@ -444,6 +444,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         processinfo_WriteMessage(processinfo, msgstring);
     }
 
+    long frameincr = 0;
+    long cnt0previous = 0;
+
     // ===========================
     // Start loop
     // ===========================
@@ -561,6 +564,18 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     loopOK = 0;
                 }
                 oldslice = slice;
+
+
+                frameincr = (long) img_p->md->cnt0 - cnt0previous;
+                if(frameincr > 1)
+                {
+                    printf("Skipped %ld frame(s) at index %ld %ld\n",
+                           frameincr - 1,
+                           (long)(img_p->md->cnt0),
+                           (long)(img_p->md->cnt1));
+                }
+
+                cnt0previous = img_p->md->cnt0;
             }
         }
         // process signals, increment loop counter
