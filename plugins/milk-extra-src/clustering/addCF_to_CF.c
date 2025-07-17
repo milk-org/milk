@@ -7,6 +7,15 @@
 //#define DEBUGPRINT
 
 
+/**
+ * @brief Combine Cluster Feature with existing CF and compute stats
+ *
+ * @param ctree
+ * @param CF
+ * @param CFindex
+ * @param combCF
+ * @return errno_t
+*/
 static errno_t combCFcomp(
     CLUSTERTREE *ctree,
     CLUSTERING_CF CF,
@@ -50,9 +59,17 @@ static errno_t combCFcomp(
 
 
 
-
-// if adding single vector, use CF.datasumvec
-//
+/**
+ * @brief Add Cluster Feature to CF
+ *
+ * If adding a single vector, it's datasumvec is used
+ *
+ * @param ctree
+ * @param CF
+ * @param CFindex
+ * @param addOK
+ * @return errno_t
+ */
 errno_t addCF_to_CF(
     CLUSTERTREE *ctree,
     CLUSTERING_CF CF,
@@ -171,7 +188,14 @@ errno_t addCF_to_CF(
 
 
 
-
+/**
+ * @brief Subtract vector from CF
+ *
+ * @param ctree
+ * @param CF
+ * @param CFindex
+ * @return errno_t
+ */
 errno_t subvector_to_CF(
     CLUSTERTREE *ctree,
     CLUSTERING_CF CF,
