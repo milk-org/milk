@@ -169,16 +169,22 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
+        const uint32_t in_xsize = imgin.md->size[0];
+        const uint32_t crop_xsize = *cropxsize;
+        const uint32_t crop_ysize = *cropysize;
+        const uint32_t crop_ystart = *cropystart;
+        const uint32_t crop_xstart = *cropxstart;
 
-        for(uint32_t jj = 0; jj < *cropysize; jj++)
+        for(uint32_t jj = 0; jj < crop_ysize; jj++)
         {
-            uint64_t indjj = jj + (*cropystart);
-            indjj *=  imgin.md->size[0];
-            for(uint32_t ii = 0; ii < *cropxsize; ii++)
+            const float *__restrict imgin_row =
+                &imgin.im->array.F[(jj + crop_ystart) * in_xsize + crop_xstart];
+            const float *__restrict imgmask_row = &imgmask.im->array.F[jj * crop_xsize];
+            float *__restrict imgout_row        = &imgout.im->array.F[jj * crop_xsize];
+
+            for(uint32_t ii = 0; ii < crop_xsize; ii++)
             {
-                imgout.im->array.F[ jj * (*cropxsize) + ii ]
-                = imgmask.im->array.F[ jj * (*cropxsize) + ii ]
-                * imgin.im->array.F[ indjj + ii + (*cropxstart) ];
+                imgout_row[ii] = imgmask_row[ii] * imgin_row[ii];
             }
         }
         processinfo_update_output_stream(processinfo, imgout.ID);
