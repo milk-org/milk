@@ -4,6 +4,7 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
+
 uint64_t compute_image_memory()
 {
     uint64_t totalmem = 0;
