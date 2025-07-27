@@ -6,6 +6,8 @@
  * Function has input stream and output stream.
  */
 
+#include <math.h> // for sqrt()
+
 #include "CommandLineInterface/CLIcore.h"
 
 //static int cmdindex;
@@ -164,7 +166,16 @@ static errno_t help_function()
 }
 
 
-
+/**
+ * @brief process image to output image
+ * 
+ * Function arguments:
+ * Input and output are passed by reference as
+ * they may be changed by resolveIMGID and imcreateIMGID.
+ * 
+ * Make sure to pass by reference if the function may change
+ * IMGID
+ */
 static errno_t streamprocess(
     IMGID *inimg,
     IMGID *outimg
@@ -175,32 +186,22 @@ static errno_t streamprocess(
 
     // resolve imgpos
     resolveIMGID(inimg, ERRMODE_ABORT);
-    // if successful, these are accessible:
-    // inimg->size
-    // inimg->im
-    // inimg->naxis
-    // inimg->ID
-    // inimg->NBkw
-    // inimg->
-
-
 
     uint32_t xsize  = inimg->size[0];
     uint32_t ysize  = inimg->size[1];
     uint64_t xysize = xsize * ysize;
 
 
-    double total = 0.0;
-    for(uint64_t ii = 0; ii < xysize; ii++)
-    {
-
-        outimg->im->array.F[ii] = inimg->im->array.F[ii];
-    }
-    
-
     // Create output image if needed
     imcreateIMGID(outimg);
 
+    outimg->md->write = 1;
+
+    for(uint64_t ii = 0; ii < xysize; ii++)
+    {
+        outimg->im->array.F[ii] = sqrt(inimg->im->array.F[ii]);
+    }
+    
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

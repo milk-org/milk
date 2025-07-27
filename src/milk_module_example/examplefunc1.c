@@ -78,20 +78,10 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
 
     // Resolve image if not already resolved
     resolveIMGID(&img, ERRMODE_ABORT);
+    // abort if unable to resolve
+    // Upon success, these are available for use:
+    // img.name, img.naxis, img.ID, img.size, img.im
 
-    // If function fails and error cannot be recovered from, use :
-
-    // abort();
-
-    // If error, return from function with error code and have
-    // caller handle it :
-
-    // FUNC_RETURN_FAILURE("error description");
-
-    // If calling other milk function, use following macro
-    // to test and handle possible error return :
-
-    // FUNC_CHECK_RETURN(othermilkfunc(img));
 
     uint32_t  xsize  = img.md->size[0];
     uint32_t  ysize  = img.md->size[1];
