@@ -49,6 +49,8 @@ static errno_t compute_function()
     resolveIMGID(&img, ERRMODE_ABORT);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    
+    
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

@@ -10,10 +10,18 @@
 #include "CommandLineInterface/CLIcore.h"
 
 // Local variables pointers
+
+// make sure to match types with farg types
+
 // Within this translation unit, these point to the variables values
 static char *inimname;
+
 // float point variable should be double. single precision float not supported
 static double *scoeff;
+
+
+
+
 
 // List of arguments to function
 // { CLItype, tag, description, initial value, flag, fptype, fpflag}
@@ -85,12 +93,12 @@ static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
 
     // FUNC_CHECK_RETURN(othermilkfunc(img));
 
-    uint32_t      xsize  = img.md->size[0];
-    uint32_t      ysize  = img.md->size[1];
-    uint_fast64_t xysize = xsize * ysize;
+    uint32_t  xsize  = img.md->size[0];
+    uint32_t  ysize  = img.md->size[1];
+    uint64_t  xysize = xsize * ysize;
 
     double total = 0.0;
-    for(uint_fast64_t ii = 0; ii < xysize; ii++)
+    for(uint64_t ii = 0; ii < xysize; ii++)
     {
         total += img.im->array.F[ii];
     }
