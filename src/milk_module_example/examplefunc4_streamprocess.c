@@ -173,9 +173,29 @@ static errno_t streamprocess(
     DEBUG_TRACE_FSTART();
     // custom stream process function code
 
-
     // resolve imgpos
     resolveIMGID(inimg, ERRMODE_ABORT);
+    // if successful, these are accessible:
+    // inimg->size
+    // inimg->im
+    // inimg->naxis
+    // inimg->ID
+    // inimg->NBkw
+    // inimg->
+
+
+
+    uint32_t xsize  = inimg->size[0];
+    uint32_t ysize  = inimg->size[1];
+    uint64_t xysize = xsize * ysize;
+
+
+    double total = 0.0;
+    for(uint64_t ii = 0; ii < xysize; ii++)
+    {
+        total += img.im->array.F[ii];
+    }
+    total *= scalingcoeff;
 
     // Create output image if needed
     imcreateIMGID(outimg);
@@ -223,7 +243,7 @@ static errno_t compute_function()
 
         streamprocess(&inimg, &outimg);
 
-        // stream is updated here, and not in the function called above, so that multiple
+        // stream is updated here, and not in the function called above, so that
         // the above function can be chained with others
         processinfo_update_output_stream(processinfo, outimg.ID);
 
