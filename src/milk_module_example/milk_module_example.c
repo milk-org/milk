@@ -60,11 +60,7 @@
 // Module short description
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
-/* ================================================================== */
-/* ================================================================== */
-/*  HEADER FILES                                                      */
-/* ================================================================== */
-/* ================================================================== */
+
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -77,16 +73,6 @@
 #include "examplefunc3_updatestreamloop.h"
 #include "examplefunc4_streamprocess.h"
 
-//#include "create_example_image.h"
-//#include "stream_process_loop_simple.h"
-
-//#include "updatestreamloop_brief.h"
-
-/* ================================================================== */
-/* ================================================================== */
-/*  INITIALIZE LIBRARY                                                */
-/* ================================================================== */
-/* ================================================================== */
 
 // Module initialization macro in CLIcore.h
 // macro argument defines module name for bindings
@@ -102,13 +88,6 @@ INIT_MODULE_LIB(milk_module_example)
  */
 static errno_t init_module_CLI()
 {
-
-    //CLI_CMD_CONNECT("func1", "create_image_with_value");
-
-    //create_example_image_addCLIcmd();
-    //stream_process_loop_simple_addCLIcmd();
-
-    //	milk_module_example__updatestreamloop_addCLIcmd();
 
     CLIADDCMD_milk_module_example__simplefunc();
     CLIADDCMD_milk_module_example__simplefunc_FPS();

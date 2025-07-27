@@ -21,6 +21,7 @@ static double *scoeff;
 static CLICMDARGDEF farg[] =
 {
     //    FARG_INPUTIM(inim),
+    FARG_INPUTIM(inim),
     {
         CLIARG_IMG,
         ".in_name",
