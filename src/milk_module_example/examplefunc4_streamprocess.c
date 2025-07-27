@@ -193,9 +193,10 @@ static errno_t streamprocess(
     double total = 0.0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        total += img.im->array.F[ii];
+
+        outimg->im->array.F[ii] = inimg->im->array.F[ii];
     }
-    total *= scalingcoeff;
+    
 
     // Create output image if needed
     imcreateIMGID(outimg);
