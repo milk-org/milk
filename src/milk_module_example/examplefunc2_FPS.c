@@ -11,11 +11,10 @@
 
 // Local variables pointers
 
-//static LOCVAR_INIMG inim;
-
 static char *inimname;
 
 static double *scoeff;
+
 
 // List of arguments to function
 static CLICMDARGDEF farg[] =
@@ -64,9 +63,6 @@ static errno_t help_function()
 /**
  * @brief Sum pixel values
  *
- * @param img
- * @param scalingcoeff
- * @return errno_t
  */
 static errno_t example_compute_2Dimage_total(
     IMGID img,
@@ -74,6 +70,9 @@ static errno_t example_compute_2Dimage_total(
 {
     DEBUG_TRACE_FSTART();
 
+    // Ensure the input image is in memory.
+    // No harm calling this here and in the upstream function,
+    // as the overhead is very small if the image is already resolved
     resolveIMGID(&img, ERRMODE_ABORT);
 
     uint32_t xsize  = img.md->size[0];
@@ -109,12 +108,14 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    //    IMGID img = makeIMGID(inimname);
-    //inim.name);
+    // Check that the input image is in memory,
+    // and link it to img if it is
+    IMGID img = mkIMGID_from_name(inimname);
+    resolveIMGID(&img, ERRMODE_ABORT);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    example_compute_2Dimage_total(mkIMGID_from_name(inimname), *scoeff);
+    example_compute_2Dimage_total(img, *scoeff);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
