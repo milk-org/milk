@@ -85,6 +85,7 @@ typedef struct
 
     long long cnt0; // used to check if cnt0 has changed
     long      deltacnt0;
+    int       erased;
 
 } STREAMINFO;
 
