@@ -168,11 +168,11 @@ static errno_t help_function()
 
 /**
  * @brief process image to output image
- * 
+ *
  * Function arguments:
  * Input and output are passed by reference as
  * they may be changed by resolveIMGID and imcreateIMGID.
- * 
+ *
  * Make sure to pass by reference if the function may change
  * IMGID
  */
@@ -201,7 +201,6 @@ static errno_t streamprocess(
     {
         outimg->im->array.F[ii] = sqrt(inimg->im->array.F[ii]);
     }
-    
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
