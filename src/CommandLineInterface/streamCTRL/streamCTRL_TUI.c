@@ -76,6 +76,11 @@ struct streamCTRL_TUI_parameters
 
 
 
+static void streamCTRL_TUI_exit()
+{
+    endwin();
+}
+
 static errno_t streamCTRL_keyinput_process(
     int ch,
     streamCTRLarg_struct *streamCTRLdata
@@ -429,6 +434,7 @@ errno_t streamCTRL_CTRLscreen()
 
     DEBUG_TRACEPOINT("Initialize terminal");
     TUI_init_terminal(&wrow, &wcol);
+    atexit(streamCTRL_TUI_exit);
 
 
     long long loopcnt  = 0;
