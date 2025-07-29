@@ -188,6 +188,7 @@ static errno_t streamCTRL_keyinput_process(
                                        streamCTRLdata->sinfo[sindex].sname);
                 remove(fname);
             }
+            streamCTRLdata->sinfo[sindex].erased = 1;
 
             DEBUG_TRACEPOINT("%d", sTUIparam.dindexSelected);
         }
@@ -388,6 +389,7 @@ errno_t streamCTRL_CTRLscreen()
         streaminfo[sindex].updatevalue_frozen   = 0.0;
         streaminfo[sindex].cnt0                 = 0;
         streaminfo[sindex].streamOpenPID_status = 0;
+        streaminfo[sindex].erased               = 0;
     }
     streaminfoproc.PIDtable = PIDname_array;
 
@@ -942,6 +944,11 @@ errno_t streamCTRL_CTRLscreen()
                 imageID ID;
                 int sindex = sTUIparam.ssindex[dindex];
                 ID     = streaminfo[sindex].ID;
+
+                if(streaminfo[sindex].erased == 1)
+                {
+                    continue;
+                }
 
 
                 while((streamCTRLimages[streaminfo[sindex].ID].used == 0) &&
