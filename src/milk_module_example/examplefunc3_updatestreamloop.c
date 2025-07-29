@@ -9,7 +9,7 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// variables local to this translation unit
+// Variables local to this translation unit
 static char *inimname;
 
 static CLICMDARGDEF farg[] =
@@ -33,7 +33,7 @@ static CLICMDDATA CLIcmddata =
 };
 
 
-// detailed help
+// Detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
@@ -50,12 +50,12 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     
-    // notify that the image is being changed
+    // Notify that the image is being changed
     img.md->write = 1;
 
-    // insert code, or function(s) that perform operation(s) on image
+    // Insert code, or function(s) that perform operation(s) on image
     
-    // call this to notify consumers that the image has been updated
+    // Call this to notify consumers that the image has been updated
     processinfo_update_output_stream(processinfo, img.ID);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
