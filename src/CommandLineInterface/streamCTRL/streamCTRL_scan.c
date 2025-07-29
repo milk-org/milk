@@ -226,6 +226,17 @@ void *streamCTRL_scan(
         DEBUG_TRACEPOINT(" ");
 
         // remove stale IDs
+        for(long sindex = 0; sindex < NBsindex; sindex++)
+        {
+            if(streaminfo[sindex].erased == 1)
+            {
+                imageID ID = streaminfo[sindex].ID;
+                if(ID != -1)
+                {
+                    ImageStreamIO_closeIm(&images[ID]);
+                }
+            }
+        }
 
 
 
