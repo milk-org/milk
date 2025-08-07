@@ -15,11 +15,7 @@
 
 #define _GNU_SOURCE
 
-/* =============================================================================================== */
-/* =============================================================================================== */
-/*                                        HEADER FILES                                             */
-/* =============================================================================================== */
-/* =============================================================================================== */
+
 
 #include <malloc.h>
 #include <pthread.h>
@@ -480,7 +476,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // uncomment following two lines to auto-load all modules
     //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
-    //load_module_shared_ALL();
+    load_module_shared_local();
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
     char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
@@ -836,6 +832,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     return RETURN_SUCCESS;
 }
 
+
+
+
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module
@@ -852,7 +851,7 @@ void runCLI_cmd_init()
     RegisterCLIcommand("quit",
                        __FILE__,
                        exitCLI,
-                       "exit program (same as quit command)",
+                       "exit program (same as exit command)",
                        "no argument",
                        "quit",
                        "exitCLI");
@@ -1075,6 +1074,8 @@ void fnExit1(void)
 {
     //
 }
+
+
 
 static int command_line_process_options(int argc, char **argv)
 {
