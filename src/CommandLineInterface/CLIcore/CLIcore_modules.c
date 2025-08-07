@@ -264,8 +264,6 @@ errno_t load_module_shared_local()
 
 
 
-
-
 errno_t RegisterModule(const char *__restrict FileName,
                        const char *__restrict PackageName,
                        const char *__restrict InfoString,
