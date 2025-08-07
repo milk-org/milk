@@ -5,6 +5,7 @@ install_debug
 src/config.h
 src/milk_config.h
 local
+lib
 
 _tmplist.txt
 .vscode
