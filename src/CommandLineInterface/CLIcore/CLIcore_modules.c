@@ -169,7 +169,7 @@ errno_t load_module_shared(
 
 
 
-errno_t load_module_shared_ALL()
+errno_t load_module_shared_local()
 {
     DEBUG_TRACE_FSTART();
 
@@ -181,11 +181,11 @@ errno_t load_module_shared_ALL()
     int            loopOK;
     int            itermax;
 
-    WRITE_DIRNAME(dirname, "%s/lib", data.installdir);
+    WRITE_DIRNAME(dirname, "./milklib");
 
     if(data.quiet == 0)
     {
-        printf("LOAD MODULES SHARED ALL: %s\n", dirname);
+        printf("load modules from directory %s\n", dirname);
     }
 
     loopOK  = 0;

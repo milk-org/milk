@@ -18,7 +18,7 @@ errno_t load_sharedobj(CONST_WORD libname);
 
 errno_t load_module_shared(CONST_WORD modulename);
 
-errno_t load_module_shared_ALL();
+errno_t load_module_shared_local();
 
 errno_t RegisterModule(CONST_WORD FileName,
                        CONST_WORD PackageName,
