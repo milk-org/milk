@@ -49,12 +49,12 @@ static errno_t compute_function()
     resolveIMGID(&img, ERRMODE_ABORT);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    
+
     // Notify that the image is being changed
     img.md->write = 1;
 
     // Insert code, or function(s) that perform operation(s) on image
-    
+
     // Call this to notify consumers that the image has been updated
     processinfo_update_output_stream(processinfo, img.ID);
 

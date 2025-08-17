@@ -118,14 +118,26 @@ errno_t SVDmkM(
 {
     DEBUG_TRACE_FSTART();
 
+    list_image_ID();
+
+    resolveIMGID(&imgU, ERRMODE_ABORT);
+    resolveIMGID(&imgS, ERRMODE_ABORT);
+    resolveIMGID(&imgV, ERRMODE_ABORT);
+
     // un-normalized modes
-    IMGID imgunmodes = mkIMGID_from_name("SVDunmodes");
+    //printf("Creating image from %s\n", imgU.md->name);
+
+    IMGID imgunmodes = mkIMGID_from_name("XXSVDunmodes");
     imgunmodes.naxis = imgU.md->naxis;
     imgunmodes.datatype = imgU.md->datatype;
     imgunmodes.size[0] = imgU.md->size[0];
     imgunmodes.size[1] = imgU.md->size[1];
     imgunmodes.size[2] = imgU.md->size[2];
+
+    printf("Creating temp img XXSVDunmodes  %d x %d x %d\n", imgunmodes.size[0], imgunmodes.size[1], imgunmodes.size[2]);
     createimagefromIMGID(&imgunmodes);
+
+    list_image_ID();
 
     int lastaxis = imgunmodes.naxis-1;
     long framesize = imgunmodes.size[0];
@@ -143,7 +155,10 @@ errno_t SVDmkM(
         }
     }
 
+    list_image_ID();
+
     computeSGEMM(imgunmodes, imgV, imgM, 0, 1, GPUdev);
+    delete_image_ID(imgunmodes.name, DELETE_IMAGE_ERRMODE_WARNING);
 
 
     DEBUG_TRACE_FEXIT();

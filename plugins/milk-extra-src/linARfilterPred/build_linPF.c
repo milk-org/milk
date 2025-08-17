@@ -709,9 +709,9 @@ static errno_t compute_function()
 
         compute_SVD(
             imgin,
-            imgU,
-            imgeval,
-            imgevec,
+            &imgU,
+            &imgeval,
+            &imgevec,
             0,
             (*SVDeps),
             10000000,

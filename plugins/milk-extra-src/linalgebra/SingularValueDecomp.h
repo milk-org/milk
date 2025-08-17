@@ -10,9 +10,9 @@
 
 errno_t compute_SVD(
     IMGID imgin,
-    IMGID imgU,
-    IMGID imgeigenval,
-    IMGID imgV,
+    IMGID *imgU,
+    IMGID *imgeigenval,
+    IMGID *imgV,
     uint32_t Vdim0,
     float SVlimit,
     uint32_t SVDmaxNBmode,

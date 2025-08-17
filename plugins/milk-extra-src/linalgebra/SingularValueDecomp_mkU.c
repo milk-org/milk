@@ -127,6 +127,10 @@ errno_t compute_SVDU(
 {
     DEBUG_TRACE_FSTART();
 
+    resolveIMGID(&imgM, ERRMODE_ABORT);
+    resolveIMGID(&imgV, ERRMODE_ABORT);
+    resolveIMGID(&imgS, ERRMODE_ABORT);
+
     computeSGEMM(
         imgM,
         imgV,
