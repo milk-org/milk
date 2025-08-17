@@ -92,7 +92,13 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # main libraries
 # linked to executable by default
 #
-
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CFITSIO cfitsio)
+if(${CFITSIO_FOUND})
+message("Found cfitsio version ${CFITSIO_VERSION}")
+message("CFITS library  : ${CFITSIO_LIBRARY}")
+message("CFITS libraries: ${CFITSIO_LIBRARIES}")
+endif()
 
 # =======================================
 # MODULES INCLUDED

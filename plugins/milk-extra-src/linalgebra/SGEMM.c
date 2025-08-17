@@ -140,6 +140,23 @@ static errno_t help_function()
 
 
 
+/**
+ * @brief Computes the single-precision general matrix multiplication (SGEMM) of two matrices.
+ *
+ * This function computes the matrix product C = A * B.
+ *
+ * The function supports both CPU (OpenBLAS/MKL) and GPU (CUDA/cuBLAS) computation.
+ * It also handles 2D and 3D input matrices, treating the first two dimensions of a 3D matrix as a single dimension.
+ * Type conversion to float is performed if input matrices are not already float.
+ *
+ * @param imginA The input matrix A. Can be 2D or 3D.
+ * @param imginB The input matrix B. Can be 2D or 3D.
+ * @param outimg Pointer to the IMGID structure for the output matrix C. The function will create this image.
+ * @param TranspA Flag indicating whether to transpose matrix A (1 for transpose, 0 for no transpose).
+ * @param TranspB Flag indicating whether to transpose matrix B (1 for transpose, 0 for no transpose).
+ * @param GPUdev The GPU device ID to use. If -1 or 99, CPU computation is used.
+ * @return errno_t Returns RETURN_SUCCESS on successful computation, or an error code otherwise.
+ */
 errno_t computeSGEMM(
     IMGID imginA,
     IMGID imginB,
@@ -151,6 +168,7 @@ errno_t computeSGEMM(
 {
     DEBUG_TRACE_FSTART();
 
+    printf("SGEMM\n");
     int SGEMMcomputed = 0;
 
     // Get input matrices A and B sizes (MxN)
@@ -166,15 +184,19 @@ errno_t computeSGEMM(
     int inA_Ndim1;
     int inA_Ndim1_active = 1; // is axis used ?
 
+    printf("inA %s naxis = %d\n", imginA.md->name, imginA.md->naxis);
+    fflush(stdout);
+
+
     if(imginA.md->naxis == 3)
     {
-        //printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
+        printf("inA_Mdim   : %d x %d\n", imginA.md->size[0], imginA.md->size[1]);
         inA_Mdim = imginA.md->size[0] * imginA.md->size[1];
         inA_Mdim0 = imginA.md->size[0];
         inA_Mdim1 = imginA.md->size[1];
         inA_Mdim1_active = 1;
 
-        //printf("inA_Ndim    : %d\n", imginA.md->size[2]);
+        printf("inA_Ndim    : %d\n", imginA.md->size[2]);
         inA_Ndim = imginA.md->size[2];
         inA_Ndim0 = imginA.md->size[2];
         inA_Ndim1 = 1;
@@ -182,13 +204,13 @@ errno_t computeSGEMM(
     }
     else
     {
-        //printf("inA_Mdim   : %d\n", imginA.md->size[0]);
+        printf("inA_Mdim   : %d\n", imginA.md->size[0]);
         inA_Mdim = imginA.md->size[0];
         inA_Mdim0 = imginA.md->size[0];
         inA_Mdim1 = 1;
         inA_Mdim1_active = 0;
 
-        //printf("inNdim    : %d\n", imginA.md->size[1]);
+        printf("inNdim    : %d\n", imginA.md->size[1]);
         inA_Ndim = imginA.md->size[1];
         inA_Ndim0 = imginA.md->size[1];
         inA_Ndim1 = 1;
@@ -208,13 +230,13 @@ errno_t computeSGEMM(
 
     if(imginB.md->naxis == 3)
     {
-        //printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
+        printf("inB_Mdim   : %d x %d\n", imginB.md->size[0], imginB.md->size[1]);
         inB_Mdim = imginB.md->size[0] * imginB.md->size[1];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = imginB.md->size[1];
         inB_Mdim1_active = 1;
 
-        //printf("inB_Ndim    : %d\n", imginB.md->size[2]);
+        printf("inB_Ndim    : %d\n", imginB.md->size[2]);
         inB_Ndim = imginB.md->size[2];
         inB_Ndim0 = imginB.md->size[2];
         inB_Ndim1 = 1;
@@ -222,13 +244,13 @@ errno_t computeSGEMM(
     }
     else
     {
-        //printf("inB_Mdim   : %d\n", imginB.md->size[0]);
+        printf("inB_Mdim   : %d\n", imginB.md->size[0]);
         inB_Mdim = imginB.md->size[0];
         inB_Mdim0 = imginB.md->size[0];
         inB_Mdim1 = 1;
         inB_Mdim1_active = 0;
 
-        //printf("inB_Ndim    : %d\n", imginB.md->size[1]);
+        printf("inB_Ndim    : %d\n", imginB.md->size[1]);
         inB_Ndim = imginB.md->size[1];
         inB_Ndim0 = imginB.md->size[1];
         inB_Ndim1 = 1;
@@ -725,4 +747,3 @@ CLIADDCMD_linalgebra__SGEMM()
 
     return RETURN_SUCCESS;
 }
-
