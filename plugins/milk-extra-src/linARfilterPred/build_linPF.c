@@ -716,7 +716,8 @@ static errno_t compute_function()
             (*SVDeps),
             10000000,
             GPUdev,
-            SVDflag
+            SVDflag,
+            "SVDunmodes", "SVDvnmodes"
         );
 
 

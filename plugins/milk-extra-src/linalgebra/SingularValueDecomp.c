@@ -249,7 +249,9 @@ errno_t compute_SVD(
     float    SVlimit,
     uint32_t SVDmaxNBmode,
     int      GPUdev,
-    uint64_t compSVDmode
+    uint64_t compSVDmode,
+    char *SVDunmodesname,
+    char *SVDvnmodesname
 )
 {
     DEBUG_TRACE_FSTART();
@@ -682,8 +684,8 @@ errno_t compute_SVD(
     if ( imgU->ID != -1 )
     {
         // un-normalized modes
-        delete_image_ID("SVDunmodes", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgunmodes = mkIMGID_from_name("SVDunmodes");
+        delete_image_ID(SVDunmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
+        IMGID imgunmodes = mkIMGID_from_name(SVDunmodesname);
         imgunmodes.naxis = imgU->md->naxis;
         imgunmodes.datatype = imgU->md->datatype;
         imgunmodes.size[0] = imgU->md->size[0];
@@ -719,8 +721,8 @@ errno_t compute_SVD(
     if ( imgV->ID != -1 )
     {
         // un-normalized modes
-        delete_image_ID("SVDvnmodes", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgvnmodes = mkIMGID_from_name("SVDvnmodes");
+        delete_image_ID(SVDvnmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
+        IMGID imgvnmodes = mkIMGID_from_name(SVDvnmodesname);
         imgvnmodes.naxis = imgV->md->naxis;
         imgvnmodes.datatype = imgV->md->datatype;
         imgvnmodes.size[0] = imgV->md->size[0];
@@ -749,9 +751,6 @@ errno_t compute_SVD(
         //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
     }
 
-    printf("[%d] imgU Created ==============================\n", __LINE__);
-    printf("[%d] imgU %s\n", __LINE__, imgU->name);
-    printf("[%d] imgU %s %d\n", __LINE__, imgU->md->name, imgU->md->naxis);
 
 
     DEBUG_TRACE_FEXIT();
@@ -783,7 +782,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        compute_SVD(imginM, &imgU, &imgS, &imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode);
+        compute_SVD(imginM, &imgU, &imgS, &imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode, "SVDunmodes", "SVDvnmodes");
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
