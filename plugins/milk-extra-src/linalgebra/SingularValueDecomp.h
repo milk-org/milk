@@ -17,7 +17,9 @@ errno_t compute_SVD(
     float SVlimit,
     uint32_t SVDmaxNBmode,
     int GPUdev,
-    uint64_t compSVDmode
+    uint64_t compSVDmode,
+    char *SVDunmodesname,
+    char *SVDvnmodesname
 );
 
 errno_t CLIADDCMD_linalgebra__compSVD();
