@@ -6,18 +6,15 @@
 
 long compute_nb_image()
 {
-    long NBimage = 0;
-
-    //printf("NB_MAX_IMAGE = %d\n", data.NB_MAX_IMAGE);
-    //fflush(stdout);
+    long image_count = 0;
 
     for(imageID i = 0; i < data.NB_MAX_IMAGE; i++)
     {
         if(data.image[i].used == 1)
         {
-            NBimage += 1;
+            image_count++;
         }
     }
 
-    return NBimage;
+    return image_count;
 }
