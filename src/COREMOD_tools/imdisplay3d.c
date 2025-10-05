@@ -108,5 +108,8 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     fflush(fpgnuplot);
     fclose(fp);
 
+    // print current date
+    
+
     return RETURN_SUCCESS;
 }
