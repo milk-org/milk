@@ -400,6 +400,7 @@ install(PROGRAMS
 			scripts/milk-fpsCTRL
 			scripts/milk-cr2tofits
 			scripts/milk-FITS2shm
+      scripts/milk-fitsheader
 			scripts/milk-fpsmkcmd
 			scripts/milk-fpsinit
 			scripts/milk-logshim
