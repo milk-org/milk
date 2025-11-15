@@ -85,6 +85,10 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     for(int k = 0; k < cuda_deviceCount; ++k)
     {
         cudaGetDeviceProperties(&deviceProp, k);
+
+        int clockRate;
+	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+
         printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                k,
                deviceProp.name,
@@ -96,11 +100,11 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
             (float) deviceProp.totalGlobalMem / 1048576.0f,
             (unsigned long long) deviceProp.totalGlobalMem);
         printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
-        /*printf(
+        printf(
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
             "GHz)\n",
-            deviceProp.clockRate * 1e-3f,
-            deviceProp.clockRate * 1e-6f);*/
+            clockRate * 1e-3f,
+            clockRate * 1e-6f);*/
         printf("\n");
     }
 
