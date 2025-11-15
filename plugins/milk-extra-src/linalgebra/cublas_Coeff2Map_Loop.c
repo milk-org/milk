@@ -192,8 +192,8 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     {
         cudaGetDeviceProperties(&deviceProp, k);
 
-        int clockRateKHz;
-	cudaDeviceGetAttribute(&clockRateKHz, cudaDevAttrClockRate, k);
+        int clockRate;
+	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
 	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                k,
@@ -209,10 +209,8 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         printf(
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
             "GHz)\n", 
-	    clockRateKHz*1e-3f,
-	    clockRateKHz*1e-6f);
-            //deviceProp.clockRate * 1e-3f,
-            //deviceProp.clockRate * 1e-6f);
+	    clockRate*1e-3f,
+	    clockRate*1e-6f);
         printf("\n");
     }
 

@@ -98,8 +98,8 @@ int LINALGEBRA_init()
     {
         cudaGetDeviceProperties(&deviceProp, device);
         
-	int clockRateKHz;
-        cudaDeviceGetAttribute(&clockRateKHz, cudaDevAttrClockRate, device);
+	    int clockRate;
+	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
 	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                device,
@@ -115,9 +115,8 @@ int LINALGEBRA_init()
         printf(
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
             "GHz)\n",
-	    clockRateKHz*1e-3f, clockRateKHz*1e-6f);
-            //deviceProp.clockRate * 1e-3f,
-            //deviceProp.clockRate * 1e-6f);
+            clockRate * 1e-3f,
+            clockRate * 1e-6f);
         printf("\n");
 #ifdef HAVE_MAGMA
         printf("Using MAGMA library\n");
@@ -165,8 +164,8 @@ void *GPU_scanDevices(
     {
         cudaGetDeviceProperties(&deviceProp, device);
         
-	int clockRateKHz;
-        cudaDeviceGetAttribute(&clockRateKHz, cudaDevAttrClockRate, device);
+	    int clockRate;
+        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
 
 	
 	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
@@ -185,9 +184,9 @@ void *GPU_scanDevices(
 
         printf(
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
-            "GHz)\n", clockRateKHz*1e-3f, clockRateKHz*1e-6f);
-            //deviceProp.clockRate * 1e-3f,
-            //deviceProp.clockRate * 1e-6f);
+            "GHz)\n",
+            clockRate * 1e-3f,
+            clockRate * 1e-6f);
 
         printf("\n");
     }
