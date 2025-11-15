@@ -866,11 +866,11 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 (float) deviceProp.totalGlobalMem / 1048576.0f,
                 (unsigned long long) deviceProp.totalGlobalMem);
             printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
-            printf(
-                "  GPU Clock rate:                                %.0f MHz "
-                "(%0.2f GHz)\n",
-                deviceProp.clockRate * 1e-3f,
-                deviceProp.clockRate * 1e-6f);
+            //printf(
+               // "  GPU Clock rate:                                %.0f MHz "
+                //"(%0.2f GHz)\n",
+                //deviceProp.clockRate * 1e-3f,
+                //deviceProp.clockRate * 1e-6f);
             printf("\n");
         }
 
