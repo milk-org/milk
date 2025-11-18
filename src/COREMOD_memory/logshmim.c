@@ -3,7 +3,6 @@
  * @brief   Save telemetry stream data
  */
 
-#define _GNU_SOURCE
 
 #include <fcntl.h>
 #include <pthread.h>

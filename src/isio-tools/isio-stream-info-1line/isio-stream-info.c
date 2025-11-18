@@ -4,7 +4,6 @@
  */
 
 
-#define _GNU_SOURCE
 #include <string.h>
 
 #include <sys/stat.h>
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 
 
 
-    for (int i=1; i< argc; i++)
+    for(int i = 1; i < argc; i++)
     {
         if(strlen(argv[i]) != 0)
         {

@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <string.h>
 
 #include <dirent.h>
@@ -29,7 +28,7 @@
 int find_streams(
     STREAMINFO *streaminfo,
     int         filter,
-    const char * __restrict namefilter
+    const char *__restrict namefilter
 )
 {
     int            NBstream = 0;
@@ -48,7 +47,7 @@ int find_streams(
             int matchOK = 1;
 
             // check that .im.shm terminates the string
-            if( pch - dir->d_name != strlen(dir->d_name) - 7 )
+            if(pch - dir->d_name != strlen(dir->d_name) - 7)
             {
                 matchOK = 0;
             }
