@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <string.h>
 
 
@@ -15,7 +14,7 @@
  */
 imageID image_ID_from_images(
     IMAGE *images,
-    const char * __restrict name
+    const char *__restrict name
 )
 {
     imageID i;
