@@ -104,7 +104,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
             "GHz)\n",
             clockRate * 1e-3f,
-            clockRate * 1e-6f);*/
+            clockRate * 1e-6f);
         printf("\n");
     }
 
