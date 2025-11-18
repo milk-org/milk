@@ -99,7 +99,7 @@ int LINALGEBRA_init()
         cudaGetDeviceProperties(&deviceProp, device);
         
 	    int clockRate;
-	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, device);
 
 	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                device,
