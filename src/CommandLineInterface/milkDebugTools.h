@@ -288,6 +288,28 @@ static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
         C_ERRNO = 0;                                                           \
     } while (0)
 
+/**
+ * @brief Print warning only in debug build and continue
+ * @ingroup errcheckmacro
+ */
+#ifdef NDEBUG
+#define PRINT_DEBUGWARNING(...)
+#else
+#define PRINT_DEBUGWARNING(...)                                               \
+    PRINT_WARNING(__VA_ARGS__)
+#endif
+
+/**
+ * @brief Print error only in debug build and continue
+ * @ingroup errcheckmacro
+ */
+#ifdef NDEBUG
+#define PRINT_DEBUGERROR(...)
+#else
+#define PRINT_DEBUGERROR(...)                                               \
+    PRINT_ERROR(__VA_ARGS__)
+#endif
+
 // Enter function
 #if defined NDEBUG
 #define DEBUG_TRACE_FSTART(...)
