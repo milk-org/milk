@@ -2,7 +2,9 @@
  * Open stream(s), print basic info within single line
  *
  */
-
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
 #include <string.h>
 

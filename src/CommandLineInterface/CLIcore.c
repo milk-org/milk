@@ -12,8 +12,9 @@
  * 	- 3: missing file required to proceed
  * 	- 4: system call error
  */
-
-
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
 #include <malloc.h>
 #include <pthread.h>
