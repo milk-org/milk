@@ -155,7 +155,7 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
     if(rtprio <= 0)
     {
         PRINT_WARNING("Invoking RT prio with rtprio %d <= 0; skipping.", rtprio);
-        return EXIT_SUCCESS;
+        return RETURN_SUCCESS;
     }
 
     char command[200];
@@ -164,6 +164,7 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
             setuid(data.euid) != 0) // This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid/setuid error");
+        return RETURN_FAILURE;
     }
 
     sprintf(command, "chrt -f -p %d %d\n", rtprio, getpid());
@@ -174,8 +175,13 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
     if(setresuid(data.ruid, data.ruid, data.euid) !=
             0) // Go back to normal privileges
     {
-        PRINT_ERROR("seteuid error");
+        PRINT_ERROR("seteuid error after executing chrt");
+        //TODO probably should force a quit here... since we're remaining
+        //TODO at elevated privileges and we really shoudn't.
+        return RETURN_FAILURE;
     }
+
+    return RETURN_SUCCESS;
 }
 
 int COREMOD_TOOLS_mvProcTset(const char *tsetspec)
