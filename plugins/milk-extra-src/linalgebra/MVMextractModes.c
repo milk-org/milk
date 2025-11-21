@@ -378,6 +378,7 @@ static errno_t compute_function()
 
 
 
+    /* // This was probaly never implemented at all.
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     imageID IDintot;
@@ -394,6 +395,7 @@ static errno_t compute_function()
     {
         INNORMMODE = 1;
     }
+    */
 
 
 
@@ -605,7 +607,7 @@ static errno_t compute_function()
                 cudaGetDeviceProperties(&deviceProp, k);
 
                 int clockRate;
-	            cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+                cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
                 printf("Device %d / %d [ %20s ]  has compute capability %d.%d.\n",
                        k + 1,
@@ -1302,9 +1304,9 @@ static errno_t compute_function()
                 for(long k = 0; k < NBmodes; k++)
                 {
                     imgout.im->array.F[k] =
-                        (modevalarray[k] / data.image[IDintot].array.F[0] -
-                         modevalarrayref[k]) /
-                        normcoeff[k];
+                        (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
+                    // Renorm was never implemented
+                    // (modevalarray[k] / data.image[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
                 }
 
 

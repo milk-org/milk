@@ -144,12 +144,13 @@ errno_t compute_SVDU(
     fflush(stdout);
     list_image_ID();
 
-    uint32_t Ndim = imgV.md->size[imgV.md->naxis-1];
+    //uint32_t Ndim = imgV.md->size[imgV.md->naxis-1];
+
     uint64_t framesize;
     uint32_t nbframe;
     imgU->naxis = imgUS->naxis;
     imgU->datatype = imgUS->md->datatype;
-    switch ( imgUS->md->naxis )
+    switch(imgUS->md->naxis)
     {
     case 2 :
         imgU->size[0] = imgUS->md->size[0];
@@ -176,11 +177,12 @@ errno_t compute_SVDU(
 
     list_image_ID();
 
-    for(uint32_t frame=0; frame<nbframe; frame++)
+    for(uint32_t frame = 0; frame < nbframe; frame++)
     {
-        for(uint64_t ii=0; ii<framesize; ii++)
+        for(uint64_t ii = 0; ii < framesize; ii++)
         {
-            imgU->im->array.F[frame*framesize + ii] =  imgUS->im->array.F[frame*framesize + ii] / imgS.im->array.F[frame];
+            imgU->im->array.F[frame * framesize + ii] =  imgUS->im->array.F[frame *
+                    framesize + ii] / imgS.im->array.F[frame];
         }
     }
 
