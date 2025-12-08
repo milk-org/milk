@@ -15,7 +15,7 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     if(*fd == -1)
     {
         perror("Error opening file");
-        exit(0);
+        return MAP_FAILED;
     }
     fstat(*fd, &file_stat);
     //printf("[%d] File %s size: %zd\n", __LINE__, pname, file_stat.st_size);
@@ -25,8 +25,9 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     if(pinfolist == MAP_FAILED)
     {
         close(*fd);
+        *fd = -1;
         fprintf(stderr, "Error mmapping the file");
-        exit(0);
+        return MAP_FAILED;
     }
 
     return pinfolist;

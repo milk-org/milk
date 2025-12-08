@@ -395,7 +395,6 @@ void *processinfo_scan(void *thptr)
             {
                 PROCESSINFO_SCAN_DEBUGLOG("     MAP_FAILED\n");
                 close(pinfop->fdarray[pinfolistindex]);
-                endwin();
                 fprintf(stderr,
                         "[%d] Error mapping file %s\n",
                         __LINE__,

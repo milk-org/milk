@@ -86,7 +86,14 @@ long processinfo_shm_list_create()
         int SM_fd;
         //struct stat file_stat;
 
-        pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(SM_fname, &SM_fd);
+        PROCESSINFO *pinfo_ret = processinfo_shm_link(SM_fname, &SM_fd);
+        if(pinfo_ret == MAP_FAILED)
+        {
+            fprintf(stderr, "Error linking to process info list shm\n");
+            exit(0);
+        }
+        pinfolist = (PROCESSINFOLIST *) pinfo_ret;
+
         while((pinfolist->active[pindex] != 0) &&
                 (pindex < PROCESSINFOLISTSIZE))
         {
