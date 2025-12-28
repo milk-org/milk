@@ -41,6 +41,8 @@
 #include "fps_create.h"
 #include "fps_list.h"
 
+#include "im3D_to_stream2D.h"
+
 #include "image_ID.h"
 #include "image_complex.h"
 #include "image_copy.h"
@@ -163,10 +165,13 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_memory__stream_copy();
     CLIADDCMD_COREMOD_memory__stream_merge();
     CLIADDCMD_COREMOD_memory__stream_poke();
+    CLIADDCMD_COREMOD_memory__im3D_to_stream2D();
 
     stream_diff_addCLIcmd();
     stream_paste_addCLIcmd();
     stream_halfimdiff_addCLIcmd();
+
+
 
     CLIADDCMD_streamaverage();
     stream_monitorlimits_addCLIcmd();
