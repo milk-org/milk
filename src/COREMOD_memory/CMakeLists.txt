@@ -19,6 +19,7 @@ set(SOURCEFILES
     fps_create.c
     fps_ID.c
     fps_list.c
+    im3D_to_stream2D.c
     image_checksize.c
     image_complex.c
     image_copy.c
@@ -76,6 +77,7 @@ set(INCLUDEFILES
     fps_create.h
     fps_ID.h
     fps_list.h
+    im3D_to_stream2D.h
     image_checksize.h
     image_complex.h
     image_copy.h
