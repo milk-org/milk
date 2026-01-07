@@ -3,11 +3,6 @@
 
 #ifdef HAVE_CUDA
 
-// include sem_timedwait
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
 #include <semaphore.h>
 
 #include <cublas_v2.h>
@@ -193,9 +188,9 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         cudaGetDeviceProperties(&deviceProp, k);
 
         int clockRate;
-	    cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
-	printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
+        printf("Device %d [ %20s ]  has compute capability %d.%d.\n",
                k,
                deviceProp.name,
                deviceProp.major,
@@ -208,9 +203,9 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         printf("  (%2d) Multiprocessors\n", deviceProp.multiProcessorCount);
         printf(
             "  GPU Clock rate:                                %.0f MHz (%0.2f "
-            "GHz)\n", 
-	    clockRate*1e-3f,
-	    clockRate*1e-6f);
+            "GHz)\n",
+            clockRate * 1e-3f,
+            clockRate * 1e-6f);
         printf("\n");
     }
 
@@ -385,20 +380,20 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;
-            semr = ImageStreamIO_semtimedwait(data.image+IDcoeff, 3, &ts);
+            semr = ImageStreamIO_semtimedwait(data.image + IDcoeff, 3, &ts);
 
             if(iter == 0)
             {
                 //  printf("driving semaphore to zero ... ");
                 // fflush(stdout);
-                semval = ImageStreamIO_semvalue(data.image+IDcoeff, 2);
+                semval = ImageStreamIO_semvalue(data.image + IDcoeff, 2);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
                     printf("WARNING %s %d  : sem_trywait on semptr2\n",
                            __FILE__,
                            __LINE__);
                     fflush(stdout);
-                    ImageStreamIO_semtrywait(data.image+IDcoeff, 2);
+                    ImageStreamIO_semtrywait(data.image + IDcoeff, 2);
                 }
                 // printf("done\n");
                 // fflush(stdout);
@@ -494,15 +489,15 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                                   d_outmap,
                                   sizeof(float) * mdim,
                                   cudaMemcpyDeviceToHost);
-            semval = ImageStreamIO_semvalue(data.image+IDoutmap, 0);
+            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image+IDoutmap, 0);
+                ImageStreamIO_sempost(data.image + IDoutmap, 0);
             }
-            semval = ImageStreamIO_semvalue(data.image+IDoutmap, 1);
+            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image+IDoutmap, 1);
+                ImageStreamIO_sempost(data.image + IDoutmap, 1);
             }
             data.image[IDoutmap].md[0].cnt0++;
             data.image[IDoutmap].md[0].write = 0;

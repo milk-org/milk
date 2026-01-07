@@ -2,9 +2,10 @@
  * Open stream(s), print basic info within single line
  *
  */
-
-
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <string.h>
 
 #include <sys/stat.h>
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
 
 
 
-    for (int i=1; i< argc; i++)
+    for(int i = 1; i < argc; i++)
     {
         if(strlen(argv[i]) != 0)
         {
