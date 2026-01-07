@@ -12,10 +12,9 @@
  * 	- 3: missing file required to proceed
  * 	- 4: system call error
  */
-
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
-
-
+#endif
 
 #include <malloc.h>
 #include <pthread.h>
@@ -1126,131 +1125,131 @@ static int command_line_process_options(int argc, char **argv)
 
         switch(c)
         {
-            case 0:
-                /* If this option set a flag, do nothing else now. */
-                if(long_options[option_index].flag != 0)
-                {
-                    break;
-                }
-                printf("option %s", long_options[option_index].name);
-                if(optarg)
-                {
-                    printf(" with arg %s", optarg);
-                }
-                printf("\n");
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if(long_options[option_index].flag != 0)
+            {
                 break;
+            }
+            printf("option %s", long_options[option_index].name);
+            if(optarg)
+            {
+                printf(" with arg %s", optarg);
+            }
+            printf("\n");
+            break;
 
-            case 'h':
-                help();
-                exit(EXIT_SUCCESS);
-                break;
+        case 'h':
+            help();
+            exit(EXIT_SUCCESS);
+            break;
 
-            case 'v':
-                printf("%s   %s\n", data.package_name, data.package_version);
-                exit(EXIT_SUCCESS);
-                break;
+        case 'v':
+            printf("%s   %s\n", data.package_name, data.package_version);
+            exit(EXIT_SUCCESS);
+            break;
 
-            case 'i':
-                printInfo();
-                exit(EXIT_SUCCESS);
-                break;
+        case 'i':
+            printInfo();
+            exit(EXIT_SUCCESS);
+            break;
 
-            case 'o':
-                puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
-                data.overwrite = 1;
-                break;
+        case 'o':
+            puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
+            data.overwrite = 1;
+            break;
 
-            case 'e':
-                printf(
-                    "Idle mode: only runs process when X is idle (pid "
-                    "%ld)\n",
-                    (long) getpid());
-                snprintf(command, STRINGMAXLEN_COMMAND, "runidle %ld > /dev/null &\n",
-                         (long) getpid());
-                if(system(command) != 0)
-                {
-                    PRINT_ERROR("system() returns non-zero value");
-                }
-                break;
+        case 'e':
+            printf(
+                "Idle mode: only runs process when X is idle (pid "
+                "%ld)\n",
+                (long) getpid());
+            snprintf(command, STRINGMAXLEN_COMMAND, "runidle %ld > /dev/null &\n",
+                     (long) getpid());
+            if(system(command) != 0)
+            {
+                PRINT_ERROR("system() returns non-zero value");
+            }
+            break;
 
 
-            case 'd':
-                printf("debug level : '%s'\n", optarg);
-                data.Debug = atoi(optarg);
-                printf("Debug = %d\n", data.Debug);
-                break;
+        case 'd':
+            printf("debug level : '%s'\n", optarg);
+            data.Debug = atoi(optarg);
+            printf("Debug = %d\n", data.Debug);
+            break;
 
-            case 'm':
-                printf("Starting memory monitor on '%s'\n", optarg);
-                //memory_monitor(optarg);
-                break;
+        case 'm':
+            printf("Starting memory monitor on '%s'\n", optarg);
+            //memory_monitor(optarg);
+            break;
 
-            case 'n':
-                if(data.quiet == 0)
-                {
-                    printf("process name '%s'\n", optarg);
-                }
-                strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
-                data.processnameflag = 1; // this process has been named
+        case 'n':
+            if(data.quiet == 0)
+            {
+                printf("process name '%s'\n", optarg);
+            }
+            strncpy(data.processname, optarg, STRINGMAXLEN_PROCESSNAME - 1);
+            data.processnameflag = 1; // this process has been named
 
-                // extract first word before '.'
-                // it can be used to name processinfo and function parameter structure for process
-                char tmpstring[200];
-                strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
-                char *firstword;
-                firstword = strtok(tmpstring, ".");
-                strncpy(data.processname0, firstword, STRINGMAXLEN_PROCESSNAME - 1);
-                prctl(PR_SET_NAME, optarg, 0, 0, 0);
-                break;
+            // extract first word before '.'
+            // it can be used to name processinfo and function parameter structure for process
+            char tmpstring[200];
+            strncpy(tmpstring, data.processname, STRINGMAXLEN_PROCESSNAME - 1);
+            char *firstword;
+            firstword = strtok(tmpstring, ".");
+            strncpy(data.processname0, firstword, STRINGMAXLEN_PROCESSNAME - 1);
+            prctl(PR_SET_NAME, optarg, 0, 0, 0);
+            break;
 
-            case 'p':
-                schedpar.sched_priority = atoi(optarg);
-                printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
+        case 'p':
+            schedpar.sched_priority = atoi(optarg);
+            printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
 
-                if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-                {
-                    PRINT_ERROR("seteuid() returns non-zero value");
-                }
-                sched_setscheduler(
-                    0,
-                    SCHED_FIFO,
-                    &schedpar); //other option is SCHED_RR, might be faster
+            if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+            {
+                PRINT_ERROR("seteuid() returns non-zero value");
+            }
+            sched_setscheduler(
+                0,
+                SCHED_FIFO,
+                &schedpar); //other option is SCHED_RR, might be faster
 
-                if(seteuid(data.ruid) != 0)  //Go back to normal privileges
-                {
-                    PRINT_ERROR("seteuid() returns non-zero value");
-                }
-                break;
+            if(seteuid(data.ruid) != 0)  //Go back to normal privileges
+            {
+                PRINT_ERROR("seteuid() returns non-zero value");
+            }
+            break;
 
-            case 'f':
-                if(data.quiet == 0)
-                {
-                    printf("fifo input ON\n");
-                }
-                data.fifoON = 1;
-                break;
+        case 'f':
+            if(data.quiet == 0)
+            {
+                printf("fifo input ON\n");
+            }
+            data.fifoON = 1;
+            break;
 
-            case 'F':
-                printf("using input fifo '%s'\n", optarg);
-                data.fifoON = 1;
-                snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", optarg);
-                printf("FIFO NAME = %s\n", data.fifoname);
-                break;
+        case 'F':
+            printf("using input fifo '%s'\n", optarg);
+            data.fifoON = 1;
+            snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", optarg);
+            printf("FIFO NAME = %s\n", data.fifoname);
+            break;
 
-            case 's':
-                strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
-                if(data.quiet == 0)
-                {
-                    printf("Startup file : %s\n", CLIstartupfilename);
-                }
-                break;
+        case 's':
+            strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
+            if(data.quiet == 0)
+            {
+                printf("Startup file : %s\n", CLIstartupfilename);
+            }
+            break;
 
-            case '?':
-                /* getopt_long already printed an error message. */
-                break;
+        case '?':
+            /* getopt_long already printed an error message. */
+            break;
 
-            default:
-                abort();
+        default:
+            abort();
         }
     }
 

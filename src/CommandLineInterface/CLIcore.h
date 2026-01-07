@@ -10,17 +10,11 @@
  *
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 
 #ifndef _CLICORE_H
 #define _CLICORE_H
 
 // include sem_timedwait
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
 
 #ifndef M_PI
 #define M_PI                                                                   \

@@ -149,7 +149,7 @@ endforeach()
 # Set Release build flags
 # cmake -DCMAKE_BUILD_TYPE=Debug
 # option: add -fanalyzer if gcc10+ (warning: this will take a while to run)
-set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -std=gnu17")
+set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 
 # Set Release build flags
 # cmake -DCMAKE_BUILD_TYPE=Release
