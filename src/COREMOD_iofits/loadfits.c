@@ -83,8 +83,8 @@ static errno_t help_function()
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
 errno_t load_fits(
-    const char * __restrict file_name,
-    const char * __restrict ID_name,
+    const char *__restrict file_name,
+    const char *__restrict ID_name,
     int      errmode,
     imageID *IDout
 )
@@ -235,20 +235,13 @@ errno_t load_fits(
         //printf("    nbFITSkeys = %d\n", nbFITSkeys);
     }
 
-
-
-
     {
         int status = 0;
 
         fits_read_key(fptr, TLONG, "NAXIS", &naxis, comment, &status);
         FITSIO_CHECK_ERROR(status, errmode, "File %s has no NAXIS", file_name);
-        DEBUG_TRACEPOINT("naxis = %ld  %d", naxis);
+        DEBUG_TRACEPOINT("naxis = %ld", naxis);
     }
-
-
-
-
 
     for(long i = 0; i < naxis; i++)
     {

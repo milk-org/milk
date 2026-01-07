@@ -233,6 +233,26 @@ typedef int errno_t;
     } while (0)
 
 /**
+ * @brief Portable strerror implementation that avoid using the gnu-only strerror_r
+ * @ingroup errcheckmacro
+ */
+static inline const char *portable_errmsg(int errnum, char *buf, size_t buflen)
+{
+    const char *msg = strerror(errnum);
+
+    if(!msg)
+    {
+        snprintf(buf, buflen, "Unknown error %d", errnum);
+        return buf;
+    }
+
+    /* Copy into caller's buffer to prevent static storage races */
+    strncpy(buf, msg, buflen - 1);
+    buf[buflen - 1] = '\0';
+    return buf;
+}
+
+/**
  * @brief Print warning and continue
  * @ingroup errcheckmacro
  */
@@ -255,14 +275,8 @@ typedef int errno_t;
         if (C_ERRNO != 0)                                                      \
         {                                                                      \
             char buff[256];                                                    \
-            if (strerror_r(errno, buff, 256) == 0)                             \
-            {                                                                  \
-                fprintf(stderr, "C Error: %s\n", buff);                        \
-            }                                                                  \
-            else                                                               \
-            {                                                                  \
-                fprintf(stderr, "Unknown C Error\n");                          \
-            }                                                                  \
+            fprintf(stderr, "C Error: %s\n",                                   \
+                    portable_errmsg(errno, buff, 256));                        \
         }                                                                      \
         else                                                                   \
         {                                                                      \
@@ -273,6 +287,28 @@ typedef int errno_t;
         fprintf(stderr, " %c[%d;m\n", (char) 27, 0);                           \
         C_ERRNO = 0;                                                           \
     } while (0)
+
+/**
+ * @brief Print warning only in debug build and continue
+ * @ingroup errcheckmacro
+ */
+#ifdef NDEBUG
+#define PRINT_DEBUGWARNING(...)
+#else
+#define PRINT_DEBUGWARNING(...)                                               \
+    PRINT_WARNING(__VA_ARGS__)
+#endif
+
+/**
+ * @brief Print error only in debug build and continue
+ * @ingroup errcheckmacro
+ */
+#ifdef NDEBUG
+#define PRINT_DEBUGERROR(...)
+#else
+#define PRINT_DEBUGERROR(...)                                               \
+    PRINT_ERROR(__VA_ARGS__)
+#endif
 
 // Enter function
 #if defined NDEBUG

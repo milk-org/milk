@@ -312,13 +312,13 @@ errno_t compute_SVD(
     uint32_t Ndim0 = 0;
     uint32_t Ndim1 = 0;
 
-    if( inNdim < inMdim )
+    if(inNdim < inMdim)
     {
         // input matrix is tall
         // this is the default
         // notations follow this case
         //
-        //printf("CASE inNdim < inMdim (tall)\n");
+        DEBUG_TRACEPOINT("CASE inNdim < inMdim (tall)\n");
         mshape = inMshape_tall;
 
         Mdim = inMdim;
@@ -331,7 +331,7 @@ errno_t compute_SVD(
     }
     else
     {
-        //printf("CASE inNdim > inMdim (wide)\n");
+        DEBUG_TRACEPOINT("CASE inNdim > inMdim (wide)\n");
         mshape = inMshape_wide;
 
         Mdim = inNdim;
@@ -343,9 +343,10 @@ errno_t compute_SVD(
         Ndim1 = inMdim1;
     }
 
-
-    //printf("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0, inNdim1);
-    //printf("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0, inMdim1);
+    DEBUG_TRACEPOINT("inNdim               = %d  (%d x %d)\n", inNdim, inNdim0,
+                     inNdim1);
+    DEBUG_TRACEPOINT("inMdim               = %d  (%d x %d)\n", inMdim, inMdim0,
+                     inMdim1);
 
     //printf("  Ndim               = %d  (%d x %d)\n",   Ndim, Ndim0, Ndim1);
     //printf("  Mdim               = %d  (%d x %d)\n",   Mdim, Mdim0, Mdim1);
@@ -353,10 +354,8 @@ errno_t compute_SVD(
 
     // from here on, Mdim > Ndim
 
-
-
     // create eigenvalues array if needed
-    if( imgS->ID == -1)
+    if(imgS->ID == -1)
     {
         imgS->naxis   = 2;
         imgS->size[0] = Ndim;
@@ -381,7 +380,7 @@ errno_t compute_SVD(
         //
         int TranspA = 1;
         int TranspB = 0;
-        if ( mshape == inMshape_wide )
+        if(mshape == inMshape_wide)
         {
             TranspA = 0;
             TranspB = 1;
@@ -402,17 +401,18 @@ errno_t compute_SVD(
     {
         // eigendecomposition
         //
-        float * __restrict d = (float*) malloc(sizeof(float)*Ndim);
-        float * __restrict e = (float*) malloc(sizeof(float)*Ndim);
-        float * __restrict t = (float*) malloc(sizeof(float)*Ndim);
+        float *__restrict d = (float *) malloc(sizeof(float) * Ndim);
+        float *__restrict e = (float *) malloc(sizeof(float) * Ndim);
+        float *__restrict t = (float *) malloc(sizeof(float) * Ndim);
 
 #ifdef HAVE_MKL
         mkl_set_interface_layer(MKL_INTERFACE_ILP64);
 #endif
-        LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float*) imgATA.im->array.F, Ndim, d, e, t);
+        LAPACKE_ssytrd(LAPACK_COL_MAJOR, 'U', Ndim, (float *) imgATA.im->array.F, Ndim,
+                       d, e, t);
 
         // Assemble Q matrix
-        LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t );
+        LAPACKE_sorgtr(LAPACK_COL_MAJOR, 'U', Ndim, imgATA.im->array.F, Ndim, t);
 
         // compute all eigenvalues and eivenvectors -> imgmV
         //
@@ -421,18 +421,18 @@ errno_t compute_SVD(
 
 
         // How many modes to keep ?
-        svalmax = sqrt(d[Ndim-1]);
+        svalmax = sqrt(d[Ndim - 1]);
         {
             long modecnt = 0;
-            for(int k=0; k<Ndim; k++)
+            for(int k = 0; k < Ndim; k++)
             {
-                if( sqrt(d[k]) > SVlimit*svalmax )
+                if(sqrt(d[k]) > SVlimit * svalmax)
                 {
                     modecnt++;
                 }
             }
             NBmode = modecnt;
-            if ( modecnt > SVDmaxNBmode )
+            if(modecnt > SVDmaxNBmode)
             {
                 NBmode = SVDmaxNBmode;
             }
@@ -445,9 +445,9 @@ errno_t compute_SVD(
         {
             imgmNsvec = imgV;
 
-            if( imgV->ID == -1)
+            if(imgV->ID == -1)
             {
-                if( Vdim0 == 0)
+                if(Vdim0 == 0)
                 {
                     imgV->naxis = 2;
                     imgV->size[0] = inNdim;
@@ -457,7 +457,7 @@ errno_t compute_SVD(
                 {
                     imgV->naxis = 3;
                     imgV->size[0] = Vdim0;
-                    imgV->size[1] = inNdim/Vdim0;
+                    imgV->size[1] = inNdim / Vdim0;
                     imgV->size[2] = NBmode; //inNdim;
                 }
                 createimagefromIMGID(imgV);
@@ -467,7 +467,7 @@ errno_t compute_SVD(
         {
             imgmNsvec = imgU;
 
-            if( imgU->ID == -1)
+            if(imgU->ID == -1)
             {
                 imgU->naxis = imgin.md->naxis;
                 if(imgin.md->naxis == 3)
@@ -490,14 +490,14 @@ errno_t compute_SVD(
 
 
         // re-order from largest to smallest
-        for(int k=0; k<NBmode; k++)
+        for(int k = 0; k < NBmode; k++)
         {
-            char * ptr0 = (char*) &imgATA.im->array.F[(Ndim-k-1)*Ndim];
-            char * ptr1 = (char*) &imgmNsvec->im->array.F[k*Ndim];
+            char *ptr0 = (char *) &imgATA.im->array.F[(Ndim - k - 1) * Ndim];
+            char *ptr1 = (char *) &imgmNsvec->im->array.F[k * Ndim];
 
             memcpy(ptr1, ptr0, sizeof(float)*Ndim);
 
-            imgS->im->array.F[k] = sqrt(d[Ndim-k-1]);
+            imgS->im->array.F[k] = sqrt(d[Ndim - k - 1]);
         }
 
 
@@ -510,7 +510,7 @@ errno_t compute_SVD(
         imgSV.size[0] = NBmode;
         imgSV.size[1] = 1;
         createimagefromIMGID(&imgSV);
-        for(int k=0; k<NBmode; k++)
+        for(int k = 0; k < NBmode; k++)
         {
             float sval = imgS->im->array.F[k];
             imgSV.im->array.F[k] = sval;
@@ -525,12 +525,12 @@ errno_t compute_SVD(
         imgSVinv.size[0] = NBmode;
         imgSVinv.size[1] = 1;
         createimagefromIMGID(&imgSVinv);
-        for(int k=0; k<NBmode; k++)
+        for(int k = 0; k < NBmode; k++)
         {
-            float normfact = 0.0;
+            //float normfact = 0.0;
             float sval = imgS->im->array.F[k];
             float svaln = sval / svalmax;
-            if( svaln > SVlimit )
+            if(svaln > SVlimit)
             {
                 imgSVinv.im->array.F[k] = 1.0 / sval;
             }
@@ -556,7 +556,7 @@ errno_t compute_SVD(
 
 
 
-    if( !(compSVDmode & COMPSVD_SKIP_BIGMAT) )
+    if(!(compSVDmode & COMPSVD_SKIP_BIGMAT))
     {
         // create mU (if inMshape_tall)
         // create mV (if inMshape_wide)
@@ -570,7 +570,7 @@ errno_t compute_SVD(
         {
             int TranspA = 0;
             int TranspB = 0;
-            if ( mshape == inMshape_wide )
+            if(mshape == inMshape_wide)
             {
                 TranspA = 1;
             }
@@ -592,21 +592,21 @@ errno_t compute_SVD(
         // Report number of modes kept
         //
         long SVkeptcnt = 0;
-        for(uint32_t jj=0; jj<NBmode; jj++)
+        for(uint32_t jj = 0; jj < NBmode; jj++)
         {
 
             float normfact = 0.0;
             float sval = imgS->im->array.F[jj];
             float svaln = sval / svalmax;
-            if( svaln > SVlimit )
+            if(svaln > SVlimit)
             {
                 normfact = 1.0 / sval;
                 SVkeptcnt ++;
             }
 
-            for(uint32_t ii=0; ii< Mdim; ii++)
+            for(uint32_t ii = 0; ii < Mdim; ii++)
             {
-                imgmMsvec->im->array.F[jj*Mdim+ii] *= normfact;
+                imgmMsvec->im->array.F[jj * Mdim + ii] *= normfact;
             }
         }
         printf("LIMIT = %g  - Keeping %ld / %u modes\n", SVlimit, SVkeptcnt, Ndim);
@@ -615,12 +615,12 @@ errno_t compute_SVD(
 
         // Compute pseudo-inverse
         //
-        if( (compSVDmode & COMPSVD_COMP_PSINV) )
+        if((compSVDmode & COMPSVD_COMP_PSINV))
         {
             // assumes tall matrix
             //
             IMGID imgmNsvec1 = mkIMGID_from_name("matNtemp");
-            if( imgmNsvec1.ID == -1)
+            if(imgmNsvec1.ID == -1)
             {
                 imgmNsvec1.naxis = 2;
 
@@ -632,20 +632,20 @@ errno_t compute_SVD(
 
             // multiply by inverse of singular values
             //
-            for(uint32_t jj=0; jj<NBmode; jj++)
+            for(uint32_t jj = 0; jj < NBmode; jj++)
             {
                 float normfact = 0.0;
                 float sval = imgS->im->array.F[jj];
                 float svaln = sval / svalmax;
-                if( svaln > SVlimit )
+                if(svaln > SVlimit)
                 {
                     normfact = 1.0 / sval;
                 }
 
-                for(uint32_t ii=0; ii < Ndim; ii++)
+                for(uint32_t ii = 0; ii < Ndim; ii++)
                 {
-                    imgmNsvec1.im->array.F[jj*Ndim+ii] =
-                        imgmNsvec->im->array.F[jj*Ndim+ii] * normfact;
+                    imgmNsvec1.im->array.F[jj * Ndim + ii] =
+                        imgmNsvec->im->array.F[jj * Ndim + ii] * normfact;
                 }
             }
 
@@ -664,7 +664,7 @@ errno_t compute_SVD(
 
             // Check inverse
             //
-            if( (compSVDmode & COMPSVD_COMP_CHECKPSINV) )
+            if((compSVDmode & COMPSVD_COMP_CHECKPSINV))
             {
 
                 IMGID imgpsinvcheck = mkIMGID_from_name("psinvcheck");
@@ -681,7 +681,7 @@ errno_t compute_SVD(
     // Compute un-normalized modes U
     // Singular Values included in modes U
     //
-    if ( imgU->ID != -1 )
+    if(imgU->ID != -1)
     {
         // un-normalized modes
         delete_image_ID(SVDunmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
@@ -693,19 +693,20 @@ errno_t compute_SVD(
         imgunmodes.size[2] = imgU->md->size[2];
         createimagefromIMGID(&imgunmodes);
 
-        int lastaxis = imgunmodes.naxis-1;
+        int lastaxis = imgunmodes.naxis - 1;
         long framesize = imgunmodes.size[0];
-        if(lastaxis==2)
+        if(lastaxis == 2)
         {
             framesize *= imgunmodes.size[1];
         }
 
-        for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgunmodes.size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
-            for(long ii=0; ii<framesize; ii++)
+            for(long ii = 0; ii < framesize; ii++)
             {
-                imgunmodes.im->array.F[kk*framesize+ii] = imgU->im->array.F[kk*framesize+ii] * mfact;
+                imgunmodes.im->array.F[kk * framesize + ii] = imgU->im->array.F[kk * framesize +
+                        ii] * mfact;
             }
         }
 
@@ -718,7 +719,7 @@ errno_t compute_SVD(
     // Compute un-normalized modes V
     // Singular Values included in modes V
     //
-    if ( imgV->ID != -1 )
+    if(imgV->ID != -1)
     {
         // un-normalized modes
         delete_image_ID(SVDvnmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
@@ -730,20 +731,21 @@ errno_t compute_SVD(
         imgvnmodes.size[2] = imgV->md->size[2];
         createimagefromIMGID(&imgvnmodes);
 
-        int lastaxis = imgvnmodes.naxis-1;
+        int lastaxis = imgvnmodes.naxis - 1;
         long framesize = imgvnmodes.size[0];
-        if(lastaxis==2)
+        if(lastaxis == 2)
         {
             framesize *= imgvnmodes.size[1];
         }
 
-        for(int kk=0; kk<imgvnmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgvnmodes.size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
             //printf("mfact %4d = %f\n", kk, mfact);
-            for(long ii=0; ii<framesize; ii++)
+            for(long ii = 0; ii < framesize; ii++)
             {
-                imgvnmodes.im->array.F[kk*framesize+ii] = imgV->im->array.F[kk*framesize+ii] * mfact;
+                imgvnmodes.im->array.F[kk * framesize + ii] = imgV->im->array.F[kk * framesize +
+                        ii] * mfact;
             }
         }
 

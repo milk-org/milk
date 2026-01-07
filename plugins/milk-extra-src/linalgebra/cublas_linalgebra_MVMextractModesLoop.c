@@ -6,11 +6,6 @@
  *
  */
 
-// include sem_timedwait
-#ifndef _POSIX_C_SOURCE
-#define _POSIX_C_SOURCE 200809L
-#endif
-
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                        HEADER FILES                                             */
@@ -117,19 +112,19 @@ static errno_t LINALGEBRA_MVMextractModesLoop_cli()
             0)
     {
         LINALGEBRA_MVMextractModesLoop(data.cmdargtoken[1].val.string,
-                                     data.cmdargtoken[2].val.string,
-                                     data.cmdargtoken[3].val.string,
-                                     data.cmdargtoken[4].val.string,
-                                     data.cmdargtoken[5].val.string,
-                                     data.cmdargtoken[6].val.string,
-                                     data.cmdargtoken[7].val.numl,
-                                     data.cmdargtoken[8].val.numl,
-                                     data.cmdargtoken[9].val.numl,
-                                     data.cmdargtoken[10].val.numl,
-                                     data.cmdargtoken[11].val.numl,
-                                     data.cmdargtoken[12].val.numl,
-                                     data.cmdargtoken[13].val.numl,
-                                     data.cmdargtoken[14].val.numl);
+                                       data.cmdargtoken[2].val.string,
+                                       data.cmdargtoken[3].val.string,
+                                       data.cmdargtoken[4].val.string,
+                                       data.cmdargtoken[5].val.string,
+                                       data.cmdargtoken[6].val.string,
+                                       data.cmdargtoken[7].val.numl,
+                                       data.cmdargtoken[8].val.numl,
+                                       data.cmdargtoken[9].val.numl,
+                                       data.cmdargtoken[10].val.numl,
+                                       data.cmdargtoken[11].val.numl,
+                                       data.cmdargtoken[12].val.numl,
+                                       data.cmdargtoken[13].val.numl,
+                                       data.cmdargtoken[14].val.numl);
 
         return RETURN_SUCCESS;
     }
@@ -820,7 +815,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
 
         // drive semaphore to zero
-        while(ImageStreamIO_semtrywait(data.image+ID_modeval, insem) == 0)
+        while(ImageStreamIO_semtrywait(data.image + ID_modeval, insem) == 0)
         {
             printf("WARNING %s %d  : sem_trywait on ID_modeval\n",
                    __FILE__,
@@ -856,7 +851,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             cudaGetDeviceProperties(&deviceProp, k);
 
             int clockRate;
-	        cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
+            cudaDeviceGetAttribute(&clockRate, cudaDevAttrClockRate, k);
 
             printf("Device %d / %d [ %20s ]  has compute capability %d.%d.\n",
                    k,
@@ -1416,7 +1411,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         {
             // WAIT FOR NEW MODEVAL
             int rval;
-            rval = ImageStreamIO_semwait(data.image+ID_modeval, insem);
+            rval = ImageStreamIO_semwait(data.image + ID_modeval, insem);
             if(rval == -1)  // interrupt
             {
                 loopOK = 0;
@@ -1439,15 +1434,15 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             }
             data.image[IDtrace].md[0].cnt1 = TRACEindex;
 
-            semval = ImageStreamIO_semvalue(data.image+IDtrace, 0);
+            semval = ImageStreamIO_semvalue(data.image + IDtrace, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image+IDtrace, 0);
+                ImageStreamIO_sempost(data.image + IDtrace, 0);
             }
-            semval = ImageStreamIO_semvalue(data.image+IDtrace, 1);
+            semval = ImageStreamIO_semvalue(data.image + IDtrace, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image+IDtrace, 1);
+                ImageStreamIO_sempost(data.image + IDtrace, 1);
             }
             data.image[IDtrace].md[0].cnt0++;
             data.image[IDtrace].md[0].write = 0;
