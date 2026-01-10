@@ -24,6 +24,7 @@ typedef enum {
     RANGE_01_99,
     RANGE_05_95,
     RANGE_10_90,
+    RANGE_MANUAL, // User defined
     RANGE_NB
 } termview_range_t;
 
@@ -31,6 +32,9 @@ typedef struct {
     termview_colormap_t colormap;
     termview_scale_t scale;
     termview_range_t range;
+    bool range_locked; // If true, min/max are frozen (or manual)
+    double manual_min;
+    double manual_max;
 } termview_options_t;
 
 errno_t termview_screen(const char *imagename, termview_options_t options);

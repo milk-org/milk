@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
     options.colormap = COLORMAP_GREYSCALE;
     options.scale = SCALE_LINEAR;
     options.range = RANGE_MINMAX;
+    options.range_locked = false;
+    options.manual_min = 0.0;
+    options.manual_max = 1.0;
 
     // Parse arguments
     static struct option long_options[] = {

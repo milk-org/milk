@@ -18,6 +18,15 @@ static termview_options_t current_options;
 static bool has_color_support = false;
 static bool has_256_color = false;
 
+// Zoom and Pan state
+static double view_zoom = 1.0;
+static double view_center_x = 0.5;
+static double view_center_y = 0.5;
+
+// Range state (cached for locking)
+static double current_min_val = 0.0;
+static double current_max_val = 1.0;
+
 // Color pair ranges
 #define COLOR_BASE_HEAT 20
 #define COLOR_BASE_COLD 30
@@ -29,11 +38,6 @@ static bool has_256_color = false;
 #define BASE_256_HEAT 100
 #define BASE_256_COLD 200
 #define BASE_256_JET 300
-
-// Zoom and Pan state
-static double view_zoom = 1.0;
-static double view_center_x = 0.5;
-static double view_center_y = 0.5;
 
 static double get_pixel_value(IMAGE *img, int x, int y) {
     long idx = y * img->md[0].size[0] + x;
@@ -63,11 +67,16 @@ static int rgb_to_256(float r, float g, float b) {
     int ir = (int)(r * 5.0 + 0.5);
     int ig = (int)(g * 5.0 + 0.5);
     int ib = (int)(b * 5.0 + 0.5);
+    if (ir < 0) ir = 0; if (ir > 5) ir = 5;
+    if (ig < 0) ig = 0; if (ig > 5) ig = 5;
+    if (ib < 0) ib = 0; if (ib > 5) ib = 5;
     return 16 + (ir * 36) + (ig * 6) + ib;
 }
 
 static void get_heat_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
+    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+    
     if (v < 0.25) { // Black to Blue
         *b = v * 4.0;
     } else if (v < 0.5) { // Blue to Cyan
@@ -85,12 +94,15 @@ static void get_heat_color(float v, float *r, float *g, float *b) {
 
 static void get_cold_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
-    if (v < 0.33) { // Black to Blue
+    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+
+    // Black -> Blue -> Cyan -> White
+    if (v < 0.33) {
         *b = v * 3.0;
-    } else if (v < 0.66) { // Blue to Cyan
+    } else if (v < 0.66) {
         *b = 1.0;
         *g = (v - 0.33) * 3.0;
-    } else { // Cyan to White
+    } else {
         *b = 1.0;
         *g = 1.0;
         *r = (v - 0.66) * 3.0;
@@ -99,20 +111,42 @@ static void get_cold_color(float v, float *r, float *g, float *b) {
 
 static void get_jet_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
+    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+
+    // Blue -> Cyan -> Green -> Yellow -> Red
     if (v < 0.125) {
-        *b = 0.5 + 4.0 * v;
+        *b = 0.5 + 4.0 * v; // Dark Blue to Blue
     } else if (v < 0.375) {
         *b = 1.0;
-        *g = (v - 0.125) * 4.0;
+        *g = (v - 0.125) * 4.0; // Blue to Cyan
     } else if (v < 0.625) {
-        *b = 1.0 - (v - 0.375) * 4.0;
+        *b = 1.0 - (v - 0.375) * 4.0; // Cyan to Green
         *g = 1.0;
-        *r = (v - 0.375) * 4.0;
-    } else if (v < 0.875) {
-        *g = 1.0 - (v - 0.625) * 4.0;
-        *r = 1.0;
+        *r = (v - 0.375) * 4.0; // Green to Yellow? Wait. 
+        // Standard Jet:
+        // 0.0-0.125: 0,0,0.5 -> 0,0,1
+        // 0.125-0.375: 0,0,1 -> 0,1,1
+        // 0.375-0.625: 0,1,1 -> 0,1,0 ??? No. Jet goes Cyan->Green->Yellow
+    }
+    
+    // Simpler 4-segment Jet:
+    // 0.0-0.25: Blue -> Cyan
+    // 0.25-0.5: Cyan -> Green
+    // 0.5-0.75: Green -> Yellow
+    // 0.75-1.0: Yellow -> Red
+    
+    if (v < 0.25) {
+        *b = 1.0;
+        *g = v * 4.0;
+    } else if (v < 0.5) {
+        *b = 1.0 - (v - 0.25) * 4.0;
+        *g = 1.0;
+    } else if (v < 0.75) {
+        *g = 1.0;
+        *r = (v - 0.5) * 4.0;
     } else {
-        *r = 1.0 - 0.5 * (v - 0.875) * 8.0;
+        *g = 1.0 - (v - 0.75) * 4.0;
+        *r = 1.0;
     }
 }
 
@@ -148,12 +182,12 @@ static void init_colormaps() {
         init_pair(COLOR_BASE_HEAT + 5, COLOR_WHITE, COLOR_MAGENTA);
 
         // COLD
-        init_pair(COLOR_BASE_COLD + 0, COLOR_BLACK, COLOR_WHITE);
-        init_pair(COLOR_BASE_COLD + 1, COLOR_BLACK, COLOR_CYAN);
-        init_pair(COLOR_BASE_COLD + 2, COLOR_WHITE, COLOR_BLUE);
-        init_pair(COLOR_BASE_COLD + 3, COLOR_WHITE, COLOR_BLACK);
-        init_pair(COLOR_BASE_COLD + 4, COLOR_WHITE, COLOR_BLACK);
-        init_pair(COLOR_BASE_COLD + 5, COLOR_WHITE, COLOR_BLACK);
+        init_pair(COLOR_BASE_COLD + 0, COLOR_WHITE, COLOR_BLACK);
+        init_pair(COLOR_BASE_COLD + 1, COLOR_WHITE, COLOR_BLUE);
+        init_pair(COLOR_BASE_COLD + 2, COLOR_BLACK, COLOR_CYAN);
+        init_pair(COLOR_BASE_COLD + 3, COLOR_BLACK, COLOR_WHITE);
+        init_pair(COLOR_BASE_COLD + 4, COLOR_BLACK, COLOR_WHITE);
+        init_pair(COLOR_BASE_COLD + 5, COLOR_BLACK, COLOR_WHITE);
 
         // JET
         init_pair(COLOR_BASE_JET + 0, COLOR_WHITE, COLOR_BLUE);
@@ -171,6 +205,27 @@ static int compare_doubles(const void *a, const void *b) {
     if (arg1 < arg2) return -1;
     if (arg1 > arg2) return 1;
     return 0;
+}
+
+static double get_input_double(const char* prompt) {
+    int r = wrow / 2;
+    int c = wcol / 2 - 15;
+    
+    // Clear prompt area
+    attron(A_REVERSE);
+    for(int i=0; i<30; i++) mvaddch(r, c+i, ' ');
+    mvprintw(r, c, "%s: ", prompt);
+    attroff(A_REVERSE);
+    refresh();
+
+    echo();
+    curs_set(1);
+    char buf[32];
+    mvgetnstr(r, c + strlen(prompt) + 2, buf, 30);
+    noecho();
+    curs_set(0);
+    
+    return atof(buf);
 }
 
 errno_t termview_screen(const char *imagename, termview_options_t options)
@@ -215,6 +270,30 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 break;
             case 'r':
                 current_options.range = (current_options.range + 1) % RANGE_NB;
+                if (current_options.range == RANGE_MANUAL) {
+                    // Manual implies lock implicitly? Or just enter manual mode.
+                    // If cycling into manual, maybe prompt? Or just use previous manual vals.
+                    // Let's assume cycling uses last manual vals.
+                    current_options.range_locked = true;
+                } else {
+                    current_options.range_locked = false;
+                }
+                break;
+            case 'l': // Lock range
+                current_options.range_locked = !current_options.range_locked;
+                if (current_options.range_locked) {
+                    current_options.range = RANGE_MANUAL;
+                    current_options.manual_min = current_min_val;
+                    current_options.manual_max = current_max_val;
+                } else {
+                    current_options.range = RANGE_MINMAX; // Default back to auto
+                }
+                break;
+            case 'm': // Manual range
+                current_options.manual_min = get_input_double("Min Val");
+                current_options.manual_max = get_input_double("Max Val");
+                current_options.range = RANGE_MANUAL;
+                current_options.range_locked = true;
                 break;
             // Zoom keys
             case '+':
@@ -258,9 +337,14 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
         uint32_t xsize = img.md[0].size[0];
         uint32_t ysize = img.md[0].size[1];
         
-        // Reserve rows for info
+        // Layout:
+        // Image Area: [0..wrow-4] x [0..wcol-12]
+        // Colorbar:   [0..wrow-4] x [wcol-10..wcol]
+        
+        int bar_width = 12;
         int disp_rows = wrow - 4;
-        int disp_cols = wcol;
+        int disp_cols = wcol - bar_width - 1;
+        int bar_col_start = wcol - bar_width;
         
         if (disp_rows <= 0 || disp_cols <= 0) {
             usleep(100000);
@@ -297,7 +381,11 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
 
         // Compute Stats
         double min_val = 0.0, max_val = 1.0;
-        if (current_options.range == RANGE_MINMAX) {
+        
+        if (current_options.range == RANGE_MANUAL) {
+            min_val = current_options.manual_min;
+            max_val = current_options.manual_max;
+        } else if (current_options.range == RANGE_MINMAX) {
             min_val = 1e20; max_val = -1e20;
             for(int k=0; k<num_pixels; k++) {
                 if(display_buffer[k] < min_val) min_val = display_buffer[k];
@@ -318,9 +406,12 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             max_val = sorted_buf[(int)(p_high * (num_pixels-1))];
             free(sorted_buf);
         }
-        if (max_val <= min_val) max_val = min_val + 1.0;
+        if (max_val <= min_val) max_val = min_val + 1.0; // Avoid div/0
+        
+        current_min_val = min_val;
+        current_max_val = max_val;
 
-        // Render
+        // Render Image
         buf_idx = 0;
         for (int i = 0; i < disp_rows; i++) {
             for (int j = 0; j < disp_cols; j++) {
@@ -351,7 +442,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 if (norm_val < 0) norm_val = 0;
                 if (norm_val > 1) norm_val = 1;
 
-                // Draw
+                // Draw Pixel
                 if (current_options.colormap == COLORMAP_GREYSCALE || !has_color_support) {
                     int char_idx = (int)(norm_val * (charset_len - 1));
                     mvaddch(i, j, charset[char_idx]);
@@ -361,15 +452,13 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                         int base = BASE_256_HEAT;
                         if (current_options.colormap == COLORMAP_COLD) base = BASE_256_COLD;
                         else if (current_options.colormap == COLORMAP_JET) base = BASE_256_JET;
-                        
                         int idx = (int)(norm_val * (STEPS_256 - 1));
                         pair = base + idx;
                     } else {
                         int base = COLOR_BASE_HEAT;
                         int n = NB_COLORS_MAP;
-                        if (current_options.colormap == COLORMAP_COLD) { base = COLOR_BASE_COLD; n = 4; }
+                        if (current_options.colormap == COLORMAP_COLD) { base = COLOR_BASE_COLD; n = NB_COLORS_MAP; } // Fixed cold range
                         else if (current_options.colormap == COLORMAP_JET) { base = COLOR_BASE_JET; }
-                        
                         int idx = (int)(norm_val * (n - 1));
                         pair = base + idx;
                     }
@@ -377,6 +466,40 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                     mvaddch(i, j, ' ');
                     attroff(COLOR_PAIR(pair));
                 }
+            }
+        }
+
+        // Render Colorbar
+        if (has_color_support && current_options.colormap != COLORMAP_GREYSCALE) {
+            for (int i = 0; i < disp_rows; i++) {
+                // Invert y: high value at top
+                double norm_val = 1.0 - (double)i / (disp_rows - 1);
+                
+                int pair = 0;
+                if (has_256_color) {
+                    int base = BASE_256_HEAT;
+                    if (current_options.colormap == COLORMAP_COLD) base = BASE_256_COLD;
+                    else if (current_options.colormap == COLORMAP_JET) base = BASE_256_JET;
+                    int idx = (int)(norm_val * (STEPS_256 - 1));
+                    pair = base + idx;
+                } else {
+                    int base = COLOR_BASE_HEAT;
+                    int n = NB_COLORS_MAP;
+                    if (current_options.colormap == COLORMAP_COLD) { base = COLOR_BASE_COLD; n = NB_COLORS_MAP; } // Fixed cold range
+                    else if (current_options.colormap == COLORMAP_JET) { base = COLOR_BASE_JET; }
+                    int idx = (int)(norm_val * (n - 1));
+                    pair = base + idx;
+                }
+                
+                attron(COLOR_PAIR(pair));
+                mvaddch(i, bar_col_start, ' ');
+                mvaddch(i, bar_col_start+1, ' ');
+                attroff(COLOR_PAIR(pair));
+                
+                // Labels
+                if (i == 0) mvprintw(i, bar_col_start+3, "%.2g", max_val);
+                if (i == disp_rows/2) mvprintw(i, bar_col_start+3, "%.2g", (min_val+max_val)/2);
+                if (i == disp_rows-1) mvprintw(i, bar_col_start+3, "%.2g", min_val);
             }
         }
 
@@ -396,16 +519,19 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             default: break;
         }
         const char* range_str = "MINMAX";
-        switch(current_options.range) {
-            case RANGE_01_99: range_str = "1-99%"; break;
-            case RANGE_05_95: range_str = "5-95%"; break;
-            case RANGE_10_90: range_str = "10-90%"; break;
-            default: break;
+        if (current_options.range_locked) range_str = "LOCKED";
+        else {
+            switch(current_options.range) {
+                case RANGE_01_99: range_str = "1-99%"; break;
+                case RANGE_05_95: range_str = "5-95%"; break;
+                case RANGE_10_90: range_str = "10-90%"; break;
+                default: break;
+            }
         }
 
         mvprintw(info_row, 0, "Image: %s [%d x %d] Type: %d", img.md[0].name, xsize, ysize, img.md[0].datatype);
         mvprintw(info_row + 1, 0, "Val: [%.4g : %.4g] Zoom: %.2fx", min_val, max_val, view_zoom);
-        mvprintw(info_row + 2, 0, "[C]map: %s  [S]cale: %s  [R]ange: %s  (+-:Zoom Arrow:Pan 0:Reset q:Quit)", cmap_str, scale_str, range_str);
+        mvprintw(info_row + 2, 0, "[C]map: %s  [S]cale: %s  [R]ange: %s  (l:Lock m:Man q:Quit)", cmap_str, scale_str, range_str);
 
         refresh();
         usleep(50000);
