@@ -184,7 +184,8 @@ static errno_t streamprocess(
     DEBUG_TRACE_FSTART();
     // custom stream process function code
 
-    // resolve imgpos
+    // resolve image
+    // This function call has low overhead, as it will acknowledge existing image
     resolveIMGID(inimg, ERRMODE_ABORT);
 
     uint32_t xsize  = inimg->size[0];
@@ -192,7 +193,9 @@ static errno_t streamprocess(
     uint64_t xysize = xsize * ysize;
 
 
-    // Create output image if needed
+    // Create output image if needed.
+    // Delaying creation of the image until here is necessary if the image size or type needs
+    // to be determined within this function.
     imcreateIMGID(outimg);
 
     outimg->md->write = 1;
@@ -213,13 +216,15 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
+
+    // Check if image is in memory
+    // First, create an IMGIG with the image name
     IMGID inimg = mkIMGID_from_name(inimname);
+    // Then resolve it (connect it to an image in memory if possible)
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
     // link/create output image/stream
     FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
-
-
 
 
     printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);

@@ -4,6 +4,7 @@
  *
  * Example 1
  * Demonstrates how functions are registered and their arguments processed.
+ * Demonstrates how functions connect to images.
  * See script milk-test-simplefunc for example usage.
  */
 
@@ -13,18 +14,31 @@
 
 // make sure to match types with farg types
 
-// Within this translation unit, these point to the variables values
+// Within this translation unit, these point to the variables values shared between the FPS and the processes
+
+
 static char *inimname;
 
-// float point variable should be double. single precision float not supported
-static double *scoeff;
+// Make sure the type here matches the type flag in CLICMDARGDEF
+static double *scoeff; // matches CLIARG_FLOAT64
+// Include the following line, and add reference to pointer in CLICMDARGDEF entry to allow for dynamic access to parameter
+// static long    fpi_scoeff = -1;
 
+
+// Possible types are:
+// static float *      for CLIARG_FLOAT32
+// static double *     for CLIARG_FLOAT64
+// static chat *       for CLIARG_IMG, CLIARG_FILENAME, CLIARG_FITSFILENAME, CLIARG_FPSNAME, CLIARG_STREAM, CLIARG_STR, CLIARG_STR_NOT_IMG
+// static uint32_t *   for CLIARG_UINT32
+// static uint64_t *   for CLIARG_UINT64
+// static int32_t *    for CLIARG_INT32
+// static int64_t *    for CLIARG_INT64, CLIARG_ONOFF, CLIARG_LONG
 
 
 
 
 // List of arguments to function
-// { CLItype, tag, description, initial value, flag, fptype, fpflag}
+// { CLItype, tag, description, initial value, flag, fptype, fpflag }
 //
 // A function variable is named by a tag, which is a hierarchical
 // series of words separated by dot "."
@@ -33,21 +47,20 @@ static double *scoeff;
 static CLICMDARGDEF farg[] =
 {
     {
-        CLIARG_IMG,
+        CLIARG_IMG, // type of argument
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        CLIARG_VISIBLE_DEFAULT, // This will be exposed as a function argument in the milk CLI, which has to be entered
         (void **) &inimname,
         NULL
     },
     {
-        // hidden argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT64,
         ".scaling",
         "scaling coefficient",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
         (void **) &scoeff,
         NULL
     }
@@ -56,9 +69,9 @@ static CLICMDARGDEF farg[] =
 // CLI function initialization data
 static CLICMDDATA CLIcmddata =
 {
-    "imsum1",                          // keyword to call function in CLI
-    "compute total of image example1", // description of what the function does
-    CLICMD_FIELDS_NOFPS
+    "imsum1",                          // keyword to call function in from the milk CLI
+    "compute total of image example1", // brief (1-line) description of what the function does
+    CLICMD_FIELDS_NOFPS                // do NOT use Function Parameter Structure (FPS)
 };
 
 
@@ -71,31 +84,41 @@ static CLICMDDATA CLIcmddata =
  * Functions should return error code of type errno_t (= int).
  * On success, return value is RETURN_SUCCESS (=0).
  */
-static errno_t example_compute_2Dimage_total(IMGID img, double scalingcoeff)
+static errno_t example_compute_2Dimage_total(
+    IMGID *imgptr,
+    double scalingcoeff
+)
 {
-    // entering function, updating trace accordingly
+    // The preferred way to have images and streams as function args is to pass a pointer to IMGID struct.
+    // Here, the function needs to change the IMGID content (call to resolveIMGID).
+    // Accessing images through IMGID is faster than through their names, as there is no need to resolve
+    // the image (find out which ID corresponds to its name) each time the function is called.
+
+    // Entering function, updating trace accordingly
     DEBUG_TRACE_FSTART();
 
-    // Resolve image if not already resolved
-    resolveIMGID(&img, ERRMODE_ABORT);
-    // abort if unable to resolve
+    // Resolve image if not already resolved.
+    // This is a low-overhead function if the image is already in memory and imgptr already pointing to it.
+    // If not already connected, the function will use imgptr->name to try to connect to it.
+    resolveIMGID(imgptr, ERRMODE_ABORT);
+    // Abort if unable to resolve.
     // Upon success, these are available for use:
-    // img.name, img.naxis, img.ID, img.size, img.im
+    // imgptr->name, imgptr->naxis, imgptr->ID, imgptr->size, imgptr->im
 
-
-    uint32_t  xsize  = img.md->size[0];
-    uint32_t  ysize  = img.md->size[1];
+    // From now on, we access the image and its metadata through its IMGID
+    uint32_t  xsize  = imgptr->md->size[0];
+    uint32_t  ysize  = imgptr->md->size[1];
     uint64_t  xysize = xsize * ysize;
 
     double total = 0.0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        total += img.im->array.F[ii];
+        total += imgptr->im->array.F[ii];
     }
     total *= scalingcoeff;
 
     printf("image %s total = %lf (scaling coeff %lf)\n",
-           img.im->name,
+           imgptr->im->name,
            total,
            scalingcoeff);
 
@@ -116,7 +139,16 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    example_compute_2Dimage_total(mkIMGID_from_name(inimname), *scoeff);
+
+    // Note how we are accessing the image from its name.
+    IMGID img = mkIMGID_from_name(inimname);
+    // The function mkIMGID_from_name takes the name as argument and forms an IMGID from it.
+    // At this point the connection to the image has not been established. This will be done
+    // on the first call of resolveIMGID inside the compute function.
+
+    example_compute_2Dimage_total(
+        &img,
+        *scoeff);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
