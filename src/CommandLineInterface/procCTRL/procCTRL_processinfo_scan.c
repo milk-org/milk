@@ -355,7 +355,10 @@ void *processinfo_scan(void *thptr)
         // CONNECT TO ALL ACTIVE SHMs
         //
 
-        for(int pinfodispindex = 0; pinfodispindex < pinfop->NBpindexActive;
+        int write_pinfodispindex = 0;
+        int max_pinfodispindex = pinfop->NBpindexActive;
+
+        for(int pinfodispindex = 0; pinfodispindex < max_pinfodispindex;
                 pinfodispindex++)
         {
             int pinfolistindex = pinfop->pindexActive[pinfodispindex];
@@ -405,50 +408,58 @@ void *processinfo_scan(void *thptr)
             }
             else
             {
+                if(write_pinfodispindex != pinfodispindex)
+                {
+                    pinfop->pindexActive[write_pinfodispindex] = pinfolistindex;
+                }
+
                 PROCESSINFO_SCAN_DEBUGLOG(
                     "     shm %d linked to pinfodisp %d/%ld\n",
                     pinfolistindex,
-                    pinfodispindex,
+                    write_pinfodispindex,
                     pinfop->NBpinfodisp);
                 pinfop->pinfommapped[pinfolistindex] = 1;
 
-                pinfop->pinfodisp[pinfodispindex].pindex = pinfolistindex;
+                pinfop->pinfodisp[write_pinfodispindex].pindex = pinfolistindex;
 
 
                 PROCESSINFO_SCAN_DEBUGLOG(
                     "     shm name : %s\n",
                     pinfop->pinfoarray[pinfolistindex]->name);
-                strncpy(pinfop->pinfodisp[pinfodispindex].name,
+                strncpy(pinfop->pinfodisp[write_pinfodispindex].name,
                         pinfop->pinfoarray[pinfolistindex]->name,
                         40 - 1);
                 PROCESSINFO_SCAN_DEBUGLOG(
                     "     shm name : %s\n",
-                    pinfop->pinfodisp[pinfodispindex].name);
+                    pinfop->pinfodisp[write_pinfodispindex].name);
 
 
                 PROCESSINFO_SCAN_DEBUGLOG(
                     "     shm loopcnt : %ld\n",
                     pinfop->pinfoarray[pinfolistindex]->loopcnt);
 
-                pinfop->pinfodisp[pinfodispindex].loopcnt =
+                pinfop->pinfodisp[write_pinfodispindex].loopcnt =
                     pinfop->pinfoarray[pinfolistindex]->loopcnt;
 
 
                 DEBUG_TRACEPOINT(" ");
 
-                pinfop->pinfodisp[pinfodispindex].active =
+                pinfop->pinfodisp[write_pinfodispindex].active =
                     pinfolist->active[pinfolistindex];
-                pinfop->pinfodisp[pinfodispindex].PID =
+                pinfop->pinfodisp[write_pinfodispindex].PID =
                     pinfolist->PIDarray[pinfolistindex];
 
                 PROCESSINFO_SCAN_DEBUGLOG(
                     "     PID %ld  active %d\n",
-                    (long) pinfop->pinfodisp[pinfodispindex].PID,
-                    pinfop->pinfodisp[pinfodispindex].active);
+                    (long) pinfop->pinfodisp[write_pinfodispindex].PID,
+                    pinfop->pinfodisp[write_pinfodispindex].active);
 
-                pinfop->pinfodisp[pinfodispindex].updatecnt++;
+                pinfop->pinfodisp[write_pinfodispindex].updatecnt++;
+
+                write_pinfodispindex++;
             }
         }
+        pinfop->NBpindexActive = write_pinfodispindex;
 
 
 
