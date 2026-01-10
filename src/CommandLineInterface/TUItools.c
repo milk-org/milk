@@ -572,7 +572,10 @@ void TUI_atexit()
 {
     //printf("exiting CTRLscreen\n");
 
-    // endwin();
+    if(screenprintmode == SCREENPRINT_NCURSES)
+    {
+        endwin();
+    }
 }
 
 errno_t TUI_ncurses_refresh()
