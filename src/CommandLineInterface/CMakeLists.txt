@@ -272,6 +272,11 @@ install(FILES streamCTRL/streamCTRL_TUI.h
 
 
 
+add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
+target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
+
+install(TARGETS milk-streamCTRL DESTINATION bin)
+
 # TESTING
 
 include(CTest)
