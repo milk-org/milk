@@ -684,6 +684,12 @@ errno_t processinfo_CTRLscreen()
             }
             break;
 
+        case KEY_RESIZE:
+            getmaxyx(stdscr, wrow, wcol);
+            clear();
+            refresh();
+            break;
+
         case KEY_DOWN:
             pindexActiveSelected++;
             if(pindexActiveSelected > procinfoproc.NBpindexActive - 1)
