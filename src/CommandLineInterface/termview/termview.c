@@ -17,6 +17,11 @@ static int charset_len = 10;
 static termview_options_t current_options;
 static bool has_color_support = false;
 
+// Zoom and Pan state
+static double view_zoom = 1.0;
+static double view_center_x = 0.5; // Normalized 0.0 to 1.0
+static double view_center_y = 0.5; // Normalized 0.0 to 1.0
+
 // Color pair ranges
 #define COLOR_BASE_HEAT 20
 #define COLOR_BASE_COLD 30
@@ -126,6 +131,38 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             case 'r':
                 current_options.range = (current_options.range + 1) % RANGE_NB;
                 break;
+            // Zoom keys
+            case '+':
+            case '=':
+                view_zoom *= 1.2;
+                break;
+            case '-':
+            case '_':
+                view_zoom /= 1.2;
+                if (view_zoom < 0.1) view_zoom = 0.1;
+                break;
+            case '0':
+                view_zoom = 1.0;
+                view_center_x = 0.5;
+                view_center_y = 0.5;
+                break;
+            // Pan keys
+            case KEY_LEFT:
+                view_center_x -= 0.1 / view_zoom;
+                if (view_center_x < 0.0) view_center_x = 0.0;
+                break;
+            case KEY_RIGHT:
+                view_center_x += 0.1 / view_zoom;
+                if (view_center_x > 1.0) view_center_x = 1.0;
+                break;
+            case KEY_UP:
+                view_center_y -= 0.1 / view_zoom;
+                if (view_center_y < 0.0) view_center_y = 0.0;
+                break;
+            case KEY_DOWN:
+                view_center_y += 0.1 / view_zoom;
+                if (view_center_y > 1.0) view_center_y = 1.0;
+                break;
         }
 
         if (loop == 0) break;
@@ -151,20 +188,40 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             display_buffer = (double*)realloc(display_buffer, buffer_size * sizeof(double));
         }
 
-        // Subsample
-        double step_x = 1.0;
-        double step_y = 1.0;
-        if (xsize > disp_cols) step_x = (double)xsize / disp_cols;
-        if (ysize > disp_rows) step_y = (double)ysize / disp_rows;
+        // Subsample logic with Zoom/Pan
+        // Viewport size in image pixels
+        double view_w_img = (double)xsize / view_zoom;
+        double view_h_img = (double)ysize / view_zoom;
 
+        // Start coordinates (top-left of viewport)
+        // Center is at view_center_x * xsize
+        double start_x = view_center_x * xsize - view_w_img / 2.0;
+        double start_y = view_center_y * ysize - view_h_img / 2.0;
+
+        // Step size per screen pixel
+        double step_x = view_w_img / disp_cols;
+        double step_y = view_h_img / disp_rows;
+
+        // Populate buffer
         int buf_idx = 0;
         for (int i = 0; i < disp_rows; i++) {
             for (int j = 0; j < disp_cols; j++) {
-                int img_y = (int)(i * step_y);
-                int img_x = (int)(j * step_x);
+                // Point in image space
+                int img_y = (int)(start_y + i * step_y);
+                int img_x = (int)(start_x + j * step_x);
+                
                 double val = 0.0;
-                if (img_x < xsize && img_y < ysize) {
+                if (img_x >= 0 && img_x < xsize && img_y >= 0 && img_y < ysize) {
                     val = get_pixel_value(&img, img_x, img_y);
+                } else {
+                    // Out of bounds - use NaN or marker? 
+                    // For now, 0.0 or maybe min_val later.
+                    // Let's use NAN to indicate out of bounds if possible, or just skip it in stats.
+                    // But we don't have stats yet. 
+                    // Let's rely on get_pixel_value returning 0.0 for OOB. 
+                    // Note: This might skew stats if 0.0 is data.
+                    // Better approach: handle OOB during rendering or filtering.
+                    val = get_pixel_value(&img, img_x, img_y); 
                 }
                 display_buffer[buf_idx++] = val;
             }
@@ -201,18 +258,21 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
 
         if (max_val <= min_val) max_val = min_val + 1.0; // Avoid div/0
 
-        // Apply Scaling
-        // We apply scaling to the normalization limits, not the data first, 
-        // to properly handle ranges. Actually, it's better to scale data then normalize.
-        // But for display, we map val -> [0,1].
-        // Linear: (v - min)/(max - min)
-        // Sqrt: (sqrt(v - min))/(sqrt(max - min)) -- assumes v >= min
-        // Log: log(v - min + 1) / log(max - min + 1)
-
         // Render
         buf_idx = 0;
         for (int i = 0; i < disp_rows; i++) {
             for (int j = 0; j < disp_cols; j++) {
+                
+                // Re-calculate coordinates to check OOB for visual feedback (optional)
+                int img_y = (int)(start_y + i * step_y);
+                int img_x = (int)(start_x + j * step_x);
+                bool in_bounds = (img_x >= 0 && img_x < xsize && img_y >= 0 && img_y < ysize);
+
+                if (!in_bounds) {
+                    buf_idx++;
+                    continue; // Skip drawing, leaves blank/black
+                }
+
                 double val = display_buffer[buf_idx++];
                 double norm_val = 0.0;
 
@@ -292,8 +352,8 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
         }
 
         mvprintw(info_row, 0, "Image: %s [%d x %d] Type: %d", img.md[0].name, xsize, ysize, img.md[0].datatype);
-        mvprintw(info_row + 1, 0, "Val: [%.4g : %.4g]", min_val, max_val);
-        mvprintw(info_row + 2, 0, "[C]map: %s  [S]cale: %s  [R]ange: %s  (q:quit)", cmap_str, scale_str, range_str);
+        mvprintw(info_row + 1, 0, "Val: [%.4g : %.4g] Zoom: %.2fx", min_val, max_val, view_zoom);
+        mvprintw(info_row + 2, 0, "[C]map: %s  [S]cale: %s  [R]ange: %s  (+-:Zoom Arrow:Pan 0:Reset q:Quit)", cmap_str, scale_str, range_str);
 
         refresh();
         usleep(50000);
