@@ -3,7 +3,7 @@
  * @brief   simple function example with FPS and processinfo support
  *
  * Example 2
- * Demonstrates using FPS to hold function arguments and parameters.
+ * Demonstrates using FPS to hold function arguments and parameters with the Function Parameter Structure (FPS).
  * See script milk-test-simplefuncFPS for example usage.
  */
 
@@ -30,12 +30,11 @@ static CLICMDARGDEF farg[] =
         NULL
     },
     {
-        // argument is not part of CLI call, FPFLAG ignored
         CLIARG_FLOAT64,
         ".scaling",
         "scaling coefficient",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
         (void **) &scoeff,
         NULL
     }
@@ -65,7 +64,7 @@ static errno_t help_function()
  *
  */
 static errno_t example_compute_2Dimage_total(
-    IMGID img,
+    IMGID *imgptr,
     double scalingcoeff)
 {
     DEBUG_TRACE_FSTART();
@@ -73,22 +72,22 @@ static errno_t example_compute_2Dimage_total(
     // Ensure the input image is in memory.
     // No harm calling this here and in the upstream function,
     // as the overhead is very small if the image is already resolved
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(imgptr, ERRMODE_ABORT);
 
-    uint32_t xsize  = img.md->size[0];
-    uint32_t ysize  = img.md->size[1];
+    uint32_t xsize  = imgptr->md->size[0];
+    uint32_t ysize  = imgptr->md->size[1];
     uint64_t xysize = xsize * ysize;
 
 
     double total = 0.0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        total += img.im->array.F[ii];
+        total += imgptr->im->array.F[ii];
     }
     total *= scalingcoeff;
 
     printf("image %s total = %lf (scaling coeff %lf)\n",
-           img.im->name,
+           imgptr->im->name,
            total,
            scalingcoeff);
 
@@ -115,7 +114,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    example_compute_2Dimage_total(img, *scoeff);
+    example_compute_2Dimage_total(&img, *scoeff);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -125,8 +124,9 @@ static errno_t compute_function()
 
 
 
-
+// Enables FPS support
 INSERT_STD_FPSCLIfunctions
+
 
 errno_t
 CLIADDCMD_milk_module_example__simplefunc_FPS()
