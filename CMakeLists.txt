@@ -394,11 +394,10 @@ install(PROGRAMS
       scripts/milk-commands
 			scripts/milk-cubeslice2shm
 			scripts/milk-exec
-      			scripts/milk-fpslist-addentry
-      			scripts/milk-procCTRL
-      			scripts/milk-fpsCTRL
-      
-			scripts/milk-cr2tofits
+      						scripts/milk-fpslist-addentry
+      						scripts/milk-fpsCTRL
+      						scripts/milk-cr2tofits
+      			
 			scripts/milk-FITS2shm
       scripts/milk-fitsheader
 			scripts/milk-fpsmkcmd
