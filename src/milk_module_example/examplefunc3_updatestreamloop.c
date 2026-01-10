@@ -3,6 +3,7 @@
  * @brief   simple procinfo+fps example - brief, no comments, uses macros
  *
  * Example 3
+ * Demonstates function that updates a stream
  */
 
 #include "CommandLineInterface/CLIcore.h"
@@ -50,10 +51,14 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    // Notify that the image is being changed
+    // Notify that the image is being changed.
+    // This is required prior to modifying image content so that consumers can be informed.
     img.md->write = 1;
 
     // Insert code, or function(s) that perform operation(s) on image
+    // If the code is very brief, it can be insterted right here, otherwise
+    // it can be in a function, which may be made visible/accessible outside of this translation unit
+    // if the function needs to be used outside of this call.
 
     // Call this to notify consumers that the image has been updated
     processinfo_update_output_stream(processinfo, img.ID);

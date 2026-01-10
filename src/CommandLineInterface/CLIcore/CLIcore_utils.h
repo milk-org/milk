@@ -907,6 +907,8 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
 
 /** @brief Resolve image already in memory
  *
+ * 
+ * 
  * ERRMODE values
  * ERRMODE_WARN : print warning
  * ERRMODE_FAIL : error
@@ -918,7 +920,9 @@ static inline imageID resolveIMGID(
 )
 {
     // IF:
-    // Not resolved before OR create counter mismatch OR not used
+    // Not resolved before OR create counter mismatch OR not used.
+    // Note: we are comparing img->createcnt to data.image[img->ID].createcnt to check if the
+    // image has been re-created, indicating that our pointers are stale.
     if((img->ID == -1)
             || (img->createcnt != data.image[img->ID].createcnt)
             || (data.image[img->ID].used != 1))
