@@ -15,6 +15,7 @@ set(SOURCEFILES
 	kbdhit.c
 	percentile.c
 	print_header.c
+	stream_monproc.c
 	streamtiming_stats.c
 	timediff.c
 )
@@ -29,6 +30,7 @@ set(INCLUDEFILES
 	kbdhit.h
 	percentile.h
 	print_header.h
+	stream_monproc.h
 	streamtiming_stats.h
 	timediff.h
 )
