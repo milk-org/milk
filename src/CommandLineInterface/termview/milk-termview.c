@@ -18,7 +18,9 @@ int main(int argc, char *argv[])
 
     // Default options
     termview_options_t options;
-    options.force_ascii = false;
+    options.colormap = COLORMAP_GREYSCALE;
+    options.scale = SCALE_LINEAR;
+    options.range = RANGE_MINMAX;
 
     // Parse arguments
     static struct option long_options[] = {
@@ -31,7 +33,7 @@ int main(int argc, char *argv[])
     while ((opt = getopt_long(argc, argv, "a", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'a':
-                options.force_ascii = true;
+                options.colormap = COLORMAP_GREYSCALE;
                 break;
             default:
                 printf("Usage: %s [-a|--ascii] <image_name>\n", argv[0]);
