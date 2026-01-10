@@ -510,10 +510,12 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
                   COLOR_WHITE); // highlighted version of #2
 
         // handle window resize
+        /*
         struct sigaction sa;
         memset(&sa, 0, sizeof(struct sigaction));
         sa.sa_handler = TUI_handle_winch;
         sigaction(SIGWINCH, &sa, NULL);
+        */
     }
 
     DEBUG_TRACE_FEXIT();
