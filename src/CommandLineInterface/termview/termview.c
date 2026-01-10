@@ -16,17 +16,24 @@ static int charset_len = 10;
 // Internal state
 static termview_options_t current_options;
 static bool has_color_support = false;
-
-// Zoom and Pan state
-static double view_zoom = 1.0;
-static double view_center_x = 0.5; // Normalized 0.0 to 1.0
-static double view_center_y = 0.5; // Normalized 0.0 to 1.0
+static bool has_256_color = false;
 
 // Color pair ranges
 #define COLOR_BASE_HEAT 20
 #define COLOR_BASE_COLD 30
 #define COLOR_BASE_JET 40
 #define NB_COLORS_MAP 6
+
+// 256-color mode ranges (64 steps each)
+#define STEPS_256 64
+#define BASE_256_HEAT 100
+#define BASE_256_COLD 200
+#define BASE_256_JET 300
+
+// Zoom and Pan state
+static double view_zoom = 1.0;
+static double view_center_x = 0.5;
+static double view_center_y = 0.5;
 
 static double get_pixel_value(IMAGE *img, int x, int y) {
     long idx = y * img->md[0].size[0] + x;
@@ -51,33 +58,111 @@ static double get_pixel_value(IMAGE *img, int x, int y) {
     }
 }
 
+// Convert normalized RGB to 256-color index (6x6x6 cube starts at 16)
+static int rgb_to_256(float r, float g, float b) {
+    int ir = (int)(r * 5.0 + 0.5);
+    int ig = (int)(g * 5.0 + 0.5);
+    int ib = (int)(b * 5.0 + 0.5);
+    return 16 + (ir * 36) + (ig * 6) + ib;
+}
+
+static void get_heat_color(float v, float *r, float *g, float *b) {
+    *r = *g = *b = 0.0;
+    if (v < 0.25) { // Black to Blue
+        *b = v * 4.0;
+    } else if (v < 0.5) { // Blue to Cyan
+        *b = 1.0;
+        *g = (v - 0.25) * 4.0;
+    } else if (v < 0.75) { // Cyan to Yellow
+        *b = 1.0 - (v - 0.5) * 4.0;
+        *g = 1.0;
+        *r = (v - 0.5) * 4.0;
+    } else { // Yellow to Red
+        *g = 1.0 - (v - 0.75) * 4.0;
+        *r = 1.0;
+    }
+}
+
+static void get_cold_color(float v, float *r, float *g, float *b) {
+    *r = *g = *b = 0.0;
+    if (v < 0.33) { // Black to Blue
+        *b = v * 3.0;
+    } else if (v < 0.66) { // Blue to Cyan
+        *b = 1.0;
+        *g = (v - 0.33) * 3.0;
+    } else { // Cyan to White
+        *b = 1.0;
+        *g = 1.0;
+        *r = (v - 0.66) * 3.0;
+    }
+}
+
+static void get_jet_color(float v, float *r, float *g, float *b) {
+    *r = *g = *b = 0.0;
+    if (v < 0.125) {
+        *b = 0.5 + 4.0 * v;
+    } else if (v < 0.375) {
+        *b = 1.0;
+        *g = (v - 0.125) * 4.0;
+    } else if (v < 0.625) {
+        *b = 1.0 - (v - 0.375) * 4.0;
+        *g = 1.0;
+        *r = (v - 0.375) * 4.0;
+    } else if (v < 0.875) {
+        *g = 1.0 - (v - 0.625) * 4.0;
+        *r = 1.0;
+    } else {
+        *r = 1.0 - 0.5 * (v - 0.875) * 8.0;
+    }
+}
+
 static void init_colormaps() {
     if (!has_colors()) return;
 
-    // HEAT: Blue -> Cyan -> Green -> Yellow -> Red -> Magenta
-    init_pair(COLOR_BASE_HEAT + 0, COLOR_WHITE, COLOR_BLUE);
-    init_pair(COLOR_BASE_HEAT + 1, COLOR_BLACK, COLOR_CYAN);
-    init_pair(COLOR_BASE_HEAT + 2, COLOR_BLACK, COLOR_GREEN);
-    init_pair(COLOR_BASE_HEAT + 3, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(COLOR_BASE_HEAT + 4, COLOR_WHITE, COLOR_RED);
-    init_pair(COLOR_BASE_HEAT + 5, COLOR_WHITE, COLOR_MAGENTA);
+    if (COLORS >= 256) {
+        has_256_color = true;
+        float r, g, b;
+        for (int i = 0; i < STEPS_256; i++) {
+            float v = (float)i / (STEPS_256 - 1);
+            
+            // Heat
+            get_heat_color(v, &r, &g, &b);
+            init_pair(BASE_256_HEAT + i, COLOR_WHITE, rgb_to_256(r, g, b));
 
-    // COLD: White -> Cyan -> Blue -> Black (Simulated with background)
-    init_pair(COLOR_BASE_COLD + 0, COLOR_BLACK, COLOR_WHITE);
-    init_pair(COLOR_BASE_COLD + 1, COLOR_BLACK, COLOR_CYAN);
-    init_pair(COLOR_BASE_COLD + 2, COLOR_WHITE, COLOR_BLUE);
-    init_pair(COLOR_BASE_COLD + 3, COLOR_WHITE, COLOR_BLACK);
-    // Fill remaining to avoid crash if accessed, map to darkest
-    init_pair(COLOR_BASE_COLD + 4, COLOR_WHITE, COLOR_BLACK);
-    init_pair(COLOR_BASE_COLD + 5, COLOR_WHITE, COLOR_BLACK);
+            // Cold
+            get_cold_color(v, &r, &g, &b);
+            init_pair(BASE_256_COLD + i, COLOR_WHITE, rgb_to_256(r, g, b));
 
-    // JET: Blue -> Cyan -> Green -> Yellow -> Red
-    init_pair(COLOR_BASE_JET + 0, COLOR_WHITE, COLOR_BLUE);
-    init_pair(COLOR_BASE_JET + 1, COLOR_BLACK, COLOR_CYAN);
-    init_pair(COLOR_BASE_JET + 2, COLOR_BLACK, COLOR_GREEN);
-    init_pair(COLOR_BASE_JET + 3, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(COLOR_BASE_JET + 4, COLOR_WHITE, COLOR_RED);
-    init_pair(COLOR_BASE_JET + 5, COLOR_WHITE, COLOR_RED); // Repeat max
+            // Jet
+            get_jet_color(v, &r, &g, &b);
+            init_pair(BASE_256_JET + i, COLOR_WHITE, rgb_to_256(r, g, b));
+        }
+    } else {
+        // Fallback standard colors
+        // HEAT
+        init_pair(COLOR_BASE_HEAT + 0, COLOR_WHITE, COLOR_BLUE);
+        init_pair(COLOR_BASE_HEAT + 1, COLOR_BLACK, COLOR_CYAN);
+        init_pair(COLOR_BASE_HEAT + 2, COLOR_BLACK, COLOR_GREEN);
+        init_pair(COLOR_BASE_HEAT + 3, COLOR_BLACK, COLOR_YELLOW);
+        init_pair(COLOR_BASE_HEAT + 4, COLOR_WHITE, COLOR_RED);
+        init_pair(COLOR_BASE_HEAT + 5, COLOR_WHITE, COLOR_MAGENTA);
+
+        // COLD
+        init_pair(COLOR_BASE_COLD + 0, COLOR_BLACK, COLOR_WHITE);
+        init_pair(COLOR_BASE_COLD + 1, COLOR_BLACK, COLOR_CYAN);
+        init_pair(COLOR_BASE_COLD + 2, COLOR_WHITE, COLOR_BLUE);
+        init_pair(COLOR_BASE_COLD + 3, COLOR_WHITE, COLOR_BLACK);
+        init_pair(COLOR_BASE_COLD + 4, COLOR_WHITE, COLOR_BLACK);
+        init_pair(COLOR_BASE_COLD + 5, COLOR_WHITE, COLOR_BLACK);
+
+        // JET
+        init_pair(COLOR_BASE_JET + 0, COLOR_WHITE, COLOR_BLUE);
+        init_pair(COLOR_BASE_JET + 1, COLOR_BLACK, COLOR_CYAN);
+        init_pair(COLOR_BASE_JET + 2, COLOR_BLACK, COLOR_GREEN);
+        init_pair(COLOR_BASE_JET + 3, COLOR_BLACK, COLOR_YELLOW);
+        init_pair(COLOR_BASE_JET + 4, COLOR_WHITE, COLOR_RED);
+        init_pair(COLOR_BASE_JET + 5, COLOR_WHITE, COLOR_RED);
+    }
 }
 
 static int compare_doubles(const void *a, const void *b) {
@@ -188,62 +273,40 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             display_buffer = (double*)realloc(display_buffer, buffer_size * sizeof(double));
         }
 
-        // Subsample logic with Zoom/Pan
-        // Viewport size in image pixels
+        // Subsample
         double view_w_img = (double)xsize / view_zoom;
         double view_h_img = (double)ysize / view_zoom;
-
-        // Start coordinates (top-left of viewport)
-        // Center is at view_center_x * xsize
         double start_x = view_center_x * xsize - view_w_img / 2.0;
         double start_y = view_center_y * ysize - view_h_img / 2.0;
-
-        // Step size per screen pixel
         double step_x = view_w_img / disp_cols;
         double step_y = view_h_img / disp_rows;
 
-        // Populate buffer
         int buf_idx = 0;
         for (int i = 0; i < disp_rows; i++) {
             for (int j = 0; j < disp_cols; j++) {
-                // Point in image space
                 int img_y = (int)(start_y + i * step_y);
                 int img_x = (int)(start_x + j * step_x);
-                
                 double val = 0.0;
                 if (img_x >= 0 && img_x < xsize && img_y >= 0 && img_y < ysize) {
                     val = get_pixel_value(&img, img_x, img_y);
-                } else {
-                    // Out of bounds - use NaN or marker? 
-                    // For now, 0.0 or maybe min_val later.
-                    // Let's use NAN to indicate out of bounds if possible, or just skip it in stats.
-                    // But we don't have stats yet. 
-                    // Let's rely on get_pixel_value returning 0.0 for OOB. 
-                    // Note: This might skew stats if 0.0 is data.
-                    // Better approach: handle OOB during rendering or filtering.
-                    val = get_pixel_value(&img, img_x, img_y); 
                 }
                 display_buffer[buf_idx++] = val;
             }
         }
         int num_pixels = buf_idx;
 
-        // Compute Min/Max based on Range Mode
+        // Compute Stats
         double min_val = 0.0, max_val = 1.0;
-        
         if (current_options.range == RANGE_MINMAX) {
-            min_val = 1e20;
-            max_val = -1e20;
+            min_val = 1e20; max_val = -1e20;
             for(int k=0; k<num_pixels; k++) {
                 if(display_buffer[k] < min_val) min_val = display_buffer[k];
                 if(display_buffer[k] > max_val) max_val = display_buffer[k];
             }
         } else {
-            // Percentiles require sorting
             double *sorted_buf = (double*)malloc(num_pixels * sizeof(double));
             memcpy(sorted_buf, display_buffer, num_pixels * sizeof(double));
             qsort(sorted_buf, num_pixels, sizeof(double), compare_doubles);
-            
             double p_low = 0.0, p_high = 1.0;
             switch(current_options.range) {
                 case RANGE_01_99: p_low = 0.01; p_high = 0.99; break;
@@ -255,69 +318,61 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             max_val = sorted_buf[(int)(p_high * (num_pixels-1))];
             free(sorted_buf);
         }
-
-        if (max_val <= min_val) max_val = min_val + 1.0; // Avoid div/0
+        if (max_val <= min_val) max_val = min_val + 1.0;
 
         // Render
         buf_idx = 0;
         for (int i = 0; i < disp_rows; i++) {
             for (int j = 0; j < disp_cols; j++) {
-                
-                // Re-calculate coordinates to check OOB for visual feedback (optional)
                 int img_y = (int)(start_y + i * step_y);
                 int img_x = (int)(start_x + j * step_x);
                 bool in_bounds = (img_x >= 0 && img_x < xsize && img_y >= 0 && img_y < ysize);
 
                 if (!in_bounds) {
                     buf_idx++;
-                    continue; // Skip drawing, leaves blank/black
+                    continue; 
                 }
 
                 double val = display_buffer[buf_idx++];
                 double norm_val = 0.0;
 
-                // Clip to range
+                // Scale
                 if (val < min_val) val = min_val;
                 if (val > max_val) val = max_val;
-
                 double v_offset = val - min_val;
                 double range = max_val - min_val;
 
                 switch(current_options.scale) {
-                    case SCALE_LINEAR:
-                        norm_val = v_offset / range;
-                        break;
-                    case SCALE_SQRT:
-                        norm_val = sqrt(v_offset) / sqrt(range);
-                        break;
-                    case SCALE_LOG:
-                        norm_val = log(v_offset + 1.0) / log(range + 1.0);
-                        break;
-                    default:
-                        norm_val = v_offset / range;
+                    case SCALE_LINEAR: norm_val = v_offset / range; break;
+                    case SCALE_SQRT:   norm_val = sqrt(v_offset) / sqrt(range); break;
+                    case SCALE_LOG:    norm_val = log(v_offset + 1.0) / log(range + 1.0); break;
+                    default:           norm_val = v_offset / range;
                 }
-
                 if (norm_val < 0) norm_val = 0;
                 if (norm_val > 1) norm_val = 1;
 
-                // Colormap rendering
+                // Draw
                 if (current_options.colormap == COLORMAP_GREYSCALE || !has_color_support) {
                     int char_idx = (int)(norm_val * (charset_len - 1));
                     mvaddch(i, j, charset[char_idx]);
                 } else {
-                    int base_pair = COLOR_BASE_HEAT;
-                    int num_colors_in_map = NB_COLORS_MAP;
-                    
-                    if (current_options.colormap == COLORMAP_COLD) {
-                        base_pair = COLOR_BASE_COLD;
-                        num_colors_in_map = 4; // Cold map has 4 colors defined
-                    } else if (current_options.colormap == COLORMAP_JET) {
-                        base_pair = COLOR_BASE_JET;
+                    int pair = 0;
+                    if (has_256_color) {
+                        int base = BASE_256_HEAT;
+                        if (current_options.colormap == COLORMAP_COLD) base = BASE_256_COLD;
+                        else if (current_options.colormap == COLORMAP_JET) base = BASE_256_JET;
+                        
+                        int idx = (int)(norm_val * (STEPS_256 - 1));
+                        pair = base + idx;
+                    } else {
+                        int base = COLOR_BASE_HEAT;
+                        int n = NB_COLORS_MAP;
+                        if (current_options.colormap == COLORMAP_COLD) { base = COLOR_BASE_COLD; n = 4; }
+                        else if (current_options.colormap == COLORMAP_JET) { base = COLOR_BASE_JET; }
+                        
+                        int idx = (int)(norm_val * (n - 1));
+                        pair = base + idx;
                     }
-
-                    int color_idx = (int)(norm_val * (num_colors_in_map - 1));
-                    int pair = base_pair + color_idx;
-                    
                     attron(COLOR_PAIR(pair));
                     mvaddch(i, j, ' ');
                     attroff(COLOR_PAIR(pair));
@@ -327,7 +382,6 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
 
         // Draw info
         int info_row = wrow - 3;
-        
         const char* cmap_str = "GREY";
         switch(current_options.colormap) {
             case COLORMAP_HEAT: cmap_str = "HEAT"; break;
@@ -335,14 +389,12 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             case COLORMAP_JET: cmap_str = "JET"; break;
             default: break;
         }
-        
         const char* scale_str = "LIN";
         switch(current_options.scale) {
             case SCALE_SQRT: scale_str = "SQRT"; break;
             case SCALE_LOG: scale_str = "LOG"; break;
             default: break;
         }
-
         const char* range_str = "MINMAX";
         switch(current_options.range) {
             case RANGE_01_99: range_str = "1-99%"; break;
