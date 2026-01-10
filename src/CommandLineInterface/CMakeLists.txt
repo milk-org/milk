@@ -282,6 +282,11 @@ target_link_libraries(milk-procCTRL PUBLIC CLIcore ImageStreamIO)
 
 install(TARGETS milk-procCTRL DESTINATION bin)
 
+add_executable(milk-termview termview/milk-termview.c termview/termview.c)
+target_link_libraries(milk-termview PUBLIC CLIcore ImageStreamIO)
+
+install(TARGETS milk-termview DESTINATION bin)
+
 # TESTING
 
 include(CTest)
