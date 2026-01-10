@@ -34,10 +34,11 @@ static double current_max_val = 1.0;
 #define NB_COLORS_MAP 6
 
 // 256-color mode ranges (64 steps each)
+// Shifted to fit within 256 COLOR_PAIRS limit
 #define STEPS_256 64
-#define BASE_256_HEAT 100
-#define BASE_256_COLD 200
-#define BASE_256_JET 300
+#define BASE_256_HEAT 50
+#define BASE_256_COLD 114
+#define BASE_256_JET 178
 
 static double get_pixel_value(IMAGE *img, int x, int y) {
     long idx = y * img->md[0].size[0] + x;
@@ -64,12 +65,18 @@ static double get_pixel_value(IMAGE *img, int x, int y) {
 
 // Convert normalized RGB to 256-color index (6x6x6 cube starts at 16)
 static int rgb_to_256(float r, float g, float b) {
+    if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
+    if (g < 0.0f) g = 0.0f; if (g > 1.0f) g = 1.0f;
+    if (b < 0.0f) b = 0.0f; if (b > 1.0f) b = 1.0f;
+
     int ir = (int)(r * 5.0 + 0.5);
     int ig = (int)(g * 5.0 + 0.5);
     int ib = (int)(b * 5.0 + 0.5);
-    if (ir < 0) ir = 0; if (ir > 5) ir = 5;
-    if (ig < 0) ig = 0; if (ig > 5) ig = 5;
-    if (ib < 0) ib = 0; if (ib > 5) ib = 5;
+    
+    if (ir > 5) ir = 5;
+    if (ig > 5) ig = 5;
+    if (ib > 5) ib = 5;
+
     return 16 + (ir * 36) + (ig * 6) + ib;
 }
 
@@ -114,27 +121,6 @@ static void get_jet_color(float v, float *r, float *g, float *b) {
     if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
 
     // Blue -> Cyan -> Green -> Yellow -> Red
-    if (v < 0.125) {
-        *b = 0.5 + 4.0 * v; // Dark Blue to Blue
-    } else if (v < 0.375) {
-        *b = 1.0;
-        *g = (v - 0.125) * 4.0; // Blue to Cyan
-    } else if (v < 0.625) {
-        *b = 1.0 - (v - 0.375) * 4.0; // Cyan to Green
-        *g = 1.0;
-        *r = (v - 0.375) * 4.0; // Green to Yellow? Wait. 
-        // Standard Jet:
-        // 0.0-0.125: 0,0,0.5 -> 0,0,1
-        // 0.125-0.375: 0,0,1 -> 0,1,1
-        // 0.375-0.625: 0,1,1 -> 0,1,0 ??? No. Jet goes Cyan->Green->Yellow
-    }
-    
-    // Simpler 4-segment Jet:
-    // 0.0-0.25: Blue -> Cyan
-    // 0.25-0.5: Cyan -> Green
-    // 0.5-0.75: Green -> Yellow
-    // 0.75-1.0: Yellow -> Red
-    
     if (v < 0.25) {
         *b = 1.0;
         *g = v * 4.0;
@@ -218,12 +204,18 @@ static double get_input_double(const char* prompt) {
     attroff(A_REVERSE);
     refresh();
 
+    // Temporarily switch to blocking mode and enable echo
+    nodelay(stdscr, FALSE);
     echo();
     curs_set(1);
+    
     char buf[32];
     mvgetnstr(r, c + strlen(prompt) + 2, buf, 30);
+    
+    // Restore settings
     noecho();
     curs_set(0);
+    nodelay(stdscr, TRUE);
     
     return atof(buf);
 }
@@ -271,9 +263,6 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             case 'r':
                 current_options.range = (current_options.range + 1) % RANGE_NB;
                 if (current_options.range == RANGE_MANUAL) {
-                    // Manual implies lock implicitly? Or just enter manual mode.
-                    // If cycling into manual, maybe prompt? Or just use previous manual vals.
-                    // Let's assume cycling uses last manual vals.
                     current_options.range_locked = true;
                 } else {
                     current_options.range_locked = false;
