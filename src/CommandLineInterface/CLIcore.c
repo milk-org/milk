@@ -283,7 +283,7 @@ void fnExit_fifoclose()
     //	system("tset");
 }
 
-static errno_t runCLI_initialize()
+errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
 
@@ -452,7 +452,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     runCLI_prompt(promptstring, prompt);
 
     // CLI initialize
-    runCLI_initialize();
+    CLI_startup();
 
     // set shared memory directory
     setSHMdir();

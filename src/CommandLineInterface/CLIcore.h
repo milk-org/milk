@@ -62,6 +62,9 @@ typedef long variableID;
 /// Size of array CLICOREVARRAY
 #define SZ_CLICOREVARRAY 1000
 
+// Initialize CLI
+errno_t CLI_startup();
+
 /// important directories and info
 extern pid_t CLIPID;         // command line interface PID
 extern char  DocDir[200];    // location of documentation
