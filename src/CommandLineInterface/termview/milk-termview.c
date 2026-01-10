@@ -1,4 +1,5 @@
 #include "milk_config.h"
+#include <getopt.h>
 #include <CommandLineInterface/CLIcore.h>
 #include <CommandLineInterface/CLIcore/CLIcore_datainit.h>
 #include <CommandLineInterface/CLIcore/CLIcore_setSHMdir.h>
@@ -15,8 +16,31 @@ int main(int argc, char *argv[])
 
     strncpy(data.processname, "termview", STRINGMAXLEN_PROCESSNAME - 1);
 
-    if (argc < 2) {
-        printf("Usage: %s <image_name>\n", argv[0]);
+    // Default options
+    termview_options_t options;
+    options.force_ascii = false;
+
+    // Parse arguments
+    static struct option long_options[] = {
+        {"ascii", no_argument, 0, 'a'},
+        {0, 0, 0, 0}
+    };
+
+    int opt;
+    int long_index = 0;
+    while ((opt = getopt_long(argc, argv, "a", long_options, &long_index)) != -1) {
+        switch (opt) {
+            case 'a':
+                options.force_ascii = true;
+                break;
+            default:
+                printf("Usage: %s [-a|--ascii] <image_name>\n", argv[0]);
+                return 1;
+        }
+    }
+
+    if (optind >= argc) {
+        printf("Usage: %s [-a|--ascii] <image_name>\n", argv[0]);
         return 0;
     }
 
@@ -26,7 +50,7 @@ int main(int argc, char *argv[])
     CLI_data_init();
 
     // Run the tool
-    termview_screen(argv[1]);
+    termview_screen(argv[optind], options);
 
     return 0;
 }
