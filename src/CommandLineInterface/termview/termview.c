@@ -34,7 +34,7 @@ static double get_pixel_value(IMAGE *img, int x, int y) {
     }
 }
 
-errno_t termview_screen(const char *imagename)
+errno_t termview_screen(const char *imagename, termview_options_t options)
 {
     IMAGE img;
     ImageStreamIO_read_sharedmem_image_toIMAGE(imagename, &img);
@@ -47,6 +47,28 @@ errno_t termview_screen(const char *imagename)
     // Initialize TUI
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
     TUI_init_terminal(&wrow, &wcol);
+
+    bool use_color = false;
+    int num_colors = 0;
+    
+    if (has_colors() && !options.force_ascii) {
+        use_color = true;
+        // Simple 5-color heat map using standard ANSI colors
+        // Pair 20: Blue BG
+        // Pair 21: Cyan BG
+        // Pair 22: Green BG
+        // Pair 23: Yellow BG
+        // Pair 24: Red BG
+        // Pair 25: Magenta BG
+        
+        init_pair(20, COLOR_WHITE, COLOR_BLUE);
+        init_pair(21, COLOR_BLACK, COLOR_CYAN);
+        init_pair(22, COLOR_BLACK, COLOR_GREEN);
+        init_pair(23, COLOR_BLACK, COLOR_YELLOW);
+        init_pair(24, COLOR_WHITE, COLOR_RED);
+        init_pair(25, COLOR_WHITE, COLOR_MAGENTA);
+        num_colors = 6;
+    }
 
     while(loop) {
         // Handle input
@@ -112,11 +134,21 @@ errno_t termview_screen(const char *imagename)
                 
                 if (img_x < xsize && img_y < ysize) {
                     double val = get_pixel_value(&img, img_x, img_y);
-                    int char_idx = (int)((val - min_val) / (max_val - min_val) * (charset_len - 1));
-                    if (char_idx < 0) char_idx = 0;
-                    if (char_idx >= charset_len) char_idx = charset_len - 1;
-                    
-                    mvaddch(i, j, charset[char_idx]);
+                    double norm_val = (val - min_val) / (max_val - min_val);
+                    if (norm_val < 0) norm_val = 0;
+                    if (norm_val > 1) norm_val = 1;
+
+                    if (use_color) {
+                        int color_idx = (int)(norm_val * (num_colors - 1));
+                        // Map to pairs 20..25
+                        // Use a space with background color
+                        attron(COLOR_PAIR(20 + color_idx));
+                        mvaddch(i, j, ' ');
+                        attroff(COLOR_PAIR(20 + color_idx));
+                    } else {
+                        int char_idx = (int)(norm_val * (charset_len - 1));
+                        mvaddch(i, j, charset[char_idx]);
+                    }
                 }
             }
         }
@@ -124,7 +156,7 @@ errno_t termview_screen(const char *imagename)
         // Draw info
         int info_row = wrow - 3;
         mvprintw(info_row, 0, "Image: %s [%d x %d] Type: %d", img.md[0].name, xsize, ysize, img.md[0].datatype);
-        mvprintw(info_row + 1, 0, "Min: %.4g  Max: %.4g", min_val, max_val);
+        mvprintw(info_row + 1, 0, "Min: %.4g  Max: %.4g  Mode: %s", min_val, max_val, use_color ? "Color" : "ASCII");
         mvprintw(info_row + 2, 0, "Counter: %lu  (q to quit)", img.md[0].cnt0);
 
         refresh();
