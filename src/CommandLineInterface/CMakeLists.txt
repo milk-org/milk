@@ -277,6 +277,11 @@ target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
 
 install(TARGETS milk-streamCTRL DESTINATION bin)
 
+add_executable(milk-procCTRL procCTRL/milk-procCTRL.c)
+target_link_libraries(milk-procCTRL PUBLIC CLIcore ImageStreamIO)
+
+install(TARGETS milk-procCTRL DESTINATION bin)
+
 # TESTING
 
 include(CTest)
