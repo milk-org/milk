@@ -17,4 +17,8 @@ errno_t load_fits(const char *restrict file_name,
                   int      errmode,
                   imageID *ID);
 
+errno_t load_fits_IMGID(const char *restrict file_name,
+                        IMGID *imgout,
+                        int errmode);
+
 #endif

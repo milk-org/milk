@@ -47,111 +47,80 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-errno_t mk_complex_from_reim(const char *re_name,
-                             const char *im_name,
-                             const char *out_name,
-                             int         sharedmem)
+errno_t mk_complex_from_reim_IMGID(
+    IMGID *imgre,
+    IMGID *imgim,
+    IMGID *imgout
+)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID   IDre;
-    imageID   IDim;
-    imageID   IDout;
-    uint32_t *naxes = NULL;
-    int8_t    naxis;
     uint8_t   datatype_re;
     uint8_t   datatype_im;
     uint8_t   datatype_out;
 
-    IDre = image_ID(re_name);
-    IDim = image_ID(im_name);
+    resolveIMGID(imgre, ERRMODE_ABORT);
+    resolveIMGID(imgim, ERRMODE_ABORT);
 
-    datatype_re = data.image[IDre].md[0].datatype;
-    datatype_im = data.image[IDim].md[0].datatype;
-    naxis       = data.image[IDre].md[0].naxis;
+    datatype_re = imgre->md[0].datatype;
+    datatype_im = imgim->md[0].datatype;
 
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL)
+    imgout->naxis = imgre->md[0].naxis;
+    for(int8_t i = 0; i < imgout->naxis; i++)
     {
-        PRINT_ERROR("malloc error");
-        abort();
+        imgout->size[i] = imgre->md[0].size[i];
     }
-
-    for(int8_t i = 0; i < naxis; i++)
-    {
-        naxes[i] = data.image[IDre].md[0].size[i];
-    }
-    uint64_t nelement = data.image[IDre].md[0].nelement;
+    uint64_t nelement = imgre->md[0].nelement;
 
     if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
-        FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                          naxis,
-                                          naxes,
-                                          datatype_out,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDout));
+        imgout->datatype = datatype_out;
+        createimagefromIMGID(imgout);
+
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.CF[ii].re = data.image[IDre].array.F[ii];
-            data.image[IDout].array.CF[ii].im = data.image[IDim].array.F[ii];
+            imgout->im->array.CF[ii].re = imgre->im->array.F[ii];
+            imgout->im->array.CF[ii].im = imgim->im->array.F[ii];
         }
     }
     else if((datatype_re == _DATATYPE_FLOAT) &&
             (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                          naxis,
-                                          naxes,
-                                          datatype_out,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDout));
+        imgout->datatype = datatype_out;
+        createimagefromIMGID(imgout);
+
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.CD[ii].re = data.image[IDre].array.F[ii];
-            data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
+            imgout->im->array.CD[ii].re = imgre->im->array.F[ii];
+            imgout->im->array.CD[ii].im = imgim->im->array.D[ii];
         }
     }
     else if((datatype_re == _DATATYPE_DOUBLE) &&
             (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                          naxis,
-                                          naxes,
-                                          datatype_out,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDout));
+        imgout->datatype = datatype_out;
+        createimagefromIMGID(imgout);
+
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
-            data.image[IDout].array.CD[ii].im = data.image[IDim].array.F[ii];
+            imgout->im->array.CD[ii].re = imgre->im->array.D[ii];
+            imgout->im->array.CD[ii].im = imgim->im->array.F[ii];
         }
     }
     else if((datatype_re == _DATATYPE_DOUBLE) &&
             (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
-        FUNC_CHECK_RETURN(create_image_ID(out_name,
-                                          naxis,
-                                          naxes,
-                                          datatype_out,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDout));
+        imgout->datatype = datatype_out;
+        createimagefromIMGID(imgout);
+
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.CD[ii].re = data.image[IDre].array.D[ii];
-            data.image[IDout].array.CD[ii].im = data.image[IDim].array.D[ii];
+            imgout->im->array.CD[ii].re = imgre->im->array.D[ii];
+            imgout->im->array.CD[ii].im = imgim->im->array.D[ii];
         }
     }
     else
@@ -161,10 +130,21 @@ errno_t mk_complex_from_reim(const char *re_name,
     }
     // Note: openMP doesn't help here
 
-    free(naxes);
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
+}
+
+errno_t mk_complex_from_reim(const char *re_name,
+                             const char *im_name,
+                             const char *out_name,
+                             int         sharedmem)
+{
+    IMGID imgre = mkIMGID_from_name(re_name);
+    IMGID imgim = mkIMGID_from_name(im_name);
+    IMGID imgout = mkIMGID_from_name(out_name);
+    imgout.shared = sharedmem;
+
+    return mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
 }
 
 static errno_t compute_function()
@@ -173,7 +153,11 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    mk_complex_from_reim(inreimname, inimimname, outimname, 0);
+    IMGID imgre = mkIMGID_from_name(inreimname);
+    IMGID imgim = mkIMGID_from_name(inimimname);
+    IMGID imgout = mkIMGID_from_name(outimname);
+
+    mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

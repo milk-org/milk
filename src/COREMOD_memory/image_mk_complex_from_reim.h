@@ -6,6 +6,10 @@ errno_t mk_complex_from_reim(const char *re_name,
                              const char *out_name,
                              int         sharedmem);
 
+errno_t mk_complex_from_reim_IMGID(IMGID *imgre,
+                                   IMGID *imgim,
+                                   IMGID *imgout);
+
 errno_t CLIADDCMD_COREMOD__mk_complex_from_reim();
 
 #endif

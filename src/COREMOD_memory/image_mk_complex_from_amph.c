@@ -52,31 +52,31 @@ static errno_t help_function()
 
 
 
-errno_t mk_complexIMG_from_amphIMG(
-    IMGID imginamp,
-    IMGID imginpha,
+errno_t mk_complex_from_amph_IMGID(
+    IMGID *imginamp,
+    IMGID *imginpha,
     IMGID *imgoutC
 )
 {
     DEBUG_TRACE_FSTART();
 
-    uint32_t naxes[3];
+    resolveIMGID(imginamp, ERRMODE_ABORT);
+    resolveIMGID(imginpha, ERRMODE_ABORT);
 
+    uint8_t datatype_am = imginamp->md->datatype;
+    uint8_t datatype_ph = imginpha->md->datatype;
 
-    uint8_t datatype_am = imginamp.md->datatype;
-    uint8_t datatype_ph = imginpha.md->datatype;
-
-    uint8_t naxisamp = imginamp.md->naxis;
-    uint8_t naxispha = imginpha.md->naxis;
-    uint64_t xysize = imginamp.md->size[0];
-    imgoutC->size[0] = imginamp.md->size[0];
+    uint8_t naxisamp = imginamp->md->naxis;
+    uint8_t naxispha = imginpha->md->naxis;
+    uint64_t xysize = imginamp->md->size[0];
+    imgoutC->size[0] = imginamp->md->size[0];
     imgoutC->size[1] = 1;
 
     uint8_t naxis = naxisamp;
     if(naxisamp > 1)
     {
-        xysize *= imginamp.md->size[1];
-        imgoutC->size[1] = imginamp.md->size[1];
+        xysize *= imginamp->md->size[1];
+        imgoutC->size[1] = imginamp->md->size[1];
     }
     if(naxispha > naxisamp)
     {
@@ -90,11 +90,11 @@ errno_t mk_complexIMG_from_amphIMG(
     uint32_t zsizepha = 1;
     if(naxisamp > 2)
     {
-        zsizeamp = imginamp.md->size[2];
+        zsizeamp = imginamp->md->size[2];
     }
     if(naxispha > 2)
     {
-        zsizepha = imginpha.md->size[2];
+        zsizepha = imginpha->md->size[2];
     }
     zsize = zsizeamp;
     if(zsizepha > zsizeamp)
@@ -138,12 +138,12 @@ errno_t mk_complexIMG_from_amphIMG(
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CF[kk*xysize + ii].re =
-                        imginamp.im->array.F[kkamp*xysize + ii] *
-                        ((float) cos(imginpha.im->array.F[kkpha*xysize + ii]));
+                        imginamp->im->array.F[kkamp*xysize + ii] *
+                        ((float) cos(imginpha->im->array.F[kkpha*xysize + ii]));
 
                     imgoutC->im->array.CF[kk*xysize +ii].im =
-                        imginamp.im->array.F[kkamp*xysize + ii] *
-                        ((float) sin(imginpha.im->array.F[kkpha*xysize + ii]));
+                        imginamp->im->array.F[kkamp*xysize + ii] *
+                        ((float) sin(imginpha->im->array.F[kkpha*xysize + ii]));
                 }
             }
 #ifdef _OPENMP
@@ -182,12 +182,12 @@ errno_t mk_complexIMG_from_amphIMG(
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp.im->array.F[kkamp*xysize + ii] *
-                        cos(imginpha.im->array.D[kkpha*xysize + ii]);
+                        imginamp->im->array.F[kkamp*xysize + ii] *
+                        cos(imginpha->im->array.D[kkpha*xysize + ii]);
 
                     imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp.im->array.F[kkamp*xysize + ii] *
-                        sin(imginpha.im->array.D[kkpha*xysize + ii]);
+                        imginamp->im->array.F[kkamp*xysize + ii] *
+                        sin(imginpha->im->array.D[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -226,12 +226,12 @@ errno_t mk_complexIMG_from_amphIMG(
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp.im->array.D[kkamp*xysize + ii] *
-                        cos(imginpha.im->array.F[kkpha*xysize + ii]);
+                        imginamp->im->array.D[kkamp*xysize + ii] *
+                        cos(imginpha->im->array.F[kkpha*xysize + ii]);
 
                     imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp.im->array.D[kkamp*xysize + ii] *
-                        sin(imginpha.im->array.F[kkpha*xysize + ii]);
+                        imginamp->im->array.D[kkamp*xysize + ii] *
+                        sin(imginpha->im->array.F[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -270,12 +270,12 @@ errno_t mk_complexIMG_from_amphIMG(
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp.im->array.D[kkamp*xysize + ii] *
-                        cos(imginpha.im->array.D[kkpha*xysize + ii]);
+                        imginamp->im->array.D[kkamp*xysize + ii] *
+                        cos(imginpha->im->array.D[kkpha*xysize + ii]);
 
                     imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp.im->array.D[kkamp*xysize + ii] *
-                        sin(imginpha.im->array.D[kkpha*xysize + ii]);
+                        imginamp->im->array.D[kkamp*xysize + ii] *
+                        sin(imginpha->im->array.D[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -306,17 +306,11 @@ errno_t mk_complex_from_amph(
 )
 {
     IMGID imgamp = mkIMGID_from_name(am_name);
-    resolveIMGID(&imgamp, ERRMODE_ABORT);
-
     IMGID imgpha = mkIMGID_from_name(ph_name);
-    resolveIMGID(&imgpha, ERRMODE_ABORT);
-
     IMGID imgoutC  = mkIMGID_from_name(out_name);
     imgoutC.shared = sharedmem;
 
-    mk_complexIMG_from_amphIMG(imgamp, imgpha, &imgoutC);
-
-    return RETURN_SUCCESS;
+    return mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
 }
 
 
@@ -327,11 +321,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgamp = mkIMGID_from_name(inampimname);
-    resolveIMGID(&imgamp, ERRMODE_ABORT);
-
     IMGID imgpha = mkIMGID_from_name(inphaimname);
-    resolveIMGID(&imgpha, ERRMODE_ABORT);
-
     IMGID imgoutC  = mkIMGID_from_name(outimname);
 
 
@@ -341,9 +331,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
-        //mk_complex_from_amph(inampimname, inphaimname, outimname, 0);
-
-        mk_complexIMG_from_amphIMG(imgamp, imgpha, &imgoutC);
+        mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
