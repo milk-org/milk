@@ -26,25 +26,71 @@ int arith_image_trunc(const char *ID_name,
 // Command line interface wrapper function(s)
 // ==========================================
 
-static errno_t arith_image_trunc_cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_FLOAT64) +
-            CLI_checkarg(3, CLIARG_FLOAT64) +
-            CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
-            0)
-    {
-        arith_image_trunc(data.cmdargtoken[1].val.string,
-                          data.cmdargtoken[2].val.numf,
-                          data.cmdargtoken[3].val.numf,
-                          data.cmdargtoken[4].val.string);
+static char   *inimname;
+static double *valmin;
+static double *valmax;
+static char   *outimname;
 
-        return CLICMD_SUCCESS;
-    }
-    else
+static CLICMDARGDEF farg[] =
+{
     {
-        return CLICMD_INVALID_ARG;
+        CLIARG_IMG,
+        ".in_name",
+        "input image",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &inimname,
+        NULL
+    },
+    {
+        CLIARG_FLOAT64,
+        ".min",
+        "min value",
+        "0.0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &valmin,
+        NULL
+    },
+    {
+        CLIARG_FLOAT64,
+        ".max",
+        "max value",
+        "1.0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &valmax,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".out_name",
+        "output image",
+        "out1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
     }
+};
+
+static CLICMDDATA CLIcmddata =
+{
+    "imtrunc",
+    "truncate pixel values",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static errno_t help_function()
+{
+    printf("Truncate pixel values between min and max.\n");
+    return RETURN_SUCCESS;
 }
+
+static errno_t compute_function()
+{
+    arith_image_trunc(inimname, *valmin, *valmax, outimname);
+    return RETURN_SUCCESS;
+}
+
+INSERT_STD_FPSCLIfunctions
 
 // ==========================================
 // Register CLI command(s)
@@ -52,16 +98,7 @@ static errno_t arith_image_trunc_cli()
 
 errno_t image_arith__im_f_f__im_addCLIcmd()
 {
-
-    RegisterCLIcommand("imtrunc",
-                       __FILE__,
-                       arith_image_trunc_cli,
-                       "trucate pixel values",
-                       "<input image> <min> <max> <output image>",
-                       "imtrunc im 0.0 1.0 out",
-                       "arith_image_trunc(const char *ID_name, double f1, "
-                       "double f2, const char *ID_out)");
-
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
