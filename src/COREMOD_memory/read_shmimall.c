@@ -15,10 +15,7 @@
 
 #include "CommandLineInterface/streamCTRL/streamCTRL_find_streams.h"
 
-
-
 errno_t read_sharedmem_image_all(const char *name);
-
 
 static errno_t read_sharedmem_image_all__cli()
 {
@@ -34,7 +31,6 @@ static errno_t read_sharedmem_image_all__cli()
         return CLICMD_INVALID_ARG;
     }
 }
-
 
 errno_t read_shmimall_addCLIcmd()
 {

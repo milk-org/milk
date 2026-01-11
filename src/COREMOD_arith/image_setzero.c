@@ -17,7 +17,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
 static CLICMDDATA CLIcmddata =
 {
     "imzero",
@@ -25,17 +24,11 @@ static CLICMDDATA CLIcmddata =
     CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 errno_t image_setzero_IMGID(
     IMGID *inimg
@@ -54,7 +47,6 @@ errno_t image_setzero_IMGID(
     }
     memset(inimg->im->array.raw, 0, typesize * nelem);
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -64,16 +56,12 @@ errno_t image_setzero(IMGID inimg)
     return image_setzero_IMGID(&inimg);
 }
 
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
@@ -87,13 +75,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t
@@ -103,6 +85,4 @@ CLIADDCMD_COREMOD_arith__imsetzero()
 
     return RETURN_SUCCESS;
 }
-
-
 

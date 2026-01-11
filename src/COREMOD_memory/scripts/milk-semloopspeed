@@ -3,7 +3,6 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
-
 # Test semaphore latency
 # Sets up two streams, imA and imB
 #
@@ -27,8 +26,6 @@ RequiredCommands=( milk tmux )
 RequiredFiles=()
 RequiredDirs=()
 
-
-
 # SCRIPT ARGUMENTS (mandatory)
 # syntax: "name:type(s)/test(s):description"
 
@@ -37,15 +34,12 @@ MSarg+=( "nbloop:int:number of loop interations" )
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
 
-
 # parse arguments
 source milk-argparse
 
 NBLOOP="${inputMSargARRAY[0]}"
 
-
 SEMTRIG="3"
-
 
 milk << EOF
 mk2Dim "s>imA" 100 100
@@ -58,7 +52,6 @@ EOF
 set +e
 tmux new-session -d -s loopAB
 #tmux new-session -d -s loopBA
-
 
 tmux send-keys -t loopAB "milk" C-M
 tmux send-keys -t loopAB "readshmim imA" C-M
@@ -77,8 +70,6 @@ tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
 tmux send-keys -t loopAB "shmimpoke imB" C-M
 tmux send-keys -t loopAB "exitCLI" C-M
 
-
-
 milk << EOF
 readshmim imA
 readshmim imB
@@ -90,7 +81,6 @@ shmimpoke imA
 imseminfo imA
 exitCLI
 EOF
-
 
 # cleanup
 

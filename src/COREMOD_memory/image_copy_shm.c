@@ -35,15 +35,11 @@ static CLICMDDATA CLIcmddata =
     "imcpshm", "copy image to shm", CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
 
 // copy image to shared memory
 errno_t image_copy_shm_IMGID(
@@ -73,7 +69,6 @@ errno_t image_copy_shm_IMGID(
         }
     }
 
-
     if ( imgshm->ID == -1 )
     {
         copyIMGID( img, imgshm );
@@ -81,7 +76,6 @@ errno_t image_copy_shm_IMGID(
 
         createimagefromIMGID(imgshm);
     }
-
 
     imgshm->md->write = 1;
     // copy data array
@@ -108,9 +102,6 @@ errno_t image_copy_shm(
 
     return image_copy_shm_IMGID(&imgin, &imgshm);
 }
-
-
-
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()

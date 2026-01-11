@@ -40,10 +40,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 IMGID read_sharedmem_img(
     const char * restrict sname
 )
@@ -90,12 +86,6 @@ IMGID read_sharedmem_img(
     return(img);
 }
 
-
-
-
-
-
-
 imageID read_sharedmem_image(
     const char * restrict sname
 )
@@ -103,10 +93,6 @@ imageID read_sharedmem_image(
     IMGID img = read_sharedmem_img(sname);
     return(img.ID);
 }
-
-
-
-
 
 /*
 imageID ID    = -1;
@@ -153,11 +139,6 @@ else
 {
     return -1;
 }*/
-
-
-
-
-
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()

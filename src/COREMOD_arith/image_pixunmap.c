@@ -1,10 +1,8 @@
 #include "CommandLineInterface/CLIcore.h"
 
-
 // input image
 //
 static char *insname;
-
 
 // unmapping array to 1D
 // same size as input, values are pix index pointing to output
@@ -13,12 +11,9 @@ static char *insname;
 //
 static char *mapsname;
 
-
 // output (remapped) image
 //
 static LOCVAR_OUTIMG2D outim;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -44,10 +39,6 @@ static CLICMDARGDEF farg[] =
     FARG_OUTIM_SHARED(outim)
 };
 
-
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "pixunmap", "pixel unmapping of image to 1D", CLICMD_FIELDS_DEFAULTS
@@ -61,23 +52,15 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
-
 
     // connect to input
     //
     IMGID imgin = mkIMGID_from_name(insname);
     resolveIMGID(&imgin, ERRMODE_ABORT);
     int64_t insize = imgin.md->size[0]*imgin.md->size[1];
-
 
     IMGID imgmap = mkIMGID_from_name(mapsname);
     resolveIMGID(&imgmap, ERRMODE_ABORT);
@@ -105,9 +88,6 @@ static errno_t compute_function()
     printf("output 1D size = %d\n", x1Dsize);
     fflush(stdout);
 
-
-
-
     // link/create output image/stream
     uint8_t outdatatype;
     switch ( imgin.md->datatype )
@@ -125,8 +105,6 @@ static errno_t compute_function()
         outdatatype = _DATATYPE_FLOAT;
     }
 
-
-
     IMGID imgout = mkIMGID_from_name(outim.name);
     imgout.shared = *outim.shared;
     if(*outim.shared == 1)
@@ -142,9 +120,6 @@ static errno_t compute_function()
         createimagefromIMGID(&imgout);
     }
     imcreateIMGID(&imgout);
-
-
-
 
     // build mapping table
     //
@@ -194,11 +169,7 @@ static errno_t compute_function()
         }
     }
 
-
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -316,8 +287,6 @@ static errno_t compute_function()
             break;
         }
 
-
-
         processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
@@ -330,14 +299,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t

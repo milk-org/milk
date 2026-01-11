@@ -6,13 +6,11 @@
  */
 #include "CommandLineInterface/CLIcore.h"
 
-
 static char *cropinsname;
 static long fpi_cropinsname;
 
 static char *outsname;
 static long fpi_outsname;
-
 
 static uint32_t *cropxstart;
 static long fpi_cropxstart;
@@ -20,18 +18,11 @@ static long fpi_cropxstart;
 static uint32_t *cropxsize;
 static long fpi_cropxsize;
 
-
 static uint32_t *cropystart;
 static long fpi_cropystart;
 
 static uint32_t *cropysize;
 static long fpi_cropysize;
-
-
-
-
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -91,8 +82,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
 // Optional custom configuration setup.
 // Runs once at conf startup
 //
@@ -131,12 +120,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -148,10 +131,7 @@ static errno_t compute_function()
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2D(outsname, *cropxsize, *cropysize, imgin.md->datatype);
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -160,7 +140,6 @@ static errno_t compute_function()
         {
             uint64_t indjj = jj + (*cropystart);
             indjj *=  imgin.md->size[0];
-
 
             switch (imgin.md->datatype)
             {
@@ -236,14 +215,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t

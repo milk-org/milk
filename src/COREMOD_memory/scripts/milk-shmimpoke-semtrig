@@ -3,7 +3,6 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
-
 # script 1-line description
 MSdescr="poke existing stream from stream trigger"
 
@@ -22,8 +21,6 @@ RequiredCommands=( milk )
 RequiredFiles=()
 RequiredDirs=()
 
-
-
 # SCRIPT ARGUMENTS (mandatory)
 # syntax: "name:type(s)/test(s):description"
 
@@ -39,13 +36,10 @@ function set_NBpoke() {
 	NBpoke="$1"
 }
 
-
-
 # parse arguments
 source milk-argparse
 streamnameOUT="${inputMSargARRAY[0]}"
 streamnameTRIG="${inputMSargARRAY[1]}"
-
 
 echo ${streamnameOUT}
 

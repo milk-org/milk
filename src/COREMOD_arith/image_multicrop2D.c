@@ -12,13 +12,11 @@ static long fpi_mcropinsname;
 static char *outsname;
 static long fpi_outsname;
 
-
 static uint32_t *outxsize;
 static long fpi_outxsize;
 
 static uint32_t *outysize;
 static long fpi_outysize;
-
 
 /*
 #define CROPWINDOWVARS(WINDEX) \
@@ -35,7 +33,6 @@ long fpi_w#WINDEXcropysize;
 
 CROPWINDOWVARS(00)
 */
-
 
 // Window 00
 
@@ -64,8 +61,6 @@ static long fpi_wcropysize[MAXNB_CROPWINDOW];
 static uint32_t *wbinfact[MAXNB_CROPWINDOW];
 static long fpi_wbinfact[MAXNB_CROPWINDOW];
 
-
-
 // output position
 
 static uint32_t *wcropxpos[MAXNB_CROPWINDOW];
@@ -74,13 +69,8 @@ static long fpi_wcropxpos[MAXNB_CROPWINDOW];
 static uint32_t *wcropypos[MAXNB_CROPWINDOW];
 static long fpi_wcropypos[MAXNB_CROPWINDOW];
 
-
-
-
-
 #define STR_EXPAND(tok) #tok
 #define STR(tok) STR_EXPAND(tok)
-
 
 #define CROPWINDOWONOFF(wn) \
     { \
@@ -181,7 +171,6 @@ static long fpi_wcropypos[MAXNB_CROPWINDOW];
         &fpi_wbinfact[wn]\
     }
 
-
 #define CROPWPARAMS(wn) \
     CROPWINDOWONOFF(wn),\
     CROPWINDOWADDMODE(wn),\
@@ -192,8 +181,6 @@ static long fpi_wcropypos[MAXNB_CROPWINDOW];
     CROPWINDOWXPOS(wn),\
     CROPWINDOWYPOS(wn),\
     CROPWINDOWBINFACT(wn)
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -243,9 +230,6 @@ static CLICMDARGDEF farg[] =
     CROPWPARAMS(07)
 };
 
-
-
-
 // Optional custom configuration setup.
 // Runs once at conf startup
 //
@@ -284,12 +268,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -314,9 +292,6 @@ static errno_t compute_function()
     int64_t  *tmparraysi64;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
-
-
 
     // allocate array memory
     switch (imgin.md->datatype)
@@ -361,8 +336,6 @@ static errno_t compute_function()
         tmparraysi64 = (int64_t*) malloc(sizeof(int64_t) * (*outxsize) * (*outysize) );
         break;
     }
-
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -441,7 +414,6 @@ static errno_t compute_function()
             break;
         }
 
-
         for(int cropwindow=0; cropwindow < MAXNB_CROPWINDOW ; cropwindow++)
         {
             if ( *wactive[cropwindow] == 1)
@@ -457,7 +429,6 @@ static errno_t compute_function()
                     iimax = imgin.md->size[0] - *wcropxstart[cropwindow];
                 }
 
-
                 uint32_t jjmax = *wcropysize[cropwindow];
                 if ( jjmax/(*wbinfact[cropwindow]) +  *wcropypos[cropwindow] > (*outysize))
                 {
@@ -469,13 +440,10 @@ static errno_t compute_function()
                     jjmax = imgin.md->size[1] - *wcropystart[cropwindow];
                 }
 
-
-
                 for(uint32_t jj = 0; jj < jjmax; jj++)
                 {
                     uint64_t indjj = jj + (*wcropystart[cropwindow]);
                     indjj *=  imgin.md->size[0];
-
 
                     if ( *waddmode[cropwindow] == 0 )
                     {
@@ -723,19 +691,11 @@ static errno_t compute_function()
         break;
     }
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t
