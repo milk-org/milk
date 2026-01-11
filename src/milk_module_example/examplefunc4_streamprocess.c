@@ -25,7 +25,8 @@
 
 static char *inimname;
 
-static LOCVAR_OUTIMG2D outim;
+static char *outimname;
+// Alternative way: static LOCVAR_OUTIMG2D outim;
 
 
 static uint32_t *cntindex;
@@ -53,7 +54,16 @@ static CLICMDARGDEF farg[] =
         (void **) &inimname,
         NULL
     },
-    FARG_OUTIM2D(outim),
+    {
+        CLIARG_STR,
+        ".out_name",
+        "output image",
+        "out1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &outimname,
+        NULL
+    },
+    // Note: an alternative way to specify an output image is FARG_OUTIM2D(outim)
     {
         CLIARG_UINT32,
         ".cntindex",
@@ -125,10 +135,17 @@ static errno_t customCONFcheck()
 {
     if(data.fpsptr != NULL)
     {
-        if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // ON state
+        // Here we set the FPS entries properties
+
+        if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // if ex0mode is in ON state
         {
+            // Then activate ex1mode argument
             data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
             data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
+
+            // Commonly use flags include:
+            // FPFLAG_WRITECONF : Allow parameter to be written/changed while conf process is running
+            // FPFLAG_RUNCONF   : Allow parameter to be written/changed while run process is running
         }
         else // OFF state
         {
@@ -196,7 +213,20 @@ static errno_t streamprocess(
     // Create output image if needed.
     // Delaying creation of the image until here is necessary if the image size or type needs
     // to be determined within this function.
-    imcreateIMGID(outimg);
+    //
+    // We have called copyIMGID in compute_function(), so outimg metadata is already filled up.
+    // Otherwise, we would edit these lines:
+    // outimg->naxis = 2;
+    // outimg->size[0] = xsize;
+    // outimg->size[1] = ysize;
+    // outimg->datatype = _DATATYPE_FLOAT;
+    // outimg->shared = inimg->shared;
+    // outimg->NBkw = inimg->NBkw;
+    // outimg->CBsize = 0;
+
+    // Create image if not already done.
+    // Otherwise, just proceed
+    imcreateIMGID(outimg); // Image is created, memory allocated
 
     outimg->md->write = 1;
 
@@ -223,8 +253,15 @@ static errno_t compute_function()
     // Then resolve it (connect it to an image in memory if possible)
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-    // link/create output image/stream
-    FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
+    // Create output image/stream.
+    // Here we only fill in the name.
+    // The image itself will be created in the compute function.
+    IMGID outimg = mkIMGID_from_name(outimname);
+
+    // If we are sure we want outimg to be the same format (size, type etc) as inimg, we can use:
+    copyIMGID(&inimg, &outimg);
+
+    // Alternate way: FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
 
 
     printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
