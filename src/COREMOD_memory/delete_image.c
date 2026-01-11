@@ -60,7 +60,8 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    FUNC_CHECK_RETURN(delete_image_ID(imname, (int) *errmode));
+    IMGID img = mkIMGID_from_name(imname);
+    FUNC_CHECK_RETURN(delete_image_IMGID(&img, (int) *errmode));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -94,6 +95,23 @@ CLIADDCMD_COREMOD_memory__delete_image()
  * DELETE_IMAGE_ERRMODE_EXIT
  *
  */
+errno_t delete_image_IMGID(
+    IMGID *img,
+    int errmode
+)
+{
+    return delete_image(img, errmode);
+}
+
+/** @brief deletes an ID
+ *
+ * errmode values:
+ * DELETE_IMAGE_ERRMODE_IGNORE
+ * DELETE_IMAGE_ERRMODE_WARNING
+ * DELETE_IMAGE_ERRMODE_ERROR
+ * DELETE_IMAGE_ERRMODE_EXIT
+ *
+ */
 errno_t delete_image(
     IMGID *img,
     int errmode
@@ -116,15 +134,15 @@ errno_t delete_image(
 
         if(errmode == DELETE_IMAGE_ERRMODE_WARNING)
         {
-            PRINT_WARNING("Image \"%s\" does not exist", imname);
+            PRINT_WARNING("Image \"%s\" does not exist", img->name);
             DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
         }
 
         if(errmode == DELETE_IMAGE_ERRMODE_ERROR)
         {
-            PRINT_WARNING("Image \"%s\" does not exist", imname);
-            FUNC_RETURN_FAILURE("Image \"%s\" does not exist", imname);
+            PRINT_WARNING("Image \"%s\" does not exist", img->name);
+            FUNC_RETURN_FAILURE("Image \"%s\" does not exist", img->name);
         }
 
         if(errmode == DELETE_IMAGE_ERRMODE_EXIT)
@@ -169,14 +187,14 @@ errno_t delete_image(
             {
                 EXECUTE_SYSTEM_COMMAND("rm /dev/shm/sem.%s.%s_sem*",
                                        data.shmsemdirname,
-                                       imname);
+                                       img->name);
                 WRITE_FULLFILENAME(fname,
                                    "/dev/shm/sem.%s.%s_semlog",
                                    data.shmsemdirname,
-                                   imname);
+                                   img->name);
                 remove(fname);
 
-                EXECUTE_SYSTEM_COMMAND("rm %s/%s.im.shm", data.shmdir, imname);
+                EXECUTE_SYSTEM_COMMAND("rm %s/%s.im.shm", data.shmdir, img->name);
             }
         }
         else
@@ -283,7 +301,7 @@ errno_t delete_image_ID(
     DEBUG_TRACE_FSTART();
 
     IMGID   img = mkIMGID_from_name(imname);
-    imageID ID  = resolveIMGID(&img, ERRMODE_WARN);
+    imageID ID  = resolveIMGID(&img, errmode);
 
     if(ID != -1)
     {
