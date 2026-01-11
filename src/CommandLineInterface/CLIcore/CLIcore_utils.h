@@ -559,6 +559,52 @@ typedef struct
     INSERT_STD_FPSRUNfunction                                                  \
         INSERT_STD_FPSCLIfunction
 
+#define INSERT_STD_FPSCONFfunction_DynamicSize                                 \
+    static errno_t FPSCONFfunction()                                           \
+    {                                                                          \
+        long nbparam = sizeof(farg) / sizeof(CLICMDARGDEF) + 50;               \
+        FPS_SETUP_INIT_SIZED(data.FPS_name, data.FPS_CMDCODE, nbparam);        \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
+            fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;      \
+            fps.cmdset.procinfo_loopcntMax =                                   \
+                CLIcmddata.cmdsettings->procinfo_loopcntMax;                   \
+            fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;      \
+            strncpy(fps.cmdset.triggerstreamname,                              \
+                   CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1); \
+            fps.cmdset.semindexrequested =                                     \
+                CLIcmddata.cmdsettings->semindexrequested;                     \
+            fps.cmdset.triggerdelay.tv_sec =                                   \
+                CLIcmddata.cmdsettings->triggerdelay.tv_sec;                   \
+            fps.cmdset.triggerdelay.tv_nsec =                                  \
+                CLIcmddata.cmdsettings->triggerdelay.tv_nsec;                  \
+            fps.cmdset.triggertimeout.tv_sec =                                 \
+                CLIcmddata.cmdsettings->triggertimeout.tv_sec;                 \
+            fps.cmdset.triggertimeout.tv_nsec =                                \
+                CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
+            fps_add_processinfo_entries(&fps);                                 \
+        }                                                                      \
+        data.fpsptr = &fps;                                                    \
+        strncpy(data.fpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
+        CMDargs_to_FPSparams_create(&fps);                                     \
+        STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
+        {                                                                      \
+            CLIcmddata.FPS_customCONFsetup();                                  \
+        }                                                                      \
+        FPS_CONFLOOP_START                                                     \
+        if (CLIcmddata.FPS_customCONFcheck != NULL)                            \
+            CLIcmddata.FPS_customCONFcheck();                                  \
+        FPS_CONFLOOP_END                                                       \
+        data.fpsptr = NULL;                                                    \
+        return RETURN_SUCCESS;                                                 \
+    }
+
+#define INSERT_STD_FPSCLIfunctions_DynamicSize                                 \
+    INSERT_STD_FPSCONFfunction_DynamicSize                                     \
+    INSERT_STD_FPSRUNfunction                                                  \
+        INSERT_STD_FPSCLIfunction
+
 #define INSERT_STD_CLIREGISTERFUNC                                             \
     {                                                                          \
         if (getenv("MILK_FPSPROCINFO"))                                        \

@@ -699,6 +699,35 @@ typedef struct
  *
  * @param[in] VARfpsname FPS name
  * @param[in] VARCMDmode command code
+ * @param[in] VARNBparamMAX max number of parameters
+ */
+#define FPS_SETUP_INIT_SIZED(VARfpsname, VARCMDmode, VARNBparamMAX)            \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        fps      = function_parameter_FPCONFsetup_sized((VARfpsname), (VARCMDmode), (VARNBparamMAX)); \
+        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
+        fps.md->sourceline = __LINE__;                                         \
+        {                                                                      \
+            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
+            SNPRINTF_CHECK(msgstring,                                          \
+                           STRINGMAXLEN_FPS_LOGMSG,                            \
+                           "LOGSTART %s %d %s %d",                             \
+                           (VARfpsname),                                       \
+                           (VARCMDmode),                                       \
+                           fps.md->sourcefname,                                \
+                           fps.md->sourceline);                                \
+            functionparameter_outlog("FPSINIT", msgstring);                    \
+        }                                                                      \
+    } while (0)
+
+
+/**
+ * @brief Initialize function parameter structure (FPS)
+ *
+ * @param[in] VARfpsname FPS name
+ * @param[in] VARCMDmode command code
  */
 #define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
     FUNCTION_PARAMETER_STRUCT fps;                                             \
