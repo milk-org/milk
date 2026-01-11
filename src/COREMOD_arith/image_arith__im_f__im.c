@@ -15,78 +15,151 @@
 
 #include "imfunctions.h"
 #include "mathfuncs.h"
+#include "image_arith__im_f__im.h"
 
+
+int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pfmod);
+}
 
 int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pfmod);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstfmod_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstadd_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Padd);
 }
 
 int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Padd);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstadd_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstsub_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Psub);
 }
 
 int arith_image_cstsub(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Psub);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstsub_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstsubm_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Psubm);
 }
 
 int arith_image_cstsubm(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Psubm);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstsubm_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstmult_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pmult);
 }
 
 int arith_image_cstmult(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pmult);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstmult_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstdiv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pdiv);
 }
 
 int arith_image_cstdiv(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pdiv);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstdiv_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstdiv1_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pdiv1);
 }
 
 int arith_image_cstdiv1(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pdiv1);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstdiv1_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstpow_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ppow);
 }
 
 int arith_image_cstpow(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Ppow);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstpow_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstmaxv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pmaxv);
 }
 
 int arith_image_cstmaxv(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pmaxv);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstmaxv_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_cstminv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pminv);
 }
 
 int arith_image_cstminv(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Pminv);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_cstminv_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_csttestlt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestlt);
 }
 
 int arith_image_csttestlt(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Ptestlt);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_csttestlt_IMGID(&imgin, f1, &imgout);
+}
+
+int arith_image_csttestmt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestmt);
 }
 
 int arith_image_csttestmt(const char *ID_name, double f1, const char *ID_out)
 {
-    arith_image_function_1f_1(ID_name, f1, ID_out, &Ptestmt);
-    return (0);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+    return arith_image_csttestmt_IMGID(&imgin, f1, &imgout);
 }
 
 int arith_image_cstfmod_inplace(const char *ID_name, double f1)
