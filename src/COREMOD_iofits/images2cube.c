@@ -18,26 +18,61 @@ errno_t images_to_cube(const char *restrict img_name,
 // Command line interface wrapper function(s)
 // ==========================================
 
-errno_t images_to_cube_cli()
+static char    *imgname;
+static int64_t *nbframes;
+static char    *cubename;
+
+static CLICMDARGDEF farg[] =
 {
-    /*  if(data.cmdargtoken[1].type != 4)
-      {
-        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
-        return -1;
-        }*/
-
-    if(data.cmdargtoken[2].type != 2)
     {
-        printf("second argument has to be integer\n");
-        return -1;
+        CLIARG_STR,
+        ".imgname",
+        "input image name format",
+        "im_",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &imgname,
+        NULL
+    },
+    {
+        CLIARG_INT64,
+        ".nbframes",
+        "number of frames",
+        "100",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &nbframes,
+        NULL
+    },
+    {
+        CLIARG_STR,
+        ".cubename",
+        "output cube name",
+        "imc",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **) &cubename,
+        NULL
     }
+};
 
-    images_to_cube(data.cmdargtoken[1].val.string,
-                   data.cmdargtoken[2].val.numl,
-                   data.cmdargtoken[3].val.string);
+static CLICMDDATA CLIcmddata =
+{
+    "imgs2cube",
+    "combine individual images into cube",
+    CLICMD_FIELDS_DEFAULTS
+};
 
-    return CLICMD_SUCCESS;
+static errno_t help_function()
+{
+    printf("Combine individual images into cube.\n");
+    printf("Image name is prefix followed by 5 digits (e.g. im_00000, im_00001 ...)\n");
+    return RETURN_SUCCESS;
 }
+
+static errno_t compute_function()
+{
+    return images_to_cube(imgname, *nbframes, cubename);
+}
+
+INSERT_STD_FPSCLIfunctions
 
 // ==========================================
 // Register CLI command(s)
@@ -45,17 +80,7 @@ errno_t images_to_cube_cli()
 
 errno_t images2cube_addCLIcmd()
 {
-
-    RegisterCLIcommand(
-        "imgs2cube",
-        __FILE__,
-        images_to_cube_cli,
-        "combine individual images into cube, image name is prefix followed by "
-        "5 digits",
-        "<input image format> <max index> <output cube>",
-        "imgs2cube im_ 100 imc",
-        "int images_to_cube(char *img_name, long nbframes, char *cube_name)");
-
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
