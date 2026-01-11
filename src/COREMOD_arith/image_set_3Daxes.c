@@ -1,7 +1,6 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-
 static char *inimname;
 
 static uint32_t    *size0;
@@ -12,8 +11,6 @@ static long      fpi_size1 = -1;
 
 static uint32_t    *size2;
 static long      fpi_size2 = -1;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -55,7 +52,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
 static CLICMDDATA CLIcmddata =
 {
     "set3Daxes",
@@ -63,17 +59,11 @@ static CLICMDDATA CLIcmddata =
     CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 errno_t image_set_3Daxes(
     IMGID    inimg,
@@ -90,15 +80,11 @@ errno_t image_set_3Daxes(
 
     // if size=0, adopt input size
 
-
-
-
     uint32_t imsize0c = imsize0;
     if(imsize0 == 0)
     {
         imsize0c =  inimg.md->size[0];
     }
-
 
     uint32_t imsize1c = imsize1;
     if(imsize1 == 0)
@@ -128,12 +114,9 @@ errno_t image_set_3Daxes(
         }
     }
 
-
-
     long nelemout = imsize0c;
     nelemout *= imsize1c;
     nelemout *= imsize2c;
-
 
     if(nelemout == nelem)
     {
@@ -147,13 +130,9 @@ errno_t image_set_3Daxes(
         printf("total number of element (%ld) does not match input (%ld) - invalid sizes\n", nelemout, nelem);
     }
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
 
 static errno_t compute_function()
 {
@@ -174,13 +153,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t
@@ -190,6 +163,4 @@ CLIADDCMD_COREMOD_arith__imset_3Daxes()
 
     return RETURN_SUCCESS;
 }
-
-
 

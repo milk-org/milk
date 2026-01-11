@@ -193,10 +193,6 @@ errno_t arith_image_function_im_im__d_d(
     return arith_image_function_im_im__d_d_IMGID(&imgin, &imgout, pt2function);
 }
 
-
-
-
-
 errno_t arith_image_function_imd_im__dd_d_IMGID(
     IMGID *imgin,
     double v0,
@@ -1190,8 +1186,6 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
-
-
 /* ------------------------------------------------------------------------- */
 /* image, image  -> image                                                    */
 /* ------------------------------------------------------------------------- */
@@ -1207,7 +1201,6 @@ errno_t arith_image_function_2_1_IMGID(
 
     resolveIMGID(inimg1, ERRMODE_ABORT);
     resolveIMGID(inimg2, ERRMODE_ABORT);
-
 
     resolveIMGID(outimg, ERRMODE_NULL);
     if( outimg->ID == -1)
@@ -1265,7 +1258,6 @@ errno_t arith_image_function_2_1_IMGID(
         }
         nbpix2 *= size2;
 
-
         if( size1 != size2 )
         {
             if( size1 == 1 )
@@ -1301,7 +1293,6 @@ errno_t arith_image_function_2_1_IMGID(
         in2expand[axis] = 1;
     }
 
-
     outimg->datatype = _DATATYPE_FLOAT; // default
     // other cases
 
@@ -1318,7 +1309,6 @@ errno_t arith_image_function_2_1_IMGID(
     }
 
     createimagefromIMGID(outimg);
-
 
     // build mapping between output and input pixel indices
 
@@ -1354,8 +1344,6 @@ errno_t arith_image_function_2_1_IMGID(
             }
         }
     }
-
-
 
     // TYPE CONVERSION TO DOUBLES
 
@@ -1412,11 +1400,6 @@ errno_t arith_image_function_2_1_IMGID(
         }
     }
 
-
-
-
-
-
     double * ptr2array;
     int ptr2allocate = 0;
     if ( inimg2->md->datatype == _DATATYPE_DOUBLE )
@@ -1470,8 +1453,6 @@ errno_t arith_image_function_2_1_IMGID(
         }
     }
 
-
-
     if ( outimg->datatype == _DATATYPE_FLOAT )
     {
         printf("RUN FUNCTION - float, %lu pix\n", nbpix);
@@ -1482,7 +1463,6 @@ errno_t arith_image_function_2_1_IMGID(
                              ptr2array[inpix2[ii]] );
         }
     }
-
 
     if ( outimg->datatype == _DATATYPE_DOUBLE )
     {
@@ -1495,7 +1475,6 @@ errno_t arith_image_function_2_1_IMGID(
         }
     }
 
-
     if(ptr1allocate == 1)
     {
         free(ptr1array);
@@ -1506,10 +1485,8 @@ errno_t arith_image_function_2_1_IMGID(
         free(ptr2array);
     }
 
-
     free(inpix1);
     free(inpix2);
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -1524,10 +1501,6 @@ errno_t arith_img_function_2_1(
 {
     return arith_image_function_2_1_IMGID(&inimg1, &inimg2, outimg, pt2function);
 }
-
-
-
-
 
 /* ------------------------------------------------------------------------- */
 /* image, image  -> image                                                    */
@@ -1546,22 +1519,6 @@ errno_t arith_image_function_2_1(
 
     return arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 errno_t arith_image_function_2_1_inplace_byID(
     imageID ID1,
@@ -1905,9 +1862,6 @@ errno_t arith_image_function_2_1_inplace_byID(
 
     return EXIT_SUCCESS;
 }
-
-
-
 
 errno_t arith_image_function_2_1_inplace(
     const char *ID_name1,

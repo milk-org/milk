@@ -75,9 +75,6 @@ errno_t stream_pixmapdecode_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-
-
-
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
@@ -328,7 +325,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         save_fits("outpixsl", IDout_pixslice_fname);
         delete_image_ID("outpixsl", DELETE_IMAGE_ERRMODE_WARNING);
     }
-
 
     processinfo->loopcntMax = -1;
     processinfo_WriteMessage(processinfo, "Starting loop");

@@ -4,17 +4,13 @@
 #include "image_norm.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-
-
 // input image names
 static char *inimname;
 
 static char *outimname;
 
-
 static uint32_t *sliceaxis;
 static long      fpi_sliceaxis = -1;
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -47,17 +43,12 @@ static CLICMDARGDEF farg[] =
     },
 };
 
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "normslice",
     "image norm by slice",
     CLICMD_FIELDS_DEFAULTS
 };
-
-
 
 // detailed help
 static errno_t help_function()
@@ -66,9 +57,6 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 errno_t image_slicenorm_IMGID(
     IMGID *inimg,
@@ -79,7 +67,6 @@ errno_t image_slicenorm_IMGID(
     DEBUG_TRACE_FSTART();
 
     resolveIMGID(inimg, ERRMODE_ABORT);
-
 
     resolveIMGID(outimg, ERRMODE_NULL);
     if( outimg->ID == -1)
@@ -98,7 +85,6 @@ errno_t image_slicenorm_IMGID(
 
     createimagefromIMGID(outimg);
 
-
     uint32_t sizescan[3];
     sizescan[0] = inimg->md->size[0];
     sizescan[1] = inimg->md->size[1];
@@ -111,8 +97,6 @@ errno_t image_slicenorm_IMGID(
     {
         sizescan[1] = 1;
     }
-
-
 
     double * __restrict normarray = (double*) malloc(sizeof(double) * sizescan[sliceaxis]);
     for( uint32_t ii=0; ii<inimg->md->size[sliceaxis]; ii++)
@@ -183,7 +167,6 @@ errno_t image_slicenorm_IMGID(
 
     free(normarray);
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -200,11 +183,6 @@ errno_t image_slicenorm(
     return image_slicenorm_IMGID(&inimg, &outimg, sliceaxis);
 }
 
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -212,11 +190,9 @@ static errno_t compute_function()
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-
     IMGID outimg = mkIMGID_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -235,11 +211,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t

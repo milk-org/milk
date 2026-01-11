@@ -28,8 +28,6 @@ milkFITSloggerdir="${MILK_SHM_DIR}/FITSlogger"
 mkdir -p ${milkFITSloggerdir}
 cd ${milkFITSloggerdir}
 
-
-
 MSextdescr="
 Log stream to disk as FITS cubes.
 
@@ -54,7 +52,6 @@ To start logging process for stream sname, 1000-deep cubes :
 
 $> $(basename $0) -d \"/mnt/log\" -z 1000 sname pstart
 $> $(basename $0) sname on
-
 
 Files will appear in: /mnt/log/YYYYMMDD/sname
 where TTTMMDD is the current UT day (${daystring}) and sname is the stream name.
@@ -86,10 +83,6 @@ NOTES:
 
 "
 
-
-
-
-
 # prerequisites
 #
 RequiredCommands=( tmux milk )
@@ -100,8 +93,6 @@ MSarg+=( "stream:string:stream name" )
 
 # actions
 MSarg+=( "action:string:action" )
-
-
 
 update_logdir=0
 update_rootlogdir=0
@@ -124,9 +115,6 @@ function set_fulllogdirectory()
 	fulllogdir="${logdirectory}"
 }
 
-
-
-
 update_cubesize=0
 MSopt+=( "z:cubesize:set_cubesize:csize[int]:max cube size (default ${cubesize})" )
 function set_cubesize()
@@ -134,7 +122,6 @@ function set_cubesize()
 	update_cubesize=1
 	cubesize=$1
 }
-
 
 update_nbframe=0
 MSopt+=( "n:nbframe:set_nbframe:nbframe[int]:max number of frames to log (default ${nbframe})" )
@@ -168,8 +155,6 @@ function set_resetsettings()
 	set_resetsettings=1
 }
 
-
-
 update_realtimeprio=0
 MSopt+=( "rtp:realtimeprio:set_realtimeprio:realtimeprio[int]:real-time priority (default ${realtimeprio}))" )
 function set_realtimeprio()
@@ -177,7 +162,6 @@ function set_realtimeprio()
 	update_realtimeprio=1
 	realtimeprio=$1
 }
-
 
 update_writerrealtimeprio=0
 MSopt+=( "wrtp:writerrealtimeprio:set_writerrealtimeprio:writerrealtimeprio[int]:writer real-time priority (default ${writerrealtimeprio}))" )
@@ -187,8 +171,6 @@ function set_writerrealtimeprio()
 	writerrealtimeprio=$1
 }
 
-
-
 update_cset=0
 MSopt+=( "cset:CPUset:set_cset:cset[string]:CPU set (default ${cset}))" )
 function set_cset()
@@ -196,8 +178,6 @@ function set_cset()
 	update_cset=1
 	cset=$1
 }
-
-
 
 source milk-argparse
 
@@ -213,15 +193,10 @@ if [ ${EXITSTATUS} = 1 ]; then
 	exit 1
 fi
 
-
-
-
 if [ $update_rootlogdir == 1 ]; then
 	fulllogdir="${logdirectory}/${daystring}/${STREAMNAME}"
 fi
 mkdir -p ${fulllogdir}
-
-
 
 function logtmuxsessionstart()
 {
@@ -240,7 +215,6 @@ function logtmuxsessionstart()
 		tmux send-keys -t ${TMUXNAME} " FPS_FILTSTRING_NAME=\"streamFITSlog\" milk-fpsCTRL -s -f ${fifoname}" C-m
 	fi
 }
-
 
 function runupdatesfps()
 {
@@ -277,10 +251,8 @@ function runupdatesfps()
 		echo "setval streamFITSlog-${STREAMNAME}.procinfo.cset ${cset}" >> ${fifoname}
 	fi
 
-
 	echo "confwupdate streamFITSlog-${STREAMNAME}" >> ${fifoname}
 }
-
 
 function logresetdefault()
 {
@@ -289,15 +261,9 @@ function logresetdefault()
 
 }
 
-
-
 #tmux kill-session -t ${TMUXNAME} > /dev/null || :
 
-
 logtmuxsessionstart
-
-
-
 
 if [ ${ACTION} == "pstart" ]; then
 	echo "action = pstart"
@@ -350,13 +316,11 @@ EOF
 	echo "rescan" >> ${fifoname}
 fi
 
-
 if [ ${ACTION} == "set" ]; then
 	echo "action = set"
 	ACTIONOK=1
 	runupdatesfps
 fi
-
 
 if [ ${ACTION} == "rstart" ]; then
 	echo "action = rstart"
@@ -372,9 +336,6 @@ if [ ${ACTION} == "rstop" ]; then
 	runupdatesfps
 fi
 
-
-
-
 if [ ${ACTION} == "on" ]; then
 	echo "action = on"
 	ACTIONOK=1
@@ -384,7 +345,6 @@ if [ ${ACTION} == "on" ]; then
 
 fi
 
-
 if [ ${ACTION} == "off" ]; then
 	echo "action = off"
 	ACTIONOK=1
@@ -392,14 +352,12 @@ if [ ${ACTION} == "off" ]; then
 	echo "setval streamFITSlog-${STREAMNAME}.saveON OFF" >> ${fifoname}
 fi
 
-
 if [ ${ACTION} == "offc" ]; then
 	echo "action = offc"
 	ACTIONOK=1
 	runupdatesfps
 	echo "setval streamFITSlog-${STREAMNAME}.lastcubeON ON" >> ${fifoname}
 fi
-
 
 if [ ${ACTION} == "kill" ]; then
 	echo "action = kill"
@@ -413,26 +371,17 @@ if [ ${ACTION} == "kill" ]; then
 	rm -f ${MILK_SHM_DIR}/${STREAMNAME}_logbuff1.im.shm
 fi
 
-
 if [ ${ACTION} == "get" ]; then
 	echo "action = get"
 	ACTIONOK=1
 	runupdatesfps
 fi
 
-
 if [ ${ACTIONOK} == 0 ]; then
 	echo "[$(tput setaf 1)$(tput bold) FAILED $(tput sgr0)] ACTION $ACTION undefined"
 	exit 1
 fi
 
-
-
-
-
-
-
 exit
-
 
 FPS_FILTSTRING_NAME="streamFITSlog" milk-fpsCTRL

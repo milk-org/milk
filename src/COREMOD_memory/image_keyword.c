@@ -80,9 +80,6 @@ errno_t image_keyword_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-
-
-
 long image_write_keyword_L(const char *IDname,
                            const char *kname,
                            long        value,
@@ -116,8 +113,6 @@ long image_write_keyword_L(const char *IDname,
 
     return kw0;
 }
-
-
 
 long image_write_keyword_D(const char *IDname,
                            const char *kname,
@@ -190,7 +185,6 @@ long image_write_keyword_S(const char *IDname,
 
     return kw0;
 }
-
 
 imageID image_list_keywords(
     const char * __restrict IDname

@@ -37,12 +37,6 @@
 
 static long tret = 0; // thread return value
 
-
-
-
-
-
-
 // stream to save
 //
 static char *streamname;
@@ -53,10 +47,8 @@ static long     fpi_saveON = -1;
 static int64_t *lastcubeON;
 static long     fpi_lastcubeON = -1;
 
-
 static int64_t *nextcube;
 static long     fpi_nextcube = -1;
-
 
 static uint32_t *cubesize;
 static long      fpi_cubesize = -1;
@@ -64,7 +56,6 @@ static long      fpi_cubesize = -1;
 // directory where FITS files are written
 static char *savedirname;
 static long  fpi_savedirname = -1;
-
 
 // current frame insdex within cube
 static uint64_t *frameindex;
@@ -74,10 +65,8 @@ static long     fpi_frameindex = -1;
 static uint64_t *framecnt;
 static long     fpi_framecnt = -1;
 
-
 static uint64_t *maxframecnt;
 static long     fpi_maxframecnt = -1;
-
 
 static uint64_t *filecnt;
 static long     fpi_filecnt = -1;
@@ -85,28 +74,17 @@ static long     fpi_filecnt = -1;
 static uint64_t *maxfilecnt;
 static long     fpi_maxfilecnt = -1;
 
-
 static int64_t *compressON;
 static long     fpi_compressON = -1;
-
-
 
 // time taken to save to filesystem
 static float *savetime;
 static long     fpi_savetime = -1;
 
-
-
 static char *outfname;
-
-
 
 static uint32_t *writerRTprio;
 static long fpi_writerRTprio;
-
-
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -247,8 +225,6 @@ static CLICMDARGDEF farg[] =
     },
 };
 
-
-
 static errno_t customCONFsetup()
 {
     if(data.fpsptr != NULL)
@@ -272,14 +248,11 @@ static errno_t customCONFsetup()
     return RETURN_SUCCESS;
 }
 
-
 static errno_t customCONFcheck()
 {
 
     return RETURN_SUCCESS;
 }
-
-
 
 static CLICMDDATA CLIcmddata =
 {
@@ -288,30 +261,11 @@ static CLICMDDATA CLIcmddata =
     CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**
  * ## Purpose
@@ -327,11 +281,8 @@ static void *save_telemetry_fits_function(
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
-
     struct timespec tstart;
     clock_gettime(CLOCK_MILK, &tstart);
-
-
 
     // Set save function to RT priority 0
     // This is meant to be lower priority than the data collection into buffers
@@ -352,30 +303,21 @@ static void *save_telemetry_fits_function(
         PRINT_ERROR("seteuid error");
     }
 
-
-
-
-
-
-
     // Add custom keywords
     int            NBcustomKW = 9;
     IMAGE_KEYWORD *imkwarray =
         (IMAGE_KEYWORD *) malloc(sizeof(IMAGE_KEYWORD) * NBcustomKW);
-
 
     // UT time
 
     strcpy(imkwarray->name, "UT");
     imkwarray->type = 'S';
 
-
     strcpy(imkwarray->value.valstr,
            timedouble_to_UTC_timeofdaystring(
                0.5 * tmsg->arraytime[0] +
                0.5 * tmsg->arraytime[tmsg->cubesize - 1]));
     strcpy(imkwarray->comment, "HH:MM:SS.SS typical UTC at exposure");
-
 
     strcpy(imkwarray[1].name, "UT-STR");
     imkwarray[1].type = 'S';
@@ -392,7 +334,6 @@ static void *save_telemetry_fits_function(
 
     // Modified Julian Date (MJD)
 
-
     strcpy(imkwarray[3].name, "MJD");
     imkwarray[3].type = 'D';
     imkwarray[3].value.numf =
@@ -400,7 +341,6 @@ static void *save_telemetry_fits_function(
         86400.0 +
         40587.0;
     strcpy(imkwarray[3].comment, "Modified Julian Day at exposure");
-
 
     strcpy(imkwarray[4].name, "MJD-STR");
     imkwarray[4].type       = 'D';
@@ -419,7 +359,6 @@ static void *save_telemetry_fits_function(
     //char tm_zone[] = "HST";
     //double tm_utcoff = -36000; // HST = UTC - 10; Positive east of UTC.
 
-
     // Causes a race condition with gettime in other thread, which result in occasional HST filenames...
     //time_t t = time(NULL);
     // OVERRIDE localtime to HST
@@ -429,10 +368,8 @@ static void *save_telemetry_fits_function(
     //putenv("TZ=");
     //printf("TIMEZONE TIMEZONE %s\n", lt.tm_zone);
 
-
     // printf("Offset to GMT is %lds.\n", lt.tm_gmtoff);
     // printf("The time zone is '%s'.\n", lt.tm_zone);
-
 
     sprintf(imkwarray[6].name, "%s", TZ_MILK_STR);
     imkwarray[6].type = 'S';
@@ -463,11 +400,8 @@ static void *save_telemetry_fits_function(
             "HH:MM:SS.SS typical %s at exposure end",
             TZ_MILK_STR);
 
-
-
     //printf("auxFITSheader = \"%s\"\n", tmsg->fname_auxFITSheader);
     printf(">>>>>>>> [%5d] tmsg->iname  = \"%s\"\n", __LINE__, tmsg->iname);
-
 
     saveFITS_opt_trunc(tmsg->iname,
                        tmsg->partial ? tmsg->cubesize : -1,
@@ -478,9 +412,7 @@ static void *save_telemetry_fits_function(
                        NBcustomKW,
                        tmsg->compress_string);
 
-
     free(imkwarray);
-
 
     if(tmsg->saveascii == 1)
     {
@@ -535,7 +467,6 @@ static void *save_telemetry_fits_function(
         fclose(fp);
     }
 
-
     tret = image_ID(tmsg->iname);
 
     struct timespec tend;
@@ -548,12 +479,9 @@ static void *save_telemetry_fits_function(
     pthread_exit(&tret);
 }
 
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
-
-
 
     int VERBOSE = 2;
     // 0: don't print
@@ -562,7 +490,6 @@ static errno_t compute_function()
 
     STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(
                                           STREAMSAVE_THREAD_MESSAGE));
-
 
     IMGID inimg = mkIMGID_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
@@ -582,7 +509,6 @@ static errno_t compute_function()
 
     uint8_t datatype = inimg.md->datatype;
 
-
     int typesize = ImageStreamIO_typesize(datatype);
     if(typesize == -1)
     {
@@ -591,7 +517,6 @@ static errno_t compute_function()
     }
 
     int buffindex = 0;
-
 
     // Create 2 log buffers
     //
@@ -610,10 +535,7 @@ static errno_t compute_function()
             stream_connect_create_3D(name, xsize, ysize, zsize, datatype);
     }
 
-
     list_image_ID();
-
-
 
     // copy keywords
     {
@@ -628,7 +550,6 @@ static errno_t compute_function()
                    sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
         }
     }
-
 
     // find creation time keyword
     // _MAQTIME
@@ -646,10 +567,7 @@ static errno_t compute_function()
         printf("[%5d] aqtimekwi = %d\n", __LINE__, aqtimekwi);
     }
 
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     // custom initialization
     if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
@@ -665,8 +583,6 @@ static errno_t compute_function()
     char ASCIITIMEffilename[STRINGMAXLEN_FULLFILENAME];
     strcpy(ASCIITIMEffilename, "null");
 
-
-
     // array are zsize * 2 long to hold double buffer
     //
     double *array_time   = (double *) malloc(sizeof(double) * (*cubesize) * 2);
@@ -675,8 +591,6 @@ static errno_t compute_function()
                              (*cubesize) * 2);
     uint64_t *array_cnt1   = (uint64_t *) malloc(sizeof(uint64_t) *
                              (*cubesize) * 2);
-
-
 
     int thread_initialized = 0;
 
@@ -690,7 +604,6 @@ static errno_t compute_function()
 
     uint64_t lastcnt0 = 0;
     int IsNewFrame = 0;
-
 
     printf("Start loop\n");
     fflush(stdout);
@@ -721,7 +634,6 @@ static errno_t compute_function()
                 IsNewFrame = 0;
             }
 
-
             //printf("IsNewFrame %d\n", IsNewFrame);
             //fflush(stdout);
 
@@ -736,8 +648,6 @@ static errno_t compute_function()
                     (*filecnt) = 0;
                 }
 
-
-
                 if((*framecnt) >= (*maxframecnt))
                 {
                     // we've logged the requested number of frames
@@ -745,14 +655,11 @@ static errno_t compute_function()
                     data.fpsptr->parray[fpi_saveON].fpflag &= ~FPFLAG_ONOFF;
                 }
 
-
                 if((*filecnt) >= (*maxfilecnt) - 1)
                 {
                     // last cube
                     lastcube = 1;
                 }
-
-
 
                 //printf("saveON %d\n", (int) (*saveON));
                 //fflush(stdout);
@@ -767,7 +674,6 @@ static errno_t compute_function()
                         printf("================= CONSTRUCT FILE NAMES ===================================\n");
                         fflush(stdout);
 
-
                         time_t          t;
                         struct tm      *uttimeStart;
                         t           = time(NULL);
@@ -776,7 +682,6 @@ static errno_t compute_function()
                         char hrminstring[6];
                         sprintf(hrminstring, "%02d:%02d", uttimeStart->tm_hour, uttimeStart->tm_min);
                         printf("hrmin: %s\n", hrminstring);
-
 
                         struct timespec timenowStart;
                         clock_gettime(CLOCK_MILK, &timenowStart);
@@ -794,7 +699,6 @@ static errno_t compute_function()
                             printf("    [%5d] FITSffilename      = %s\n", __LINE__, FITSffilename);
                         }
 
-
                         WRITE_FULLFILENAME(ASCIITIMEffilename,
                                            "%s/%s_%s:%02ld.%09ld.txt",
                                            savedirname,
@@ -811,7 +715,6 @@ static errno_t compute_function()
                         printf("================= CONSTRUCT FILE NAMES ===================================\n");
                         fflush(stdout);
                     }
-
 
                     // timing buffer index
                     {
@@ -837,14 +740,12 @@ static errno_t compute_function()
                         }
                     }
 
-
                     // copy frame to buffer
 
                     {
 
                         //printf("[[copy frame %ld to frame %ld of buffer %d]]\n", inimg.md->cnt0, (*frameindex), buffindex);
                         //fflush(stdout);
-
 
                         long framesize = typesize * xsize * ysize;
 
@@ -862,7 +763,6 @@ static errno_t compute_function()
                             ptr0 = ptr0_0;
                         }
 
-
                         char *ptr1_0; // destination image data
                         char *ptr1;   // destination image data, after offset
                         if(buffindex == 0)
@@ -875,12 +775,8 @@ static errno_t compute_function()
                         }
                         ptr1 = ptr1_0 + framesize * (*frameindex);
 
-
                         memcpy((void *) ptr1, (void *) ptr0, framesize);
                     }
-
-
-
 
                     processinfo_WriteMessage_fmt(
                         processinfo,
@@ -898,9 +794,6 @@ static errno_t compute_function()
                 }
             }
         }
-
-
-
 
         // Should we save current cube ?
 
@@ -941,7 +834,6 @@ static errno_t compute_function()
                        FITSffilename);
                 fflush(stdout);
 
-
                 // update buffer content
 
                 if(buffindex == 0)
@@ -957,12 +849,9 @@ static errno_t compute_function()
                            sizeof(IMAGE_KEYWORD) * inimg.md->NBkw);
                 }
 
-
-
                 {
                     static pthread_t  thread_savefits;
                     static int        iret_savefits;
-
 
                     // Fill up thread message
                     //
@@ -979,7 +868,6 @@ static errno_t compute_function()
                     {
                         tmsg->partial = 0;
                     }
-
 
                     if(buffindex == 0)
                     {
@@ -1005,7 +893,6 @@ static errno_t compute_function()
                                    data.shmdir,
                                    streamname);
 
-
                     if((*compressON) == 0)
                     {
                         strcpy(tmsg->compress_string, "");
@@ -1014,8 +901,6 @@ static errno_t compute_function()
                     {
                         strcpy(tmsg->compress_string, "[compress R 1,1,10000]");
                     }
-
-
 
                     // Wait for save thread to complete to launch next one
                     if(thread_initialized == 1)
@@ -1056,8 +941,6 @@ static errno_t compute_function()
                         printf("\n ************** MISSED  %ld frames\n", inimg.md->cnt0 - cnt0start);
                     }
 
-
-
                     // start thread
                     //
                     tmsg->writerRTprio = (*writerRTprio);
@@ -1075,7 +958,6 @@ static errno_t compute_function()
                         exit(EXIT_FAILURE);
                     }
 
-
                 }
                 SaveCube = 0;
 
@@ -1084,8 +966,6 @@ static errno_t compute_function()
                 (*frameindex) = 0;
                 (*filecnt) ++;
             }
-
-
 
             // report buffer is ready
             //
@@ -1131,19 +1011,11 @@ static errno_t compute_function()
 
     free(tmsg);
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t

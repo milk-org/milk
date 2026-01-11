@@ -292,10 +292,6 @@ void close_list_image_ID_ncurses(void)
     data.MEM_MONITOR = 0;
 }
 
-
-
-
-
 errno_t list_image_ID_ofp(FILE *fo)
 {
     long               i;
@@ -444,10 +440,6 @@ errno_t list_image_ID_ofp(FILE *fo)
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 errno_t list_image_ID_ofp_simple(FILE *fo)
 {
     long i, j;
@@ -480,11 +472,6 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
 errno_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
@@ -500,9 +487,6 @@ errno_t list_image_ID()
    size
    type
  */
-
-
-
 
 errno_t list_image_ID_file(const char *fname)
 {

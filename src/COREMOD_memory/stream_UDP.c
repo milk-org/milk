@@ -22,7 +22,6 @@ static int MULTIGRAM_MAGIC = 0x3E; // Random magic to start datagrams with.
 static int DGRAM_CHUNK_SIZE = 62 *
                               1024; // Max payload per datagram, just shy of the maximum 65507 bytes
 
-
 // ==========================================
 // Forward declaration(s)
 // ==========================================
@@ -154,7 +153,6 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     char           *ptr_this_dgram;
     long            this_dgram_size;
 
-
     int semtrig = 6; // TODO - scan for available sem
     // IMPORTANT: do not use semtrig 0
     int use_sem = 1;
@@ -266,7 +264,6 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         ptr_buff_metadata = buff + 2;
         ptr_buff_data = ptr_buff_metadata + sizeof(IMAGE_METADATA);
         ptr_buff_keywords = ptr_buff_data + framesize;
-
 
         printf("Transfer buffer size = %ld\n", framesizeall);
         printf("Using %ld UDP datagrams\n", n_udp_dgrams);
@@ -741,8 +738,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             NBslices = data.image[ID].md[0].size[2];
         }
 
-
-
     if(data.processinfo == 1)
     {
         char typestring[8];
@@ -784,8 +779,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         framesizefull = framesize1 + nbkw * sizeof(IMAGE_KEYWORD);
     }
 
-
-
     // TODO
     buff = (char *) malloc(sizeof(char) * framesizefull);
     ptr_buff_metadata = buff;
@@ -825,7 +818,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                              DGRAM_CHUNK_SIZE + 2;
     long this_dgram_bytes;
     int abort_frame = 1; // Initial sync
-
 
     while(loopOK == 1)
     {
@@ -878,7 +870,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     socketOpen = 0;
                     break; // This should be a double break... loopOK = 0 should cover.
                 }
-
 
                 if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
                 {

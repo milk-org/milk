@@ -1,11 +1,7 @@
 #include "CommandLineInterface/CLIcore.h"
 
-
-
-
 static char *masksname;
 long fpi_masksname;
-
 
 static char *cminsname;
 long fpi_cminsname;
@@ -13,25 +9,17 @@ long fpi_cminsname;
 static char *outsname;
 long fpi_outsname;
 
-
 static uint32_t *cropxstart;
 long fpi_cropxstart;
 
 static uint32_t *cropxsize;
 long fpi_cropxsize;
 
-
 static uint32_t *cropystart;
 long fpi_cropystart;
 
 static uint32_t *cropysize;
 long fpi_cropysize;
-
-
-
-
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -100,8 +88,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
 // Optional custom configuration setup.
 // Runs once at conf startup
 //
@@ -140,12 +126,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -156,7 +136,6 @@ static errno_t compute_function()
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     //long m = imgin.md->size[0] * imgin.md->size[1];
 
-
     // CONNNECT TO OR CREATE MASK STREAM
     IMGID imgmask = stream_connect_create_2Df32(masksname, *cropxsize, *cropysize);
 
@@ -164,8 +143,6 @@ static errno_t compute_function()
     IMGID imgout = stream_connect_create_2Df32(outsname, *cropxsize, *cropysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -196,14 +173,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t

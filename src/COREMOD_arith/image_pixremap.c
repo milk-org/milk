@@ -1,10 +1,8 @@
 #include "CommandLineInterface/CLIcore.h"
 
-
 // input image
 //
 static char *insname;
-
 
 // mapping array
 // same size as output, values are pix index pointing to input
@@ -13,12 +11,9 @@ static char *insname;
 //
 static char *mapsname;
 
-
 // output (remapped) image
 //
 static LOCVAR_OUTIMG2D outim;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -44,10 +39,6 @@ static CLICMDARGDEF farg[] =
     FARG_OUTIM_SHARED(outim)
 };
 
-
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "pixremap", "pixel remapping of image", CLICMD_FIELDS_DEFAULTS
@@ -61,23 +52,15 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
-
 
     // connect to input
     //
     IMGID imgin = mkIMGID_from_name(insname);
     resolveIMGID(&imgin, ERRMODE_ABORT);
     int64_t insize = imgin.md->size[0]*imgin.md->size[1];
-
 
     IMGID imgmap = mkIMGID_from_name(mapsname);
     resolveIMGID(&imgmap, ERRMODE_ABORT);
@@ -107,7 +90,6 @@ static errno_t compute_function()
     }
     imcreateIMGID(&imgout);
 
-
     // build mapping table
     //
     uint64_t nbpix = 0;
@@ -126,7 +108,6 @@ static errno_t compute_function()
     uint64_t * __restrict map_outpixindex = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
     uint64_t * __restrict map_inpixindex  = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
 
-
     nbpix = 0;
     for(uint64_t ii = 0; ii < xsize*ysize; ii++)
     {
@@ -140,11 +121,7 @@ static errno_t compute_function()
         }
     }
 
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -221,8 +198,6 @@ static errno_t compute_function()
             break;
         }
 
-
-
         processinfo_update_output_stream(processinfo, imgout.ID);
 
     }
@@ -235,14 +210,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t

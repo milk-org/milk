@@ -3,7 +3,6 @@
 # This script uses milk-argparse
 # See template milk-scriptexample for details
 
-
 # script 1-line description
 MSdescr="crop stream"
 
@@ -21,8 +20,6 @@ RequiredCommands=( milk )
 RequiredFiles=()
 RequiredDirs=()
 
-
-
 # SCRIPT ARGUMENTS (mandatory)
 # syntax: "name:type(s)/test(s):description"
 
@@ -34,10 +31,8 @@ MSarg+=( "dx:integer:x size" )
 MSarg+=( "y0:integer:y start" )
 MSarg+=( "dy:integer:y size" )
 
-
 # SCRIPT OPTIONS
 # syntax: "short:long:functioncall:args[types]:description"
-
 
 # parse arguments
 source milk-argparse

@@ -216,9 +216,6 @@ void qs_ushort(
     }
 }
 
-
-
-
 void qs2(
     double       * __restrict array,
     double       * __restrict array1,
@@ -274,8 +271,6 @@ void qs2(
         qs2(array, array1, i, right);
     }
 }
-
-
 
 void qs3(
     double       * __restrict array,
@@ -337,12 +332,6 @@ void qs3(
         qs3(array, array1, array2, i, right);
     }
 }
-
-
-
-
-
-
 
 void qs3_float(
     float        * __restrict array,
@@ -748,7 +737,6 @@ void qs3ll_double(
     }
 }
 
-
 void qs3ulul_double(
     double        * __restrict array,
     unsigned long * __restrict array1,
@@ -810,7 +798,6 @@ void qs3ulul_double(
     }
 }
 
-
 void quick_sort_float(
     float * __restrict array,
     unsigned long count
@@ -818,7 +805,6 @@ void quick_sort_float(
 {
     qs_float(array, 0, count - 1);
 }
-
 
 void quick_sort_long(
     long * __restrict array,
@@ -828,7 +814,6 @@ void quick_sort_long(
     qs_long(array, 0, count - 1);
 }
 
-
 void quick_sort_double(
     double * __restrict array,
     unsigned long count
@@ -836,7 +821,6 @@ void quick_sort_double(
 {
     qs_double(array, 0, count - 1);
 }
-
 
 void quick_sort_ushort(
     unsigned short * __restrict array,
@@ -855,7 +839,6 @@ void quick_sort2(
     qs2(array, array1, 0, count - 1);
 }
 
-
 void quick_sort3(
     double       * __restrict array,
     double       * __restrict array1,
@@ -865,7 +848,6 @@ void quick_sort3(
 {
     qs3(array, array1, array2, 0, count - 1);
 }
-
 
 void quick_sort3_float(
     float        * __restrict array,
@@ -877,7 +859,6 @@ void quick_sort3_float(
     qs3_float(array, array1, array2, 0, count - 1);
 }
 
-
 void quick_sort3_double(
     double       * __restrict array,
     double       * __restrict array1,
@@ -888,7 +869,6 @@ void quick_sort3_double(
     qs3_double(array, array1, array2, 0, count - 1);
 }
 
-
 void quick_sort2l(
     double * __restrict array,
     long * __restrict array1,
@@ -897,7 +877,6 @@ void quick_sort2l(
 {
     qs2l(array, array1, 0, count - 1);
 }
-
 
 void quick_sort2ul(
     double * __restrict array,
@@ -908,7 +887,6 @@ void quick_sort2ul(
     qs2ul(array, array1, 0, count - 1);
 }
 
-
 void quick_sort2l_double(
     double * __restrict array,
     long * __restrict array1,
@@ -917,7 +895,6 @@ void quick_sort2l_double(
 {
     qs2l_double(array, array1, 0, count - 1);
 }
-
 
 void quick_sort2ul_double(
     double        * __restrict array,
@@ -928,7 +905,6 @@ void quick_sort2ul_double(
     qs2ul_double(array, array1, 0, count - 1);
 }
 
-
 void quick_sort3ll_double(
     double       * __restrict array,
     long         * __restrict array1,
@@ -938,7 +914,6 @@ void quick_sort3ll_double(
 {
     qs3ll_double(array, array1, array2, 0, count - 1);
 }
-
 
 void quick_sort3ulul_double(
     double        * __restrict array,

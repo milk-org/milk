@@ -7,7 +7,6 @@
 #ifndef CLICORE_MEMORY_LOGSHMIM_TYPES_H
 #define CLICORE_MEMORY_LOGSHMIM_TYPES_H
 
-
 typedef struct
 {
     char iname[STRINGMAXLEN_IMGNAME];
@@ -17,7 +16,6 @@ typedef struct
 
     float timespan; // measured execution time for saving
     int writerRTprio; // writer real-time priority
-
 
     int saveascii;
     // 0 : Not saving ascii
@@ -35,8 +33,5 @@ typedef struct
     double *arraytime;   // time at which frame has arrived
     double *arrayaqtime; // frame source time, earlier
 } STREAMSAVE_THREAD_MESSAGE;
-
-
-
 
 #endif

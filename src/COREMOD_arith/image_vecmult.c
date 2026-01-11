@@ -18,10 +18,6 @@ static long fpi_imoutname;
 static uint32_t *multaxis;
 static long fpi_multaxis;
 
-
-
-
-
 static CLICMDARGDEF farg[] =
 {
     {
@@ -62,8 +58,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
 // Optional custom configuration setup.
 // Runs once at conf startup
 //
@@ -102,14 +96,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
-
-
 errno_t image_vect_multiply(
     IMGID    imgin,
     IMGID    imgvec,
@@ -125,8 +111,6 @@ errno_t image_vect_multiply(
     resolveIMGID(&imgvec, ERRMODE_ABORT);
 
     resolveIMGID(imgout, ERRMODE_NULL);
-
-
 
     // Create output
     //
@@ -185,15 +169,9 @@ errno_t image_vect_multiply(
         }
     }
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
 
 static errno_t compute_function()
 {
@@ -207,16 +185,11 @@ static errno_t compute_function()
     IMGID imgvec = mkIMGID_from_name(vecname);
     resolveIMGID(&imgvec, ERRMODE_ABORT);
 
-
     // output
 
     IMGID imgout  = mkIMGID_from_name(imoutname);
 
-
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -229,20 +202,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
-
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t

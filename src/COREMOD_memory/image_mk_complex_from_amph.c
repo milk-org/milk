@@ -47,11 +47,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
-
 errno_t mk_complex_from_amph_IMGID(
     IMGID *imginamp,
     IMGID *imginpha,
@@ -83,8 +78,6 @@ errno_t mk_complex_from_amph_IMGID(
         naxis = naxispha;
     }
 
-
-
     uint32_t zsize = 1;
     uint32_t zsizeamp = 1;
     uint32_t zsizepha = 1;
@@ -102,11 +95,8 @@ errno_t mk_complex_from_amph_IMGID(
         zsize = zsizepha;
     }
 
-
     imgoutC->naxis = naxis;
     imgoutC->size[2] = zsize;
-
-
 
     //printf("xysize = %lu\n", xysize);
 
@@ -178,7 +168,6 @@ errno_t mk_complex_from_amph_IMGID(
                     kkpha = zsizepha-1;
                 }
 
-
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CD[kk*xysize + ii].re =
@@ -221,7 +210,6 @@ errno_t mk_complex_from_amph_IMGID(
                 {
                     kkpha = zsizepha-1;
                 }
-
 
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
@@ -266,7 +254,6 @@ errno_t mk_complex_from_amph_IMGID(
                     kkpha = zsizepha-1;
                 }
 
-
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
                     imgoutC->im->array.CD[kk*xysize + ii].re =
@@ -294,10 +281,6 @@ errno_t mk_complex_from_amph_IMGID(
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 errno_t mk_complex_from_amph(
     const char *am_name,
     const char *ph_name,
@@ -313,9 +296,6 @@ errno_t mk_complex_from_amph(
     return mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
 }
 
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -324,9 +304,7 @@ static errno_t compute_function()
     IMGID imgpha = mkIMGID_from_name(inphaimname);
     IMGID imgoutC  = mkIMGID_from_name(outimname);
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {

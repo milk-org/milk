@@ -34,9 +34,6 @@ set(INCLUDEFILES
 set(SCRIPTFILES
 	)
 
-
-
-
 # TESTING
 
 include(CTest)
@@ -47,7 +44,6 @@ add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
 set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_iofits")
-
 
 # test that commands are registered
 
@@ -63,10 +59,6 @@ set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
 
 endforeach()
-
-
-
-
 
 # DEFAULT SETTINGS
 # Do not change unless needed

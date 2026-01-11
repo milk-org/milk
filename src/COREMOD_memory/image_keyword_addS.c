@@ -48,9 +48,6 @@ static CLICMDDATA CLIcmddata =
     "imkwaddS", "add string type image keyword", CLICMD_FIELDS_NOFPS
 };
 
-
-
-
 errno_t image_keyword_addS(
     IMGID img,
     char *kwname,
@@ -86,8 +83,6 @@ errno_t image_keyword_addS(
 
     return RETURN_SUCCESS;
 }
-
-
 
 static errno_t compute_function()
 {

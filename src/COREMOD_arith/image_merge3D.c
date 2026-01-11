@@ -9,24 +9,14 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-
-
-
-
-
 // input image names
 static char *inimname0;
 static char *inimname1;
 
 static char *outimname;
 
-
-
 static uint32_t *mergeaxis;
 static long      fpi_mergeaxis = -1;
-
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -68,18 +58,12 @@ static CLICMDARGDEF farg[] =
     },
 };
 
-
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "immerge",
     "merge images along axis",
     CLICMD_FIELDS_DEFAULTS
 };
-
-
 
 // detailed help
 static errno_t help_function()
@@ -88,8 +72,6 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
-
-
 
 errno_t image_marge(
     IMGID inimg0,
@@ -102,7 +84,6 @@ errno_t image_marge(
 
     resolveIMGID(&inimg0, ERRMODE_ABORT);
     resolveIMGID(&inimg1, ERRMODE_ABORT);
-
 
     resolveIMGID(outimg, ERRMODE_NULL);
     if( outimg->ID == -1)
@@ -125,8 +106,6 @@ errno_t image_marge(
         abort();
     }
 
-
-
     outimg->naxis = 1;
     if ( outimg->size[1] > 1 )
     {
@@ -141,7 +120,6 @@ errno_t image_marge(
 
     list_image_ID();
     printf(">>>>>>>>>>>>>>>>>> LINE %d\n", __LINE__);
-
 
     if ( mergeaxis == outimg->naxis-1 )
     {
@@ -161,7 +139,6 @@ errno_t image_marge(
             memcpy(&outimg->im->array.SI8[inimg0.md->nelement], &inimg1.im->array.SI8[0], sizeof(int8_t)*inimg1.md->nelement);
             break;
 
-
         case _DATATYPE_UINT16 :
             memcpy(&outimg->im->array.UI16[0], &inimg0.im->array.UI16[0], sizeof(uint16_t)*inimg0.md->nelement);
             memcpy(&outimg->im->array.UI16[inimg0.md->nelement], &inimg1.im->array.UI16[0], sizeof(uint16_t)*inimg1.md->nelement);
@@ -172,7 +149,6 @@ errno_t image_marge(
             memcpy(&outimg->im->array.SI16[inimg0.md->nelement], &inimg1.im->array.SI16[0], sizeof(int16_t)*inimg1.md->nelement);
             break;
 
-
         case _DATATYPE_UINT32 :
             memcpy(&outimg->im->array.UI32[0], &inimg0.im->array.UI32[0], sizeof(uint32_t)*inimg0.md->nelement);
             memcpy(&outimg->im->array.UI32[inimg0.md->nelement], &inimg1.im->array.UI32[0], sizeof(uint32_t)*inimg1.md->nelement);
@@ -182,7 +158,6 @@ errno_t image_marge(
             memcpy(&outimg->im->array.SI32[0], &inimg0.im->array.SI32[0], sizeof(int32_t)*inimg0.md->nelement);
             memcpy(&outimg->im->array.SI32[inimg0.md->nelement], &inimg1.im->array.SI32[0], sizeof(int32_t)*inimg1.md->nelement);
             break;
-
 
         case _DATATYPE_UINT64 :
             memcpy(&outimg->im->array.UI64[0], &inimg0.im->array.UI64[0], sizeof(uint64_t)*inimg0.md->nelement);
@@ -324,7 +299,6 @@ errno_t image_marge(
             }
             break;
 
-
         case _DATATYPE_UINT64 :
             while ( pixiout < outimg->md->nelement)
             {
@@ -354,7 +328,6 @@ errno_t image_marge(
                 pixiout += blocksize_in1;
             }
             break;
-
 
         case _DATATYPE_FLOAT :
             while ( pixiout < outimg->md->nelement)
@@ -386,7 +359,6 @@ errno_t image_marge(
             }
             break;
 
-
         default:
             PRINT_ERROR("datatype %u not supported", outimg->datatype );
             abort();
@@ -398,10 +370,6 @@ errno_t image_marge(
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -412,13 +380,9 @@ static errno_t compute_function()
     IMGID inimg1 = mkIMGID_from_name(inimname1);
     resolveIMGID(&inimg1, ERRMODE_ABORT);
 
-
     IMGID outimg = mkIMGID_from_name(outimname);
 
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -438,11 +402,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t
