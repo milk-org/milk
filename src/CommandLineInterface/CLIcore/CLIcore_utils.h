@@ -699,7 +699,7 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
 
 
 
-/** make blank IMGID from name
+/** make blank IMGID
  *
  * All fields are uninitialized
  * Can be used for comparison
@@ -907,8 +907,8 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
 
 /** @brief Resolve image already in memory
  *
- * 
- * 
+ *
+ *
  * ERRMODE values
  * ERRMODE_WARN : print warning
  * ERRMODE_FAIL : error
