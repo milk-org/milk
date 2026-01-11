@@ -15,12 +15,12 @@
  * called by conf and run functions
  *
  */
-FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
     const char *fpsname,
-    uint32_t    CMDmode
+    uint32_t    CMDmode,
+    long        NBparamMAX
 )
 {
-    long     NBparamMAX = FUNCTION_PARAMETER_NBPARAM_DEFAULT;
     uint32_t FPSCONNECTFLAG;
 
     FUNCTION_PARAMETER_STRUCT fps = {0};
@@ -86,4 +86,13 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     }
 
     return fps;
+}
+
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
+    const char *fpsname,
+    uint32_t    CMDmode
+)
+{
+    return function_parameter_FPCONFsetup_sized(fpsname, CMDmode,
+            FUNCTION_PARAMETER_NBPARAM_DEFAULT);
 }

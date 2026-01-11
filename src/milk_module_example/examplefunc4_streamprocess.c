@@ -299,7 +299,7 @@ static errno_t compute_function()
 
 
 
-INSERT_STD_FPSCLIfunctions
+INSERT_STD_FPSCLIfunctions_DynamicSize
 
 
 
