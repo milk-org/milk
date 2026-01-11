@@ -6,6 +6,7 @@
  */
 
 #include "CommandLineInterface/CLIcore.h"
+#include "image_stats.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -13,39 +14,43 @@
 
 #include "image_total.h"
 
-double arith_image_mean(const char *ID_name)
+double arith_image_mean_IMGID(IMGID *imgin)
 {
     double  value;
-    imageID ID;
 
-    ID = image_ID(ID_name);
+    resolveIMGID(imgin, ERRMODE_ABORT);
 
     value =
-        (double)(arith_image_total(ID_name) / data.image[ID].md[0].nelement);
+        (double)(arith_image_total_IMGID(imgin) / imgin->md[0].nelement);
 
     return (value);
 }
 
-double arith_image_min(const char *ID_name)
+double arith_image_mean(const char *ID_name)
 {
-    imageID  ID;
+    IMGID imgin = mkIMGID_from_name(ID_name);
+    return arith_image_mean_IMGID(&imgin);
+}
+
+double arith_image_min_IMGID(IMGID *imgin)
+{
     uint64_t nelement;
     uint8_t  datatype;
     int      OK = 0;
 
-    ID       = image_ID(ID_name);
-    datatype = data.image[ID].md[0].datatype;
+    resolveIMGID(imgin, ERRMODE_ABORT);
+    datatype = imgin->md[0].datatype;
 
-    nelement = data.image[ID].md[0].nelement;
+    nelement = imgin->md[0].nelement;
 
     if(datatype == _DATATYPE_FLOAT)
     {
         float value;
 
-        value = data.image[ID].array.F[0];
+        value = imgin->im->array.F[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            float value1 = data.image[ID].array.F[ii];
+            float value1 = imgin->im->array.F[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -59,10 +64,10 @@ double arith_image_min(const char *ID_name)
     {
         double value;
 
-        value = data.image[ID].array.D[0];
+        value = imgin->im->array.D[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            double value1 = data.image[ID].array.D[ii];
+            double value1 = imgin->im->array.D[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -76,10 +81,10 @@ double arith_image_min(const char *ID_name)
     {
         uint8_t value;
 
-        value = data.image[ID].array.UI8[0];
+        value = imgin->im->array.UI8[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint8_t value1 = data.image[ID].array.UI8[ii];
+            uint8_t value1 = imgin->im->array.UI8[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -93,10 +98,10 @@ double arith_image_min(const char *ID_name)
     {
         uint16_t value;
 
-        value = data.image[ID].array.UI16[0];
+        value = imgin->im->array.UI16[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint16_t value1 = data.image[ID].array.UI16[ii];
+            uint16_t value1 = imgin->im->array.UI16[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -110,10 +115,10 @@ double arith_image_min(const char *ID_name)
     {
         uint32_t value;
 
-        value = data.image[ID].array.UI32[0];
+        value = imgin->im->array.UI32[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint32_t value1 = data.image[ID].array.UI32[ii];
+            uint32_t value1 = imgin->im->array.UI32[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -127,10 +132,10 @@ double arith_image_min(const char *ID_name)
     {
         uint64_t value;
 
-        value = data.image[ID].array.UI64[0];
+        value = imgin->im->array.UI64[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint64_t value1 = data.image[ID].array.UI64[ii];
+            uint64_t value1 = imgin->im->array.UI64[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -144,10 +149,10 @@ double arith_image_min(const char *ID_name)
     {
         int8_t value;
 
-        value = data.image[ID].array.SI8[0];
+        value = imgin->im->array.SI8[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int8_t value1 = data.image[ID].array.SI8[ii];
+            int8_t value1 = imgin->im->array.SI8[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -161,10 +166,10 @@ double arith_image_min(const char *ID_name)
     {
         int16_t value;
 
-        value = (double) data.image[ID].array.SI16[0];
+        value = (double) imgin->im->array.SI16[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int16_t value1 = data.image[ID].array.SI16[ii];
+            int16_t value1 = imgin->im->array.SI16[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -178,10 +183,10 @@ double arith_image_min(const char *ID_name)
     {
         int32_t value;
 
-        value = data.image[ID].array.SI32[0];
+        value = imgin->im->array.SI32[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int32_t value1 = data.image[ID].array.SI32[ii];
+            int32_t value1 = imgin->im->array.SI32[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -195,10 +200,10 @@ double arith_image_min(const char *ID_name)
     {
         int64_t value;
 
-        value = data.image[ID].array.SI64[0];
+        value = imgin->im->array.SI64[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int64_t value1 = data.image[ID].array.SI64[ii];
+            int64_t value1 = imgin->im->array.SI64[ii];
             if(value1 < value)
             {
                 value = value1;
@@ -216,27 +221,32 @@ double arith_image_min(const char *ID_name)
     return (0);
 }
 
-double arith_image_max(const char *ID_name)
+double arith_image_min(const char *ID_name)
 {
-    imageID ID;
+    IMGID imgin = mkIMGID_from_name(ID_name);
+    return arith_image_min_IMGID(&imgin);
+}
+
+double arith_image_max_IMGID(IMGID *imgin)
+{
     long    ii;
     long    nelement;
     uint8_t datatype;
     int     OK = 0;
 
-    ID       = image_ID(ID_name);
-    datatype = data.image[ID].md[0].datatype;
+    resolveIMGID(imgin, ERRMODE_ABORT);
+    datatype = imgin->md[0].datatype;
 
-    nelement = data.image[ID].md[0].nelement;
+    nelement = imgin->md[0].nelement;
 
     if(datatype == _DATATYPE_FLOAT)
     {
         float value, value1;
 
-        value = data.image[ID].array.F[0];
+        value = imgin->im->array.F[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.F[ii];
+            value1 = imgin->im->array.F[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -250,10 +260,10 @@ double arith_image_max(const char *ID_name)
     {
         double value, value1;
 
-        value = data.image[ID].array.D[0];
+        value = imgin->im->array.D[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.D[ii];
+            value1 = imgin->im->array.D[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -267,10 +277,10 @@ double arith_image_max(const char *ID_name)
     {
         uint8_t value, value1;
 
-        value = data.image[ID].array.UI8[0];
+        value = imgin->im->array.UI8[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI8[ii];
+            value1 = imgin->im->array.UI8[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -284,10 +294,10 @@ double arith_image_max(const char *ID_name)
     {
         uint16_t value, value1;
 
-        value = data.image[ID].array.UI16[0];
+        value = imgin->im->array.UI16[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI16[ii];
+            value1 = imgin->im->array.UI16[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -301,10 +311,10 @@ double arith_image_max(const char *ID_name)
     {
         uint32_t value, value1;
 
-        value = data.image[ID].array.UI32[0];
+        value = imgin->im->array.UI32[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI32[ii];
+            value1 = imgin->im->array.UI32[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -318,10 +328,10 @@ double arith_image_max(const char *ID_name)
     {
         uint64_t value, value1;
 
-        value = data.image[ID].array.UI64[0];
+        value = imgin->im->array.UI64[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.UI64[ii];
+            value1 = imgin->im->array.UI64[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -335,10 +345,10 @@ double arith_image_max(const char *ID_name)
     {
         int8_t value, value1;
 
-        value = data.image[ID].array.SI8[0];
+        value = imgin->im->array.SI8[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI8[ii];
+            value1 = imgin->im->array.SI8[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -352,10 +362,10 @@ double arith_image_max(const char *ID_name)
     {
         int16_t value, value1;
 
-        value = (double) data.image[ID].array.SI16[0];
+        value = (double) imgin->im->array.SI16[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI16[ii];
+            value1 = imgin->im->array.SI16[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -369,10 +379,10 @@ double arith_image_max(const char *ID_name)
     {
         int32_t value, value1;
 
-        value = data.image[ID].array.SI32[0];
+        value = imgin->im->array.SI32[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI32[ii];
+            value1 = imgin->im->array.SI32[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -386,10 +396,10 @@ double arith_image_max(const char *ID_name)
     {
         int64_t value, value1;
 
-        value = data.image[ID].array.SI64[0];
+        value = imgin->im->array.SI64[0];
         for(ii = 0; ii < nelement; ii++)
         {
-            value1 = data.image[ID].array.SI64[ii];
+            value1 = imgin->im->array.SI64[ii];
             if(value1 > value)
             {
                 value = value1;
@@ -406,9 +416,14 @@ double arith_image_max(const char *ID_name)
     return (0);
 }
 
-double arith_image_percentile(const char *ID_name, double fraction)
+double arith_image_max(const char *ID_name)
 {
-    imageID         ID;
+    IMGID imgin = mkIMGID_from_name(ID_name);
+    return arith_image_max_IMGID(&imgin);
+}
+
+double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
+{
     long            ii;
     double          value  = 0;
     long           *arrayL = NULL;
@@ -419,10 +434,10 @@ double arith_image_percentile(const char *ID_name, double fraction)
     uint8_t         datatype;
     int             atypeOK = 1;
 
-    ID       = image_ID(ID_name);
-    datatype = data.image[ID].md[0].datatype;
+    resolveIMGID(imgin, ERRMODE_ABORT);
+    datatype = imgin->md[0].datatype;
 
-    nelement = data.image[ID].md[0].nelement;
+    nelement = imgin->md[0].nelement;
 
 
     void *array_raw = malloc(ImageStreamIO_typesize(datatype) * nelement);
@@ -431,7 +446,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
         PRINT_ERROR("malloc() error");
         exit(EXIT_FAILURE);
     }
-    memcpy(array_raw, data.image[ID].array.raw,
+    memcpy(array_raw, imgin->im->array.raw,
            ImageStreamIO_typesize(datatype) * nelement);
 
 
@@ -458,7 +473,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayU[ii] = data.image[ID].array.UI8[ii];
+                arrayU[ii] = imgin->im->array.UI8[ii];
             }
             quick_sort_ushort(arrayU, nelement);
             value = arrayU[(long)(fraction * nelement)];
@@ -474,7 +489,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayU[ii] = data.image[ID].array.UI16[ii];
+                arrayU[ii] = imgin->im->array.UI16[ii];
             }
             quick_sort_ushort(arrayU, nelement);
             value = arrayU[(long)(fraction * nelement)];
@@ -483,14 +498,14 @@ double arith_image_percentile(const char *ID_name, double fraction)
 
         case _DATATYPE_UINT32:
             arrayL = (long *) malloc(sizeof(long) * nelement);
-            if(arrayU == NULL)
+            if(arrayL == NULL)
             {
                 PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = data.image[ID].array.UI32[ii];
+                arrayL[ii] = imgin->im->array.UI32[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = arrayL[(long)(fraction * nelement)];
@@ -499,14 +514,14 @@ double arith_image_percentile(const char *ID_name, double fraction)
 
         case _DATATYPE_UINT64:
             arrayL = (long *) malloc(sizeof(long) * nelement);
-            if(arrayU == NULL)
+            if(arrayL == NULL)
             {
                 PRINT_ERROR("malloc() error");
                 exit(EXIT_FAILURE);
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = data.image[ID].array.UI64[ii];
+                arrayL[ii] = imgin->im->array.UI64[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = arrayL[(long)(fraction * nelement)];
@@ -522,7 +537,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = (long) data.image[ID].array.SI8[ii];
+                arrayL[ii] = (long) imgin->im->array.SI8[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = (double) arrayL[(long)(fraction * nelement)];
@@ -538,7 +553,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = (long) data.image[ID].array.SI16[ii];
+                arrayL[ii] = (long) imgin->im->array.SI16[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = (double) arrayL[(long)(fraction * nelement)];
@@ -554,7 +569,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = (long) data.image[ID].array.SI32[ii];
+                arrayL[ii] = (long) imgin->im->array.SI32[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = (double) arrayL[(long)(fraction * nelement)];
@@ -570,7 +585,7 @@ double arith_image_percentile(const char *ID_name, double fraction)
             }
             for(ii = 0; ii < nelement; ii++)
             {
-                arrayL[ii] = (long) data.image[ID].array.SI64[ii];
+                arrayL[ii] = (long) imgin->im->array.SI64[ii];
             }
             quick_sort_long(arrayL, nelement);
             value = (double) arrayL[(long)(fraction * nelement)];
@@ -591,11 +606,23 @@ double arith_image_percentile(const char *ID_name, double fraction)
     return (value);
 }
 
-double arith_image_median(const char *ID_name)
+double arith_image_percentile(const char *ID_name, double fraction)
+{
+    IMGID imgin = mkIMGID_from_name(ID_name);
+    return arith_image_percentile_IMGID(&imgin, fraction);
+}
+
+double arith_image_median_IMGID(IMGID *imgin)
 {
     double value = 0.0;
 
-    value = arith_image_percentile(ID_name, 0.5);
+    value = arith_image_percentile_IMGID(imgin, 0.5);
 
     return (value);
+}
+
+double arith_image_median(const char *ID_name)
+{
+    IMGID imgin = mkIMGID_from_name(ID_name);
+    return arith_image_median_IMGID(&imgin);
 }

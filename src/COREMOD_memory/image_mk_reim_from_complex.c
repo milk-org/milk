@@ -47,53 +47,39 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-errno_t mk_reim_from_complex(const char *in_name,
-                             const char *re_name,
-                             const char *im_name,
-                             int         sharedmem)
+errno_t mk_reim_from_complex_IMGID(
+    IMGID *imgin,
+    IMGID *imgre,
+    IMGID *imgim
+)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID  IDre;
-    imageID  IDim;
-    imageID  IDin;
-    uint32_t naxes[3];
-    long     naxis;
-    uint64_t nelement;
-    long     i;
     uint8_t  datatype;
 
-    IDin     = image_ID(in_name);
-    datatype = data.image[IDin].md[0].datatype;
-    naxis    = data.image[IDin].md[0].naxis;
-    for(i = 0; i < naxis; i++)
+    resolveIMGID(imgin, ERRMODE_ABORT);
+    datatype = imgin->md[0].datatype;
+    uint8_t naxis    = imgin->md[0].naxis;
+    for(int i = 0; i < naxis; i++)
     {
-        naxes[i] = data.image[IDin].md[0].size[i];
+        imgre->size[i] = imgin->md[0].size[i];
+        imgim->size[i] = imgin->md[0].size[i];
     }
-    nelement = data.image[IDin].md[0].nelement;
+    imgre->naxis = naxis;
+    imgim->naxis = naxis;
+
+    uint64_t nelement = imgin->md[0].nelement;
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT)  // single precision
     {
-        FUNC_CHECK_RETURN(create_image_ID(re_name,
-                                          naxis,
-                                          naxes,
-                                          _DATATYPE_FLOAT,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDre));
+        imgre->datatype = _DATATYPE_FLOAT;
+        createimagefromIMGID(imgre);
 
-        FUNC_CHECK_RETURN(create_image_ID(im_name,
-                                          naxis,
-                                          naxes,
-                                          _DATATYPE_FLOAT,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDim));
+        imgim->datatype = _DATATYPE_FLOAT;
+        createimagefromIMGID(imgim);
 
-        data.image[IDre].md[0].write = 1;
-        data.image[IDim].md[0].write = 1;
+        imgre->md[0].write = 1;
+        imgim->md[0].write = 1;
 #ifdef _OPENMP
         #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
@@ -101,43 +87,35 @@ errno_t mk_reim_from_complex(const char *in_name,
 #endif
             for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                data.image[IDre].array.F[ii] = data.image[IDin].array.CF[ii].re;
-                data.image[IDim].array.F[ii] = data.image[IDin].array.CF[ii].im;
+                imgre->im->array.F[ii] = imgin->im->array.CF[ii].re;
+                imgim->im->array.F[ii] = imgin->im->array.CF[ii].im;
             }
 #ifdef _OPENMP
         }
 #endif
-        if(sharedmem == 1)
+        if(imgre->md[0].shared == 1)
         {
-            COREMOD_MEMORY_image_set_sempost_byID(IDre, -1);
-            COREMOD_MEMORY_image_set_sempost_byID(IDim, -1);
+            COREMOD_MEMORY_image_set_sempost_byID(imgre->ID, -1);
         }
-        data.image[IDre].md[0].cnt0++;
-        data.image[IDim].md[0].cnt0++;
-        data.image[IDre].md[0].write = 0;
-        data.image[IDim].md[0].write = 0;
+        if(imgim->md[0].shared == 1)
+        {
+            COREMOD_MEMORY_image_set_sempost_byID(imgim->ID, -1);
+        }
+        imgre->md[0].cnt0++;
+        imgim->md[0].cnt0++;
+        imgre->md[0].write = 0;
+        imgim->md[0].write = 0;
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)  // double precision
     {
-        FUNC_CHECK_RETURN(create_image_ID(re_name,
-                                          naxis,
-                                          naxes,
-                                          _DATATYPE_DOUBLE,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDre));
+        imgre->datatype = _DATATYPE_DOUBLE;
+        createimagefromIMGID(imgre);
 
-        FUNC_CHECK_RETURN(create_image_ID(im_name,
-                                          naxis,
-                                          naxes,
-                                          _DATATYPE_DOUBLE,
-                                          sharedmem,
-                                          NB_KEYWNODE_MAX,
-                                          0,
-                                          &IDim));
-        data.image[IDre].md[0].write = 1;
-        data.image[IDim].md[0].write = 1;
+        imgim->datatype = _DATATYPE_DOUBLE;
+        createimagefromIMGID(imgim);
+
+        imgre->md[0].write = 1;
+        imgim->md[0].write = 1;
 #ifdef _OPENMP
         #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
@@ -145,21 +123,24 @@ errno_t mk_reim_from_complex(const char *in_name,
 #endif
             for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                data.image[IDre].array.D[ii] = data.image[IDin].array.CD[ii].re;
-                data.image[IDim].array.D[ii] = data.image[IDin].array.CD[ii].im;
+                imgre->im->array.D[ii] = imgin->im->array.CD[ii].re;
+                imgim->im->array.D[ii] = imgin->im->array.CD[ii].im;
             }
 #ifdef _OPENMP
         }
 #endif
-        if(sharedmem == 1)
+        if(imgre->md[0].shared == 1)
         {
-            COREMOD_MEMORY_image_set_sempost_byID(IDre, -1);
-            COREMOD_MEMORY_image_set_sempost_byID(IDim, -1);
+            COREMOD_MEMORY_image_set_sempost_byID(imgre->ID, -1);
         }
-        data.image[IDre].md[0].cnt0++;
-        data.image[IDim].md[0].cnt0++;
-        data.image[IDre].md[0].write = 0;
-        data.image[IDim].md[0].write = 0;
+        if(imgim->md[0].shared == 1)
+        {
+            COREMOD_MEMORY_image_set_sempost_byID(imgim->ID, -1);
+        }
+        imgre->md[0].cnt0++;
+        imgim->md[0].cnt0++;
+        imgre->md[0].write = 0;
+        imgim->md[0].write = 0;
     }
     else
     {
@@ -171,13 +152,31 @@ errno_t mk_reim_from_complex(const char *in_name,
     return RETURN_SUCCESS;
 }
 
+errno_t mk_reim_from_complex(const char *in_name,
+                             const char *re_name,
+                             const char *im_name,
+                             int         sharedmem)
+{
+    IMGID imgin = mkIMGID_from_name(in_name);
+    IMGID imgre = mkIMGID_from_name(re_name);
+    IMGID imgim = mkIMGID_from_name(im_name);
+    imgre.shared = sharedmem;
+    imgim.shared = sharedmem;
+
+    return mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
+}
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    mk_reim_from_complex(inimname, outreimname, outimimname, 0);
+    IMGID imgin = mkIMGID_from_name(inimname);
+    IMGID imgre = mkIMGID_from_name(outreimname);
+    IMGID imgim = mkIMGID_from_name(outimimname);
+
+    mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

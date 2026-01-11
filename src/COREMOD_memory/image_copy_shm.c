@@ -46,57 +46,67 @@ static errno_t help_function()
 
 
 // copy image to shared memory
-static errno_t image_copy_shm(
-    IMGID img,
-    const char * restrict outshmname
+errno_t image_copy_shm_IMGID(
+    IMGID *img,
+    IMGID *imgshm
 )
 {
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(img, ERRMODE_ABORT);
 
     // check if shared memory destination exists
-    IMGID imgshm = read_sharedmem_img(outshmname);
-    if( imgshm.ID != -1)
+    resolveIMGID(imgshm, ERRMODE_NULL);
+    if( imgshm->ID != -1)
     {
         // image exists - checking if compatible size and type
-        if( IMGIDmdcompare(img, imgshm) > 0 )
+        if( IMGIDmdcompare(*img, *imgshm) > 0 )
         {
             // image formats are incompatible
             // delete output
-            printf("Image %s already exist in shm, but wrong size/format -> deleting\n", outshmname);
+            printf("Image %s already exist in shm, but wrong size/format -> deleting\n", imgshm->name);
 
-            ImageStreamIO_destroyIm(imgshm.im);
-            imgshm.ID = -1;
+            ImageStreamIO_destroyIm(imgshm->im);
+            imgshm->ID = -1;
         }
         else
         {
-            printf("re-using existing shm %s\n", outshmname);
+            printf("re-using existing shm %s\n", imgshm->name);
         }
     }
 
 
-    if ( imgshm.ID == -1 )
+    if ( imgshm->ID == -1 )
     {
-        copyIMGID( &img, &imgshm );
-        strcpy(imgshm.name, outshmname);
-        imgshm.shared = 1;
+        copyIMGID( img, imgshm );
+        imgshm->shared = 1;
 
-        createimagefromIMGID(&imgshm);
+        createimagefromIMGID(imgshm);
     }
 
 
-    imgshm.md->write = 1;
+    imgshm->md->write = 1;
     // copy data array
-    memcpy(imgshm.im->array.raw,
-           img.im->array.raw,
-           ImageStreamIO_typesize(img.md->datatype)* img.md->nelement);
+    memcpy(imgshm->im->array.raw,
+           img->im->array.raw,
+           ImageStreamIO_typesize(img->md->datatype)* img->md->nelement);
     // copy keywords
-    memcpy(imgshm.im->kw, img.im->kw, sizeof(IMAGE_KEYWORD) * img.md->NBkw);
+    memcpy(imgshm->im->kw, img->im->kw, sizeof(IMAGE_KEYWORD) * img->md->NBkw);
 
-    COREMOD_MEMORY_image_set_sempost_byID(imgshm.ID, -1);
-    imgshm.md->cnt0++;
-    imgshm.md->write = 0;
+    COREMOD_MEMORY_image_set_sempost_byID(imgshm->ID, -1);
+    imgshm->md->cnt0++;
+    imgshm->md->write = 0;
 
     return RETURN_SUCCESS;
+}
+
+errno_t image_copy_shm(
+    const char *inname,
+    const char *outname
+)
+{
+    IMGID imgin = mkIMGID_from_name(inname);
+    IMGID imgshm = mkIMGID_from_name(outname);
+
+    return image_copy_shm_IMGID(&imgin, &imgshm);
 }
 
 
@@ -109,9 +119,10 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_copy_shm(
-        mkIMGID_from_name(inimname),
-        outimname);
+    IMGID imgin = mkIMGID_from_name(inimname);
+    IMGID imgshm = mkIMGID_from_name(outimname);
+
+    image_copy_shm_IMGID(&imgin, &imgshm);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
