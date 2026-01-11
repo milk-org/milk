@@ -16,8 +16,6 @@
 
 //#include "COREMOD_tools/COREMOD_tools.h"
 
-
-
 // variables local to this translation unit
 static char *stream_basename; // stream basename, which also is the output name.
 static int32_t *ptr_n_input; // How many streams to merge?
@@ -55,8 +53,6 @@ static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
 
 // Wrapper function, used by all CLI calls
 static errno_t compute_function()
@@ -110,7 +106,6 @@ static errno_t compute_function()
         sem_idxs[kk] = ImageStreamIO_getsemwaitindex(img_in_arr[kk].im, 0);
     }
 
-
     struct timespec t_spec1;
     struct timespec t_spec2;
 
@@ -127,7 +122,6 @@ static errno_t compute_function()
         t_spec2.tv_sec = t_spec1.tv_sec + 1;
         t_spec2.tv_nsec = t_spec1.tv_nsec;
 
-
         for(int kk = 0; kk < n_input; kk++)
         {
             ImageStreamIO_semtimedwait(img_in_arr[kk].im, sem_idxs[kk], &t_spec2);
@@ -140,7 +134,6 @@ static errno_t compute_function()
             memcpy(img_out.im->array.raw + offset_bytes[kk], img_in_arr[kk].im->array.raw,
                    size_bytes[kk]);
         }
-
 
         // What about keywords?
 

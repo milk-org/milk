@@ -565,7 +565,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 }
                 oldslice = slice;
 
-
                 frameincr = (long) img_p->md->cnt0 - cnt0previous;
                 if(frameincr > 1)
                 {
@@ -646,8 +645,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     //size_t flushsize;
     char *socket_flush_buff;
-
-
 
     struct sched_param schedpar;
 
@@ -878,7 +875,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         }
     }
 
-
     if(OKim == 0)
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd->name);
@@ -926,7 +922,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     snprintf(typestring, 8, "%s", ImageStreamIO_typename(img_p->md->datatype));
 
     ptr0 = (char *) img_p->array.raw;
-
 
     if(data.processinfo == 1)
     {
@@ -1061,7 +1056,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             img_p->md->write = 1;
             img_p->md->cnt1 = frame_md_p->cnt1;
-
 
             // copy pixel data
             if(NBslices > 1)

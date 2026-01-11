@@ -146,9 +146,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
 static errno_t streamdelay(IMGID            inimg,
                            IMGID            outimg,
                            IMGID            bufferimg,
@@ -333,9 +330,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
     long                cntskip = 0;
     long                kk;
 
-
-
-
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
     *zsize = (long)(2 * delayus / dtus);
@@ -349,8 +343,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 
     create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
-
-
     IDout = image_ID(IDout_name);
     if(IDout == -1)   // CREATE IT
     {
@@ -360,7 +352,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
         create_image_ID(IDout_name, 2, arraytmp, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
         free(arraytmp);
     }
-
 
     *kkin = 0;
     *kkout = 0;
@@ -375,9 +366,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
         t0array[kk] = tnow;
     }
 
-
     DEBUG_TRACEPOINT(" ");
-
 
     // Specify input stream trigger
 
@@ -390,7 +379,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
         processinfo->triggerdelay.tv_nsec -= 1000000000;
         processinfo->triggerdelay.tv_sec += 1;
     }
-
 
     // ===========================
     /// ### START LOOP
@@ -408,7 +396,6 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 
         DEBUG_TRACEPOINT(" ");
         loopOK = processinfo_loopstep(processinfo);
-
 
         processinfo_waitoninputstream(processinfo);
         //usleep(dtus); // main loop wait
@@ -438,18 +425,14 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                 (*kkin) = 0;
             }
 
-
-
             clock_gettime(CLOCK_MILK, &tnow);
             DEBUG_TRACEPOINT(" ");
-
 
             cntskip = 0;
             tdiff = timespec_diff(t0array[*kkout], tnow);
             tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
 
             DEBUG_TRACEPOINT(" ");
-
 
             while((tdiffv > 1.0e-6 * delayus) && (cntskip < *zsize))
             {
@@ -471,9 +454,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                 *framelag += *zsize;
             }
 
-
             DEBUG_TRACEPOINT(" ");
-
 
             switch(timeavemode)
             {

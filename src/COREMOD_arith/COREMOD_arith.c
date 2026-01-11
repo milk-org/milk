@@ -81,21 +81,15 @@
 
 #include "image_vecmult.h"
 
-
 #include "mathfuncs.h"
 
 #include "execute_arith.h"
-
-
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-
 INIT_MODULE_LIB(COREMOD_arith)
-
-
 
 static errno_t init_module_CLI()
 {

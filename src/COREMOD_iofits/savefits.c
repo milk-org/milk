@@ -27,8 +27,6 @@ static char *outfname;
 static int  *outbitpix;
 static char *inheader; // import header from this file
 
-
-
 // CLI function arguments and parameters
 static CLICMDARGDEF farg[] = {{ 
         CLIARG_IMG,
@@ -69,8 +67,6 @@ static CLICMDARGDEF farg[] = {{
     }
 };
 
-
-
 // CLI function initialization data
 static CLICMDDATA CLIcmddata =
 {
@@ -82,12 +78,6 @@ static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
 
 /**
  * @brief Write FITS file - implementation using IMGID
@@ -113,7 +103,6 @@ errno_t saveFITS_opt_trunc_IMGID(
     const char *__restrict FITSIOext
 )
 {
-
 
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
@@ -233,7 +222,6 @@ errno_t saveFITS_opt_trunc_IMGID(
         FUNC_RETURN_FAILURE(" ");
     }
 
-
     DEBUG_TRACEPOINT("Adding optional header");
     // HEADER
 
@@ -342,8 +330,6 @@ errno_t saveFITS_opt_trunc_IMGID(
             }
         }
     }
-
-
 
     DEBUG_TRACEPOINT("Add FITS keywords from image keywords");
     // Skip keywords that start with a "_"
@@ -593,7 +579,6 @@ errno_t saveFITS_opt_trunc_IMGID(
         FUNC_RETURN_FAILURE(" ");
     }
 
-
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("mv %s %s", fnametmp, outputFITSname);
 
     DEBUG_TRACE_FEXIT();
@@ -622,8 +607,6 @@ errno_t saveFITS_opt_trunc(
                                     kwarraysize,
                                     FITSIOext);
 }
-
-
 
 /**
  * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
@@ -658,9 +641,6 @@ errno_t saveFITS(
                "");
 }
 
-
-
-
 errno_t saveall_fits(
     const char *__restrict savedirname
 )
@@ -685,8 +665,6 @@ errno_t saveall_fits(
     return RETURN_SUCCESS;
 }
 
-
-
 errno_t save_fits(
     const char *__restrict inputimname,
     const char *__restrict outputFITSname
@@ -701,7 +679,6 @@ errno_t save_fits(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 errno_t save_fl_fits(
     const char *__restrict inputimname,
@@ -718,7 +695,6 @@ errno_t save_fl_fits(
     return RETURN_SUCCESS;
 }
 
-
 errno_t save_db_fits(
     const char *__restrict inputimname,
     const char *__restrict outputFITSname
@@ -733,7 +709,6 @@ errno_t save_db_fits(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 static errno_t compute_function()
 {

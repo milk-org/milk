@@ -25,8 +25,6 @@ imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name);
 errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname);
 errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout);
 
-
-
 // ==========================================
 // Command line interface wrapper function(s)
 // ==========================================
@@ -45,7 +43,6 @@ static errno_t copy_image_ID__cli()
 
     return CLICMD_SUCCESS;
 }
-
 
 static errno_t chname_image_ID__cli()
 {
@@ -100,7 +97,6 @@ errno_t image_copy_addCLIcmd()
         "long copy_image_ID(const char *name, const char *newname, 1)");
 */
 
-
     RegisterCLIcommand(
         "mv",
         __FILE__,
@@ -121,8 +117,6 @@ errno_t image_copy_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
-
 
 imageID copy_image_ID_IMGID(
     IMGID *imgin,
@@ -213,9 +207,6 @@ imageID copy_image_ID(
     return copy_image_ID_IMGID(&imgin, &imgout, shared);
 }
 
-
-
-
 imageID chname_image_ID_IMGID(
     IMGID *imgin,
     const char *new_name
@@ -252,8 +243,6 @@ imageID chname_image_ID(
 
     return chname_image_ID_IMGID(&imgin, new_name);
 }
-
-
 
 /** copy an image to shared memory
  *

@@ -5,29 +5,23 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-
-
 static char *inimname;
-
 
 static char *outimave;
 static uint32_t *outimshared;
 
 static char *outimrms;
 
-
 static uint64_t *NBcoadd;
 
 static uint64_t *cntindex;
 static long      fpi_cntindex = -1;
-
 
 static uint64_t *compave;
 static long     fpi_compave = -1;
 
 static uint64_t *comprms;
 static long     fpi_comprms = -1;
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -105,15 +99,11 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
-
 static errno_t customCONFsetup()
 {
 
     return RETURN_SUCCESS;
 }
-
 
 static errno_t customCONFcheck()
 {
@@ -124,9 +114,6 @@ static errno_t customCONFcheck()
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 static CLICMDDATA CLIcmddata =
 {
@@ -143,12 +130,6 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
 
 static errno_t compute_function()
 {
@@ -176,8 +157,6 @@ static errno_t compute_function()
     {
         imcreateIMGID(&outimgrms);
     }
-
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
@@ -273,7 +252,6 @@ static errno_t compute_function()
             }
             break;
 
-
         }
 
         if(*comprms == 1)
@@ -352,7 +330,6 @@ static errno_t compute_function()
             break;
         }
 
-
         if(*comprms == 1)
         {
             for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
@@ -361,7 +338,6 @@ static errno_t compute_function()
             }
         }
     }
-
 
     (*cntindex)++;
     if((*cntindex) >= (*NBcoadd))
@@ -402,12 +378,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
 INSERT_STD_FPSCLIfunctions
-
-
-
 
 // Register function in CLI
 errno_t
@@ -415,7 +386,6 @@ CLIADDCMD_streamaverage()
 {
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
 
     INSERT_STD_CLIREGISTERFUNC
 

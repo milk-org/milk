@@ -58,7 +58,6 @@ void qs2(
     unsigned long right
 );
 
-
 void qs3(
     double       * __restrict array,
     double       * __restrict array1,
@@ -115,14 +114,11 @@ void quick_sort2l(
     unsigned long count
 );
 
-
-
 void quick_sort2l_double(
     double * __restrict array,
     long   * __restrict array1,
     unsigned long count
 );
-
 
 void quick_sort2ul_double(
     double        * __restrict array,

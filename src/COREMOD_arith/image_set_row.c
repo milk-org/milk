@@ -1,7 +1,6 @@
 
 #include "CommandLineInterface/CLIcore.h"
 
-
 static char *inimname;
 
 static float    *pixval;
@@ -9,8 +8,6 @@ static long      fpi_pixval = -1;
 
 static uint32_t *rowindex;
 static long      fpi_rowindex = -1;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -43,7 +40,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
 static CLICMDDATA CLIcmddata =
 {
     "setrow",
@@ -51,17 +47,11 @@ static CLICMDDATA CLIcmddata =
     CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 errno_t image_set_row(
     IMGID    inimg,
@@ -73,10 +63,8 @@ errno_t image_set_row(
 
     long nelem = inimg.md->nelement;
 
-
     switch ( inimg.md->datatype )
     {
-
 
     case _DATATYPE_INT8 :
         for(uint_fast32_t ii = 0; ii < inimg.md->size[0]; ii++)
@@ -134,7 +122,6 @@ errno_t image_set_row(
         }
         break;
 
-
     case _DATATYPE_FLOAT :
         for(uint_fast32_t ii = 0; ii < inimg.md->size[0]; ii++)
         {
@@ -166,13 +153,9 @@ errno_t image_set_row(
         break;
     }
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
 
 static errno_t compute_function()
 {
@@ -180,7 +163,6 @@ static errno_t compute_function()
 
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
@@ -194,13 +176,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t
@@ -210,6 +186,4 @@ CLIADDCMD_COREMOD_arith__imset_row()
 
     return RETURN_SUCCESS;
 }
-
-
 

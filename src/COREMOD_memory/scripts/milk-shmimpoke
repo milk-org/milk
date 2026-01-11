@@ -3,8 +3,6 @@
 # This script uses milk-argparse
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
-
-
 # script 1-line description
 MSdescr="poke existing stream"
 
@@ -22,8 +20,6 @@ source milk-script-std-config
 RequiredCommands=( milk )
 RequiredFiles=()
 RequiredDirs=()
-
-
 
 # SCRIPT ARGUMENTS (mandatory)
 # syntax: "name:type(s)/test(s):description"
@@ -48,7 +44,6 @@ function set_pokeDelay() {
 # parse arguments
 source milk-argparse
 streamname="${inputMSargARRAY[0]}"
-
 
 echo ${streamname}
 

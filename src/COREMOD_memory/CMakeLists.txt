@@ -135,9 +135,6 @@ set(SCRIPTFILES
   scripts/milk-streamFITSlog
 )
 
-
-
-
 # TESTING
 
 include(CTest)
@@ -148,7 +145,6 @@ add_test (NAME "${TESTNAME}" COMMAND milk-exec "-T" "m?")
 set_property (TEST "${TESTNAME}" PROPERTY LABELS "CLImodule")
 set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 1)
 set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_memory")
-
 
 # test that commands are registered
 
@@ -165,8 +161,6 @@ set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "src:")
 
 endforeach()
 
-
-
 # Semaphore latency - speed test
 
 set(TESTNAME "milksemloopspeed")
@@ -174,11 +168,6 @@ add_test (NAME "${TESTNAME}" COMMAND milk-semloopspeed "123456")
 set_property (TEST "${TESTNAME}" PROPERTY LABELS "perf")
 set_property (TEST "${TESTNAME}" PROPERTY TIMEOUT 5)
 set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "cnt0 = 123457")
-
-
-
-
-
 
 # DEFAULT SETTINGS
 # Do not change unless needed

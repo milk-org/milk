@@ -167,8 +167,6 @@ errno_t load_fits_IMGID(
 
         //printf("fileOK = %d\n", fileOK);
 
-
-
         if(fileOK == 0)
         {
             // if image not loaded, set output identifier to -1
@@ -208,8 +206,6 @@ errno_t load_fits_IMGID(
     }
 
     DEBUG_TRACEPOINT("File %s open", file_name);
-
-
 
     char keyword[STRINGMAXLEN_FITSKEYWORDNAME];
     long fpixel = 1;
@@ -253,7 +249,6 @@ errno_t load_fits_IMGID(
             //printf("    naxis%ld = %u\n", i, naxes[i]);
         }
     }
-
 
     {
         int status = 0;
@@ -642,8 +637,6 @@ errno_t load_fits(
     return retval;
 }
 
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -658,7 +651,6 @@ static errno_t compute_function()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 INSERT_STD_FPSCLIfunctions
 

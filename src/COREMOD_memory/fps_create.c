@@ -55,8 +55,6 @@ errno_t fps_create_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-
-
 errno_t function_parameter_struct_create(
     int NBparamMAX,
     const char *name
@@ -187,7 +185,6 @@ errno_t function_parameter_struct_create(
     // and create the directory
     mkdir(fps.md->confdir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
-
     // Get keywordarray from environment variable
     char *kwarray = getenv("FPS_KEYWORDARRAY");
     if(kwarray)
@@ -202,8 +199,6 @@ errno_t function_parameter_struct_create(
                 ":",
                 FPS_KEYWORDARRAY_STRMAXLEN - 1);
     }
-
-
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;

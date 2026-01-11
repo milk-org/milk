@@ -3,14 +3,11 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-
-
 // input image names
 static char *inimname;
 static char *maskimname;
 
 static char *outimname;
-
 
 static uint32_t *axisA;
 static long      fpi_axisA = -1;
@@ -24,8 +21,6 @@ static long      fpi_colsize = -1;
 static char *auxin;
 
 static uint64_t *modeRMS;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -76,17 +71,12 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "unfold",
     "image unfold, merge axis A into axis B",
     CLICMD_FIELDS_DEFAULTS
 };
-
-
 
 // detailed help
 static errno_t help_function()
@@ -100,9 +90,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
 errno_t image_unfold(
     IMGID inimg,
     IMGID *outimg,
@@ -115,7 +102,6 @@ errno_t image_unfold(
 
     resolveIMGID(&inimg, ERRMODE_ABORT);
 
-
     resolveIMGID(outimg, ERRMODE_NULL);
     if( outimg->ID == -1)
     {
@@ -124,7 +110,6 @@ errno_t image_unfold(
 
     // output image size
     outimg->naxis = inimg.md->naxis - 1;
-
 
     // remove missing axis
     {
@@ -159,7 +144,6 @@ errno_t image_unfold(
         axisC = 1;
     }
 
-
     int mdimsize = 0;
     if( axis0 == axis1 )
     {
@@ -192,9 +176,6 @@ errno_t image_unfold(
 
     createimagefromIMGID(outimg);
 
-
-
-
     // copy data to ouput
 
     // destination pix coord
@@ -214,7 +195,6 @@ errno_t image_unfold(
 
                 pixo += ii % outimg->md->size[0];
                 pixo += mdimsize * ( ii / outimg->md->size[0] );
-
 
                 outimg->im->array.F[pixo] = inimg.im->array.F[pixi];
                 pixi ++;
@@ -242,25 +222,11 @@ errno_t image_unfold(
             jj -= inimg.md->size[1];
         }
 
-
     }
-
-
-
-
-
-
-
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
 
 static errno_t compute_function()
 {
@@ -272,7 +238,6 @@ static errno_t compute_function()
     IMGID outimg = mkIMGID_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -293,11 +258,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t

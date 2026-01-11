@@ -1,15 +1,8 @@
 #! /bin/bash
 
-
-
 NBARGS=3
 
-
 pname="logshim-$1"
-
-
-
-
 
 function printHELP {
     echo "------------------------------------------------------------------------"
@@ -35,19 +28,12 @@ function printHELP {
     echo "------------------------------------------------------------------------"
 }
 
-
 printHELP1 ()
 {
     printf "%20s       Start process to log image stream to disk\n" "$0"
 }
 
-
-
-
-
 EXITSTATUS=0
-
-
 
 function checkFile {
     if [ -f $1 ]
@@ -58,7 +44,6 @@ function checkFile {
         EXITSTATUS=1
     fi
 }
-
 
 function checkDir {
     if [ -d $1 ]
@@ -75,7 +60,6 @@ function cmdexists()
     command -v "$1" >/dev/null 2>&1
 }
 
-
 function checkCommand {
     if cmdexists $1; then
         echo "[$(tput setaf 2)$(tput bold)   OK   $(tput sgr0)] Command $(tput bold)$1$(tput sgr0) found"
@@ -85,13 +69,7 @@ function checkCommand {
 
 }
 
-
-
-
-
-
 # ================= OPTIONS =============================
-
 
 # Transform long options to short ones
 singlelinehelp=0
@@ -106,9 +84,6 @@ for arg in "$@"; do
         *)        set -- "$@" "$arg"
     esac
 done
-
-
-
 
 CPUset="NULL"
 
@@ -134,13 +109,6 @@ done
 
 shift $((OPTIND-1))
 
-
-
-
-
-
-
-
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
         echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
@@ -149,19 +117,13 @@ if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     exit
 fi
 
-
-
 # ======================= CHECK REQUIRED FILES =================================
 echo ""
 checkFile $MILK_SHM_DIR/$1.im.shm
 
-
 # ============================= CHECK IF COMMAND EXISTS ==========================
 
 checkCommand milk
-
-
-
 
 if [ $EXITSTATUS -eq 1 ]; then
     echo ""
@@ -172,9 +134,7 @@ else
     echo ""
 fi
 
-
 mkdir -p $3
-
 
 milk -n $pname << EOF
 csetpmove ${CPUset}

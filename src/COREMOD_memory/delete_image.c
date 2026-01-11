@@ -17,9 +17,6 @@ errno_t delete_image_ID(const char *__restrict imname, int errmode);
 static char *imname;
 static long *errmode;
 
-
-
-
 // CLI function arguments and parameters
 static CLICMDARGDEF farg[] =
 {
@@ -45,8 +42,6 @@ static CLICMDARGDEF farg[] =
 
 // CLI function initialization data
 static CLICMDDATA CLIcmddata = {"rm", "remove image", CLICMD_FIELDS_DEFAULTS};
-
-
 
 // detailed help
 static errno_t help_function()
@@ -82,9 +77,6 @@ CLIADDCMD_COREMOD_memory__delete_image()
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 /** @brief deletes an ID
  *
@@ -281,9 +273,6 @@ errno_t delete_image(
     return RETURN_SUCCESS;
 }
 
-
-
-
 /** @brief deletes an ID
  *
  * errmode values:
@@ -311,9 +300,6 @@ errno_t delete_image_ID(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
 
 // delete all images with a prefix
 errno_t delete_image_ID_prefix(

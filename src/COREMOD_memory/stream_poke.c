@@ -36,8 +36,6 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-
-
 // Wrapper function, used by all CLI calls
 static errno_t compute_function()
 {

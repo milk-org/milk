@@ -1,6 +1,5 @@
 #include "CommandLineInterface/CLIcore.h"
 
-
 static char *inimname;
 
 static uint32_t *colindex;
@@ -11,7 +10,6 @@ static long      fpi_rowindex = -1;
 
 static float    *pixval;
 static long      fpi_pixval = -1;
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -53,7 +51,6 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
 static CLICMDDATA CLIcmddata =
 {
     "setpix",
@@ -61,17 +58,11 @@ static CLICMDDATA CLIcmddata =
     CLICMD_FIELDS_DEFAULTS
 };
 
-
-
 // detailed help
 static errno_t help_function()
 {
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 errno_t image_set_2Dpix(
     IMGID    inimg,
@@ -84,10 +75,8 @@ errno_t image_set_2Dpix(
 
     long nelem = inimg.md->nelement;
 
-
     switch ( inimg.md->datatype )
     {
-
 
     case _DATATYPE_INT8 :
         inimg.im->array.SI8[rowindex * inimg.md->size[0] + colindex] = (int8_t) value;
@@ -121,7 +110,6 @@ errno_t image_set_2Dpix(
         inimg.im->array.UI64[rowindex * inimg.md->size[0] + colindex] = (uint64_t) value;
         break;
 
-
     case _DATATYPE_FLOAT :
         inimg.im->array.F[rowindex * inimg.md->size[0] + colindex] = value;
         break;
@@ -141,13 +129,9 @@ errno_t image_set_2Dpix(
         break;
     }
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
 
 static errno_t compute_function()
 {
@@ -155,7 +139,6 @@ static errno_t compute_function()
 
     IMGID inimg = mkIMGID_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT);
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
@@ -169,13 +152,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t
@@ -185,6 +162,4 @@ CLIADDCMD_COREMOD_arith__imset_2Dpix()
 
     return RETURN_SUCCESS;
 }
-
-
 

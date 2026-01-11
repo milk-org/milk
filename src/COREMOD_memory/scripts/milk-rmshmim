@@ -1,13 +1,11 @@
 #!/bin/bash
 
-
 # number of arguments to script
 NBARGS=1
 
 # ======================= PROCESS NAME =================================
 pname=`echo "$0" | sed "s/\.\///g"`
 echo "pname = $pname"
-
 
 function printHELP {
     echo "------------------------------------------------------------------------"
@@ -25,16 +23,10 @@ function printHELP {
     echo "------------------------------------------------------------------------"
 }
 
-
 printHELP1 ()
 {
     printf "%20s       Remove shared memory image (stream)\n" "$0"
 }
-
-
-
-
-
 
 # Transform long options to short ones
 singlelinehelp=0
@@ -49,9 +41,6 @@ for arg in "$@"; do
         *)        set -- "$@" "$arg"
     esac
 done
-
-
-
 
 while getopts :h FLAG; do
     case $FLAG in
@@ -74,11 +63,6 @@ shift $((OPTIND-1))
 
 ### End getopts code ###
 
-
-
-
-
-
 if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     if [ "$#" -ne $NBARGS ]; then
         echo "$(tput setaf 1)$(tput bold) Illegal number of parameters ($NBARGS params required, $# entered) $(tput sgr0)"
@@ -87,11 +71,7 @@ if [ "$1" = "help" ] || [ "$#" -ne $NBARGS ]; then
     exit
 fi
 
-
-
-
 IFS=',' read -r -a array <<< "$1"
-
 
 pname="milkrmshmim"
 fifoname="milkCLIfifo.${pname}"

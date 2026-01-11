@@ -3,14 +3,11 @@
 #include "CommandLineInterface/CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-
-
 // input image names
 static char *inimname;
 static char *maskimname;
 
 static char *outimname;
-
 
 static uint32_t *sliceaxis;
 static long      fpi_sliceaxis = -1;
@@ -18,8 +15,6 @@ static long      fpi_sliceaxis = -1;
 static char *auxin;
 
 static uint64_t *modeRMS;
-
-
 
 static CLICMDARGDEF farg[] =
 {
@@ -79,17 +74,12 @@ static CLICMDARGDEF farg[] =
     }
 };
 
-
-
-
 static CLICMDDATA CLIcmddata =
 {
     "normalizeslice",
     "image normalize over mask by slice",
     CLICMD_FIELDS_DEFAULTS
 };
-
-
 
 // detailed help
 static errno_t help_function()
@@ -98,9 +88,6 @@ static errno_t help_function()
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 errno_t image_slicenormalize(
     IMGID inimg,
@@ -118,18 +105,15 @@ errno_t image_slicenormalize(
 
     resolveIMGID(&imgaux, ERRMODE_NULL);
 
-
     resolveIMGID(outimg, ERRMODE_NULL);
     if(outimg->ID == -1)
     {
         copyIMGID(&inimg, outimg);
     }
 
-
     outimg->datatype = _DATATYPE_FLOAT;
 
     createimagefromIMGID(outimg);
-
 
     // input image
     //
@@ -145,7 +129,6 @@ errno_t image_slicenormalize(
     {
         sizescan[1] = 1;
     }
-
 
     // aux input image
     //
@@ -165,9 +148,6 @@ errno_t image_slicenormalize(
         }
     }
 
-
-
-
     // mask image
     //
     uint32_t sizescanm[3];
@@ -181,9 +161,6 @@ errno_t image_slicenormalize(
     sizemmask[1] = 1;
     sizemmask[2] = 1;
     sizemmask[sliceaxis] = 0;
-
-
-
 
     double *__restrict normarray = (double *) malloc(sizeof(
                                        double) * sizescan[sliceaxis]);
@@ -209,7 +186,6 @@ errno_t image_slicenormalize(
     // input image
     uint32_t pixcoord[3];
 
-
     for(uint32_t ii = 0; ii < sizescan[0]; ii++)
     {
         pixcoord[0] = ii;
@@ -228,7 +204,6 @@ errno_t image_slicenormalize(
                 uint64_t pixi = kk * sizescan[1] * sizescan[0];
                 pixi += jj * sizescan[0];
                 pixi += ii;
-
 
                 uint64_t pixim = kkm * sizescanm[1] * sizescanm[0];
                 pixim += jjm * sizescanm[0];
@@ -276,7 +251,6 @@ errno_t image_slicenormalize(
         }
     }
 
-
     for(uint32_t ii = 0; ii < sizescan[sliceaxis]; ii++)
     {
         avarray[ii] /= maskcntarray[ii];
@@ -289,7 +263,6 @@ errno_t image_slicenormalize(
             normarray[ii] = sqrt(normarray[ii]);
         }
         // printf("slice %3u : cnt=%lf  av=%lf  std=%lf\n", ii, maskcntarray[ii], avarray[ii], normarray[ii]);
-
 
         if(modeRMS == 0)
         {
@@ -312,7 +285,6 @@ errno_t image_slicenormalize(
                 uint64_t pixi = kk * sizescan[1] * sizescan[0];
                 pixi += jj * sizescan[0];
                 pixi += ii;
-
 
                 switch(inimg.datatype)
                 {
@@ -365,9 +337,6 @@ errno_t image_slicenormalize(
         }
     }
 
-
-
-
     if(imgaux.ID != -1)
     {
         // process aux input image
@@ -395,20 +364,13 @@ errno_t image_slicenormalize(
         }
     }
 
-
     free(normarray);
     free(avarray);
     free(maskcntarray);
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
 
 static errno_t compute_function()
 {
@@ -426,7 +388,6 @@ static errno_t compute_function()
     IMGID outimg = mkIMGID_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -448,11 +409,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-
-
 INSERT_STD_FPSCLIfunctions
-
-
 
 // Register function in CLI
 errno_t

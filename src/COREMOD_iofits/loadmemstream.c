@@ -15,9 +15,6 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
-
-
-
 /**
  * @brief High-level load to stream
  *
