@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "CommandLineInterface/CLIcore.h"
+#include "loadfits.h"
 
 #include "COREMOD_iofits_common.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -82,11 +83,10 @@ static errno_t help_function()
 /// LOADFITS_ERRMODE_ERROR   (2) return error
 /// LOADFITS_ERRMODE_EXIT    (3) exit program at error
 
-errno_t load_fits(
+errno_t load_fits_IMGID(
     const char *__restrict file_name,
-    const char *__restrict ID_name,
-    int      errmode,
-    imageID *IDout
+    IMGID *imgout,
+    int      errmode
 )
 {
     DEBUG_TRACE_FSTART();
@@ -104,8 +104,6 @@ errno_t load_fits(
     //    unsigned short *sarray = NULL;
     //    long      NDR = 1; /* non-destructive reads */
 
-    imageID ID;
-
     nulval = 0;
     anynul = 0;
     bscale = 1;
@@ -115,7 +113,7 @@ errno_t load_fits(
     naxes[1] = 0;
     naxes[2] = 0;
 
-    DEBUG_TRACEPOINT("FARG \"%s\" %s %d", file_name, ID_name, errmode);
+    DEBUG_TRACEPOINT("FARG \"%s\" %s %d", file_name, imgout->name, errmode);
 
     {
         // Open fitsio file pointer
@@ -158,7 +156,7 @@ errno_t load_fits(
                         }
                     }
 
-                    ID = -1;
+                    imgout->ID = -1;
                 }
                 else
                 {
@@ -174,10 +172,7 @@ errno_t load_fits(
         if(fileOK == 0)
         {
             // if image not loaded, set output identifier to -1
-            if(IDout != NULL)
-            {
-                *IDout = -1;
-            }
+            imgout->ID = -1;
 
             if(errmode == 0)
             {
@@ -189,7 +184,7 @@ errno_t load_fits(
             {
                 PRINT_WARNING(
                     "Image \"%s\" could not be loaded from file \"%s\"",
-                    ID_name,
+                    imgout->name,
                     file_name);
                 DEBUG_TRACE_FEXIT();
                 return RETURN_SUCCESS;
@@ -199,7 +194,7 @@ errno_t load_fits(
             {
                 FUNC_RETURN_FAILURE(
                     "Image \"%s\" could not be loaded from file \"%s\"",
-                    ID_name,
+                    imgout->name,
                     file_name);
             }
 
@@ -300,14 +295,14 @@ errno_t load_fits(
     /* bitpix = -32  TFLOAT */
     if(bitpix == -32)
     {
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_FLOAT,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
 
         {
             int status = 0;
@@ -316,7 +311,7 @@ errno_t load_fits(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[ID].array.F,
+                          data.image[imgout->ID].array.F,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -329,14 +324,14 @@ errno_t load_fits(
     /* bitpix = -64  TDOUBLE */
     if(bitpix == -64)
     {
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_DOUBLE,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
 
         {
             int status = 0;
@@ -345,7 +340,7 @@ errno_t load_fits(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[ID].array.D,
+                          data.image[imgout->ID].array.D,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -359,14 +354,14 @@ errno_t load_fits(
     if(bitpix == 16)
     {
         // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_UINT16,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
 
         //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
         {
@@ -376,7 +371,7 @@ errno_t load_fits(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[ID].array.UI16,
+                          data.image[imgout->ID].array.UI16,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -389,14 +384,14 @@ errno_t load_fits(
     /* bitpix = 32   TLONG */
     if(bitpix == 32)
     {
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_INT32,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
         larray = (long *) malloc(sizeof(long) * nelements);
         if(larray == NULL)
         {
@@ -422,7 +417,7 @@ errno_t load_fits(
         bzero = 0.0;
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[ID].array.SI32[ii] = larray[ii] * bscale + bzero;
+            data.image[imgout->ID].array.SI32[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -431,14 +426,14 @@ errno_t load_fits(
     /* bitpix = 64   TLONG  */
     if(bitpix == 64)
     {
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_INT64,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
         larray = (long *) malloc(sizeof(long) * nelements);
         if(larray == NULL)
         {
@@ -465,7 +460,7 @@ errno_t load_fits(
         bzero = 0.0;
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[ID].array.SI64[ii] = larray[ii] * bscale + bzero;
+            data.image[imgout->ID].array.SI64[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -474,14 +469,14 @@ errno_t load_fits(
     /* bitpix = 8   TBYTE */
     if(bitpix == 8)
     {
-        create_image_ID(ID_name,
+        create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_FLOAT,
                         data.SHARED_DFT,
                         NB_KEYWNODE_MAX,
                         0,
-                        &ID);
+                        &imgout->ID);
         barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
                                           naxes[0]);
         if(barray == NULL)
@@ -508,13 +503,13 @@ errno_t load_fits(
 
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
+            data.image[imgout->ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
         }
         free(barray);
         barray = NULL;
     }
 
-    IMGID img = makesetIMGID(ID_name, ID);
+    resolveIMGID(imgout, errmode);
 
 // keywords to ignore
     char *keywordignore[] = {"BITPIX",
@@ -577,7 +572,7 @@ errno_t load_fits(
                        keyname,
                        kwlongval,
                        kwcomment);*/
-                image_keyword_addL(img, keyname, kwlongval, kwcomment);
+                image_keyword_addL(*imgout, keyname, kwlongval, kwcomment);
             }
 
             if(kwtypeOK == 0)
@@ -592,7 +587,7 @@ errno_t load_fits(
                            keyname,
                            kwdoubleval,
                            kwcomment);*/
-                    image_keyword_addD(img, keyname, kwdoubleval, kwcomment);
+                    image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
                 }
 
                 if(kwtypeOK == 0)
@@ -607,7 +602,7 @@ errno_t load_fits(
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
                     kwvaluestr1 = kwvaluestr + 1;
-                    image_keyword_addS(img, keyname, kwvaluestr1, kwcomment);
+                    image_keyword_addS(*imgout, keyname, kwvaluestr1, kwcomment);
                 }
             }
         }
@@ -622,15 +617,29 @@ errno_t load_fits(
                            file_name);
     }
 
-    if(IDout != NULL)
-    {
-        *IDout = ID;
-    }
-
-    DEBUG_TRACEPOINT("FOUT IDout %ld", ID);
+    DEBUG_TRACEPOINT("FOUT IDout %ld", imgout->ID);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
+}
+
+errno_t load_fits(
+    const char *__restrict file_name,
+    const char *__restrict ID_name,
+    int      errmode,
+    imageID *IDout
+)
+{
+    IMGID imgout = mkIMGID_from_name(ID_name);
+
+    errno_t retval = load_fits_IMGID(file_name, &imgout, errmode);
+
+    if(IDout != NULL)
+    {
+        *IDout = imgout.ID;
+    }
+
+    return retval;
 }
 
 
@@ -641,7 +650,8 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    FUNC_CHECK_RETURN(load_fits(infilename, outimname, *FITSIOerrmode, NULL));
+    IMGID imgout = mkIMGID_from_name(outimname);
+    FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, *FITSIOerrmode));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

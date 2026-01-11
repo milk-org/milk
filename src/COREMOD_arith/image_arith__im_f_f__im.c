@@ -15,12 +15,8 @@
 
 #include "imfunctions.h"
 #include "mathfuncs.h"
+#include "image_arith__im_f_f__im.h"
 
-
-int arith_image_trunc(const char *ID_name,
-                      double      f1,
-                      double      f2,
-                      const char *ID_out);
 
 // ==========================================
 // Command line interface wrapper function(s)
@@ -86,7 +82,11 @@ static errno_t help_function()
 
 static errno_t compute_function()
 {
-    arith_image_trunc(inimname, *valmin, *valmax, outimname);
+    IMGID imgin  = mkIMGID_from_name(inimname);
+    IMGID imgout = mkIMGID_from_name(outimname);
+
+    arith_image_trunc_IMGID(&imgin, *valmin, *valmax, &imgout);
+
     return RETURN_SUCCESS;
 }
 
@@ -102,12 +102,25 @@ errno_t image_arith__im_f_f__im_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+int arith_image_trunc_IMGID(IMGID *imgin,
+                            double f1,
+                            double f2,
+                            IMGID *imgout)
+{
+    arith_image_function_1ff_1_IMGID(imgin, f1, f2, imgout, &Ptrunc);
+    return (0);
+}
+
 int arith_image_trunc(const char *ID_name,
                       double      f1,
                       double      f2,
                       const char *ID_out)
 {
-    arith_image_function_1ff_1(ID_name, f1, f2, ID_out, &Ptrunc);
+    IMGID imgin  = mkIMGID_from_name(ID_name);
+    IMGID imgout = mkIMGID_from_name(ID_out);
+
+    arith_image_trunc_IMGID(&imgin, f1, f2, &imgout);
+
     return (0);
 }
 

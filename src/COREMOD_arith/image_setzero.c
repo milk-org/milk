@@ -1,6 +1,6 @@
 
 #include "CommandLineInterface/CLIcore.h"
-
+#include "image_setzero.h"
 
 static char *inimname;
 
@@ -37,24 +37,31 @@ static errno_t help_function()
 
 
 
-errno_t image_setzero(
-    IMGID inimg
+errno_t image_setzero_IMGID(
+    IMGID *inimg
 )
 {
     DEBUG_TRACE_FSTART();
 
-    long nelem = inimg.md->nelement;
-    int typesize = ImageStreamIO_typesize(inimg.md->datatype);
+    resolveIMGID(inimg, ERRMODE_ABORT);
+
+    long nelem = inimg->md->nelement;
+    int typesize = ImageStreamIO_typesize(inimg->md->datatype);
     if(typesize == -1)
     {
-        PRINT_ERROR("cannot detect image type for image %s",  inimg.name);
+        PRINT_ERROR("cannot detect image type for image %s",  inimg->name);
         exit(0);
     }
-    memset(inimg.im->array.raw, 0, typesize * nelem);
+    memset(inimg->im->array.raw, 0, typesize * nelem);
 
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
+}
+
+errno_t image_setzero(IMGID inimg)
+{
+    return image_setzero_IMGID(&inimg);
 }
 
 
@@ -70,7 +77,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
-        image_setzero(inimg);
+        image_setzero_IMGID(&inimg);
         processinfo_update_output_stream(processinfo, inimg.ID);
 
     }
