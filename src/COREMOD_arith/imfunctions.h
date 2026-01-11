@@ -10,7 +10,24 @@ errno_t arith_image_function_im_im__d_d(const char *ID_name,
                                         const char *ID_out,
                                         double (*pt2function)(double));
 
-errno_t arith_image_function_im_im__d_d_IMGID(IMGID *imgin,
+errno_t arith_image_cstadd_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+errno_t arith_image_cstsub_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+errno_t arith_image_cstmult_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+errno_t arith_image_cstdiv_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+
+errno_t arith_image_add_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
+errno_t arith_image_sub_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
+errno_t arith_image_mult_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
+errno_t arith_image_div_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
+
+
+errno_t arith_image_function_im_im__d_d_IMGID(
+
+IMGID *imgin,
         IMGID *imgout,
         double (*pt2function)(double));
 
