@@ -49,7 +49,7 @@ int arith_image_pow(const char *ID1_name,
 
 int arith_image_add_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Padd);
+    return arith_image_add_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_add(const char *ID1_name,
@@ -64,7 +64,7 @@ int arith_image_add(const char *ID1_name,
 
 int arith_image_sub_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Psub);
+    return arith_image_sub_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_sub(const char *ID1_name,
@@ -79,7 +79,7 @@ int arith_image_sub(const char *ID1_name,
 
 int arith_image_mult_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pmult);
+    return arith_image_mult_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_mult(const char *ID1_name,
@@ -94,7 +94,7 @@ int arith_image_mult(const char *ID1_name,
 
 int arith_image_div_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pdiv);
+    return arith_image_div_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_div(const char *ID1_name,

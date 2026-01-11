@@ -32,7 +32,7 @@ int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out)
 
 int arith_image_cstadd_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Padd);
+    return arith_image_cstadd_optimized_IMGID(imgin, f1, imgout);
 }
 
 int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out)
@@ -44,7 +44,7 @@ int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out)
 
 int arith_image_cstsub_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Psub);
+    return arith_image_cstsub_optimized_IMGID(imgin, f1, imgout);
 }
 
 int arith_image_cstsub(const char *ID_name, double f1, const char *ID_out)
@@ -68,7 +68,7 @@ int arith_image_cstsubm(const char *ID_name, double f1, const char *ID_out)
 
 int arith_image_cstmult_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pmult);
+    return arith_image_cstmult_optimized_IMGID(imgin, f1, imgout);
 }
 
 int arith_image_cstmult(const char *ID_name, double f1, const char *ID_out)
@@ -80,7 +80,7 @@ int arith_image_cstmult(const char *ID_name, double f1, const char *ID_out)
 
 int arith_image_cstdiv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pdiv);
+    return arith_image_cstdiv_optimized_IMGID(imgin, f1, imgout);
 }
 
 int arith_image_cstdiv(const char *ID_name, double f1, const char *ID_out)
