@@ -1,4 +1,5 @@
 #include "CommandLineInterface/CLIcore.h"
+#include "image_make3D.h"
 
 // Local variables pointers
 static char     *outimname;
@@ -59,12 +60,18 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-static imageID make_3Dimage(IMGID *img)
+imageID make_3Dimage_IMGID(IMGID *img)
 {
     // Create image if needed
     imcreateIMGID(img);
 
     return (img->ID);
+}
+
+imageID make_3Dimage(const char *name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
+{
+    IMGID img = makeIMGID_3D(name, xsize, ysize, zsize);
+    return make_3Dimage_IMGID(&img);
 }
 
 static errno_t compute_function()
@@ -75,7 +82,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    make_3Dimage(&img);
+    make_3Dimage_IMGID(&img);
 
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
