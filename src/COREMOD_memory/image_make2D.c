@@ -1,4 +1,5 @@
 #include "CommandLineInterface/CLIcore.h"
+#include "image_make2D.h"
 
 // Local variables pointers
 static char     *outimname;
@@ -64,12 +65,18 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-static imageID make_2Dimage(IMGID *img)
+imageID make_2Dimage_IMGID(IMGID *img)
 {
     // Create image if needed
     imcreateIMGID(img);
 
     return (img->ID);
+}
+
+imageID make_2Dimage(const char *name, uint32_t xsize, uint32_t ysize)
+{
+    IMGID img = makeIMGID_2D(name, xsize, ysize);
+    return make_2Dimage_IMGID(&img);
 }
 
 static errno_t compute_function()
@@ -80,7 +87,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    make_2Dimage(&img);
+    make_2Dimage_IMGID(&img);
 
     processinfo_update_output_stream(processinfo, img.ID);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

@@ -4,6 +4,7 @@
  */
 
 #include "CommandLineInterface/CLIcore.h"
+#include "savefits.h"
 
 #include <pthread.h>
 
@@ -29,7 +30,7 @@ static char *inheader; // import header from this file
 
 
 // CLI function arguments and parameters
-static CLICMDARGDEF farg[] = {{
+static CLICMDARGDEF farg[] = {{ 
         CLIARG_IMG,
         ".in_name",
         "input image",
@@ -51,10 +52,7 @@ static CLICMDARGDEF farg[] = {{
         // non-CLI parameter
         CLIARG_INT64,
         ".bitpix",
-        "0: auto\n"
-        "8 /(10) : (un)sig   8-b int\n"
-        "16/(20) 32/(40) 64/(80) : (un)sig int\n"
-        "-32/-64 : 32/64-b flt\n",
+        "0: auto\n8 /(10) : (un)sig   8-b int\n16/(20) 32/(40) 64/(80) : (un)sig int\n-32/-64 : 32/64-b flt\n",
         "0",
         CLIARG_HIDDEN_DEFAULT,
         (void **) &outbitpix,
@@ -91,12 +89,10 @@ static errno_t help_function()
 
 
 
-
 /**
- * @brief Write FITS file - wrapper kept for backwards compatibility before introducing
- * optional input image truncation
+ * @brief Write FITS file - implementation using IMGID
  *
- * @param inputimname       input image name
+ * @param imgin             input image
  * @param truncate          truncate input image to truncate first slices - -1 to ignore
  * @param outputFITSname    output FITS file name
  * @param outputbitpix      bitpix of output image. 0 if match input
@@ -106,8 +102,8 @@ static errno_t help_function()
  * @param FITSIOext         extension to pass instructions to FITSIO
  * @return errno_t
  */
-errno_t saveFITS_opt_trunc(
-    const char *__restrict inputimname,
+errno_t saveFITS_opt_trunc_IMGID(
+    IMGID *imgin,
     int truncate,
     const char *__restrict outputFITSname,
     int outputbitpix,
@@ -121,7 +117,7 @@ errno_t saveFITS_opt_trunc(
 
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("Saving image %s to file %s, bitpix = %d, slice truncation %d\n",
-                     inputimname,
+                     imgin->name,
                      outputFITSname,
                      outputbitpix,
                      truncate);
@@ -133,14 +129,7 @@ errno_t saveFITS_opt_trunc(
 
     char fnametmp[STRINGMAXLEN_FILENAME];
 
-    DEBUG_TRACEPOINT(">> saving %s to %s\n", inputimname, outputFITSname);
-    /*
-        WRITE_FILENAME(fnametmp,
-                       "_savefits_atomic_%s_%d_%ld.tmp.fits",
-                       inputimname,
-                       (int) getpid(),
-                       (long) self_id);
-    */
+    DEBUG_TRACEPOINT(">> saving %s to %s\n", imgin->name, outputFITSname);
 
     WRITE_FILENAME(fnametmp,
                    "%s.%d.%ld.tmp",
@@ -158,19 +147,18 @@ errno_t saveFITS_opt_trunc(
                    FITSIOext
                   );
 
-    IMGID imgin = mkIMGID_from_name(inputimname);
-    resolveIMGID(&imgin, ERRMODE_WARN);
-    if(imgin.ID == -1)
+    resolveIMGID(imgin, ERRMODE_WARN);
+    if(imgin->ID == -1)
     {
         PRINT_WARNING("Image %s does not exist in memory - cannot save to FITS",
-                      inputimname);
+                      imgin->name);
         DEBUG_TRACE_FEXIT();
         return RETURN_SUCCESS;
     }
 
     // data types
-    uint8_t datatype       = imgin.md->datatype;
-    char *datainptr = (char *) imgin.im->array.raw;
+    uint8_t datatype       = imgin->md->datatype;
+    char *datainptr = (char *) imgin->im->array.raw;
 
     // default
     int     bitpix = FLOAT_IMG;
@@ -217,12 +205,12 @@ errno_t saveFITS_opt_trunc(
         abort();
     }
 
-    int  naxis = imgin.md->naxis;
+    int  naxis = imgin->md->naxis;
     long nelements = 1;
     long naxesl[3];
     for(int i = 0; i < naxis; i++)
     {
-        naxesl[i] = (long) imgin.md->size[i];
+        naxesl[i] = (long) imgin->md->size[i];
         if (truncate >= 0 && i == naxis -1) {
             naxesl[naxis - 1] = truncate;
             DEBUG_TRACEPOINT("-------------- TRUNCATE TO %d\n", truncate);
@@ -323,7 +311,7 @@ errno_t saveFITS_opt_trunc(
                     fits_write_record(fptr,
                                       fitscard,
                                       &COREMOD_iofits_data.FITSIO_status);
-                    if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) !=
+                    if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 
                             0)
                     {
                         PRINT_ERROR(
@@ -362,61 +350,61 @@ errno_t saveFITS_opt_trunc(
     // These are technical keywords that shouldn't be propagated to FITS.
 
     {
-        int NBkw  = imgin.md->NBkw;
+        int NBkw  = imgin->md->NBkw;
         int kwcnt = 0;
         DEBUG_TRACEPOINT("----------- NUMBER KW = %d ---------------\n", NBkw);
         for(int kw = 0; kw < NBkw; kw++)
         {
-            if(imgin.im->kw[kw].name[0] == '_')
+            if(imgin->im->kw[kw].name[0] == '_')
             {
                 // Skip keywords that start with a "_"
                 continue;
             }
-            if(imgin.im->kw[kw].name[0] == ' ')
+            if(imgin->im->kw[kw].name[0] == ' ')
             {
                 // Abort when we hit an empty keyword.
                 break;
             }
 
             char tmpkwvalstr[81];
-            switch(imgin.im->kw[kw].type)
+            switch(imgin->im->kw[kw].type)
             {
                 case 'L':
                     DEBUG_TRACEPOINT("writing keyword [L] %-8s= %20ld / %s\n",
-                                     imgin.im->kw[kw].name,
-                                     imgin.im->kw[kw].value.numl,
-                                     imgin.im->kw[kw].comment);
+                                     imgin->im->kw[kw].name,
+                                     imgin->im->kw[kw].value.numl,
+                                     imgin->im->kw[kw].comment);
                     COREMOD_iofits_data.FITSIO_status = 0;
                     fits_update_key(fptr,
                                     TLONG,
-                                    imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numl,
-                                    imgin.im->kw[kw].comment,
+                                    imgin->im->kw[kw].name,
+                                    &imgin->im->kw[kw].value.numl,
+                                    imgin->im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
                     kwcnt++;
                     break;
 
                 case 'D':
                     DEBUG_TRACEPOINT("writing keyword [D] %-8s= %20g / %s\n",
-                                     imgin.im->kw[kw].name,
-                                     imgin.im->kw[kw].value.numf,
-                                     imgin.im->kw[kw].comment);
+                                     imgin->im->kw[kw].name,
+                                     imgin->im->kw[kw].value.numf,
+                                     imgin->im->kw[kw].comment);
                     COREMOD_iofits_data.FITSIO_status = 0;
                     fits_update_key(fptr,
                                     TDOUBLE,
-                                    imgin.im->kw[kw].name,
-                                    &imgin.im->kw[kw].value.numf,
-                                    imgin.im->kw[kw].comment,
+                                    imgin->im->kw[kw].name,
+                                    &imgin->im->kw[kw].value.numf,
+                                    imgin->im->kw[kw].comment,
                                     &COREMOD_iofits_data.FITSIO_status);
                     kwcnt++;
                     break;
 
                 case 'S':
-                    snprintf(tmpkwvalstr, 81, "'%s'", imgin.im->kw[kw].value.valstr);
+                    snprintf(tmpkwvalstr, 81, "'%s'", imgin->im->kw[kw].value.valstr);
                     DEBUG_TRACEPOINT("writing keyword [S] %-8s= %20s / %s\n",
-                                     imgin.im->kw[kw].name,
+                                     imgin->im->kw[kw].name,
                                      tmpkwvalstr,
-                                     imgin.im->kw[kw].comment);
+                                     imgin->im->kw[kw].comment);
                     COREMOD_iofits_data.FITSIO_status = 0;
                     // MIND THAT WE ADDED SINGLE QUOTES JUST ABOVE IN snprintf!!
                     if((strncmp("'#TRUE#'", tmpkwvalstr, 8) == 0) ||
@@ -427,9 +415,9 @@ errno_t saveFITS_opt_trunc(
                             strncmp("'#TRUE#'", tmpkwvalstr, 6) == 0;
                         fits_update_key(fptr,
                                         TLOGICAL,
-                                        imgin.im->kw[kw].name,
+                                        imgin->im->kw[kw].name,
                                         &tmpval_is_true,
-                                        imgin.im->kw[kw].comment,
+                                        imgin->im->kw[kw].comment,
                                         &COREMOD_iofits_data.FITSIO_status);
                     }
                     else
@@ -437,9 +425,9 @@ errno_t saveFITS_opt_trunc(
                         // Normal string
                         fits_update_key(fptr,
                                         TSTRING,
-                                        imgin.im->kw[kw].name,
-                                        imgin.im->kw[kw].value.valstr,
-                                        imgin.im->kw[kw].comment,
+                                        imgin->im->kw[kw].name,
+                                        imgin->im->kw[kw].value.valstr,
+                                        imgin->im->kw[kw].comment,
                                         &COREMOD_iofits_data.FITSIO_status);
                     }
                     kwcnt++;
@@ -452,7 +440,7 @@ errno_t saveFITS_opt_trunc(
             if(check_FITSIO_status(__FILE__, __func__, __LINE__, 1) != 0)
             {
                 PRINT_ERROR("fits_update_key error on keyword %s",
-                            imgin.im->kw[kw].name);
+                            imgin->im->kw[kw].name);
                 abort();
             }
         }
@@ -612,6 +600,29 @@ errno_t saveFITS_opt_trunc(
     return RETURN_SUCCESS;
 }
 
+errno_t saveFITS_opt_trunc(
+    const char *__restrict inputimname,
+    int truncate,
+    const char *__restrict outputFITSname,
+    int outputbitpix,
+    const char *__restrict importheaderfile,
+    IMAGE_KEYWORD *kwarray,
+    int            kwarraysize,
+    const char *__restrict FITSIOext
+)
+{
+    IMGID imgin = mkIMGID_from_name(inputimname);
+
+    return saveFITS_opt_trunc_IMGID(&imgin,
+                                    truncate,
+                                    outputFITSname,
+                                    outputbitpix,
+                                    importheaderfile,
+                                    kwarray,
+                                    kwarraysize,
+                                    FITSIOext);
+}
+
 
 
 /**
@@ -634,8 +645,10 @@ errno_t saveFITS(
     IMAGE_KEYWORD *kwarray,
     int            kwarraysize)
 {
-    return saveFITS_opt_trunc(
-               inputimname,
+    IMGID imgin = mkIMGID_from_name(inputimname);
+
+    return saveFITS_opt_trunc_IMGID(
+               &imgin,
                -1,
                outputFITSname,
                outputbitpix,
@@ -675,13 +688,15 @@ errno_t saveall_fits(
 
 
 errno_t save_fits(
-    const char *__restrict savedirname,
+    const char *__restrict inputimname,
     const char *__restrict outputFITSname
 )
 {
     DEBUG_TRACE_FSTART();
 
-    FUNC_CHECK_RETURN(saveFITS(savedirname, outputFITSname, 0, "", NULL, 0));
+    IMGID imgin = mkIMGID_from_name(inputimname);
+
+    FUNC_CHECK_RETURN(saveFITS_opt_trunc_IMGID(&imgin, -1, outputFITSname, 0, "", NULL, 0, ""));
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -689,13 +704,15 @@ errno_t save_fits(
 
 
 errno_t save_fl_fits(
-    const char *__restrict savedirname,
+    const char *__restrict inputimname,
     const char *__restrict outputFITSname
 )
 {
     DEBUG_TRACE_FSTART();
 
-    FUNC_CHECK_RETURN(saveFITS(savedirname, outputFITSname, -32, "", NULL, 0));
+    IMGID imgin = mkIMGID_from_name(inputimname);
+
+    FUNC_CHECK_RETURN(saveFITS_opt_trunc_IMGID(&imgin, -1, outputFITSname, -32, "", NULL, 0, ""));
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -703,13 +720,15 @@ errno_t save_fl_fits(
 
 
 errno_t save_db_fits(
-    const char *__restrict savedirname,
+    const char *__restrict inputimname,
     const char *__restrict outputFITSname
 )
 {
     DEBUG_TRACE_FSTART();
 
-    FUNC_CHECK_RETURN(saveFITS(savedirname, outputFITSname, -64, "", NULL, 0));
+    IMGID imgin = mkIMGID_from_name(inputimname);
+
+    FUNC_CHECK_RETURN(saveFITS_opt_trunc_IMGID(&imgin, -1, outputFITSname, -64, "", NULL, 0, ""));
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -722,7 +741,8 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    saveFITS(inimname, outfname, *outbitpix, inheader, NULL, 0);
+    IMGID imgin = mkIMGID_from_name(inimname);
+    saveFITS_opt_trunc_IMGID(&imgin, -1, outfname, *outbitpix, inheader, NULL, 0, "");
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
