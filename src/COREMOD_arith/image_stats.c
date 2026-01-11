@@ -14,6 +14,11 @@
 
 #include "image_total.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#define OMP_NELEMENT_LIMIT 1000000
+#endif
+
 double arith_image_mean_IMGID(IMGID *imgin)
 {
     double  value;
@@ -45,15 +50,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float value;
-
-        value = imgin->im->array.F[0];
+        float *ptr = imgin->im->array.F;
+        float value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            float value1 = imgin->im->array.F[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -62,15 +68,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_DOUBLE)
     {
-        double value;
-
-        value = imgin->im->array.D[0];
+        double *ptr = imgin->im->array.D;
+        double value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            double value1 = imgin->im->array.D[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -79,15 +86,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t value;
-
-        value = imgin->im->array.UI8[0];
+        uint8_t *ptr = imgin->im->array.UI8;
+        uint8_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint8_t value1 = imgin->im->array.UI8[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -96,15 +104,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t value;
-
-        value = imgin->im->array.UI16[0];
+        uint16_t *ptr = imgin->im->array.UI16;
+        uint16_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint16_t value1 = imgin->im->array.UI16[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -113,15 +122,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t value;
-
-        value = imgin->im->array.UI32[0];
+        uint32_t *ptr = imgin->im->array.UI32;
+        uint32_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint32_t value1 = imgin->im->array.UI32[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -130,15 +140,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t value;
-
-        value = imgin->im->array.UI64[0];
+        uint64_t *ptr = imgin->im->array.UI64;
+        uint64_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            uint64_t value1 = imgin->im->array.UI64[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -147,15 +158,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT8)
     {
-        int8_t value;
-
-        value = imgin->im->array.SI8[0];
+        int8_t *ptr = imgin->im->array.SI8;
+        int8_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int8_t value1 = imgin->im->array.SI8[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -164,15 +176,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT16)
     {
-        int16_t value;
-
-        value = (double) imgin->im->array.SI16[0];
+        int16_t *ptr = imgin->im->array.SI16;
+        int16_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int16_t value1 = imgin->im->array.SI16[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -181,15 +194,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT32)
     {
-        int32_t value;
-
-        value = imgin->im->array.SI32[0];
+        int32_t *ptr = imgin->im->array.SI32;
+        int32_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int32_t value1 = imgin->im->array.SI32[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -198,15 +212,16 @@ double arith_image_min_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT64)
     {
-        int64_t value;
-
-        value = imgin->im->array.SI64[0];
+        int64_t *ptr = imgin->im->array.SI64;
+        int64_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            int64_t value1 = imgin->im->array.SI64[ii];
-            if(value1 < value)
+            if(ptr[ii] < value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -229,7 +244,6 @@ double arith_image_min(const char *ID_name)
 
 double arith_image_max_IMGID(IMGID *imgin)
 {
-    long    ii;
     long    nelement;
     uint8_t datatype;
     int     OK = 0;
@@ -241,15 +255,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float value, value1;
-
-        value = imgin->im->array.F[0];
-        for(ii = 0; ii < nelement; ii++)
+        float *ptr = imgin->im->array.F;
+        float value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.F[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -258,15 +273,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_DOUBLE)
     {
-        double value, value1;
-
-        value = imgin->im->array.D[0];
-        for(ii = 0; ii < nelement; ii++)
+        double *ptr = imgin->im->array.D;
+        double value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.D[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -275,15 +291,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t value, value1;
-
-        value = imgin->im->array.UI8[0];
-        for(ii = 0; ii < nelement; ii++)
+        uint8_t *ptr = imgin->im->array.UI8;
+        uint8_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.UI8[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -292,15 +309,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t value, value1;
-
-        value = imgin->im->array.UI16[0];
-        for(ii = 0; ii < nelement; ii++)
+        uint16_t *ptr = imgin->im->array.UI16;
+        uint16_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.UI16[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -309,15 +327,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t value, value1;
-
-        value = imgin->im->array.UI32[0];
-        for(ii = 0; ii < nelement; ii++)
+        uint32_t *ptr = imgin->im->array.UI32;
+        uint32_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.UI32[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -326,15 +345,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t value, value1;
-
-        value = imgin->im->array.UI64[0];
-        for(ii = 0; ii < nelement; ii++)
+        uint64_t *ptr = imgin->im->array.UI64;
+        uint64_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.UI64[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -343,15 +363,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT8)
     {
-        int8_t value, value1;
-
-        value = imgin->im->array.SI8[0];
-        for(ii = 0; ii < nelement; ii++)
+        int8_t *ptr = imgin->im->array.SI8;
+        int8_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.SI8[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -360,15 +381,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT16)
     {
-        int16_t value, value1;
-
-        value = (double) imgin->im->array.SI16[0];
-        for(ii = 0; ii < nelement; ii++)
+        int16_t *ptr = imgin->im->array.SI16;
+        int16_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.SI16[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -377,15 +399,16 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT32)
     {
-        int32_t value, value1;
-
-        value = imgin->im->array.SI32[0];
-        for(ii = 0; ii < nelement; ii++)
+        int32_t *ptr = imgin->im->array.SI32;
+        int32_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.SI32[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
@@ -394,20 +417,22 @@ double arith_image_max_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_INT64)
     {
-        int64_t value, value1;
-
-        value = imgin->im->array.SI64[0];
-        for(ii = 0; ii < nelement; ii++)
+        int64_t *ptr = imgin->im->array.SI64;
+        int64_t value = ptr[0];
+#ifdef _OPENMP
+        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            value1 = imgin->im->array.SI64[ii];
-            if(value1 > value)
+            if(ptr[ii] > value)
             {
-                value = value1;
+                value = ptr[ii];
             }
         }
         OK = 1;
         return ((double) value);
     }
+
     if(OK == 0)
     {
         printf("Error : Invalid data format for arith_image_max\n");
@@ -602,6 +627,8 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
     {
         exit(EXIT_FAILURE);
     }
+
+    free(array_raw);
 
     return (value);
 }
