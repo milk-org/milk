@@ -15,13 +15,22 @@ errno_t processinfo_update_output_stream(
 {
     if(data.image[outstreamID].md->shared == 1)
     {
-        imageID IDin;
+        // Always update PID and timestamp, regardless of processinfo status
+        struct timespec ts;
+        if(clock_gettime(CLOCK_MILK, &ts) == -1)
+        {
+            perror("clock_gettime");
+            exit(EXIT_FAILURE);
+        }
+
+        data.image[outstreamID].streamproctrace[0].procwrite_PID = getpid();
+        data.image[outstreamID].streamproctrace[0].ts_streamupdate = ts;
 
         DEBUG_TRACEPOINT(" ");
 
         if(processinfo != NULL)
         {
-            IDin = processinfo->triggerstreamID;
+            imageID IDin = processinfo->triggerstreamID;
             DEBUG_TRACEPOINT("trigger IDin = %ld", IDin);
 
             if(IDin > -1)
@@ -34,28 +43,16 @@ errno_t processinfo_update_output_stream(
                        sizeof(STREAM_PROC_TRACE) * sptisize);
             }
 
-            DEBUG_TRACEPOINT("timing");
-            struct timespec ts;
-            if(clock_gettime(CLOCK_MILK, &ts) == -1)
-            {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-
             // write first streamproctrace entry
             DEBUG_TRACEPOINT("trigger info");
             data.image[outstreamID].streamproctrace[0].trigsemindex =
                 processinfo->triggermode;
-
-            data.image[outstreamID].streamproctrace[0].procwrite_PID = getpid();
 
             data.image[outstreamID].streamproctrace[0].trigger_inode =
                 processinfo->triggerstreaminode;
 
             data.image[outstreamID].streamproctrace[0].ts_procstart =
                 processinfo->texecstart[processinfo->timerindex];
-
-            data.image[outstreamID].streamproctrace[0].ts_streamupdate = ts;
 
             data.image[outstreamID].streamproctrace[0].trigsemindex =
                 processinfo->triggersem;
