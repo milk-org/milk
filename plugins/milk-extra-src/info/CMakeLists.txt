@@ -72,3 +72,13 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
+
+# Standalone runner for stream_monproc
+add_executable(stream-monproc-runner stream-monproc-runner.c)
+target_link_libraries(stream-monproc-runner ${LIBNAME} CLIcore ImageStreamIO)
+install(TARGETS stream-monproc-runner DESTINATION bin)
+
+# Standalone display for stream_monproc
+add_executable(stream-monproc-disp stream-monproc-disp.c)
+target_link_libraries(stream-monproc-disp ${LIBNAME} CLIcore ImageStreamIO ncurses)
+install(TARGETS stream-monproc-disp DESTINATION bin)
