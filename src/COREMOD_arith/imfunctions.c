@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <math.h>
 
 #include "CommandLineInterface/CLIcore.h"
 
@@ -14,7 +15,7 @@
 
 #ifdef _OPENMP
 #include <omp.h>
-#define OMP_NELEMENT_LIMIT 1000000
+#define OMP_NELEMENT_LIMIT 100000
 #endif
 
 static double get_pixel_double(IMAGE *im, uint64_t index)
@@ -1340,7 +1341,33 @@ errno_t arith_image_function_2_1_IMGID(
         #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
         {
 #endif
-            if (datatype == _DATATYPE_FLOAT)
+            if (datatype == _DATATYPE_FLOAT && datatype1 == _DATATYPE_FLOAT && datatype2 == _DATATYPE_FLOAT)
+            {
+                float *outptr = outimg->im->array.F;
+                float *in1ptr = inimg1->im->array.F;
+                float *in2ptr = inimg2->im->array.F;
+#ifdef _OPENMP
+                #pragma omp for
+#endif
+                for (uint64_t ii = 0; ii < nelement; ii++)
+                {
+                    outptr[ii] = (float)pt2function((double)in1ptr[ii], (double)in2ptr[ii]);
+                }
+            }
+            else if (datatype == _DATATYPE_DOUBLE && datatype1 == _DATATYPE_DOUBLE && datatype2 == _DATATYPE_DOUBLE)
+            {
+                double *outptr = outimg->im->array.D;
+                double *in1ptr = inimg1->im->array.D;
+                double *in2ptr = inimg2->im->array.D;
+#ifdef _OPENMP
+                #pragma omp for
+#endif
+                for (uint64_t ii = 0; ii < nelement; ii++)
+                {
+                    outptr[ii] = pt2function(in1ptr[ii], in2ptr[ii]);
+                }
+            }
+            else if (datatype == _DATATYPE_FLOAT)
             {
                 float *outptr = outimg->im->array.F;
 #ifdef _OPENMP
@@ -1818,3 +1845,42 @@ ARITH_CST_OPTIMIZED_FUNCTION(add, +)
 ARITH_CST_OPTIMIZED_FUNCTION(sub, -)
 ARITH_CST_OPTIMIZED_FUNCTION(mult, *)
 ARITH_CST_OPTIMIZED_FUNCTION(div, /)
+
+#define ARITH_OPTIMIZED_FUNCTION_CALL(name, funcname) \
+errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
+{ \
+    DEBUG_TRACE_FSTART(); \
+    resolveIMGID(imgin1, ERRMODE_ABORT); \
+    resolveIMGID(imgin2, ERRMODE_ABORT); \
+    resolveIMGID(imgout, ERRMODE_NULL); \
+    if(imgout->ID == -1) copyIMGID(imgin1, imgout); \
+    imcreateIMGID(imgout); \
+    uint64_t nelement = imgout->md->nelement; \
+    if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    { \
+        float *p1 = imgin1->im->array.F; \
+        float *p2 = imgin2->im->array.F; \
+        float *po = imgout->im->array.F; \
+        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i], (double)p2[i]); \
+    } \
+    else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    { \
+        double *p1 = imgin1->im->array.D; \
+        double *p2 = imgin2->im->array.D; \
+        double *po = imgout->im->array.D; \
+        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        for(uint64_t i=0; i<nelement; i++) po[i] = funcname(p1[i], p2[i]); \
+    } \
+    else \
+    { \
+        arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &P##name); \
+    } \
+    DEBUG_TRACE_FEXIT(); \
+    return RETURN_SUCCESS; \
+}
+
+ARITH_OPTIMIZED_FUNCTION_CALL(pow, pow)
+ARITH_OPTIMIZED_FUNCTION_CALL(fmod, fmod)
+ARITH_OPTIMIZED_FUNCTION_CALL(minv, fmin)
+ARITH_OPTIMIZED_FUNCTION_CALL(maxv, fmax)
