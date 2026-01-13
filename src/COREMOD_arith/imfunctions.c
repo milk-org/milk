@@ -1683,14 +1683,42 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
     imgout->shared = data.SHARED_DFT; imgout->NBkw = NB_KEYWNODE_MAX;
     imcreateIMGID(imgout);
     uint_fast64_t nelement = imgin->md->nelement;
+
+    if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT)
+    {
+        float *ptr = imgin->im->array.F;
+        float *out = imgout->im->array.F;
 #ifdef _OPENMP
     #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
 #endif
-    for(ii = 0; ii < nelement; ii++)
+        for(ii = 0; ii < nelement; ii++)
+        {
+             out[ii] = (float)pt2function((double)ptr[ii], f1);
+        }
+    }
+    else if (imgin->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE)
     {
-        double v = get_pixel_double(imgin->im, ii);
-        if (imgout->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
-        else imgout->im->array.D[ii] = pt2function(v, f1);
+        double *ptr = imgin->im->array.D;
+        double *out = imgout->im->array.D;
+#ifdef _OPENMP
+    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(ii = 0; ii < nelement; ii++)
+        {
+             out[ii] = pt2function(ptr[ii], f1);
+        }
+    }
+    else
+    {
+#ifdef _OPENMP
+    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(ii = 0; ii < nelement; ii++)
+        {
+            double v = get_pixel_double(imgin->im, ii);
+            if (imgout->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
+            else imgout->im->array.D[ii] = pt2function(v, f1);
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -1769,6 +1797,54 @@ int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2
 }
 
 /* Specialized optimized arithmetic functions */
+
+#define ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(name, funcname) \
+errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
+{ \
+    DEBUG_TRACE_FSTART(); \
+    resolveIMGID(imgin, ERRMODE_ABORT); \
+    resolveIMGID(imgout, ERRMODE_NULL); \
+    if(imgout->ID == -1) copyIMGID(imgin, imgout); \
+    imcreateIMGID(imgout); \
+    uint64_t nelement = imgout->md->nelement; \
+    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    { \
+        float *p1 = imgin->im->array.F; \
+        float *po = imgout->im->array.F; \
+        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i]); \
+    } \
+    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    { \
+        double *p1 = imgin->im->array.D; \
+        double *po = imgout->im->array.D; \
+        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        for(uint64_t i=0; i<nelement; i++) po[i] = funcname(p1[i]); \
+    } \
+    else \
+    { \
+        arith_image_function_1_1_IMGID(imgin, imgout, &P##name); \
+    } \
+    DEBUG_TRACE_FEXIT(); \
+    return RETURN_SUCCESS; \
+}
+
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(acos, acos)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(asin, asin)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(atan, atan)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ceil, ceil)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cos, cos)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cosh, cosh)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(exp, exp)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(fabs, fabs)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(floor, floor)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ln, log)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(log, log10)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sqrt, sqrt)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sin, sin)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sinh, sinh)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tan, tan)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh)
 
 #define ARITH_OPTIMIZED_FUNCTION(name, op) \
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
