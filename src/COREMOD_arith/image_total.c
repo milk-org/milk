@@ -12,7 +12,7 @@
 
 #ifdef _OPENMP
 #include <omp.h>
-#define OMP_NELEMENT_LIMIT 1000000
+#define OMP_NELEMENT_LIMIT 100000
 #endif
 
 double arith_image_total_IMGID(IMGID *imgin)
@@ -167,7 +167,7 @@ double arith_image_total(const char *ID_name)
 
 double arith_image_sumsquare_IMGID(IMGID *imgin)
 {
-    long double lvalue; // uses long double internally
+    double lvalue; // uses double internally
     uint64_t    nelement;
     uint8_t     datatype;
 
@@ -191,7 +191,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_DOUBLE)
@@ -202,7 +202,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT8)
@@ -213,7 +213,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT16)
@@ -224,7 +224,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT32)
@@ -235,7 +235,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_UINT64)
@@ -246,7 +246,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT8)
@@ -257,7 +257,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT16)
@@ -268,7 +268,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT32)
@@ -279,7 +279,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else if(datatype == _DATATYPE_INT64)
@@ -290,7 +290,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            lvalue += (long double)(ptr[ii] * ptr[ii]);
+            lvalue += (double)(ptr[ii] * ptr[ii]);
         }
     }
     else
