@@ -23,6 +23,28 @@ errno_t arith_image_mult_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *im
 
 errno_t arith_image_div_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 
+errno_t arith_image_pow_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+errno_t arith_image_fmod_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+errno_t arith_image_minv_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+errno_t arith_image_maxv_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
+errno_t arith_image_acos_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_asin_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_atan_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_ceil_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_cos_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_cosh_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_exp_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_fabs_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_floor_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_ln_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_log_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_sqrt_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_sin_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_sinh_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_tan_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+errno_t arith_image_tanh_optimized_IMGID(IMGID *imgin, IMGID *imgout);
+
 
 
 errno_t arith_image_function_im_im__d_d_IMGID(
