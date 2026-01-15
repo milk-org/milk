@@ -7,11 +7,36 @@
 
 void print_help() {
     printf("Usage: milk-stream-cnt2push <stream_name> [options]\n");
+    printf("\n");
+    printf("Purpose:\n");
+    printf("  Updates the 'cnt2' counter of a shared memory image stream. This counter is typically\n");
+    printf("  used for demand-driven synchronization (flow control), where a writer waits until\n");
+    printf("  cnt0 < cnt2 before proceeding. By incrementing cnt2, a reader requests more frames.\n");
+    printf("\n");
+    printf("counters:\n");
+    printf("  cnt0: Current write counter (increments when stream is written)\n");
+    printf("  cnt2: Control counter (used to gate execution in CNT2 trigger mode)\n");
+    printf("\n");
     printf("Options:\n");
-    printf("  -v, --value <val>   Value to add/set (default: 1)\n");
-    printf("  -a, --abs           Set absolute value (default: increment cnt0)\n");
-    printf("  -i, --inc           Increment from current cnt2 (default: increment from cnt0)\n");
+    printf("  -v, --value <val>   Value to add or set (default: 1)\n");
+    printf("  -a, --abs           Set cnt2 to an absolute value <val>.\n");
+    printf("                      (default is relative to cnt0: cnt2 = cnt0 + <val>)\n");
+    printf("  -i, --inc           Increment from current cnt2 value.\n");
+    printf("                      (cnt2 = cnt2 + <val>)\n");
     printf("  -h, --help          Show this help message\n");
+    printf("\n");
+    printf("Examples:\n");
+    printf("  milk-stream-cnt2push mystream\n");
+    printf("      Sets cnt2 = cnt0 + 1. Writer will process 1 more frame.\n");
+    printf("\n");
+    printf("  milk-stream-cnt2push mystream -v 10\n");
+    printf("      Sets cnt2 = cnt0 + 10. Writer will process 10 more frames.\n");
+    printf("\n");
+    printf("  milk-stream-cnt2push mystream -i -v 5\n");
+    printf("      Sets cnt2 = cnt2 + 5. Adds 5 more frames to the current quota.\n");
+    printf("\n");
+    printf("  milk-stream-cnt2push mystream -a -v 100\n");
+    printf("      Sets cnt2 = 100. Writer will stop when cnt0 >= 100.\n");
 }
 
 int main(int argc, char *argv[]) {
