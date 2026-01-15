@@ -2645,6 +2645,14 @@ errno_t processinfo_CTRLscreen()
                                         ->triggermode);
                                     break;
 
+                                case PROCESSINFO_TRIGGERMODE_CNT2:
+                                    TUI_printfw(
+                                        "%2d:"
+                                        "CNT2 ",
+                                        procinfoproc.pinfoarray[pindex]
+                                        ->triggermode);
+                                    break;
+
                                 case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
                                     TUI_printfw(
                                         "%2d:"

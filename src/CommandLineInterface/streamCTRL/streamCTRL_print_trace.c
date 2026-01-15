@@ -144,6 +144,13 @@ errno_t streamCTRL_print_SPTRACE_details(
                         "DELA");
             break;
 
+        case PROCESSINFO_TRIGGERMODE_CNT2:
+            TUI_printfw("%d%*s",
+                        streamCTRLimages[ID].streamproctrace[spti].triggermode,
+                        Disp_type_NBchar - 1,
+                        "CNT2");
+            break;
+
         default:
             TUI_printfw("%d%*s",
                         streamCTRLimages[ID].streamproctrace[spti].triggermode,
