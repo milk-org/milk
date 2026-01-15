@@ -708,6 +708,9 @@ errno_t help_command(
                     case PROCESSINFO_TRIGGERMODE_DELAY:
                         printf("DELAY");
                         break;
+                    case PROCESSINFO_TRIGGERMODE_CNT2:
+                        printf("CNT2");
+                        break;
                     default:
                         printf("unknown");
                         break;

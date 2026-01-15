@@ -93,6 +93,22 @@ errno_t processinfo_waitoninputstream_init(
             data.image[processinfo->triggerstreamID].md[0].cnt1;
     }
 
+    if(triggermode == PROCESSINFO_TRIGGERMODE_CNT2)
+    {
+        DEBUG_TRACEPOINT("trigger mode %d = cnt2 of ID %ld",
+                         PROCESSINFO_TRIGGERMODE_CNT2,
+                         trigID);
+
+        if(trigID == -1)
+        {
+            FUNC_RETURN_FAILURE("missing trigger ID");
+        }
+        // trigger on cnt0 < cnt2
+        processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT2;
+        processinfo->triggerstreamcnt =
+            data.image[processinfo->triggerstreamID].md[0].cnt0;
+    }
+
     if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
     {
         DEBUG_TRACEPOINT("trigger mode %d = immediate",
@@ -214,6 +230,32 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         // update trigger counter
         processinfo->triggerstreamcnt =
             data.image[processinfo->triggerstreamID].md[0].cnt1;
+
+        processinfo->triggermissedframe_cumul +=
+            processinfo->triggermissedframe;
+
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
+
+        return RETURN_SUCCESS;
+    }
+
+    if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT2)
+    {
+        // use cnt2
+
+        processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
+
+        while(data.image[processinfo->triggerstreamID].md[0].cnt0 >=
+                data.image[processinfo->triggerstreamID].md[0].cnt2)
+        {
+            // wait until we are allowed to proceed
+            usleep(5);
+        }
+        processinfo->triggermissedframe = 0;
+
+        // update trigger counter
+        processinfo->triggerstreamcnt =
+            data.image[processinfo->triggerstreamID].md[0].cnt0;
 
         processinfo->triggermissedframe_cumul +=
             processinfo->triggermissedframe;
