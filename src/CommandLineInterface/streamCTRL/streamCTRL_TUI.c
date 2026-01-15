@@ -1596,6 +1596,10 @@ errno_t streamCTRL_CTRLscreen()
                                     snprintf(string, stringlen, "(%7lu C1 ", inode);
                                     break;
 
+                                case PROCESSINFO_TRIGGERMODE_CNT2:
+                                    snprintf(string, stringlen, "(%7lu C2 ", inode);
+                                    break;
+
                                 case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
                                     snprintf(string, stringlen, "(%7lu %02d ", inode, sem);
                                     break;

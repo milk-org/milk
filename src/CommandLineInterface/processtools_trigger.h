@@ -29,6 +29,9 @@
 // trigger when semaphore is posted AND propagate the timeout (i.e. enter the execution anyway)
 #define PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS 5
 
+// trigger when cnt0 < cnt2 (demand-driven / flow control)
+#define PROCESSINFO_TRIGGERMODE_CNT2 6
+
 // trigger is currently waiting for input
 #define PROCESSINFO_TRIGGERSTATUS_WAITING 1
 // trigger has been received and we're executing the loop
