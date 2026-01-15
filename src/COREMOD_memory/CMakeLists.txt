@@ -196,3 +196,9 @@ target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES})
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
+
+# Standalone executable
+add_executable(milk-stream-cnt2push cnt2push_main.c)
+target_include_directories(milk-stream-cnt2push PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+target_link_libraries(milk-stream-cnt2push ImageStreamIO pthread rt)
+install(TARGETS milk-stream-cnt2push DESTINATION bin)
