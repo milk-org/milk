@@ -49,6 +49,9 @@ int fps_value_to_key(pyFps             &cls,
                    cls,
                    key.c_str(),
                    std::string(py::str(value)).c_str());
+    case FPS_type::TIMESPEC:
+        return functionparameter_SetParamValue_TIMESPEC(cls, key.c_str(),
+                py::float_(value));
     default:
         return EXIT_FAILURE;
     }
@@ -82,6 +85,8 @@ fps_value_from_key(pyFps &cls, const std::string &key, const FPS_type fps_type)
     case FPS_type::FILENAME:
     case FPS_type::FITSFILENAME:
         return py::str(functionparameter_GetParamPtr_STRING(cls, key.c_str()));
+    case FPS_type::TIMESPEC:
+        return py::float_(functionparameter_GetParamValue_TIMESPEC(cls, key.c_str()));
     default:
         return py::none();
     }
