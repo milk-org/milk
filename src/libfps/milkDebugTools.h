@@ -66,7 +66,7 @@
 #define EXECUTE_SYSTEM_COMMAND(...) do { \
     char cmd[STRINGMAXLEN_COMMAND]; \
     snprintf(cmd, STRINGMAXLEN_COMMAND, __VA_ARGS__); \
-    system(cmd); \
+    (void)system(cmd); \
 } while(0)
 #endif
 
