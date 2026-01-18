@@ -10,12 +10,14 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "timeutils.h"
 
 #include "fps_GetParamIndex.h"
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
+
+// Prototype for ported or stubbed function
+int save_fits(const char *imname, const char *filename);
 
 
 

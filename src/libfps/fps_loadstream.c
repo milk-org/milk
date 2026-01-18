@@ -6,7 +6,8 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-#include "COREMOD_iofits/COREMOD_iofits.h"
+// Prototype for ported or stubbed function
+imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
 
 imageID functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps,
                                      int                        pindex,
