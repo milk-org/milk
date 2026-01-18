@@ -29,6 +29,7 @@ int main() {
     uint64_t counter = 0;
 
     while(keep_running) {
+        image.md[0].write = 1;
         for(uint32_t y=0; y<height; y++) {
             for(uint32_t x=0; x<width; x++) {
                 data[y*width + x] = 0.5 * sin((x + counter)*0.1) + 0.5 * cos((y + counter)*0.05);

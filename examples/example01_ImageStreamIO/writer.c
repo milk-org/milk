@@ -19,7 +19,7 @@ int main() {
     uint32_t width = 200;
     uint32_t height = 200;
     uint32_t dims[2] = {width, height};
-    
+
     // 1. Create Stream
     IMAGE image;
     ImageStreamIO_createIm_gpu(&image, stream_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0);
@@ -31,6 +31,7 @@ int main() {
 
     // 2. Loop update
     while(keep_running) {
+        image.md[0].write = 1;
         // Generate dummy data (moving gradient)
         for(uint32_t y=0; y<height; y++) {
             for(uint32_t x=0; x<width; x++) {

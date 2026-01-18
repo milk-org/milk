@@ -16,7 +16,7 @@ int main() {
 
     const char *in_name = "stream01";
     const char *out_name = "stream01_proc";
-    
+
     // 1. Connect to Input Stream
     IMAGE input_image;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name, &input_image) != 0) {
@@ -48,6 +48,7 @@ int main() {
         // Using semaphore 0
         ImageStreamIO_semwait(&input_image, 0);
 
+        output_image.md[0].write = 1;
         // Process
         for(uint32_t y=0; y<roi_h; y++) {
             for(uint32_t x=0; x<roi_w; x++) {
