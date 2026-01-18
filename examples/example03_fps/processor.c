@@ -42,6 +42,7 @@ int FPSCONF_processor() {
     // Initialize standard processinfo default trigger stream
     strncpy(fps.cmdset.triggerstreamname, "stream03", STRINGMAXLEN_IMAGE_NAME - 1);
     fps.cmdset.procinfo_loopcntMax = -1;
+    fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
     fps.cmdset.triggertimeout.tv_sec = 10;
     fps.cmdset.triggertimeout.tv_nsec = 0;
 
