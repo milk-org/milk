@@ -14,8 +14,10 @@
 #include <float.h>
 
 #include "CommandLineInterface/CLIcore.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#include "CommandLineInterface/processtools_trigger.h"
+
+#include <processtools_trigger.h>
+
+#include "streamtiming_stats.h"
 #include "stream_monproc.h"
 
 static char *inimname;

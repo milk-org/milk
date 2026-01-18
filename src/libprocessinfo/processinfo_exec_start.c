@@ -1,5 +1,15 @@
-#include "CLIcore.h"
-#include <processtools.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "processinfo_exec_start.h"
+#include "processinfo_WriteMessage.h"
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
 
 
 int processinfo_exec_start(PROCESSINFO *processinfo)

@@ -7,7 +7,7 @@
 #define FPS_ADD_RTSETTING_ENTRIES_H
 
 #include "../function_parameters.h"
-#include "../processinfo.h"
+#include <processinfo.h>
 
 errno_t fps_add_processinfo_entries(
     FUNCTION_PARAMETER_STRUCT *fps

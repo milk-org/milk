@@ -94,20 +94,6 @@ add_library(CLIcore
             procCTRL/procCTRL_GetCPUloads.c
             procCTRL/procCTRL_GetNumberCPUs.c
             procCTRL/procCTRL_PIDcollectSystemInfo.c
-            processtools_trigger.c
-            processinfo/processinfo_procdirname.c
-            processinfo/processinfo_exec_start.c
-            processinfo/processinfo_exec_end.c
-            processinfo/processinfo_loopstep.c
-            processinfo/processinfo_setup.c
-            processinfo/processinfo_shm_close.c
-            processinfo/processinfo_shm_create.c
-            processinfo/processinfo_shm_link.c
-            processinfo/processinfo_shm_list_create.c
-            processinfo/processinfo_signals.c
-            processinfo/processinfo_SIGexit.c
-            processinfo/processinfo_update_output_stream.c
-            processinfo/processinfo_WriteMessage.c
             streamCTRL/streamCTRL_TUI.c
             streamCTRL/streamCTRL_find_streams.c
             streamCTRL/streamCTRL_print_inode.c
@@ -148,7 +134,7 @@ target_link_libraries(CLIcore
                               ${FFTWF_LIBRARIES}
                               ${CMAKE_THREAD_LIBS_INIT}
                               ${NCURSES_LIBRARIES}
-                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools)
+                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools processinfo)
 
 if(${HWLOC_FOUND})
   target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
@@ -182,9 +168,7 @@ install(FILES CLIcore.h
               cmdsettings.h
               function_parameters.h
               milkDebugTools.h
-              processinfo.h
               processtools.h
-              processtools_trigger.h
               standalone_dependencies.h
               timeutils.h
               DESTINATION include/${SRCNAME})
@@ -251,21 +235,6 @@ install(FILES procCTRL/procCTRL_GetCPUloads.h
               procCTRL/procCTRL_TUI.h
               procCTRL/procCTRL_processinfo_scan.h
               DESTINATION include/${SRCNAME}/procCTRL)
-
-install(FILES processinfo/processinfo_SIGexit.h
-              processinfo/processinfo_WriteMessage.h
-              processinfo/processinfo_exec_end.h
-              processinfo/processinfo_exec_start.h
-              processinfo/processinfo_loopstep.h
-              processinfo/processinfo_procdirname.h
-              processinfo/processinfo_setup.h
-              processinfo/processinfo_shm_close.h
-              processinfo/processinfo_shm_create.h
-              processinfo/processinfo_shm_link.h
-              processinfo/processinfo_shm_list_create.h
-              processinfo/processinfo_signals.h
-              processinfo/processinfo_update_output_stream.h
-              DESTINATION include/${SRCNAME}/processinfo)
 
 install(FILES streamCTRL/streamCTRL_TUI.h
               DESTINATION include/${SRCNAME}/streamCTRL)

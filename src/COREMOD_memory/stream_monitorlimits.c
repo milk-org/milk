@@ -226,7 +226,7 @@ errno_t stream_monitorlimits_RUN()
     imageID IDin = image_ID(IDin_name);
 
     processinfo_waitoninputstream_init(processinfo,
-                                       IDin,
+                                       (IDin == -1 ? NULL : &data.image[IDin]),
                                        PROCESSINFO_TRIGGERMODE_DELAY,
                                        -1);
     processinfo->triggerdelay.tv_sec  = 0;

@@ -17,8 +17,8 @@ typedef const char *__restrict CONST_WORD;
 
 #include "CommandLineInterface/CLIcore.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "CommandLineInterface/IMGID.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #define CLIARG_VISIBLE_DEFAULT                                                 \
     CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
@@ -383,7 +383,7 @@ typedef struct
                          processinfo->triggerstreamID);                        \
         FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                  \
             processinfo,                                                       \
-            processinfo->triggerstreamID,                                      \
+            (processinfo->triggerstreamID > -1 ? &data.image[processinfo->triggerstreamID] : NULL), \
             CLIcmddata.cmdsettings->triggermode,                               \
             CLIcmddata.cmdsettings->semindexrequested));                       \
         DEBUG_TRACEPOINT("setting RT priority to %d",                          \

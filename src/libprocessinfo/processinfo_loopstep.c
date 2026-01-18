@@ -1,5 +1,11 @@
-#include "CLIcore.h"
-#include <processtools.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "processinfo_loopstep.h"
+#include "processinfo_signals.h"
 
 
 /**
@@ -30,12 +36,12 @@ int processinfo_loopstep(
         loopstatus = 0;
     }
 
-    if(data.signal_INT == 1)  // CTRL-C
+    if(processinfo_signal_INT == 1)  // CTRL-C
     {
         loopstatus = 0;
     }
 
-    if(data.signal_HUP == 1)  // terminal has disappeared
+    if(processinfo_signal_HUP == 1)  // terminal has disappeared
     {
         loopstatus = 0;
     }
