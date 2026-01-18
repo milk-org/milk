@@ -3,6 +3,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 #include "ImageStruct.h"
 #include "ImageStreamIO.h"
 
@@ -12,7 +13,12 @@ void signal_handler(int sig) {
     keep_running = 0;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        printf("Usage: %s\n", argv[0]);
+        printf("Example 03 Writer: Creates 'stream03' and writes a moving gradient.\n");
+        return 0;
+    }
     signal(SIGINT, signal_handler);
 
     const char *stream_name = "stream03";
