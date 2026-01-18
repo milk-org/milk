@@ -1,10 +1,13 @@
 #include <dirent.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "CLIcore.h"
-#include <processtools.h>
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "ImageStreamIO/ImageStruct.h" // For SHAREDMEMDIR
 
-
-#define SHAREDPROCDIR data.shmdir
+#define SHAREDPROCDIR SHAREDMEMDIR
 
 
 errno_t processinfo_procdirname(char *procdname)
@@ -16,7 +19,7 @@ errno_t processinfo_procdirname(char *procdname)
     char *MILK_PROC_DIR = getenv("MILK_PROC_DIR");
     if(MILK_PROC_DIR != NULL)
     {
-        printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
+        // printf(" [ MILK_PROC_DIR ] '%s'\n", MILK_PROC_DIR);
 
         {
             int slen = snprintf(procdname,

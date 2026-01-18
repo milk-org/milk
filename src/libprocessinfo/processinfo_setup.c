@@ -1,8 +1,17 @@
 #include <sys/stat.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sched.h>
 
-#include "CLIcore.h"
-#include <processtools.h>
-
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "processinfo_setup.h"
+#include "processinfo_shm_create.h"
+#include "processinfo_signals.h"
+#include "processinfo_WriteMessage.h"
+#include "processinfo_SIGexit.h"
 
 // High level processinfo function
 
@@ -18,15 +27,13 @@ PROCESSINFO *processinfo_setup(
     DEBUG_TRACE_FSTART();
 
     static PROCESSINFO *processinfo = NULL;
-    // Only one instance of processinfo created by process
-    // subsequent calls to this function will re-use the same processinfo structure
+    static int processinfoActive = 0;
 
     DEBUG_TRACEPOINT(" ");
 
     DEBUG_TRACEPOINT(" ");
-    if(data.processinfoActive == 0)
+    if(processinfoActive == 0)
     {
-        //        PROCESSINFO *processinfo;
         DEBUG_TRACEPOINT(" ");
 
         char pinfoname0[STRINGMAXLEN_PROCESSINFO_NAME];
@@ -38,12 +45,12 @@ PROCESSINFO *processinfo_setup(
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
+                abort(); 
             }
             if(slen >= STRINGMAXLEN_PROCESSINFO_NAME)
             {
                 PRINT_ERROR("snprintf string truncation");
-                abort(); // can't handle this error any other way
+                abort(); 
             }
         }
 
@@ -53,7 +60,7 @@ PROCESSINFO *processinfo_setup(
 
         DEBUG_TRACEPOINT(" ");
 
-        processinfo_CatchSignals();
+        // processinfo_CatchSignals(); // Removed: user responsibility
     }
 
     DEBUG_TRACEPOINT(" ");
@@ -64,7 +71,7 @@ PROCESSINFO *processinfo_setup(
     processinfo->source_LINE = linenumber;
     strcpy(processinfo->description, descriptionstring);
     processinfo_WriteMessage(processinfo, msgstring);
-    data.processinfoActive = 1;
+    processinfoActive = 1;
 
     processinfo->loopcntMax = -1; // infinite loop
 
@@ -79,8 +86,6 @@ PROCESSINFO *processinfo_setup(
 }
 
 // report error
-// should be followed by return(EXIT_FAILURE) call
-//
 errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
 {
     processinfo->loopstat = 4; // ERROR
@@ -97,22 +102,10 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo)
     if(processinfo->RT_priority > -1)
     {
         struct sched_param schedpar;
-        // ===========================
-        // Set realtime priority
-        // ===========================
         schedpar.sched_priority = processinfo->RT_priority;
 
-        if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
-        {
-            PRINT_ERROR("seteuid error");
-        }
-        sched_setscheduler(
-            0,
-            SCHED_FIFO,
-            &schedpar);              //other option is SCHED_RR, might be faster
-        if(seteuid(data.ruid) != 0)  //Go back to normal privileges
-        {
-            PRINT_ERROR("seteuid error");
+        if (sched_setscheduler(0, SCHED_FIFO, &schedpar) != 0) {
+            // perror("sched_setscheduler");
         }
     }
 

@@ -56,13 +56,13 @@ typedef int errno_t;
 
 #include <processtools.h>
 
-#include "processinfo/processinfo_setup.h"
-#include "processinfo/processinfo_procdirname.h"
-#include "processinfo/processinfo_SIGexit.h"
-#include "processinfo/processinfo_shm_create.h"
-#include "processinfo/processinfo_shm_list_create.h"
-#include "processinfo/processinfo_exec_start.h"
-#include "processinfo/processinfo_exec_end.h"
+#include <processinfo_setup.h>
+#include <processinfo_procdirname.h>
+#include <processinfo_SIGexit.h>
+#include <processinfo_shm_create.h>
+#include <processinfo_shm_list_create.h>
+#include <processinfo_exec_start.h>
+#include <processinfo_exec_end.h>
 
 
 #include "procCTRL/procCTRL_PIDcollectSystemInfo.h"

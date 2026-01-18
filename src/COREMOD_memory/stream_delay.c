@@ -370,8 +370,8 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 
     // Specify input stream trigger
 
-    processinfo_waitoninputstream_init(processinfo, IDin,
-                                       PROCESSINFO_TRIGGERMODE_DELAY, -1);
+    processinfo_waitoninputstream_init(processinfo, (IDin == -1 ? NULL : &data.image[IDin]),
+                                       PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
     processinfo->triggerdelay.tv_sec = 0;
     processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);
     while(processinfo->triggerdelay.tv_nsec > 1000000000)

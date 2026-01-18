@@ -347,8 +347,8 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // Specify input stream trigger
 
     processinfo_waitoninputstream_init(processinfo,
-                                       IDin,
-                                       PROCESSINFO_TRIGGERMODE_DELAY,
+                                       (IDin == -1 ? NULL : &data.image[IDin]),
+                                       PROCESSINFO_TRIGGERMODE_SEMAPHORE,
                                        -1);
     processinfo->triggerdelay.tv_sec  = 0;
     processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);

@@ -1,18 +1,19 @@
-
 #include <sys/file.h>
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "CLIcore.h"
-#include <processtools.h>
-
+#include "processinfo_internal.h"
+#include "processinfo.h"
 #include "processinfo_procdirname.h"
+#include "processinfo_shm_link.h"
 
 #define FILEMODE 0666
 
 extern PROCESSINFOLIST *pinfolist;
-
-
 
 
 long processinfo_shm_list_create()
@@ -65,7 +66,7 @@ long processinfo_shm_list_create()
             exit(0);
         }
 
-        pinfolist = (PROCESSINFOLIST *)
+        pinfolist = (PROCESSINFOLIST *) \
                     mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
         if(pinfolist == MAP_FAILED)
         {
