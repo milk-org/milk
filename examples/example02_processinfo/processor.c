@@ -42,6 +42,10 @@ int main(int argc, char *argv[]) {
                                    "Starting...",          // Msg
                                    __FUNCTION__, __FILE__, __LINE__
                                );
+    if (processinfo == NULL) {
+        fprintf(stderr, "Error: processinfo_setup failed\n");
+        return 1;
+    }
 
     // Trigger configuration
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
