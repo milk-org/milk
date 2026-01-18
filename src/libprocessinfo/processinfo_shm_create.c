@@ -2,17 +2,26 @@
 #include <sys/mman.h> // mmap()
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <time.h>
+#include <string.h>
 
-#include "CLIcore.h"
-#include <processtools.h>
-
+#include "processinfo_internal.h"
+#include "processinfo.h"
 #include "processinfo_shm_list_create.h"
 #include "processinfo_procdirname.h"
+#include "processinfo_WriteMessage.h"
+#include "processinfo_shm_create.h"
 
 
 #define FILEMODE 0666
 
 extern PROCESSINFOLIST *pinfolist;
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
 
 /**
  * Create PROCESSINFO structure in shared memory
@@ -33,7 +42,7 @@ PROCESSINFO *processinfo_shm_create(
     int          SM_fd;          // shared memory file descriptor
     PROCESSINFO *pinfo = NULL;
 
-    // static int LogFileCreated = 0;
+    static int LogFileCreated = 0;
     // toggles to 1 when created. To avoid re-creating file on same process
 
     sharedsize = sizeof(PROCESSINFO);
@@ -123,7 +132,8 @@ PROCESSINFO *processinfo_shm_create(
     fpout = popen("tmuxsessionname", "r");
     if(fpout == NULL)
     {
-        printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+        // printf("WARNING: cannot run command \"tmuxsessionname\"\n");
+        notmux = 1;
     }
     else
     {
@@ -147,7 +157,7 @@ PROCESSINFO *processinfo_shm_create(
         }
         else
         {
-            printf("tmux name empty\n");
+            // printf("tmux name empty\n");
         }
     }
     else
@@ -183,7 +193,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfo->dtiter_limit_enable = 0;
     pinfo->dtexec_limit_enable = 0;
 
-    data.pinfo = pinfo;
+    // data.pinfo = pinfo; // REMOVED
     pinfo->PID = PID;
 
     // create logfile

@@ -39,13 +39,11 @@
 // trigger has not been received but we've skipped out of the wait into the execution of the loop
 #define PROCESSINFO_TRIGGERSTATUS_TIMEDOUT 3
 
-#include "CLIcore.h"
-#include "CommandLineInterface/IMGID.h"
-
 #include "processinfo.h"
+#include "ImageStreamIO/ImageStruct.h"
 
 errno_t processinfo_waitoninputstream_init(PROCESSINFO *processinfo,
-        imageID      trigID,
+        IMAGE        *image,
         int          triggermode,
         int          semindexrequested);
 
@@ -55,7 +53,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo);
     do                                                                         \
     {                                                                          \
         processinfo_waitoninputstream_init(processinfo,                        \
-                                           -1,                                 \
+                                           NULL,                               \
                                            PROCESSINFO_TRIGGERMODE_DELAY,      \
                                            -1);                                \
         processinfo->triggerdelay.tv_sec  = 0;                                 \

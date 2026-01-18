@@ -8,6 +8,15 @@
 #ifndef _PROCESSINFO_H
 #define _PROCESSINFO_H
 
+#include <time.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <sched.h> // for cpu_set_t
+
+#include "ImageStreamIO/ImageStruct.h"
+
+typedef long imageID;
+
 #define STRINGMAXLEN_PROCESSINFO_NAME        80
 #define STRINGMAXLEN_PROCESSINFO_SRCFUNC     200
 #define STRINGMAXLEN_PROCESSINFO_SRCFILE     200
@@ -33,12 +42,25 @@
 #define PROCESSINFO_LOOPSTAT_SPIN    5
 #define PROCESSINFO_LOOPSTAT_CRASHED 6
 
-
-#include "CLIcore.h"
-
+#define PROCESSINFOLISTSIZE 50000
 
 // uncomment to enable LOGFILE for debugging
 //#define PROCESSINFO_LOGFILE
+
+//
+// This structure maintains a list of active processes
+// It is used to quickly build (without scanning directory) an array of
+// PROCESSINFO
+//
+typedef struct
+{
+    pid_t PIDarray[PROCESSINFOLISTSIZE];
+    int   active[PROCESSINFOLISTSIZE];
+    char  pnamearray[PROCESSINFOLISTSIZE]
+    [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
+    double createtime[PROCESSINFOLISTSIZE];
+
+} PROCESSINFOLIST;
 
 
 /**
@@ -115,6 +137,10 @@ typedef struct
     //  2+ : frame(s) missed
     uint64_t triggermissedframe_cumul; // cumulative missed frames
     int      triggerstatus;            // see TRIGGERSTATUS codes
+
+    // Pointer to trigger image (process-local, not valid in SHM for other processes)
+    // Used by libprocessinfo to wait on stream without depending on global data
+    IMAGE *trigger_image;
 
     int       RT_priority; // -1 if unused. 0-99 for higher priority
     cpu_set_t CPUmask;

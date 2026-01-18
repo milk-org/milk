@@ -9,12 +9,16 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <time.h>
 
-#include "CLIcore.h"
-#include "CLIcore/CLIcore_utils.h"
-
+#include "processinfo_internal.h"
 #include "processinfo.h"
 #include "processtools_trigger.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
 
 /** @brief Set up input wait stream
  *
@@ -29,19 +33,23 @@
  */
 errno_t processinfo_waitoninputstream_init(
     PROCESSINFO *processinfo,
-    imageID      trigID,
+    IMAGE        *image,
     int          triggermode,
     int          semindexrequested
 )
 {
-    DEBUG_TRACE_FSTART("%ld %d %d", trigID, triggermode, semindexrequested);
-    processinfo->triggerstreamID = trigID;
+    DEBUG_TRACE_FSTART("%p %d %d", (void*)image, triggermode, semindexrequested);
+    
+    // Legacy support: triggerstreamID is not used internally by the library anymore
+    // but we can set it to -1 to indicate unused.
+    processinfo->triggerstreamID = -1;
+    processinfo->trigger_image = image;
 
-    if(trigID > -1)
+    if(image != NULL)
     {
-        processinfo->triggerstreaminode = data.image[trigID].md[0].inode;
+        processinfo->triggerstreaminode = image->md[0].inode;
         strncpy(processinfo->triggerstreamname,
-                data.image[trigID].md[0].name,
+                image->md[0].name,
                 STRINGMAXLEN_IMAGE_NAME);
     }
     else
@@ -56,57 +64,48 @@ errno_t processinfo_waitoninputstream_init(
     processinfo->trigggertimeoutcnt       = 0;
     processinfo->triggerstatus            = 0;
 
-    // default
-    //processinfo->triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
-
     // valid modes
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = cnt0 of ID %ld",
-                         PROCESSINFO_TRIGGERMODE_CNT0,
-                         trigID);
+        DEBUG_TRACEPOINT("trigger mode %d = cnt0", PROCESSINFO_TRIGGERMODE_CNT0);
 
-        if(trigID == -1)
+        if(image == NULL)
         {
-            FUNC_RETURN_FAILURE("missing trigger ID");
+            PRINT_ERROR("missing trigger image");
+            return RETURN_FAILURE;
         }
         // trigger on cnt0 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt0;
+        processinfo->triggerstreamcnt = image->md[0].cnt0;
     }
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = cnt1 of ID %ld",
-                         PROCESSINFO_TRIGGERMODE_CNT1,
-                         trigID);
+        DEBUG_TRACEPOINT("trigger mode %d = cnt1", PROCESSINFO_TRIGGERMODE_CNT1);
 
-        if(trigID == -1)
+        if(image == NULL)
         {
-            FUNC_RETURN_FAILURE("missing trigger ID");
+            PRINT_ERROR("missing trigger image");
+            return RETURN_FAILURE;
         }
         // trigger on cnt1 increment
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt1;
+        processinfo->triggerstreamcnt = image->md[0].cnt1;
     }
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT2)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = cnt2 of ID %ld",
-                         PROCESSINFO_TRIGGERMODE_CNT2,
-                         trigID);
+        DEBUG_TRACEPOINT("trigger mode %d = cnt2", PROCESSINFO_TRIGGERMODE_CNT2);
 
-        if(trigID == -1)
+        if(image == NULL)
         {
-            FUNC_RETURN_FAILURE("missing trigger ID");
+            PRINT_ERROR("missing trigger image");
+            return RETURN_FAILURE;
         }
         // trigger on cnt0 < cnt2
         processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT2;
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt0;
+        processinfo->triggerstreamcnt = image->md[0].cnt0;
     }
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
@@ -116,7 +115,6 @@ errno_t processinfo_waitoninputstream_init(
         // immmediate trigger
         processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
         processinfo->triggerstreamcnt = 0;
-        //data.image[processinfo->triggerstreamID].md[0].cnt0;
     }
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
@@ -124,33 +122,28 @@ errno_t processinfo_waitoninputstream_init(
         DEBUG_TRACEPOINT("trigger mode %d = time delay",
                          PROCESSINFO_TRIGGERMODE_DELAY);
         // time wait
-
         processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_DELAY;
         processinfo->triggerstreamcnt = 0;
-        //data.image[processinfo->triggerstreamID].md[0].cnt0;
     }
 
     // checking if semaphore trigger mode OK
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)
     {
-        DEBUG_TRACEPOINT("trigger mode %d = semaphore %d on ID %ld",
+        DEBUG_TRACEPOINT("trigger mode %d = semaphore %d",
                          PROCESSINFO_TRIGGERMODE_SEMAPHORE,
-                         semindexrequested,
-                         trigID);
+                         semindexrequested);
         if(semindexrequested < -1)
         {
-            FUNC_RETURN_FAILURE("invalid semaphore index %d",
-                                semindexrequested);
+            PRINT_ERROR("invalid semaphore index %d", semindexrequested);
+            return RETURN_FAILURE;
         }
-        if(trigID == -1)
+        if(image == NULL)
         {
-            printf("trigID not valid: %ld\n", trigID);
-
-            FUNC_RETURN_FAILURE("invalid image ID %ld", trigID);
+            PRINT_ERROR("image not valid");
+            return RETURN_FAILURE;
         }
         processinfo->triggersem =
-            ImageStreamIO_getsemwaitindex(&data.image[trigID],
-                                          semindexrequested);
+            ImageStreamIO_getsemwaitindex(image, semindexrequested);
         if(processinfo->triggersem == -1)
         {
             // could not find available semaphore
@@ -160,7 +153,7 @@ errno_t processinfo_waitoninputstream_init(
         else
         {
             // register PID to stream
-            data.image[trigID].semReadPID[processinfo->triggersem] = getpid();
+            image->semReadPID[processinfo->triggersem] = getpid();
         }
     }
 
@@ -169,13 +162,12 @@ errno_t processinfo_waitoninputstream_init(
 }
 
 
-
-
 /** @brief Wait on a stream
  *
  */
 errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 {
+    IMAGE *image = processinfo->trigger_image;
     processinfo->triggermissedframe = 0;
 
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_IMMEDIATE)
@@ -187,22 +179,20 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
     {
+        if(image == NULL) return RETURN_FAILURE;
         // use cnt0
-
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
-        while(data.image[processinfo->triggerstreamID].md[0].cnt0 ==
-                processinfo->triggerstreamcnt)
+        while(image->md[0].cnt0 == processinfo->triggerstreamcnt)
         {
             // test if new frame exists
             usleep(5);
         }
         processinfo->triggermissedframe =
-            data.image[processinfo->triggerstreamID].md[0].cnt0 -
+            image->md[0].cnt0 -
             processinfo->triggerstreamcnt - 1;
         // update trigger counter
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt0;
+        processinfo->triggerstreamcnt = image->md[0].cnt0;
 
         processinfo->triggermissedframe_cumul +=
             processinfo->triggermissedframe;
@@ -214,22 +204,20 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT1)
     {
+        if(image == NULL) return RETURN_FAILURE;
         // use cnt1
-
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
-        while(data.image[processinfo->triggerstreamID].md[0].cnt1 ==
-                processinfo->triggerstreamcnt)
+        while(image->md[0].cnt1 == processinfo->triggerstreamcnt)
         {
             // test if new frame exists
             usleep(5);
         }
         processinfo->triggermissedframe =
-            data.image[processinfo->triggerstreamID].md[0].cnt1 -
+            image->md[0].cnt1 -
             processinfo->triggerstreamcnt - 1;
         // update trigger counter
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt1;
+        processinfo->triggerstreamcnt = image->md[0].cnt1;
 
         processinfo->triggermissedframe_cumul +=
             processinfo->triggermissedframe;
@@ -241,12 +229,11 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
 
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_CNT2)
     {
+        if(image == NULL) return RETURN_FAILURE;
         // use cnt2
-
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
-        while(data.image[processinfo->triggerstreamID].md[0].cnt0 >=
-                data.image[processinfo->triggerstreamID].md[0].cnt2)
+        while(image->md[0].cnt0 >= image->md[0].cnt2)
         {
             // wait until we are allowed to proceed
             usleep(5);
@@ -254,8 +241,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         processinfo->triggermissedframe = 0;
 
         // update trigger counter
-        processinfo->triggerstreamcnt =
-            data.image[processinfo->triggerstreamID].md[0].cnt0;
+        processinfo->triggerstreamcnt = image->md[0].cnt0;
 
         processinfo->triggermissedframe_cumul +=
             processinfo->triggermissedframe;
@@ -268,7 +254,6 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_DELAY)
     {
         // return after fixed delay
-
         processinfo->triggerstatus = PROCESSINFO_TRIGGERSTATUS_WAITING;
 
         // Note: nanosleep adds a few x10us of latency on most systems
@@ -283,6 +268,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
     if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
             processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
+        if(image == NULL) return RETURN_FAILURE;
+        
         int semr;
         int tmpstatus = PROCESSINFO_TRIGGERSTATUS_RECEIVED;
 
@@ -305,9 +292,8 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
         {
             // this should only run once, returning semr = -1 with errno = EAGAIN
             // otherwise, we're potentially missing frames
-            DEBUG_TRACEPOINT("sem_trywait %ld", processinfo->triggerstreamID);
-            semr = ImageStreamIO_semtrywait(data.image + processinfo->triggerstreamID
-                                            , processinfo->triggersem);
+            DEBUG_TRACEPOINT("sem_trywait");
+            semr = ImageStreamIO_semtrywait(image, processinfo->triggersem);
             if(semr == 0)
             {
                 processinfo->triggermissedframe++;
@@ -330,9 +316,7 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                 ts.tv_sec++;
             }
 
-            semr = ImageStreamIO_semtimedwait(data.image + processinfo->triggerstreamID
-                                              , processinfo->triggersem,
-                                              &ts);
+            semr = ImageStreamIO_semtimedwait(image, processinfo->triggersem, &ts);
             if(semr == -1)
             {
                 if(errno == ETIMEDOUT)

@@ -1,92 +1,114 @@
-#include "CLIcore.h"
-#include <processtools.h>
-#include "processinfo_procdirname.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <time.h>
+#include <string.h>
 
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "processinfo_signals.h"
+#include "processinfo_SIGexit.h"
+#include "processinfo_procdirname.h"
+#include "processinfo_WriteMessage.h"
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
+
+void processinfo_sig_handler(int signo)
+{
+    switch(signo)
+    {
+        case SIGUSR1:
+            processinfo_signal_USR1 = 1;
+            break;
+        case SIGUSR2:
+            processinfo_signal_USR2 = 1;
+            break;
+        case SIGINT:
+            processinfo_signal_INT = 1;
+            break;
+        case SIGTERM:
+            processinfo_signal_TERM = 1;
+            break;
+        case SIGSEGV:
+            processinfo_signal_SEGV = 1;
+            break;
+        case SIGABRT:
+            processinfo_signal_ABRT = 1;
+            break;
+        case SIGBUS:
+            processinfo_signal_BUS = 1;
+            break;
+        case SIGHUP:
+            processinfo_signal_HUP = 1;
+            break;
+        case SIGPIPE:
+            processinfo_signal_PIPE = 1;
+            break;
+    }
+}
 
 int processinfo_CatchSignals()
 {
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGTERM\n");
-    }
+    struct sigaction sigact;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigact.sa_handler = processinfo_sig_handler;
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGINT\n");
-    }
-
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGABRT\n");
-    }
-
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGBUS\n");
-    }
-
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGSEGV\n");
-    }
-
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGHUP\n");
-    }
-
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
-    {
-        printf("\ncan't catch SIGPIPE\n");
-    }
+    if(sigaction(SIGTERM, &sigact, NULL) == -1) printf("\ncan't catch SIGTERM\n");
+    if(sigaction(SIGINT, &sigact, NULL) == -1) printf("\ncan't catch SIGINT\n");
+    if(sigaction(SIGABRT, &sigact, NULL) == -1) printf("\ncan't catch SIGABRT\n");
+    if(sigaction(SIGBUS, &sigact, NULL) == -1) printf("\ncan't catch SIGBUS\n");
+    if(sigaction(SIGSEGV, &sigact, NULL) == -1) printf("\ncan't catch SIGSEGV\n");
+    if(sigaction(SIGHUP, &sigact, NULL) == -1) printf("\ncan't catch SIGHUP\n");
+    if(sigaction(SIGPIPE, &sigact, NULL) == -1) printf("\ncan't catch SIGPIPE\n");
 
     return 0;
 }
-
-
 
 int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 {
     int loopOK = 1;
     // process signals
 
-    if(data.signal_TERM == 1)
+    if(processinfo_signal_TERM == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGTERM);
     }
 
-    if(data.signal_INT == 1)
+    if(processinfo_signal_INT == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGINT);
     }
 
-    if(data.signal_ABRT == 1)
+    if(processinfo_signal_ABRT == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGABRT);
     }
 
-    if(data.signal_BUS == 1)
+    if(processinfo_signal_BUS == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGBUS);
     }
 
-    if(data.signal_SEGV == 1)
+    if(processinfo_signal_SEGV == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGSEGV);
     }
 
-    if(data.signal_HUP == 1)
+    if(processinfo_signal_HUP == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGHUP);
     }
 
-    if(data.signal_PIPE == 1)
+    if(processinfo_signal_PIPE == 1)
     {
         loopOK = 0;
         processinfo_SIGexit(processinfo, SIGPIPE);
@@ -94,7 +116,6 @@ int processinfo_ProcessSignals(PROCESSINFO *processinfo)
 
     return loopOK;
 }
-
 
 int processinfo_cleanExit(PROCESSINFO *processinfo)
 {

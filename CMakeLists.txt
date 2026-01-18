@@ -213,7 +213,8 @@ message("EXTRAMODULES             = ${EXTRAMODULES}")
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-
+# Add processinfo include directory globally
+include_directories(src/libprocessinfo)
 
 
 # ADD SOURCE DIRECTORIES
@@ -239,8 +240,14 @@ add_subdirectory(src/isio-tools)
 # add libfps (standalone fps library exploration)
 add_subdirectory(src/libfps)
 
+# add libprocessinfo
+
+add_subdirectory(src/libprocessinfo)
+
+
 
 # main
+
 add_executable(milk src/CLImain.c)
 
 

@@ -1,5 +1,17 @@
-#include "CLIcore.h"
-#include <processtools.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+
+#include "processinfo_internal.h"
+#include "processinfo.h"
+#include "processinfo_SIGexit.h"
+#include "processinfo_WriteMessage.h"
+
+#ifndef CLOCK_MILK
+#define CLOCK_MILK CLOCK_REALTIME
+#endif
 
 
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)

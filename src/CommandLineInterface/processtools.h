@@ -26,8 +26,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "processinfo.h"
-#include "processtools_trigger.h"
+#include <processinfo.h>
+#include <processtools_trigger.h>
 
 #define PROCESSINFOLISTSIZE 50000
 
@@ -43,15 +43,7 @@ typedef int errno_t;
 // It is used to quickly build (without scanning directory) an array of
 // PROCESSINFO
 //
-typedef struct
-{
-    pid_t PIDarray[PROCESSINFOLISTSIZE];
-    int   active[PROCESSINFOLISTSIZE];
-    char  pnamearray[PROCESSINFOLISTSIZE]
-    [STRINGMAXLEN_PROCESSINFO_NAME]; // short name
-    double createtime[PROCESSINFOLISTSIZE];
-
-} PROCESSINFOLIST;
+// PROCESSINFOLIST is now defined in processinfo.h
 
 
 
