@@ -64,6 +64,10 @@ errno_t processinfo_waitoninputstream_init(
     processinfo->trigggertimeoutcnt       = 0;
     processinfo->triggerstatus            = 0;
 
+    // Default timeout: 2 seconds
+    processinfo->triggertimeout.tv_sec  = 2;
+    processinfo->triggertimeout.tv_nsec = 0;
+
     // Set requested triggermode
     processinfo->triggermode = triggermode;
 

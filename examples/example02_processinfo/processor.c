@@ -68,11 +68,10 @@ int main(int argc, char *argv[]) {
         // Wait for Trigger
         processinfo_waitoninputstream(processinfo);
 
-        // Exec Start (Timing)
-        processinfo_exec_start(processinfo);
+        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) {
+            continue;
+        }
 
-
-        // Computation
         output_image.md[0].write = 1;
         for(uint32_t y=0; y<roi_h; y++) {
             for(uint32_t x=0; x<roi_w; x++) {
