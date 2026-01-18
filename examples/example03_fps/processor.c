@@ -170,8 +170,22 @@ int FPSRUN_processor() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <fpsinit|conf|run> [-tmux]\n", argv[0]);
+        printf("Usage: %s <Command> [Options]\n", argv[0]);
+        printf("Run '%s -h' for detailed help.\n", argv[0]);
         return 1;
+    }
+
+    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+        printf("\nUsage: %s <Command> [Options]\n\n", argv[0]);
+        printf("Commands:\n");
+        printf("  fpsinit  Initialize the Function Parameter Structure (FPS) shared memory.\n");
+        printf("           This must be run once before starting the configuration or run loops.\n");
+        printf("  conf     Start the configuration process. Monitors and validates parameter updates.\n");
+        printf("  run      Start the main processing loop using parameters from the FPS.\n\n");
+        printf("Options:\n");
+        printf("  -tmux    Create a tmux session named '%s' with windows for ctrl, conf,\n", FPS_NAME);
+        printf("           and run. Launches the specified command in the appropriate window.\n\n");
+        return 0;
     }
 
     int use_tmux = 0;

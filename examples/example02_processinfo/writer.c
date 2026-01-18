@@ -15,8 +15,11 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("Usage: %s\n", argv[0]);
-        printf("Example 02 Writer: Creates 'stream02' and writes a moving gradient.\n");
+        printf("\nUsage: %s\n\n", argv[0]);
+        printf("Description:\n");
+        printf("  Example 02 Writer: Creates 'stream02' (200x200 FLOAT) and writes a\n");
+        printf("  moving gradient pattern. This stream is intended for the Example 02\n");
+        printf("  processor which includes processinfo monitoring.\n\n");
         return 0;
     }
     signal(SIGINT, signal_handler);

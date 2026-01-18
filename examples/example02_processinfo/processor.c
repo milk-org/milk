@@ -14,8 +14,14 @@
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("Usage: %s\n", argv[0]);
-        printf("Example 02 Processor: Example 01 + ProcessInfo integration for monitoring and control.\n");
+        printf("\nUsage: %s\n\n", argv[0]);
+        printf("Description:\n");
+        printf("  This program demonstrates the integration of ImageStreamIO with libprocessinfo.\n");
+        printf("  It performs the same ROI cropping and summing as Example 01, but also\n");
+        printf("  registers itself in the milk process list ('proc_ex02').\n\n");
+        printf("Process Control:\n");
+        printf("  External tools can monitor this process's status and timing, or send\n");
+        printf("  signals to pause or stop the loop via the shared memory process structure.\n\n");
         return 0;
     }
     const char *in_name = "stream02";
