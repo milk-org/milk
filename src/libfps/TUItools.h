@@ -10,6 +10,11 @@
 
 // Simple ANSI color codes for terminal output
 #define AECBOLDHIGREEN "\033[1;32m"
+#define AECBOLDHIRED   "\033[1;31m"
 #define AECNORMAL      "\033[0m"
+
+#define TUI_exit()
+int get_singlechar_block();
+int get_singlechar_nonblock();
 
 #endif
