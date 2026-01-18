@@ -60,9 +60,7 @@ int FPSCONF_processor() {
     function_parameter_add_entry(&fps, ".off_x", "Offset X", FPTYPE_UINT32, FPFLAG_DEFAULT_INPUT, (void*)&off_x, NULL);
     
     // Add ProcessInfo standard parameters (triggers, etc.)
-    // Note: fps_add_processinfo_entries is in libfps if compiled with it, or we add manually.
-    // Assuming we linked with libfps which has this utility or we do it manually.
-    // For standalone, let's add minimal trigger params manually to show how it's done.
+    fps_add_processinfo_entries(&fps);
     
     // Configuration Loop
     while (function_parameter_FPCONFloopstep(&fps)) {
@@ -120,6 +118,10 @@ int FPSRUN_processor() {
 
     // Setup Trigger
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    
+    // Sync settings from FPS to processinfo
+    fps_to_processinfo(&fps, processinfo);
+    
     processinfo_loopstart(processinfo);
 
     float *in_data = (float*)input_image.array.raw;
