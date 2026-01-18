@@ -14,8 +14,15 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("Usage: %s\n", argv[0]);
-        printf("Example 01 Processor: Connects to 'stream01', crops 4 ROIs, sums them, and writes to 'stream01_proc'.\n");
+        printf("\nUsage: %s\n\n", argv[0]);
+        printf("Description:\n");
+        printf("  This program demonstrates the basic usage of ImageStreamIO for processing.\n");
+        printf("  It connects to 'stream01' and creates an output stream 'stream01_proc'.\n");
+        printf("  The processing loop waits for new frames on 'stream01' using semaphores.\n");
+        printf("  For each frame, it crops four 50x50 regions from the corners of the input,\n");
+        printf("  sums them together, and writes the resulting 50x50 image to the output.\n\n");
+        printf("Requirements:\n");
+        printf("  The 'writer' executable from this example must be running first.\n\n");
         return 0;
     }
     signal(SIGINT, signal_handler);

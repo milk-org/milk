@@ -15,8 +15,14 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("Usage: %s\n", argv[0]);
-        printf("Example 01 Writer: Creates 'stream01' and writes a moving gradient.\n");
+        printf("\nUsage: %s\n\n", argv[0]);
+        printf("Description:\n");
+        printf("  This program demonstrates the basic usage of ImageStreamIO for writing.\n");
+        printf("  It creates a shared memory stream named 'stream01' with dimensions 200x200\n");
+        printf("  and data type FLOAT. It then enters a loop writing a moving gradient\n");
+        printf("  pattern at approximately 100Hz.\n\n");
+        printf("Environment Variables:\n");
+        printf("  MILK_SHM_DIR  Directory for shared memory files (default: /milk/shm)\n\n");
         return 0;
     }
     signal(SIGINT, signal_handler);
