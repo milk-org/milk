@@ -58,6 +58,7 @@ int main() {
         // Wait for Trigger
         processinfo_waitoninputstream(processinfo);
 
+        output_image.md[0].write = 1;
         // Exec Start (Timing)
         processinfo_exec_start(processinfo);
 

@@ -131,6 +131,7 @@ int FPSRUN_processor() {
         processinfo_waitoninputstream(processinfo);
         processinfo_exec_start(processinfo);
 
+        output_image.md[0].write = 1;
         // Simple Crop & Sum (simplified for example)
         // Using parameter off_x for dynamic control
         // Re-read parameters if needed (usually done at check/update signal)
