@@ -64,6 +64,9 @@ errno_t processinfo_waitoninputstream_init(
     processinfo->trigggertimeoutcnt       = 0;
     processinfo->triggerstatus            = 0;
 
+    // Set requested triggermode
+    processinfo->triggermode = triggermode;
+
     // valid modes
 
     if(triggermode == PROCESSINFO_TRIGGERMODE_CNT0)
@@ -76,7 +79,6 @@ errno_t processinfo_waitoninputstream_init(
             return RETURN_FAILURE;
         }
         // trigger on cnt0 increment
-        processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
         processinfo->triggerstreamcnt = image->md[0].cnt0;
     }
 
@@ -90,7 +92,6 @@ errno_t processinfo_waitoninputstream_init(
             return RETURN_FAILURE;
         }
         // trigger on cnt1 increment
-        processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT1;
         processinfo->triggerstreamcnt = image->md[0].cnt1;
     }
 
@@ -104,7 +105,6 @@ errno_t processinfo_waitoninputstream_init(
             return RETURN_FAILURE;
         }
         // trigger on cnt0 < cnt2
-        processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT2;
         processinfo->triggerstreamcnt = image->md[0].cnt0;
     }
 
@@ -113,7 +113,6 @@ errno_t processinfo_waitoninputstream_init(
         DEBUG_TRACEPOINT("trigger mode %d = immediate",
                          PROCESSINFO_TRIGGERMODE_IMMEDIATE);
         // immmediate trigger
-        processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_IMMEDIATE;
         processinfo->triggerstreamcnt = 0;
     }
 
@@ -122,15 +121,15 @@ errno_t processinfo_waitoninputstream_init(
         DEBUG_TRACEPOINT("trigger mode %d = time delay",
                          PROCESSINFO_TRIGGERMODE_DELAY);
         // time wait
-        processinfo->triggermode      = PROCESSINFO_TRIGGERMODE_DELAY;
         processinfo->triggerstreamcnt = 0;
     }
 
     // checking if semaphore trigger mode OK
-    if(processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)
+    if(triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE ||
+       triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE_PROP_TIMEOUTS)
     {
         DEBUG_TRACEPOINT("trigger mode %d = semaphore %d",
-                         PROCESSINFO_TRIGGERMODE_SEMAPHORE,
+                         triggermode,
                          semindexrequested);
         if(semindexrequested < -1)
         {
@@ -149,6 +148,7 @@ errno_t processinfo_waitoninputstream_init(
             // could not find available semaphore
             // fall back to CNT0 trigger mode
             processinfo->triggermode = PROCESSINFO_TRIGGERMODE_CNT0;
+            processinfo->triggerstreamcnt = image->md[0].cnt0;
         }
         else
         {
