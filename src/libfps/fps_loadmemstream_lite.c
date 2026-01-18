@@ -17,7 +17,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
 {
     *imLOC = STREAM_LOAD_SOURCE_NOTFOUND;
     
-    if(strcmp(sname, "NULL") == 0) {
+    if(sname == NULL || strlen(sname) == 0 || strcmp(sname, " ") == 0 || strcmp(sname, "NULL") == 0) {
         *imLOC = STREAM_LOAD_SOURCE_NULL;
         return -1;
     }
