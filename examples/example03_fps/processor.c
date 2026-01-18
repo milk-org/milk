@@ -113,6 +113,10 @@ int FPSRUN_processor() {
         "Starting", 
         __FUNCTION__, __FILE__, __LINE__
     );
+    if (processinfo == NULL) {
+        fprintf(stderr, "Error: processinfo_setup failed\n");
+        return 1;
+    }
 
     // Setup Trigger
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
