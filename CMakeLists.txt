@@ -236,6 +236,9 @@ add_subdirectory(src/milk_module_example)
 # add isio-tools
 add_subdirectory(src/isio-tools)
 
+# add libfps (standalone fps library exploration)
+add_subdirectory(src/libfps)
+
 
 # main
 add_executable(milk src/CLImain.c)
