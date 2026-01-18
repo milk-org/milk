@@ -37,9 +37,10 @@ int FPSCONF_processor() {
     FUNCTION_PARAMETER_STRUCT fps;
     
     // Create FPS
-    // Use low-level function or macro if available. 
-    // Here we use function_parameter_FPCONFsetup directly.
     fps = function_parameter_FPCONFsetup("processor03", FPSCMDCODE_FPSINIT);
+
+    // Initialize standard processinfo default trigger stream
+    strncpy(fps.cmdset.triggerstreamname, "stream03", STRINGMAXLEN_IMAGE_NAME - 1);
 
     // Add Parameters
     
