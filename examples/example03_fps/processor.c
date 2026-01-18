@@ -135,6 +135,11 @@ int FPSRUN_processor() {
         if(!loopOK) break;
 
         processinfo_waitoninputstream(processinfo);
+
+        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) {
+            continue;
+        }
+
         processinfo_exec_start(processinfo);
 
         output_image.md[0].write = 1;
