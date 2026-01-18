@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include "processinfo.h"
 #include "processtools_trigger.h"
 #include "processinfo_update_output_stream.h"
@@ -11,7 +12,12 @@
 #include "processinfo_signals.h"
 #include "ImageStreamIO.h"
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
+        printf("Usage: %s\n", argv[0]);
+        printf("Example 02 Processor: Example 01 + ProcessInfo integration for monitoring and control.\n");
+        return 0;
+    }
     const char *in_name = "stream02";
     const char *out_name = "stream02_proc";
 
@@ -31,15 +37,15 @@ int main() {
 
     // 3. ProcessInfo Setup
     PROCESSINFO *processinfo = processinfo_setup(
-        "proc_ex02",            // Process name
-        "Example 02 Processor", // Description
-        "Starting...",          // Msg
-        __FUNCTION__, __FILE__, __LINE__
-    );
+                                   "proc_ex02",            // Process name
+                                   "Example 02 Processor", // Description
+                                   "Starting...",          // Msg
+                                   __FUNCTION__, __FILE__, __LINE__
+                               );
 
     // Trigger configuration
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
-    
+
     // Loop start
     processinfo_loopstart(processinfo);
 
@@ -58,11 +64,12 @@ int main() {
         // Wait for Trigger
         processinfo_waitoninputstream(processinfo);
 
-        output_image.md[0].write = 1;
         // Exec Start (Timing)
         processinfo_exec_start(processinfo);
 
+
         // Computation
+        output_image.md[0].write = 1;
         for(uint32_t y=0; y<roi_h; y++) {
             for(uint32_t x=0; x<roi_w; x++) {
                 float sum = 0.0;
@@ -80,6 +87,6 @@ int main() {
 
     // Cleanup
     processinfo_cleanExit(processinfo);
-    
+
     return 0;
 }
