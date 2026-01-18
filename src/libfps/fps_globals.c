@@ -1,0 +1,4 @@
+#include "fps_globals.h"
+
+long FPS_TIMESTAMP = 0;
+char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE] = "UNDEF";
