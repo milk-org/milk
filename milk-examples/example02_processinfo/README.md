@@ -15,12 +15,12 @@ make
 
 1. Start the writer:
    ```bash
-   ./writer
+   ./milk-example-02-writer
    ```
 
 2. Start the processor:
    ```bash
-   ./processor
+   ./milk-example-02-processor
    ```
 
 The processor creates a ProcessInfo structure in shared memory. You can see it in `/milk/shm/proc.proc_ex02.*.shm`.
