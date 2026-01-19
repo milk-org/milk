@@ -87,7 +87,7 @@ message("Found cfitsio")
 endif()
 
 target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${LIBNAME} PRIVATE m ${CFITSIO_LIBRARIES})
+target_link_libraries(${LIBNAME} PRIVATE m ${CFITSIO_LIBRARIES} milkfps)
 
 message(" CFITSIO_LIBRARIES : ${CFITSIO_LIBRARIES}")
 
