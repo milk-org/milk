@@ -134,7 +134,7 @@ target_link_libraries(CLIcore
                               ${FFTWF_LIBRARIES}
                               ${CMAKE_THREAD_LIBS_INIT}
                               ${NCURSES_LIBRARIES}
-                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools processinfo)
+                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo)
 
 if(${HWLOC_FOUND})
   target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
