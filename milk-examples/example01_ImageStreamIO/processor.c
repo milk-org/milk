@@ -14,7 +14,7 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("\nUsage: %s\n\n", argv[0]);
+        printf("\nUsage: %s\n\n", "milk-example-01-processor");
         printf("Description:\n");
         printf("  This program demonstrates the basic usage of ImageStreamIO for processing.\n");
         printf("  It connects to 'stream01' and creates an output stream 'stream01_proc'.\n");
