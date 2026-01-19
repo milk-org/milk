@@ -36,8 +36,7 @@ int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         printf("\nUsage: %s\n\n", "milk-example-02-processor");
         printf("Description:\n");
-        printf("  This program performs ROI processing and registers itself with libprocessinfo.
-");
+        printf("  This program performs ROI processing and registers itself with libprocessinfo.\n");
         printf("  It demonstrates how to use the 'processinfo' structure for lifecycle management.\n\n");
         printf("ProcessInfo Features demonstrated:\n");
         printf("  - Registration: Appears in milk process lists ('proc_ex02').\n");
