@@ -421,6 +421,12 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
                                      char    *fpsnamemask,
                                      char    *fpsCTRLfifoname);
 
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t mode);
+FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(const char *fpsname, uint32_t mode, long NBparamMAX);
+uint16_t function_parameter_FPCONFloopstep(FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps);
+uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
+
 #include "fps_add_entry.h"
 #include "fps_checkparameter.h"
 #include "fps_connect.h"
