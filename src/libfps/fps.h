@@ -443,4 +443,234 @@ errno_t functionparameter_CTRLscreen(uint32_t mode,
 #include "fps_shmdirname.h"
 #include "fps_WriteParameterToDisk.h"
 
+#include "fps_processinfo_entries.h"
+
+// ===========================
+// CONVENIENT MACROS FOR FPS
+// ===========================
+
+/** @defgroup fpsmacro          MACROS: Function parameter structure
+ *
+ * Frequently used function parameter structure (FPS) operations :
+ * - Create / initialize FPS
+ * - Add parameters to existing FPS
+ *
+ * @{
+ */
+
+/**
+ * @brief Initialize function parameter structure (FPS)
+ *
+ * @param[in] VARfpsname FPS name
+ * @param[in] VARCMDmode command code
+ * @param[in] VARNBparamMAX max number of parameters
+ */
+#define FPS_SETUP_INIT_SIZED(VARfpsname, VARCMDmode, VARNBparamMAX)            \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        fps      = function_parameter_FPCONFsetup_sized((VARfpsname), (VARCMDmode), (VARNBparamMAX)); \
+        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
+        fps.md->sourceline = __LINE__;                                         \
+        {                                                                      \
+            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
+            SNPRINTF_CHECK(msgstring,                                          \
+                           STRINGMAXLEN_FPS_LOGMSG,                            \
+                           "LOGSTART %s %d %s %d",                             \
+                           (VARfpsname),                                       \
+                           (VARCMDmode),                                       \
+                           fps.md->sourcefname,                                \
+                           fps.md->sourceline);                                \
+            functionparameter_outlog("FPSINIT", msgstring);                    \
+        }                                                                      \
+    } while (0)
+
+
+/**
+ * @brief Initialize function parameter structure (FPS)
+ *
+ * @param[in] VARfpsname FPS name
+ * @param[in] VARCMDmode command code
+ */
+#define FPS_SETUP_INIT(VARfpsname, VARCMDmode)                                 \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        fps      = function_parameter_FPCONFsetup((VARfpsname), (VARCMDmode)); \
+        strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX);          \
+        fps.md->sourceline = __LINE__;                                         \
+        {                                                                      \
+            char msgstring[STRINGMAXLEN_FPS_LOGMSG];                           \
+            SNPRINTF_CHECK(msgstring,                                          \
+                           STRINGMAXLEN_FPS_LOGMSG,                            \
+                           "LOGSTART %s %d %s %d",                             \
+                           (VARfpsname),                                       \
+                           (VARCMDmode),                                       \
+                           fps.md->sourcefname,                                \
+                           fps.md->sourceline);                                \
+            functionparameter_outlog("FPSINIT", msgstring);                    \
+        }                                                                      \
+    } while (0)
+
+
+
+/** @brief Connect to FPS
+ *
+ *
+ */
+#define FPS_CONNECT(VARfpsname, VARCMDmode)                                    \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    do                                                                         \
+    {                                                                          \
+        fps.SMfd = -1;                                                         \
+        if (function_parameter_struct_connect((VARfpsname),                    \
+                                              &fps,                            \
+                                              (VARCMDmode)) == -1)             \
+        {                                                                      \
+            printf(                                                            \
+                "ERROR: fps \"%s\" does not exist -> running without "         \
+                "FPS interface\n",                                             \
+                VARfpsname);                                                   \
+            return RETURN_FAILURE;                                             \
+        }                                                                      \
+    } while (0)
+
+
+
+
+/** @brief Start FPS configuration loop
+ */
+#define FPS_CONFLOOP_START                                                     \
+    if (!fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                           \
+    {                                                                          \
+        return RETURN_SUCCESS;                                                 \
+    }                                                                          \
+    while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP)                         \
+    {                                                                          \
+        {                                                                      \
+            struct timespec treq, trem;                                        \
+            treq.tv_sec  = 0;                                                  \
+            treq.tv_nsec = 50000;                                              \
+            nanosleep(&treq, &trem);                                           \
+            if (data.signal_INT == 1)                                          \
+            {                                                                  \
+                fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;                  \
+            }                                                                  \
+        }                                                                      \
+        if (function_parameter_FPCONFloopstep(&fps) == 1)                      \
+        {
+
+
+
+/** @brief End FPS configuration loop
+ */
+#define FPS_CONFLOOP_END                                                       \
+    functionparameter_CheckParametersAll(&fps);                                \
+    }                                                                          \
+    }                                                                          \
+    function_parameter_FPCONFexit(&fps);
+
+/** @brief Combine initialization of FPS and procinfo for RUN process
+ */
+
+#define FPSPROCINFOLOOP_RUNINIT(...)                                           \
+    PROCESSINFO *processinfo = NULL;                                                  \
+    int          processloopOK = 1;                                            \
+    do                                                                         \
+    {                                                                          \
+        char pinfodescr[200];                                                  \
+        int  slen = snprintf(pinfodescr, 200, __VA_ARGS__);                    \
+        if (slen < 1)                                                          \
+        {                                                                      \
+            PRINT_ERROR("snprintf wrote <1 char");                             \
+            abort();                                                           \
+        }                                                                      \
+        if (slen >= 200)                                                       \
+        {                                                                      \
+            PRINT_ERROR("snprintf string truncation");                         \
+            abort();                                                           \
+        }                                                                      \
+        processinfo = processinfo_setup(data.FPS_name,                         \
+                                        pinfodescr,                            \
+                                        "startup",                             \
+                                        __FUNCTION__,                          \
+                                        __FILE__,                              \
+                                        __LINE__);                             \
+        fps_to_processinfo(&fps, processinfo);                                 \
+    } while (0)
+
+
+
+
+#define FPS_AUTORUN_SETUP(funcstring, shortname)                               \
+    FUNCTION_PARAMETER_STRUCT fps;                                             \
+    do                                                                         \
+    {                                                                          \
+        snprintf(data.FPS_name,STRINGMAXLEN_FPS_NAME,  "%s-%06ld", (shortname), (long) getpid());      \
+        data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
+        FPSCONF_##funcstring();                                                \
+        function_parameter_struct_connect(data.FPS_name,                       \
+                                          &fps,                                \
+                                          FPSCONNECT_SIMPLE);                  \
+    } while (0)
+
+
+
+
+#define FPS_EXECFUNCTION_STD                                                   \
+    static errno_t FPSEXECfunction()                                           \
+    {                                                                          \
+        FUNCTION_PARAMETER_STRUCT fps;                                         \
+        snprintf(data.FPS_name, STRINGMAXLEN_FPS_NAME, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
+        data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
+        FPSCONFfunction();                                                     \
+        function_parameter_struct_connect(data.FPS_name,                       \
+                                          &fps,                                \
+                                          FPSCONNECT_SIMPLE);                  \
+        CLIargs_to_FPSparams_setval(farg, CLIcmddata.nbarg, &fps);             \
+        function_parameter_struct_disconnect(&fps);                            \
+        FPSRUNfunction();                                                      \
+        return RETURN_SUCCESS;                                                 \
+    }
+
+
+
+#define FPS_CLIFUNCTION_STD                                                    \
+    static errno_t FPSCLIfunction(void)                                        \
+    {                                                                          \
+        function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);            \
+        if (data.FPS_CMDCODE != 0)                                             \
+        {                                                                      \
+            data.FPS_CONFfunc = FPSCONFfunction;                               \
+            data.FPS_RUNfunc  = FPSRUNfunction;                                \
+            function_parameter_execFPScmd();                                   \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+        if (CLI_checkarg_array(farg, CLIcmddata.nbarg) == RETURN_SUCCESS)      \
+        {                                                                      \
+            FPSEXECfunction();                                                 \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            return CLICMD_INVALID_ARG;                                         \
+        }                                                                      \
+    }
+
+#define FPS_MAKE_CONF_FUNCNAME(x)      FPSCONF_##x
+#define FPSCONF_FUNCTION_NAME(fncname) FPS_MAKE_CONF_FUNCNAME(fncname)
+
+#define FPS_MAKE_RUN_FUNCNAME(x)      FPSRUN_##x
+#define FPSRUN_FUNCTION_NAME(fncname) FPS_MAKE_RUN_FUNCNAME(fncname)
+
+#define FPS_MAKE_CLI_FUNCNAME(x)      FPSCLI_##x
+#define FPSCLI_FUNCTION_NAME(fncname) FPS_MAKE_CLI_FUNCNAME(fncname)
+
+#define FPS_MAKE_CLIADDCMD_FUNCNAME(x)      FPSCLIADDCMD_##x
+#define FPSCLIADDCMD_FUNCTION_NAME(fncname) FPS_MAKE_CLIADDCMD_FUNCNAME(fncname)
+
+/** @} */ // end group fpsmacro
+
 #endif // FPS_H
