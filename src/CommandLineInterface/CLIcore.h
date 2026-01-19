@@ -47,7 +47,7 @@ typedef long variableID;
 #include "ImageStreamIO/ImageStruct.h"
 
 #include "CommandLineInterface/function_parameters.h"
-#include "CommandLineInterface/processtools.h"
+#include <processtools.h>
 #include "CommandLineInterface/timeutils.h"
 #include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
 
