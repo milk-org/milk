@@ -43,46 +43,15 @@ set(CORE_FILES
     
     link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
     
-    # main
-    add_library(CLIcore
-                SHARED
-                timeutils.c
-                fps/fps_add_entry.c            fps/fps_checkparameter.c
-            fps/fps_connect.c
-            fps/fps_connectExternalFPS.c
-            fps/fps_CONFstart.c
-            fps/fps_CONFstop.c
-            fps/fps_disconnect.c
-            fps/fps_execFPScmd.c
-            fps/fps_FPCONFexit.c
-            fps/fps_FPCONFloopstep.c
-            fps/fps_FPCONFsetup.c
-            fps/fps_FPSremove.c
-            fps/fps_GetFileName.c
-            fps/fps_getFPSargs.c
-            fps/fps_GetParamIndex.c
-            fps/fps_GetTypeString.c
-            fps/fps_load.c
-            fps/fps_loadstream.c
-            fps/fps_outlog.c
-            fps/fps_paramvalue.c
-            fps/fps_printlist.c
-            fps/fps_PrintParameterInfo.c
-            fps/fps_printparameter_valuestring.c
-            fps/fps_processcmdline.c
-            fps/fps_process_fpsCMDarray.c
-            fps/fps_processinfo_entries.c
-            fps/fps_read_fpsCMD_fifo.c
-            fps/fps_RUNexit.c
-            fps/fps_RUNstart.c
-            fps/fps_RUNstop.c
-            fps/fps_save2disk.c
-            fps/fps_scan.c
-            fps/fps_shmdirname.c
-            fps/fps_tmux.c
-            fps/fps_userinputsetparamvalue.c
-            fps/fps_WriteParameterToDisk.c
-            streamCTRL/streamCTRL_TUI.c
+        # main
+    
+        add_library(CLIcore
+    
+                    SHARED
+    
+                    timeutils.c
+    
+                    streamCTRL/streamCTRL_TUI.c
             streamCTRL/streamCTRL_find_streams.c
             streamCTRL/streamCTRL_print_inode.c
             streamCTRL/streamCTRL_print_procpid.c
@@ -154,7 +123,6 @@ install(FILES CLIcore.h
               calc.h
               calc_bison.h
               cmdsettings.h
-              function_parameters.h
               milkDebugTools.h
               processtools.h
               standalone_dependencies.h
@@ -171,43 +139,6 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_signals.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
-
-install(FILES fps/fps_CONFstart.h
-              fps/fps_CONFstop.h
-              fps/fps_FPCONFexit.h
-              fps/fps_FPCONFloopstep.h
-              fps/fps_FPCONFsetup.h
-              fps/fps_FPSremove.h
-              fps/fps_GetFileName.h
-              fps/fps_GetParamIndex.h
-              fps/fps_GetTypeString.h
-              fps/fps_PrintParameterInfo.h
-              fps/fps_RUNexit.h
-              fps/fps_RUNstart.h
-              fps/fps_RUNstop.h
-              fps/fps_WriteParameterToDisk.h
-              fps/fps_add_entry.h
-              fps/fps_checkparameter.h
-              fps/fps_connect.h
-              fps/fps_connectExternalFPS.h
-              fps/fps_disconnect.h
-              fps/fps_execFPScmd.h
-              fps/fps_getFPSargs.h
-              fps/fps_load.h
-              fps/fps_loadstream.h
-              fps/fps_outlog.h
-              fps/fps_paramvalue.h
-              fps/fps_printparameter_valuestring.h
-              fps/fps_process_fpsCMDarray.h
-              fps/fps_processcmdline.h
-              fps/fps_processinfo_entries.h
-              fps/fps_read_fpsCMD_fifo.h
-              fps/fps_save2disk.h
-              fps/fps_scan.h
-              fps/fps_shmdirname.h
-              fps/fps_tmux.h
-              fps/fps_userinputsetparamvalue.c
-              DESTINATION include/${SRCNAME}/fps)
 
 add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
