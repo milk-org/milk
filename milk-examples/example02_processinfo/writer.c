@@ -1,3 +1,10 @@
+/**
+ * @file milk-example-02-writer.c
+ * @brief Writer for the ProcessInfo example.
+ *
+ * This is similar to Example 01 but uses 'stream02'.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,18 +17,20 @@
 static int keep_running = 1;
 
 void signal_handler(int sig) {
-    keep_running = 0;
+    printf("\nWriter: Exiting on CTRL+C.\n");
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
+    // Detailed help for Example 02 Writer
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         printf("\nUsage: %s\n\n", "milk-example-02-writer");
         printf("Description:\n");
-        printf("  Example 02 Writer: Creates 'stream02' (200x200 FLOAT) and writes a\n");
-        printf("  moving gradient pattern. This stream is intended for the Example 02\n");
-        printf("  processor which includes processinfo monitoring.\n\n");
+        printf("  Simple writer creating 'stream02' for the processinfo integration example.\n");
+        printf("  It produces a moving pattern similar to example 01.\n\n");
         return 0;
     }
+
     signal(SIGINT, signal_handler);
 
     const char *stream_name = "stream02";
@@ -30,7 +39,10 @@ int main(int argc, char *argv[]) {
     uint32_t dims[2] = {width, height};
     
     IMAGE image;
-    ImageStreamIO_createIm_gpu(&image, stream_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0);
+    if (ImageStreamIO_createIm_gpu(&image, stream_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != IMAGESTREAMIO_SUCCESS) {
+        fprintf(stderr, "Error creating stream %s\n", stream_name);
+        return 1;
+    }
 
     printf("Writer: Stream '%s' created.\n", stream_name);
 

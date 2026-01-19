@@ -1,0 +1,269 @@
+using python at /usr/bin/python3
+-- Checking for module 'mkl-sdl'
+--   Package 'mkl-sdl', required by 'virtual:world', not found
+Found cfitsio version 4.6.2
+CFITS library  : 
+CFITS libraries: cfitsio
+-- Submodule update
+======= adding module  COREMOD_arith
+======= adding module  COREMOD_iofits
+======= adding module  COREMOD_memory
+======= adding module  COREMOD_tools
+CMAKE_BUILD_TYPE : Release
+COMPILE_OPTIONS:  
+====================================================
+VERSION  1.03.00
+====================================================
+CMAKE_THREAD_LIBS_INIT  :  
+PROJECT_SOURCE_DIR       = /home/oguyon/src/milk
+PROJECT_BINARY_DIR       = /home/oguyon/src/milk/_build
+CMAKE_INSTALL_PREFIX     = /usr/local/milk-1.03.00
+USE_CUDA                 = OFF
+USE_MAGMA                = OFF
+EXTRAMODULES             = 
+ADDING SUBDIR = src/CommandLineInterface
+CMake Deprecation Warning at src/CommandLineInterface/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Checking for module 'hwloc'
+--   Package 'hwloc', required by 'virtual:world', not found
+Found OpenMP
+ADDING SUBDIR = src/ImageStreamIO
+
+ SRCNAME = ImageStreamIO -> LIBNAME = ImageStreamIO
+ VERSION = 2.00.00
+CMake Deprecation Warning at src/ImageStreamIO/python_module/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Warning (dev) at /usr/lib/cmake/pybind11/FindPythonLibsNew.cmake:101 (message):
+  Policy CMP0148 is not set: The FindPythonInterp and FindPythonLibs modules
+  are removed.  Run "cmake --help-policy CMP0148" for policy details.  Use
+  the cmake_policy command to set the policy and suppress this warning, or
+  preferably upgrade to using FindPython, either by calling it explicitly
+  before pybind11, or by setting PYBIND11_FINDPYTHON ON before pybind11.
+Call Stack (most recent call first):
+  /usr/lib/cmake/pybind11/pybind11Tools.cmake:50 (find_package)
+  /usr/lib/cmake/pybind11/pybind11Common.cmake:228 (include)
+  /usr/lib/cmake/pybind11/pybind11Config.cmake:250 (include)
+  src/ImageStreamIO/python_module/CMakeLists.txt:8 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found pybind11: /usr/include (found version "2.13.6")
+ADDING SUBDIR = src/COREMOD_arith
+
+ SRCNAME = COREMOD_arith -> LIBNAME = milkCOREMODarith
+ADDING SUBDIR = src/COREMOD_iofits
+
+ SRCNAME = COREMOD_iofits -> LIBNAME = milkCOREMODiofits
+Found cfitsio
+ CFITSIO_LIBRARIES : cfitsio
+ADDING SUBDIR = src/COREMOD_memory
+
+ SRCNAME = COREMOD_memory -> LIBNAME = milkCOREMODmemory
+ADDING SUBDIR = src/COREMOD_tools
+
+ SRCNAME = COREMOD_tools -> LIBNAME = milkCOREMODtools
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/fft
+
+ SRCNAME = fft -> LIBNAME = milkfft
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/linopt_imtools
+
+ SRCNAME = linopt_imtools -> LIBNAME = milklinoptimtools
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/linalgebra
+---- module linalgebra ------------------
+---- OPENBLAS_LIBRARY_DIRS =  /usr/lib/x86_64-linux-gnu/openblas-pthread/
+---- OPENBLAS_LIBRARIES    =  openblas
+---- OPENBLAS_CFLAGS_OTHER =  
+-- MKL NOT FOUND
+   LINKING LAPACKE
+---------------------------------------
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/image_gen
+
+ SRCNAME =  -> LIBNAME = milkimagegen
+ SRCNAME = image_gen
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/ZernikePolyn
+
+ SRCNAME = ZernikePolyn -> LIBNAME = milkZernikePolyn
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/linARfilterPred
+
+ SRCNAME = linARfilterPred -> LIBNAME = milklinARfilterPred
+---- OPENBLAS_LIBRARY_DIRS =  /usr/lib/x86_64-linux-gnu/openblas-pthread/
+---- OPENBLAS_LIBRARIES    =  openblas
+---- OPENBLAS_CFLAGS_OTHER =  
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/clustering
+
+ SRCNAME =  -> LIBNAME = milkclustering
+ SRCNAME = clustering
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/kdtree
+
+ SRCNAME = kdtree -> LIBNAME = milkkdtree
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/image_basic
+
+ SRCNAME = image_basic -> LIBNAME = milkimagebasic
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/info
+
+ SRCNAME = info -> LIBNAME = milkinfo
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/psf
+
+ SRCNAME = psf -> LIBNAME = milkpsf
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/img_reduce
+
+ SRCNAME = img_reduce -> LIBNAME = milkimgreduce
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/statistic
+
+ SRCNAME = statistic -> LIBNAME = milkstatistic
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/image_filter
+
+ SRCNAME = image_filter -> LIBNAME = milkimagefilter
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/milk-extra-src/image_format
+
+ SRCNAME = image_format -> LIBNAME = milkimageformat
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi
+ SRCNAME = vampirespdi
+ ================ vampirespdi: /home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi /home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi
+-- 
+ Properties for TARGET vampirespdi:
+   vampirespdi.INCLUDE_DIRECTORIES = "/home/oguyon/src/milk/src/libprocessinfo;/home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi/..;/home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi;/home/oguyon/src/milk/plugins/scexao-dataanalysis/vampirespdi/..;/home/oguyon/src/milk/plugins/milk-extra-src/"
+
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_perfTest
+
+ SRCNAME = AOloopControl_perfTest -> LIBNAME = cacaoAOloopControlperfTest
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_IOtools
+
+ SRCNAME = AOloopControl_IOtools -> LIBNAME = cacaoAOloopControlIOtools
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/pycacao
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_PredictiveControl
+
+ SRCNAME = AOloopControl_PredictiveControl -> LIBNAME = cacaoAOloopControlPredictiveControl
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/computeCalib
+ SRCNAME = computeCalib
+-- MKL NOT FOUND
+   LINKING LAPACKE
+---- OPENBLAS_LIBRARY_DIRS =  /usr/lib/x86_64-linux-gnu/openblas-pthread/
+---- OPENBLAS_LIBRARIES    =  openblas
+---- OPENBLAS_CFLAGS_OTHER =  
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_acquireCalib
+
+ SRCNAME = AOloopControl_acquireCalib -> LIBNAME = cacaoAOloopControlacquireCalib
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_compTools
+
+ SRCNAME = AOloopControl_compTools -> LIBNAME = cacaoAOloopControlcompTools
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl
+
+ SRCNAME = AOloopControl -> LIBNAME = cacaoAOloopControl
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/AOloopControl_DM
+
+ SRCNAME = AOloopControl_DM -> LIBNAME = cacaoAOloopControlDM
+ADDING SUBDIR = /home/oguyon/src/milk/plugins/cacao-src/pyramidWFStools
+ SRCNAME = pyramidWFStools
+-- MKL NOT FOUND
+   LINKING LAPACKE
+ SRCNAME = milk_module_example
+CMake Deprecation Warning at src/isio-tools/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+CMake Deprecation Warning at src/isio-tools/isio-stream-info-1line/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+====================================================
+BUILD_FLAGS             :  -DPACKAGE_NAME=\"milk\" -DCONFIGDIR=\"/home/oguyon/src/milk/config\" -DINSTALLDIR=\"/usr/local/milk-1.03.00\" -DSOURCEDIR=\"/home/oguyon/src/milk\" -DABSSRCTOPDIR=\"/home/oguyon/src/milk\" -DPACKAGE_BUGREPORT=\"https://github.com/milk-org/milk/issues\"
+COMPILE_FLAGS           :  
+COMPILE_OPTIONS         :  $<$<COMPILE_LANGUAGE:C>:-march=native>;$<$<COMPILE_LANGUAGE:C>:-flto=auto>;$<$<COMPILE_LANGUAGE:C>:-fwhole-program>;$<$<COMPILE_LANGUAGE:C>:-pipe>
+CMAKE_EXE_LINKER_FLAGS  :  
+CMAKE_C_FLAGS           :  
+CMAKE_CXX_FLAGS         :  
+CMAKE_C_FLAGS_DEBUG           : -O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare
+CMAKE_C_FLAGS_RELEASE         : -Ofast -DNDEBUG -std=gnu17
+CMAKE_C_FLAGS_RELWITHDEBINFO  : -O2 -g -DNDEBUG
+CMAKE_C_FLAGS_MINSIZEREL      : -Os -DNDEBUG
+CMAKE_CURRENT_SOURCE_DIR      : /home/oguyon/src/milk
+CMAKE_CURRENT_BINARY_DIR      : /home/oguyon/src/milk/_build
+INSTALL_PKGCONFIG_DIR         : lib/pkgconfig
+====================================================
+LINKSTRING: -lCLIcore -lImageStreamIO -lm -lmilkCOREMODarith -lmilkCOREMODiofits -lmilkCOREMODmemory -lmilkCOREMODtools 
+CMake Deprecation Warning at python_module/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.10 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+  to tell CMake that the project requires at least <min> but has been updated
+  to work with policies introduced by <max> or earlier.
+
+
+-- Configuring done (0.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/oguyon/src/milk/_build
+[  1%] Built target ImageStreamIO
+[  5%] Built target milkCOREMODtools
+[  6%] Built target milkCOREMODiofits
+[  6%] Built target ImageStreamIOWrap
+[  6%] Built target isio-stream-info
+[  6%] Built target milk-stream-cnt2push
+[ 12%] Built target milkCOREMODarith
+[ 16%] Built target processinfo
+[ 27%] Built target milkCOREMODmemory
+[ 27%] Building C object src/libfps/CMakeFiles/fps.dir/fps_userinputsetparamvalue.c.o
+[ 27%] Building C object src/libfps/CMakeFiles/fps.dir/fps_read_fpsCMD_fifo.c.o
+[ 28%] Building C object src/libfps/CMakeFiles/fps.dir/fps_scan.c.o
+[ 28%] Building C object src/libfps/CMakeFiles/fps.dir/fps_PrintParameterInfo.c.o
+[ 29%] Building C object src/libfps/CMakeFiles/fps.dir/fps_process_fpsCMDarray.c.o
+/home/oguyon/src/milk/src/libfps/fps_read_fpsCMD_fifo.c: In function ‘functionparameter_read_fpsCMD_fifo’:
+/home/oguyon/src/milk/src/libfps/fps_read_fpsCMD_fifo.c:206:35: error: ‘CLOCK_MILK’ undeclared (first use in this function)
+  206 |                     clock_gettime(CLOCK_MILK,
+      |                                   ^~~~~~~~~~
+/home/oguyon/src/milk/src/libfps/fps_read_fpsCMD_fifo.c:206:35: note: each undeclared identifier is reported only once for each function it appears in
+gmake[2]: *** [src/libfps/CMakeFiles/fps.dir/build.make:555: src/libfps/CMakeFiles/fps.dir/fps_read_fpsCMD_fifo.c.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+/home/oguyon/src/milk/src/libfps/fps_process_fpsCMDarray.c: In function ‘function_parameter_process_fpsCMDarray’:
+/home/oguyon/src/milk/src/libfps/fps_process_fpsCMDarray.c:149:29: error: ‘CLOCK_MILK’ undeclared (first use in this function)
+  149 |                             CLOCK_MILK,
+      |                             ^~~~~~~~~~
+/home/oguyon/src/milk/src/libfps/fps_process_fpsCMDarray.c:149:29: note: each undeclared identifier is reported only once for each function it appears in
+gmake[2]: *** [src/libfps/CMakeFiles/fps.dir/build.make:541: src/libfps/CMakeFiles/fps.dir/fps_process_fpsCMDarray.c.o] Error 1
+[ 43%] Built target CLIcore
+[ 43%] Built target milkkdtree
+[ 45%] Built target milkstatistic
+[ 45%] Built target milk-procCTRL
+[ 45%] Built target milk-streamCTRL
+[ 45%] Built target milk
+[ 45%] Built target milk-termview
+gmake[1]: *** [CMakeFiles/Makefile2:3460: src/libfps/CMakeFiles/fps.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+[ 45%] Built target milkimgreduce
+[ 45%] Built target milkpsf
+[ 47%] Built target milkmoduleexample
+[ 48%] Built target milklinARfilterPred
+[ 49%] Built target CacaoProcessTools
+[ 51%] Built target milkfft
+[ 54%] Built target milklinoptimtools
+[ 57%] Built target milkimagefilter
+[ 60%] Built target milkinfo
+[ 63%] Built target milkimageformat
+[ 68%] Built target milklinalgebra
+[ 72%] Built target milkimagebasic
+[ 77%] Built target milkclustering
+gmake: *** [Makefile:146: all] Error 2

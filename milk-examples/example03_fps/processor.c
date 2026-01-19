@@ -187,6 +187,9 @@ int FPSRUN_processor() {
     PROCESSINFO *processinfo = processinfo_setup(FPS_NAME, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     if (!processinfo) return 1;
 
+    // Capture SIGINT and other signals
+    processinfo_CatchSignals();
+
     // Use current FPS settings to configure ProcessInfo triggers/priority
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
     fps_to_processinfo(&fps, processinfo);
