@@ -15,18 +15,21 @@ make
 
 1. Start the writer:
    ```bash
-   ./writer
+   ./milk-example-03-writer
    ```
 
 2. Initialize the FPS (one-time setup):
    ```bash
-   ./processor conf
+   ./milk-example-03-processor fpsinit
    ```
-   (Wait until it exits or stop it once it created the shared memory)
 
-3. Start the processor:
+3. Start the processor (directly or via tmux):
    ```bash
-   ./processor run
+   ./milk-example-03-processor run
+   ```
+   OR
+   ```bash
+   ./milk-example-03-processor run -tmux
    ```
 
 The processor will use FPS for its configuration parameters and can be controlled via `libfps` or the `milk-fpsCTRL` script.

@@ -14,7 +14,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("\nUsage: %s\n\n", argv[0]);
+        printf("\nUsage: %s\n\n", "milk-example-02-processor");
         printf("Description:\n");
         printf("  This program demonstrates the integration of ImageStreamIO with libprocessinfo.\n");
         printf("  It performs the same ROI cropping and summing as Example 01, but also\n");

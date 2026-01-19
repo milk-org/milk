@@ -15,7 +15,7 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
-        printf("\nUsage: %s\n\n", argv[0]);
+        printf("\nUsage: %s\n\n", "milk-example-03-writer");
         printf("Description:\n");
         printf("  Example 03 Writer: Creates 'stream03' (200x200 FLOAT) and writes a\n");
         printf("  moving gradient pattern. This is the source for the FPS-enabled\n");

@@ -15,12 +15,12 @@ make
 
 1. Start the writer in one terminal:
    ```bash
-   ./writer
+   ./milk-example-01-writer
    ```
 
 2. Start the processor in another terminal:
    ```bash
-   ./processor
+   ./milk-example-01-processor
    ```
 
 The processor will wait for new frames from the writer, crop 4 ROIs, sum them, and post the result to `stream01_proc`.
