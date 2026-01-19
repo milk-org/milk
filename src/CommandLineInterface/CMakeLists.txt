@@ -89,11 +89,6 @@ add_library(CLIcore
             fps/fps_tmux.c
             fps/fps_userinputsetparamvalue.c
             fps/fps_WriteParameterToDisk.c
-            procCTRL/procCTRL_TUI.c
-            procCTRL/procCTRL_processinfo_scan.c
-            procCTRL/procCTRL_GetCPUloads.c
-            procCTRL/procCTRL_GetNumberCPUs.c
-            procCTRL/procCTRL_PIDcollectSystemInfo.c
             streamCTRL/streamCTRL_TUI.c
             streamCTRL/streamCTRL_find_streams.c
             streamCTRL/streamCTRL_print_inode.c
@@ -229,27 +224,10 @@ install(FILES fpsCTRL/fpsCTRL_FPSdisplay.h
               fpsCTRL/scheduler_display.h
               DESTINATION include/${SRCNAME}/fpsCTRL)
 
-install(FILES procCTRL/procCTRL_GetCPUloads.h
-              procCTRL/procCTRL_GetNumberCPUs.h
-              procCTRL/procCTRL_PIDcollectSystemInfo.h
-              procCTRL/procCTRL_TUI.h
-              procCTRL/procCTRL_processinfo_scan.h
-              DESTINATION include/${SRCNAME}/procCTRL)
-
-install(FILES streamCTRL/streamCTRL_TUI.h
-              DESTINATION include/${SRCNAME}/streamCTRL)
-
-
-
 add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
 
 install(TARGETS milk-streamCTRL DESTINATION bin)
-
-add_executable(milk-procCTRL procCTRL/milk-procCTRL.c)
-target_link_libraries(milk-procCTRL PUBLIC CLIcore ImageStreamIO)
-
-install(TARGETS milk-procCTRL DESTINATION bin)
 
 add_executable(milk-termview termview/milk-termview.c termview/termview.c)
 target_link_libraries(milk-termview PUBLIC CLIcore ImageStreamIO)

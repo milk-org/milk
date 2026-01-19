@@ -63,6 +63,9 @@ typedef struct
 } PROCESSINFOLIST;
 
 
+extern PROCESSINFOLIST *pinfolist;
+extern pid_t CLIPID;
+
 /**
  *
  * This structure hold process information and hooks required for basic

@@ -8,6 +8,8 @@
 // List of active processes in shared memory
 PROCESSINFOLIST *pinfolist = NULL;
 
+pid_t CLIPID = 0;
+
 // Signals
 int processinfo_signal_USR1 = 0;
 int processinfo_signal_USR2 = 0;
