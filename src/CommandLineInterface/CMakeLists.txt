@@ -39,22 +39,15 @@ set(CORE_FILES
     CLIcore/CLIcore_setSHMdir.c
     CLIcore/CLIcore_signals.c
     ${BISON_MilkBison_OUTPUTS}
-    ${FLEX_MilkFlex_OUTPUTS})
-
-link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
-
-# main
-add_library(CLIcore
-            SHARED
-            fpsCTRL/fpsCTRL_TUI.c
-            fpsCTRL/fpsCTRL_TUI_process_user_key.c
-            fpsCTRL/fpsCTRL_FPSdisplay.c
-            fpsCTRL/print_nodeinfo.c
-            fpsCTRL/level0node_summary.c
-            fpsCTRL/scheduler_display.c
-            timeutils.c
-            fps/fps_add_entry.c
-            fps/fps_checkparameter.c
+                ${FLEX_MilkFlex_OUTPUTS})
+    
+    link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
+    
+    # main
+    add_library(CLIcore
+                SHARED
+                timeutils.c
+                fps/fps_add_entry.c            fps/fps_checkparameter.c
             fps/fps_connect.c
             fps/fps_connectExternalFPS.c
             fps/fps_CONFstart.c
@@ -129,7 +122,7 @@ target_link_libraries(CLIcore
                               ${FFTWF_LIBRARIES}
                               ${CMAKE_THREAD_LIBS_INIT}
                               ${NCURSES_LIBRARIES}
-                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo)
+                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps)
 
 if(${HWLOC_FOUND})
   target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
@@ -213,16 +206,8 @@ install(FILES fps/fps_CONFstart.h
               fps/fps_scan.h
               fps/fps_shmdirname.h
               fps/fps_tmux.h
-              fps/fps_userinputsetparamvalue.h
+              fps/fps_userinputsetparamvalue.c
               DESTINATION include/${SRCNAME}/fps)
-
-install(FILES fpsCTRL/fpsCTRL_FPSdisplay.h
-              fpsCTRL/fpsCTRL_TUI.h
-              fpsCTRL/fpsCTRL_TUI_process_user_key.h
-              fpsCTRL/level0node_summary.h
-              fpsCTRL/print_nodeinfo.h
-              fpsCTRL/scheduler_display.h
-              DESTINATION include/${SRCNAME}/fpsCTRL)
 
 add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
