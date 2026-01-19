@@ -29,38 +29,6 @@
 
 #define FPS_NAME "processor03"
 
-// Helper to handle tmux logic
-void handle_tmux(const char *arg, int argc, char *argv[]) {
-    char cmd[1024];
-    // Check if session exists
-    int ret = system("tmux has-session -t " FPS_NAME " 2>/dev/null");
-    if (ret != 0) {
-        printf("Creating tmux session '%s'...\n", FPS_NAME);
-        system("tmux new-session -d -s " FPS_NAME " -n ctrl");
-        system("tmux new-window -t " FPS_NAME ":1 -n conf");
-        system("tmux new-window -t " FPS_NAME ":2 -n run");
-    }
-
-    // Get absolute path of this executable
-    char path[1024];
-    ssize_t len = readlink("/proc/self/exe", path, sizeof(path)-1);
-    if (len != -1) {
-        path[len] = '\0';
-    } else {
-        strncpy(path, argv[0], 1023);
-    }
-
-    if (strcmp(arg, "conf") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":conf \"%s conf\" C-m", path);
-        system(cmd);
-        printf("Launched 'conf' in tmux window " FPS_NAME ":conf\n");
-    } else if (strcmp(arg, "run") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":run \"%s run\" C-m", path);
-        system(cmd);
-        printf("Launched 'run' in tmux window " FPS_NAME ":run\n");
-    }
-}
-
 // FPS Initialization
 int FPSINIT_processor() {
     FUNCTION_PARAMETER_STRUCT fps;
@@ -87,6 +55,48 @@ int FPSINIT_processor() {
     fps_add_processinfo_entries(&fps);
     function_parameter_FPCONFexit(&fps);
     return 0;
+}
+
+// Helper to handle tmux logic
+void handle_tmux(const char *command, int argc, char *argv[]) {
+    char cmd[1024];
+    // Check if session exists
+    int ret = system("tmux has-session -t " FPS_NAME " 2>/dev/null");
+    if (ret != 0) {
+        printf("Creating tmux session '%s'...\n", FPS_NAME);
+        // Create session with first window 'ctrl'
+        system("tmux new-session -d -s " FPS_NAME " -n ctrl");
+        // Create 'conf' and 'run' windows
+        system("tmux new-window -t " FPS_NAME " -n conf");
+        system("tmux new-window -t " FPS_NAME " -n run");
+        // Wait a bit for shells to be ready
+        sleep(1);
+    }
+
+    // Get absolute path of this executable
+    char path[1024];
+    ssize_t path_len = readlink("/proc/self/exe", path, sizeof(path)-1);
+    if (path_len != -1) {
+        path[path_len] = '\0';
+    } else {
+        // Fallback to argv[0]
+        if (realpath(argv[0], path) == NULL) {
+            strncpy(path, argv[0], 1023);
+        }
+    }
+
+    if (strcmp(command, "conf") == 0) {
+        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":conf \"%s conf\" C-m", path);
+        system(cmd);
+        printf("Dispatched 'conf' to tmux window " FPS_NAME ":conf\n");
+    } else if (strcmp(command, "run") == 0) {
+        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":run \"%s run\" C-m", path);
+        system(cmd);
+        printf("Dispatched 'run' to tmux window " FPS_NAME ":run\n");
+    } else if (strcmp(command, "fpsinit") == 0) {
+        FPSINIT_processor();
+        printf("FPS initialized locally.\n");
+    }
 }
 
 // FPS Configuration Process
@@ -170,7 +180,7 @@ int FPSRUN_processor() {
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <Command> [Options]\n", argv[0]);
+        printf("Usage: %s <fpsinit|conf|run> [-tmux]\n", argv[0]);
         printf("Run '%s -h' for detailed help.\n", argv[0]);
         return 1;
     }
@@ -189,25 +199,33 @@ int main(int argc, char *argv[]) {
     }
 
     int use_tmux = 0;
+    char *command = NULL;
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-tmux") == 0) use_tmux = 1;
+        if (strcmp(argv[i], "-tmux") == 0) {
+            use_tmux = 1;
+        } else if (command == NULL) {
+            command = argv[i];
+        }
     }
 
-    if (strcmp(argv[1], "fpsinit") == 0) {
-        return FPSINIT_processor();
-    } 
-    
+    if (command == NULL) {
+        printf("Error: No command specified (fpsinit, conf, or run).\n");
+        return 1;
+    }
+
     if (use_tmux) {
-        handle_tmux(argv[1], argc, argv);
+        handle_tmux(command, argc, argv);
         return 0;
     }
 
-    if (strcmp(argv[1], "conf") == 0) {
+    if (strcmp(command, "fpsinit") == 0) {
+        return FPSINIT_processor();
+    } else if (strcmp(command, "conf") == 0) {
         return FPSCONF_processor();
-    } else if (strcmp(argv[1], "run") == 0) {
+    } else if (strcmp(command, "run") == 0) {
         return FPSRUN_processor();
     }
 
-    printf("Invalid argument: %s\n", argv[1]);
+    printf("Invalid command: %s\n", command);
     return 1;
 }
