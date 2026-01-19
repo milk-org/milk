@@ -34,7 +34,9 @@ typedef int errno_t;
 #define STRINGMAXLEN_STREAMNAME   100
 #define STRINGMAXLEN_IMGNAME      STRINGMAXLEN_STREAMNAME
 #define STRINGMAXLEN_FILENAME     200 // without directory, includes extension
+#ifndef STRINGMAXLEN_DIRNAME
 #define STRINGMAXLEN_DIRNAME      800
+#endif
 #define STRINGMAXLEN_FULLFILENAME 1000 // includes directory name
 #define STRINGMAXLEN_FUNCTIONNAME 200
 #define STRINGMAXLEN_FUNCTIONARGS 1000
