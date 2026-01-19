@@ -1,3 +1,10 @@
+/**
+ * @file milk-example-03-writer.c
+ * @brief Writer for the FPS example.
+ *
+ * This is similar to previous examples but uses 'stream03'.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,18 +17,18 @@
 static int keep_running = 1;
 
 void signal_handler(int sig) {
-    keep_running = 0;
+    printf("\nWriter: Exiting on CTRL+C.\n");
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
     if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         printf("\nUsage: %s\n\n", "milk-example-03-writer");
         printf("Description:\n");
-        printf("  Example 03 Writer: Creates 'stream03' (200x200 FLOAT) and writes a\n");
-        printf("  moving gradient pattern. This is the source for the FPS-enabled\n");
-        printf("  processor example.\n\n");
+        printf("  Simple writer creating 'stream03' for the full FPS/ProcessInfo example.\n\n");
         return 0;
     }
+
     signal(SIGINT, signal_handler);
 
     const char *stream_name = "stream03";
@@ -30,7 +37,9 @@ int main(int argc, char *argv[]) {
     uint32_t dims[2] = {width, height};
     
     IMAGE image;
-    ImageStreamIO_createIm_gpu(&image, stream_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0);
+    if (ImageStreamIO_createIm_gpu(&image, stream_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
+        return 1;
+    }
 
     printf("Writer: Stream '%s' created.\n", stream_name);
 
