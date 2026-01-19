@@ -77,7 +77,7 @@ endif()
 
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
 											$<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC ${CFITSIO_LIBRARIES})
+target_link_libraries(${LIBNAME} PUBLIC m milkfps)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
