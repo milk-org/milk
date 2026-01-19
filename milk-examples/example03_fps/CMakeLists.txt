@@ -16,4 +16,4 @@ add_executable(milk-example-03-writer writer.c)
 target_link_libraries(milk-example-03-writer ImageStreamIO m rt)
 
 add_executable(milk-example-03-processor processor.c)
-target_link_libraries(milk-example-03-processor fps processinfo ImageStreamIO m rt)
+target_link_libraries(milk-example-03-processor milkfps milkprocessinfo ImageStreamIO m rt)

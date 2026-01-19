@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(processinfo)
+project(milkprocessinfo)
 
 set(SOURCES
     processinfo_exec_end.c
@@ -19,10 +19,10 @@ set(SOURCES
     processtools_trigger.c
 )
 
-add_library(processinfo SHARED ${SOURCES})
+add_library(milkprocessinfo SHARED ${SOURCES})
 
 # Include directories
-target_include_directories(processinfo PUBLIC
+target_include_directories(milkprocessinfo PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/ImageStreamIO>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
@@ -30,9 +30,9 @@ target_include_directories(processinfo PUBLIC
 )
 
 # Link dependencies
-target_link_libraries(processinfo ImageStreamIO rt)
+target_link_libraries(milkprocessinfo ImageStreamIO rt)
 
-install(TARGETS processinfo EXPORT milkTargets DESTINATION lib)
+install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
 
 install(FILES 
     processinfo.h

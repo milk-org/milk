@@ -1,4 +1,4 @@
-set(LIBNAME "fps")
+set(LIBNAME "milkfps")
 set(SRCNAME "libfps")
 
 set(SOURCEFILES
@@ -56,7 +56,7 @@ target_include_directories(${LIBNAME} PUBLIC
 
 # Standalone libfps dependencies
 # We removed milkCOREMODiofits and milkCOREMODtools to break dependency on CLIcore
-target_link_libraries(fps ImageStreamIO m rt processinfo)
+target_link_libraries(milkfps ImageStreamIO m rt milkprocessinfo)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES fps.h fps_internal.h fps_globals.h timeutils.h DESTINATION include/libfps)
