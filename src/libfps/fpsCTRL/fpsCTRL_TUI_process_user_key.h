@@ -3,10 +3,10 @@
  * @brief   TUI key input processing
  */
 
-#ifndef FPS_PROCESS_USER_KEY_H
-#define FPS_PROCESS_USER_KEY_H
+#ifndef FPS_CTRLSCREEN_TUI_PROCESS_USER_KEY_H
+#define FPS_CTRLSCREEN_TUI_PROCESS_USER_KEY_H
 
-#include "function_parameters.h"
+#include "fps.h"
 
 int fpsCTRL_TUI_process_user_key(int                        ch,
                                  FUNCTION_PARAMETER_STRUCT *fps,
