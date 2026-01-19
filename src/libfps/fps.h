@@ -235,6 +235,11 @@ typedef struct
 } FUNCTION_PARAMETER;
 
 #define STRINGMAXLEN_FPS_NAME 100
+
+#define STRINGMAXLEN_PROCESSINFO_TMUXNAME    100
+
+
+
 #define FUNCTION_PARAMETER_STRUCT_MSG_SIZE 500
 
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CONF 0x0001
@@ -243,6 +248,8 @@ typedef struct
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN 0x0020
 #define FUNCTION_PARAMETER_STRUCT_STATUS_RUNLOOP 0x0100
 #define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK 0x0200
+#define FUNCTION_PARAMETER_STRUCT_STATUS_CHECKERR 0x0400
+#define FUNCTION_PARAMETER_STRUCT_STATUS_SAVE     0x0800
 
 #define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXCONF 0x1000
 #define FUNCTION_PARAMETER_STRUCT_STATUS_TMUXRUN  0x2000
@@ -284,11 +291,13 @@ typedef struct
     char confdir[FPS_DIR_STRLENMAX];
     char sourcefname[FPS_SRCDIR_STRLENMAX];
     int sourceline;
-    char pname[FPS_PNAME_STRMAXLEN];
+    // the name and indices are automatically parsed in the following format
+    char pname[FPS_PNAME_STRMAXLEN]; // example: pname
     char callprogname[FPS_CALLPROGNAME_STRMAXLEN];
     char callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
-    char nameindexW[16][10];
-    int  NBnameindex;
+    char tmuxname[STRINGMAXLEN_PROCESSINFO_TMUXNAME];
+    char nameindexW[16][10]; // subnames
+    int  NBnameindex;        // example: 2
     pid_t           confpid;
     struct timespec confpidstarttime;
     pid_t           runpid;
@@ -407,6 +416,10 @@ typedef struct
 } KEYWORD_TREE_NODE;
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
+
+errno_t functionparameter_CTRLscreen(uint32_t mode,
+                                     char    *fpsnamemask,
+                                     char    *fpsCTRLfifoname);
 
 #include "fps_add_entry.h"
 #include "fps_checkparameter.h"

@@ -662,7 +662,12 @@ typedef struct
 
 } KEYWORD_TREE_NODE;
 
-#include "fpsCTRL/fpsCTRL_TUI.h"
+int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
+
+errno_t functionparameter_CTRLscreen(uint32_t mode,
+                                     char    *fpsnamemask,
+                                     char    *fpsCTRLfifoname);
+
 #include "fps/fps_FPCONFexit.h"
 #include "fps/fps_FPCONFloopstep.h"
 #include "fps/fps_FPCONFsetup.h"

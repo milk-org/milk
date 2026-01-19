@@ -1,6 +1,9 @@
 set(LIBNAME "milkfps")
 set(SRCNAME "libfps")
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(NCURSES REQUIRED ncurses)
+
 set(SOURCEFILES
     fps_add_entry.c
     fps_checkparameter.c
@@ -43,20 +46,47 @@ set(SOURCEFILES
     fps_loadmemstream_lite.c
     TUItools_stubs.c
     timeutils.c
+    # fpsCTRL sources
+    fpsCTRL/fpsCTRL_FPSdisplay.c
+    fpsCTRL/fpsCTRL_TUI.c
+    fpsCTRL/fpsCTRL_TUI_process_user_key.c
+    fpsCTRL/level0node_summary.c
+    fpsCTRL/print_nodeinfo.c
+    fpsCTRL/scheduler_display.c
+    fpsCTRL/fpsCTRL_globals.c
 )
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 target_include_directories(${LIBNAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>
 )
 
 # Standalone libfps dependencies
-# We removed milkCOREMODiofits and milkCOREMODtools to break dependency on CLIcore
-target_link_libraries(milkfps ImageStreamIO m rt milkprocessinfo)
+target_link_libraries(milkfps ImageStreamIO m rt milkprocessinfo ${NCURSES_LIBRARIES})
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES fps.h fps_internal.h fps_globals.h timeutils.h DESTINATION include/libfps)
+
+# ==========================================
+# milk-fpsCTRL executable
+# ==========================================
+
+add_executable(milk-fpsCTRL fpsCTRL/milk-fpsCTRL.c)
+target_include_directories(milk-fpsCTRL PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL
+)
+target_link_libraries(milk-fpsCTRL PUBLIC 
+    milkfps
+    milkprocessinfo 
+    ImageStreamIO
+    ${NCURSES_LIBRARIES}
+    pthread
+    m
+)
+
+install(TARGETS milk-fpsCTRL DESTINATION bin)

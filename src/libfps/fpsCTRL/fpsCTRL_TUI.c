@@ -11,22 +11,20 @@
 #include <unistd.h>
 #include <stdio.h>
 
-
-#include "CommandLineInterface/CLIcore.h"
-
-#include "COREMOD_tools/COREMOD_tools.h"
-
-#include "CommandLineInterface/timeutils.h"
+#include "fps.h"
+#include "fps_internal.h"
+#include "timeutils.h"
 
 #include "fpsCTRL_TUI_process_user_key.h"
-#include "fps/fps_GetTypeString.h"
-#include "fps/fps_disconnect.h"
-#include "fps/fps_outlog.h"
-#include "fps/fps_process_fpsCMDarray.h"
-#include "fps/fps_read_fpsCMD_fifo.h"
-#include "fps/fps_scan.h"
+#include "fps_GetTypeString.h"
+#include "fps_disconnect.h"
+#include "fps_outlog.h"
+#include "fps_process_fpsCMDarray.h"
+#include "fps_read_fpsCMD_fifo.h"
+#include "fps_scan.h"
 
-#include "TUItools.h"
+#include "fps_TUI_shim.h"
+#include "fpsCTRL_globals.h"
 
 #include "fpsCTRL_FPSdisplay.h"
 #include "print_nodeinfo.h"
@@ -69,9 +67,9 @@ fpsCTRLscreen_print_DisplayMode_status(
     {
         PRINT_ERROR("snprintf error");
     }
-    TUI_print_header(monstring, '-');
+    TUI_printfw("%s", monstring); // Simplified header
     screenprint_unsetbold();
-    TUI_newline();
+    TUI_printfw("\n");
 
 
 
@@ -123,34 +121,34 @@ fpsCTRLscreen_print_DisplayMode_status(
     {
         TUI_printfw("[F3] Sequencer");
     }
-    TUI_newline();
+    TUI_printfw("\n");
     DEBUG_TRACE_FEXIT();
 }
 
-
+static void print_help_entry(const char *key, const char *desc) {
+    TUI_printfw(" %-15s : %s\n", key, desc);
+}
 
 
 /**
  * @brief Print help
- *
+ * 
  */
 inline static void fpsCTRLscreen_print_help()
 {
     DEBUG_TRACE_FSTART();
     // int attrval = A_BOLD;
 
-    TUI_newline();
+    TUI_printfw("\n");
     print_help_entry("x", "Exit");
 
-    TUI_newline();
-    TUI_printfw("============ SCREENS");
-    TUI_newline();
+    TUI_printfw("\n");
+    TUI_printfw("============ SCREENS\n");
     print_help_entry("h/F2/F3", "Help/Control/Sequencer screen");
     print_help_entry("v/V", "verbose mode on/off");
 
-    TUI_newline();
-    TUI_printfw("============ OTHER");
-    TUI_newline();
+    TUI_printfw("\n");
+    TUI_printfw("============ OTHER\n");
     print_help_entry("s", "rescan");
     print_help_entry("T / CRTL+t",
                      "initialize (T)mux session / kill (t)mux session");
@@ -167,8 +165,7 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry(">", "export fpsdatadir values to fpsconfdir");
     print_help_entry("<", "import/load values from fpsconfdir to fps");
     print_help_entry("P", "(P)rocess input file \"confscript\"");
-    TUI_printfw("        format: setval <paramfulname> <value>");
-    TUI_newline();
+    TUI_printfw("        format: setval <paramfulname> <value>\n");
 
     DEBUG_TRACE_FEXIT();
 }
@@ -176,7 +173,7 @@ inline static void fpsCTRLscreen_print_help()
 
 /**
  * @brief Print help
- *
+ * 
  */
 inline static void fpsCTRLscreen_print_FPShelp(
     KEYWORD_TREE_NODE *keywnode,
@@ -186,19 +183,19 @@ inline static void fpsCTRLscreen_print_FPShelp(
     DEBUG_TRACE_FSTART();
     // int attrval = A_BOLD;
 
-    TUI_newline();
+    TUI_printfw("\n");
 
     TUI_printfw("FPS entry     : %s\n",
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name);
+                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name);
     TUI_printfw(" call key     : %s\n",
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
+                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname);
 
     TUI_printfw(" src / line   : %s / %d\n",
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourcefname,
-                data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline
+                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourcefname,
+                fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->sourceline
                );
 
-    TUI_newline();
+    TUI_printfw("\n");
 
 
     // module load string
@@ -209,14 +206,14 @@ inline static void fpsCTRLscreen_print_FPShelp(
     memset(mloadstringcp, 0, sizeof(mloadstringcp));
     snprintf(mloadstring, mloadstring_maxlen, " ");
     for(int m = 0;
-            m < data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
+            m < fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->NBmodule;
             m++)
     {
         snprintf(mloadstringcp,
                  mloadstring_maxlen,
                  "%smload %s;",
                  mloadstring,
-                 data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[m]);
+                 fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[m]);
         strcpy(mloadstring, mloadstringcp);
     }
 
@@ -224,53 +221,53 @@ inline static void fpsCTRLscreen_print_FPShelp(
     snprintf(helpfunctionstring,
              2000,
              "MILK_QUIET=1 MILK_FPSPROCINFO=1 %s-exec -n %s \"%s;%s ?\"\n",
-             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
-             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
+             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callprogname,
+             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->name,
              mloadstring,
-             data.fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
+             fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->callfuncname
             );
 
     //  TUI_printfw("%s", helpfunctionstring);
 
     //  TUI_newline();
 
-    {
-        FILE *fp = NULL;
-        //int status = 0;
-        int LINESLEN = 200;
-        char line[LINESLEN];
-        memset(line, 0, sizeof(line));
+    // {
+    //     FILE *fp = NULL;
+    //     //int status = 0;
+    //     int LINESLEN = 200;
+    //     char line[LINESLEN];
+    //     memset(line, 0, sizeof(line));
 
 
-        fp = popen(helpfunctionstring, "r");
+    //     fp = popen(helpfunctionstring, "r");
 
-        {
-            int printtoggle = 0;
+    //     {
+    //         int printtoggle = 0;
 
-            while(fgets(line, LINESLEN, fp) != NULL)
-            {
-                if(strncmp(HELPDETAILSSTRINGSTART, line, strlen(HELPDETAILSSTRINGSTART)) == 0)
-                {
-                    printtoggle = 1;
-                }
+    //         while(fgets(line, LINESLEN, fp) != NULL)
+    //         {
+    //             if(strncmp(HELPDETAILSSTRINGSTART, line, strlen(HELPDETAILSSTRINGSTART)) == 0)
+    //             {
+    //                 printtoggle = 1;
+    //             }
 
-                if(strncmp(HELPDETAILSSTRINGEND, line, strlen(HELPDETAILSSTRINGEND)) == 0)
-                {
-                    printtoggle = 0;
-                }
+    //             if(strncmp(HELPDETAILSSTRINGEND, line, strlen(HELPDETAILSSTRINGEND)) == 0)
+    //             {
+    //                 printtoggle = 0;
+    //             }
 
-                if(printtoggle == 1)
-                {
-                    TUI_printfw("%s", line);
-                }
-            }
-        }
+    //             if(printtoggle == 1)
+    //             {
+    //                 TUI_printfw("%s", line);
+    //             }
+    //         }
+    //     }
 
-        pclose(fp);
-    }
+    //     pclose(fp);
+    // }
 
 
-    TUI_newline();
+    TUI_printfw("\n");
 
     DEBUG_TRACE_FEXIT();
 }
@@ -299,7 +296,7 @@ errno_t functionparameter_CTRLscreen(
     FPSCTRL_PROCESS_VARS fpsCTRLvar = {0};
 
     // keyword tree
-    KEYWORD_TREE_NODE *keywnode = NULL;
+    // KEYWORD_TREE_NODE *keywnode = NULL;
 
 
     int       loopOK  = 1;
@@ -313,12 +310,12 @@ errno_t functionparameter_CTRLscreen(
     int run_display = 1;
     loopOK          = 1;
 
-    {
-        struct timespec tnow = {0};
-        clock_gettime(CLOCK_MILK, &tnow);
-        data.FPS_TIMESTAMP = tnow.tv_sec;
-        strcpy(data.FPS_PROCESS_TYPE, "ctrl");
-    }
+    // {
+    //     struct timespec tnow = {0};
+    //     clock_gettime(CLOCK_MILK, &tnow);
+    //     data.FPS_TIMESTAMP = tnow.tv_sec;
+    //     strcpy(data.FPS_PROCESS_TYPE, "ctrl");
+    // }
 
 
     {
@@ -351,13 +348,13 @@ errno_t functionparameter_CTRLscreen(
 
 
     // All parameters held in this array
-    //
-    keywnode = calloc(NB_KEYWNODE_MAX, sizeof(*keywnode));
-    if(keywnode == NULL)
-    {
-        PRINT_ERROR("malloc error: can't allocate keywnode");
-        abort();
-    }
+    // 
+    // keywnode = calloc(NB_KEYWNODE_MAX, sizeof(*keywnode));
+    // if(keywnode == NULL)
+    // {
+    //     PRINT_ERROR("malloc error: can't allocate keywnode");
+    //     abort();
+    // }
     for(int kn = 0; kn < NB_KEYWNODE_MAX; kn++)
     {
         strcpy(keywnode[kn].keywordfull, "");
@@ -369,7 +366,7 @@ errno_t functionparameter_CTRLscreen(
 
 
     // Set up instruction buffer to sequence commands
-    //
+    // 
     FPSCTRL_TASK_ENTRY *fpsctrltasklist = calloc(NB_FPSCTRL_TASK_MAX,
                                           sizeof(*fpsctrltasklist));
     if(fpsctrltasklist == NULL)
@@ -384,7 +381,7 @@ errno_t functionparameter_CTRLscreen(
     }
 
     // Set up task queue list
-    //
+    // 
     FPSCTRL_TASK_QUEUE *fpsctrlqueuelist = calloc(NB_FPSCTRL_TASKQUEUE_MAX,
                                            sizeof(* fpsctrlqueuelist));
     if(fpsctrlqueuelist == NULL)
@@ -399,12 +396,15 @@ errno_t functionparameter_CTRLscreen(
     }
 
     // catch signals (CTRL-C etc)
-    //
-    set_signal_catch();
+    // 
+    // set_signal_catch();
 
     // fifo
-    fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname,
-                                    O_RDWR | O_NONBLOCK);
+    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
+        fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
+    } else {
+        fpsCTRLvar.fpsCTRLfifofd = -1;
+    }
     long fifocmdcnt = 0;
 
     for(int level = 0; level < MAXNBLEVELS; level++)
@@ -423,7 +423,7 @@ errno_t functionparameter_CTRLscreen(
         long NBpindex = 0;
         functionparameter_scan_fps(fpsCTRLvar.mode,
                                    fpsCTRLvar.fpsnamemask,
-                                   data.fpsarray,
+                                   fpsarray,
                                    keywnode,
                                    &fpsCTRLvar.NBkwn,
                                    &fpsCTRLvar.NBfps,
@@ -445,25 +445,42 @@ errno_t functionparameter_CTRLscreen(
 
     fpsCTRLvar.nodeSelected = 1;
 
-    // default: use ncurses
-    TUI_set_screenprintmode(SCREENPRINT_NCURSES);
+    // // default: use ncurses
+    // TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
-    if(getenv("MILK_TUIPRINT_STDIO"))
-    {
-        // use stdio instead of ncurses
-        TUI_set_screenprintmode(SCREENPRINT_STDIO);
-    }
+    // if(getenv("MILK_TUIPRINT_STDIO"))
+    // {
+    //     // use stdio instead of ncurses
+    //     TUI_set_screenprintmode(SCREENPRINT_STDIO);
+    // }
 
-    if(getenv("MILK_TUIPRINT_NONE"))
-    {
-        TUI_set_screenprintmode(SCREENPRINT_NONE);
-    }
+    // if(getenv("MILK_TUIPRINT_NONE"))
+    // {
+    //     TUI_set_screenprintmode(SCREENPRINT_NONE);
+    // }
 
     // INITIALIZE terminal
 
     if(run_display == 1)
     {
-        TUI_init_terminal(&wrow, &wcol);
+        // TUI_init_terminal(&wrow, &wcol);
+        initscr();
+        cbreak();
+        noecho();
+        keypad(stdscr, TRUE);
+        nodelay(stdscr, TRUE);
+        start_color();
+        use_default_colors();
+        
+        // Define color pairs to match fps_TUI_shim.h
+        init_pair(COLOR_DIRECTORY, COLOR_CYAN, -1);
+        init_pair(COLOR_OK, COLOR_GREEN, -1);
+        init_pair(COLOR_ERROR, COLOR_RED, -1);
+        init_pair(COLOR_WARNING, COLOR_YELLOW, -1);
+        init_pair(COLOR_BLACK_ON_WHITE, COLOR_BLACK, COLOR_WHITE);
+
+        getmaxyx(stdscr, wrow, wcol);
+        
         DEBUG_TRACEPOINT("returned from TUI init %d %d", wrow, wcol);
     }
 
@@ -485,7 +502,7 @@ errno_t functionparameter_CTRLscreen(
     int getchardt_us     = getchardt_us_ref;
     int refreshtimeoutus = refreshtimeoutus_ref;
 
-    if(TUI_get_screenprintmode() == SCREENPRINT_NCURSES)  // ncurses mode
+    // if(TUI_get_screenprintmode() == SCREENPRINT_NCURSES)  // ncurses mode
     {
         refreshtimeoutus_ref = 100000; // 10 Hz
     }
@@ -506,11 +523,14 @@ errno_t functionparameter_CTRLscreen(
         while(refresh_screen == 0)  // wait for input
         {
             // put input commands from fifo into the task queue
-            int fcnt =
-                functionparameter_read_fpsCMD_fifo(
-                    fpsCTRLvar.fpsCTRLfifofd,
-                    fpsctrltasklist,
-                    fpsctrlqueuelist);
+            if (fpsCTRLvar.fpsCTRLfifofd > 0) {
+                int fcnt =
+                    functionparameter_read_fpsCMD_fifo(
+                        fpsCTRLvar.fpsCTRLfifofd,
+                        fpsctrltasklist,
+                        fpsctrlqueuelist);
+                fifocmdcnt += fcnt;
+            }
 
             DEBUG_TRACEPOINT(" ");
 
@@ -521,7 +541,7 @@ errno_t functionparameter_CTRLscreen(
                     fpsctrlqueuelist,
                     keywnode,
                     &fpsCTRLvar,
-                    data.fpsarray);
+                    fpsarray);
 
             if(taskflag > 0)  // task has been performed
             {
@@ -541,7 +561,6 @@ errno_t functionparameter_CTRLscreen(
 
             NBtaskLaunchedcnt += NBtaskLaunched;
 
-            fifocmdcnt += fcnt;
 
             usleep(getchardt_us);
 
@@ -574,12 +593,13 @@ errno_t functionparameter_CTRLscreen(
             refresh_screen--; // will wait next time we enter the loop
         }
 
-        TUI_clearscreen(&wrow, &wcol);
+        // TUI_clearscreen(&wrow, &wcol);
+        getmaxyx(stdscr, wrow, wcol);
 
         DEBUG_TRACEPOINT(" ");
 
         loopOK = fpsCTRL_TUI_process_user_key(ch,
-                                              data.fpsarray,
+                                              fpsarray,
                                               keywnode,
                                               fpsctrltasklist,
                                               fpsctrlqueuelist,
@@ -595,7 +615,8 @@ errno_t functionparameter_CTRLscreen(
         if(fpsCTRLvar.run_display == 1)
         {
 
-            TUI_ncurses_erase();
+            // TUI_ncurses_erase();
+            erase();
 
             fpsCTRLscreen_print_DisplayMode_status(
                 fpsCTRLvar.fpsCTRL_DisplayMode,
@@ -607,20 +628,18 @@ errno_t functionparameter_CTRLscreen(
             {
                 TUI_printfw(
                     "======== FPSCTRL info  ( screen refresh cnt %7ld  "
-                    "scan interval %7ld us)",
+                    "scan interval %7ld us)\n",
                     loopcnt,
                     getchardt_us);
-                TUI_newline();
                 TUI_printfw(
                     "    INPUT FIFO       :  %s (fd=%d)    fifocmdcnt = "
-                    "%ld   NBtaskLaunched = %d -> %d   [NB FPS = %d]",
+                    "%ld   NBtaskLaunched = %d -> %d   [NB FPS = %d]\n",
                     fpsCTRLvar.fpsCTRLfifoname,
                     fpsCTRLvar.fpsCTRLfifofd,
                     fifocmdcnt,
                     NBtaskLaunched,
                     NBtaskLaunchedcnt,
                     fpsCTRLvar.NBfps);
-                TUI_newline();
 
                 DEBUG_TRACEPOINT(" ");
                 char logfname[STRINGMAXLEN_FULLFILENAME];
@@ -634,7 +653,7 @@ errno_t functionparameter_CTRLscreen(
                 {
                     TUI_printfw("    OUTPUT LOG   [%2d] :  %s", flagFPSoutlog, logfname);
                 }
-                TUI_newline();
+                TUI_printfw("\n");
             }
             DEBUG_TRACEPOINT(" ");
 
@@ -670,7 +689,8 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
 
-            TUI_ncurses_refresh();
+            // TUI_ncurses_refresh();
+            refresh();
 
             DEBUG_TRACEPOINT(" ");
 
@@ -682,6 +702,7 @@ errno_t functionparameter_CTRLscreen(
 
         loopcnt++;
 
+        /*
         if((data.signal_TERM == 1) || (data.signal_INT == 1) ||
                 (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
                 (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
@@ -690,6 +711,7 @@ errno_t functionparameter_CTRLscreen(
             printf("Exit condition met\n");
             loopOK = 0;
         }
+        */
     }
 
 
@@ -697,7 +719,8 @@ errno_t functionparameter_CTRLscreen(
 
     if(run_display == 1)
     {
-        TUI_exit();
+        // TUI_exit();
+        endwin();
     }
 
 
@@ -715,11 +738,11 @@ errno_t functionparameter_CTRLscreen(
     DEBUG_TRACEPOINT("Disconnect from FPS entries");
     for(int fpsindex = 0; fpsindex < fpsCTRLvar.NBfps; fpsindex++)
     {
-        function_parameter_struct_disconnect(&data.fpsarray[fpsindex]);
+        function_parameter_struct_disconnect(&fpsarray[fpsindex]);
     }
 
 
-    free(keywnode);
+    // free(keywnode);
 
     free(fpsctrltasklist);
     free(fpsctrlqueuelist);
