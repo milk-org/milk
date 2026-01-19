@@ -89,6 +89,14 @@ int FPSINIT_processor() {
  */
 void handle_tmux(const char *command, int argc, char *argv[]) {
     char cmd[2048];
+
+    // Check if tmux is installed
+    if (system("command -v tmux > /dev/null 2>&1") != 0) {
+        fprintf(stderr, "\nError: 'tmux' is not installed or not in PATH.\n");
+        fprintf(stderr, "The -tmux option requires tmux to be installed on your system.\n\n");
+        exit(EXIT_FAILURE);
+    }
+
     // Check if session exists
     int ret = system("tmux has-session -t " FPS_NAME " 2>/dev/null");
     if (ret != 0) {
