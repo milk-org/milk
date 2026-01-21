@@ -4,10 +4,10 @@
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_matrix.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/savefits.h"
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 #include "linalgebra/linalgebra.h"
 
 // Local variables pointers

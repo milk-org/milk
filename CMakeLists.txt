@@ -126,6 +126,9 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
+list(APPEND libsrcdir src/libmilkTUI)
+list(APPEND libname milkTUI)
+
 list(APPEND libsrcdir src/CommandLineInterface)
 list(APPEND libname CLIcore)
 
@@ -405,7 +408,6 @@ install(PROGRAMS
 			scripts/milk-cubeslice2shm
 			scripts/milk-exec
       						scripts/milk-fpslist-addentry
-      						scripts/milk-fpsCTRL
       						scripts/milk-cr2tofits
       			
 			scripts/milk-FITS2shm

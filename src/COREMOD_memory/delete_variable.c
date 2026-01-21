@@ -1,7 +1,7 @@
 /** @file delete_variable.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "variable_ID.h"
 
 /* deletes a variable ID */

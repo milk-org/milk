@@ -10,7 +10,7 @@
 #include <errno.h>
 
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"

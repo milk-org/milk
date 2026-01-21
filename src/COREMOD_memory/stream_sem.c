@@ -5,7 +5,7 @@
 
 #include <pthread.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"

@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/savefits.h"
 

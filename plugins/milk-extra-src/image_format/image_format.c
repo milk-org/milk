@@ -9,7 +9,7 @@
 #define MODULE_SHORTNAME_DEFAULT "imgformat"
 #define MODULE_DESCRIPTION       "Conversion between image format, I/O"
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "CR2toFITS.h"
 #include "FITS_to_floatbin_lock.h"

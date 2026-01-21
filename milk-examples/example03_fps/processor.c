@@ -78,6 +78,7 @@ int FPSINIT_processor() {
     
     // Add standard processinfo parameters (RTprio, cset, triggermode, etc.)
     fps_add_processinfo_entries(&fps);
+    functionparameter_SetParamValue_ONOFF(&fps, ".procinfo.MeasureTiming", 1);
 
     // Finalize creation
     function_parameter_FPCONFexit(&fps);
@@ -211,10 +212,9 @@ int FPSRUN_processor() {
         
         processinfo_exec_start(processinfo);
 
-        output_image.md[0].write = 1;
-        
         // RE-READ PARAMETERS DYNAMICALLY
         // This allows real-time adjustment of processing logic (e.g., changing off_x via TUI)
+        fps_to_processinfo(&fps, processinfo);
         off_x = functionparameter_GetParamValue_UINT32(&fps, ".off_x");
         
         for(uint32_t y=0; y<roi_size; y++) {

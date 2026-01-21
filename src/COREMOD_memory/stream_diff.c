@@ -2,7 +2,7 @@
  * @file    stream_diff.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"

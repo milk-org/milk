@@ -61,7 +61,7 @@
 
 
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 //
 // Forward declarations are required to connect CLI calls to functions

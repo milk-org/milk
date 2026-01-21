@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <CommandLineInterface/CLIcore.h>
+#include "CLIcore.h"
 
 #include "CLIcore/CLIcore_UI.h"
 

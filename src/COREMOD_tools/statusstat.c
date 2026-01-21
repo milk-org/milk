@@ -5,9 +5,9 @@
 #include <sched.h>
 #include <time.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

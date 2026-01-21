@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include "cmdsettings.h"
+#include "timeutils.h"
 
 typedef long imageID;
 typedef long variableID;

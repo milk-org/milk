@@ -161,6 +161,17 @@ errno_t fps_add_processinfo_entries(
                                  fps->cmdset.triggerstreamname,
                                  NULL);
 
+    // Timing measurement
+    long fp_measuretiming = 0;
+    function_parameter_add_entry(fps,
+                                 ".procinfo.MeasureTiming",
+                                 "Measure timing",
+                                 FPTYPE_ONOFF,
+                                 FPFLAG|FPFLAG_WRITERUN,
+                                 NULL,
+                                 &fp_measuretiming);
+    fps->parray[fp_measuretiming].fpflag |= FPFLAG_ONOFF;
+
     // -1 : auto (recommended)
     long semindexrequested_default[4] = {fps->cmdset.semindexrequested,
                                          -1,
@@ -253,6 +264,17 @@ errno_t fps_to_processinfo(
                 functionparameter_GetParamValue_INT64(fps,
                         ".procinfo.triggermode");
             procinfo->triggermode = triggermode;
+        }
+    }
+
+    DEBUG_TRACEPOINT("set MeasureTiming if applicable");
+    {
+        long pindex =
+            functionparameter_GetParamIndex(fps, ".procinfo.MeasureTiming");
+        if(pindex > -1)
+        {
+            procinfo->MeasureTiming =
+                functionparameter_GetParamValue_ONOFF(fps, ".procinfo.MeasureTiming");
         }
     }
 

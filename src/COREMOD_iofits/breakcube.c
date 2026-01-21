@@ -2,7 +2,7 @@
  * @file    breakcube.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -59,6 +59,7 @@ imageID break_cube(const char *restrict ID_name)
     imageID  ID;
     uint32_t naxes[3];
     long     i;
+    char     framename[STRINGMAXLEN_IMGNAME];
 
     ID       = image_ID(ID_name);
     naxes[0] = data.image[ID].md[0].size[0];

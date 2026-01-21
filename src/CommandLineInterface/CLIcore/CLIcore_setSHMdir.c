@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 /** @brief Set shared memory directory
  *

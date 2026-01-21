@@ -8,12 +8,12 @@
 #include <sys/stat.h>
 #include <unistd.h> // close
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
 
-#include "CommandLineInterface/streamCTRL/streamCTRL_find_streams.h"
+#include "streamCTRL_find_streams.h"
 
 errno_t read_sharedmem_image_all(const char *name);
 

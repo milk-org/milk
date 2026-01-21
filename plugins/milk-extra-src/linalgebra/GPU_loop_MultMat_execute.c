@@ -8,8 +8,8 @@
 
 #include <cublas_v2.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"

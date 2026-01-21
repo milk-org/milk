@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_eigen.h>

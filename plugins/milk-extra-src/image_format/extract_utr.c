@@ -17,7 +17,7 @@
 
 #include <pthread.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "extract_utr.h"
 
 // Local variables pointers

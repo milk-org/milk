@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include <assert.h>
 #include <stdio.h>

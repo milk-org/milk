@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "CommandLineInterface/TUItools.h"
+#include "TUItools.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 static int loop = 1;

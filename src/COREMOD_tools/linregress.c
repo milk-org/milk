@@ -1,7 +1,7 @@
 /** @file linregress.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 errno_t lin_regress(double      *a,
                     double      *b,

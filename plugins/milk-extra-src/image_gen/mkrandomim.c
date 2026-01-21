@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
 #include "COREMOD_memory/image_keyword_addL.h"

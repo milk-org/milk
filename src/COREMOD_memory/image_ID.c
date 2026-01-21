@@ -3,7 +3,7 @@
  * @brief   find image ID(s) from name
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 /* ID number corresponding to a name */
 imageID image_ID(const char *name)

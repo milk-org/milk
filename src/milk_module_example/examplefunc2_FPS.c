@@ -7,7 +7,7 @@
  * See script milk-test-simplefuncFPS for example usage.
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // Local variables pointers
 

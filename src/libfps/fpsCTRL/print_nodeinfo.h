@@ -3,6 +3,7 @@
 
 void fpsCTRLscreen_print_nodeinfo(
     FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE *keywnode,
     int nodeSelected,
     int fpsindexSelected,
     long pindexSelected

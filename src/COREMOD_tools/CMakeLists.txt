@@ -12,7 +12,6 @@ set(SOURCEFILES
 	linregress.c
 	logfunc.c
 	mvprocCPUset.c
-	quicksort.c
 	statusstat.c
 	stringutils.c
 )
@@ -24,7 +23,6 @@ set(INCLUDEFILES
 	linregress.h
 	logfunc.h
 	mvprocCPUset.h
-	quicksort.h
 	statusstat.h
 	stringutils.h
 )

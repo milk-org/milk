@@ -3,7 +3,7 @@
 
 #include <ncurses.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 extern int infoscreen_wcol;
 extern int infoscreen_wrow;

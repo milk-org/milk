@@ -3,7 +3,7 @@
  * @brief   convert 3D image to 2D stream
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Local variables pointers

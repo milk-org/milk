@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <float.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include <processtools_trigger.h>
 

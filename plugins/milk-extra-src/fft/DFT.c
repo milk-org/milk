@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -662,7 +662,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
             FUNC_CHECK_RETURN(save_fl_fits("tmp_foc0_p", "_DFT_focp.fits"));
 
             FUNC_CHECK_RETURN(
-                delete_image_ID("tmp_foc0_a", DELETE_IMAGE_ERRMODE_WARNING););
+                delete_image_ID("tmp_foc0_a", DELETE_IMAGE_ERRMODE_WARNING));
 
             FUNC_CHECK_RETURN(
                 delete_image_ID("tmp_foc0_p", DELETE_IMAGE_ERRMODE_WARNING));

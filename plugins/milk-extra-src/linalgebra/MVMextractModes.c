@@ -26,8 +26,8 @@
 
 
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "MVM_CPU.h"
 

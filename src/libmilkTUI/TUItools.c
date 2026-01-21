@@ -12,10 +12,29 @@
 
 #include <locale.h>
 #include <wchar.h>
-
-#include <CommandLineInterface/CLIcore.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "TUItools.h"
+
+#ifndef RETURN_SUCCESS
+#define RETURN_SUCCESS 0
+#endif
+
+#ifndef DEBUG_TRACEPOINT
+#define DEBUG_TRACEPOINT(...)
+#endif
+
+#ifndef DEBUG_TRACE_FSTART
+#define DEBUG_TRACE_FSTART(...)
+#endif
+
+#ifndef DEBUG_TRACE_FEXIT
+#define DEBUG_TRACE_FEXIT(...)
+#endif
 
 static struct winsize     w;
 static short unsigned int wrow, wcol;
@@ -544,6 +563,10 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr,
         TUI_inittermios(wrowptr, wcolptr);
         DEBUG_TRACEPOINT("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
     }
+    
+    // Final assignment to ensure pointers are updated
+    *wrowptr = wrow;
+    *wcolptr = wcol;
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
