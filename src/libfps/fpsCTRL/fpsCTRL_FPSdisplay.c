@@ -16,6 +16,9 @@
 #include "fps_PrintParameterInfo.h"
 #include "fps_printparameter_valuestring.h"
 
+#define LEVEL0_SUMMARY_WIDTH 20
+#define TREE_LEVEL_WIDTH 12
+
 static void print_sliding_string(const char *str, int width, int row_index)
 {
     int len = strlen(str);
