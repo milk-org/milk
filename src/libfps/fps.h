@@ -177,7 +177,7 @@ typedef long variableID;
 
 #define FPFLAG_DEFAULT_STATUS (FPFLAG_ACTIVE | FPFLAG_USED | FPFLAG_VISIBLE)
 
-#define FUNCTION_PARAMETER_NBPARAM_DEFAULT 200 // size of dynamically allocated array of parameters
+#define FUNCTION_PARAMETER_NBPARAM_DEFAULT 10 // size of dynamically allocated array of parameters
 
 typedef struct
 {
