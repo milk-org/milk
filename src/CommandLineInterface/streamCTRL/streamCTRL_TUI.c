@@ -21,7 +21,7 @@ typedef int errno_t;
 #include <pthread.h>
 
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -92,6 +92,24 @@ static errno_t streamCTRL_keyinput_process(
 
     switch(ch)
     {
+    case 545: // CTRL+LEFT
+    case 560:
+    case 443:
+    case 564:
+    case 554:
+        sTUIparam.DisplayMode--;
+        if (sTUIparam.DisplayMode < 1) sTUIparam.DisplayMode = 6;
+        break;
+
+    case 561: // CTRL+RIGHT
+    case 566:
+    case 444:
+    case 565:
+    case 569:
+        sTUIparam.DisplayMode++;
+        if (sTUIparam.DisplayMode > 6) sTUIparam.DisplayMode = 1;
+        break;
+
     case 'x': // Exit control screen
         sTUIparam.loopOK = 0;
         break;
@@ -579,6 +597,7 @@ errno_t streamCTRL_CTRLscreen()
             print_help_entry("F4", "semaphore write PIDs");
             print_help_entry("F5", "stream process trace");
             print_help_entry("F6", "stream open by processes ...");
+            print_help_entry("CTRL+L/R", "cycle between tabs");
 
             TUI_newline();
             TUI_printfw("============ ACTIONS");

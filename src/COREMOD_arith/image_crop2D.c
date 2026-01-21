@@ -4,7 +4,7 @@
  *
  *
  */
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 static char *cropinsname;
 static long fpi_cropinsname;

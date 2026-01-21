@@ -3,7 +3,7 @@
 // log all debug trace points to file
 #define DEBUGLOG
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 

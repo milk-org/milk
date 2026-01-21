@@ -5,7 +5,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // ==========================================
 // Forward declaration(s)

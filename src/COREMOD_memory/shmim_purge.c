@@ -8,8 +8,8 @@
 #include <sys/stat.h>
 #include <unistd.h> // close
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/streamCTRL/streamCTRL_find_streams.h"
+#include "CLIcore.h"
+#include "streamCTRL_find_streams.h"
 
 #include "image_ID.h"
 #include "read_shmim.h"

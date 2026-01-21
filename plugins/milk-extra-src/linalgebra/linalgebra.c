@@ -17,7 +17,7 @@
 #include "magma_v2.h"
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "linalgebra_types.h"
 

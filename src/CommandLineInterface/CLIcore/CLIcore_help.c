@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
 
 

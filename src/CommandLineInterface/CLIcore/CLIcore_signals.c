@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <termios.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "CLIcore_UI.h"
 

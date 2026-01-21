@@ -57,7 +57,7 @@
 #include <fitsio.h>
 #include <gsl/gsl_rng.h> // for random numbers
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 //#include "initmodules.h"
 
@@ -67,14 +67,14 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "CommandLineInterface/CLIcore/CLIcore_UI.h"
-#include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
-#include "CommandLineInterface/CLIcore/CLIcore_datainit.h"
-#include "CommandLineInterface/CLIcore/CLIcore_help.h"
-#include "CommandLineInterface/CLIcore/CLIcore_memory.h"
-#include "CommandLineInterface/CLIcore/CLIcore_modules.h"
-#include "CommandLineInterface/CLIcore/CLIcore_setSHMdir.h"
-#include "CommandLineInterface/CLIcore/CLIcore_signals.h"
+#include "CLIcore_UI.h"
+#include "CLIcore_checkargs.h"
+#include "CLIcore_datainit.h"
+#include "CLIcore_help.h"
+#include "CLIcore_memory.h"
+#include "CLIcore_modules.h"
+#include "CLIcore_setSHMdir.h"
+#include "CLIcore_signals.h"
 
 /*-----------------------------------------
 *       Globals exported to all modules

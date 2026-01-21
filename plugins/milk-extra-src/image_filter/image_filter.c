@@ -13,7 +13,7 @@
 // Module short description
 #define MODULE_DESCRIPTION "Image filtering"
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "fconvolve.h"
 #include "gaussfilter.h"

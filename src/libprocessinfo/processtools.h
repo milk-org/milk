@@ -1,8 +1,18 @@
 /**
  * @file    processtools.h
- * @brief   Process control and monitoring tools
+ * @brief   Command line interface
+ *
+ * Command line interface (CLI) definitions and function prototypes
+ *
+ * @bug No known bugs.
  *
  */
+
+/* =============================================================================================== */
+/* =============================================================================================== */
+/*                                      DEFINES, MACROS                                            */
+/* =============================================================================================== */
+/* =============================================================================================== */
 
 #ifndef _PROCESSTOOLS_H
 #define _PROCESSTOOLS_H
@@ -10,7 +20,7 @@
 #include <sched.h>
 #include <semaphore.h>
 #include <signal.h>
-#include <stdint.h>
+#include <stdint.h> 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -19,12 +29,10 @@
 #include "processinfo.h"
 #include "processtools_trigger.h"
 
+#define PROCESSINFOLISTSIZE 50000
+
 #define MAXNBSUBPROCESS 50
 #define MAXNBCPU        100
-
-#ifndef STRINGMAXLEN_DIRNAME
-#define STRINGMAXLEN_DIRNAME 256
-#endif
 
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
@@ -40,6 +48,7 @@ typedef struct
     long  updatecnt;
 
     long loopcnt;
+    long loopcntMax;
     int  loopstat;
 
 
@@ -51,6 +60,7 @@ typedef struct
     int   rt_priority;
     float memload;
 
+    char state;
     char statusmsg[200];
     char tmuxname[100];
 
@@ -58,7 +68,7 @@ typedef struct
     int subprocPIDarray[MAXNBSUBPROCESS];
 
     double sampletimearray
-    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec]
+    [MAXNBSUBPROCESS]; // time at which sampling was performed [sec] 
     double sampletimearray_prev[MAXNBSUBPROCESS];
 
     long ctxtsw_voluntary[MAXNBSUBPROCESS];
@@ -74,6 +84,20 @@ typedef struct
     long VmRSSarray[MAXNBSUBPROCESS];
 
     int processorarray[MAXNBSUBPROCESS];
+
+    // Triggering info
+    int      triggermode;
+    char     triggerstreamname[80];
+    int      triggersem;
+    uint64_t triggerstreamcnt;
+    struct timespec triggertimeout;
+    int      triggermissedframe;
+    uint64_t triggermissedframe_cumul;
+
+    // Timing info
+    int  MeasureTiming;
+    long dtmedian_iter_ns;
+    long dtmedian_exec_ns;
 
 } PROCESSINFODISP;
 
@@ -141,7 +165,24 @@ typedef struct
     int pindexActive[PROCESSINFOLISTSIZE];
     int psysinfostatus[PROCESSINFOLISTSIZE];
 
+    int has_cset;
+
+    int col_visible[10][10];
+    int selected_col;
+    int sort_col[10]; // 0: no sort, 1-9: column index
+    int sort_dir[10]; // 0: ascending, 1: descending
+    int sort_mode[10]; // mode used for comparison logic
+    int local_sorted_pindex[PROCESSINFOLISTSIZE];
+
 } PROCINFOPROC;
+
+// ---------------------  -------------------------------
+
+typedef struct
+{
+    char name[200];
+    char description[200];
+} STRINGLISTENTRY;
 
 #ifdef __cplusplus
 extern "C"
@@ -158,15 +199,6 @@ extern "C"
 #define PROCCTRL_DISPLAYMODE_IOTOP     7
 #define PROCCTRL_DISPLAYMODE_ATOP      8
 
-errno_t processinfo_CTRLscreen();
-
-int processinfo_compute_status(PROCESSINFO *processinfo);
-int processinfo_cleanExit(PROCESSINFO *processinfo);
-int processinfo_exec_end(PROCESSINFO *processinfo);
-int processinfo_exec_start(PROCESSINFO *processinfo);
-int processinfo_loopstep(PROCESSINFO *processinfo);
-errno_t processinfo_loopstart(PROCESSINFO *processinfo);
-
 PROCESSINFO *processinfo_setup(char       *pinfoname,
                                const char *descriptionstring,
                                const char *msgstring,
@@ -174,17 +206,55 @@ PROCESSINFO *processinfo_setup(char       *pinfoname,
                                const char *filename,
                                int         linenumber);
 
-errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-        imageID      outstreamID);
+errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
+
+errno_t processinfo_loopstart(PROCESSINFO *processinfo);
+
+int processinfo_loopstep(PROCESSINFO *processinfo);
+
+int processinfo_compute_status(PROCESSINFO *processinfo);
 
 PROCESSINFO *processinfo_shm_create(const char *pname, int CTRLval);
 PROCESSINFO *processinfo_shm_link(const char *pname, int *fd);
-int processinfo_shm_close(PROCESSINFO *pinfo, int fd);
-int processinfo_WriteMessage(PROCESSINFO *processinfo, const char *msgstring);
-int processinfo_WriteMessage_fmt(PROCESSINFO *processinfo, const char *fmt, ...);
-errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring);
+int          processinfo_shm_close(PROCESSINFO *pinfo, int fd);
+int          processinfo_cleanExit(PROCESSINFO *processinfo);
 int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber);
-int processinfo_procdirname(char *procdname);
+
+int processinfo_WriteMessage(PROCESSINFO *processinfo,
+                             const char  *msgstring);
+
+int processinfo_WriteMessage_fmt(
+    PROCESSINFO *processinfo,
+    const char *format,
+    ...
+);
+
+int processinfo_exec_start(PROCESSINFO *processinfo);
+int processinfo_exec_end(PROCESSINFO *processinfo);
+
+int processinfo_CatchSignals();
+int processinfo_ProcessSignals(PROCESSINFO *processinfo);
+
+errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
+        imageID      outstreamID);
+
+errno_t processinfo_CTRLscreen();
+
+#define PROCINFOLOOP_START                                                     \
+    processinfo_loopstart(processinfo);                                        \
+    while (processloopOK == 1)                                                 \
+    {                                                                          \
+        processloopOK = processinfo_loopstep(processinfo);                     \
+        processinfo_waitoninputstream(processinfo);                            \
+        processinfo_exec_start(processinfo);                                   \
+        if (processinfo_compute_status(processinfo) == 1)                      \
+        {                                                                      
+
+#define PROCINFOLOOP_END                                                       \
+    }                                                                          \
+    processinfo_exec_end(processinfo);                                         \
+    }                                                                          \
+    processinfo_cleanExit(processinfo);
 
 #ifdef __cplusplus
 }

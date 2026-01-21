@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_make2D.h"
 
 // Local variables pointers

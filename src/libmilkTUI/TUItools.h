@@ -6,6 +6,10 @@
 #ifndef TUITOOLS_H
 #define TUITOOLS_H
 
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
+
 /** @brief print to screen, or not
  *
  * mode=0 : printf (stdout)
@@ -169,6 +173,12 @@ int get_singlechar_block();
         TUI_set_screenprintmode(SCREENPRINT_NONE);                             \
     }                                                                          \
     TUI_init_terminal(&wrow, &wcol);                                           \
+    if (TUI_get_screenprintmode() == SCREENPRINT_NCURSES)                      \
+    {                                                                          \
+        keypad(stdscr, TRUE);                                                  \
+        nodelay(stdscr, TRUE);                                                 \
+        curs_set(0);                                                           \
+    }                                                                          \
     int       TUIpause = 0;                                                    \
     TUISCREEN TUIscreenarray[10];
 

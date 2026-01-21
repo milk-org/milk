@@ -42,7 +42,7 @@
 #define OMP_NELEMENT_LIMIT 1000000
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"

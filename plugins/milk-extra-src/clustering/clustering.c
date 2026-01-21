@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "cubecluster.h"
 #include "mindiffscan.h"

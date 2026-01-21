@@ -3,7 +3,7 @@
  * @brief   find fps ID(s) from name
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 /* ID number corresponding to a name */
 long fps_ID(const char *name)

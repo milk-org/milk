@@ -49,8 +49,6 @@ set(CORE_FILES
     
                     SHARED
     
-                    timeutils.c
-    
                     streamCTRL/streamCTRL_TUI.c
             streamCTRL/streamCTRL_find_streams.c
             streamCTRL/streamCTRL_print_inode.c
@@ -58,7 +56,6 @@ set(CORE_FILES
             streamCTRL/streamCTRL_print_trace.c
             streamCTRL/streamCTRL_scan.c
             streamCTRL/streamCTRL_utilfuncs.c
-            TUItools.c
             ${CORE_FILES})
 
 if(${CFITSIO_FOUND})
@@ -91,6 +88,7 @@ target_link_libraries(CLIcore
                               ${FFTWF_LIBRARIES}
                               ${CMAKE_THREAD_LIBS_INIT}
                               ${NCURSES_LIBRARIES}
+                              milkTUI
                               milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps)
 
 if(${HWLOC_FOUND})
@@ -98,6 +96,9 @@ if(${HWLOC_FOUND})
 endif()
 target_include_directories(CLIcore
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/streamCTRL>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
                                   ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
                                   ${HWLOC_INCLUDE_DIR} ${NCURSES_INCLUDE_DIR})
@@ -119,14 +120,13 @@ install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 
 install(FILES CLIcore.h
               IMGID.h
-              TUItools.h
+              ../libmilkTUI/TUItools.h
               calc.h
               calc_bison.h
               cmdsettings.h
               milkDebugTools.h
-              processtools.h
               standalone_dependencies.h
-              timeutils.h
+              ../libmilkTUI/timeutils.h
               DESTINATION include/${SRCNAME})
 
 install(FILES CLIcore/CLIcore_UI.h
@@ -139,6 +139,13 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_signals.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
+
+install(FILES ../libprocessinfo/procCTRL/procCTRL_GetCPUloads.h
+              ../libprocessinfo/procCTRL/procCTRL_GetNumberCPUs.h
+              ../libprocessinfo/procCTRL/procCTRL_PIDcollectSystemInfo.h
+              ../libprocessinfo/procCTRL/procCTRL_TUI.h
+              ../libprocessinfo/procCTRL/procCTRL_processinfo_scan.h
+              DESTINATION include/${SRCNAME}/procCTRL)
 
 add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)

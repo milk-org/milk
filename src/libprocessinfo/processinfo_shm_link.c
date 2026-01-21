@@ -17,15 +17,13 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     SM_fd = open(pname, O_RDWR);
     if(SM_fd == -1)
     {
-        perror("Error opening file for writing");
-        exit(0);
+        return (PROCESSINFO *) MAP_FAILED;
     }
 
     struct stat SM_stat;
     if (fstat(SM_fd, &SM_stat) == -1) {
-        perror("Error fstat shm file");
         close(SM_fd);
-        exit(0);
+        return (PROCESSINFO *) MAP_FAILED;
     }
     sharedsize = SM_stat.st_size;
 
@@ -35,8 +33,7 @@ PROCESSINFO *processinfo_shm_link(const char *pname, int *fd)
     if(pinfo == MAP_FAILED)
     {
         close(SM_fd);
-        perror("Error mmapping the file");
-        exit(0);
+        return (PROCESSINFO *) MAP_FAILED;
     }
 
     *fd = SM_fd;

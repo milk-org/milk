@@ -3,8 +3,8 @@
 
 #include <sched.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "create_image.h"
 #include "image_ID.h"

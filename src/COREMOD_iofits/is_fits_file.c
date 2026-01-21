@@ -3,7 +3,7 @@
  */
 
 #include "COREMOD_iofits_common.h"
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "check_fitsio_status.h"
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;

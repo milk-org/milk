@@ -38,8 +38,6 @@ typedef int errno_t;
 #include <sys/types.h>
 #include <unistd.h>
 
-typedef long imageID;
-typedef long variableID;
 
 #include "config.h"
 
@@ -48,14 +46,14 @@ typedef long variableID;
 
 #include <fps.h>
 #include <processtools.h>
-#include "CommandLineInterface/timeutils.h"
-#include "CommandLineInterface/streamCTRL/streamCTRL_TUI.h"
+#include "timeutils.h"
+#include "streamCTRL_TUI.h"
 
-#include "CommandLineInterface/CLIcore/CLIcore_checkargs.h"
-#include "CommandLineInterface/CLIcore/CLIcore_help.h"
-#include "CommandLineInterface/CLIcore/CLIcore_modules.h"
+#include "CLIcore_checkargs.h"
+#include "CLIcore_help.h"
+#include "CLIcore_modules.h"
 
-#include "CommandLineInterface/milkDebugTools.h"
+#include "milkDebugTools.h"
 
 #define PI 3.14159265358979323846264338328
 
@@ -344,7 +342,6 @@ typedef struct
 #define CODETESTPOINTARRAY_NBCNT 100000
 
 
-#define STRINGMAXLEN_PROCESSNAME 100
 
 
 // THIS IS WHERE EVERYTHING THAT NEEDS TO BE WIDELY ACCESSIBLE GETS STORED
@@ -510,7 +507,6 @@ typedef struct
 
     // Which type of FPS process is the current process ?
     // conf, run, ctrl
-    char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE];
     // included in log file name
 
     long     FPS_TIMESTAMP;            // included in log file name
@@ -564,7 +560,7 @@ typedef struct
 
 extern DATA data;
 
-#include "CommandLineInterface/CLIcore/CLIcore_utils.h"
+#include "CLIcore_utils.h"
 
 errno_t set_signal_catch();
 

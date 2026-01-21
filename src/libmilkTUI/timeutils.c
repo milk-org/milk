@@ -2,10 +2,20 @@
  * @file timeutils.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "timeutils.h"
+
+// Basic error macro if not defined
+#ifndef PRINT_ERROR
+#define PRINT_ERROR(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
+#endif
+
+#ifndef RETURN_SUCCESS
+#define RETURN_SUCCESS 0
+#endif
 
 
 

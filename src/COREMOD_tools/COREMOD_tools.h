@@ -6,7 +6,7 @@
 #include "COREMOD_tools/linregress.h"
 #include "COREMOD_tools/logfunc.h"
 #include "COREMOD_tools/mvprocCPUset.h"
-#include "COREMOD_tools/quicksort.h"
+#include "quicksort.h"
 #include "COREMOD_tools/statusstat.h"
 #include "COREMOD_tools/stringutils.h"
 

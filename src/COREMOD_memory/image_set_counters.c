@@ -3,7 +3,7 @@
  * @brief   SET IMAGE FLAGS / COUNTERS
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 
 // ==========================================

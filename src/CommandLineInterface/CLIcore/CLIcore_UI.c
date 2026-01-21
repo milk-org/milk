@@ -11,7 +11,7 @@
 #include <readline/readline.h>
 
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "CommandLineInterface/calc.h"
 #include "CommandLineInterface/calc_bison.h"
 
@@ -313,6 +313,7 @@ errno_t CLI_execute_line()
     struct tm       *uttime;
     struct timespec *thetime =
         (struct timespec *) malloc(sizeof(struct timespec));
+    char calctmpimname[STRINGMAXLEN_IMGNAME];
 
 
     if(data.Debug > 0)

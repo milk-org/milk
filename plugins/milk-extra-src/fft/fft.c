@@ -11,7 +11,7 @@
 
 #include <fftw3.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "dofft.h"
 #include "fftcorrelation.h"

@@ -18,7 +18,7 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "stream_monproc.h"
 #include "TUItools.h"
 
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
             snprintf(label, sizeof(label), "%.2e - %.2e", lower, upper);
 
             if (row < wrow - 1) { // Safety check
-                mvprintw(row, 0, "% -25s %6u ", label, sum);
+                mvprintw(row, 0, "%-25s %6u ", label, sum);
 
                 int bar_width = (int)((double)sum / max_count * (wcol - 35));
                 if (bar_width > wcol - 35) bar_width = wcol - 35;

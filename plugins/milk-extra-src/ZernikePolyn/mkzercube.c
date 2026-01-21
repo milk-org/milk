@@ -5,7 +5,7 @@
 
 
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include <math.h>
 

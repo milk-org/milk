@@ -8,7 +8,7 @@
 #include <netinet/tcp.h>
 #include <sched.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"

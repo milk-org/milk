@@ -3,6 +3,8 @@
  * @brief   read FPS args from CLI
  */
 
+#include "CLIcore.h"
+
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"

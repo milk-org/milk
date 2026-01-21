@@ -12,14 +12,17 @@
 
 // handles leap seconds better than CLOCK_REALTIME
 // Really we should go get CLOCK_ISIO here
-#include "ImageStreamIO/ImageStruct.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+#ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_ISIO
+#endif
 
 #define TZ_MILK_STR "HST" // Name of timezone to use in FITS headers.
 #define TZ_MILK_UTC_OFF -36000.0 // Offset east of UTC in seconds for TZ_MILK_STR
 
-// Don't move above #definitions, this an unresolved circular import of hell
-#include "CommandLineInterface/CLIcore.h" // errno_t
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
+#endif
 
 errno_t milk_clock_gettime(struct timespec *tnow_p);
 

@@ -2,7 +2,7 @@
  * @file    images2cube.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -94,6 +94,7 @@ errno_t images_to_cube(const char *restrict img_name,
     long     frame;
     uint32_t naxes[2];
     uint32_t xsize, ysize;
+    char     imname[STRINGMAXLEN_IMGNAME];
 
     frame = 0;
 

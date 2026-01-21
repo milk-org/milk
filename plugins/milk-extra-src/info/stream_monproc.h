@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 #include <time.h>
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // Maximum number of frames in the history circular buffer
 #define STREAM_MON_MAX_SAMPLES 1024
