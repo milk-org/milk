@@ -9,7 +9,7 @@
 #define MODULE_DESCRIPTION       "Read/Write FITS files"
 
 #include "COREMOD_iofits_common.h"
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "breakcube.h"
 #include "images2cube.h"

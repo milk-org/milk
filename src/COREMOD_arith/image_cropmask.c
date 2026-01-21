@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 static char *masksname;
 long fpi_masksname;

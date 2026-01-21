@@ -4,7 +4,7 @@
 
 #include <fftw3.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "wisdom.h"
 

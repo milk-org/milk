@@ -7,7 +7,7 @@
 #include "magma_lapack.h"
 #include "magma_v2.h"
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

@@ -15,9 +15,8 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.c"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 
 // Local variables pointers

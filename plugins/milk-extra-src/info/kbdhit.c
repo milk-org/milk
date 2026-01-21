@@ -5,7 +5,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 errno_t kbdhit(void)
 {

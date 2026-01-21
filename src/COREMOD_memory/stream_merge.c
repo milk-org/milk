@@ -8,8 +8,8 @@
  *          Designed for parallel MVM computations.
  */
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 //#include "image_ID.h"
 //#include "stream_sem.h"

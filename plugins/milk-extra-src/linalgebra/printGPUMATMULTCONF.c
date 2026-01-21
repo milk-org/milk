@@ -3,7 +3,7 @@
 
 #ifdef HAVE_CUDA
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "linalgebra_types.h"
 

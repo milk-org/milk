@@ -11,7 +11,7 @@
 #define MODULE_SHORTNAME_DEFAULT "info"
 #define MODULE_DESCRIPTION       "Image information and statistics"
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "cubeMatchMatrix.h"
 #include "cubestats.h"
 #include "image_stats.h"

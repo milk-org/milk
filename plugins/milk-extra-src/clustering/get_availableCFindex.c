@@ -1,4 +1,4 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include "ctree_memallocate.h"

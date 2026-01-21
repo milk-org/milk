@@ -1,77 +1,84 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <ncurses.h>
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "fps_TUI_shim.h"
+#include "TUItools.h"
 #include "fpsCTRL_globals.h"
 
 #include "level0node_summary.h"
 
 void fpsCTRLscreen_level0node_summary(
     FUNCTION_PARAMETER_STRUCT *fps,
-    int fpsindex
-)
+    int fpsindex)
 {
-    // fpsindex is passed but we also have global fpsarray.
-    // If called with global fpsarray, fps[fpsindex] is valid.
-    // We assume fps is the array base pointer.
+    pid_t pid;
 
-    // Using simplified printing for TUI shim compatibility
-    
-    // Status flags
-    if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+    pid = fps[fpsindex].md->confpid;
+    if((getpgid(pid) >= 0) && (pid > 0))
     {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw(" C ");
-        screenprint_unsetcolor(COLOR_OK);
+        screenprint_setcolor(2);
+        TUI_printfw("%07d ", (int) pid);
+        screenprint_unsetcolor(2);
+    }
+    else     // PID not active
+    {
+        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF)
+        {
+            // not clean exit
+            screenprint_setcolor(4);
+            TUI_printfw("%07d ", (int) pid);
+            screenprint_unsetcolor(4);
+        }
+        else
+        {
+            // All OK
+            TUI_printfw("%07d ", (int) pid);
+        }
+    }
+
+
+    if(fps[fpsindex].md->conferrcnt > 99)
+    {
+        screenprint_setcolor(4);
+        TUI_printfw("[XX]");
+        screenprint_unsetcolor(4);
+    }
+    else if(fps[fpsindex].md->conferrcnt > 0)
+    {
+        screenprint_setcolor(4);
+        TUI_printfw("[%02d]", (int) fps[fpsindex].md->conferrcnt);
+        screenprint_unsetcolor(4);
+    }
+    else if(fps[fpsindex].md->conferrcnt == 0)
+    {
+        screenprint_setcolor(2);
+        TUI_printfw("[%02d]", (int) fps[fpsindex].md->conferrcnt);
+        screenprint_unsetcolor(2);
+    }
+
+    pid = fps[fpsindex].md->runpid;
+    if((getpgid(pid) >= 0) && (pid > 0))
+    {
+        screenprint_setcolor(2);
+        TUI_printfw("%07d ", (int) pid);
+        screenprint_unsetcolor(2);
     }
     else
     {
-        screenprint_setcolor(COLOR_DIRECTORY);
-        TUI_printfw(" C ");
-        screenprint_unsetcolor(COLOR_DIRECTORY);
+        if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
+        {
+            // not clean exit
+            screenprint_setcolor(4);
+            TUI_printfw("%07d ", (int) pid);
+            screenprint_unsetcolor(4);
+        }
+        else
+        {
+            // All OK
+            TUI_printfw("%07d ", (int) pid);
+        }
     }
-
-    if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)
-    {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw(" R ");
-        screenprint_unsetcolor(COLOR_OK);
-    }
-    else
-    {
-        screenprint_setcolor(COLOR_DIRECTORY);
-        TUI_printfw(" R ");
-        screenprint_unsetcolor(COLOR_DIRECTORY);
-    }
-
-    if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKERR)
-    {
-        screenprint_setcolor(COLOR_ERROR);
-        TUI_printfw(" E ");
-        screenprint_unsetcolor(COLOR_ERROR);
-    }
-    else
-    {
-        screenprint_setcolor(COLOR_OK);
-        TUI_printfw(" E ");
-        screenprint_unsetcolor(COLOR_OK);
-    }
-
-    if(fps[fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_SAVE)
-    {
-        screenprint_setcolor(COLOR_WARNING);
-        TUI_printfw(" S ");
-        screenprint_unsetcolor(COLOR_WARNING);
-    }
-    else
-    {
-        screenprint_setcolor(COLOR_DIRECTORY);
-        TUI_printfw(" S ");
-        screenprint_unsetcolor(COLOR_DIRECTORY);
-    }
-
-    TUI_printfw("  %s\n", fps[fpsindex].md->name);
 }

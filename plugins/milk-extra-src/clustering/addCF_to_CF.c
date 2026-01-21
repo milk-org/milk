@@ -1,5 +1,5 @@
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include <math.h>

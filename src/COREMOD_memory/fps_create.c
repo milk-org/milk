@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h> // for close
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // ==========================================
 // Forward declaration(s)

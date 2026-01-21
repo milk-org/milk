@@ -14,7 +14,7 @@
 #include <wctype.h>
 #include <locale.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -279,15 +279,16 @@ errno_t printstatus(imageID ID)
 
         for(j = 1; j < image->md->naxis; j++)
         {
-            WRITE_STRING(str1,
-                         "%s x %6ld",
-                         str,
-                         (long) image->md->size[j]);
+            snprintf(str1,
+                     STRINGMAXLEN_DEFAULT,
+                     "%s x %6ld",
+                     str,
+                     (long) image->md->size[j]);
 
             strcpy(str, str1);
         }
 
-        WRITE_STRING(str1, "%s]", str);
+        snprintf(str1, STRINGMAXLEN_DEFAULT, "%s]", str);
         strcpy(str, str1);
 
         TUI_printfw("%-28s\n", str);

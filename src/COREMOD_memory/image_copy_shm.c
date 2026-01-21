@@ -1,6 +1,6 @@
 #include <stdbool.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "create_image.h"
 #include "read_shmim.h"

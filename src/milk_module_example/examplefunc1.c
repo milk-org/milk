@@ -8,7 +8,7 @@
  * See script milk-test-simplefunc for example usage.
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // Local variables pointers
 

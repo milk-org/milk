@@ -5,7 +5,7 @@
 
 #include <ncurses.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "compute_image_memory.h"
 #include "compute_nb_image.h"
 #include "image_ID.h"

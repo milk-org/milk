@@ -26,9 +26,9 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "clearall.h"
 #include "create_image.h"

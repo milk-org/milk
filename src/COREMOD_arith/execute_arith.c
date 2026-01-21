@@ -8,7 +8,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -311,6 +311,8 @@ int execute_arith(const char *cmd1)
     int  OKea = 1;
 
     int Debug = 0;
+    char name[STRINGMAXLEN_IMGNAME];
+    char name1[STRINGMAXLEN_IMGNAME];
 
     //  if( Debug > 0 )   fprintf(stdout, "[execute_arith]\n");
     //  if( Debug > 0 )   fprintf(stdout, "[execute_arith] str: [%s]\n", cmd1);

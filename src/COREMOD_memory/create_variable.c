@@ -3,7 +3,7 @@
  * @brief   create variables
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 #include "variable_ID.h"
 

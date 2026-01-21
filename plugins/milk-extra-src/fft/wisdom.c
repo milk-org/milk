@@ -2,7 +2,7 @@
  * @file wisdom.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 errno_t import_wisdom()
 {

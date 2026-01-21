@@ -1,7 +1,7 @@
 /** @file writeBMP.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 const int BYTES_PER_PIXEL  = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;

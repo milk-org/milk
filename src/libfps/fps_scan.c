@@ -195,6 +195,11 @@ errno_t functionparameter_scan_fps(
 
             if((pch) && (matchOK == 1))
             {
+                if(fpsindex >= NB_FPS_MAX)
+                {
+                    fprintf(stderr, "WARNING: Maximum number of FPS reached (%d). Skipping %s\n", NB_FPS_MAX, dir->d_name);
+                    continue;
+                }
 
                 // is file sym link ?
                 struct stat buf;
@@ -289,6 +294,10 @@ errno_t functionparameter_scan_fps(
                                                       &fps[fpsindex],
                                                       FPSCONNECT_SIMPLE);
 
+                if(NBparamMAX == -1)
+                {
+                    continue;
+                }
 
 
                 // FILTERING
@@ -411,6 +420,12 @@ errno_t functionparameter_scan_fps(
 
                                 if(scanOK == 0)  // node does not exit -> create it
                                 {
+                                    if(NBkwn >= NB_KEYWNODE_MAX)
+                                    {
+                                        fprintf(stderr, "WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.\n", NB_KEYWNODE_MAX);
+                                        break;
+                                    }
+
                                     // look for parent
                                     int scanparentOK = 0;
                                     int kwnindexp    = 0;
@@ -454,10 +469,17 @@ errno_t functionparameter_scan_fps(
                                         cindex = keywnode[keywnode[kwnindex]
                                                           .parent_index]
                                                  .NBchild;
-                                        keywnode[keywnode[kwnindex].parent_index]
-                                        .child[cindex] = kwnindex;
-                                        keywnode[keywnode[kwnindex].parent_index]
-                                        .NBchild++;
+                                        if(cindex < MAX_NB_CHILD)
+                                        {
+                                            keywnode[keywnode[kwnindex].parent_index]
+                                            .child[cindex] = kwnindex;
+                                            keywnode[keywnode[kwnindex].parent_index]
+                                            .NBchild++;
+                                        }
+                                        else
+                                        {
+                                            fprintf(stderr, "WARNING: Maximum number of children reached for node %d (%d). Skipping child.\n", keywnode[kwnindex].parent_index, MAX_NB_CHILD);
+                                        }
                                     }
 
                                     if(verbose > 0)

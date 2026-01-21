@@ -3,7 +3,7 @@
  * @brief   check image size
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 
 //  check only is size > 0

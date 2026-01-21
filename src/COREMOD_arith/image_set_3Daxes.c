@@ -1,5 +1,5 @@
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 static char *inimname;
 

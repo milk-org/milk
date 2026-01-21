@@ -1,7 +1,7 @@
 /** @file clearall.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "delete_image.h"
 #include "delete_variable.h"
 #include "image_ID.h"

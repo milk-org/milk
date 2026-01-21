@@ -3,7 +3,7 @@
  * @brief   find variable ID(s) from name
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 /* ID number corresponding to a name */
 variableID variable_ID(const char *name)

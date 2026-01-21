@@ -5,7 +5,7 @@
  *
  */
 
-#include "CommandLineInterface/CLIcore.h" // complex types
+#include "CLIcore.h" // complex types
 #include <math.h>
 
 double Pacos(double a)

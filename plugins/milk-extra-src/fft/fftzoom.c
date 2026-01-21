@@ -1,7 +1,7 @@
 /** @file fftzoom.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -69,6 +69,11 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
     imageID  ID1;
     uint32_t naxes[2];
     double   coeff;
+
+    char tmpzname[STRINGMAXLEN_IMGNAME];
+    char tmpz1name[STRINGMAXLEN_IMGNAME];
+    char tmpz2name[STRINGMAXLEN_IMGNAME];
+    char tbename[STRINGMAXLEN_IMGNAME];
 
     ID = image_ID(ID_name);
 

@@ -3,7 +3,7 @@
  * @brief   save FITS format files
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "savefits.h"
 
 #include <pthread.h>

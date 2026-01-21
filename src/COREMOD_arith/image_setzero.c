@@ -1,5 +1,5 @@
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_setzero.h"
 
 static char *inimname;

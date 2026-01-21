@@ -8,7 +8,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 /**
  * ## Purpose

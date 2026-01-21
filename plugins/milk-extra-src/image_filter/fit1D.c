@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "statistic/statistic.h"
 
 int filter_fit1D(const char *__restrict fname, long NBpts)

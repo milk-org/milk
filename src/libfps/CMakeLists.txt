@@ -22,6 +22,7 @@ set(SOURCEFILES
     fps_CONFstop.c
     fps_FPSremove.c
     fps_GetFileName.c
+    fps_getFPSargs.c
     fps_GetParamIndex.c
     fps_GetTypeString.c
     fps_paramvalue.c
@@ -44,8 +45,6 @@ set(SOURCEFILES
     fps_read_fpsCMD_fifo.c
     fps_userinputsetparamvalue.c
     fps_loadmemstream_lite.c
-    TUItools_stubs.c
-    timeutils.c
     # fpsCTRL sources
     fpsCTRL/fpsCTRL_FPSdisplay.c
     fpsCTRL/fpsCTRL_TUI.c
@@ -67,10 +66,10 @@ target_include_directories(${LIBNAME} PUBLIC
 )
 
 # Standalone libfps dependencies
-target_link_libraries(milkfps ImageStreamIO m rt milkprocessinfo ${NCURSES_LIBRARIES})
+target_link_libraries(milkfps ImageStreamIO milkTUI m rt milkprocessinfo ${NCURSES_LIBRARIES})
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
-install(FILES fps.h fps_internal.h fps_globals.h timeutils.h DESTINATION include/libfps)
+install(FILES fps.h fps_internal.h fps_globals.h ../libmilkTUI/timeutils.h DESTINATION include/libfps)
 
 # ==========================================
 # milk-fpsCTRL executable
@@ -84,6 +83,7 @@ target_link_libraries(milk-fpsCTRL PUBLIC
     milkfps
     milkprocessinfo 
     ImageStreamIO
+    CLIcore
     ${NCURSES_LIBRARIES}
     pthread
     m

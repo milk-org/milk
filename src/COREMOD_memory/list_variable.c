@@ -3,7 +3,7 @@
  * @brief   list variables
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // ==========================================
 // Forward declaration(s)

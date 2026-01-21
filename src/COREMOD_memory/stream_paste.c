@@ -3,7 +3,7 @@
  * @brief Paste two equal size 2D streams into an output 2D stream
 */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"

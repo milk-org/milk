@@ -8,7 +8,7 @@
 
 #include <math.h> // for sqrt()
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 //static int cmdindex;
 
@@ -19,7 +19,7 @@
 //#include "COREMOD_tools/COREMOD_tools.h"
 
 // required for timespec_diff
-//#include "CommandLineInterface/timeutils.h"
+//#include "timeutils.h"
 
 // Local variables pointers
 

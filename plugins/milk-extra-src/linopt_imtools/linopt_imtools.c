@@ -44,7 +44,7 @@
 
 #include <fitsio.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -56,7 +56,7 @@
 #include "linopt_imtools/linopt_imtools.h"
 #include "statistic/statistic.h"
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "compute_SVDdecomp.h"
 #include "compute_SVDpseudoInverse.h"

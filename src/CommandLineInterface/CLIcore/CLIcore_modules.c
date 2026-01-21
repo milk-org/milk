@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <dlfcn.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"

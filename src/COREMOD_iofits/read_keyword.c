@@ -2,7 +2,7 @@
  * @file    read_keyword.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits_common.h"
 #include "check_fitsio_status.h"

@@ -5,7 +5,7 @@
 
 #include <dirent.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // ==========================================
 // Forward declaration(s)

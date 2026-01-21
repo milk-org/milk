@@ -2,7 +2,7 @@
 #define _TERMVIEW_H
 
 #include <stdbool.h>
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 typedef enum {
     COLORMAP_GREYSCALE = 0,

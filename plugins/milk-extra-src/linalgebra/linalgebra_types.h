@@ -8,7 +8,7 @@
 #include <cuda_runtime_api.h>
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #ifdef HAVE_MAGMA
 

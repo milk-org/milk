@@ -1,7 +1,7 @@
 #include "milk_config.h"
-#include <CommandLineInterface/CLIcore.h>
-#include "CommandLineInterface/CLIcore/CLIcore_datainit.h"
-#include "CommandLineInterface/CLIcore/CLIcore_setSHMdir.h"
+#include "CLIcore.h"
+#include "CLIcore_datainit.h"
+#include "CLIcore_setSHMdir.h"
 #include "streamCTRL_TUI.h"
 
 int main(int argc, char *argv[])

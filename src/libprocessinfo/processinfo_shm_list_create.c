@@ -46,7 +46,7 @@ long processinfo_shm_list_create()
         if(SM_fd == -1)
         {
             perror("Error opening file for writing");
-            exit(0);
+            return -1;
         }
 
         int result;
@@ -55,7 +55,7 @@ long processinfo_shm_list_create()
         {
             close(SM_fd);
             fprintf(stderr, "Error calling lseek() to 'stretch' the file");
-            exit(0);
+            return -1;
         }
 
         result = write(SM_fd, "", 1);
@@ -63,7 +63,7 @@ long processinfo_shm_list_create()
         {
             close(SM_fd);
             perror("Error writing last byte of the file");
-            exit(0);
+            return -1;
         }
 
         pinfolist = (PROCESSINFOLIST *) \
@@ -72,7 +72,7 @@ long processinfo_shm_list_create()
         {
             close(SM_fd);
             perror("Error mmapping the file");
-            exit(0);
+            return -1;
         }
 
         for(pindex = 0; pindex < PROCESSINFOLISTSIZE; pindex++)
@@ -88,6 +88,11 @@ long processinfo_shm_list_create()
         //struct stat file_stat;
 
         pinfolist = (PROCESSINFOLIST *) processinfo_shm_link(SM_fname, &SM_fd);
+        if(pinfolist == MAP_FAILED)
+        {
+            return -1;
+        }
+
         while((pinfolist->active[pindex] != 0) &&
                 (pindex < PROCESSINFOLISTSIZE))
         {
@@ -96,12 +101,12 @@ long processinfo_shm_list_create()
 
         if(pindex == PROCESSINFOLISTSIZE)
         {
-            printf("ERROR: pindex reaches max value\n");
-            exit(0);
+            fprintf(stderr, "ERROR: pindex reaches max value\n");
+            return -1;
         }
     }
 
-    printf("pindex = %ld\n", pindex);
+    // printf("pindex = %ld\n", pindex);
 
     return pindex;
 }

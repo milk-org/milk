@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h> // close
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "image_ID.h"
 #include "image_keyword_list.h"
 #include "list_image.h"
