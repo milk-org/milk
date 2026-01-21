@@ -293,6 +293,7 @@ int main(int argc, char *argv[]) {
         for (long i = 0; i < PROCESSINFOLISTSIZE; i++) {
             if (pinfolist->active[i] == 1) {
                 
+                scan_shm->pinfodisp[i].pindex = i;
                 // Track CPU usage for all active processes every cycle
                 PIDcollectSystemInfo(&scan_shm->pinfodisp[i], 0);
 
