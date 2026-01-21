@@ -193,5 +193,24 @@ errno_t function_parameter_struct_realloc(
     
     fps->md->NBparamMAX = NBparamMAX_new;
 
+    // 5. Update pointers in cmdset (if they were set)
+    // These pointers point into parray, which changed location
+    if (fps->cmdset.procinfo_loopcntMax_ptr != NULL) {
+        int pindex = functionparameter_GetParamIndex(fps, ".procinfo.loopcntMax");
+        if(pindex > -1) fps->cmdset.procinfo_loopcntMax_ptr = fps->parray[pindex].val.i64;
+    }
+    if (fps->cmdset.triggermodeptr != NULL) {
+        int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggermode");
+        if(pindex > -1) fps->cmdset.triggermodeptr = fps->parray[pindex].val.i64;
+    }
+    if (fps->cmdset.triggerdelayptr != NULL) {
+        int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggerdelay");
+        if(pindex > -1) fps->cmdset.triggerdelayptr = fps->parray[pindex].val.ts;
+    }
+    if (fps->cmdset.triggertimeoutptr != NULL) {
+        int pindex = functionparameter_GetParamIndex(fps, ".procinfo.triggertimeout");
+        if(pindex > -1) fps->cmdset.triggertimeoutptr = fps->parray[pindex].val.ts;
+    }
+
     return RETURN_SUCCESS;
 }
