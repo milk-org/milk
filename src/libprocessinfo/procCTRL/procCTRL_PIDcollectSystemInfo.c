@@ -44,6 +44,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
     }
 
     // 2. Get timing info from /proc/PID/stat
+    long utime = 0, stime = 0;
     snprintf(procfname, 200, "/proc/%d/stat", (int)pinfodisp->PID);
     fp = fopen(procfname, "r");
     if (fp != NULL) {
@@ -51,7 +52,6 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
             char *p = strrchr(line, ')');
             if (p) {
                 p += 2; // Skip ") "
-                long utime = 0, stime = 0;
                 
                 int field = 0;
                 char *token = strtok(p, " ");
@@ -64,15 +64,6 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
                     token = strtok(NULL, " ");
                     field++;
                 }
-                
-                if (pinfodisp->sampletimearray[0] > 0) {
-                    pinfodisp->cpuloadcntarray_prev[0] = pinfodisp->cpuloadcntarray[0];
-                    pinfodisp->cpuloadcntarray[0] = utime + stime;
-                } else {
-                    // First time we see this PID
-                    pinfodisp->cpuloadcntarray[0] = utime + stime;
-                    pinfodisp->cpuloadcntarray_prev[0] = utime + stime;
-                }
             }
         }
         fclose(fp);
@@ -82,29 +73,51 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
     clock_gettime(CLOCK_MONOTONIC, &ts);
     double now = (double)ts.tv_sec + 1.0e-9 * ts.tv_nsec;
 
-    if (pinfodisp->sampletimearray[0] > 0) {
-        double dt = now - pinfodisp->sampletimearray[0];
-        if (dt > 0.05) { // Ensure at least 50ms between samples
-            long long dcnt = pinfodisp->cpuloadcntarray[0] - pinfodisp->cpuloadcntarray_prev[0];
-            long ticks_per_sec = sysconf(_SC_CLK_TCK);
-            
-            float instantaneous_cpu = 100.0 * (double)dcnt / (dt * ticks_per_sec);
-            pinfodisp->subprocCPUloadarray[0] = instantaneous_cpu;
-            
-            // 1s averaged CPU usage using Exponential Moving Average
-            // alpha = 1 - exp(-dt / tau), where tau = 1.0s
-            float alpha = 1.0 - exp(-dt / 1.0);
-            pinfodisp->subprocCPUloadarray_timeaveraged[0] = (1.0 - alpha) * pinfodisp->subprocCPUloadarray_timeaveraged[0] + alpha * instantaneous_cpu;
+    // Use local static tracking to avoid SHM interference
+    static struct {
+        pid_t PID;
+        long long prev_total_time;
+        double prev_sample_time;
+    } pid_track[PROCESSINFOLISTSIZE];
+    static int track_init = 0;
+    if (!track_init) {
+        for(int i=0; i<PROCESSINFOLISTSIZE; i++) pid_track[i].PID = 0;
+        track_init = 1;
+    }
 
-            pinfodisp->sampletimearray_prev[0] = pinfodisp->sampletimearray[0];
-            pinfodisp->sampletimearray[0] = now;
+    // Find or assign slot for this PID (using pindex if available and stable)
+    int slot = -1;
+    if (pinfodisp->pindex >= 0 && pinfodisp->pindex < PROCESSINFOLISTSIZE) {
+        slot = pinfodisp->pindex;
+    }
+
+    if (slot >= 0) {
+        if (pid_track[slot].PID != pinfodisp->PID) {
+            // New PID in this slot or first time
+            pid_track[slot].PID = pinfodisp->PID;
+            pid_track[slot].prev_total_time = utime + stime;
+            pid_track[slot].prev_sample_time = now;
+            pinfodisp->subprocCPUloadarray[0] = 0.0;
+            pinfodisp->subprocCPUloadarray_timeaveraged[0] = 0.0;
+        } else {
+            double dt = now - pid_track[slot].prev_sample_time;
+            if (dt > 0.01) {
+                long long total_time = utime + stime;
+                long long dcnt = total_time - pid_track[slot].prev_total_time;
+                long ticks_per_sec = sysconf(_SC_CLK_TCK);
+                
+                float instantaneous_cpu = 100.0 * (double)dcnt / (dt * ticks_per_sec);
+                pinfodisp->subprocCPUloadarray[0] = instantaneous_cpu;
+                
+                // 1s averaged CPU usage using Exponential Moving Average
+                float tau = 1.0;
+                float alpha = 1.0 - exp(-dt / tau);
+                pinfodisp->subprocCPUloadarray_timeaveraged[0] = (1.0 - alpha) * pinfodisp->subprocCPUloadarray_timeaveraged[0] + alpha * instantaneous_cpu;
+
+                pid_track[slot].prev_total_time = total_time;
+                pid_track[slot].prev_sample_time = now;
+            }
         }
-    } else {
-        // First sample
-        pinfodisp->sampletimearray[0] = now;
-        pinfodisp->sampletimearray_prev[0] = now;
-        pinfodisp->subprocCPUloadarray[0] = 0.0;
-        pinfodisp->subprocCPUloadarray_timeaveraged[0] = 0.0;
     }
 
     return 0;
