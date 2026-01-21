@@ -9,4 +9,7 @@
 #include "milkDebugTools.h"
 #include "ImageStreamIO/ImageStruct.h"
 
+errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
+errno_t function_parameter_struct_realloc(FUNCTION_PARAMETER_STRUCT *fps, int NBparamMAX_new);
+
 #endif

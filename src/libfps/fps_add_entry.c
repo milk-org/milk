@@ -77,12 +77,23 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
 
         if(pindex == NBparamMAX)
         {
-            printf("ERROR [%s line %d]: NBparamMAX %ld limit reached\n",
-                   __FILE__,
-                   __LINE__,
-                   NBparamMAX);
-            fflush(stdout);
-            exit(0);
+            // Dynamic reallocation
+            long NBparamMAX_new = NBparamMAX + 10; // Grow by 10
+            if (function_parameter_struct_realloc(fps, NBparamMAX_new) == RETURN_SUCCESS)
+            {
+                NBparamMAX = fps->md->NBparamMAX;
+                funcparamarray = fps->parray;
+                // pindex is already at old NBparamMAX, which is now a valid index
+            }
+            else
+            {
+                printf("ERROR [%s line %d]: NBparamMAX %ld limit reached and realloc failed\n",
+                       __FILE__,
+                       __LINE__,
+                       NBparamMAX);
+                fflush(stdout);
+                exit(0);
+            }
         }
 
         funcparamarray[pindex].fpflag = fpflag;

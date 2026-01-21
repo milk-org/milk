@@ -10,9 +10,6 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 
-// Prototype for ported creation function
-errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
-
 /** @brief FPS config setup
  *
  * called by conf and run functions
