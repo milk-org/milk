@@ -151,3 +151,47 @@ errno_t function_parameter_struct_create(
 
     return 0;
 }
+
+errno_t function_parameter_struct_realloc(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int NBparamMAX_new
+)
+{
+    char shmdname[200];
+    char SM_fname[200];
+    function_parameter_struct_shmdirname(shmdname);
+    snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, fps->md->name);
+
+    size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * fps->md->NBparamMAX;
+    size_t sharedsize_new = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * NBparamMAX_new;
+
+    // 1. Unmap old
+    munmap(fps->md, sharedsize_old);
+
+    // 2. Resize file
+    if(truncate(SM_fname, sharedsize_new) == -1)
+    {
+        perror("Error truncating file for realloc");
+        return RETURN_FAILURE;
+    }
+
+    // 3. Remap
+    fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
+             mmap(0, sharedsize_new, PROT_READ | PROT_WRITE, MAP_SHARED, fps->SMfd, 0);
+    if(fps->md == MAP_FAILED)
+    {
+        perror("Error re-mmapping the file");
+        return RETURN_FAILURE;
+    }
+
+    char *mapv = (char *) fps->md;
+    mapv += sizeof(FUNCTION_PARAMETER_STRUCT_MD);
+    fps->parray = (FUNCTION_PARAMETER *) mapv;
+
+    // 4. Initialize new part
+    memset(&fps->parray[fps->md->NBparamMAX], 0, (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FUNCTION_PARAMETER));
+    
+    fps->md->NBparamMAX = NBparamMAX_new;
+
+    return RETURN_SUCCESS;
+}

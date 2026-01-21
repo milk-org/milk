@@ -89,7 +89,7 @@ int fpsCTRL_TUI_process_user_key(
             clear();
             break;
 
-        case 'e' : // erase FPS
+        case ctrl('e') : // erase FPS
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_FPSremove(&fps[fpsindex]);
 
