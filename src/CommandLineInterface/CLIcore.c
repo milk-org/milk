@@ -1093,7 +1093,8 @@ static int command_line_process_options(int argc, char **argv)
         {"version", no_argument, 0, 'v'},
         {"info", no_argument, 0, 'i'},
         {"overwrite", no_argument, 0, 'o'},
-        {"idle", no_argument, 0, 'e'},
+        {"errorexit", no_argument, 0, 'e'},
+        {"idle", no_argument, 0, 'Z'},
         {"fifoflag", no_argument, 0, 'f'},
         {"debug", required_argument, 0, 'd'},
         {"mmon", required_argument, 0, 'm'},
@@ -1113,7 +1114,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvid:oe:m:n:p:fF:s:",
+                        "hvid:oeZm:n:p:fF:s:",
                         long_options,
                         &option_index);
 
@@ -1160,6 +1161,14 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'e':
+            if(data.quiet == 0)
+            {
+                printf("Exit on error ON\n");
+            }
+            data.errorexit = 1;
+            break;
+
+        case 'Z':
             printf(
                 "Idle mode: only runs process when X is idle (pid "
                 "%ld)\n",
