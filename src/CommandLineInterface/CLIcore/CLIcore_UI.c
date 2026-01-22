@@ -735,3 +735,4 @@ void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
 }
+
