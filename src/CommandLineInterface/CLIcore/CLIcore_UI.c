@@ -647,7 +647,9 @@ errno_t CLI_execute_line()
 static void CLI_redisplay(void)
 {
     // Default redisplay
+    rl_redisplay_function = NULL;
     rl_redisplay();
+    rl_redisplay_function = CLI_redisplay;
 
     if(data.autocomplete == 0)
     {
