@@ -714,6 +714,7 @@ static void CLI_redisplay(void)
 
     // Get best match
     char *match = CLI_generator(text, 0);
+    
     if(match)
     {
         // Check if match starts with text
