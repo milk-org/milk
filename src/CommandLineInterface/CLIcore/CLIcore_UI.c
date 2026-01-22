@@ -649,6 +649,7 @@ static void CLI_redisplay(void)
     // Default redisplay
     rl_redisplay_function = NULL;
     rl_redisplay();
+    fflush(stdout);
     rl_redisplay_function = CLI_redisplay;
 
     if(data.autocomplete == 0)
@@ -729,11 +730,8 @@ static void CLI_redisplay(void)
             char *suffix = match + strlen(text);
             if(strlen(suffix) > 0)
             {
-                // Print in grey (using 90m for bright black/dark grey)
-                // Note: \033[K clears to end of line
-                printf("\033[90m%s\033[0m\033[K", suffix);
-                // Move cursor back
-                printf("\033[%ldD", strlen(suffix));
+                // Save cursor, print suffix (grey), clear rest of line, restore cursor
+                printf("\033[s\033[90m%s\033[0m\033[K\033[u", suffix);
                 fflush(stdout);
             }
         }
