@@ -23,10 +23,6 @@ errno_t setSHMdir()
     char *MILK_SHM_DIR = getenv("MILK_SHM_DIR");
     if(MILK_SHM_DIR != NULL)
     {
-        if(data.quiet == 0)
-        {
-            printf("        MILK_SHM_DIR '%s'\n", MILK_SHM_DIR);
-        }
         snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "%s", MILK_SHM_DIR);
 
         // does this direcory exist ?
@@ -37,7 +33,7 @@ errno_t setSHMdir()
             closedir(tmpdir);
             if(data.quiet == 0)
             {
-                printf("        Using SHM directory %s\n", shmdirname);
+                printf("        MILK_SHM_DIR: %s\n", shmdirname);
             }
         }
         else
@@ -89,7 +85,7 @@ errno_t setSHMdir()
             closedir(tmpdir);
             if(data.quiet == 0)
             {
-                printf("        Using SHM directory %s\n", shmdirname);
+                printf("        MILK_SHM_DIR: %s (default)\n", shmdirname);
             }
         }
         else
@@ -120,7 +116,7 @@ errno_t setSHMdir()
             shmdirOK = 1;
             if(data.quiet == 0)
             {
-                printf("        Using SHM directory %s\n", shmdirname);
+                printf("        MILK_SHM_DIR: %s (fallback)\n", shmdirname);
 
                 printf(
                     "        NOTE: Consider creating tmpfs "
@@ -148,11 +144,6 @@ errno_t setSHMdir()
         }
 
     snprintf(data.shmsemdirname, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
-    if(data.quiet == 0)
-    {
-        printf("        semaphore naming : /dev/shm/sem.%s.<sname>_sem<xx>\n",
-               data.shmsemdirname);
-    }
 
     return RETURN_SUCCESS;
 }
