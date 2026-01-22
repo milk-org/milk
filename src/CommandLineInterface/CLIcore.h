@@ -456,6 +456,8 @@ typedef struct
     int  CLImatchMode;
     // 1 if error, 0 otherwise
     int parseerror;
+    // 1 if autocomplete preview is enabled
+    int autocomplete;
     // number of arguments in last command line
     long        cmdNBarg;
     CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
