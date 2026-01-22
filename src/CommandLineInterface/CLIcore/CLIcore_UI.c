@@ -688,18 +688,24 @@ static void CLI_redisplay(void)
     {
         char  str[200];
         char *firstword;
-        firstword = strcpy(str, rl_line_buffer);
-        strtok(str, " ");
+        // Safe copy
+        snprintf(str, 200, "%s", rl_line_buffer);
+        firstword = strtok(str, " ");
+        
         int      cmdimatch = -1;
         uint32_t cmdi      = 0;
-        while((cmdimatch == -1) && (cmdi < data.NBcmd))
-        {
-            if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+        
+        // Only check first word if it exists
+        if(firstword != NULL) {
+            while((cmdimatch == -1) && (cmdi < data.NBcmd))
             {
-                cmdimatch = cmdi;
-                data.cmdindex = cmdi;
+                if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+                {
+                    cmdimatch = cmdi;
+                    data.cmdindex = cmdi;
+                }
+                cmdi++;
             }
-            cmdi++;
         }
 
         if((cmdimatch != -1) && (text[0] == '.'))
@@ -723,7 +729,8 @@ static void CLI_redisplay(void)
             char *suffix = match + strlen(text);
             if(strlen(suffix) > 0)
             {
-                // Print in grey
+                // Print in grey (using 90m for bright black/dark grey)
+                // Note: \033[K clears to end of line
                 printf("\033[90m%s\033[0m\033[K", suffix);
                 // Move cursor back
                 printf("\033[%ldD", strlen(suffix));
