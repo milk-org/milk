@@ -370,6 +370,7 @@ errno_t CLI_startup()
     data.fifoON            = 0;
     data.processinfo       = 1; // process info for intensive processes
     data.processinfoActive = 0; // toggles to 1 when process is logged
+    data.autocomplete      = 0; // autocomplete preview disabled by default
 
     // signal handling
 
@@ -788,6 +789,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     rl_callback_handler_install(
                         prompt,
                         (rl_vcpfunc_t *) &rl_cb_linehandler);
+                    CLI_configure_readline();
                 }
             }
 
@@ -1095,6 +1097,7 @@ static int command_line_process_options(int argc, char **argv)
         {"overwrite", no_argument, 0, 'o'},
         {"errorexit", no_argument, 0, 'e'},
         {"idle", no_argument, 0, 'Z'},
+        {"autocomplete", no_argument, 0, 'A'},
         {"fifoflag", no_argument, 0, 'f'},
         {"debug", required_argument, 0, 'd'},
         {"mmon", required_argument, 0, 'm'},
@@ -1114,7 +1117,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvid:oeZm:n:p:fF:s:",
+                        "hvid:oeZm:n:p:fF:s:A",
                         long_options,
                         &option_index);
 
@@ -1179,6 +1182,14 @@ static int command_line_process_options(int argc, char **argv)
             {
                 PRINT_ERROR("system() returns non-zero value");
             }
+            break;
+
+        case 'A':
+            if(data.quiet == 0)
+            {
+                printf("Autocomplete preview ON\n");
+            }
+            data.autocomplete = 1;
             break;
 
 

@@ -643,3 +643,95 @@ errno_t CLI_execute_line()
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
+
+static void CLI_redisplay(void)
+{
+    // Default redisplay
+    rl_redisplay();
+
+    if(data.autocomplete == 0)
+    {
+        return;
+    }
+
+    if(rl_line_buffer[0] == '\0')
+    {
+        return;
+    }
+
+    if(rl_point != rl_end)
+    {
+        return;    // Only at end of line
+    }
+
+    // Find current word start
+    int start = 0;
+    for(int i = rl_point - 1; i >= 0; i--)
+    {
+        if(rl_line_buffer[i] == ' ')
+        {
+            start = i + 1;
+            break;
+        }
+    }
+
+    char *text = rl_line_buffer + start;
+
+    // Determine matching mode (logic duplicated from CLI_completion)
+    if((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
+    {
+        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
+    }
+    else
+    {
+        char  str[200];
+        char *firstword;
+        firstword = strcpy(str, rl_line_buffer);
+        strtok(str, " ");
+        int      cmdimatch = -1;
+        uint32_t cmdi      = 0;
+        while((cmdimatch == -1) && (cmdi < data.NBcmd))
+        {
+            if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+            {
+                cmdimatch = cmdi;
+                data.cmdindex = cmdi;
+            }
+            cmdi++;
+        }
+
+        if((cmdimatch != -1) && (text[0] == '.'))
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
+        }
+        else
+        {
+            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
+        }
+    }
+
+    // Get best match
+    char *match = CLI_generator(text, 0);
+    if(match)
+    {
+        // Check if match starts with text
+        if(strncmp(match, text, strlen(text)) == 0)
+        {
+            char *suffix = match + strlen(text);
+            if(strlen(suffix) > 0)
+            {
+                // Print in grey
+                printf("\033[90m%s\033[0m\033[K", suffix);
+                // Move cursor back
+                printf("\033[%ldD", strlen(suffix));
+                fflush(stdout);
+            }
+        }
+        free(match);
+    }
+}
+
+void CLI_configure_readline()
+{
+    rl_redisplay_function = CLI_redisplay;
+}
