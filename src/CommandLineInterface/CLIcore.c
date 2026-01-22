@@ -659,6 +659,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 rl_callback_handler_install(
                     prompt,
                     (rl_vcpfunc_t *) &rl_cb_linehandler);
+                CLI_configure_readline();
             }
         }
 
