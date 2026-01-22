@@ -13,10 +13,12 @@ COMMAND LINE OPTIONS
 	Set debug level at startup
   -o, --overwrite
 	Automatically overwrite files if necessary (USE WITH CAUTION - WILL OVERWRITE EXISTING FITS FILES)
-  -e, --idle
+  -e, --errorexit
+	Exit on error (default: off, do not exit on error)
+  -Z, --idle
 	Only run process when X is idle (WARNING: PREVENTS INTERACTIVE USER INPUT)
 	Requires script runidle
-  --listimfile
+  --listimf
 	Keeps a list of images in file imlist.txt
   -m, --mmon=TTYDEVICE
 	open memory monitor on tty device
@@ -30,11 +32,13 @@ COMMAND LINE OPTIONS
 	note: by default, fifo name is <processname>.fifo
   -p, --priority=<PR>
 	set process priority to PR (0-99)
-  -f, --fifo==FIFONAME
+  -f, --fifoflag
+	enable fifo input (default name)
+  -F, --fifoname=FIFONAME
 	specify fifo name
 	example
-	<executable> -f /tmp/fifo24
-	<executable> --fifo=/tmp/fifo24
+	<executable> -F /tmp/fifo24
+	<executable> --fifoname=/tmp/fifo24
   -s, --startup=STARTUPFILE
 	execute specified script on startup
 	requires the -f option, as the script is loaded into fifo
@@ -70,8 +74,6 @@ HELP COMMANDS
 	# print this help file
 > helprl
 	# print readline quick help
-> lm?
-	# list all modules loaded
 > m? <module>
 	# list all commands for a module
 > m?
@@ -97,8 +99,8 @@ IMPORTANT COMMANDS
 > showhist
 	# prints history of all commands
 > quit
-	# exit Cfits (exit also works)
-> creaim <im> <xs> <ys>
+	# exit program (exit also works)
+> mk2Dim <im> <xs> <ys>
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 
 -----------------------------------------------------------------------------------
@@ -139,8 +141,8 @@ FIFO INPUT TO EXECUTABLE:
 
 You can control the executable through a named pipe (fifo), which is created by default when the executable is started, and removed when it is cleanly stopped. Note that starting the program will erase the content of the fifo upon startup even if it was previously created.
 
-By default, the fifo is created in the local directory, with the name "clififo", to pipe commands into the command line interface. You can opt out of the fifo feature by adding the option --nofifo to the command line executable, or rename the fifo with the -f option :
-<executable> -f "/tmp/fifo145.txt"
+By default, the fifo is created in the local directory, with the name "clififo", to pipe commands into the command line interface. You can opt out of the fifo feature by adding the option --nofifo to the command line executable, or rename the fifo with the -F option :
+<executable> -F "/tmp/fifo145.txt"
 This will create a fifo named /tmp/fifo145.txt.
 
 Other programs can write to the fifo to issue commands to the executable, such as:
@@ -153,7 +155,7 @@ For example, to load all im*.fits files in memory, you can type within the execu
 
 USING "imlist.txt" AND fifo
 
-If you start the executable with the "-l" option,  the file "imlist.txt" contains the list of images currently in memory in a ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files :
+If you start the executable with the "--listimf" option,  the file "imlist.txt" contains the list of images currently in memory in a ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files :
 
 > !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo saveflfits {} {}_tmp.fits >> clififo
 

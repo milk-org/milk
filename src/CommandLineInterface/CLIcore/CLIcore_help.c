@@ -1130,7 +1130,7 @@ errno_t command_info_search(const char *restrict searchstring)
 errno_t help()
 {
 
-    EXECUTE_SYSTEM_COMMAND("more %s/src/CommandLineInterface/doc/help.txt",
+    EXECUTE_SYSTEM_COMMAND("more %s/doc/help.txt",
                            data.sourcedir);
 
     return RETURN_SUCCESS;
