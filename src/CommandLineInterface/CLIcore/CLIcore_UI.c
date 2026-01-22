@@ -604,6 +604,13 @@ errno_t CLI_execute_line()
                 data.CMDexecuted = 1;
             }
         }
+        else
+        {
+            if(data.errorexit == 1)
+            {
+                data.exitcode = 1;
+            }
+        }
 
         for(int i = 0; i < data.calctmp_imindex; i++)
         {
