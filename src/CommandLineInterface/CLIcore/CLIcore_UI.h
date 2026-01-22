@@ -20,4 +20,6 @@ errno_t CLI_execute_line();
 
 errno_t write_tracedebugfile();
 
+void CLI_configure_readline();
+
 #endif
