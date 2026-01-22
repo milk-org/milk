@@ -730,8 +730,8 @@ static void CLI_redisplay(void)
             char *suffix = match + strlen(text);
             if(strlen(suffix) > 0)
             {
-                // Print suffix (dim grey), clear rest of line, move cursor back
-                printf("\033[2;90m%s\033[0m\033[K", suffix);
+                // Print suffix (lighter grey), clear rest of line, move cursor back
+                printf("\033[38;5;245m%s\033[0m\033[K", suffix);
                 printf("\033[%ldD", strlen(suffix));
                 fflush(stdout);
             }
