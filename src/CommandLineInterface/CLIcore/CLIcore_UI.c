@@ -730,8 +730,8 @@ static void CLI_redisplay(void)
             char *suffix = match + strlen(text);
             if(strlen(suffix) > 0)
             {
-                // Save cursor, print suffix (grey), clear rest of line, restore cursor
-                printf("\033[s\033[90m%s\033[0m\033[K\033[u", suffix);
+                // Save cursor (DECSC), print suffix (magenta), clear rest of line, restore cursor (DECRC)
+                printf("\0337\033[35m%s\033[0m\033[K\0338", suffix);
                 fflush(stdout);
             }
         }
