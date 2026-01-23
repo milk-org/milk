@@ -405,10 +405,21 @@ errno_t TUI_inittermios(short unsigned int *wrowptr,
 
     // get terminal size
     struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    memset(&w, 0, sizeof(w));
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1)
+    {
+        w.ws_row = 24;
+        w.ws_col = 80;
+    }
 
-    *wrowptr = w.ws_row;
-    *wcolptr = w.ws_col;
+    if(w.ws_row == 0) w.ws_row = 24;
+    if(w.ws_col == 0) w.ws_col = 80;
+
+    wrow = w.ws_row;
+    wcol = w.ws_col;
+
+    *wrowptr = wrow;
+    *wcolptr = wcol;
 
     atexit(TUI_reset_terminal_mode);
 
