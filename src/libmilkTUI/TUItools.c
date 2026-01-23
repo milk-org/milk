@@ -384,7 +384,6 @@ errno_t TUI_print_header(const char *str, char c)
 void TUI_reset_terminal_mode()
 {
     tcsetattr(0, TCSANOW, &orig_termios);
-    tcsetattr(0, TCSANOW, &new_termios);
 }
 
 errno_t TUI_inittermios(short unsigned int *wrowptr,
