@@ -541,6 +541,7 @@ errno_t functionparameter_CTRLscreen(
         if(fpsCTRLvar.run_display == 1)
         {
 
+            TUI_stdio_clear();
             TUI_ncurses_erase();
 
             fpsCTRLscreen_print_DisplayMode_status(
