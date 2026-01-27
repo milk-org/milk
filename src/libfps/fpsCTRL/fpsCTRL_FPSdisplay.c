@@ -528,3 +528,47 @@ errno_t fpsCTRL_FPSdisplay(
 
     return RETURN_SUCCESS;
 }
+
+errno_t fpsCTRL_FPSlog(
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+)
+{
+    (void) keywnode;
+    if (fpsCTRLvar->NBfps > 0)
+    {
+        int fpsidx = fpsCTRLvar->fpsindexSelected;
+        char datadir[FPS_DIR_STRLENMAX];
+        strncpy(datadir, fpsarray[fpsidx].md->datadir, FPS_DIR_STRLENMAX - 1);
+
+        TUI_printfw("LOG FOR FPS: %s  (directory: %s)\n", fpsarray[fpsidx].md->name, datadir);
+        TUI_newline();
+
+        char cmd[1024];
+        // Find all .fps files, grep for comment lines, sort them, and take the last 40.
+        snprintf(cmd, sizeof(cmd), "grep -h '#' %s/*.fps 2>/dev/null | sort | tail -n 40", datadir);
+        
+        FILE *fp = popen(cmd, "r");
+        if (fp != NULL)
+        {
+            char line[1024];
+            while (fgets(line, sizeof(line), fp) != NULL)
+            {
+                // Format: value # timestamp cnt0 [pid tid] comment
+                // We want to show the timestamp and the comment part.
+                TUI_printfw("%s", line);
+            }
+            pclose(fp);
+        }
+        else
+        {
+            TUI_printfw("No log entries found.\n");
+        }
+    }
+    else
+    {
+        TUI_printfw("NO FPS LOADED\n");
+    }
+
+    return RETURN_SUCCESS;
+}

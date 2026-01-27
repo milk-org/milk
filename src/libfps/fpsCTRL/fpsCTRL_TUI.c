@@ -37,9 +37,9 @@
 static short unsigned int wrow, wcol;
 
 #define DISPLAYMODE_HELP      1
-#define DISPLAYMODE_FPSCTRL   2
-#define DISPLAYMODE_SEQUENCER 3
-#define DISPLAYMODE_FPSHELP   4
+#define DISPLAYMODE_FPSLOG    2
+#define DISPLAYMODE_FPSCTRL   3
+#define DISPLAYMODE_SEQUENCER 4
 
 
 
@@ -88,15 +88,15 @@ fpsCTRLscreen_print_DisplayMode_status(
     }
     TUI_printfw("   ");
 
-    if(fpsCTRL_DisplayMode == DISPLAYMODE_FPSHELP)
+    if(fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
     {
         screenprint_setreverse();
-        TUI_printfw("[?] FPS help");
+        TUI_printfw("[?] FPS log");
         screenprint_unsetreverse();
     }
     else
     {
-        TUI_printfw("[?] FPS help");
+        TUI_printfw("[?] FPS log");
     }
     TUI_printfw("   ");
 
@@ -142,6 +142,9 @@ inline static void fpsCTRLscreen_print_help()
     TUI_printfw("\n");
     TUI_printfw("============ SCREENS\n");
     print_help_entry("v/V", "verbose mode on/off");
+    print_help_entry("F2", "parameter control");
+    print_help_entry("F3", "scheduler / sequencer");
+    print_help_entry("?", "FPS log");
     print_help_entry("CTRL+L/R", "cycle between tabs");
 
     TUI_printfw("\n");
@@ -588,6 +591,11 @@ errno_t functionparameter_CTRLscreen(
                     TUI_printfw("    OUTPUT LOG   [%2d] :  %s", flagFPSoutlog, logfname);
                 }
                 TUI_printfw("\n");
+
+                if (fpsCTRLvar.NBfps > 0)
+                {
+                    TUI_printfw("    FPS keywords     :  %s\n", fpsarray[fpsCTRLvar.fpsindexSelected].md->keywordarray);
+                }
             }
             DEBUG_TRACEPOINT(" ");
 
@@ -614,9 +622,9 @@ errno_t functionparameter_CTRLscreen(
                                           &fpsCTRLvar.scheduler_wrowstart);
             }
 
-            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSHELP)
+            if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
             {
-                fpsCTRLscreen_print_FPShelp(keywnode, &fpsCTRLvar);
+                fpsCTRL_FPSlog(keywnode, &fpsCTRLvar);
             }
 
 
