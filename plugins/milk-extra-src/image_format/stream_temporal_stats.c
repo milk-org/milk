@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_temporal_stats.c
  * @brief   Publishes average and standard dev of image stream at regular intervals
@@ -396,13 +397,12 @@ static errno_t compute_function()
                 }
 
                 ave_finalize(out_ave_img, sum_x, n_frames_acc);
-                processinfo_update_output_stream(processinfo, out_ave_img.ID);
+                processinfo_update_output_stream(processinfo, out_ave_img.im, NULL);
 
                 if(n_frames_acc >= 2)
                 {
                     std_finalize(out_std_img, sum_x, sum_xx, n_frames_acc);
-                    processinfo_update_output_stream(processinfo,
-                                                     out_std_img.ID);
+                    processinfo_update_output_stream(processinfo, out_std_img.im, NULL);
                 }
 
                 // TODO update the timeout timespec

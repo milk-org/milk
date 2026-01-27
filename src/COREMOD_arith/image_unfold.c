@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 
 #include "CLIcore.h"
@@ -250,7 +251,7 @@ static errno_t compute_function()
             *colsize
         );
 
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

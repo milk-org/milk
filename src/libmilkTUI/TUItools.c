@@ -94,20 +94,7 @@ void TUI_printfw(const char *fmt, ...)
 
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
-        int  x, y;
-        int  MAXSTRLEN = 512;
-
-        getyx(stdscr, y, x);
-        (void) x;
-        (void) y;
-
-        int remaining_cols = MAXSTRLEN < wcol - x ? MAXSTRLEN : wcol - x;
-        if(remaining_cols > 0)
-        {
-            char prtstring[remaining_cols];
-            vsnprintf(prtstring, remaining_cols, fmt, args);
-            printw("%s", prtstring);
-        }
+        vw_printw(stdscr, fmt, args);
     }
 
     va_end(args);
@@ -187,6 +174,11 @@ void screenprint_setcolor(int colorcode)
             case 10:
                 printAECfgcolor = AEC_FGCOLOR_BLACK;
                 printAECbgcolor = AEC_BGCOLOR_BLUE + 60;
+                break;
+
+            case 13:
+                printAECfgcolor = AEC_FGCOLOR_WHITE;
+                printAECbgcolor = AEC_BGCOLOR_GREEN;
                 break;
         }
 
@@ -537,6 +529,7 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
         init_pair(10, COLOR_BLACK, COLOR_CYAN);
         init_pair(12, COLOR_GREEN,
                   COLOR_WHITE); // highlighted version of #2
+        init_pair(13, COLOR_WHITE, COLOR_GREEN); // White on Green
 
         // handle window resize
         /*
@@ -643,6 +636,10 @@ errno_t TUI_stdio_clear()
 
 int get_singlechar_nonblock()
 {
+    static char stdio_buffer[64];
+    static int stdio_buf_len = 0;
+    static int stdio_buf_pos = 0;
+
     int ch = -1;
 
     if(screenprintmode == SCREENPRINT_NCURSES)
@@ -651,59 +648,74 @@ int get_singlechar_nonblock()
     }
     else
     {
-        char buff[3];
-
-        int l = read(STDIN_FILENO, buff, 3);
-
-        if(l > 0)
+        if (stdio_buf_pos >= stdio_buf_len)
         {
-            ch = buff[0];
+             stdio_buf_pos = 0;
+             stdio_buf_len = read(STDIN_FILENO, stdio_buffer, 64);
+             if (stdio_buf_len <= 0)
+             {
+                 stdio_buf_len = 0;
+                 return -1;
+             }
+        }
 
-            if(buff[0] == 13)  // enter
+        ch = stdio_buffer[stdio_buf_pos];
+
+        if (ch == 13) // Enter
+        {
+            ch = 10;
+            stdio_buf_pos++;
+            return ch;
+        }
+
+        if (ch == 27) // Escape
+        {
+            int remaining = stdio_buf_len - stdio_buf_pos;
+            
+            if (remaining >= 3)
             {
-                ch = 10; // new line
-            }
+                char c1 = stdio_buffer[stdio_buf_pos+1];
+                char c2 = stdio_buffer[stdio_buf_pos+2];
 
-            if(buff[0] == 27)  // if the first value is esc
-            {
-
-                if(buff[1] == 91)
+                if (c1 == 91) // [
                 {
-                    switch(buff[2])
+                    switch(c2)
                     {
-                        // the real value
-                        case 'A':
-                            ch = KEY_UP; // code for arrow up
-                            break;
-                        case 'B':
-                            ch = KEY_DOWN; // code for arrow down
-                            break;
-                        case 'C':
-                            ch = KEY_RIGHT; // code for arrow right
-                            break;
-                        case 'D':
-                            ch = KEY_LEFT; // code for arrow left
-                            break;
+                        case 'A': ch = KEY_UP; stdio_buf_pos+=3; return ch;
+                        case 'B': ch = KEY_DOWN; stdio_buf_pos+=3; return ch;
+                        case 'C': ch = KEY_RIGHT; stdio_buf_pos+=3; return ch;
+                        case 'D': ch = KEY_LEFT; stdio_buf_pos+=3; return ch;
+                    }
+                    
+                    // Check for CTRL+Arrow (needs 6 bytes)
+                    if (remaining >= 6)
+                    {
+                        if (c2 == '1' && stdio_buffer[stdio_buf_pos+3] == ';' && stdio_buffer[stdio_buf_pos+4] == '5')
+                        {
+                            char c5 = stdio_buffer[stdio_buf_pos+5];
+                            if (c5 == 'C') { // CTRL+RIGHT
+                                ch = 561; stdio_buf_pos+=6; return ch;
+                            }
+                            if (c5 == 'D') { // CTRL+LEFT
+                                ch = 545; stdio_buf_pos+=6; return ch;
+                            }
+                        }
                     }
                 }
-
-                if(buff[1] == 79)
+                else if (c1 == 79) // O
                 {
-                    switch(buff[2])
+                    switch(c2)
                     {
-                        case 80:
-                            ch = KEY_F(1);
-                            break;
-                        case 81:
-                            ch = KEY_F(2);
-                            break;
-                        case 82:
-                            ch = KEY_F(3);
-                            break;
+                        case 80: ch = KEY_F(1); stdio_buf_pos+=3; return ch;
+                        case 81: ch = KEY_F(2); stdio_buf_pos+=3; return ch;
+                        case 82: ch = KEY_F(3); stdio_buf_pos+=3; return ch;
                     }
                 }
             }
         }
+        
+        // If no sequence matched, return char and advance
+        stdio_buf_pos++;
     }
 
     return ch;
@@ -722,12 +734,12 @@ int get_singlechar_block()
     }
     else
     {
-        int getchardt_us = 100000;
+        int getchardt_us = 1000; // 1 ms
 
-        ch = -1;
+        ch = get_singlechar_nonblock();
         while(ch == -1)
         {
-            usleep(getchardt_us); // kHz
+            usleep(getchardt_us);
             ch = get_singlechar_nonblock();
         }
     }

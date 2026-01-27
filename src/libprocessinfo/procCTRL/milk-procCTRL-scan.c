@@ -163,6 +163,25 @@ int main(int argc, char *argv[]) {
     int rebuild = 0;
     int opt;
     
+    // --- DAEMON CHECK ---
+    pid_t my_pid = getpid();
+    int other_running = 0;
+    FILE *fp = popen("pgrep \"milk-procCTRL-s\"", "r");
+    if (fp != NULL) {
+        char pid_str[64];
+        while (fgets(pid_str, sizeof(pid_str), fp) != NULL) {
+            pid_t pid = (pid_t)atoi(pid_str);
+            if (pid != my_pid) {
+                printf("Scanner milk-procCTRL-scan is already running (PID %d)\n", (int)pid);
+                other_running = 1;
+                break;
+            }
+        }
+        pclose(fp);
+    }
+    if (other_running) return 0;
+    // --- END DAEMON CHECK ---
+
     static struct option long_options[] = {
         {"help",    no_argument,       0, 'h'},
         {"rate",    required_argument, 0, 'r'},

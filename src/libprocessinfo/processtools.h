@@ -235,8 +235,14 @@ int processinfo_exec_end(PROCESSINFO *processinfo);
 int processinfo_CatchSignals();
 int processinfo_ProcessSignals(PROCESSINFO *processinfo);
 
-errno_t processinfo_update_output_stream(PROCESSINFO *processinfo,
-        imageID      outstreamID);
+/**
+ * @brief Update output stream metadata and telemetry at the end of a loop iteration.
+ */
+errno_t processinfo_update_output_stream(
+    PROCESSINFO *processinfo,
+    IMAGE        *output_image,
+    IMAGE        *input_image
+);
 
 errno_t processinfo_CTRLscreen();
 

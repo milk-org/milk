@@ -1,291 +1,201 @@
-/** @file stream_monitorlimits.c
+/**
+ * @file stream_monitorlimits.c
+ * @brief Monitors stream to fit within limits.
  *
- * Monitors stream to fit within limits.
- *
- * Can take actions if limits are exceeded.
+ * Example of a stream monitoring loop with FPS and processinfo support.
  */
-
-#include <math.h>
 
 #include "CLIcore.h"
 #include "create_image.h"
-#include "delete_image.h"
 #include "image_ID.h"
-#include "stream_sem.h"
+#include "processinfo.h"
 
-#include "COREMOD_tools/COREMOD_tools.h"
+// Local variables pointers
+static char *inimname;
+static int64_t *dtus;
+static int64_t *minON;
+static float *minVal;
+static int64_t *maxON;
+static float *maxVal;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+static long fpi_dtus = -1;
+static long fpi_minON = -1;
+static long fpi_minVal = -1;
+static long fpi_maxON = -1;
+static long fpi_maxVal = -1;
 
-errno_t stream_monitorlimits_FPCONF();
-
-errno_t stream_monitorlimits_RUN();
-
-errno_t stream_monitorlimits(const char *instreamname);
-
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
-
-static errno_t COREMOD_MEMORY_stream_monitorlimits__cli()
-{
-    // Try FPS implementation
-
-    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
-    // Default FPS name will be used if CLI process has NOT been named.
-    // See code in function_parameter.c for detailed rules.
-    function_parameter_getFPSargs_from_CLIfunc("streammlim");
-
-    if(data.FPS_CMDCODE != 0)
+// List of arguments to function
+static CLICMDARGDEF farg[] = {
     {
-        // use FPS implementation
-        // set pointers to CONF and RUN functions
-        data.FPS_CONFfunc = stream_monitorlimits_FPCONF;
-        data.FPS_RUNfunc  = stream_monitorlimits_RUN;
-        function_parameter_execFPScmd();
-        return RETURN_SUCCESS;
-    }
-
-    // call non FPS implementation - all parameters specified at function launch
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
+        CLIARG_IMG,
+        ".in_name",
+        "input stream",
+        "im1",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&inimname,
+        NULL
+    },
     {
-        stream_monitorlimits(data.cmdargtoken[1].val.string);
-
-        return RETURN_SUCCESS;
-    }
-    else
+        CLIARG_INT64,
+        ".dtus",
+        "loop period [us]",
+        "100000",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&dtus,
+        &fpi_dtus
+    },
     {
-        return CLICMD_INVALID_ARG;
+        CLIARG_ONOFF,
+        ".minON",
+        "minimum limit toggle",
+        "0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&minON,
+        &fpi_minON
+    },
+    {
+        CLIARG_FLOAT32,
+        ".minVal",
+        "minimum limit value",
+        "0.0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&minVal,
+        &fpi_minVal
+    },
+    {
+        CLIARG_ONOFF,
+        ".maxON",
+        "maximum limit toggle",
+        "0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&maxON,
+        &fpi_maxON
+    },
+    {
+        CLIARG_FLOAT32,
+        ".maxVal",
+        "maximum limit value",
+        "1000.0",
+        CLIARG_VISIBLE_DEFAULT,
+        (void **)&maxVal,
+        &fpi_maxVal
     }
-}
+};
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static CLICMDDATA CLIcmddata = {
+    "streammlim",
+    "monitor stream values for safety",
+    CLICMD_FIELDS_DEFAULTS
+};
 
-errno_t stream_monitorlimits_addCLIcmd()
-{
-
-    RegisterCLIcommand("streammlim",
-                       __FILE__,
-                       COREMOD_MEMORY_stream_monitorlimits__cli,
-                       "monitor stream values for safety",
-                       "FPS function",
-                       "streammlim",
-                       "COREMOD_MEMORY_stream_monitorlimits_RUN");
-
+static errno_t help_function() {
+    printf("Monitors an input stream and checks if its values stay within limits.\n");
+    printf("If limits are exceeded, a message is written to processinfo.\n");
     return RETURN_SUCCESS;
 }
 
 /**
- * @brief Manages configuration parameters for stream_monitorlimits
- *
- * ## Purpose
- *
- * Initializes configuration parameters structure\n
- *
- * ## Arguments
- *
- * @param[in]
- * char*		fpsname
- * 				name of function parameter structure
- *
- * @param[in]
- * uint32_t		CMDmode
- * 				Command mode
- *
- *
+ * @brief Actual monitoring logic
  */
-errno_t stream_monitorlimits_FPCONF()
-{
-    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);
-    uint64_t FPFLAG;
+static errno_t monitor_logic(IMGID *imgptr) {
+    DEBUG_TRACE_FSTART();
 
-    FPFLAG = FPFLAG_DEFAULT_INPUT;
-    FPFLAG &= ~FPFLAG_WRITERUN;
+    resolveIMGID(imgptr, ERRMODE_ABORT);
 
-    FPS_ADDPARAM_STREAM_IN(streaminname, ".in_sname", "input stream", NULL);
+    uint32_t xsize = imgptr->md->size[0];
+    uint32_t ysize = imgptr->md->size[1];
+    uint64_t xysize = (uint64_t)xsize * ysize;
 
-    long dtus_default[4] = {50, 1, 1000000000, 50};
-    long fp_dtus         = 0;
-    function_parameter_add_entry(&fps,
-                                 ".dtus",
-                                 "Loop period [us]",
-                                 FPTYPE_INT64,
-                                 FPFLAG,
-                                 &dtus_default,
-                                 &fp_dtus);
-    (void) fp_dtus; // suppresses unused parameter compiler warning
+    float minv = imgptr->im->array.F[0];
+    float maxv = imgptr->im->array.F[0];
 
-    // Limits
-
-    FPFLAG = FPFLAG_DEFAULT_INPUT;
-    FPFLAG |= FPFLAG_WRITERUN;
-
-    long fpi_minON = 0;
-    function_parameter_add_entry(&fps,
-                                 ".minON",
-                                 "min toggle",
-                                 FPTYPE_ONOFF,
-                                 FPFLAG,
-                                 NULL,
-                                 &fpi_minON);
-    (void) fpi_minON;
-
-    long fpi_minVal = 0;
-    function_parameter_add_entry(&fps,
-                                 ".minVal",
-                                 "min value",
-                                 FPTYPE_FLOAT32,
-                                 FPFLAG,
-                                 NULL,
-                                 &fpi_minVal);
-    (void) fpi_minVal;
-
-    long fpi_maxON = 0;
-    function_parameter_add_entry(&fps,
-                                 ".maxON",
-                                 "max toggle",
-                                 FPTYPE_ONOFF,
-                                 FPFLAG_DEFAULT_INPUT,
-                                 NULL,
-                                 &fpi_maxON);
-    (void) fpi_maxON;
-
-    long fpi_maxVal = 0;
-    function_parameter_add_entry(&fps,
-                                 ".minVal",
-                                 "min value",
-                                 FPTYPE_FLOAT32,
-                                 FPFLAG,
-                                 NULL,
-                                 &fpi_maxVal);
-    (void) fpi_maxVal;
-
-    // start function parameter conf loop, defined in function_parameter.h
-    FPS_CONFLOOP_START
-
-    // stop function parameter conf loop, defined in function_parameter.h
-    FPS_CONFLOOP_END
-
-    printf("CONF EXIT CONDITION MET\n");
-
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief Delay image stream by time offset
- *
- * IDout_name is a time-delayed copy of IDin_name
- *
- */
-
-errno_t stream_monitorlimits_RUN()
-{
-
-    // ===========================
-    /// ### CONNECT TO FPS
-    // ===========================
-    FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
-
-    // ===============================
-    /// ### GET FUNCTION PARAMETER VALUES
-    // ===============================
-    // parameters are addressed by their tag name
-    // These parameters are read once, before running the loop
-    //
-    char IDin_name[FUNCTION_PARAMETER_STRMAXLEN];
-    strncpy(IDin_name,
-            functionparameter_GetParamPtr_STRING(&fps, ".in_sname"),
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
-
-    long dtus = functionparameter_GetParamValue_INT64(&fps, ".dtus");
-
-    // ===========================
-    /// ### processinfo support
-    // ===========================
-    PROCESSINFO *processinfo;
-
-    processinfo =
-        processinfo_setup(data.FPS_name, // re-use fpsname as processinfo name
-                          "monitor stream limits", // description
-                          "starting monitor",      // message on startup
-                          __FUNCTION__,
-                          __FILE__,
-                          __LINE__);
-
-    // =============================================
-    /// ### OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
-    // =============================================
-    // Pre-loop testing, anything that would prevent loop from starting should issue message
-    int loopOK = 1;
-
-    // Specify input stream trigger
-    imageID IDin = image_ID(IDin_name);
-
-    processinfo_waitoninputstream_init(processinfo,
-                                       (IDin == -1 ? NULL : &data.image[IDin]),
-                                       PROCESSINFO_TRIGGERMODE_DELAY,
-                                       -1);
-    processinfo->triggerdelay.tv_sec  = 0;
-    processinfo->triggerdelay.tv_nsec = (long)(dtus * 1000);
-    while(processinfo->triggerdelay.tv_nsec > 1000000000)
-    {
-        processinfo->triggerdelay.tv_nsec -= 1000000000;
-        processinfo->triggerdelay.tv_sec += 1;
-    }
-
-    // ===========================
-    /// ### START LOOP
-    // ===========================
-
-    // Notify processinfo that we are entering loop
-    processinfo_loopstart(processinfo);
-
-    while(loopOK == 1)
-    {
-        loopOK = processinfo_loopstep(processinfo);
-
-        processinfo_waitoninputstream(processinfo);
-
-        processinfo_exec_start(processinfo);
-
-        if(processinfo_compute_status(processinfo) == 1)
-        {
+    for (uint64_t ii = 1; ii < xysize; ii++) {
+        if (imgptr->im->array.F[ii] < minv) {
+            minv = imgptr->im->array.F[ii];
         }
-
-        // process signals, increment loop counter
-        processinfo_exec_end(processinfo);
+        if (imgptr->im->array.F[ii] > maxv) {
+            maxv = imgptr->im->array.F[ii];
+        }
     }
 
-    // ==================================
-    /// ### ENDING LOOP
-    // ==================================
-    processinfo_cleanExit(processinfo);
-    function_parameter_RUNexit(&fps);
+    int limit_exceeded = 0;
+    char msg[STRINGMAXLEN_PROCESSINFO_STATUSMSG];
+    msg[0] = '\0';
 
+    if (*minON && (minv < *minVal)) {
+        limit_exceeded = 1;
+        snprintf(msg, STRINGMAXLEN_PROCESSINFO_STATUSMSG, "MIN LIMIT EXCEEDED: %f < %f", minv, *minVal);
+    }
+
+    if (*maxON && (maxv > *maxVal)) {
+        limit_exceeded = 1;
+        if (msg[0] != '\0') {
+            strncat(msg, " | ", STRINGMAXLEN_PROCESSINFO_STATUSMSG - strlen(msg) - 1);
+        }
+        char tmpmsg[100];
+        snprintf(tmpmsg, 100, "MAX LIMIT EXCEEDED: %f > %f", maxv, *maxVal);
+        strncat(msg, tmpmsg, STRINGMAXLEN_PROCESSINFO_STATUSMSG - strlen(msg) - 1);
+    }
+
+    if (limit_exceeded) {
+        PRINT_WARNING("%s", msg);
+    }
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-errno_t stream_monitorlimits(const char *instreamname)
-{
-    FUNCTION_PARAMETER_STRUCT fps;
+static errno_t compute_function() {
+    DEBUG_TRACE_FSTART();
 
-    // create and initialize FPS
-    // specify name
-    sprintf(data.FPS_name, "%s-%s", "streammlim", instreamname);
-    data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
-    stream_monitorlimits_FPCONF();
+    IMGID inimg = mkIMGID_from_name(inimname);
+    resolveIMGID(&inimg, ERRMODE_ABORT);
 
-    // initialize parameters
-    function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
-    functionparameter_SetParamValue_STRING(&fps, "in_sname", instreamname);
-    function_parameter_struct_disconnect(&fps);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
-    // run
-    stream_monitorlimits_RUN();
+    if (data.processinfo == 1) {
+        processinfo_waitoninputstream_init(processinfo, inimg.im, PROCESSINFO_TRIGGERMODE_DELAY, -1);
+        processinfo->triggerdelay.tv_sec = 0;
+        processinfo->triggerdelay.tv_nsec = (*dtus) * 1000;
+        while (processinfo->triggerdelay.tv_nsec >= 1000000000) {
+            processinfo->triggerdelay.tv_nsec -= 1000000000;
+            processinfo->triggerdelay.tv_sec += 1;
+        }
+    }
 
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    {
+        monitor_logic(&inimg);
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
+}
+
+// Generate FPS and CLI functions
+INSERT_STD_FPSCLIfunctions
+
+// Registration function
+errno_t stream_monitorlimits_addCLIcmd() {
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+
+// For backward compatibility if needed
+errno_t stream_monitorlimits(const char *instreamname) {
+    inimname = strdup(instreamname);
+    int64_t default_dtus = 100000;
+    int64_t default_minON = 0;
+    float default_minVal = 0.0;
+    int64_t default_maxON = 0;
+    float default_maxVal = 1000.0;
+
+    dtus = &default_dtus;
+    minON = &default_minON;
+    minVal = &default_minVal;
+    maxON = &default_maxON;
+    maxVal = &default_maxVal;
+
+    return compute_function();
 }

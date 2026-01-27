@@ -16,6 +16,9 @@
 #include "fps_globals.h"
 #include "fps_shmdirname.h"
 
+
+
+
 errno_t function_parameter_struct_create(
     int NBparamMAX,
     const char *name
@@ -87,12 +90,11 @@ errno_t function_parameter_struct_create(
     memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
-    
-    // Decoupled from data.package_name
-    strncpy(fps.md->callprogname, "standalone", FPS_CALLPROGNAME_STRMAXLEN - 1);
-    
-    // Decoupled from data.cmdargtoken
-    strncpy(fps.md->callfuncname, "unknown", FPS_CALLFUNCNAME_STRMAXLEN - 1);
+
+    // Use global defaults
+    strncpy(fps.md->callprogname, FPS_callprogname, FPS_CALLPROGNAME_STRMAXLEN - 1);
+
+    strncpy(fps.md->callfuncname, FPS_callfuncname, FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
@@ -177,7 +179,7 @@ errno_t function_parameter_struct_realloc(
 
     // 3. Remap
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
-             mmap(0, sharedsize_new, PROT_READ | PROT_WRITE, MAP_SHARED, fps->SMfd, 0);
+              mmap(0, sharedsize_new, PROT_READ | PROT_WRITE, MAP_SHARED, fps->SMfd, 0);
     if(fps->md == MAP_FAILED)
     {
         perror("Error re-mmapping the file");
@@ -190,7 +192,7 @@ errno_t function_parameter_struct_realloc(
 
     // 4. Initialize new part
     memset(&fps->parray[fps->md->NBparamMAX], 0, (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FUNCTION_PARAMETER));
-    
+
     fps->md->NBparamMAX = NBparamMAX_new;
 
     // 5. Update pointers in cmdset (if they were set)

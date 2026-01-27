@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file PCAmatch.c
  *
@@ -433,10 +434,10 @@ static errno_t compute_function()
             *GPUdevice
         );
 
-        processinfo_update_output_stream(processinfo, imgoutcA.ID);
-        processinfo_update_output_stream(processinfo, imgoutcB.ID);
-        //processinfo_update_output_stream(processinfo, imgoutimA.ID);
-        //processinfo_update_output_stream(processinfo, imgoutimB.ID);
+        processinfo_update_output_stream(processinfo, imgoutcA.im, NULL);
+        processinfo_update_output_stream(processinfo, imgoutcB.im, NULL);
+        //processinfo_update_output_stream(processinfo, imgoutimA.im, NULL);
+        //processinfo_update_output_stream(processinfo, imgoutimB.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

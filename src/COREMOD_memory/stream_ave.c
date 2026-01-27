@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /** @file stream_ave.c
  */
 
@@ -352,7 +353,7 @@ static errno_t compute_function()
                 outimgave.im->array.F[pixi] = imdataarray[pixi] / (*cntindex);
             }
 
-            processinfo_update_output_stream(processinfo, outimgave.ID);
+            processinfo_update_output_stream(processinfo, outimgave.im, NULL);
         }
 
         if(*comprms == 1)
@@ -364,7 +365,7 @@ static errno_t compute_function()
                     sqrt(imdataarrayPOW[pixi]) / (*cntindex);
             }
 
-            processinfo_update_output_stream(processinfo, outimgrms.ID);
+            processinfo_update_output_stream(processinfo, outimgrms.im, NULL);
         }
 
         (*cntindex) = 0;

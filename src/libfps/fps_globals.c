@@ -5,6 +5,8 @@ char FPS_PROCESS_TYPE[STRINGMAXLEN_FPSPROCESSTYPE] = "UNDEF";
 
 uint32_t FPS_CMDCODE = 0;
 char FPS_name[STRINGMAXLEN_FPS_NAME] = "";
+char FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN] = "milk";
+char FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN] = "unknown";
 errno_t (*FPS_CONFfunc)() = NULL;
 errno_t (*FPS_RUNfunc)() = NULL;
 

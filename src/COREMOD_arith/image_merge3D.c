@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    image_merge3D.c
  * @brief   merge 3D images
@@ -394,7 +395,7 @@ static errno_t compute_function()
             *mergeaxis
         );
 
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

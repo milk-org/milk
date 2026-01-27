@@ -513,8 +513,6 @@ typedef struct
 
     long     FPS_TIMESTAMP;            // included in log file name
     uint32_t FPS_CMDCODE;              // current FPS mode
-    errno_t (*FPS_CONFfunc)();         // pointer to FPS conf function
-    errno_t (*FPS_RUNfunc)();          // pointer to FPS run function
 
 
 

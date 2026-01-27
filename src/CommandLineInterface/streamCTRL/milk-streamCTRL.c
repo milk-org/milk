@@ -3,11 +3,15 @@
 #include "CLIcore_datainit.h"
 #include "CLIcore_setSHMdir.h"
 #include "streamCTRL_TUI.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 int main(int argc, char *argv[])
 {
     (void) argc;
     (void) argv;
+
+    // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
+    ImageStreamIO_set_verbosity(0);
 
     // Initialize data
     if(getenv("MILK_QUIET")) {

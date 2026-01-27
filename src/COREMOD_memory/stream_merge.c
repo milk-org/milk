@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_merge.c
  * @brief   Merge n independently triggers streams into one
@@ -138,7 +139,7 @@ static errno_t compute_function()
         // What about keywords?
 
         // Finito!
-        processinfo_update_output_stream(processinfo, img_out.ID);
+        processinfo_update_output_stream(processinfo, img_out.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

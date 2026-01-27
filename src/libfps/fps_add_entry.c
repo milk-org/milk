@@ -6,12 +6,27 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-/** @brief Add parameter to database with default settings
+/**
+ * @brief Add a parameter entry to a Function Parameter Structure (FPS).
  *
- * If entry already exists, do not modify it
+ * This function handles the low-level logic of finding or creating a 
+ * parameter slot in the shared memory array.
  *
+ * Logic flow:
+ * 1.  Prepend the FPS name to the keyword if it starts with a dot.
+ * 2.  Search for an existing parameter with the same full keyword.
+ * 3.  If found, return its index without modifying it.
+ * 4.  If not found, find the first inactive slot in the parameter array.
+ * 5.  If the array is full, call `function_parameter_struct_realloc` to grow it.
+ * 6.  Initialize the parameter metadata:
+ *     - Keyword components (broken down by dots).
+ *     - Description.
+ *     - Data type.
+ *     - Flags.
+ * 7.  Set initial/default values based on the data type.
+ * 8.  If `valueptr` is provided, copy the initial values from it into the FPS.
+ * 9.  Return the index of the newly added entry.
  */
-
 errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                                      const char                *keywordstring,
                                      const char *descriptionstring,

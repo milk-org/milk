@@ -21,17 +21,28 @@
 // #include "timeutils.h"
 
 
-/** @brief Connect to function parameter structure
+/**
+ * @brief Connect to an existing FPS in shared memory.
  *
+ * This function performs the mapping of a shared memory file containing 
+ * an FPS structure into the process's address space. It also handles 
+ * initial synchronization and optionally loads data streams specified 
+ * by FPS parameters.
  *
- * ## Arguments
- *
- * fpsconnectmode can take following value
- *
- * FPSCONNECT_SIMPLE : connect only, don't try load streams
- * FPSCONNECT_CONF   : connect as CONF process
- * FPSCONNECT_RUN    : connect as RUN process
- *
+ * Logic flow:
+ * 1.  Initialize global FPS timestamp and process type if not already set.
+ * 2.  Construct the full path to the SHM file (e.g., /tmp/milk/fps/<name>.fps.shm).
+ * 3.  Open the file and use `fstat` to determine its size.
+ * 4.  `mmap` the entire file into memory.
+ * 5.  Set the metadata (`fps->md`) and parameter array (`fps->parray`) pointers.
+ * 6.  If connecting as CONF or RUN process, record the process PID and start time.
+ * 7.  Parse the FPS name (which may contain indices separated by '-') into the metadata.
+ * 8.  Count the number of active parameters.
+ * 9.  If in CONF/RUN mode, iterate through all parameters and call 
+ *     `functionparameter_LoadStream` for any parameter of type `FPTYPE_STREAMNAME`.
+ * 10. If in RUN mode, attempt to populate the `fps->cmdset` structure by looking 
+ *     up standard processinfo-related parameters (e.g., ".procinfo.enabled", 
+ *     ".procinfo.RTprio", etc.).
  */
 long function_parameter_struct_connect(
     const char                *name,
