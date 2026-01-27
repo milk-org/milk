@@ -139,44 +139,63 @@ errno_t fpsCTRL_FPSdisplay(
             child_index[level] = 0;
         }
 
-        // Calculate dynamic widths
-        int max_kw_width = 10;
-        int max_val_width = 10;
-        
-        DEBUG_TRACEPOINT("Calculating dynamic widths for %d children", keywnode[fpsCTRLvar->directorynodeSelected].NBchild);
+        // Calculate dynamic widths for each level
+        int max_kw_width[MAXNBLEVELS];
+        for (int l = 0; l < MAXNBLEVELS; l++) max_kw_width[l] = 5; // minimum width
+
+        // Widths for hierarchy columns (levels < currentlevel)
+        for (int l = 0; l < fpsCTRLvar->currentlevel; l++)
+        {
+            int parent_node = nodechain[l];
+            for (int i = 0; i < keywnode[parent_node].NBchild; i++)
+            {
+                int kn = keywnode[parent_node].child[i];
+                int len = strlen(keywnode[kn].keyword[l]);
+                if (len > max_kw_width[l]) max_kw_width[l] = len;
+            }
+            if (max_kw_width[l] > 30) max_kw_width[l] = 30;
+        }
+
+        // Width for the current level's keyword column
+        int max_val_width = 5;
+        int cl = fpsCTRLvar->currentlevel;
         for(int i = 0; i < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; i++)
         {
             int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[i];
+            int kw_len;
             if (keywnode[knodeindex].leaf)
             {
                 int fpsindex = keywnode[knodeindex].fpsindex;
                 int pindex = keywnode[knodeindex].pindex;
-                int kw_len = strlen(fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
-                if (kw_len > max_kw_width) max_kw_width = kw_len;
+                kw_len = strlen(fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
                 
                 char valstring[200];
-                functionparameter_GetParamValueString(&fpsarray[fpsindex].parray[pindex], valstring, 200);
+                if (fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
+                    snprintf(valstring, 200, "%s", fpsarray[fpsindex].parray[pindex].val.string[0]);
+                } else {
+                    functionparameter_GetParamValueString(&fpsarray[fpsindex].parray[pindex], valstring, 200);
+                }
                 int val_len = strlen(valstring);
                 if (val_len > max_val_width) max_val_width = val_len;
             }
             else
             {
-                int kw_len = strlen(keywnode[knodeindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
-                if (kw_len > max_kw_width) max_kw_width = kw_len;
+                kw_len = strlen(keywnode[knodeindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
             }
+            if (kw_len > max_kw_width[cl]) max_kw_width[cl] = kw_len;
         }
+        if (max_kw_width[cl] > 30) max_kw_width[cl] = 30;
+        if (max_val_width > 40) max_val_width = 40;
 
-        if(max_kw_width > 30) max_kw_width = 30;
-        if(max_val_width > 40) max_val_width = 40;
-
-        DEBUG_TRACEPOINT("max_kw_width: %d, max_val_width: %d", max_kw_width, max_val_width);
+        DEBUG_TRACEPOINT("max_kw_width[cl]: %d, max_val_width: %d", max_kw_width[cl], max_val_width);
 
         // Impose constraints based on terminal width
-        int reserved_width = (fpsCTRLvar->currentlevel * 12) + 25; 
+        int reserved_width = 25; 
+        for (int l = 0; l < fpsCTRLvar->currentlevel; l++) reserved_width += max_kw_width[l] + 3;
         int available_width = COLS - reserved_width;
         if (available_width < 40) available_width = 40;
         
-        if (max_kw_width > available_width / 2) max_kw_width = available_width / 2;
+        if (max_kw_width[cl] > available_width / 2) max_kw_width[cl] = available_width / 2;
         // max_val_width is handled by sliding print, but we need enough space for description
 
         TUI_newline();
@@ -262,7 +281,7 @@ errno_t fpsCTRL_FPSdisplay(
                         screenprint_setcolor(5);
                     }
 
-                    TUI_printfw("%-*.*s ", max_kw_width, max_kw_width, keywnode[knodeindex].keyword[level]);
+                    TUI_printfw("%-*.*s ", max_kw_width[level], max_kw_width[level], keywnode[knodeindex].keyword[level]);
 
                     if(keywnode[knodeindex].leaf == 0)   // directory
                     {
@@ -282,7 +301,7 @@ errno_t fpsCTRL_FPSdisplay(
                 }
                 else     // blank space
                 {
-                    TUI_printfw("%*s ", max_kw_width, " ");
+                    TUI_printfw("%*s ", max_kw_width[level], " ");
                     TUI_printfw("  ");
                 }
             }
@@ -321,10 +340,10 @@ errno_t fpsCTRL_FPSdisplay(
                     {
                         screenprint_setcolor(5);
                         int l = keywnode[knodeindex].keywordlevel;
-                        TUI_printfw("%-*.*s", max_kw_width, max_kw_width, keywnode[knodeindex].keyword[l - 1]);
+                        TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], keywnode[knodeindex].keyword[l - 1]);
                         screenprint_unsetcolor(5);
 
-                        if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
+                        if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                         {
                             TUI_printfw("> ");
                             screenprint_unsetreverse();
@@ -334,7 +353,7 @@ errno_t fpsCTRL_FPSdisplay(
                             TUI_printfw("  ");
                         }
                     }
-                    else TUI_printfw("%*s  ", max_kw_width, " ");
+                    else TUI_printfw("%*s  ", max_kw_width[cl], " ");
                 }
                 else   // If this is a parameter
                 {
@@ -391,7 +410,7 @@ errno_t fpsCTRL_FPSdisplay(
                         TUI_printfw("  ");
                     }
 
-                    if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
+                    if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                         screenprint_setreverse();
 
                     int is_resolved_stream = 0;
@@ -402,7 +421,7 @@ errno_t fpsCTRL_FPSdisplay(
                         }
                     }
 
-                    TUI_printfw(" %-*.*s", max_kw_width, max_kw_width, fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
+                    TUI_printfw(" %-*.*s", max_kw_width[cl], max_kw_width[cl], fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
 
                     if (is_resolved_stream) {
                         screenprint_unsetcolor(2);
@@ -412,7 +431,7 @@ errno_t fpsCTRL_FPSdisplay(
                         screenprint_unsetcolor(COLOR_OK);
                     }
 
-                    if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
+                    if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                     {
                         screenprint_unsetcolor(10);
                         TUI_printfw("> ");
@@ -506,6 +525,50 @@ errno_t fpsCTRL_FPSdisplay(
         }
     }
     else TUI_printfw("NO FPS LOADED\n");
+
+    return RETURN_SUCCESS;
+}
+
+errno_t fpsCTRL_FPSlog(
+    KEYWORD_TREE_NODE    *keywnode,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar
+)
+{
+    (void) keywnode;
+    if (fpsCTRLvar->NBfps > 0)
+    {
+        int fpsidx = fpsCTRLvar->fpsindexSelected;
+        char datadir[FPS_DIR_STRLENMAX];
+        strncpy(datadir, fpsarray[fpsidx].md->datadir, FPS_DIR_STRLENMAX - 1);
+
+        TUI_printfw("LOG FOR FPS: %s  (directory: %s)\n", fpsarray[fpsidx].md->name, datadir);
+        TUI_newline();
+
+        char cmd[1024];
+        // Find all .fps files, grep for comment lines, sort them, and take the last 40.
+        snprintf(cmd, sizeof(cmd), "grep -h '#' %s/*.fps 2>/dev/null | sort | tail -n 40", datadir);
+        
+        FILE *fp = popen(cmd, "r");
+        if (fp != NULL)
+        {
+            char line[1024];
+            while (fgets(line, sizeof(line), fp) != NULL)
+            {
+                // Format: value # timestamp cnt0 [pid tid] comment
+                // We want to show the timestamp and the comment part.
+                TUI_printfw("%s", line);
+            }
+            pclose(fp);
+        }
+        else
+        {
+            TUI_printfw("No log entries found.\n");
+        }
+    }
+    else
+    {
+        TUI_printfw("NO FPS LOADED\n");
+    }
 
     return RETURN_SUCCESS;
 }
