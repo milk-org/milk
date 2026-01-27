@@ -679,6 +679,11 @@ errno_t functionparameter_CTRLscreen(
 
     free(fpsctrltasklist);
     free(fpsctrlqueuelist);
+
+    if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
+        unlink(fpsCTRLvar.fpsCTRLfifoname);
+    }
+
     functionparameter_outlog("LOGFILECLOSE", "close log file");
 
     DEBUG_TRACE_FEXIT();

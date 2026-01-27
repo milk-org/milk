@@ -1435,21 +1435,13 @@ errno_t streamCTRL_CTRLscreen()
                             TUI_printfw(string);
 
                             {
-                                int s;
-                                int max_s = sTUIparam.DISPLAY_ALL_SEMS
-                                            ? streamCTRLimages[ID].md[0].sem
-                                            : 3;
+                                pid_t pid = streamCTRLimages[ID].semWritePID[0];
                                 TUI_printfw(" ");
-                                for(s = 0; s < max_s; s++)
-                                {
-                                    pid_t pid = streamCTRLimages[ID].semWritePID[s];
-                                    if (s > 0) TUI_printfw(":");
-                                    streamCTRL_print_procpid(0, // 0 for minimal width
-                                                             pid,
-                                                             upstreamproc,
-                                                             NBupstreamproc,
-                                                             print_pid_mode);
-                                }
+                                streamCTRL_print_procpid(8,
+                                                         pid,
+                                                         upstreamproc,
+                                                         NBupstreamproc,
+                                                         print_pid_mode);
                             }
 
                             if(sTUIparam.DisplayDetailLevel == 1)

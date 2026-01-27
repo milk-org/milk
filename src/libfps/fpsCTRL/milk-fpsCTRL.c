@@ -3,9 +3,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
+#include <libgen.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fpsCTRL_globals.h"
+#include "fps_shmdirname.h"
 
 // Standalone main for milk-fpsCTRL
 
@@ -14,7 +16,7 @@ void print_usage(const char *progname) {
     printf("Options:\n");
     printf("  -m, --match       Force match with fpscmd/fpslist.txt (default: 0)\n");
     printf("  -n, --name NAME   Filter FPS by name mask (default: \"_ALL\")\n");
-    printf("  -f, --fifo FIFO   Input FIFO name (default: \"\")\n");
+    printf("  -f, --fifo FIFO   Input FIFO name (default: based on terminal name)\n");
     printf("  -q, --quiet       Quiet mode (suppress TUI output)\n");
     printf("  -s, --stdio       Use stdio instead of ncurses\n");
     printf("  -h, --help        Show this help message\n");
@@ -85,6 +87,17 @@ int main(int argc, char *argv[]) {
     // Handle positional argument for name mask
     if (optind < argc) {
         strncpy(fpsnamemask, argv[optind], sizeof(fpsnamemask) - 1);
+    }
+
+    // Default FIFO name based on terminal
+    if (strlen(fifoname) == 0) {
+        char *term_name = ttyname(STDIN_FILENO);
+        if (term_name != NULL) {
+            char shmdname[STRINGMAXLEN_SHMDIRNAME];
+            function_parameter_struct_shmdirname(shmdname);
+            char *term_base = basename(term_name);
+            snprintf(fifoname, sizeof(fifoname), "%s/fpsCTRL_%s.fifo", shmdname, term_base);
+        }
     }
 
     // Call the main TUI function
