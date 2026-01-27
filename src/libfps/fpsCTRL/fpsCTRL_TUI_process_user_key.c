@@ -48,11 +48,11 @@ int fpsCTRL_TUI_process_user_key(
     {
         if(ch == 545 || ch == 560 || ch == 443 || ch == 564 || ch == 554) { // CTRL+LEFT
              fpsCTRLvar->fpsCTRL_DisplayMode--;
-             if (fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 3;
+             if (fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 4;
         }
         else if (ch == 561 || ch == 566 || ch == 444 || ch == 565 || ch == 569) { // CTRL+RIGHT
              fpsCTRLvar->fpsCTRL_DisplayMode++;
-             if (fpsCTRLvar->fpsCTRL_DisplayMode > 3) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
+             if (fpsCTRLvar->fpsCTRL_DisplayMode > 4) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
         }
 
         switch(ch)
@@ -68,12 +68,16 @@ int fpsCTRL_TUI_process_user_key(
             fpsCTRLvar->fpsCTRL_DisplayMode = 1;
             break;
 
-        case KEY_F(2): // control
+        case '?': // fps log
             fpsCTRLvar->fpsCTRL_DisplayMode = 2;
             break;
 
-        case KEY_F(3): // scheduler
+        case KEY_F(2): // control
             fpsCTRLvar->fpsCTRL_DisplayMode = 3;
+            break;
+
+        case KEY_F(3): // scheduler
+            fpsCTRLvar->fpsCTRL_DisplayMode = 4;
             break;
 
         case 's' : // (re)scan
@@ -143,7 +147,7 @@ int fpsCTRL_TUI_process_user_key(
             {
                 fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
             }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 3)
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart--;
             break;
 
@@ -161,7 +165,7 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
                     keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
             }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 3)
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart++;
             break;
 
@@ -172,7 +176,7 @@ int fpsCTRL_TUI_process_user_key(
             {
                 fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
             }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 3)
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart -= 10;
             break;
 
@@ -190,7 +194,7 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
                     keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
             }
-            if (fpsCTRLvar->fpsCTRL_DisplayMode == 3)
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart += 10;
             break;
 
