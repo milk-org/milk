@@ -56,4 +56,10 @@ make
    ./milk-example-03-processor confstop
    ```
 
+7. Use a custom FPS name:
+   ```bash
+   ./milk-example-03-processor fpsinit -n myname
+   ./milk-example-03-processor runstart -n myname -tmux
+   ```
+
 The processor will use FPS for its configuration parameters and can be controlled via `libfps` or the `milk-fpsCTRL` script.

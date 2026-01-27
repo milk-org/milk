@@ -155,13 +155,23 @@ errno_t functionparameter_FPS_tmux_init(
                            fps->md->name);
 
 
+    char progexec[1024];
+    if( (strlen(fps->md->execfullpath) > 0) && (strcmp(fps->md->execfullpath, "unknown") != 0) )
+    {
+        strncpy(progexec, fps->md->execfullpath, 1023);
+    }
+    else
+    {
+        snprintf(progexec, 1024, "%s-exec", fps->md->callprogname);
+    }
+
     snprintf(functionstring,
              funcstring_maxlen,
              " function fpsconfstart {\n"
              "echo \"STARTING CONF PROCESS\"\n"
-             "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
+             "MILK_FPSPROCINFO=1 %s -n %s \\\"%s%s _CONFSTART_ %s\\\"\n"
              "}\n",
-             fps->md->callprogname,
+             progexec,
              fps->md->name,
              mloadstring,
              fps->md->callfuncname,
@@ -186,10 +196,10 @@ errno_t functionparameter_FPS_tmux_init(
              funcstring_maxlen,
              " function fpsrunstart {\n"
              "echo \"STARTING RUN PROCESS\"\n"
-             "MILK_FPSPROCINFO=1 %s-exec -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
+             "MILK_FPSPROCINFO=1 %s -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
              "_RUNSTART_ %s\\\"\n"
              "}\n",
-             fps->md->callprogname,
+             progexec,
              fps->md->name,
              mloadstring,
              fps->md->callfuncname,
@@ -205,9 +215,9 @@ errno_t functionparameter_FPS_tmux_init(
              funcstring_maxlen,
              " function fpsrunstop {\n"
              "echo \"STOPPING RUN PROCESS\"\n"
-             "%s-exec -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
+             "%s -n %s \\\"%s%s _RUNSTOP_ %s\\\"\n"
              "}\n",
-             fps->md->callprogname,
+             progexec,
              fps->md->name,
              mloadstring,
              fps->md->callfuncname,
@@ -217,5 +227,20 @@ errno_t functionparameter_FPS_tmux_init(
                            fps->md->name,
                            functionstring);
 
+    return RETURN_SUCCESS;
+}
+
+/** @brief Ensure FPS tmux sesssion exists
+ *
+ */
+errno_t functionparameter_FPS_tmux_ensure(
+    FUNCTION_PARAMETER_STRUCT *fps
+)
+{
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps->md->name);
+    if (system(cmd) != 0) {
+        functionparameter_FPS_tmux_init(fps);
+    }
     return RETURN_SUCCESS;
 }

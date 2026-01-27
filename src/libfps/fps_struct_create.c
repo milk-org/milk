@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CLIcore.h"
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
@@ -96,6 +97,17 @@ errno_t function_parameter_struct_create(
 
     strncpy(fps.md->callfuncname, FPS_callfuncname, FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
+    {
+        char path[512];
+        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+        if (len != -1) {
+            path[len] = '\0';
+            strncpy(fps.md->execfullpath, path, 511);
+        } else {
+            strncpy(fps.md->execfullpath, "unknown", 511);
+        }
+    }
+
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
     {
@@ -137,7 +149,32 @@ errno_t function_parameter_struct_create(
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
-    // Decoupled from data.NBmodule
+    for(int m = 0; m < data.NBmodule; m++)
+    {
+        if(data.module[m].type != MODULE_TYPE_UNUSED)
+        {
+            char *mname = data.module[m].name;
+            if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
+            {
+                if(strlen(data.module[m].loadname) > 0)
+                {
+                    mname = data.module[m].loadname;
+                }
+            }
+
+            if(strlen(mname) > 0)
+            {
+                strncpy(fps.md->modulename[fps.md->NBmodule],
+                        mname,
+                        FPS_MODULE_STRMAXLEN - 1);
+                fps.md->NBmodule++;
+            }
+        }
+        if(fps.md->NBmodule >= FPS_MAXNB_MODULE)
+        {
+            break;
+        }
+    }
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default

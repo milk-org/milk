@@ -286,6 +286,7 @@ typedef struct
 {
     char name[STRINGMAXLEN_FPS_NAME];
     char description[FPS_DESCR_STRMAXLEN];
+    char execfullpath[512];
     char keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
     char workdir[FPS_CWD_STRLENMAX];
     char datadir[FPS_DIR_STRLENMAX];
