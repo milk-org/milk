@@ -90,3 +90,37 @@ target_link_libraries(milk-fpsCTRL PUBLIC
 )
 
 install(TARGETS milk-fpsCTRL DESTINATION bin)
+
+# ==========================================
+# milk-fps-list executable
+# ==========================================
+
+add_executable(milk-fps-list milk-fps-list.c)
+target_link_libraries(milk-fps-list PUBLIC 
+    milkfps
+    milkprocessinfo 
+    ImageStreamIO
+    CLIcore
+    ${NCURSES_LIBRARIES}
+    pthread
+    m
+)
+
+install(TARGETS milk-fps-list DESTINATION bin)
+
+# ==========================================
+# milk-fps-print executable
+# ==========================================
+
+add_executable(milk-fps-print milk-fps-print.c)
+target_link_libraries(milk-fps-print PUBLIC 
+    milkfps
+    milkprocessinfo 
+    ImageStreamIO
+    CLIcore
+    ${NCURSES_LIBRARIES}
+    pthread
+    m
+)
+
+install(TARGETS milk-fps-print DESTINATION bin)
