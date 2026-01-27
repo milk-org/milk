@@ -15,6 +15,20 @@
 
 // High level processinfo function
 
+/**
+ * @brief Initialize and register a process for MILK process management.
+ *
+ * This function performs the first-time setup of a process's shared memory 
+ * status structure.
+ *
+ * Logic flow:
+ * 1.  Ensure the processinfo instance name is valid.
+ * 2.  Call `processinfo_shm_create` to physically create and map the SHM segment.
+ * 3.  Initialize metadata fields: loop status (INIT), source code location, 
+ *     description, and initial message.
+ * 4.  Set default values for loop control: infinite loop, no timing measurement, 
+ *     and no real-time priority.
+ */
 PROCESSINFO *processinfo_setup(
     char         *
     pinfoname, // short name for the processinfo instance, avoid spaces, name should be human-readable
@@ -85,7 +99,13 @@ PROCESSINFO *processinfo_setup(
     return processinfo;
 }
 
-// report error
+/**
+ * @brief Log an error and perform a clean exit.
+ *
+ * This function is used to handle fatal loop errors. it sets the loop 
+ * status to ERROR, writes the error message to SHM, and then calls 
+ * `processinfo_cleanExit` to detach.
+ */
 errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
 {
     processinfo->loopstat = 4; // ERROR
@@ -94,6 +114,13 @@ errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Finalize process initialization and enter active loop state.
+ *
+ * This function should be called just before entering the main processing loop.
+ * It resets the loop counter, sets status to ACTIVE, and attempts to set 
+ * the process's real-time scheduler priority if configured.
+ */
 errno_t processinfo_loopstart(PROCESSINFO *processinfo)
 {
     processinfo->loopcnt  = 0;

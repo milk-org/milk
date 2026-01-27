@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_copy.c
  * @brief   copy image stream
@@ -83,7 +84,7 @@ static errno_t compute_function()
             byte_copy_size
         );
 
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

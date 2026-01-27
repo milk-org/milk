@@ -420,6 +420,7 @@ errno_t functionparameter_scan_fps(
 
                                 if(scanOK == 0)  // node does not exit -> create it
                                 {
+                                    kwnindex = NBkwn;
                                     if(NBkwn >= NB_KEYWNODE_MAX)
                                     {
                                         fprintf(stderr, "WARNING: Maximum number of keyword nodes reached (%d). Skipping further parameters.\n", NB_KEYWNODE_MAX);

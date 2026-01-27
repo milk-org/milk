@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    linalgebra_MVMextractModesLoop.c
  * @brief   CUDA functions wrapper
@@ -95,8 +96,20 @@ static errno_t LINALGEBRA_MVMextractModesLoop_cli()
     if(data.FPS_CMDCODE != 0)  // use FPS implementation
     {
         // set pointers to CONF and RUN functions
-        data.FPS_CONFfunc = LINALGEBRA_MVMextractModesLoop_FPCONF;
-        data.FPS_RUNfunc  = LINALGEBRA_MVMextractModesLoop_RUN;
+        extern errno_t (*FPS_CONFfunc)();
+        extern errno_t (*FPS_RUNfunc)();
+        extern uint32_t FPS_CMDCODE;
+        extern char     FPS_name[STRINGMAXLEN_FPS_NAME];
+        extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];
+        extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
+        extern FUNCTION_PARAMETER_STRUCT *fpsarray;
+        FPS_CONFfunc = LINALGEBRA_MVMextractModesLoop_FPCONF;
+        FPS_RUNfunc  = LINALGEBRA_MVMextractModesLoop_RUN;
+        FPS_CMDCODE  = data.FPS_CMDCODE;
+        fpsarray     = data.fpsarray;
+        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);
+        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);
+        strncpy(FPS_callfuncname, "cudaMVM", FPS_CALLFUNCNAME_STRMAXLEN - 1);
         function_parameter_execFPScmd();
         return RETURN_SUCCESS;
     }
@@ -1403,7 +1416,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                             data.image[ID_modeval].array.F[k] = modevalarray[k];
                         }
 
-                    processinfo_update_output_stream(processinfo, ID_modeval);
+                    processinfo_update_output_stream(processinfo, &data.image[ID_modeval], NULL);
                 }
             }
         }
@@ -1473,7 +1486,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 }
                 stepcoeff *= stepcoeff0;
             }
-            processinfo_update_output_stream(processinfo, IDprocave);
+            processinfo_update_output_stream(processinfo, &data.image[IDprocave], NULL);
 
             stepcoeff                         = stepcoeff0;
             data.image[IDprocrms].md[0].write = 1;
@@ -1492,7 +1505,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 stepcoeff *= stepcoeff0;
             }
 
-            processinfo_update_output_stream(processinfo, IDprocrms);
+            processinfo_update_output_stream(processinfo, &data.image[IDprocrms], NULL);
         }
 
         //t06OK = 1;

@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    applyPF.c
  * @brief   Apply predictive filter
@@ -591,8 +592,8 @@ static errno_t compute_function()
         imgout.im->array.F[outmaskindex[mi]] = imgoutbuff.im->array.F[mi];
         imgoutPFstat.im->array.F[outmaskindex[mi]] = 1.0;
     }
-    processinfo_update_output_stream(processinfo, imgoutPFstat.ID);
-    processinfo_update_output_stream(processinfo, imgout.ID);
+    processinfo_update_output_stream(processinfo, imgoutPFstat.im, NULL);
+    processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
 
 

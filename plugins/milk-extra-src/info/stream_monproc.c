@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_monproc.c
  * @brief   monitor stream with multi-level time binning, circular buffer, and dynamic histogram
@@ -408,7 +409,7 @@ errno_t stream_monitor_run(
         memcpy(cbptr_raw, inimg.im->array.raw, xysize * typesize);
         cbimg.md->cnt1 = cb_idx;
         cbimg.md->write = 1;
-        processinfo_update_output_stream(processinfo, cbimg.ID);
+        processinfo_update_output_stream(processinfo, cbimg.im, NULL);
 
         // --------------------------------------------------------------------
         // Update Timing
@@ -419,7 +420,7 @@ errno_t stream_monitor_run(
         cbtptr[cb_idx * 2 + 1] = (uint64_t) tnow.tv_nsec;
         cbtimg.md->cnt1 = cb_idx;
         cbtimg.md->write = 1;
-        processinfo_update_output_stream(processinfo, cbtimg.ID);
+        processinfo_update_output_stream(processinfo, cbtimg.im, NULL);
 
 
         // --------------------------------------------------------------------
@@ -533,8 +534,8 @@ errno_t stream_monitor_run(
                     outptr[pixi] = (float) avg;
                     outrmsptr[pixi] = (float) (var > 0 ? sqrt(var) : 0);
                 }
-                processinfo_update_output_stream(processinfo, imgoutbin[b].ID);
-                processinfo_update_output_stream(processinfo, imgoutbinrms[b].ID);
+                processinfo_update_output_stream(processinfo, imgoutbin[b].im, NULL);
+                processinfo_update_output_stream(processinfo, imgoutbinrms[b].im, NULL);
 
                 for (uint64_t pixi = 0; pixi < xysize; pixi++) {
                     arraysum[b][pixi] = 0.0;

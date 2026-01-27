@@ -227,7 +227,10 @@ int fpsCTRL_TUI_process_user_key(
                 if(system("clear") != 0) { } // Corrected escaping for "clear"
                 functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
                         fpsCTRLvar->pindexSelected);
-                TUI_initncurses();
+                {
+                    short unsigned int wrow = 0, wcol = 0;
+                    TUI_initncurses(&wrow, &wcol);
+                }
                 TUI_stdio_clear();
             }
             break;
@@ -296,6 +299,19 @@ int fpsCTRL_TUI_process_user_key(
             functionparameter_CONFstart(&fps[fpsindex]);
             break;
 
+        case 'O': // toggle conf process
+        case ctrl('o'):
+            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            if((getpgid(fps[fpsindex].md->confpid) >= 0) && (fps[fpsindex].md->confpid > 0))
+            {
+                 functionparameter_CONFstop(&fps[fpsindex]);
+            }
+            else
+            {
+                 functionparameter_CONFstart(&fps[fpsindex]);
+            }
+            break;
+
         case 'c': // kill conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_CONFstop(&fps[fpsindex]);
@@ -316,7 +332,10 @@ int fpsCTRL_TUI_process_user_key(
             printf("  TOTAL :  %d nodes\n\n", fpsCTRLvar->NBkwn);
             printf("Press Enter to Continue\n");
             while(getchar() != '\n');
-            TUI_initncurses();
+            {
+                short unsigned int wrow = 0, wcol = 0;
+                TUI_initncurses(&wrow, &wcol);
+            }
             break;
         
         case 'v':

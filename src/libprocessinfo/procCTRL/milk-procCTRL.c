@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "processinfo.h"
 #include "procCTRL_TUI.h"
 
@@ -30,6 +31,7 @@ void print_help(const char *progname) {
     printf("Options:\n");
     printf("  -h, --help           Show this help message and exit.\n");
     printf("  -d, --debug          Enable debug output to stdout (disables TUI).\n");
+    printf("  -c, --check-scan     Check if milk-procCTRL-scan is running and print its PID.\n");
     printf("\n");
     printf("Key Bindings (Interactive Mode):\n");
     printf("--------------------------------\n");
@@ -69,16 +71,21 @@ void print_help(const char *progname) {
 int main(int argc, char *argv[])
 {
     int opt;
+
+    // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
+    ImageStreamIO_set_verbosity(0);
+
     static struct option long_options[] = {
-        {"help",  no_argument, 0, 'h'},
-        {"debug", no_argument, 0, 'd'},
-        {"log",   required_argument, 0, 'l'},
+        {"help",       no_argument,       0, 'h'},
+        {"debug",      no_argument,       0, 'd'},
+        {"log",        required_argument, 0, 'l'},
+        {"check-scan", no_argument,       0, 'c'},
         {0, 0, 0, 0}
     };
 
     optind = 1; // Ensure getopt starts from beginning
 
-    while ((opt = getopt_long(argc, argv, "hdl:", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hdcl:", long_options, NULL)) != -1) {
         switch (opt) {
             case 'h':
                 print_help(argv[0]);
@@ -86,6 +93,53 @@ int main(int argc, char *argv[])
             case 'd':
                 procCTRL_debug_mode = 1;
                 break;
+            case 'c':
+                {
+                    int scan_ok = 0;
+                    int tmux_ok = 0;
+                    pid_t my_pid = getpid();
+
+                    // Check scanner
+                    FILE *fp = popen("pgrep \"milk-procCTRL-s\"", "r");
+                    if (fp != NULL) {
+                        char pid_str[64];
+                        while (fgets(pid_str, sizeof(pid_str), fp) != NULL) {
+                            pid_t pid = (pid_t)atoi(pid_str);
+                            if (pid != my_pid) {
+                                pid_str[strcspn(pid_str, "\n")] = 0;
+                                printf("Scanner milk-procCTRL-scan is running (PID %s)\n", pid_str);
+                                scan_ok = 1;
+                                break;
+                            }
+                        }
+                        pclose(fp);
+                    }
+                    if (!scan_ok) {
+                        printf("Scanner milk-procCTRL-scan is NOT running\n");
+                    }
+
+                    // Check tmux
+                    fp = popen("tmux -V 2>/dev/null", "r");
+                    if (fp != NULL) {
+                        char tmux_ver[64];
+                        if (fgets(tmux_ver, sizeof(tmux_ver), fp) != NULL) {
+                            tmux_ver[strcspn(tmux_ver, "\n")] = 0;
+                            printf("tmux is installed (%s)\n", tmux_ver);
+                            tmux_ok = 1;
+                        } else {
+                            printf("tmux is NOT installed\n");
+                        }
+                        pclose(fp);
+                    } else {
+                         printf("tmux is NOT installed\n");
+                    }
+                    
+                    if (scan_ok && tmux_ok) {
+                        return 0;
+                    } else {
+                        return 1;
+                    }
+                }
             case 'l':
                 strncpy(procCTRL_logfile, optarg, 1023);
                 break;

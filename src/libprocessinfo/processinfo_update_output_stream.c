@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "processinfo_internal.h"
 #include "processinfo.h"
@@ -12,17 +13,17 @@
 #define CLOCK_MILK CLOCK_REALTIME
 #endif
 
-/** @brief Update ouput stream at completion of processinfo-enabled loop iteration
- *
+/**
+ * @brief Update output stream metadata and telemetry at the end of a loop iteration.
  */
-
 errno_t processinfo_update_output_stream(
     PROCESSINFO *processinfo,
     IMAGE        *output_image,
     IMAGE        *input_image
 )
 {
-    if(output_image == NULL) {
+    if(output_image == NULL)
+    {
         return RETURN_FAILURE;
     }
 
@@ -43,14 +44,27 @@ errno_t processinfo_update_output_stream(
 
         if(processinfo != NULL)
         {
+            // If input_image is NULL, try to use processinfo->trigger_image
+            if(input_image == NULL)
+            {
+                if(processinfo->trigger_image != NULL)
+                {
+                    input_image = processinfo->trigger_image;
+                }
+            }
+
             if(input_image != NULL)
             {
                 int sptisize = input_image->md[0].NBproctrace - 1;
                 // Ensure we don't overflow output trace
                 int sptosize = output_image->md[0].NBproctrace - 1;
-                if(sptisize > sptosize) sptisize = sptosize;
+                if(sptisize > sptosize)
+                {
+                    sptisize = sptosize;
+                }
 
-                if (sptisize > 0) {
+                if(sptisize > 0)
+                {
                     // copy streamproctrace from input to output
                     memcpy(&output_image->streamproctrace[1],
                            &input_image->streamproctrace[0],

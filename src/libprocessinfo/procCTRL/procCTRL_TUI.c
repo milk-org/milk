@@ -313,10 +313,25 @@ errno_t processinfo_CTRLscreen()
     }
 
     if (flog) { fprintf(flog, "Checking for daemon...\n"); fflush(flog); }
-    if (system("pgrep -f \"milk-procCTRL-scan\" > /dev/null") != 0) {
-        fprintf(stderr, "\nERROR: milk-procCTRL-scan daemon is not running.\n");
-        if (flog) fclose(flog);
-        return RETURN_FAILURE;
+    if (system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0) {
+        fprintf(stderr, "\nWARNING: milk-procCTRL-scan daemon is not running.\n");
+        printf("Start it now in tmux session 'milk-procCTRL-scan'? [y/n] ");
+        fflush(stdout);
+        char response = 'n';
+        if (scanf(" %c", &response) == 1 && (response == 'y' || response == 'Y')) {
+            printf("Launching milk-procCTRL-scan...\n");
+            system("tmux new-session -d -s milk-procCTRL-scan 'milk-procCTRL-scan'");
+            sleep(1);
+            if (system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0) {
+                fprintf(stderr, "ERROR: Failed to launch milk-procCTRL-scan daemon.\n");
+                if (flog) fclose(flog);
+                return RETURN_FAILURE;
+            }
+        } else {
+            fprintf(stderr, "ERROR: milk-procCTRL-scan daemon is required for this tool.\n");
+            if (flog) fclose(flog);
+            return RETURN_FAILURE;
+        }
     }
 
     processinfo_procdirname(local_shmdir);

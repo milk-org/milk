@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+#include "ImageStreamIO/ImageStruct.h"
+#define _GNU_SOURCE
 /**
  * @file    logshmim.c
  * @brief   Save telemetry stream data
@@ -971,11 +974,11 @@ static errno_t compute_function()
             //
             if(buffindex == 0)
             {
-                processinfo_update_output_stream(processinfo, imgbuff0.ID);
+                processinfo_update_output_stream(processinfo, imgbuff0.im, NULL);
             }
             else
             {
-                processinfo_update_output_stream(processinfo, imgbuff1.ID);
+                processinfo_update_output_stream(processinfo, imgbuff1.im, NULL);
             }
 
             buffindex ++;

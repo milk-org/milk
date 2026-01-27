@@ -137,7 +137,7 @@ static errno_t init_module_CLI()
 
     // FPS
     fps_list_addCLIcmd();
-    fps_create_addCLIcmd();
+    //fps_create_addCLIcmd();
 
     // TYPE CONVERSIONS TO AND FROM COMPLEX
     CLIADDCMD_COREMOD__mk_complex_from_reim();

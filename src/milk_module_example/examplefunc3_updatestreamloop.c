@@ -61,7 +61,9 @@ static errno_t compute_function()
     // if the function needs to be used outside of this call.
 
     // Call this to notify consumers that the image has been updated
-    processinfo_update_output_stream(processinfo, img.ID);
+    //processinfo_update_output_stream(processinfo, img.im, NULL);
+    //processinfo_update_output_stream(processinfo, &img, NULL);
+    processinfo_update_output_stream(processinfo, img.im, NULL);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

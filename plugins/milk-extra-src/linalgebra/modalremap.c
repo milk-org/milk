@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file ModalRemap.c
  *
@@ -287,7 +288,7 @@ static errno_t compute_function()
     {
 
         ModalRemap(imginM0, imginU0, imginU1, &imgoutM1, *GPUdevice);
-        processinfo_update_output_stream(processinfo, imgoutM1.ID);
+        processinfo_update_output_stream(processinfo, imgoutM1.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

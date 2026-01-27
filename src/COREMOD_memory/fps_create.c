@@ -10,16 +10,12 @@
 
 #include "CLIcore.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
-errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+//errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
+
+/*
 static errno_t fps_create__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_INT64) +
@@ -35,12 +31,10 @@ static errno_t fps_create__cli()
         return CLICMD_INVALID_ARG;
     }
 }
+*/
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
-errno_t fps_create_addCLIcmd()
+/*errno_t fps_create_addCLIcmd()
 {
 
     RegisterCLIcommand("fpscreate",
@@ -54,7 +48,11 @@ errno_t fps_create_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+*/
 
+
+
+/*
 errno_t function_parameter_struct_create(
     int NBparamMAX,
     const char *name
@@ -81,7 +79,7 @@ errno_t function_parameter_struct_create(
     }
     remove(SM_fname);
 
-    printf("Creating file %s, holding NBparamMAX = %d\n", SM_fname, NBparamMAX);
+    printf("> Creating file %s, holding NBparamMAX = %d\n", SM_fname, NBparamMAX);
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);
@@ -145,13 +143,7 @@ errno_t function_parameter_struct_create(
     fps.md->NBparamMAX = NBparamMAX;
 
     memset(fps.parray, 0, NBparamMAX * sizeof(*fps.parray));
-    /*
-    for(index = 0; index < NBparamMAX; index++)
-    {
-        fps.parray[index].fpflag = 0; // not active
-        fps.parray[index].cnt0   = 0; // update counter
-    }
-    */
+
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
     strncpy(fps.md->callprogname,
@@ -202,15 +194,32 @@ errno_t function_parameter_struct_create(
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
+    printf("%ld modules loaded\n", data.NBmodule);
+    fflush(stdout);
     for(int m = 0; m < data.NBmodule; m++)
     {
-        // custom loaded module
-        if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
+        if(data.module[m].type != MODULE_TYPE_UNUSED)
         {
-            strncpy(fps.md->modulename[fps.md->NBmodule],
-                    data.module[m].loadname,
-                    FPS_MODULE_STRMAXLEN - 1);
-            fps.md->NBmodule++;
+            char *mname = data.module[m].name;
+            if(data.module[m].type == MODULE_TYPE_CUSTOMLOAD)
+            {
+                if(strlen(data.module[m].loadname) > 0)
+                {
+                    mname = data.module[m].loadname;
+                }
+            }
+
+            if(strlen(mname) > 0)
+            {
+                strncpy(fps.md->modulename[fps.md->NBmodule],
+                        mname,
+                        FPS_MODULE_STRMAXLEN - 1);
+                fps.md->NBmodule++;
+            }
+        }
+        if(fps.md->NBmodule >= FPS_MAXNB_MODULE)
+        {
+            break;
         }
     }
 
@@ -228,3 +237,4 @@ errno_t function_parameter_struct_create(
 
     return EXIT_SUCCESS;
 }
+*/

@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 
 static char *inimname;
@@ -179,7 +180,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
         image_set_1Dpixrange(inimg, *pixval, *minindex, *maxindex);
-        processinfo_update_output_stream(processinfo, inimg.ID);
+        processinfo_update_output_stream(processinfo, inimg.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

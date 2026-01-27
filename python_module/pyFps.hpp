@@ -177,7 +177,8 @@ class pyFps
         if(connect() == -1)
         {
             std::cout << "Creating FPS...";
-            function_parameter_struct_create(NBparamMAX, name_.c_str());
+            // OG FPS-STANDALONE-TOBEFIXED
+            //function_parameter_struct_create(NBparamMAX, name_.c_str());
             std::cout << "Done" << std::endl;
             connect();
         }

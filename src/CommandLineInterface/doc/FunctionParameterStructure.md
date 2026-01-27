@@ -154,9 +154,12 @@ errno_t ExampleFunction_cli()
 
 	if(data.FPS_CMDCODE != 0) {	// use FPS implementation
 		// set pointers to CONF and RUN functions
-		data.FPS_CONFfunc = ExampleFunction_FPCONF;
-		data.FPS_RUNfunc  = ExampleFunction_RUN;
-		function_parameter_execFPScmd();
+		               extern errno_t (*FPS_CONFfunc)();
+		               extern errno_t (*FPS_RUNfunc)();
+		               FPS_CONFfunc = ExampleFunction_FPCONF;
+		               FPS_RUNfunc  = ExampleFunction_RUN;
+		               function_parameter_execFPScmd();
+		
 		return RETURN_SUCCESS;
 	}
 

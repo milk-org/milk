@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file SingularValueDecomp_mkU.c
  *
@@ -220,8 +221,8 @@ static errno_t compute_function()
     {
 
         compute_SVDU(imginM, imginV, imginS, &imgoutU, &imgoutUS, *GPUdevice);
-        processinfo_update_output_stream(processinfo, imgoutU.ID);
-        processinfo_update_output_stream(processinfo, imgoutUS.ID);
+        processinfo_update_output_stream(processinfo, imgoutU.im, NULL);
+        processinfo_update_output_stream(processinfo, imgoutUS.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

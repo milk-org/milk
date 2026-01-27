@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /** @file stream_delay,c
  */
 
@@ -36,14 +37,26 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
     // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
     // Default FPS name will be used if CLI process has NOT been named.
     // See code in function_parameter.c for detailed rules.
+    function_parameter_getFPSargs_from_CLIfunc("streamdelay");
 
-    function_parameter_getFPSargs_from_CLIfunc("streamDelay");
-
-    if(data.FPS_CMDCODE != 0)  // use FPS implementation
+    if(data.FPS_CMDCODE != 0)
     {
+        // use FPS implementation
         // set pointers to CONF and RUN functions
-        data.FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
-        data.FPS_RUNfunc  = COREMOD_MEMORY_streamDelay_RUN;
+        extern errno_t (*FPS_CONFfunc)();
+        extern errno_t (*FPS_RUNfunc)();
+        extern uint32_t FPS_CMDCODE;
+        extern char     FPS_name[STRINGMAXLEN_FPS_NAME];
+        extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];
+        extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];
+        extern FUNCTION_PARAMETER_STRUCT *fpsarray;
+        FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
+        FPS_RUNfunc  = COREMOD_MEMORY_streamDelay_RUN;
+        FPS_CMDCODE  = data.FPS_CMDCODE;
+        fpsarray     = data.fpsarray;
+        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);
+        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);
+        strncpy(FPS_callfuncname, "streamdelay", FPS_CALLFUNCNAME_STRMAXLEN - 1);
         function_parameter_execFPScmd();
         return RETURN_SUCCESS;
     }
@@ -499,7 +512,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                         data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                     }
 
-                    processinfo_update_output_stream(processinfo, IDout);
+                    processinfo_update_output_stream(processinfo, &data.image[IDout], NULL);
                     /*
                         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                         data.image[IDout].md[0].cnt0++;

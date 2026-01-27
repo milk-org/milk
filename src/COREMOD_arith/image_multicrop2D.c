@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    image_multicrop2D.c
  * @brief   crop 2D function, multiple windows
@@ -644,7 +645,7 @@ static errno_t compute_function()
             memcpy(imgout.im->array.SI64, tmparraysi64, sizeof(int64_t) * (*outxsize) * (*outysize));
             break;
         }
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

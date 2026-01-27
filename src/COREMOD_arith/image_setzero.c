@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 
 #include "CLIcore.h"
 #include "image_setzero.h"
@@ -66,7 +67,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
         image_setzero_IMGID(&inimg);
-        processinfo_update_output_stream(processinfo, inimg.ID);
+        processinfo_update_output_stream(processinfo, inimg.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

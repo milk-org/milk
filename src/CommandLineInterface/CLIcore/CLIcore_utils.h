@@ -524,11 +524,23 @@ typedef struct
     {                                                                          \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_FPS)                    \
         {                                                                      \
+            extern errno_t (*FPS_CONFfunc)();                                  \
+            extern errno_t (*FPS_RUNfunc)();                                   \
+            extern uint32_t FPS_CMDCODE;                                       \
+            extern char     FPS_name[STRINGMAXLEN_FPS_NAME];                   \
+            extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];      \
+            extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];      \
+            extern FUNCTION_PARAMETER_STRUCT *fpsarray;                        \
             function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);        \
             if (data.FPS_CMDCODE != 0)                                         \
             {                                                                  \
-                data.FPS_CONFfunc = FPSCONFfunction;                           \
-                data.FPS_RUNfunc  = FPSRUNfunction;                            \
+                FPS_CONFfunc = FPSCONFfunction;                                \
+                FPS_RUNfunc  = FPSRUNfunction;                                 \
+                FPS_CMDCODE  = data.FPS_CMDCODE;                               \
+                fpsarray     = data.fpsarray;                                  \
+                strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);    \
+                strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+                strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
                 function_parameter_execFPScmd();                               \
                 return RETURN_SUCCESS;                                         \
             }                                                                  \

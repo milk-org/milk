@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    image_crop2D.c
  * @brief   crop 2D function
@@ -206,7 +207,7 @@ static errno_t compute_function()
             }
 
         }
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
