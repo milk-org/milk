@@ -44,18 +44,16 @@
 
 #include "ImageStreamIO.h"
 
-#define FPS_NAME "processor03"
-
 /**
  * @brief Performs one-time setup of the Function Parameter Structure (FPS).
  * This creates the shared memory segment and initializes default values.
  */
-int FPSINIT_processor() {
+int FPSINIT_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
-    printf("Initializing FPS '%s'...\n", FPS_NAME);
+    printf("Initializing FPS '%s'...\n", fps_name);
 
     // Create the FPS entry
-    fps = function_parameter_FPCONFsetup(FPS_NAME, FPSCMDCODE_FPSINIT);
+    fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
 
     // ------------------------------------------------------------------------
     // INITIALIZE DEFAULTS IN cmdset
@@ -94,7 +92,7 @@ int FPSINIT_processor() {
 /**
  * @brief Helper to handle tmux logic for automated multi-window setup.
  */
-void handle_tmux(const char *command, int argc, char *argv[]) {
+void handle_tmux(const char *fps_name, const char *command, int argc, char *argv[]) {
     char cmd[2048];
 
     // Check if tmux is installed
@@ -105,12 +103,16 @@ void handle_tmux(const char *command, int argc, char *argv[]) {
     }
 
     // Check if session exists
-    int ret = system("tmux has-session -t " FPS_NAME " 2>/dev/null");
+    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps_name);
+    int ret = system(cmd);
     if (ret != 0) {
-        printf("Creating tmux session '%s'\n", FPS_NAME);
-        system("tmux new-session -d -s " FPS_NAME " -n ctrl");
-        system("tmux new-window -t " FPS_NAME " -n conf");
-        system("tmux new-window -t " FPS_NAME " -n run");
+        printf("Creating tmux session '%s'\n", fps_name);
+        snprintf(cmd, sizeof(cmd), "tmux new-session -d -s %s -n ctrl", fps_name);
+        system(cmd);
+        snprintf(cmd, sizeof(cmd), "tmux new-window -t %s -n conf", fps_name);
+        system(cmd);
+        snprintf(cmd, sizeof(cmd), "tmux new-window -t %s -n run", fps_name);
+        system(cmd);
         sleep(1); // Wait for shells
     }
 
@@ -122,20 +124,26 @@ void handle_tmux(const char *command, int argc, char *argv[]) {
         if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023);
     }
 
+    // Reconstruct arguments to pass custom name if needed
+    char name_arg[256] = "";
+    if (strcmp(fps_name, "processor03") != 0) {
+        snprintf(name_arg, sizeof(name_arg), " -n %s", fps_name);
+    }
+
     if (strcmp(command, "confstart") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":conf \"%s confstart\" C-m", path);
+        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:conf \"%s confstart%s\" C-m", fps_name, path, name_arg);
         system(cmd);
-        printf("Dispatched 'confstart' to tmux window " FPS_NAME ":conf\n");
+        printf("Dispatched 'confstart' to tmux window %s:conf\n", fps_name);
     } else if (strcmp(command, "confstep") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":conf \"%s confstep\" C-m", path);
+        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:conf \"%s confstep%s\" C-m", fps_name, path, name_arg);
         system(cmd);
-        printf("Dispatched 'confstep' to tmux window " FPS_NAME ":conf\n");
+        printf("Dispatched 'confstep' to tmux window %s:conf\n", fps_name);
     } else if (strcmp(command, "runstart") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t " FPS_NAME ":run \"%s runstart\" C-m", path);
+        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:run \"%s runstart%s\" C-m", fps_name, path, name_arg);
         system(cmd);
-        printf("Dispatched 'runstart' to tmux window " FPS_NAME ":run\n");
+        printf("Dispatched 'runstart' to tmux window %s:run\n", fps_name);
     } else if (strcmp(command, "fpsinit") == 0) {
-        FPSINIT_processor();
+        FPSINIT_processor(fps_name);
     }
 }
 
@@ -146,13 +154,13 @@ void handle_tmux(const char *command, int argc, char *argv[]) {
  * This process typically runs in the background and validates parameter changes.
  * @param loop If non-zero, run an infinite monitoring loop.
  */
-int FPSCONF_processor(int loop) {
+int FPSCONF_processor(const char *fps_name, int loop) {
     FUNCTION_PARAMETER_STRUCT fps;
 
     if (loop) {
-        printf("Starting configuration process loop for '%s'\n", FPS_NAME);
+        printf("Starting configuration process loop for '%s'\n", fps_name);
         // Connect as configuration owner and set the loop bit
-        fps = function_parameter_FPCONFsetup(FPS_NAME, FPSCMDCODE_CONFSTART);
+        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
 
         // Monitoring loop for validation
         while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) {
@@ -163,9 +171,9 @@ int FPSCONF_processor(int loop) {
             usleep(10000);
         }
     } else {
-        printf("Running single configuration step for '%s'\n", FPS_NAME);
+        printf("Running single configuration step for '%s'\n", fps_name);
         // Connect without setting the loop bit
-        fps = function_parameter_FPCONFsetup(FPS_NAME, FPSCMDCODE_FPSINIT);
+        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
         function_parameter_FPCONFloopstep(&fps);
     }
 
@@ -177,12 +185,12 @@ int FPSCONF_processor(int loop) {
 /**
  * @brief Stop the configuration process.
  */
-int FPSCONFSTOP_processor() {
+int FPSCONFSTOP_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
-    printf("Stopping configuration process for '%s'\n", FPS_NAME);
+    printf("Stopping configuration process for '%s'\n", fps_name);
 
-    if (function_parameter_struct_connect(FPS_NAME, &fps, FPSCONNECT_SIMPLE) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found.\n", FPS_NAME);
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
     }
 
@@ -196,12 +204,12 @@ int FPSCONFSTOP_processor() {
 /**
  * @brief Stop the run process.
  */
-int FPSRUNSTOP_processor() {
+int FPSRUNSTOP_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
-    printf("Stopping run process for '%s'\n", FPS_NAME);
+    printf("Stopping run process for '%s'\n", fps_name);
 
-    if (function_parameter_struct_connect(FPS_NAME, &fps, FPSCONNECT_SIMPLE) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found.\n", FPS_NAME);
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
     }
 
@@ -217,9 +225,11 @@ int FPSRUNSTOP_processor() {
     if (d) {
         struct dirent *dir;
         while ((dir = readdir(d)) != NULL) {
-            // Looking for proc.processor03.<PID>.shm
-            if (strncmp(dir->d_name, "proc." FPS_NAME ".", 5 + strlen(FPS_NAME) + 1) == 0) {
-                char fullpath[1024];
+            // Looking for proc.<fps_name>.<PID>.shm
+            char prefix[256];
+            snprintf(prefix, sizeof(prefix), "proc.%s.", fps_name);
+            if (strncmp(dir->d_name, prefix, strlen(prefix)) == 0) {
+                char fullpath[2048];
                 snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, dir->d_name);
                 int fd;
                 PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
@@ -242,12 +252,12 @@ int FPSRUNSTOP_processor() {
  * @brief The main Processing loop.
  * Reads data, processes it according to FPS parameters, and reports status.
  */
-int FPSRUN_processor() {
+int FPSRUN_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
 
     // 1. CONNECT TO FPS
-    if (function_parameter_struct_connect(FPS_NAME, &fps, FPSCONNECT_RUN) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", FPS_NAME);
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) {
+        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", fps_name);
         return 1;
     }
 
@@ -273,7 +283,7 @@ int FPSRUN_processor() {
     }
 
     // 4. SETUP PROCESS MONITORING
-    PROCESSINFO *processinfo = processinfo_setup(FPS_NAME, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
+    PROCESSINFO *processinfo = processinfo_setup((char*)fps_name, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     if (!processinfo) return 1;
 
     // Capture SIGINT and other signals
@@ -335,7 +345,7 @@ int FPSRUN_processor() {
 int main(int argc, char *argv[]) {
     // Basic argument check
     if (argc < 2) {
-        printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [-tmux]\n", "milk-example-03-processor");
+        printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [Options]\n", "milk-example-03-processor");
         printf("Run '%s -h' for detailed help.\n", "milk-example-03-processor");
         return 1;
     }
@@ -354,25 +364,31 @@ int main(int argc, char *argv[]) {
         printf("  runstart   Run the main ROI processing loop.\n");
         printf("  runstop    Stop the main ROI processing loop.\n\n");
         printf("Options:\n");
-        printf("  -tmux    Auto-create a tmux session named '%s' and dispatch commands.\n", FPS_NAME);
-        printf("           - 'confstart' command goes to window 1.\n");
-        printf("           - 'runstart' command goes to window 2.\n");
-        printf("           - 'ctrl' window (index 0) remains for user interaction.\n\n");
+        printf("  -n, --name NAME  Specify FPS name (default: processor03).\n");
+        printf("  -tmux            Auto-create a tmux session and dispatch commands.\n");
+        printf("                   - 'confstart' command goes to window 1.\n");
+        printf("                   - 'runstart' command goes to window 2.\n");
+        printf("                   - 'ctrl' window (index 0) remains for user interaction.\n\n");
         printf("Typical Workflow:\n");
         printf("  1. Terminal A: ./milk-example-03-writer\n");
         printf("  2. Terminal B: ./milk-example-03-processor fpsinit\n");
         printf("  3. Terminal B: ./milk-example-03-processor runstart -tmux\n");
         printf("  4. Terminal B: ./milk-example-03-processor confstart -tmux\n");
-        printf("  5. Connect:    tmux a -t %s\n\n", FPS_NAME);
+        printf("  5. Connect:    tmux a -t processor03\n\n");
         return 0;
     }
 
-    // Check for -tmux flag
+    // Default settings
+    char fps_name[STRINGMAXLEN_FPS_NAME] = "processor03";
     int use_tmux = 0;
     char *command = NULL;
+
+    // Argument parsing
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-tmux") == 0) {
             use_tmux = 1;
+        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) {
+            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1);
         } else if (command == NULL) {
             command = argv[i];
         }
@@ -385,22 +401,22 @@ int main(int argc, char *argv[]) {
 
     // Dispatching
     if (use_tmux) {
-        handle_tmux(command, argc, argv);
+        handle_tmux(fps_name, command, argc, argv);
         return 0;
     }
 
     if (strcmp(command, "fpsinit") == 0) {
-        return FPSINIT_processor();
+        return FPSINIT_processor(fps_name);
     } else if (strcmp(command, "confstart") == 0) {
-        return FPSCONF_processor(1);
+        return FPSCONF_processor(fps_name, 1);
     } else if (strcmp(command, "confstep") == 0) {
-        return FPSCONF_processor(0);
+        return FPSCONF_processor(fps_name, 0);
     } else if (strcmp(command, "confstop") == 0) {
-        return FPSCONFSTOP_processor();
+        return FPSCONFSTOP_processor(fps_name);
     } else if (strcmp(command, "runstart") == 0) {
-        return FPSRUN_processor();
+        return FPSRUN_processor(fps_name);
     } else if (strcmp(command, "runstop") == 0) {
-        return FPSRUNSTOP_processor();
+        return FPSRUNSTOP_processor(fps_name);
     }
 
     fprintf(stderr, "Invalid command: %s\n", command);

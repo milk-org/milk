@@ -27,9 +27,11 @@ void fpsCTRLscreen_print_nodeinfo(
     }
     TUI_printfw(" ]\n");
 
-    TUI_printfw("    FPS source            : %s %d\n",
-            fps[fpsindexSelected].md->sourcefname,
-            fps[fpsindexSelected].md->sourceline);
+    TUI_printfw(" FPS descr  : %s\n", fps[fpsindexSelected].md->description);
+    TUI_printfw(" Exec path  : %s\n", fps[fpsindexSelected].md->execfullpath);
+    TUI_printfw(" FPS source : %s:%d\n",
+                fps[fpsindexSelected].md->sourcefname,
+                fps[fpsindexSelected].md->sourceline);
 
     TUI_printfw("   %d libs : ", fps[fpsindexSelected].md->NBmodule);
     for(int m = 0; m < fps[fpsindexSelected].md->NBmodule; m++)

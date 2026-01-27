@@ -153,6 +153,17 @@ errno_t function_parameter_struct_create(
             data.cmdargtoken[0].val.string,
             FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
+    {
+        char path[512];
+        ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+        if (len != -1) {
+            path[len] = '\0';
+            strncpy(fps.md->execfullpath, path, 511);
+        } else {
+            strncpy(fps.md->execfullpath, "unknown", 511);
+        }
+    }
+
     char cwd[FPS_CWD_STRLENMAX];
     if(getcwd(cwd, sizeof(cwd)) != NULL)
     {

@@ -283,32 +283,78 @@ int fpsCTRL_TUI_process_user_key(
                 FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
             break;
 
-        case 'R' : // start run process if possible
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            functionparameter_RUNstart(&fps[fpsindex]);
+        case 'R' : // start run process
+            {
+                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                functionparameter_FPS_tmux_ensure(selected_fps);
+                char progexec[1024];
+                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
+                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
+                else
+                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
+                
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s runstart -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+            }
             break;
 
-        case 'r' : // stop run process
+        case ctrl('r') : // stop run process
+            {
+                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                functionparameter_FPS_tmux_ensure(selected_fps);
+                char progexec[1024];
+                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
+                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
+                else
+                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
+                
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s runstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+            }
+            break;
+
+        case 'r' : // legacy stop run process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_RUNstop(&fps[fpsindex]);
             break;
 
 
-        case 'C' : // start conf process
+        case 'C' : // legacy start conf process
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
             functionparameter_CONFstart(&fps[fpsindex]);
             break;
 
-        case 'O': // toggle conf process
-        case ctrl('o'):
-            fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-            if((getpgid(fps[fpsindex].md->confpid) >= 0) && (fps[fpsindex].md->confpid > 0))
+        case 'O': // start conf process
             {
-                 functionparameter_CONFstop(&fps[fpsindex]);
+                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                functionparameter_FPS_tmux_ensure(selected_fps);
+                char progexec[1024];
+                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
+                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
+                else
+                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
+                
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s confstart -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
-            else
+            break;
+
+        case ctrl('o'): // stop conf process
             {
-                 functionparameter_CONFstart(&fps[fpsindex]);
+                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
+                functionparameter_FPS_tmux_ensure(selected_fps);
+                char progexec[1024];
+                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
+                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
+                else
+                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
+                
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s confstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 
