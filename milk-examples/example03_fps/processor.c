@@ -54,6 +54,8 @@ int FPSINIT_processor(const char *fps_name) {
 
     // Create the FPS entry
     fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
+    strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1);
+    fps.md->sourceline = __LINE__;
 
     // ------------------------------------------------------------------------
     // INITIALIZE DEFAULTS IN cmdset

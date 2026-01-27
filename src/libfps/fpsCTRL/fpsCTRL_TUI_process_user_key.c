@@ -310,8 +310,8 @@ int fpsCTRL_TUI_process_user_key(
                 else
                     snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
                 
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s runstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s runstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 
