@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 
 #include <assert.h>
@@ -451,7 +452,7 @@ static errno_t compute_function()
     image_PCAdecomp(&img);
 
     //DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    //processinfo_update_output_stream(processinfo, img.ID);
+    //processinfo_update_output_stream(processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();

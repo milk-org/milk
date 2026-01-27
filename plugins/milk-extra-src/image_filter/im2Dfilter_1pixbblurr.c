@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    im2Dfilter_1pixbblurr.c
  * @brief   Apply 1 pixel radius blurr to image
@@ -283,7 +284,7 @@ static errno_t compute_function()
     {
         imfilter_im2D_1pixblurr(imgin, &imgout, *blurramp, *NBloop);
 
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

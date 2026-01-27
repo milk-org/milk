@@ -4,6 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "fpsCTRL_globals.h"
 
 // Standalone main for milk-fpsCTRL
@@ -31,6 +32,9 @@ int main(int argc, char *argv[]) {
     int matchmode = 0;
     char fpsnamemask[256] = "_ALL";
     char fifoname[512] = "";
+
+    // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
+    ImageStreamIO_set_verbosity(0);
 
     // Allocate global fpsarray
     fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
@@ -85,7 +89,7 @@ int main(int argc, char *argv[]) {
 
     // Call the main TUI function
     // functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname);
-    functionparameter_CTRLscreen((uint32_t)matchmode, fpsnamemask, fifoname);
+    functionparameter_CTRLscreen((uint32_t)matchmode, fpsnamemask, fifoname, 0.0);
 
     return 0;
 }

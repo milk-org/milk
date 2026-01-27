@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
@@ -153,7 +154,7 @@ static errno_t compute_function()
     make_image_random(&img, *distrib);
 
     DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    processinfo_update_output_stream(processinfo, img.ID);
+    processinfo_update_output_stream(processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
 

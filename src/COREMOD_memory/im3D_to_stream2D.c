@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    im3D_to_stream2D.c
  * @brief   convert 3D image to 2D stream
@@ -141,7 +142,7 @@ static errno_t compute_function()
         }
 
         extract_slice_to_2D(&inimg, &outimg, *slice_index);
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

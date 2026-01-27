@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 
 static char *masksname;
@@ -164,7 +165,7 @@ static errno_t compute_function()
                 imgout_row[ii] = imgmask_row[ii] * imgin_row[ii];
             }
         }
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

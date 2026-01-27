@@ -251,7 +251,12 @@ static errno_t compute_function()
     // First, create an IMGIG with the image name
     IMGID inimg = mkIMGID_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
+    // Once the image is resolved, this function will execute very quickly, only checking if resolved
     resolveIMGID(&inimg, ERRMODE_ABORT);
+
+    // If the image may not be in memory, use resolveloadIMGID instead
+    // This will attempt to load the image from shared memory
+    // resolveloadIMGID(&inimg, ERRMODE_ABORT);
 
     // Create output image/stream.
     // Here we only fill in the name.
@@ -288,7 +293,9 @@ static errno_t compute_function()
 
         // stream is updated here, and not in the function called above, so that
         // the above function can be chained with others
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        //processinfo_update_output_stream(processinfo, outimg.im, NULL);
+    //processinfo_update_output_stream(processinfo, &outimg, &inimg);
+    processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

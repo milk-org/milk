@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <math.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include <unistd.h>
 #include <stdio.h>
@@ -281,7 +282,8 @@ inline static void fpsCTRLscreen_print_FPShelp(
 errno_t functionparameter_CTRLscreen(
     uint32_t mode,
     char    *fpsnamemask,
-    char    *fpsCTRLfifoname
+    char    *fpsCTRLfifoname,
+    double  timeout_sec
 )
 {
     DEBUG_TRACE_FSTART();
@@ -355,7 +357,7 @@ errno_t functionparameter_CTRLscreen(
                                           sizeof(*fpsctrltasklist));
     if(fpsctrltasklist == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
     for(int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
@@ -368,7 +370,7 @@ errno_t functionparameter_CTRLscreen(
                                            sizeof(* fpsctrlqueuelist));
     if(fpsctrlqueuelist == NULL)
     {
-        PRINT_ERROR("malloc error");
+        PRINT_ERROR("calloc error");
         abort();
     }
     for(int queueindex = 0; queueindex < NB_FPSCTRL_TASKQUEUE_MAX;
@@ -378,6 +380,12 @@ errno_t functionparameter_CTRLscreen(
     }
 
     if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
+        // Create FIFO if it does not exist
+        if (access(fpsCTRLvar.fpsCTRLfifoname, F_OK) == -1) {
+            if (mkfifo(fpsCTRLvar.fpsCTRLfifoname, 0666) == -1) {
+                perror("mkfifo");
+            }
+        }
         fpsCTRLvar.fpsCTRLfifofd = open(fpsCTRLvar.fpsCTRLfifoname, O_RDWR | O_NONBLOCK);
     } else {
         fpsCTRLvar.fpsCTRLfifofd = -1;

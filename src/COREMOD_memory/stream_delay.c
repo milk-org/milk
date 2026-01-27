@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /** @file stream_delay,c
  */
 
@@ -291,7 +292,7 @@ static errno_t compute_function()
     // status is 0 if no update to output, 1 otherwise
     if(status != 0)
     {
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
@@ -514,5 +515,5 @@ CLIADDCMD_COREMOD_memory__streamdelay()
                     data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                 }
 
-                processinfo_update_output_stream(processinfo, IDout);
+                processinfo_update_output_stream(processinfo, &data.image[IDout], NULL);
            */

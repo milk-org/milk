@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_TCP.c
  * @brief   TCP stream transfer
@@ -1108,7 +1109,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             // Carry cnt0 to streamproctrace
             img_p->streamproctrace[0].cnt0 = img_p->md->cnt0;
-            processinfo_update_output_stream(processinfo, ID);
+            processinfo_update_output_stream(processinfo, &data.image[ID], NULL);
         }
 
         if(socketOpen == 0)

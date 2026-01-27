@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /** @file stream_pixmapdecode.c
  */
 
@@ -431,7 +432,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 if(slice == NBslice - 1)
                 {
-                    processinfo_update_output_stream(processinfo, IDout);
+                    processinfo_update_output_stream(processinfo, &data.image[IDout], NULL);
                 }
 
                 data.image[IDout].md[0].cnt1 = slice;

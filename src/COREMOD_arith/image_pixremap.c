@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 
 // input image
@@ -198,7 +199,7 @@ static errno_t compute_function()
             break;
         }
 
-        processinfo_update_output_stream(processinfo, imgout.ID);
+        processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

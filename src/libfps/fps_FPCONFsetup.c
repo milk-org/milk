@@ -10,6 +10,9 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 
+
+
+
 /** @brief FPS config setup
  *
  * called by conf and run functions
@@ -36,7 +39,7 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
-        //printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
+        printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
@@ -53,14 +56,14 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
         if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
                 -1)
         {
-            //printf("=== FPS DOES NOT EXISTS -> CREATE\n");
+            printf("=== FPS DOES NOT EXISTS -> CREATE\n");
             function_parameter_struct_create(NBparamMAX, fpsname);
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
-        /*        else
+        else
         {
             printf("=== FPS EXISTS\n");
-        }*/
+        }
     }
 
     if(CMDmode & FPSCMDCODE_CONFSTOP)  // stop conf
@@ -87,6 +90,12 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
     return fps;
 }
+
+
+
+
+
+
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(
     const char *fpsname,

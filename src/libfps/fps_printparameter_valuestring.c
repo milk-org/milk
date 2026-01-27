@@ -5,6 +5,7 @@
 
 #include "fps.h"
 #include "fps_internal.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 errno_t functionparameter_PrintParameter_ValueString(
     FUNCTION_PARAMETER *fpsentry,
@@ -179,11 +180,40 @@ errno_t functionparameter_GetParamValueString(
             }
             break;
 
+        case FPTYPE_STREAMNAME:
+            {
+                int _slen = snprintf(outstring, stringmaxlen, "%s", fpsentry->val.string[0]);
+                if (_slen >= 0) {
+                    IMAGE tmpimg;
+                    if (ImageStreamIO_openIm(&tmpimg, fpsentry->val.string[0]) == IMAGESTREAMIO_SUCCESS) {
+                        const char* type_str = ImageStreamIO_typename(tmpimg.md->datatype);
+                        
+                        char size_str[64];
+                        if (tmpimg.md->naxis == 1) {
+                            snprintf(size_str, 64, "%u", tmpimg.md->size[0]);
+                        } else if (tmpimg.md->naxis == 2) {
+                            snprintf(size_str, 64, "%ux%u", tmpimg.md->size[0], tmpimg.md->size[1]);
+                        } else {
+                            snprintf(size_str, 64, "%ux%ux%u", tmpimg.md->size[0], tmpimg.md->size[1], tmpimg.md->size[2]);
+                        }
+
+                        int _slen2 = snprintf(outstring + _slen, stringmaxlen - _slen, 
+                                              " [%s %s cnt=%lu]", type_str, size_str, tmpimg.md->cnt0);
+                        if (_slen2 >= 0) cmdOK = 1;
+                        ImageStreamIO_closeIm(&tmpimg);
+                    } else {
+                        // Stream not found
+                        int _slen2 = snprintf(outstring + _slen, stringmaxlen - _slen, " [NOTFOUND]");
+                        if (_slen2 >= 0) cmdOK = 1;
+                    }
+                }
+            }
+            break;
+
         case FPTYPE_FILENAME:
         case FPTYPE_FITSFILENAME:
         case FPTYPE_EXECFILENAME:
         case FPTYPE_DIRNAME:
-        case FPTYPE_STREAMNAME:
         case FPTYPE_STRING:
         case FPTYPE_FPSNAME:
             {

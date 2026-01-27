@@ -229,7 +229,8 @@ errno_t functionparameter_CTRLscreen__cli()
     {
         functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl,
                                      data.cmdargtoken[2].val.string,
-                                     data.cmdargtoken[3].val.string);
+                                     data.cmdargtoken[3].val.string,
+                                     0.0);
         return RETURN_SUCCESS;
     }
     else
@@ -286,6 +287,11 @@ void fnExit_fifoclose()
 errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
+
+    if(data.quiet == 1)
+    {
+        ImageStreamIO_set_verbosity(0);
+    }
 
     // get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();

@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file PCAmatch.c
  *
@@ -236,7 +237,7 @@ static errno_t compute_function()
             *axis
         );
 
-        processinfo_update_output_stream(processinfo, imgoutcoeffM.ID);
+        processinfo_update_output_stream(processinfo, imgoutcoeffM.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

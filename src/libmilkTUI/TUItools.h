@@ -135,7 +135,7 @@ void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol);
 
 void TUI_handle_winch(int sig);
 
-errno_t TUI_initncurses();
+errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr);
 
 errno_t TUI_init_terminal(short unsigned int *wrowptr,
                           short unsigned int *wcolptr);

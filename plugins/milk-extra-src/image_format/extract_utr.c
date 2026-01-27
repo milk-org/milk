@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    extract_utr.c
  * @brief   CDS (correlated double sampling) + UTR (sample up-the-ramp) image processing loop for CRED streams
@@ -733,7 +734,7 @@ static errno_t compute_function()
                 pending_fin_warps = FALSE;
                 if(publishable_output)
                 {
-                    processinfo_update_output_stream(processinfo, out_img.ID);
+                    processinfo_update_output_stream(processinfo, out_img.im, NULL);
                 }
             }
             ++next_fin_warp;

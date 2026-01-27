@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
 #include "image_make2D.h"
 
@@ -89,7 +90,7 @@ static errno_t compute_function()
 
     make_2Dimage_IMGID(&img);
 
-    processinfo_update_output_stream(processinfo, img.ID);
+    processinfo_update_output_stream(processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();

@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -1169,7 +1170,7 @@ static errno_t compute_function()
                 imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
             }
 //            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
-            processinfo_update_output_stream(processinfo, imgout.ID);
+            processinfo_update_output_stream(processinfo, imgout.im, NULL);
         }
         else
         {
@@ -1321,7 +1322,7 @@ static errno_t compute_function()
 
 
 
-                processinfo_update_output_stream(processinfo, imgout.ID);
+                processinfo_update_output_stream(processinfo, imgout.im, NULL);
             }
 #endif
         }
