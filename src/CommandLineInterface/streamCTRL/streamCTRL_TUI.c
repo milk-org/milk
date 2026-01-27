@@ -1408,10 +1408,15 @@ errno_t streamCTRL_CTRLscreen()
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                         ? streamCTRLimages[ID].md[0].sem
                                         : 3;
+                            TUI_printfw(" ");
                             for(s = 0; s < max_s; s++)
                             {
                                 int semval = ImageStreamIO_semvalue(streamCTRLimages + ID, s);
-                                snprintf(string, stringlen, " %7d", semval);
+                                if (s == 0) {
+                                    snprintf(string, stringlen, "%02d", semval);
+                                } else {
+                                    snprintf(string, stringlen, ":%02d", semval);
+                                }
                                 TUI_printfw(string);
                             }
                         }
@@ -1434,15 +1439,16 @@ errno_t streamCTRL_CTRLscreen()
                                 int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                             ? streamCTRLimages[ID].md[0].sem
                                             : 3;
+                                TUI_printfw(" ");
                                 for(s = 0; s < max_s; s++)
                                 {
                                     pid_t pid = streamCTRLimages[ID].semWritePID[s];
-                                    streamCTRL_print_procpid(8,
+                                    if (s > 0) TUI_printfw(":");
+                                    streamCTRL_print_procpid(0, // 0 for minimal width
                                                              pid,
                                                              upstreamproc,
                                                              NBupstreamproc,
                                                              print_pid_mode);
-                                    TUI_printfw(" ");
                                 }
                             }
 
@@ -1552,15 +1558,16 @@ errno_t streamCTRL_CTRLscreen()
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                         ? streamCTRLimages[ID].md[0].sem
                                         : 3;
+                            TUI_printfw(" ");
                             for(s = 0; s < max_s; s++)
                             {
                                 pid_t pid = streamCTRLimages[ID].semReadPID[s];
-                                streamCTRL_print_procpid(8,
+                                if (s > 0) TUI_printfw(":");
+                                streamCTRL_print_procpid(0, // 0 for minimal width
                                                          pid,
                                                          upstreamproc,
                                                          NBupstreamproc,
                                                          print_pid_mode);
-                                TUI_printfw(" ");
                             }
                         }
                     }
