@@ -156,6 +156,9 @@ int FPSINIT_processor(
         strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN - 1);
     }
 
+    // Set detailed help text
+    strncpy(fps.md->helptext, PROCESSOR_HELPTEXT, FPS_HELPTEXT_STRMAXLEN - 1);
+
     strncpy(fps.cmdset.triggerstreamname, "stream03", STRINGMAXLEN_IMAGE_NAME - 1);
     fps.cmdset.procinfo_loopcntMax = -1;
     fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
@@ -277,5 +280,5 @@ int FPSRUN_processor(const char *fps_name) {
 }
 
 #ifndef MILK_MODULE
-FPS_MAIN_STANDALONE("processor03", processor)
+FPS_MAIN_STANDALONE("processor03", processor, PROCESSOR_HELPTEXT)
 #endif
