@@ -6,8 +6,10 @@
 #define NCURSES_WIDECHAR 1
 
 #include <math.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
 #include <curses.h>
+#endif
 
 #include <stdio.h>
 #include <wchar.h>
@@ -98,6 +100,7 @@ static errno_t compute_function()
     TUIscreenarray[0].keych = 'h';
     strcpy(TUIscreenarray[0].name, "[h] Help");
 
+#ifdef USE_NCURSES
     TUIscreenarray[1].index = 2;
     TUIscreenarray[1].keych = KEY_F(2);
     strcpy(TUIscreenarray[1].name, "[F2] summary");
@@ -105,6 +108,7 @@ static errno_t compute_function()
     TUIscreenarray[2].index = 3;
     TUIscreenarray[2].keych = KEY_F(3);
     strcpy(TUIscreenarray[2].name, "[F3] timing");
+#endif
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -136,7 +140,9 @@ static errno_t compute_function()
         if((dispcnt == 0) && (TUIpause == 0))
         {
             processinfo_WriteMessage(processinfo, "clear screen");
+#ifdef USE_NCURSES
             erase();
+#endif
 
             // Check for screen size change
             TUI_get_terminal_size(&wrow, &wcol);
@@ -195,7 +201,9 @@ static errno_t compute_function()
                 sem = -1;
             }
 
+#ifdef USE_NCURSES
             refresh();
+#endif
         }
 
         if(++dispcnt > diplaycntinterval)
@@ -206,7 +214,9 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+#ifdef USE_NCURSES
     endwin();
+#endif
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -697,14 +707,18 @@ errno_t printstatus(imageID ID)
                         vcnt[h]);
 
                 TUI_printfw("%s", line1);
+#ifdef USE_NCURSES
                 attron(COLOR_PAIR(customcolor));
+#endif
 
                 cnt = vcnt[h] * (wcol - 2 - strlen(line1)) / vcntmax;
                 for(unsigned long i = 0; i < cnt; ++i)
                 {
                     TUI_printfw(" ");
                 }
+#ifdef USE_NCURSES
                 attroff(COLOR_PAIR(customcolor));
+#endif
 
                 TUI_printfw("\n");
             }

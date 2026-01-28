@@ -10,6 +10,10 @@ project(milk LANGUAGES C)
 
 option(build_python_module "Compile Python Wrappers" OFF)
 
+option(USE_NCURSES "Enable ncurses and TUI support" ON)
+option(USE_READLINE "Enable readline support" ON)
+option(USE_GSL "Enable GSL support" ON)
+
 include(CheckLanguage)
 
 # =======================================
@@ -126,6 +130,9 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
+list(APPEND libsrcdir src/libmilkcore)
+list(APPEND libname milkcore)
+
 list(APPEND libsrcdir src/libmilkTUI)
 list(APPEND libname milkTUI)
 
@@ -209,7 +216,15 @@ message("USE_MAGMA                = ${USE_MAGMA}")
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
 
-
+macro(add_milk_standalone FUNC_NAME SOURCE_FILE)
+    set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
+    add_executable(${EXE_NAME} ${SOURCE_FILE})
+    target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
+    target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    # Note: ${LIBNAME} must be defined in the calling scope
+    target_link_libraries(${EXE_NAME} PRIVATE ${LIBNAME} milkfps ImageStreamIO CLIcore m)
+    install(TARGETS ${EXE_NAME} DESTINATION bin)
+endmacro()
 
 
 

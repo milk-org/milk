@@ -11,11 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "CLIcore.h"
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
 #include "fps_shmdirname.h"
+
+#ifdef MILK_MODULE
+#include "CLIcore.h"
+#endif
 
 
 
@@ -149,6 +152,7 @@ errno_t function_parameter_struct_create(
 
     // write currently loaded modules to fps
     fps.md->NBmodule = 0;
+#ifdef MILK_MODULE
     for(int m = 0; m < data.NBmodule; m++)
     {
         if(data.module[m].type != MODULE_TYPE_UNUSED)
@@ -175,6 +179,7 @@ errno_t function_parameter_struct_create(
             break;
         }
     }
+#endif
 
     fps.md->signal     = (uint64_t) FUNCTION_PARAMETER_STRUCT_SIGNAL_CONFRUN;
     fps.md->confwaitus = (uint64_t) 1000; // 1 kHz default

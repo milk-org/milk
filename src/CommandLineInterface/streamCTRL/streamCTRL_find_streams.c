@@ -9,7 +9,9 @@
 #include <sys/stat.h>
 
 
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#endif
 
 
 #include "CLIcore.h"
@@ -80,7 +82,9 @@ int find_streams(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
+#ifdef USE_NCURSES
                     endwin();
+#endif
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
                     exit(EXIT_FAILURE);

@@ -17,7 +17,9 @@ typedef int errno_t;
 
 #include <sys/file.h>
 #include <sys/stat.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#endif
 #include <pthread.h>
 
 
@@ -77,7 +79,9 @@ struct streamCTRL_TUI_parameters
 
 static void streamCTRL_TUI_exit()
 {
+#ifdef USE_NCURSES
     endwin();
+#endif
 }
 
 static errno_t streamCTRL_keyinput_process(
@@ -114,6 +118,7 @@ static errno_t streamCTRL_keyinput_process(
         sTUIparam.loopOK = 0;
         break;
 
+#ifdef USE_NCURSES
     case KEY_UP:
         sTUIparam.dindexSelected--;
         if(sTUIparam.dindexSelected < 0)
@@ -153,6 +158,7 @@ static errno_t streamCTRL_keyinput_process(
             sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
         }
         break;
+#endif
 
     // ============ SCREENS
 
@@ -160,6 +166,7 @@ static errno_t streamCTRL_keyinput_process(
         sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
         break;
 
+#ifdef USE_NCURSES
     case KEY_F(2): // semvals
         sTUIparam.DisplayMode = DISPLAY_MODE_SUMMARY;
         break;
@@ -184,11 +191,10 @@ static errno_t streamCTRL_keyinput_process(
             time(&rawtime);
             sTUIparam.uttime_lastScan           = gmtime(&rawtime);
             sTUIparam.fuserScan                 = 1;
-            streamCTRLdata->streaminfoproc->sindexscan = 0;
         }
-
         sTUIparam.DisplayMode = DISPLAY_MODE_FUSER;
         break;
+#endif
 
     // ============ ACTIONS
 
@@ -341,8 +347,11 @@ static errno_t streamCTRL_keyinput_process(
  *
  * @return errno_t
  */
+#ifdef USE_NCURSES
 errno_t streamCTRL_CTRLscreen()
 {
+    DEBUG_TRACE_FSTART();
+
     // initialize sCTRLTUIparams
     sTUIparam.loopOK = 1;
     sTUIparam.dindexSelected = 0;
@@ -560,7 +569,9 @@ errno_t streamCTRL_CTRLscreen()
         }
 
         DEBUG_TRACEPOINT("Erase screen");
+#ifdef USE_NCURSES
         erase();
+#endif
 
         //attron(A_BOLD);
         screenprint_setbold();
@@ -1800,7 +1811,9 @@ errno_t streamCTRL_CTRLscreen()
 
         DEBUG_TRACEPOINT(" ");
 
+#ifdef USE_NCURSES
         refresh();
+#endif
 
         DEBUG_TRACEPOINT(" ");
 
@@ -1816,7 +1829,9 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT(" ");
     }
 
+#ifdef USE_NCURSES
     endwin();
+#endif
 
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
@@ -1853,3 +1868,4 @@ errno_t streamCTRL_CTRLscreen()
 
     return EXIT_SUCCESS;
 }
+#endif

@@ -3,30 +3,26 @@
  * @brief   read FPS args from CLI
  */
 
-#include "CLIcore.h"
-
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
 
 
-
-
 /** @brief get FPS arguments from command line function call
  *
- * Write data.FPS_name and data.FPS_CMDCODE
- *
- * Reads FPS_CMDCODE from CLI argument 1
- *
- * Construct FPS_name from subsequent arguments
- *
+ * This function is intended to be used when running from the CLI.
+ * For standalone applications, arguments are parsed in the main() function.
+ * 
+ * When compiled as a module, this function will still need access to CLIcore data.
+ * We wrap it to only compile when MILK_MODULE is defined.
  */
+#ifdef MILK_MODULE
+#include "CLIcore.h"
+
 errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 {
-    // Check if function will be executed through FPS interface
-
     // set to 0 as default (no FPS, function will be processed according to CLI rules)
-    data.FPS_CMDCODE = 0;
+    FPS_CMDCODE = 0;
 
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     DEBUG_TRACEPOINT("pre-processing CLI arg");
@@ -36,25 +32,10 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
     switch(data.cmdargtoken[1].type)
     {
         case CLIARG_FLOAT32:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_FLOAT64:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_INT32:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_UINT32:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_INT64:
-            argpreprocess = 0;
-            break;
-
         case CLIARG_UINT64:
             argpreprocess = 0;
             break;
@@ -80,7 +61,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                 data.cmd[data.cmdindex].cmdsettings.flags |=
                     CLICMDFLAG_PROCINFO;
             }
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -91,7 +72,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                    data.cmdargtoken[2].val.numl);
             data.cmd[data.cmdindex].cmdsettings.RT_priority =
                 data.cmdargtoken[2].val.numl;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -102,7 +83,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                    data.cmdargtoken[2].val.numl);
             data.cmd[data.cmdindex].cmdsettings.procinfo_loopcntMax =
                 data.cmdargtoken[2].val.numl;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -113,7 +94,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                    data.cmdargtoken[2].val.numl);
             data.cmd[data.cmdindex].cmdsettings.triggermode =
                 data.cmdargtoken[2].val.numl;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -124,7 +105,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                    data.cmdargtoken[2].val.string);
             strcpy(data.cmd[data.cmdindex].cmdsettings.triggerstreamname,
                    data.cmdargtoken[2].val.string);
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -135,7 +116,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                    data.cmdargtoken[2].val.numl);
             data.cmd[data.cmdindex].cmdsettings.semindexrequested =
                    data.cmdargtoken[2].val.numl;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -167,7 +148,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 
             data.cmd[data.cmdindex].cmdsettings.triggerdelay.tv_sec  = x_sec;
             data.cmd[data.cmdindex].cmdsettings.triggerdelay.tv_nsec = x_nsec;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
 
@@ -183,67 +164,51 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 
             data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_sec  = x_sec;
             data.cmd[data.cmdindex].cmdsettings.triggertimeout.tv_nsec = x_nsec;
-            data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+            FPS_CMDCODE = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
-        }
-
-        // check that first arg is a string
-        // if it isn't, the non-FPS implementation should be called
-
-
-
-        {
-            //struct timespec tnow = {0};
-            //clock_gettime(CLOCK_MILK, &tnow);
-            //data.FPS_TIMESTAMP = tnow.tv_sec;
-            //strcpy(data.FPS_PROCESS_TYPE, "undef");
         }
 
         // check if recognized FPSCMDCODE
         if(strcmp(data.cmdargtoken[1].val.string,
                   "_FPSINIT_") == 0) // Initialize FPS
         {
-            data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
-            //strcpy(data.FPS_PROCESS_TYPE, "fpsinit");
+            FPS_CMDCODE = FPSCMDCODE_FPSINIT;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_CONFSTART_") == 0) // Start conf process
         {
-            data.FPS_CMDCODE = FPSCMDCODE_CONFSTART;
-            //strcpy(data.FPS_PROCESS_TYPE, "conf");
+            FPS_CMDCODE = FPSCMDCODE_CONFSTART;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_CONFSTOP_") == 0) // Stop conf process
         {
-            data.FPS_CMDCODE = FPSCMDCODE_CONFSTOP;
+            FPS_CMDCODE = FPSCMDCODE_CONFSTOP;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_RUNSTART_") == 0) // Run process
         {
-            data.FPS_CMDCODE = FPSCMDCODE_RUNSTART;
-            //strcpy(data.FPS_PROCESS_TYPE, "run");
+            FPS_CMDCODE = FPSCMDCODE_RUNSTART;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_RUNSTOP_") == 0) // Stop process
         {
-            data.FPS_CMDCODE = FPSCMDCODE_RUNSTOP;
+            FPS_CMDCODE = FPSCMDCODE_RUNSTOP;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_TMUXSTART_") == 0) // Start tmux session
         {
-            data.FPS_CMDCODE = FPSCMDCODE_TMUXSTART;
-            //strcpy(data.FPS_PROCESS_TYPE, "tmux");
+            FPS_CMDCODE = FPSCMDCODE_TMUXSTART;
         }
         else if(strcmp(data.cmdargtoken[1].val.string,
                        "_TMUXSTOP_") == 0) // Stop tmux session
         {
-            data.FPS_CMDCODE = FPSCMDCODE_TMUXSTOP;
+            FPS_CMDCODE = FPSCMDCODE_TMUXSTOP;
         }
 
     }
 
     // if recognized FPSCMDCODE, use FPS implementation
-    if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
+    if((FPS_CMDCODE != 0) && (FPS_CMDCODE != FPSCMDCODE_IGNORE))
     {
         // ===============================
         //     SET FPS INTERFACE NAME
@@ -253,12 +218,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         if(data.processnameflag == 1)
         {
             // Automatically set fps name to be process name up to first instance of character '.'
-            strcpy(data.FPS_name, data.processname0);
+            strcpy(FPS_name, data.processname0);
         }
         else // otherwise, construct name as follows
         {
             // Adopt default name for fpsname
-            int slen = snprintf(data.FPS_name,
+            int slen = snprintf(FPS_name,
                                 FUNCTION_PARAMETER_STRMAXLEN,
                                 "%s",
                                 fpsname_default);
@@ -274,7 +239,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                     "Full string  : %s\n"
                     "Truncated to : %s",
                     fpsname_default,
-                    data.FPS_name);
+                    FPS_name);
                 abort(); // can't handle this error any other way
             }
 
@@ -289,7 +254,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                 int slen = snprintf(fpsname1,
                                     FUNCTION_PARAMETER_STRMAXLEN,
                                     "%s-%s",
-                                    data.FPS_name,
+                                    FPS_name,
                                     data.cmdargtoken[argindex].val.string);
                 if(slen < 1)
                 {
@@ -302,20 +267,26 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                         "snprintf string truncation.\n"
                         "Full string  : %s-%s\n"
                         "Truncated to : %s",
-                        data.FPS_name,
+                        FPS_name,
                         data.cmdargtoken[argindex].val.string,
                         fpsname1);
                     abort(); // can't handle this error any other way
                 }
 
-                strncpy(data.FPS_name,
+                strncpy(FPS_name,
                         fpsname1,
                         FUNCTION_PARAMETER_STRMAXLEN - 1);
                 argindex++;
             }
         }
-        //printf(">>>>> %s >>>>>>> FPS name : %s\n", fpsname_default, data.FPS_name);
     }
 
     return RETURN_SUCCESS;
 }
+#else
+errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
+{
+    (void)fpsname_default;
+    return RETURN_SUCCESS;
+}
+#endif

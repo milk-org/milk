@@ -123,9 +123,20 @@ endif()
 
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
 											$<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
+target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps milkCOREMODiofits)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
+
+add_milk_standalone(crop2D image_crop2D.c)
+add_milk_standalone(multicrop image_multicrop2D.c)
+add_milk_standalone(immerge image_merge3D.c)
+add_milk_standalone(setrow image_set_row.c)
+add_milk_standalone(setcol image_set_col.c)
+add_milk_standalone(setpix image_set_2Dpix.c)
+add_milk_standalone(imzero image_setzero.c)
+add_milk_standalone(setpix1D image_set_1Dpixrange.c)
+add_milk_standalone(set3Daxes image_set_3Daxes.c)
+add_milk_standalone(normslice image_norm.c)

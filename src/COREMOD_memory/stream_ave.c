@@ -1,394 +1,125 @@
-#include "ImageStreamIO/ImageStruct.h"
-/** @file stream_ave.c
- */
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <math.h>
-
 #include "CLIcore.h"
+#include "stream_ave.h"
+#include "fps.h"
+#include "processinfo.h"
+#include "ImageStreamIO.h"
 
-static char *inimname;
+char     *streamave_inimname    = NULL;
+char     *streamave_outimave    = NULL;
+uint32_t *streamave_outimshared = NULL;
+char     *streamave_outimrms    = NULL;
+uint64_t *streamave_NBcoadd     = NULL;
+uint64_t *streamave_cntindex    = NULL;
+uint64_t *streamave_compave     = NULL;
+uint64_t *streamave_comprms     = NULL;
+static uint64_t processinfo_change_cnt_local = 0;
 
-static char *outimave;
-static uint32_t *outimshared;
-
-static char *outimrms;
-
-static uint64_t *NBcoadd;
-
-static uint64_t *cntindex;
-static long      fpi_cntindex = -1;
-
-static uint64_t *compave;
-static long     fpi_compave = -1;
-
-static uint64_t *comprms;
-static long     fpi_comprms = -1;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outave_name",
-        "output average image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimave,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".out_shared",
-        "output shared flag",
-        "1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &outimshared,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outrms_name",
-        "output RMS image",
-        "out1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &outimrms,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".NBcoadd",
-        "number of coadded frames",
-        "100",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &NBcoadd,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".cntindex",
-        "counter index",
-        "5",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindex,
-        &fpi_cntindex
-    },
-    {
-        CLIARG_ONOFF,
-        ".comp.ave",
-        "compute average",
-        "1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &compave,
-        &fpi_compave
-    },
-    {
-        CLIARG_ONOFF,
-        ".comp.rms",
-        "compute rms",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &comprms,
-        &fpi_comprms
+void stream_ave_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *imgin, IMAGE *imgoutave, IMAGE *imgoutrms, double *imdataarray, double *imdataarrayPOW) {
+    if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
+        fps_to_processinfo(fps, processinfo); processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
     }
+    uint64_t xysize = imgin->md[0].size[0] * imgin->md[0].size[1];
+    if (*streamave_cntindex == 0) {
+        for(uint64_t i=0; i<xysize; i++) {
+            double v = 0; switch(imgin->md[0].datatype) { case _DATATYPE_FLOAT: v = imgin->array.F[i]; break; case _DATATYPE_DOUBLE: v = imgin->array.D[i]; break; }
+            imdataarray[i] = v; if (*streamave_comprms) imdataarrayPOW[i] = v*v;
+        }
+    } else {
+        for(uint64_t i=0; i<xysize; i++) {
+            double v = 0; switch(imgin->md[0].datatype) { case _DATATYPE_FLOAT: v = imgin->array.F[i]; break; case _DATATYPE_DOUBLE: v = imgin->array.D[i]; break; }
+            imdataarray[i] += v; if (*streamave_comprms) imdataarrayPOW[i] += v*v;
+        }
+    }
+    (*streamave_cntindex)++;
+    if (*streamave_cntindex >= *streamave_NBcoadd) {
+        if (*streamave_compave && imgoutave) { for(uint64_t i=0; i<xysize; i++) imgoutave->array.F[i] = imdataarray[i] / (*streamave_cntindex); processinfo_update_output_stream(processinfo, imgoutave, NULL); }
+        if (*streamave_comprms && imgoutrms) { for(uint64_t i=0; i<xysize; i++) imgoutrms->array.F[i] = sqrt(imdataarrayPOW[i]) / (*streamave_cntindex); processinfo_update_output_stream(processinfo, imgoutrms, NULL); }
+        *streamave_cntindex = 0;
+    }
+}
+
+
+/* ================================================================== */
+/* STANDALONE IMPLEMENTATION                                          */
+
+int FPSINIT_stream_ave(const char *fps_name, const char *keywords, const char *description) {
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
+    if (keywords) strncpy(fps.md->keywordarray, keywords, FPS_KEYWORDARRAY_STRMAXLEN-1);
+    if (description) strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN-1);
+    strncpy(fps.md->helptext, STREAMAVE_HELPTEXT, FPS_HELPTEXT_STRMAXLEN-1);
+    fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+    STREAMAVE_PARAMS(X_FPS_INIT)
+#undef X_FPS_INIT
+    fps_add_processinfo_entries(&fps);
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+int FPSCONF_stream_ave(const char *fps_name, int loop) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (loop) {
+        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
+        streamave_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+        streamave_outimave = functionparameter_GetParamPtr_STRING(&fps, ".outave_name");
+        streamave_NBcoadd = functionparameter_GetParamPtr_UINT64(&fps, ".NBcoadd");
+        streamave_cntindex = functionparameter_GetParamPtr_UINT64(&fps, ".cntindex");
+        streamave_compave = (uint64_t*)functionparameter_GetParamPtr_INT64(&fps, ".comp.ave");
+        streamave_comprms = (uint64_t*)functionparameter_GetParamPtr_INT64(&fps, ".comp.rms");
+        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { function_parameter_FPCONFloopstep(&fps); usleep(10000); }
+    } else { fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT); function_parameter_FPCONFloopstep(&fps); }
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+FPS_MAKE_STANDALONE_CONFSTOP(stream_ave)
+FPS_MAKE_STANDALONE_RUNSTOP(stream_ave)
+
+int FPSRUN_stream_ave(const char *fps_name) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) return 1;
+    streamave_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+    streamave_NBcoadd = functionparameter_GetParamPtr_UINT64(&fps, ".NBcoadd");
+    streamave_cntindex = functionparameter_GetParamPtr_UINT64(&fps, ".cntindex");
+    IMAGE iin; if (ImageStreamIO_read_sharedmem_image_toIMAGE(streamave_inimname, &iin) != 0) return 1;
+    uint64_t xys = iin.md[0].size[0] * iin.md[0].size[1];
+    double *d1 = malloc(sizeof(double)*xys), *d2 = malloc(sizeof(double)*xys);
+    PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
+    processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    fps_to_processinfo(&fps, pinfo); processinfo_loopstart(pinfo);
+    while(processinfo_loopstep(pinfo)) {
+        processinfo_waitoninputstream(pinfo); if (pinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
+        processinfo_exec_start(pinfo); stream_ave_compute(&fps, pinfo, &iin, NULL, NULL, d1, d2); processinfo_exec_end(pinfo);
+    }
+    free(d1); free(d2); processinfo_cleanExit(pinfo); function_parameter_struct_disconnect(&fps); return 0;
+}
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE("stream_ave", stream_ave, STREAMAVE_HELPTEXT)
+#endif
+
+static CLICMDARGDEF farg[] = {
+#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+    STREAMAVE_PARAMS(X_CLI_DEF)
+#undef X_CLI_DEF
 };
 
-static errno_t customCONFsetup()
-{
+static CLICMDDATA CLIcmddata = { "streamave", "average stream of images", CLICMD_FIELDS_DEFAULTS };
 
-    return RETURN_SUCCESS;
-}
+static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
-static errno_t customCONFcheck()
-{
-    if(data.fpsptr != NULL)
-    {
-
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "streamave",
-    "average stream of images",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("Average frames from stream\n");
-    printf("output is by default float type\n");
-
-    return RETURN_SUCCESS;
-}
-
-static errno_t compute_function()
-{
-    DEBUG_TRACE_FSTART();
-
-    IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
-
-    uint32_t xsize  = inimg.size[0];
-    uint32_t ysize  = inimg.size[1];
-    uint64_t xysize = xsize * ysize;
-
-    IMGID outimgave  = makeIMGID_2D(outimave, xsize, ysize);
-    outimgave.shared = *outimshared;
-
-    if((*compave) == 1)
-    {
-        imcreateIMGID(&outimgave);
-    }
-
-    IMGID outimgrms  = makeIMGID_2D(outimrms, xsize, ysize);
-    outimgrms.shared = 1;
-
-    if((*comprms) == 1)
-    {
-        imcreateIMGID(&outimgrms);
-    }
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
-    // custom initialization
-    if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
-    {
-        // procinfo is accessible here
-        printf("PROCINFO IS ON\n");
-    }
-
-    DEBUG_TRACEPOINT("Allocating summation array");
-    double * restrict imdataarray    = (double *) malloc(sizeof(double) * xysize);
-    if(imdataarray == NULL) {
-        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (sizeof(double) * xysize));
-        abort();
-    }
-
-    double * restrict imdataarrayPOW = (double *) malloc(sizeof(double) * xysize);
-    if(imdataarrayPOW == NULL) {
-        PRINT_ERROR("malloc returns NULL pointer, size %ld", (long) (sizeof(double) * xysize));
-        abort();
-    }
-
-    *cntindex = 0;
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-
-    //DEBUG_TRACEPOINT("cntindex = %lu / %lu", *cntindex, *NBcoadd);
-
-    printf("Adding image %lu / %lu\n", *cntindex, *NBcoadd);
-
-    if(*cntindex == 0)
-    {
-        // initialization
-        //
-
-        switch(inimg.datatype)
-        {
-
-        case _DATATYPE_FLOAT :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = inimg.im->array.F[pixi];
-            }
-            break;
-
-        case _DATATYPE_DOUBLE :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = inimg.im->array.D[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT16 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.SI16[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT16 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.UI16[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT32 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.SI32[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT32 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.UI32[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT64 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.SI64[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT64 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] = (double) inimg.im->array.UI64[pixi];
-            }
-            break;
-
-        }
-
-        if(*comprms == 1)
-        {
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarrayPOW[pixi] = imdataarray[pixi] * imdataarray[pixi];
-            }
-        }
-
-    }
-    else
-    {
-
-        switch(inimg.datatype)
-        {
-        case _DATATYPE_FLOAT :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += inimg.im->array.F[pixi];
-            }
-            break;
-
-        case _DATATYPE_DOUBLE :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += inimg.im->array.D[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT16 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.SI16[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT16 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.UI16[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT32 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.SI32[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT32 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.UI32[pixi];
-            }
-            break;
-
-        case _DATATYPE_INT64 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.SI64[pixi];
-            }
-            break;
-
-        case _DATATYPE_UINT64 :
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarray[pixi] += (double) inimg.im->array.UI64[pixi];
-            }
-            break;
-
-        default :
-            PRINT_ERROR("Invalid datatype");
-            abort();
-            break;
-        }
-
-        if(*comprms == 1)
-        {
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                imdataarrayPOW[pixi] += imdataarray[pixi] * imdataarray[pixi];
-            }
-        }
-    }
-
-    (*cntindex)++;
-    if((*cntindex) >= (*NBcoadd))
-    {
-
-        if(*compave == 1)
-        {
-            DEBUG_TRACEPOINT("Writing output AVE image");
-
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                outimgave.im->array.F[pixi] = imdataarray[pixi] / (*cntindex);
-            }
-
-            processinfo_update_output_stream(processinfo, outimgave.im, NULL);
-        }
-
-        if(*comprms == 1)
-        {
-            DEBUG_TRACEPOINT("Writing output RMS image");
-            for(uint_fast64_t pixi = 0; pixi < xysize; pixi++)
-            {
-                outimgrms.im->array.F[pixi] =
-                    sqrt(imdataarrayPOW[pixi]) / (*cntindex);
-            }
-
-            processinfo_update_output_stream(processinfo, outimgrms.im, NULL);
-        }
-
-        (*cntindex) = 0;
-    }
-
+static errno_t compute_function() {
+    IMGID in = mkIMGID_from_name(streamave_inimname); resolveIMGID(&in, ERRMODE_ABORT);
+    uint64_t xys = in.md[0].size[0] * in.md[0].size[1];
+    double *d1 = malloc(sizeof(double)*xys), *d2 = malloc(sizeof(double)*xys);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    stream_ave_compute(data.fpsptr, processinfo, in.im, NULL, NULL, d1, d2);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    free(imdataarray);
-
-    DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    free(d1); free(d2); return RETURN_SUCCESS;
 }
 
 INSERT_STD_FPSCLIfunctions
-
-// Register function in CLI
-errno_t
-CLIADDCMD_streamaverage()
-{
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
+errno_t CLIADDCMD_streamaverage() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
