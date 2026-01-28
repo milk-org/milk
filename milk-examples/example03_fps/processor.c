@@ -48,7 +48,7 @@
  * @brief Performs one-time setup of the Function Parameter Structure (FPS).
  * This creates the shared memory segment and initializes default values.
  */
-int FPSINIT_processor(const char *fps_name) {
+int FPSINIT_processor(const char *fps_name, const char *keywords, const char *description) {
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Initializing FPS '%s'...\n", fps_name);
 
@@ -56,6 +56,13 @@ int FPSINIT_processor(const char *fps_name) {
     fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
     strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1);
     fps.md->sourceline = __LINE__;
+
+    if (keywords != NULL) {
+        strncpy(fps.md->keywordarray, keywords, FPS_KEYWORDARRAY_STRMAXLEN - 1);
+    }
+    if (description != NULL) {
+        strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN - 1);
+    }
 
     // ------------------------------------------------------------------------
     // INITIALIZE DEFAULTS IN cmdset
@@ -94,7 +101,7 @@ int FPSINIT_processor(const char *fps_name) {
 /**
  * @brief Helper to handle tmux logic for automated multi-window setup.
  */
-void handle_tmux(const char *fps_name, const char *command, int argc, char *argv[]) {
+void handle_tmux(const char *fps_name, const char *command, int argc, char *argv[], const char *keywords, const char *description) {
     char cmd[2048];
 
     // Check if tmux is installed
@@ -145,7 +152,7 @@ void handle_tmux(const char *fps_name, const char *command, int argc, char *argv
         system(cmd);
         printf("Dispatched 'runstart' to tmux window %s:run\n", fps_name);
     } else if (strcmp(command, "fpsinit") == 0) {
-        FPSINIT_processor(fps_name);
+        FPSINIT_processor(fps_name, keywords, description);
     }
 }
 
@@ -164,11 +171,42 @@ int FPSCONF_processor(const char *fps_name, int loop) {
         // Connect as configuration owner and set the loop bit
         fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
 
+        char *in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+        uint32_t *roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+        uint32_t *off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
+
+        if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) {
+            fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
+            function_parameter_FPCONFexit(&fps);
+            return 1;
+        }
+
         // Monitoring loop for validation
         while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) {
             if (function_parameter_FPCONFloopstep(&fps)) {
-                // Logic to validate dependencies between parameters would go here
+                // Logic to validate dependencies between parameters
                 // For example, ensuring off_x + roi_size < stream_width
+
+                IMAGE input_image;
+                if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) == 0) {
+                    uint32_t width = input_image.md[0].size[0];
+                    if (*off_x_ptr + *roi_size_ptr > width) {
+                        // Clamp off_x first
+                        if (*off_x_ptr > width) {
+                            *off_x_ptr = 0;
+                        }
+                        // Then adjust if still too large (meaning roi_size is big or off_x is pushing it)
+                        if (*off_x_ptr + *roi_size_ptr > width) {
+                            if (*roi_size_ptr > width) {
+                                *roi_size_ptr = width;
+                                *off_x_ptr = 0;
+                            } else {
+                                *off_x_ptr = width - *roi_size_ptr;
+                            }
+                        }
+                    }
+                    ImageStreamIO_closeIm(&input_image);
+                }
             }
             usleep(10000);
         }
@@ -182,7 +220,6 @@ int FPSCONF_processor(const char *fps_name, int loop) {
     function_parameter_FPCONFexit(&fps);
     return 0;
 }
-
 
 /**
  * @brief Stop the configuration process.
@@ -264,23 +301,27 @@ int FPSRUN_processor(const char *fps_name) {
     }
 
     // 2. RETRIEVE CURRENT PARAMETERS
-    char in_name[200];
-    char out_name[200];
-    strncpy(in_name, functionparameter_GetParamPtr_STRING(&fps, ".in_name"), 199);
-    strncpy(out_name, functionparameter_GetParamPtr_STRING(&fps, ".out_name"), 199);
-    uint32_t roi_size = functionparameter_GetParamValue_UINT32(&fps, ".roi_size");
-    uint32_t off_x = functionparameter_GetParamValue_UINT32(&fps, ".off_x");
+    char *in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+    char *out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
+    uint32_t *roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+    uint32_t *off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
+
+    if (!in_name_ptr || !out_name_ptr || !roi_size_ptr || !off_x_ptr) {
+        fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
+        function_parameter_struct_disconnect(&fps);
+        return 1;
+    }
 
     // 3. INITIALIZE STREAMS
     IMAGE input_image;
-    if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name, &input_image) != 0) {
-        fprintf(stderr, "Error connecting to input %s\n", in_name);
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) != 0) {
+        fprintf(stderr, "Error connecting to input %s\n", in_name_ptr);
         return 1;
     }
 
     IMAGE output_image;
-    uint32_t dims[2] = {roi_size, roi_size};
-    if (ImageStreamIO_createIm_gpu(&output_image, out_name, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
+    uint32_t dims[2] = {*roi_size_ptr, *roi_size_ptr};
+    if (ImageStreamIO_createIm_gpu(&output_image, out_name_ptr, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
         return 1;
     }
 
@@ -315,7 +356,8 @@ int FPSRUN_processor(const char *fps_name) {
         // RE-READ PARAMETERS DYNAMICALLY
         // This allows real-time adjustment of processing logic (e.g., changing off_x via TUI)
         fps_to_processinfo(&fps, processinfo);
-        off_x = functionparameter_GetParamValue_UINT32(&fps, ".off_x");
+        uint32_t off_x = *off_x_ptr;
+        uint32_t roi_size = *roi_size_ptr;
 
         for(uint32_t y=0; y<roi_size; y++) {
             for(uint32_t x=0; x<roi_size; x++) {
@@ -366,11 +408,13 @@ int main(int argc, char *argv[]) {
         printf("  runstart   Run the main ROI processing loop.\n");
         printf("  runstop    Stop the main ROI processing loop.\n\n");
         printf("Options:\n");
-        printf("  -n, --name NAME  Specify FPS name (default: processor03).\n");
-        printf("  -tmux            Auto-create a tmux session and dispatch commands.\n");
-        printf("                   - 'confstart' command goes to window 1.\n");
-        printf("                   - 'runstart' command goes to window 2.\n");
-        printf("                   - 'ctrl' window (index 0) remains for user interaction.\n\n");
+        printf("  -n, --name NAME          Specify FPS name (default: processor03).\n");
+        printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n");
+        printf("  -d, --description DESC   Specify FPS description (default: NULL).\n");
+        printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n");
+        printf("                           - 'confstart' command goes to window 1.\n");
+        printf("                           - 'runstart' command goes to window 2.\n");
+        printf("                           - 'ctrl' window (index 0) remains for user interaction.\n\n");
         printf("Typical Workflow:\n");
         printf("  1. Terminal A: ./milk-example-03-writer\n");
         printf("  2. Terminal B: ./milk-example-03-processor fpsinit\n");
@@ -384,6 +428,8 @@ int main(int argc, char *argv[]) {
     char fps_name[STRINGMAXLEN_FPS_NAME] = "processor03";
     int use_tmux = 0;
     char *command = NULL;
+    char *keywords = NULL;
+    char *description = NULL;
 
     // Argument parsing
     for (int i = 1; i < argc; i++) {
@@ -391,6 +437,10 @@ int main(int argc, char *argv[]) {
             use_tmux = 1;
         } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) {
             strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1);
+        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) {
+            keywords = argv[++i];
+        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) {
+            description = argv[++i];
         } else if (command == NULL) {
             command = argv[i];
         }
@@ -403,12 +453,12 @@ int main(int argc, char *argv[]) {
 
     // Dispatching
     if (use_tmux) {
-        handle_tmux(fps_name, command, argc, argv);
+        handle_tmux(fps_name, command, argc, argv, keywords, description);
         return 0;
     }
 
     if (strcmp(command, "fpsinit") == 0) {
-        return FPSINIT_processor(fps_name);
+        return FPSINIT_processor(fps_name, keywords, description);
     } else if (strcmp(command, "confstart") == 0) {
         return FPSCONF_processor(fps_name, 1);
     } else if (strcmp(command, "confstep") == 0) {
