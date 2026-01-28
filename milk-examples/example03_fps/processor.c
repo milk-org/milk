@@ -1,15 +1,12 @@
 /**
- * @file milk-example-03-processor.c
- * @brief Integration of ImageStreamIO, libprocessinfo, and libfps.
+ * @file processor.c
+ * @brief Logic for ImageStreamIO + ProcessInfo + FPS integration.
  *
- * This source file contains:
- * 1. Global parameter pointers (shared with module).
- * 2. Shared processing and validation logic.
- * 3. Standalone implementation (FPS loop, main).
- *
- * It is compiled as a standalone executable (processor.c)
- * AND linked into the shared object module (processor03.so) via CMake.
- * When compiled for the module (-DMILK_MODULE), main() is excluded.
+ * This file contains:
+ * 1. Global parameter pointers (shared between standalone and module).
+ * 2. core compute logic used in both run modes.
+ * 3. Validation logic used in both configuration modes.
+ * 4. Standalone implementation of FPS/ProcessInfo hooks (main, start/stop).
  */
 
 #include <stdio.h>
@@ -51,24 +48,26 @@
 #include "ImageStreamIO.h"
 #include "processor.h"
 
-// ===============================================================================================
-// GLOBAL PARAMETERS (SHARED)
-// ===============================================================================================
+/* =============================================================================================== */
+/* GLOBAL PARAMETERS (SHARED)                                                                      */
+/* =============================================================================================== */
 char *in_name_ptr = NULL;
 char *proc_out_name_ptr = NULL;
 uint32_t *roi_size_ptr = NULL;
 uint32_t *off_x_ptr = NULL;
 
+/** @brief Tracks whether processinfo settings need to be re-synced from FPS. */
 static uint64_t processinfo_change_cnt_local = 0;
 
 
-/* =============================================================================================== */
 /* =============================================================================================== */
 /* SHARED LOGIC                                                                                    */
 /* =============================================================================================== */
 
 /**
- * @brief Shared processing logic for one loop iteration.
+ * @brief Core ROI extraction computation.
+ * 
+ * This function is called by both the standalone RUN loop and the CLI module compute function.
  */
 void processor03_compute(
     FUNCTION_PARAMETER_STRUCT *fps,
@@ -76,6 +75,7 @@ void processor03_compute(
     IMAGE *input_image,
     IMAGE *output_image)
 {
+    // Sync processinfo settings (priority, CPU mask, etc.) if they were changed via FPS TUI/CLI
     if (fps) {
         if(fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
             fps_to_processinfo(fps, processinfo);
@@ -92,20 +92,26 @@ void processor03_compute(
     float *in_data = (float*)input_image->array.raw;
     float *out_data = (float*)output_image->array.raw;
 
+    // Simple 2D copy with horizontal offset
     for(uint32_t y=0; y<roi_size; y++) {
         for(uint32_t x=0; x<roi_size; x++) {
             if (x + off_x < in_w)
                 out_data[y*roi_size + x] = in_data[y*in_w + (x + off_x)];
             else
-                out_data[y*roi_size + x] = 0;
+                out_data[y*roi_size + x] = 0; // Padding if offset is out of bounds
         }
     }
+    
+    // Visual progress indicator
     printf(".");
     fflush(stdout);
 }
 
 /**
- * @brief Shared validation logic for configuration loop.
+ * @brief Validates parameter constraints.
+ * 
+ * Ensures the requested ROI window is physically possible within the current input stream.
+ * Automatically adjusts offset or size to maintain validity.
  */
 void processor03_validate() {
     if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) return;
@@ -133,10 +139,14 @@ void processor03_validate() {
 
 
 /* =============================================================================================== */
-/* =============================================================================================== */
 /* STANDALONE IMPLEMENTATION                                                                       */
 /* =============================================================================================== */
 
+/**
+ * @brief Initialize the FPS shared memory segment.
+ * 
+ * Uses the PROCESSOR_PARAMS X-Macro to populate the structure.
+ */
 int FPSINIT_processor(
     const char *fps_name,
     const char *keywords,
@@ -145,6 +155,7 @@ int FPSINIT_processor(
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Initializing FPS '%s'...\n", fps_name);
 
+    // Setup the shared memory segment
     fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
     strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1);
     fps.md->sourceline = __LINE__;
@@ -156,15 +167,17 @@ int FPSINIT_processor(
         strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN - 1);
     }
 
-    // Set detailed help text
+    // Set detailed help text for the TUI
     strncpy(fps.md->helptext, PROCESSOR_HELPTEXT, FPS_HELPTEXT_STRMAXLEN - 1);
 
+    // Set default ProcessInfo loop settings
     strncpy(fps.cmdset.triggerstreamname, "stream03", STRINGMAXLEN_IMAGE_NAME - 1);
     fps.cmdset.procinfo_loopcntMax = -1;
     fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
     fps.cmdset.triggertimeout.tv_sec = 10;
     fps.cmdset.triggertimeout.tv_nsec = 0;
 
+    // Use X-Macro to add all parameters to the FPS
 #define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
     { \
         c_type val = def_val; \
@@ -173,6 +186,7 @@ int FPSINIT_processor(
     PROCESSOR_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
 
+    // Add standard ProcessInfo parameters (CPU mask, RT priority, etc.)
     fps_add_processinfo_entries(&fps);
     functionparameter_SetParamValue_ONOFF(&fps, ".procinfo.MeasureTiming", 1);
 
@@ -180,6 +194,11 @@ int FPSINIT_processor(
     return 0;
 }
 
+/**
+ * @brief Run the configuration monitoring loop.
+ * 
+ * Links the local pointers to the shared memory entries and runs the validation logic.
+ */
 int FPSCONF_processor(
     const char *fps_name,
     int loop)
@@ -190,6 +209,7 @@ int FPSCONF_processor(
         printf("Starting configuration process loop for '%s'\n", fps_name);
         fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
 
+        // Map local pointers to FPS shared memory entries
         in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
         roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
         off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
@@ -200,6 +220,7 @@ int FPSCONF_processor(
             return 1;
         }
 
+        // Configuration loop
         while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) {
             if (function_parameter_FPCONFloopstep(&fps)) {
                 processor03_validate();
@@ -216,17 +237,25 @@ int FPSCONF_processor(
     return 0;
 }
 
+// Generate standard stop commands
 FPS_MAKE_STANDALONE_CONFSTOP(processor)
 FPS_MAKE_STANDALONE_RUNSTOP(processor)
 
+/**
+ * @brief Main processing loop (RUN mode).
+ * 
+ * Synchronizes with the input stream and performs the ROI extraction.
+ */
 int FPSRUN_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
 
+    // Connect to the FPS created by fpsinit
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", fps_name);
         return 1;
     }
 
+    // Map local pointers
     in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
     proc_out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
     roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
@@ -238,38 +267,49 @@ int FPSRUN_processor(const char *fps_name) {
         return 1;
     }
 
+    // Connect to source stream
     IMAGE input_image;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) != 0) {
         fprintf(stderr, "Error connecting to input %s\n", in_name_ptr);
         return 1;
     }
 
+    // Create/Connect to output stream
     IMAGE output_image;
     uint32_t dims[2] = {*roi_size_ptr, *roi_size_ptr};
     if (ImageStreamIO_createIm_gpu(&output_image, proc_out_name_ptr, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
         return 1;
     }
 
+    // Setup ProcessInfo for monitoring
     PROCESSINFO *processinfo = processinfo_setup((char*)fps_name, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     if (!processinfo) return 1;
 
     processinfo_CatchSignals();
+    // Configure hardware-accelerated trigger (semaphore)
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    
+    // Initial sync of settings
     fps_to_processinfo(&fps, processinfo);
     processinfo_loopstart(processinfo);
 
     int loopOK = 1;
     while(loopOK) {
+        // Heartbeat and control check
         loopOK = processinfo_loopstep(processinfo);
         if(!loopOK) break;
 
+        // Wait for next frame from source
         processinfo_waitoninputstream(processinfo);
         if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
 
+        // Record execution start time
         processinfo_exec_start(processinfo);
 
+        // Perform computation
         processor03_compute(&fps, processinfo, &input_image, &output_image);
 
+        // Record execution end time and update stream metadata (counter, semaphores)
         processinfo_exec_end(processinfo);
         processinfo_update_output_stream(processinfo, &output_image, &input_image);
     }
@@ -279,6 +319,7 @@ int FPSRUN_processor(const char *fps_name) {
     return 0;
 }
 
+// Generate the standard main function for standalone build
 #ifndef MILK_MODULE
 FPS_MAIN_STANDALONE("processor03", processor, PROCESSOR_HELPTEXT)
 #endif
