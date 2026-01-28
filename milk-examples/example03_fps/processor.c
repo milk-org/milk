@@ -70,19 +70,24 @@ static uint64_t processinfo_change_cnt_local = 0;
 /**
  * @brief Shared processing logic for one loop iteration.
  */
-void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *input_image, IMAGE *output_image) {
+void processor03_compute(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    PROCESSINFO *processinfo,
+    IMAGE *input_image,
+    IMAGE *output_image)
+{
     if (fps) {
         if(fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
             fps_to_processinfo(fps, processinfo);
             processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
         }
     }
-    
+
     if (!off_x_ptr || !roi_size_ptr) return;
 
     uint32_t off_x = *off_x_ptr;
     uint32_t roi_size = *roi_size_ptr;
-    
+
     uint32_t in_w = input_image->md[0].size[0];
     float *in_data = (float*)input_image->array.raw;
     float *out_data = (float*)output_image->array.raw;
@@ -108,7 +113,7 @@ void processor03_validate() {
     IMAGE input_image;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) == 0) {
         uint32_t width = input_image.md[0].size[0];
-        
+
         if (*off_x_ptr + *roi_size_ptr > width) {
             if (*off_x_ptr > width) {
                 *off_x_ptr = 0;
@@ -132,7 +137,11 @@ void processor03_validate() {
 /* STANDALONE IMPLEMENTATION                                                                       */
 /* =============================================================================================== */
 
-int FPSINIT_processor(const char *fps_name, const char *keywords, const char *description) {
+int FPSINIT_processor(
+    const char *fps_name,
+    const char *keywords,
+    const char *description)
+{
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Initializing FPS '%s'...\n", fps_name);
 
@@ -153,17 +162,13 @@ int FPSINIT_processor(const char *fps_name, const char *keywords, const char *de
     fps.cmdset.triggertimeout.tv_sec = 10;
     fps.cmdset.triggertimeout.tv_nsec = 0;
 
-    char *in_name = "stream03";
-    function_parameter_add_entry(&fps, ".in_name", "Input Stream Name", FPTYPE_STRING, FPFLAG_DEFAULT_INPUT, (void*)in_name, NULL);
-
-    char *out_name = "stream03_proc";
-    function_parameter_add_entry(&fps, ".out_name", "Output Stream Name", FPTYPE_STRING, FPFLAG_DEFAULT_INPUT, (void*)out_name, NULL);
-
-    uint32_t roi_size = 50;
-    function_parameter_add_entry(&fps, ".roi_size", "ROI Size", FPTYPE_UINT32, FPFLAG_DEFAULT_INPUT, (void*)&roi_size, NULL);
-
-    uint32_t off_x = 0;
-    function_parameter_add_entry(&fps, ".off_x", "Offset X", FPTYPE_UINT32, FPFLAG_DEFAULT_INPUT, (void*)&off_x, NULL);
+#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+    { \
+        c_type val = def_val; \
+        function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); \
+    }
+    PROCESSOR_PARAMS(X_FPS_INIT)
+#undef X_FPS_INIT
 
     fps_add_processinfo_entries(&fps);
     functionparameter_SetParamValue_ONOFF(&fps, ".procinfo.MeasureTiming", 1);
@@ -172,29 +177,10 @@ int FPSINIT_processor(const char *fps_name, const char *keywords, const char *de
     return 0;
 }
 
-void handle_tmux(const char *fps_name, const char *command, int argc, char *argv[], const char *keywords, const char *description) {
-    char path[1024];
-    if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL) {
-        if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023);
-    }
-
-    char name_arg[256] = "";
-    if (strcmp(fps_name, "processor03") != 0) {
-        snprintf(name_arg, sizeof(name_arg), " -n %s", fps_name);
-    }
-
-    functionparameter_FPS_tmux_standalone_setup(fps_name);
-
-    if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) {
-        return;
-    }
-
-    if (strcmp(command, "fpsinit") == 0) {
-        FPSINIT_processor(fps_name, keywords, description);
-    }
-}
-
-int FPSCONF_processor(const char *fps_name, int loop) {
+int FPSCONF_processor(
+    const char *fps_name,
+    int loop)
+{
     FUNCTION_PARAMETER_STRUCT fps;
 
     if (loop) {
@@ -227,32 +213,8 @@ int FPSCONF_processor(const char *fps_name, int loop) {
     return 0;
 }
 
-int FPSCONFSTOP_processor(const char *fps_name) {
-    FUNCTION_PARAMETER_STRUCT fps;
-    printf("Stopping configuration process for '%s'\n", fps_name);
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
-        return 1;
-    }
-    functionparameter_CONFstop(&fps);
-    function_parameter_struct_disconnect(&fps);
-    return 0;
-}
-
-int FPSRUNSTOP_processor(const char *fps_name) {
-    FUNCTION_PARAMETER_STRUCT fps;
-    printf("Stopping run process for '%s'\n", fps_name);
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
-        return 1;
-    }
-    functionparameter_RUNstop(&fps);
-    function_parameter_struct_disconnect(&fps);
-    
-    functionparameter_FPS_processinfo_signal(fps_name, 3); // 3 = EXIT
-
-    return 0;
-}
+FPS_MAKE_STANDALONE_CONFSTOP(processor)
+FPS_MAKE_STANDALONE_RUNSTOP(processor)
 
 int FPSRUN_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
@@ -302,7 +264,7 @@ int FPSRUN_processor(const char *fps_name) {
         if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
 
         processinfo_exec_start(processinfo);
-        
+
         processor03_compute(&fps, processinfo, &input_image, &output_image);
 
         processinfo_exec_end(processinfo);
@@ -315,87 +277,5 @@ int FPSRUN_processor(const char *fps_name) {
 }
 
 #ifndef MILK_MODULE
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [Options]\n", "milk-example-03-processor");
-        printf("Run '%s -h' for detailed help.\n", "milk-example-03-processor");
-        return 1;
-    }
-
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-        printf("\nUsage: %s <Command> [Options]\n\n", "milk-example-03-processor");
-        printf("Description:\n");
-        printf("  Full-featured example demonstrating FPS (parameters), ProcessInfo (monitoring),\n");
-        printf("  and ImageStreamIO (data) working standalone from CLIcore.\n\n");
-        printf("Commands:\n");
-        printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n");
-        printf("  confstart  Run the configuration monitoring loop (infinite). Validates parameter changes.\n");
-        printf("  confstep   Run a single configuration monitoring step.\n");
-        printf("  confstop   Stop the configuration monitoring loop.\n");
-        printf("  runstart   Run the main ROI processing loop.\n");
-        printf("  runstop    Stop the main ROI processing loop.\n\n");
-        printf("Options:\n");
-        printf("  -n, --name NAME          Specify FPS name (default: processor03).\n");
-        printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n");
-        printf("  -d, --description DESC   Specify FPS description (default: NULL).\n");
-        printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n");
-        printf("                           - 'confstart' command goes to window 1.\n");
-        printf("                           - 'runstart' command goes to window 2.\n");
-        printf("                           - 'ctrl' window (index 0) remains for user interaction.\n\n");
-        printf("Typical Workflow:\n");
-        printf("  1. Terminal A: ./milk-example-03-writer\n");
-        printf("  2. Terminal B: ./milk-example-03-processor fpsinit\n");
-        printf("  3. Terminal B: ./milk-example-03-processor runstart -tmux\n");
-        printf("  4. Terminal B: ./milk-example-03-processor confstart -tmux\n");
-        printf("  5. Connect:    tmux a -t processor03\n\n");
-        return 0;
-    }
-
-    char fps_name[STRINGMAXLEN_FPS_NAME] = "processor03";
-    int use_tmux = 0;
-    char *command = NULL;
-    char *keywords = NULL;
-    char *description = NULL;
-
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-tmux") == 0) {
-            use_tmux = 1;
-        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) {
-            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1);
-        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) {
-            keywords = argv[++i];
-        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) {
-            description = argv[++i];
-        } else if (command == NULL) {
-            command = argv[i];
-        }
-    }
-
-    if (command == NULL) {
-        fprintf(stderr, "Error: Missing command argument.\n");
-        return 1;
-    }
-
-    if (use_tmux) {
-        handle_tmux(fps_name, command, argc, argv, keywords, description);
-        return 0;
-    }
-
-    if (strcmp(command, "fpsinit") == 0) {
-        return FPSINIT_processor(fps_name, keywords, description);
-    } else if (strcmp(command, "confstart") == 0) {
-        return FPSCONF_processor(fps_name, 1);
-    } else if (strcmp(command, "confstep") == 0) {
-        return FPSCONF_processor(fps_name, 0);
-    } else if (strcmp(command, "confstop") == 0) {
-        return FPSCONFSTOP_processor(fps_name);
-    } else if (strcmp(command, "runstart") == 0) {
-        return FPSRUN_processor(fps_name);
-    } else if (strcmp(command, "runstop") == 0) {
-        return FPSRUNSTOP_processor(fps_name);
-    }
-
-    fprintf(stderr, "Invalid command: %s\n", command);
-    return 1;
-}
+FPS_MAIN_STANDALONE("processor03", processor)
 #endif
