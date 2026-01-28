@@ -715,6 +715,120 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 #define FPS_MAKE_CLIADDCMD_FUNCNAME(x)      FPSCLIADDCMD_##x
 #define FPSCLIADDCMD_FUNCTION_NAME(fncname) FPS_MAKE_CLIADDCMD_FUNCNAME(fncname)
 
+/** @brief Macro to generate standalone CONFSTOP function
+ */
+#define FPS_MAKE_STANDALONE_CONFSTOP(FUNC_SUFFIX) \
+int FPSCONFSTOP_##FUNC_SUFFIX(const char *fps_name) { \
+    FUNCTION_PARAMETER_STRUCT fps; \
+    printf("Stopping configuration process for '%s'\n", fps_name); \
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name); \
+        return 1; \
+    } \
+    functionparameter_CONFstop(&fps); \
+    function_parameter_struct_disconnect(&fps); \
+    return 0; \
+}
+
+/** @brief Macro to generate standalone RUNSTOP function
+ */
+#define FPS_MAKE_STANDALONE_RUNSTOP(FUNC_SUFFIX) \
+int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
+    FUNCTION_PARAMETER_STRUCT fps; \
+    printf("Stopping run process for '%s'\n", fps_name); \
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name); \
+        return 1; \
+    } \
+    functionparameter_RUNstop(&fps); \
+    function_parameter_struct_disconnect(&fps); \
+    functionparameter_FPS_processinfo_signal(fps_name, 3); \
+    return 0; \
+}
+
+/** @brief Macro to generate standalone main function
+ */
+#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX) \
+int main(int argc, char *argv[]) { \
+    if (argc < 2) { \
+        printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [Options]\n", argv[0]); \
+        printf("Run '%s -h' for detailed help.\n", argv[0]); \
+        return 1; \
+    } \
+    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) { \
+        printf("\nUsage: %s <Command> [Options]\n\n", argv[0]); \
+        printf("Description:\n  Standalone FPS application.\n\n"); \
+        printf("Commands:\n"); \
+        printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n"); \
+        printf("  confstart  Run the configuration monitoring loop.\n"); \
+        printf("  confstep   Run a single configuration monitoring step.\n"); \
+        printf("  confstop   Stop the configuration monitoring loop.\n"); \
+        printf("  runstart   Run the main processing loop.\n"); \
+        printf("  runstop    Stop the main processing loop.\n\n"); \
+        printf("Options:\n"); \
+        printf("  -n, --name NAME          Specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+        printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
+        printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
+        printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n\n"); \
+        return 0; \
+    } \
+    char fps_name[STRINGMAXLEN_FPS_NAME] = DEFAULT_FPS_NAME; \
+    int use_tmux = 0; \
+    char *command = NULL; \
+    char *keywords = NULL; \
+    char *description = NULL; \
+    for (int i = 1; i < argc; i++) { \
+        if (strcmp(argv[i], "-tmux") == 0) { \
+            use_tmux = 1; \
+        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
+            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
+        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
+            keywords = argv[++i]; \
+        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
+            description = argv[++i]; \
+        } else if (command == NULL) { \
+            command = argv[i]; \
+        } \
+    } \
+    if (command == NULL) { \
+        fprintf(stderr, "Error: Missing command argument.\n"); \
+        return 1; \
+    } \
+    if (use_tmux) { \
+        char path[1024]; \
+        if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL) { \
+            if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023); \
+        } \
+        char name_arg[256] = ""; \
+        if (strcmp(fps_name, DEFAULT_FPS_NAME) != 0) { \
+            snprintf(name_arg, sizeof(name_arg), " -n %s", fps_name); \
+        } \
+        functionparameter_FPS_tmux_standalone_setup(fps_name); \
+        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) { \
+            return 0; \
+        } \
+        if (strcmp(command, "fpsinit") == 0) { \
+            FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
+        } \
+        return 0; \
+    } \
+    if (strcmp(command, "fpsinit") == 0) { \
+        return FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
+    } else if (strcmp(command, "confstart") == 0) { \
+        return FPSCONF_##FUNC_PREFIX(fps_name, 1); \
+    } else if (strcmp(command, "confstep") == 0) { \
+        return FPSCONF_##FUNC_PREFIX(fps_name, 0); \
+    } else if (strcmp(command, "confstop") == 0) { \
+        return FPSCONFSTOP_##FUNC_PREFIX(fps_name); \
+    } else if (strcmp(command, "runstart") == 0) { \
+        return FPSRUN_##FUNC_PREFIX(fps_name); \
+    } else if (strcmp(command, "runstop") == 0) { \
+        return FPSRUNSTOP_##FUNC_PREFIX(fps_name); \
+    } \
+    fprintf(stderr, "Invalid command: %s\n", command); \
+    return 1; \
+}
+
 /** @} */ // end group fpsmacro
 
 #endif // FPS_H
