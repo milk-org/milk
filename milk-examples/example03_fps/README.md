@@ -21,90 +21,68 @@ make
 ```
 
 This will produce:
-- `milk-example-03-writer`: A helper program to generate a test input stream.
+- `milk-example-03-writer`: The standalone writer executable.
 - `milk-example-03-processor`: The standalone processor executable.
+- `writer03.so`: The shared object module for the milk CLI.
 - `processor03.so`: The shared object module for the milk CLI.
 
 ---
 
 ## Standalone Usage
 
-### 1. Start the Data Source
-First, run the writer to create and populate the input stream (`stream03`):
+### 1. Initialize FPS
+Initialize the FPS shared memory structures for both writer and processor.
 ```bash
-./milk-example-03-writer
+./milk-example-03-writer    fpsinit -d "Example 03 Writer"
+./milk-example-03-processor fpsinit -d "Example 03 Processor"
 ```
 
-### 2. Initialize FPS
-Initialize the FPS shared memory structure. You can optionally set keywords (`-k`) and a description (`-d`).
+### 2. Start Processes
+Start the run and configuration loops. Using `-tmux` is highly recommended.
 ```bash
-./milk-example-03-processor fpsinit -k "test,example" -d "Example 03 Processor"
-```
-
-### 3. Start Processing
-Start the processing loop. The `-tmux` option is recommended to launch separate tmux windows for the run loop and configuration loop.
-```bash
+./milk-example-03-writer    runstart -tmux
+./milk-example-03-writer    confstart -tmux
 ./milk-example-03-processor runstart -tmux
-```
-Alternatively, run directly in the current terminal (blocking):
-```bash
-./milk-example-03-processor runstart
-```
-
-### 4. Start Configuration Loop
-The configuration loop validates parameters in the background (e.g., ensuring the ROI fits within the image).
-```bash
 ./milk-example-03-processor confstart -tmux
 ```
 
-### 5. Control Parameters
-You can control the processor using `milk-fpsCTRL` (TUI) or by modifying the FPS entries directly.
+### 3. Control Parameters
+You can control both processes using `milk-fpsCTRL` (TUI).
 ```bash
-milk-fpsCTRL -n processor03
+milk-fpsCTRL
 ```
+Use `Left/Right` arrows to navigate the hierarchical parameters and `h` for detailed help.
 
-### 6. Stop Processes
-To stop the loops:
+### 4. Stop Processes
 ```bash
+./milk-example-03-writer    runstop
+./milk-example-03-writer    confstop
 ./milk-example-03-processor runstop
 ./milk-example-03-processor confstop
 ```
-
-### Custom Options
-- Specify a custom FPS name: `-n myproc`
-- Specify initial parameters (during `fpsinit`): Not supported via CLI args in standalone (uses FPS defaults), but can be modified via FPS after init.
 
 ---
 
 ## Milk CLI Usage (Shared Object)
 
-You can load the compiled module into the `milk` CLI to run the processor as a native command.
+You can load the compiled modules into the `milk` CLI to run them as native commands.
 
-### 1. Start Milk
-Run the milk shell:
+### 1. Load the Modules
 ```bash
-milk
-```
-
-### 2. Load the Module
-Load the compiled shared object. Adjust the path if necessary.
-```bash
+milk > soload ./build/writer03.so
 milk > soload ./build/processor03.so
 ```
 
-### 3. Run the Command
-The module registers the `processor03` command.
+### 2. Run the Commands
 ```bash
+milk > writer03
 milk > processor03
 ```
-This will start the FPS configuration and run loops managed by the CLI's internal FPS framework.
-
-### 4. Access Parameters
-In the milk CLI, you can pass arguments directly:
+This will start the FPS loops within the CLI. You can also pass parameters:
 ```bash
-milk > processor03 .in_name "stream03" .roi_size 100
+milk > writer03 .width 100 .height 100
+milk > processor03 .in_name "stream03" .roi_size 50
 ```
-Or use the FPS interface within milk to modify parameters dynamically.
 
 ---
 
