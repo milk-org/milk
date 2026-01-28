@@ -309,6 +309,7 @@ typedef struct
     uint64_t signal;
     uint64_t confwaitus;
     uint32_t status;
+    uint64_t processinfo_change_cnt;
     long NBparamMAX;
     char message[FPS_NB_MSG][FUNCTION_PARAMETER_STRUCT_MSG_LEN];
     int msgpindex[FPS_NB_MSG];

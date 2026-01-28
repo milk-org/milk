@@ -74,6 +74,8 @@ static char *out_name_ptr = NULL;
 static uint32_t *roi_size_ptr = NULL;
 static uint32_t *off_x_ptr = NULL;
 
+static uint64_t processinfo_change_cnt_local = 0;
+
 
 /* =============================================================================================== */
 /* =============================================================================================== */
@@ -96,7 +98,10 @@ static void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *pro
     // RE-READ PARAMETERS DYNAMICALLY
     // Update local ProcessInfo settings (like triggers, priority) from FPS if changed
     if (fps) {
-        fps_to_processinfo(fps, processinfo);
+        if(fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
+            fps_to_processinfo(fps, processinfo);
+            processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
+        }
     }
     
     // Safety check

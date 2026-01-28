@@ -5,6 +5,7 @@
 
 #include <limits.h>
 #include <math.h>
+#include <string.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -437,6 +438,11 @@ int functionparameter_UserInputSetParamValue(
                     functionparameter_outlog("SETVAL", "%s FPSNAME %s", fpsentry->parray[pindex].keywordfull, buff);
                 }
                 break;
+            }
+
+            if(strncmp(fpsentry->parray[pindex].keywordfull, ".procinfo.", 10) == 0)
+            {
+                fpsentry->md->processinfo_change_cnt++;
             }
 
             fpsentry->parray[pindex].cnt0++;
