@@ -278,6 +278,7 @@ typedef struct
 #define FPS_DESCR_STRMAXLEN          200
 #define FPS_KEYWORDARRAY_STRMAXLEN   200
 #define STRINGMAXLEN_FPS_DIRNAME     200
+#define FPS_HELPTEXT_STRMAXLEN      8192
 
 #define FPS_MAXNB_MODULE     50
 #define FPS_MODULE_STRMAXLEN 200
@@ -286,6 +287,7 @@ typedef struct
 {
     char name[STRINGMAXLEN_FPS_NAME];
     char description[FPS_DESCR_STRMAXLEN];
+    char helptext[FPS_HELPTEXT_STRMAXLEN];
     char execfullpath[512];
     char keywordarray[FPS_KEYWORDARRAY_STRMAXLEN];
     char workdir[FPS_CWD_STRLENMAX];
@@ -748,14 +750,30 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 
 /** @brief Macro to generate standalone main function
  */
-#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX) \
+#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX, HELPTEXT) \
 int main(int argc, char *argv[]) { \
-    if (argc < 2) { \
-        printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [Options]\n", argv[0]); \
-        printf("Run '%s -h' for detailed help.\n", argv[0]); \
-        return 1; \
+    char fps_name[STRINGMAXLEN_FPS_NAME] = DEFAULT_FPS_NAME; \
+    int use_tmux = 0; \
+    int show_help = 0; \
+    char *command = NULL; \
+    char *keywords = NULL; \
+    char *description = NULL; \
+    for (int i = 1; i < argc; i++) { \
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) { \
+            show_help = 1; \
+        } else if (strcmp(argv[i], "-tmux") == 0) { \
+            use_tmux = 1; \
+        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
+            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
+        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
+            keywords = argv[++i]; \
+        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
+            description = argv[++i]; \
+        } else if (command == NULL) { \
+            command = argv[i]; \
+        } \
     } \
-    if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) { \
+    if (show_help || (argc < 2)) { \
         printf("\nUsage: %s <Command> [Options]\n\n", argv[0]); \
         printf("Description:\n  Standalone FPS application.\n\n"); \
         printf("Commands:\n"); \
@@ -770,25 +788,12 @@ int main(int argc, char *argv[]) { \
         printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
         printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
         printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n\n"); \
-        return 0; \
-    } \
-    char fps_name[STRINGMAXLEN_FPS_NAME] = DEFAULT_FPS_NAME; \
-    int use_tmux = 0; \
-    char *command = NULL; \
-    char *keywords = NULL; \
-    char *description = NULL; \
-    for (int i = 1; i < argc; i++) { \
-        if (strcmp(argv[i], "-tmux") == 0) { \
-            use_tmux = 1; \
-        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
-            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
-        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
-            keywords = argv[++i]; \
-        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
-            description = argv[++i]; \
-        } else if (command == NULL) { \
-            command = argv[i]; \
+        if (HELPTEXT[0] != '\0') { \
+            printf("Detailed Help:\n"); \
+            printf("--------------\n"); \
+            printf("%s\n\n", HELPTEXT); \
         } \
+        return 0; \
     } \
     if (command == NULL) { \
         fprintf(stderr, "Error: Missing command argument.\n"); \

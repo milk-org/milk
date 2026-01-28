@@ -142,10 +142,14 @@ int fpsCTRL_TUI_process_user_key(
 
         case KEY_UP:
             fpsCTRLvar->direction = -1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] --;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
             {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
+                int l = fpsCTRLvar->currentlevel;
+                if (l < 0) l = 0;
+                fpsCTRLvar->GUIlineSelected[l] --;
+                if(fpsCTRLvar->GUIlineSelected[l] < 0)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] = 0;
+                }
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart--;
@@ -154,16 +158,20 @@ int fpsCTRL_TUI_process_user_key(
 
         case KEY_DOWN:
             fpsCTRLvar->direction = 1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] ++;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] > fpsCTRLvar->NBindex - 1)
             {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
-            }
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+                int l = fpsCTRLvar->currentlevel;
+                if (l < 0) l = 0;
+                fpsCTRLvar->GUIlineSelected[l] ++;
+                if(fpsCTRLvar->GUIlineSelected[l] > fpsCTRLvar->NBindex - 1)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] = fpsCTRLvar->NBindex - 1;
+                }
+                if(fpsCTRLvar->GUIlineSelected[l] >
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] =
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+                }
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart++;
@@ -171,10 +179,14 @@ int fpsCTRL_TUI_process_user_key(
 
         case KEY_PPAGE:
             fpsCTRLvar->direction = -1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] -= 10;
-            if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] < 0)
             {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = 0;
+                int l = fpsCTRLvar->currentlevel;
+                if (l < 0) l = 0;
+                fpsCTRLvar->GUIlineSelected[l] -= 10;
+                if(fpsCTRLvar->GUIlineSelected[l] < 0)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] = 0;
+                }
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart -= 10;
@@ -182,17 +194,21 @@ int fpsCTRL_TUI_process_user_key(
 
         case KEY_NPAGE:
             fpsCTRLvar->direction = 1;
-            fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] += 10;
-            while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    fpsCTRLvar->NBindex - 1)
             {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
-            }
-            while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
-            {
-                fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] =
-                    keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+                int l = fpsCTRLvar->currentlevel;
+                if (l < 0) l = 0;
+                fpsCTRLvar->GUIlineSelected[l] += 10;
+                while(fpsCTRLvar->GUIlineSelected[l] >
+                        fpsCTRLvar->NBindex - 1)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] = fpsCTRLvar->NBindex - 1;
+                }
+                while(fpsCTRLvar->GUIlineSelected[l] >
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+                {
+                    fpsCTRLvar->GUIlineSelected[l] =
+                        keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1;
+                }
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart += 10;
@@ -207,11 +223,19 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
                 fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
             }
+            else if (fpsCTRLvar->currentlevel == 0)
+            {
+                fpsCTRLvar->currentlevel = -1;
+            }
             break;
 
 
         case KEY_RIGHT :
-            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
+            if (fpsCTRLvar->currentlevel == -1)
+            {
+                fpsCTRLvar->currentlevel = 0;
+            }
+            else if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
             {
                 if(keywnode[keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]]].leaf
                         == 0)
