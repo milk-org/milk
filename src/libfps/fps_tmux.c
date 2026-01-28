@@ -9,14 +9,15 @@
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
-
-
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
 
 
 /** @brief Kill FPS tmux sesssion
  *
  */
-errno_t functionparameter_FPS_tmux_kill(
+int functionparameter_FPS_tmux_kill(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
@@ -44,7 +45,7 @@ errno_t functionparameter_FPS_tmux_kill(
     return RETURN_SUCCESS;
 }
 
-errno_t functionparameter_FPS_tmux_attach(
+int functionparameter_FPS_tmux_attach(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
@@ -59,7 +60,7 @@ errno_t functionparameter_FPS_tmux_attach(
 /** @brief Initialize FPS tmux sesssion
  *
  */
-errno_t functionparameter_FPS_tmux_init(
+int functionparameter_FPS_tmux_init(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
@@ -196,7 +197,7 @@ errno_t functionparameter_FPS_tmux_init(
              funcstring_maxlen,
              " function fpsrunstart {\n"
              "echo \"STARTING RUN PROCESS\"\n"
-             "MILK_FPSPROCINFO=1 %s -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
+             "MILK_FPSPROCINFO=1 %s -n %s \\\"\\\${TCSETCMDPREFIX} %s%s "
              "_RUNSTART_ %s\\\"\n"
              "}\n",
              progexec,
@@ -233,7 +234,7 @@ errno_t functionparameter_FPS_tmux_init(
 /** @brief Ensure FPS tmux sesssion exists
  *
  */
-errno_t functionparameter_FPS_tmux_ensure(
+int functionparameter_FPS_tmux_ensure(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
@@ -243,4 +244,89 @@ errno_t functionparameter_FPS_tmux_ensure(
         functionparameter_FPS_tmux_init(fps);
     }
     return RETURN_SUCCESS;
+}
+
+/** @brief Setup standalone tmux session
+ */
+int functionparameter_FPS_tmux_standalone_setup(
+    const char *fps_name
+)
+{
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps_name);
+    if (system(cmd) == 0) {
+        return RETURN_SUCCESS;
+    }
+
+    float tmuxwait = 0.1;
+    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps_name);
+    sleep(tmuxwait);
+    EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps_name);
+    sleep(tmuxwait);
+    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n conf", fps_name);
+    sleep(tmuxwait);
+    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps_name);
+    sleep(tmuxwait);
+
+    return RETURN_SUCCESS;
+}
+
+/** @brief Send command to tmux window
+ */
+int functionparameter_FPS_tmux_send(
+    const char *fps_name,
+    const char *window,
+    const char *cmd_str
+)
+{
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:%s \"%s\" C-m", fps_name, window, cmd_str);
+    return RETURN_SUCCESS;
+}
+
+/** @brief Dispatch command to tmux if applicable
+ *
+ * Returns 0 if handled (sent to tmux), 1 if not handled (should be run locally).
+ */
+int functionparameter_FPS_tmux_send_dispatch(
+    const char *fps_name,
+    const char *command,
+    const char *exec_path,
+    const char *extra_args
+)
+{
+    char cmd_str[2048];
+    const char *args = extra_args ? extra_args : "";
+
+    if (strcmp(command, "confstart") == 0) {
+        snprintf(cmd_str, sizeof(cmd_str), "%s confstart%s", exec_path, args);
+        functionparameter_FPS_tmux_send(fps_name, "conf", cmd_str);
+        printf("Dispatched 'confstart' to tmux window %s:conf\n", fps_name);
+        return 0;
+    } else if (strcmp(command, "confstep") == 0) {
+        snprintf(cmd_str, sizeof(cmd_str), "%s confstep%s", exec_path, args);
+        functionparameter_FPS_tmux_send(fps_name, "conf", cmd_str);
+        printf("Dispatched 'confstep' to tmux window %s:conf\n", fps_name);
+        return 0;
+    } else if (strcmp(command, "runstart") == 0) {
+        snprintf(cmd_str, sizeof(cmd_str), "%s runstart%s", exec_path, args);
+        functionparameter_FPS_tmux_send(fps_name, "run", cmd_str);
+        printf("Dispatched 'runstart' to tmux window %s:run\n", fps_name);
+        return 0;
+    }
+    
+    return 1;
+}
+
+/** @brief Get path to current executable
+ */
+char* functionparameter_FPS_get_executable_path(char *buffer, size_t size)
+{
+    if (!buffer || size == 0) return NULL;
+    
+    ssize_t len = readlink("/proc/self/exe", buffer, size - 1);
+    if (len != -1) {
+        buffer[len] = '\0';
+        return buffer;
+    }
+    return NULL;
 }
