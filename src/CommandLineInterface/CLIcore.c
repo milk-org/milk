@@ -42,8 +42,10 @@
 #include <sched.h>
 #include <signal.h>
 
+#ifdef USE_READLINE
 #include <readline/history.h>
 #include <readline/readline.h>
+#endif
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -220,6 +222,7 @@ errno_t milk_usleep__cli()
     }
 }
 
+#ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen__cli()
 {
     DEBUG_TRACEPOINT("calling CLI_checkarg");
@@ -240,6 +243,7 @@ errno_t functionparameter_CTRLscreen__cli()
     }
     return RETURN_SUCCESS;
 }
+#endif
 
 errno_t function_parameter_structure_load__cli()
 {
@@ -255,6 +259,7 @@ errno_t function_parameter_structure_load__cli()
     }
 }
 
+#ifdef USE_NCURSES
 errno_t processinfo_CTRLscreen__cli()
 {
     return (processinfo_CTRLscreen());
@@ -264,6 +269,7 @@ errno_t streamCTRL_CTRLscreen__cli()
 {
     return (streamCTRL_CTRLscreen());
 }
+#endif
 
 void fnExit_fifoclose()
 {
@@ -420,7 +426,9 @@ static void sighandler(int sig)
 {
 
     (void) sig;
+#ifdef USE_READLINE
     rl_resize_terminal();
+#endif
     //printf("RESIZE detected %d %d\n", COLS, LINES);
     sigwinch_received = 1;
 }
@@ -653,6 +661,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if(realine_initialized == 0)
             {
                 realine_initialized = 1;
+#ifdef USE_READLINE
                 // initialize readline
                 DEBUG_TRACEPOINT("initialize readline");
                 // Tell readline to use custom completion function
@@ -666,6 +675,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     prompt,
                     (rl_vcpfunc_t *) &rl_cb_linehandler);
                 CLI_configure_readline();
+#endif
             }
         }
 
@@ -784,6 +794,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 if(realine_initialized == 0)
                 {
                     realine_initialized = 1;
+#ifdef USE_READLINE
                     // initialize readline
                     DEBUG_TRACEPOINT("initialize readline");
                     // Tell readline to use custom completion function
@@ -797,6 +808,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         prompt,
                         (rl_vcpfunc_t *) &rl_cb_linehandler);
                     CLI_configure_readline();
+#endif
                 }
             }
 
@@ -807,34 +819,24 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 // revert to default mode
                 if(FD_ISSET(fileno(stdin), &cli_fdin_set))
                 {
+#ifdef USE_READLINE
                     DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
+#else
+                    // Fallback for no readline: read from stdin directly
+                    if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin)) {
+                        data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
+                        CLI_execute_line();
+                    }
+#endif
                 }
             }
-
-            if(data.exitcode != 0)
-            {
-                exitCLI();
-            }
         }
-        data.CLIexecuteCMDready = 0;
-
-        //TEST data.CLIloopON = 0;
     }
-    DEBUG_TRACEPOINT("exit from CLI loop");
 
-    // clear all images and variables
-    clearall();
-
-    DEBUG_TRACEPOINT("images and variables cleared");
-
-    runCLI_free();
-
-#if (RL_READLINE_VERSION > 0x602)
-    rl_clear_history();
-#endif
-
+#ifdef USE_READLINE
     rl_callback_handler_remove();
+#endif
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -986,6 +988,7 @@ void runCLI_cmd_init()
                        "setprocinfoOFF",
                        "set_processinfoOFF()");
 
+#ifdef USE_NCURSES
     RegisterCLIcommand("procCTRL",
                        __FILE__,
                        processinfo_CTRLscreen__cli,
@@ -1003,6 +1006,7 @@ void runCLI_cmd_init()
                        "no argument",
                        "streamCTRL",
                        "streamCTRL_CTRLscreen()");
+#endif
 
     // FPS
     RegisterCLIcommand("fpsload",
@@ -1013,6 +1017,7 @@ void runCLI_cmd_init()
                        "fpsload imanalyze",
                        "long function_parameter_structure_load(char *fpsname)");
 
+#ifdef USE_NCURSES
     RegisterCLIcommand(
         "fpsCTRL",
         __FILE__,
@@ -1021,6 +1026,7 @@ void runCLI_cmd_init()
         "no arg",
         "fpsCTRL fpsname",
         "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
+#endif
 
     RegisterCLIcommand("usleep",
                        __FILE__,

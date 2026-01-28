@@ -1,8 +1,12 @@
 set(LIBNAME "milkfps")
 set(SRCNAME "libfps")
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(NCURSES REQUIRED ncurses)
+option(USE_NCURSES "Enable ncurses and TUI support" ON)
+
+if(USE_NCURSES)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(NCURSES REQUIRED ncurses)
+endif()
 
 set(SOURCEFILES
     fps_add_entry.c
@@ -46,16 +50,9 @@ set(SOURCEFILES
     fps_read_fpsCMD_fifo.c
     fps_userinputsetparamvalue.c
     fps_loadmemstream_lite.c
-    # fpsCTRL sources
-    fpsCTRL/fpsCTRL_FPSdisplay.c
-    fpsCTRL/fpsCTRL_TUI.c
-    fpsCTRL/fpsCTRL_TUI_process_user_key.c
-    fpsCTRL/level0node_summary.c
-    fpsCTRL/print_nodeinfo.c
-    fpsCTRL/scheduler_display.c
-    fpsCTRL/fpsCTRL_globals.c
 )
 
+# Core library (no TUI/ncurses dependency)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 target_include_directories(${LIBNAME} PUBLIC
@@ -66,12 +63,37 @@ target_include_directories(${LIBNAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-# Standalone libfps dependencies
-target_link_libraries(milkfps ImageStreamIO milkTUI m rt milkprocessinfo ${NCURSES_LIBRARIES})
+target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO milkcore m rt milkprocessinfo)
+
+
+if(USE_NCURSES)
+    set(SOURCEFILES_TUI
+        # fpsCTRL sources
+        fpsCTRL/fpsCTRL_FPSdisplay.c
+        fpsCTRL/fpsCTRL_TUI.c
+        fpsCTRL/fpsCTRL_TUI_process_user_key.c
+        fpsCTRL/level0node_summary.c
+        fpsCTRL/print_nodeinfo.c
+        fpsCTRL/scheduler_display.c
+        fpsCTRL/fpsCTRL_globals.c
+    )
+    
+    add_library(milkfpsTUI SHARED ${SOURCEFILES_TUI})
+    target_compile_definitions(milkfpsTUI PUBLIC USE_NCURSES)
+    target_include_directories(milkfpsTUI PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+    )
+    target_link_libraries(milkfpsTUI PUBLIC ${LIBNAME} milkTUI ${NCURSES_LIBRARIES})
+    install(TARGETS milkfpsTUI EXPORT milkTargets DESTINATION lib)
+endif()
+
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
-install(FILES fps.h fps_internal.h fps_globals.h ../libmilkTUI/timeutils.h DESTINATION include/libfps)
+install(FILES fps.h fps_internal.h fps_globals.h ../libmilkcore/timeutils.h DESTINATION include/libfps)
 
+if(USE_NCURSES)
 # ==========================================
 # milk-fpsCTRL executable
 # ==========================================
@@ -81,6 +103,7 @@ target_include_directories(milk-fpsCTRL PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL
 )
 target_link_libraries(milk-fpsCTRL PUBLIC 
+    milkfpsTUI
     milkfps
     milkprocessinfo 
     ImageStreamIO
@@ -125,3 +148,4 @@ target_link_libraries(milk-fps-print PUBLIC
 )
 
 install(TARGETS milk-fps-print DESTINATION bin)
+endif()

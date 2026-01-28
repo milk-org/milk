@@ -3,12 +3,23 @@
  * @brief   Text User Interface tools
  */
 
+#define TUITOOLS_C
+
 #include <sys/ioctl.h> // for terminal size
 #include <termios.h>
 
+#ifdef USE_NCURSES
 #include <ncurses.h>
 //#include <curses.h>
 #include <ncursesw/ncurses.h>
+#else
+// Define some ncurses constants if not using ncurses
+#define KEY_UP    0403
+#define KEY_DOWN  0402
+#define KEY_LEFT  0404
+#define KEY_RIGHT 0405
+#define KEY_F(n)  (0410+(n))
+#endif
 
 #include <locale.h>
 #include <wchar.h>
@@ -92,10 +103,12 @@ void TUI_printfw(const char *fmt, ...)
         vfprintf(stdout, fmt, args);
     }
 
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         vw_printw(stdscr, fmt, args);
     }
+#endif
 
     va_end(args);
 }
@@ -107,10 +120,12 @@ void TUI_newline()
     {
         printf("\n");
     }
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         printw("\n");
     }
+#endif
 }
 
 
@@ -118,11 +133,13 @@ void TUI_newline()
 
 void screenprint_setcolor(int colorcode)
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attron(COLOR_PAIR(colorcode));
     }
     else
+#endif
     {
         switch(colorcode)
         {
@@ -188,11 +205,13 @@ void screenprint_setcolor(int colorcode)
 
 void screenprint_unsetcolor(int colorcode)
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attroff(COLOR_PAIR(colorcode));
     }
     else
+#endif
     {
         printAEC        = AEC_NORMAL;
         printAECfgcolor = AEC_FGCOLOR_WHITE;
@@ -203,11 +222,13 @@ void screenprint_unsetcolor(int colorcode)
 
 void screenprint_setbold()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attron(A_BOLD);
     }
     else
+#endif
     {
         printAEC = AEC_BOLD;
         printf("\033[%dm", printAEC);
@@ -216,11 +237,13 @@ void screenprint_setbold()
 
 void screenprint_unsetbold()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attroff(A_BOLD);
     }
     else
+#endif
     {
         printAEC = AEC_NORMAL; //AEC_BOLDOFF;
         printf("\033[%dm", printAEC);
@@ -229,11 +252,13 @@ void screenprint_unsetbold()
 
 void screenprint_setblink()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attron(A_BLINK);
     }
     else
+#endif
     {
         printAEC = AEC_FASTBLINK;
         printf("\033[%dm", printAEC);
@@ -242,11 +267,13 @@ void screenprint_setblink()
 
 void screenprint_unsetblink()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attroff(A_BLINK);
     }
     else
+#endif
     {
         printAEC = AEC_NORMAL; //AEC_BLINKOFF;
         printf("\033[%dm", AEC_NORMAL);
@@ -255,11 +282,13 @@ void screenprint_unsetblink()
 
 void screenprint_setdim()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attron(A_DIM);
     }
     else
+#endif
     {
         printAEC = AEC_FAINT;
         printf("\033[%dm", printAEC);
@@ -268,11 +297,13 @@ void screenprint_setdim()
 
 void screenprint_unsetdim()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attroff(A_DIM);
     }
     else
+#endif
     {
         printAEC = AEC_NORMAL; //AEC_FAINTOFF;
         printf("\033[%dm", printAEC);
@@ -281,11 +312,13 @@ void screenprint_unsetdim()
 
 void screenprint_setreverse()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attron(A_REVERSE);
     }
     else
+#endif
     {
         printAEC = AEC_REVERSE;
         printf("\033[%dm", printAEC);
@@ -294,11 +327,13 @@ void screenprint_setreverse()
 
 void screenprint_unsetreverse()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         attroff(A_REVERSE);
     }
     else
+#endif
     {
         printAEC = AEC_NORMAL; //AEC_REVERSEOFF;
         printf("\033[%dm", printAEC);
@@ -437,6 +472,7 @@ void TUI_clearscreen(short unsigned int *wrowptr, short unsigned int *wcolptr)
     }
 }
 
+#ifdef USE_NCURSES
 void TUI_handle_winch(int sig)
 {
     wresizecnt++;
@@ -544,6 +580,7 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
 
     return RETURN_SUCCESS;
 }
+#endif
 
 
 
@@ -552,6 +589,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr,
                           short unsigned int *wcolptr)
 {
     DEBUG_TRACE_FSTART();
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)  // ncurses mode
     {
         TUI_initncurses(wrowptr, wcolptr);
@@ -562,6 +600,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr,
         clear();
     }
     else
+#endif
     {
         TUI_inittermios(wrowptr, wcolptr);
         DEBUG_TRACEPOINT("init terminal stdio mode %d %d", *wrowptr, *wcolptr);
@@ -575,6 +614,7 @@ errno_t TUI_init_terminal(short unsigned int *wrowptr,
 }
 
 
+#ifdef USE_NCURSES
 errno_t TUI_get_terminal_size(short unsigned int *wrowptr,
                               short unsigned int *wcolptr)
 {
@@ -583,13 +623,16 @@ errno_t TUI_get_terminal_size(short unsigned int *wrowptr,
 
     return RETURN_SUCCESS;
 }
+#endif
 
 errno_t TUI_exit()
 {
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         endwin();
     }
+#endif
 
     return RETURN_SUCCESS;
 }
@@ -598,12 +641,15 @@ void TUI_atexit()
 {
     //printf("exiting CTRLscreen\n");
 
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         endwin();
     }
+#endif
 }
 
+#ifdef USE_NCURSES
 errno_t TUI_ncurses_refresh()
 {
     if(screenprintmode == SCREENPRINT_NCURSES)
@@ -623,6 +669,7 @@ errno_t TUI_ncurses_erase()
 
     return RETURN_SUCCESS;
 }
+#endif
 
 errno_t TUI_stdio_clear()
 {
@@ -642,11 +689,13 @@ int get_singlechar_nonblock()
 
     int ch = -1;
 
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         ch = getch(); // ncurses function, non-blocking
     }
     else
+#endif
     {
         if (stdio_buf_pos >= stdio_buf_len)
         {
@@ -728,11 +777,13 @@ int get_singlechar_block()
 {
     int ch;
 
+#ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
         ch = getchar();
     }
     else
+#endif
     {
         int getchardt_us = 1000; // 1 ms
 

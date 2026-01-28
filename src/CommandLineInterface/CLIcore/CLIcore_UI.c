@@ -7,8 +7,10 @@
 
 #include <stdio.h>
 
+#ifdef USE_READLINE
 #include <readline/history.h>
 #include <readline/readline.h>
+#endif
 
 
 #include "CLIcore.h"
@@ -29,6 +31,7 @@
 extern void yy_scan_string(const char *);
 extern int  yylex_destroy(void);
 
+#ifdef USE_READLINE
 /**
  * @brief Readline callback
  *
@@ -48,6 +51,7 @@ void rl_cb_linehandler(char *linein)
 
     free(linein);
 }
+#endif
 
 
 
@@ -106,6 +110,7 @@ static char *dupstr(char *s)
     return (r);
 }
 
+#ifdef USE_READLINE
 static char *CLI_generator(const char *text, int state)
 {
     static unsigned int list_index;
@@ -236,6 +241,7 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
 
     return (matches);
 }
+#endif
 
 errno_t write_tracedebugfile()
 {
@@ -322,7 +328,9 @@ errno_t CLI_execute_line()
                data.CLIcmdline);
     }
 
+#ifdef USE_READLINE
     add_history(data.CLIcmdline);
+#endif
 
     //
     // If line starts with !, use system()
@@ -644,6 +652,7 @@ errno_t CLI_execute_line()
     return RETURN_SUCCESS;
 }
 
+#ifdef USE_READLINE
 static void CLI_redisplay(void)
 {
     // Default redisplay
@@ -744,4 +753,7 @@ void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
 }
+#else
+void CLI_configure_readline() {}
+#endif
 

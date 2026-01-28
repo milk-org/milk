@@ -3,7 +3,16 @@
  * @brief   list images
  */
 
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#else
+#define printw(...) printf(__VA_ARGS__)
+#define mvprintw(y,x,...) printf(__VA_ARGS__)
+#define attron(a)
+#define attroff(a)
+#define A_BOLD 0
+#define COLOR_PAIR(c) 0
+#endif
 
 #include "CLIcore.h"
 #include "compute_image_memory.h"
@@ -15,7 +24,9 @@
 // MEMORY MONITOR
 static FILE   *listim_scr_fpo;
 static FILE   *listim_scr_fpi;
+#ifdef USE_NCURSES
 static SCREEN *listim_scr; // for memory monitoring
+#endif
 
 static int listim_scr_wrow;
 static int listim_scr_wcol;
@@ -79,6 +90,7 @@ errno_t list_image_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
+#ifdef USE_NCURSES
 errno_t init_list_image_ID_ncurses(const char *termttyname)
 {
     //    int wrow, wcol;
@@ -122,9 +134,10 @@ errno_t list_image_ID_ncurses()
 
     clock_gettime(CLOCK_MILK, &timenow);
 
+#ifdef USE_NCURSES
     set_term(listim_scr);
-
     clear();
+#endif
 
     sizeb = compute_image_memory();
 
@@ -277,7 +290,9 @@ errno_t list_image_ID_ncurses()
     mvprintw(listim_scr_wrow - 1, 0, "%s\n", str);
     //  attroff(A_BOLD);
 
+#ifdef USE_NCURSES
     refresh();
+#endif
 
     return RETURN_SUCCESS;
 }
@@ -291,6 +306,11 @@ void close_list_image_ID_ncurses(void)
     fclose(listim_scr_fpi);
     data.MEM_MONITOR = 0;
 }
+#else
+errno_t init_list_image_ID_ncurses(const char *termttyname) { (void)termttyname; return 0; }
+errno_t list_image_ID_ncurses() { return 0; }
+void close_list_image_ID_ncurses(void) {}
+#endif
 
 errno_t list_image_ID_ofp(FILE *fo)
 {
@@ -540,7 +560,9 @@ errno_t memory_monitor(const char *termttyname)
     data.MEM_MONITOR = 1;
     init_list_image_ID_ncurses(termttyname);
     list_image_ID_ncurses();
+#ifdef USE_NCURSES
     atexit(close_list_image_ID_ncurses);
+#endif
 
     return RETURN_SUCCESS;
 }
