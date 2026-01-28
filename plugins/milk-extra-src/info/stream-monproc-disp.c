@@ -6,8 +6,10 @@
 #define NCURSES_WIDECHAR 1
 
 #include <math.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
 #include <curses.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -30,15 +32,19 @@ extern errno_t CLI_data_init();
 static uint16_t wrow, wcol;
 
 static void cleanup_ncurses() {
+#ifdef USE_NCURSES
     endwin();
+#endif
 }
 
 static void print_bar(int len, int color_pair) {
+#ifdef USE_NCURSES
     attron(COLOR_PAIR(color_pair));
     for (int i = 0; i < len; i++) {
         addch(' ');
     }
     attroff(COLOR_PAIR(color_pair));
+#endif
 }
 
 int main(int argc, char *argv[]) {
@@ -63,6 +69,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Init ncurses
+#ifdef USE_NCURSES
     initscr();
     cbreak();
     noecho();
@@ -80,6 +87,7 @@ int main(int argc, char *argv[]) {
     init_pair(4, COLOR_CYAN, COLOR_BLACK);  // Info
     init_pair(5, COLOR_YELLOW, COLOR_BLACK);// Warning
     init_pair(6, COLOR_WHITE, COLOR_CYAN);  // Histogram bar
+#endif
 
     int ch;
     int loop = 1;
@@ -88,23 +96,29 @@ int main(int argc, char *argv[]) {
     float local_thresholds[STREAM_MON_MAX_HIST_BINS + 1];
 
     while (loop) {
+#ifdef USE_NCURSES
         getmaxyx(stdscr, wrow, wcol);
         erase();
+#endif
 
         // --------------------------------------------------------------------
         // Header
         // --------------------------------------------------------------------
+#ifdef USE_NCURSES
         attron(COLOR_PAIR(1));
         mvprintw(0, 0, " Stream Monitor Display: %s (PID %d) - Press 'q' to exit ", streamname, getpid());
         mvprintw(0, wcol - 20, " Count: %lu ", smon->cnt);
         attroff(COLOR_PAIR(1));
+#endif
 
         int row = 2;
 
         // --------------------------------------------------------------------
         // Flux History (Recent)
         // --------------------------------------------------------------------
+#ifdef USE_NCURSES
         mvprintw(row++, 0, "Recent Flux (last %d frames):", smon->size > 50 ? 50 : smon->size);
+#endif
 
         // Find min/max for scaling
         double min_flux = 1e30, max_flux = -1e30;
@@ -131,12 +145,16 @@ int main(int argc, char *argv[]) {
             if (height < 0) height = 0;
             if (height > bar_h) height = bar_h;
 
+#ifdef USE_NCURSES
             for (int h = 0; h < height; h++) {
                 mvaddch(row + bar_h - h, i, '|');
             }
+#endif
         }
+#ifdef USE_NCURSES
         mvprintw(row, hist_len + 2, "Max: %.2e", max_flux);
         mvprintw(row + bar_h, hist_len + 2, "Min: %.2e", min_flux);
+#endif
 
         row += bar_h + 2;
 
@@ -166,7 +184,9 @@ int main(int argc, char *argv[]) {
             bin_factor = (nbins + available_rows - 1) / available_rows; // ceil
         }
 
+#ifdef USE_NCURSES
         mvprintw(row++, 0, "Histogram (Horizontal, binning x%d): Range [%.2e, %.2e]", bin_factor, h_min, h_max);
+#endif
 
         // Compute max count for scaling (considering binning)
         uint32_t max_count = 0;
@@ -196,6 +216,7 @@ int main(int argc, char *argv[]) {
             snprintf(label, sizeof(label), "%.2e - %.2e", lower, upper);
 
             if (row < wrow - 1) { // Safety check
+#ifdef USE_NCURSES
                 mvprintw(row, 0, "%-25s %6u ", label, sum);
 
                 int bar_width = (int)((double)sum / max_count * (wcol - 35));
@@ -204,6 +225,7 @@ int main(int argc, char *argv[]) {
                 // Draw bar
                 move(row, 33);
                 print_bar(bar_width, 6);
+#endif
                 row++;
             }
         }
@@ -213,7 +235,9 @@ int main(int argc, char *argv[]) {
         // --------------------------------------------------------------------
         int status_col = 60;
         int status_row = 3;
+#ifdef USE_NCURSES
         mvprintw(status_row++, status_col, "Active Output Streams:");
+#endif
 
         for (int p = 0; p < 10; p++) { // Check powers of 2 up to 512
             int bin = 1 << p;
@@ -223,6 +247,7 @@ int main(int argc, char *argv[]) {
             snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", data.shmdir, streamname, bin);
             int exists = (stat(fname, &st) == 0);
 
+#ifdef USE_NCURSES
             move(status_row + p, status_col);
             if (exists) {
                 attron(COLOR_PAIR(2));
@@ -233,14 +258,19 @@ int main(int argc, char *argv[]) {
                 printw(" [OFF] .tbin%d ", bin);
                 attroff(COLOR_PAIR(3));
             }
+#endif
         }
 
+#ifdef USE_NCURSES
         refresh();
 
         ch = getch();
         if (ch == 'q' || ch == 'Q') {
             loop = 0;
         }
+#else
+        loop = 0; // Exit loop if no TUI
+#endif
 
         usleep(100000); // 100ms update
     }

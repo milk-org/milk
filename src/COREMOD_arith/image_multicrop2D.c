@@ -1,710 +1,156 @@
-#include "ImageStreamIO/ImageStruct.h"
-/**
- * @file    image_multicrop2D.c
- * @brief   crop 2D function, multiple windows
- *
- */
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include "CLIcore.h"
+#include "image_multicrop2D.h"
+#include "fps.h"
+#include "processinfo.h"
+#include "ImageStreamIO.h"
 
-static char *mcropinsname;
-static long fpi_mcropinsname;
+char     *multicrop_insname  = NULL;
+char     *multicrop_outsname = NULL;
+uint32_t *multicrop_outxsize = NULL;
+uint32_t *multicrop_outysize = NULL;
+int64_t  *multicrop_wactive[MAXNB_CROPWINDOW];
+int64_t  *multicrop_waddmode[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropxstart[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropxsize[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropystart[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropysize[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wbinfact[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropxpos[MAXNB_CROPWINDOW];
+uint32_t *multicrop_wcropypos[MAXNB_CROPWINDOW];
+static uint64_t processinfo_change_cnt_local = 0;
 
-static char *outsname;
-static long fpi_outsname;
-
-static uint32_t *outxsize;
-static long fpi_outxsize;
-
-static uint32_t *outysize;
-static long fpi_outysize;
-
-/*
-#define CROPWINDOWVARS(WINDEX) \
-static int64_t *w#WINDEXactive; \
-static long     fpi_w#WINDEXactive; \
-static uint32_t *w#WINDEXcropxstart; \
-long fpi_w#WINDEXcropxstart; \
-static uint32_t *w#WINDEXcropxsize; \
-long fpi_w#WINDEXcropxsize; \
-static uint32_t *w#WINDEXcropystart; \
-long fpi_w#WINDEXcropystart; \
-static uint32_t *w#WINDEXcropysize; \
-long fpi_w#WINDEXcropysize;
-
-CROPWINDOWVARS(00)
-*/
-
-// Window 00
-
-#define MAXNB_CROPWINDOW 8
-
-static int64_t *wactive[MAXNB_CROPWINDOW];
-static long     fpi_wactive[MAXNB_CROPWINDOW];
-
-// addmode = 0 if replacing pixels, 1 if adding
-static int64_t *waddmode[MAXNB_CROPWINDOW];
-static long     fpi_waddmode[MAXNB_CROPWINDOW];
-
-static uint32_t *wcropxstart[MAXNB_CROPWINDOW];
-static long fpi_wcropxstart[MAXNB_CROPWINDOW];
-
-static uint32_t *wcropxsize[MAXNB_CROPWINDOW];
-static long fpi_wcropxsize[MAXNB_CROPWINDOW];
-
-static uint32_t *wcropystart[MAXNB_CROPWINDOW];
-static long fpi_wcropystart[MAXNB_CROPWINDOW];
-
-static uint32_t *wcropysize[MAXNB_CROPWINDOW];
-static long fpi_wcropysize[MAXNB_CROPWINDOW];
-
-// binning
-static uint32_t *wbinfact[MAXNB_CROPWINDOW];
-static long fpi_wbinfact[MAXNB_CROPWINDOW];
-
-// output position
-
-static uint32_t *wcropxpos[MAXNB_CROPWINDOW];
-static long fpi_wcropxpos[MAXNB_CROPWINDOW];
-
-static uint32_t *wcropypos[MAXNB_CROPWINDOW];
-static long fpi_wcropypos[MAXNB_CROPWINDOW];
-
-#define STR_EXPAND(tok) #tok
-#define STR(tok) STR_EXPAND(tok)
-
-#define CROPWINDOWONOFF(wn) \
-    { \
-        CLIARG_ONOFF,\
-        ".w"#wn".active",\
-        "crop window active flag", \
-        "0",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wactive[wn],\
-        &fpi_wactive[wn]\
+void image_multicrop2D_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *imgin, IMAGE *imgout) {
+    if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
+        fps_to_processinfo(fps, processinfo); processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
     }
-
-#define CROPWINDOWADDMODE(wn) \
-    { \
-        CLIARG_ONOFF,\
-        ".w"#wn".addmode",\
-        "1 if adding, 0 if replacing", \
-        "0",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &waddmode[wn],\
-        &fpi_waddmode[wn]\
+    uint32_t ox = *multicrop_outxsize, oy = *multicrop_outysize;
+    size_t ts = ImageStreamIO_typesize(imgin->md[0].datatype);
+    memset(imgout->array.raw, 0, ts * ox * oy);
+    for(int w=0; w < MAXNB_CROPWINDOW ; w++) {
+        if (multicrop_wactive[w] && *multicrop_wactive[w] == 1) {
+            uint32_t xs = *multicrop_wcropxstart[w], ys = *multicrop_wcropystart[w], xw = *multicrop_wcropxsize[w], yw = *multicrop_wcropysize[w], xp = *multicrop_wcropxpos[w], yp = *multicrop_wcropypos[w], bf = *multicrop_wbinfact[w];
+            if (bf < 1) bf = 1;
+            uint32_t cxw = xw; if (xp + cxw/bf > ox) cxw = (ox - xp) * bf; if (xs + cxw > imgin->md[0].size[0]) cxw = imgin->md[0].size[0] - xs;
+            uint32_t cyw = yw; if (yp + cyw/bf > oy) cyw = (oy - yp) * bf; if (ys + cyw > imgin->md[0].size[1]) cyw = imgin->md[0].size[1] - ys;
+            for(uint32_t j=0; j<cyw; j++) {
+                uint64_t ioff = (uint64_t)(ys + j) * imgin->md[0].size[0] + xs, ooff = (uint64_t)(yp + j/bf) * ox + xp;
+                if (*multicrop_waddmode[w] == 0) memcpy(((char*)imgout->array.raw) + ooff*ts, ((char*)imgin->array.raw) + ioff*ts, ts * (cxw/bf));
+                else if (imgin->md[0].datatype == _DATATYPE_FLOAT) for(uint32_t i=0; i<cxw; i++) imgout->array.F[ooff + i/bf] += imgin->array.F[ioff + i];
+            }
+        }
     }
+}
 
-#define CROPWINDOWXSTART(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropxstart",\
-        "crop x coord start",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropxstart[wn],\
-        &fpi_wcropxstart[wn]\
+errno_t image_multicrop2D_validate() {
+    if (multicrop_outxsize && *multicrop_outxsize < 1) *multicrop_outxsize = 1;
+    if (multicrop_outysize && *multicrop_outysize < 1) *multicrop_outysize = 1;
+    return RETURN_SUCCESS;
+}
+
+/* ================================================================== */
+/* STANDALONE IMPLEMENTATION                                          */
+
+int FPSINIT_multicrop(const char *fps_name, const char *keywords, const char *description) {
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
+    if (keywords) strncpy(fps.md->keywordarray, keywords, FPS_KEYWORDARRAY_STRMAXLEN-1);
+    if (description) strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN-1);
+    strncpy(fps.md->helptext, MULTICROP2D_HELPTEXT, FPS_HELPTEXT_STRMAXLEN-1);
+    fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+    { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+    MULTICROP2D_PARAMS(X_FPS_INIT)
+#undef X_FPS_INIT
+    fps_add_processinfo_entries(&fps);
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+int FPSCONF_multicrop(const char *fps_name, int loop) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (loop) {
+        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
+        multicrop_insname = functionparameter_GetParamPtr_STRING(&fps, ".insname");
+        multicrop_outsname = functionparameter_GetParamPtr_STRING(&fps, ".outsname");
+        multicrop_outxsize = functionparameter_GetParamPtr_UINT32(&fps, ".outxsize");
+        multicrop_outysize = functionparameter_GetParamPtr_UINT32(&fps, ".outysize");
+        for(int i=0; i<MAXNB_CROPWINDOW; i++) {
+            char key[64]; sprintf(key, ".w%d.active", i); multicrop_wactive[i] = functionparameter_GetParamPtr_INT64(&fps, key);
+            sprintf(key, ".w%d.addmode", i); multicrop_waddmode[i] = functionparameter_GetParamPtr_INT64(&fps, key);
+            sprintf(key, ".w%d.cropxstart", i); multicrop_wcropxstart[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropxsize", i); multicrop_wcropxsize[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropystart", i); multicrop_wcropystart[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropysize", i); multicrop_wcropysize[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropxpos", i); multicrop_wcropxpos[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropypos", i); multicrop_wcropypos[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+            sprintf(key, ".w%d.cropbinfact", i); multicrop_wbinfact[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        }
+        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { if (function_parameter_FPCONFloopstep(&fps)) image_multicrop2D_validate(); usleep(10000); }
+    } else { fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT); function_parameter_FPCONFloopstep(&fps); }
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+FPS_MAKE_STANDALONE_CONFSTOP(multicrop)
+FPS_MAKE_STANDALONE_RUNSTOP(multicrop)
+
+int FPSRUN_multicrop(const char *fps_name) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) return 1;
+    multicrop_insname = functionparameter_GetParamPtr_STRING(&fps, ".insname");
+    multicrop_outsname = functionparameter_GetParamPtr_STRING(&fps, ".outsname");
+    multicrop_outxsize = functionparameter_GetParamPtr_UINT32(&fps, ".outxsize");
+    multicrop_outysize = functionparameter_GetParamPtr_UINT32(&fps, ".outysize");
+    for(int i=0; i<MAXNB_CROPWINDOW; i++) {
+        char key[64]; sprintf(key, ".w%d.active", i); multicrop_wactive[i] = functionparameter_GetParamPtr_INT64(&fps, key);
+        sprintf(key, ".w%d.addmode", i); multicrop_waddmode[i] = functionparameter_GetParamPtr_INT64(&fps, key);
+        sprintf(key, ".w%d.cropxstart", i); multicrop_wcropxstart[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropxsize", i); multicrop_wcropxsize[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropystart", i); multicrop_wcropystart[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropysize", i); multicrop_wcropysize[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropxpos", i); multicrop_wcropxpos[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropypos", i); multicrop_wcropypos[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
+        sprintf(key, ".w%d.cropbinfact", i); multicrop_wbinfact[i] = functionparameter_GetParamPtr_UINT32(&fps, key);
     }
-
-#define CROPWINDOWXSIZE(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropxsize",\
-        "crop x coord size",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropxsize[wn],\
-        &fpi_wcropxsize[wn]\
+    IMAGE iin, iout; if (ImageStreamIO_read_sharedmem_image_toIMAGE(multicrop_insname, &iin) != 0) return 1;
+    uint32_t dims[2] = {*multicrop_outxsize, *multicrop_outysize};
+    if (ImageStreamIO_createIm_gpu(&iout, multicrop_outsname, 2, dims, iin.md[0].datatype, -1, 1, 10, 0, 0, 0) != 0) return 1;
+    PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "multicrop Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
+    processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    fps_to_processinfo(&fps, pinfo); processinfo_loopstart(pinfo);
+    while(processinfo_loopstep(pinfo)) {
+        processinfo_waitoninputstream(pinfo); if (pinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
+        processinfo_exec_start(pinfo); image_multicrop2D_compute(&fps, pinfo, &iin, &iout); processinfo_exec_end(pinfo);
+        processinfo_update_output_stream(pinfo, &iout, &iin);
     }
+    processinfo_cleanExit(pinfo); function_parameter_struct_disconnect(&fps); return 0;
+}
 
-#define CROPWINDOWYSTART(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropystart",\
-        "crop y coord start",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropystart[wn],\
-        &fpi_wcropystart[wn]\
-    }
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE("multicrop", multicrop, MULTICROP2D_HELPTEXT)
+#endif
 
-#define CROPWINDOWYSIZE(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropysize",\
-        "crop y coord size",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropysize[wn],\
-        &fpi_wcropysize[wn]\
-    }
-
-#define CROPWINDOWXPOS(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropxpos",\
-        "crop x placement in output",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropxpos[wn],\
-        &fpi_wcropxpos[wn]\
-    }
-
-#define CROPWINDOWYPOS(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropypos",\
-        "crop y placement in output",\
-        "30",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wcropypos[wn],\
-        &fpi_wcropypos[wn]\
-    }
-
-#define CROPWINDOWBINFACT(wn) \
-    {\
-        CLIARG_UINT32,\
-        ".w"#wn".cropbinfact",\
-        "binning factor",\
-        "1",\
-        CLIARG_HIDDEN_DEFAULT,\
-        (void **) &wbinfact[wn],\
-        &fpi_wbinfact[wn]\
-    }
-
-#define CROPWPARAMS(wn) \
-    CROPWINDOWONOFF(wn),\
-    CROPWINDOWADDMODE(wn),\
-    CROPWINDOWXSTART(wn),\
-    CROPWINDOWXSIZE(wn),\
-    CROPWINDOWYSTART(wn),\
-    CROPWINDOWYSIZE(wn),\
-    CROPWINDOWXPOS(wn),\
-    CROPWINDOWYPOS(wn),\
-    CROPWINDOWBINFACT(wn)
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".insname",
-        "input stream name",
-        "inim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &mcropinsname,
-        &fpi_mcropinsname
-    },
-    {
-        CLIARG_STR,
-        ".outsname",
-        "output stream name",
-        "outim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outsname,
-        &fpi_outsname
-    },
-    {
-        CLIARG_UINT32,
-        ".outxsize",
-        "output x size",
-        "200",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outxsize,
-        &fpi_outxsize
-    },
-    {
-        CLIARG_UINT32,
-        ".outysize",
-        "output y size",
-        "200",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outysize,
-        &fpi_outysize
-    },
-    CROPWPARAMS(00),
-    CROPWPARAMS(01),
-    CROPWPARAMS(02),
-    CROPWPARAMS(03),
-    CROPWPARAMS(04),
-    CROPWPARAMS(05),
-    CROPWPARAMS(06),
-    CROPWPARAMS(07)
+static CLICMDARGDEF farg[] = {
+#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+    { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+    MULTICROP2D_PARAMS(X_CLI_DEF)
+#undef X_CLI_DEF
 };
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_mcropinsname].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-    }
-
-    return RETURN_SUCCESS;
-}
-
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "multicrop2D", "crop 2D image, multiple crops", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
-
-static errno_t compute_function()
-{
-    DEBUG_TRACE_FSTART();
-
-    // CONNECT TO INPUT STREAM
-    IMGID imgin = mkIMGID_from_name(mcropinsname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
-
-    // CONNNECT TO OR CREATE OUTPUT STREAM
-    IMGID imgout = stream_connect_create_2D(outsname, *outxsize, *outysize, imgin.md->datatype);
-
-    // temporary array
-    float    *tmparrayf;
-    double   *tmparrayd;
-    uint8_t  *tmparrayui8;
-    uint16_t *tmparrayui16;
-    uint32_t *tmparrayui32;
-    uint64_t *tmparrayui64;
-    int8_t   *tmparraysi8;
-    int16_t  *tmparraysi16;
-    int32_t  *tmparraysi32;
-    int64_t  *tmparraysi64;
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
-    // allocate array memory
-    switch (imgin.md->datatype)
-    {
-    case _DATATYPE_FLOAT:
-        tmparrayf = (float*) malloc(sizeof(float) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_DOUBLE:
-        tmparrayd = (double*) malloc(sizeof(double) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_UINT8:
-        tmparrayui8 = (uint8_t*) malloc(sizeof(uint8_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_UINT16:
-        tmparrayui16 = (uint16_t*) malloc(sizeof(uint16_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_UINT32:
-        tmparrayui32 = (uint32_t*) malloc(sizeof(uint32_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_UINT64:
-        tmparrayui64 = (uint64_t*) malloc(sizeof(uint64_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_INT8:
-        tmparraysi8 = (int8_t*) malloc(sizeof(int8_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_INT16:
-        tmparraysi16 = (int16_t*) malloc(sizeof(int16_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_INT32:
-        tmparraysi32 = (int32_t*) malloc(sizeof(int32_t) * (*outxsize) * (*outysize) );
-        break;
-
-    case _DATATYPE_INT64:
-        tmparraysi64 = (int64_t*) malloc(sizeof(int64_t) * (*outxsize) * (*outysize) );
-        break;
-    }
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-    {
-
-        // zero output array
-        switch (imgin.md->datatype)
-        {
-        case _DATATYPE_FLOAT:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayf[ii] = 0.0;
-            }
-            break;
-
-        case _DATATYPE_DOUBLE:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayd[ii] = 0.0;
-            }
-            break;
-
-        case _DATATYPE_UINT8:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayui8[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_UINT16:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayui16[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_UINT32:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayui32[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_UINT64:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparrayui64[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_INT8:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparraysi8[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_INT16:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparraysi16[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_INT32:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparraysi32[ii] = 0;
-            }
-            break;
-
-        case _DATATYPE_INT64:
-            for(uint64_t ii=0; ii < *outxsize * *outysize; ii++)
-            {
-                tmparraysi64[ii] = 0;
-            }
-            break;
-        }
-
-        for(int cropwindow=0; cropwindow < MAXNB_CROPWINDOW ; cropwindow++)
-        {
-            if ( *wactive[cropwindow] == 1)
-            {
-                uint32_t iimax = *wcropxsize[cropwindow];
-                if ( iimax/(*wbinfact[cropwindow]) +  *wcropxpos[cropwindow] > (*outxsize))
-                {
-                    iimax = ((*outxsize) - *wcropxpos[cropwindow]) * (*wbinfact[cropwindow]);
-                }
-
-                if ( iimax + *wcropxstart[cropwindow] > imgin.md->size[0])
-                {
-                    iimax = imgin.md->size[0] - *wcropxstart[cropwindow];
-                }
-
-                uint32_t jjmax = *wcropysize[cropwindow];
-                if ( jjmax/(*wbinfact[cropwindow]) +  *wcropypos[cropwindow] > (*outysize))
-                {
-                    jjmax = ((*outysize) - *wcropypos[cropwindow]) * (*wbinfact[cropwindow]);
-                }
-
-                if ( jjmax + *wcropystart[cropwindow] > imgin.md->size[1])
-                {
-                    jjmax = imgin.md->size[1] - *wcropystart[cropwindow];
-                }
-
-                for(uint32_t jj = 0; jj < jjmax; jj++)
-                {
-                    uint64_t indjj = jj + (*wcropystart[cropwindow]);
-                    indjj *=  imgin.md->size[0];
-
-                    if ( *waddmode[cropwindow] == 0 )
-                    {
-                        switch (imgin.md->datatype)
-                        {
-                        case _DATATYPE_FLOAT:
-                            memcpy( &tmparrayf[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.F[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_FLOAT);
-                            break;
-
-                        case _DATATYPE_DOUBLE:
-                            memcpy( &tmparrayd[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.D[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_DOUBLE);
-                            break;
-
-                        case _DATATYPE_UINT8:
-                            memcpy( &tmparrayui8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_UINT8);
-                            break;
-
-                        case _DATATYPE_UINT16:
-                            memcpy( &tmparrayui16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_UINT16);
-                            break;
-
-                        case _DATATYPE_UINT32:
-                            memcpy( &tmparrayui32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_UINT32);
-                            break;
-
-                        case _DATATYPE_UINT64:
-                            memcpy( &tmparrayui64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_UINT64);
-                            break;
-
-                        case _DATATYPE_INT8:
-                            memcpy( &tmparraysi8[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_INT8);
-                            break;
-
-                        case _DATATYPE_INT16:
-                            memcpy( &tmparraysi16[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_INT16);
-                            break;
-
-                        case _DATATYPE_INT32:
-                            memcpy( &tmparraysi32[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_INT32);
-                            break;
-
-                        case _DATATYPE_INT64:
-                            memcpy( &tmparraysi64[ (*wcropypos[cropwindow] + jj) * (*outxsize) + *wcropxpos[cropwindow] ],
-                                    &imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow]) ],
-                                    iimax * SIZEOF_DATATYPE_INT64);
-                            break;
-
-                        }
-                    }
-                    else  // add pixels
-                    {
-                        switch (imgin.md->datatype)
-                        {
-
-                        case _DATATYPE_FLOAT:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayf[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow])) * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.F[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_DOUBLE:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayd[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.D[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_UINT8:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayui8[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.UI8[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_UINT16:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayui16[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.UI16[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_UINT32:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayui32[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.UI32[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_UINT64:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparrayui64[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.UI64[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_INT8:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparraysi8[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.SI8[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_INT16:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparraysi16[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.SI16[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_INT32:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparraysi32[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize) + (*wcropxpos[cropwindow] + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.SI32[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-
-                        case _DATATYPE_INT64:
-                            for(int ii=0; ii< iimax; ii++)
-                            {
-                                tmparraysi64[ (*wcropypos[cropwindow] + jj/(*wbinfact[cropwindow]))  * (*outxsize)+ (*wcropxpos[cropwindow]  + ii/(*wbinfact[cropwindow]))] +=
-                                    imgin.im->array.SI64[ indjj + (*wcropxstart[cropwindow] + ii)];
-                            }
-                            break;
-                        }
-
-                    }
-                }
-            }
-        }
-
-        switch (imgin.md->datatype)
-        {
-        case _DATATYPE_FLOAT:
-            memcpy(imgout.im->array.F, tmparrayf, sizeof(float) * (*outxsize) * (*outysize) );
-            break;
-
-        case _DATATYPE_DOUBLE:
-            memcpy(imgout.im->array.D, tmparrayd, sizeof(double) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_UINT8:
-            memcpy(imgout.im->array.UI8, tmparrayui8, sizeof(uint8_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_UINT16:
-            memcpy(imgout.im->array.UI16, tmparrayui16, sizeof(uint16_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_UINT32:
-            memcpy(imgout.im->array.UI32, tmparrayui32, sizeof(uint32_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_UINT64:
-            memcpy(imgout.im->array.UI64, tmparrayui64, sizeof(uint64_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_INT8:
-            memcpy(imgout.im->array.SI8, tmparraysi8, sizeof(int8_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_INT16:
-            memcpy(imgout.im->array.SI16, tmparraysi16, sizeof(int16_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_INT32:
-            memcpy(imgout.im->array.SI32, tmparraysi32, sizeof(int32_t) * (*outxsize) * (*outysize));
-            break;
-
-        case _DATATYPE_INT64:
-            memcpy(imgout.im->array.SI64, tmparraysi64, sizeof(int64_t) * (*outxsize) * (*outysize));
-            break;
-        }
-        processinfo_update_output_stream(processinfo, imgout.im, NULL);
-    }
+static CLICMDDATA CLIcmddata = { "multicrop2D", "crop 2D image, multiple crops", CLICMD_FIELDS_DEFAULTS };
+
+static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
+
+static errno_t compute_function() {
+    IMGID in = mkIMGID_from_name(multicrop_insname); resolveIMGID(&in, ERRMODE_ABORT);
+    IMGID out = stream_connect_create_2D(multicrop_outsname, *multicrop_outxsize, *multicrop_outysize, in.md->datatype);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    image_multicrop2D_compute(data.fpsptr, processinfo, in.im, out.im);
+    processinfo_update_output_stream(processinfo, out.im, in.im);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
-    switch (imgin.md->datatype)
-    {
-    case _DATATYPE_FLOAT:
-        free(tmparrayf);
-        break;
-
-    case _DATATYPE_DOUBLE:
-        free(tmparrayd);
-        break;
-
-    case _DATATYPE_UINT8:
-        free(tmparrayui8);
-        break;
-
-    case _DATATYPE_UINT16:
-        free(tmparrayui16);
-        break;
-
-    case _DATATYPE_UINT32:
-        free(tmparrayui32);
-        break;
-
-    case _DATATYPE_UINT64:
-        free(tmparrayui64);
-        break;
-
-    case _DATATYPE_INT8:
-        free(tmparraysi8);
-        break;
-
-    case _DATATYPE_INT16:
-        free(tmparraysi16);
-        break;
-
-    case _DATATYPE_INT32:
-        free(tmparraysi32);
-        break;
-
-    case _DATATYPE_INT64:
-        free(tmparraysi64);
-        break;
-    }
-
-    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 INSERT_STD_FPSCLIfunctions
-
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMODE_arith__multicrop2D()
-{
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
+errno_t CLIADDCMD_COREMODE_arith__multicrop2D() { CLIcmddata.FPS_customCONFcheck = image_multicrop2D_validate; INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }

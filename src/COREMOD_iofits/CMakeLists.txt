@@ -94,3 +94,5 @@ message(" CFITSIO_LIBRARIES : ${CFITSIO_LIBRARIES}")
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
+
+add_milk_standalone(savefits savefits.c)

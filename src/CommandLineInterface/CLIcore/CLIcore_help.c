@@ -6,7 +6,9 @@
 #include <malloc.h>
 
 #include <fitsio.h>
+#ifdef USE_READLINE
 #include <readline/readline.h>
+#endif
 #include <regex.h>
 
 #include <assert.h>
@@ -370,7 +372,11 @@ errno_t printInfo()
 
     printf("\n");
     printf("--------------- LIBRARIES --------------------\n");
+#ifdef USE_READLINE
     printf("READLINE : version %x\n", RL_READLINE_VERSION);
+#else
+    printf("READLINE : disabled\n");
+#endif
 #ifdef _OPENMP
     printf("OPENMP   : Compiled by an OpenMP-compliant implementation.\n");
 #endif

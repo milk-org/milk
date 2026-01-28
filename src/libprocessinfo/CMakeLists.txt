@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(milkprocessinfo)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(NCURSES REQUIRED ncurses)
+option(USE_NCURSES "Enable ncurses and TUI support" ON)
+
+if(USE_NCURSES)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(NCURSES REQUIRED ncurses)
+endif()
 
 set(SOURCES
     processinfo_compute_status.c
@@ -18,38 +22,55 @@ set(SOURCES
     processinfo_shm_list_create.c
     processinfo_SIGexit.c
     processinfo_signals.c
-    processinfo_update_output_stream.c
-    processinfo_WriteMessage.c
-    processtools_trigger.c
-    # procCTRL tools are now part of the library
-    procCTRL/procCTRL_GetCPUloads.c
-    procCTRL/procCTRL_GetNumberCPUs.c
-    procCTRL/procCTRL_PIDcollectSystemInfo.c
-    procCTRL/procCTRL_processinfo_scan.c
-    procCTRL/procCTRL_TUI.c
-)
-
-add_library(milkprocessinfo SHARED ${SOURCES})
-
-# Include directories
-target_include_directories(milkprocessinfo PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/ImageStreamIO>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libmilkTUI>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/streamCTRL>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/procCTRL>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libfps>
-    $<INSTALL_INTERFACE:include>
-)
-
-# Link dependencies
-target_link_libraries(milkprocessinfo ImageStreamIO milkTUI rt ${NCURSES_LIBRARIES} pthread m)
-
-install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
+        processinfo_update_output_stream.c
+        processinfo_WriteMessage.c
+        processtools_trigger.c
+    )
+    
+    # Core library (no TUI/ncurses dependency)
+    add_library(milkprocessinfo SHARED ${SOURCES})
+    
+    if(USE_NCURSES)
+        set(SOURCES_TUI
+            procCTRL/procCTRL_GetCPUloads.c
+            procCTRL/procCTRL_GetNumberCPUs.c
+            procCTRL/procCTRL_PIDcollectSystemInfo.c
+            procCTRL/procCTRL_processinfo_scan.c
+            procCTRL/procCTRL_TUI.c
+        )
+        
+        add_library(milkprocessinfoTUI SHARED ${SOURCES_TUI})
+        target_compile_definitions(milkprocessinfoTUI PUBLIC USE_NCURSES)
+        target_include_directories(milkprocessinfoTUI PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+        )
+        target_link_libraries(milkprocessinfoTUI PUBLIC milkprocessinfo milkTUI ${NCURSES_LIBRARIES})
+        install(TARGETS milkprocessinfoTUI EXPORT milkTargets DESTINATION lib)
+    endif()
+    
+    
+    # Include directories
+    target_include_directories(milkprocessinfo PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/ImageStreamIO>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libmilkTUI>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/streamCTRL>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/CLIcore>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/procCTRL>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libfps>
+        $<INSTALL_INTERFACE:include>
+    )
+    
+    # Link dependencies
+    target_link_libraries(milkprocessinfo ImageStreamIO milkcore rt pthread m)
+        
+    install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
+    
 
 install(FILES 
     processinfo.h
@@ -70,12 +91,14 @@ install(FILES
     processinfo_WriteMessage.h
     DESTINATION include)
 
+if(USE_NCURSES)
 # ==========================================
 # milk-procCTRL executable
 # ==========================================
 
 add_executable(milk-procCTRL procCTRL/milk-procCTRL.c)
 target_link_libraries(milk-procCTRL PUBLIC 
+    milkprocessinfoTUI
     milkprocessinfo 
     ImageStreamIO
     milkTUI
@@ -86,6 +109,7 @@ target_link_libraries(milk-procCTRL PUBLIC
 
 add_executable(milk-procCTRL-scan procCTRL/milk-procCTRL-scan.c)
 target_link_libraries(milk-procCTRL-scan PUBLIC
+    milkprocessinfoTUI
     milkprocessinfo
     ImageStreamIO
     pthread
@@ -94,3 +118,4 @@ target_link_libraries(milk-procCTRL-scan PUBLIC
 
 install(TARGETS milk-procCTRL DESTINATION bin)
 install(TARGETS milk-procCTRL-scan DESTINATION bin)
+endif()

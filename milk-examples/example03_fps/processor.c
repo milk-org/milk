@@ -19,31 +19,10 @@
 
 // Main FPS headers
 #include "fps.h"
-#include "fps_add_entry.h"
-#include "fps_paramvalue.h"
-#include "fps_FPCONFsetup.h"
-#include "fps_FPCONFloopstep.h"
-#include "fps_FPCONFexit.h"
-#include "fps_CONFstop.h"
-#include "fps_RUNstop.h"
-#include "fps_connect.h"
-#include "fps_disconnect.h"
-#include "fps_RUNexit.h"
-#include "fps_tmux.h"
-#include "fps_processinfo.h"
 
 // ProcessInfo headers
 #include "processinfo.h"
-#include "processinfo_shm_link.h"
-#include "processinfo_procdirname.h"
-#include "processtools_trigger.h"
-#include "processinfo_update_output_stream.h"
-#include "processinfo_setup.h"
-#include "processinfo_loopstep.h"
-#include "processinfo_exec_start.h"
-#include "processinfo_exec_end.h"
-#include "processinfo_signals.h"
-#include "fps_processinfo_entries.h"
+#include "processtools.h"
 
 #include "ImageStreamIO.h"
 #include "processor.h"

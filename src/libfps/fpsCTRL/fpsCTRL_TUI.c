@@ -25,6 +25,13 @@
 #include "fps_read_fpsCMD_fifo.h"
 #include "fps_scan.h"
 
+#include "processinfo_signals.h"
+#ifdef MILK_MODULE
+#ifdef MILK_MODULE
+#include "CLIcore.h"
+#endif
+#endif
+
 #include "TUItools.h"
 #include "fpsCTRL_globals.h"
 
@@ -643,16 +650,14 @@ errno_t functionparameter_CTRLscreen(
 
         loopcnt++;
 
-        /*
-        if((data.signal_TERM == 1) || (data.signal_INT == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((processinfo_signal_TERM == 1) || (processinfo_signal_INT == 1) ||
+                (processinfo_signal_ABRT == 1) || (processinfo_signal_BUS == 1) ||
+                (processinfo_signal_SEGV == 1) || (processinfo_signal_HUP == 1) ||
+                (processinfo_signal_PIPE == 1))
         {
             printf("Exit condition met\n");
             loopOK = 0;
         }
-        */
     }
 
 
