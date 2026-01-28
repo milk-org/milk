@@ -29,43 +29,51 @@ target_link_libraries(milk-example-03-processor milkfps milkprocessinfo ImageStr
 
 
 
-# Build as a shared object module for milk-CLI
+# Build as a single shared object module for milk-CLI
 
 
 
-add_library(processor03 MODULE processor_module.c processor.c)
+add_library(example03fps MODULE 
 
 
 
-set_target_properties(processor03 PROPERTIES PREFIX "")
+    example03fps_module.c 
 
 
 
-target_compile_definitions(processor03 PRIVATE MILK_MODULE)
+    writer_module.c 
 
 
 
-target_link_libraries(processor03 milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
+    writer.c 
+
+
+
+    processor_module.c 
+
+
+
+    processor.c
+
+
+
+)
+
+
+
+set_target_properties(example03fps PROPERTIES PREFIX "")
+
+
+
+target_compile_definitions(example03fps PRIVATE MILK_MODULE)
+
+
+
+target_link_libraries(example03fps milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
 
 
 
 
-
-
-
-add_library(writer03 MODULE writer_module.c writer.c)
-
-
-
-set_target_properties(writer03 PROPERTIES PREFIX "")
-
-
-
-target_compile_definitions(writer03 PRIVATE MILK_MODULE)
-
-
-
-target_link_libraries(writer03 milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
 
 
 
