@@ -79,6 +79,21 @@ errno_t fpsCTRL_FPSdisplay(
 
         fpsCTRLvar->fpsindexSelected = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         fpsCTRLvar->pindexSelected = keywnode[fpsCTRLvar->nodeSelected].pindex;
+
+        if (fpsCTRLvar->currentlevel == -1)
+        {
+            // Resolve node selected at level 0
+            int knodeindex = keywnode[0].child[fpsCTRLvar->GUIlineSelected[0]];
+            fpsCTRLvar->nodeSelected = knodeindex;
+            fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
+
+            screenprint_setbold();
+            TUI_printfw("Detailed Help for FPS '%s':\n", fpsarray[fpsCTRLvar->fpsindexSelected].md->name);
+            TUI_printfw("--------------------------\n");
+            screenprint_unsetbold();
+            TUI_printfw("%s\n", fpsarray[fpsCTRLvar->fpsindexSelected].md->helptext);
+            return RETURN_SUCCESS;
+        }
         
         DEBUG_TRACEPOINT("fpsindexSelected: %d, pindexSelected: %d", fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
 
