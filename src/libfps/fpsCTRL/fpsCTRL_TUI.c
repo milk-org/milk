@@ -341,7 +341,7 @@ errno_t functionparameter_CTRLscreen(
     strcpy(fpsCTRLvar.fpsnamemask, fpsnamemask);
     strcpy(fpsCTRLvar.fpsCTRLfifoname, fpsCTRLfifoname);
 
-    fpsCTRLvar.fpsCTRL_DisplayMode = 2;
+    fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
     INSERT_TUI_SETUP
 
