@@ -40,6 +40,7 @@ set(SOURCEFILES
     fps_load.c
     fps_scan.c
     fps_tmux.c
+    fps_processinfo.c
     fps_processcmdline.c
     fps_process_fpsCMDarray.c
     fps_read_fpsCMD_fifo.c

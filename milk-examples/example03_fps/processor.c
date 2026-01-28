@@ -32,6 +32,8 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 #include "fps_RUNexit.h"
+#include "fps_tmux.h"
+#include "fps_processinfo.h"
 
 // ProcessInfo headers
 #include "processinfo.h"
@@ -52,8 +54,6 @@
 // ===============================================================================================
 // GLOBAL PARAMETERS (SHARED)
 // ===============================================================================================
-// These pointers hold the addresses of the parameter values in the FPS shared memory.
-// Exposed via processor.h for the module to bind CLI arguments to them.
 char *in_name_ptr = NULL;
 char *out_name_ptr = NULL;
 uint32_t *roi_size_ptr = NULL;
@@ -66,13 +66,11 @@ static uint64_t processinfo_change_cnt_local = 0;
 /* =============================================================================================== */
 /* SHARED LOGIC                                                                                    */
 /* =============================================================================================== */
-/* =============================================================================================== */
 
 /**
  * @brief Shared processing logic for one loop iteration.
  */
 void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *input_image, IMAGE *output_image) {
-    // RE-READ PARAMETERS DYNAMICALLY
     if (fps) {
         if(fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
             fps_to_processinfo(fps, processinfo);
@@ -80,10 +78,8 @@ void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinf
         }
     }
     
-    // Safety check
     if (!off_x_ptr || !roi_size_ptr) return;
 
-    // Dereference pointers
     uint32_t off_x = *off_x_ptr;
     uint32_t roi_size = *roi_size_ptr;
     
@@ -91,7 +87,6 @@ void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinf
     float *in_data = (float*)input_image->array.raw;
     float *out_data = (float*)output_image->array.raw;
 
-    // Process: Copy ROI
     for(uint32_t y=0; y<roi_size; y++) {
         for(uint32_t x=0; x<roi_size; x++) {
             if (x + off_x < in_w)
@@ -136,7 +131,6 @@ void processor03_validate() {
 /* =============================================================================================== */
 /* STANDALONE IMPLEMENTATION                                                                       */
 /* =============================================================================================== */
-/* =============================================================================================== */
 
 int FPSINIT_processor(const char *fps_name, const char *keywords, const char *description) {
     FUNCTION_PARAMETER_STRUCT fps;
@@ -179,31 +173,8 @@ int FPSINIT_processor(const char *fps_name, const char *keywords, const char *de
 }
 
 void handle_tmux(const char *fps_name, const char *command, int argc, char *argv[], const char *keywords, const char *description) {
-    char cmd[2048];
-
-    if (system("command -v tmux > /dev/null 2>&1") != 0) {
-        fprintf(stderr, "\nError: 'tmux' is not installed or not in PATH.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps_name);
-    int ret = system(cmd);
-    if (ret != 0) {
-        printf("Creating tmux session '%s'\n", fps_name);
-        snprintf(cmd, sizeof(cmd), "tmux new-session -d -s %s -n ctrl", fps_name);
-        system(cmd);
-        snprintf(cmd, sizeof(cmd), "tmux new-window -t %s -n conf", fps_name);
-        system(cmd);
-        snprintf(cmd, sizeof(cmd), "tmux new-window -t %s -n run", fps_name);
-        system(cmd);
-        sleep(1);
-    }
-
     char path[1024];
-    ssize_t path_len = readlink("/proc/self/exe", path, sizeof(path)-1);
-    if (path_len != -1) {
-        path[path_len] = '\0';
-    } else {
+    if (functionparameter_FPS_get_executable_path(path, sizeof(path)) == NULL) {
         if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023);
     }
 
@@ -212,19 +183,13 @@ void handle_tmux(const char *fps_name, const char *command, int argc, char *argv
         snprintf(name_arg, sizeof(name_arg), " -n %s", fps_name);
     }
 
-    if (strcmp(command, "confstart") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:conf \"%s confstart%s\" C-m", fps_name, path, name_arg);
-        system(cmd);
-        printf("Dispatched 'confstart' to tmux window %s:conf\n", fps_name);
-    } else if (strcmp(command, "confstep") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:conf \"%s confstep%s\" C-m", fps_name, path, name_arg);
-        system(cmd);
-        printf("Dispatched 'confstep' to tmux window %s:conf\n", fps_name);
-    } else if (strcmp(command, "runstart") == 0) {
-        snprintf(cmd, sizeof(cmd), "tmux send-keys -t %s:run \"%s runstart%s\" C-m", fps_name, path, name_arg);
-        system(cmd);
-        printf("Dispatched 'runstart' to tmux window %s:run\n", fps_name);
-    } else if (strcmp(command, "fpsinit") == 0) {
+    functionparameter_FPS_tmux_standalone_setup(fps_name);
+
+    if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) {
+        return;
+    }
+
+    if (strcmp(command, "fpsinit") == 0) {
         FPSINIT_processor(fps_name, keywords, description);
     }
 }
@@ -284,29 +249,8 @@ int FPSRUNSTOP_processor(const char *fps_name) {
     functionparameter_RUNstop(&fps);
     function_parameter_struct_disconnect(&fps);
     
-    char procdname[STRINGMAXLEN_DIR_NAME];
-    processinfo_procdirname(procdname);
-    DIR *d = opendir(procdname);
-    if (d) {
-        struct dirent *dir;
-        while ((dir = readdir(d)) != NULL) {
-            char prefix[256];
-            snprintf(prefix, sizeof(prefix), "proc.%s.", fps_name);
-            if (strncmp(dir->d_name, prefix, strlen(prefix)) == 0) {
-                char fullpath[2048];
-                snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, dir->d_name);
-                int fd;
-                PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
-                if (pinfo != (PROCESSINFO *)MAP_FAILED) {
-                    printf("Signaling process PID %d to exit...\n", (int)pinfo->PID);
-                    pinfo->CTRLval = 3; 
-                    munmap(pinfo, sizeof(PROCESSINFO));
-                    close(fd);
-                }
-            }
-        }
-        closedir(d);
-    }
+    functionparameter_FPS_processinfo_signal(fps_name, 3); // 3 = EXIT
+
     return 0;
 }
 
