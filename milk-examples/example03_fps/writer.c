@@ -1,15 +1,15 @@
 /**
- * @file milk-example-03-writer.c
- * @brief Writer with FPS and ProcessInfo integration.
+ * @file writer.c
+ * @brief Dynamic pattern generator with full FPS and ProcessInfo support.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <math.h>
-#include <string.h>
-#include <dirent.h>
-#include <sys/mman.h>
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <unistd.h> 
+#include <math.h> 
+#include <string.h> 
+#include <dirent.h> 
+#include <sys/mman.h> 
 
 // Main FPS headers
 #include "fps.h"
@@ -42,9 +42,9 @@
 #include "ImageStreamIO.h"
 #include "writer.h"
 
-// ===============================================================================================
-// GLOBAL PARAMETERS (SHARED)
-// ===============================================================================================
+/* =============================================================================================== */
+/* GLOBAL PARAMETERS (SHARED)                                                                      */
+/* =============================================================================================== */
 char *out_name_ptr = NULL;
 uint32_t *width_ptr = NULL;
 uint32_t *height_ptr = NULL;
@@ -57,11 +57,17 @@ static uint64_t processinfo_change_cnt_local = 0;
 /* SHARED LOGIC                                                                                    */
 /* =============================================================================================== */
 
+/**
+ * @brief Computation logic for pattern generation.
+ * 
+ * Generates a scrolling 2D pattern based on the current loop counter.
+ */
 void writer03_compute(
     FUNCTION_PARAMETER_STRUCT *fps,
     PROCESSINFO *processinfo,
     IMAGE *output_image)
 {
+    // Sync external FPS changes to local ProcessInfo
     if (fps) {
         if(fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
             fps_to_processinfo(fps, processinfo);
@@ -79,6 +85,7 @@ void writer03_compute(
     float *out_data = (float*)output_image->array.raw;
     uint64_t counter = processinfo->loopcnt;
 
+    // Pattern generation: sum of sine waves
     for(uint32_t y=0; y<height; y++) {
         for(uint32_t x=0; x<width; x++) {
             out_data[y*width + x] = 0.5 * sin((x + counter)*freq_x) + 0.5 * cos((y + counter)*freq_y);
@@ -86,6 +93,9 @@ void writer03_compute(
     }
 }
 
+/**
+ * @brief Basic parameter validation.
+ */
 void writer03_validate() {
     if (width_ptr && *width_ptr < 1) *width_ptr = 1;
     if (height_ptr && *height_ptr < 1) *height_ptr = 1;
@@ -95,6 +105,9 @@ void writer03_validate() {
 /* STANDALONE IMPLEMENTATION                                                                       */
 /* =============================================================================================== */
 
+/**
+ * @brief Initialize FPS metadata for the writer.
+ */
 int FPSINIT_writer(
     const char *fps_name,
     const char *keywords,
@@ -114,11 +127,10 @@ int FPSINIT_writer(
         strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN - 1);
     }
 
-    // Set detailed help text
     strncpy(fps.md->helptext, WRITER_HELPTEXT, FPS_HELPTEXT_STRMAXLEN - 1);
 
     fps.cmdset.procinfo_loopcntMax = -1;
-    // Writer typically runs free-running or on timer
+    // Free-running mode
     fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE; 
 
 #define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
@@ -136,6 +148,9 @@ int FPSINIT_writer(
     return 0;
 }
 
+/**
+ * @brief Config loop: handles real-time parameter validation.
+ */
 int FPSCONF_writer(
     const char *fps_name,
     int loop)
@@ -177,6 +192,9 @@ int FPSCONF_writer(
 FPS_MAKE_STANDALONE_CONFSTOP(writer)
 FPS_MAKE_STANDALONE_RUNSTOP(writer)
 
+/**
+ * @brief Main execution loop for the writer.
+ */
 int FPSRUN_writer(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
 
@@ -220,9 +238,10 @@ int FPSRUN_writer(const char *fps_name) {
         writer03_compute(&fps, processinfo, &output_image);
 
         processinfo_exec_end(processinfo);
+        // Post frame to shared memory (increment cnt0, post semaphores)
         processinfo_update_output_stream(processinfo, &output_image, NULL);
         
-        usleep(10000); // 100 Hz
+        usleep(10000); // Target 100 Hz
     }
 
     processinfo_cleanExit(processinfo);
