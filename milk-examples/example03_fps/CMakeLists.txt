@@ -24,7 +24,7 @@ add_executable(milk-example-03-processor processor.c)
 target_link_libraries(milk-example-03-processor milkfps milkprocessinfo ImageStreamIO CLIcore m rt)
 
 # Build as a shared object module for milk-CLI
-add_library(processor03 MODULE processor.c)
+add_library(processor03 MODULE processor_module.c processor.c)
 set_target_properties(processor03 PROPERTIES PREFIX "") # milk usually loads .so without lib prefix if specified by name?
 # Actually milk loads "milkmilkmoduleexample.so" for module "milkmilkmoduleexample".
 # INIT_MODULE_LIB(processor03) creates libinit_processor03.
