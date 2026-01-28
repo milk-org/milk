@@ -22,9 +22,9 @@
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
 
-#define COLORRESET     "\033[0m"
-#define COLORRED       "\033[31m" /* Red */
-#define COLORHBOLDCYAN "\e[0;96m" /* High Intensity Bold Cyan */
+#define COLORRESET     "\001\033[0m\002"
+#define COLORRED       "\001\033[31m\002" /* Red */
+#define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
 
 extern void yy_scan_string(const char *);
 extern int  yylex_destroy(void);
