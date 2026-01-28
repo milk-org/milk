@@ -89,7 +89,7 @@ milk
 ### 2. Load the Module
 Load the compiled shared object. Adjust the path if necessary.
 ```bash
-milk > mload ./build/processor03.so
+milk > soload ./build/processor03.so
 ```
 
 ### 3. Run the Command
