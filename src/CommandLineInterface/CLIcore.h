@@ -26,12 +26,15 @@ typedef int errno_t;
 #endif
 
 #include <errno.h>
+#ifdef MILK_MODULE
 #include <fftw3.h>
 #include <gsl/gsl_rng.h> // for random numbers
+#endif
 #include <sched.h>
 #include <semaphore.h>
 #include <signal.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,6 +75,35 @@ extern char  BuildDate[200];
 extern char  BuildTime[200];
 
 extern int C_ERRNO; // C errno (from errno.h)
+
+#ifdef USE_NCURSES
+errno_t functionparameter_CTRLscreen(uint32_t mode,
+                                     char    *fpsnamemask,
+                                     char    *fpsCTRLfifoname,
+                                     double  timeout_sec);
+
+errno_t processinfo_CTRLscreen();
+#else
+static inline errno_t functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname, double timeout_sec) {
+    (void)mode; (void)fpsnamemask; (void)fpsCTRLfifoname; (void)timeout_sec; return 0;
+}
+static inline errno_t processinfo_CTRLscreen() { return 0; }
+static inline void TUI_printfw(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+}
+static inline void TUI_newline() { printf("\n"); }
+static inline void screenprint_setreverse() {}
+static inline void screenprint_unsetreverse() {}
+static inline void screenprint_setcolor(int pair) { (void)pair; }
+static inline void screenprint_unsetcolor(int pair) { (void)pair; }
+static inline void TUI_set_screenprintmode(int mode) { (void)mode; }
+static inline errno_t TUI_init_terminal(short unsigned int *wrow, short unsigned int *wcol) { (void)wrow; (void)wcol; return 0; }
+static inline int get_singlechar_nonblock() { return -1; }
+static inline errno_t TUI_exit() { return 0; }
+#endif
 
 
 #define STRINGMAXLEN_CLISTARTUPFILENAME 200
@@ -426,7 +458,11 @@ typedef struct
     int      overwrite; // automatically overwrite FITS files
     int      rmSHMfile; // remove shared memory files upon delete
     double   INVRANDMAX;
+#ifdef MILK_MODULE
     gsl_rng *rndgen;    // random number generator
+#else
+    void    *rndgen;
+#endif
     int      precision; // default precision: 0 for float, 1 for double
 
     // LOGGING, PROCESS MONITORING

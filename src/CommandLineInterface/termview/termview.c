@@ -1,5 +1,7 @@
 #include "termview.h"
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#endif
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -137,6 +139,7 @@ static void get_jet_color(float v, float *r, float *g, float *b) {
 }
 
 static void init_colormaps() {
+#ifdef USE_NCURSES
     if (!has_colors()) return;
 
     if (COLORS >= 256) {
@@ -183,6 +186,7 @@ static void init_colormaps() {
         init_pair(COLOR_BASE_JET + 4, COLOR_WHITE, COLOR_RED);
         init_pair(COLOR_BASE_JET + 5, COLOR_WHITE, COLOR_RED);
     }
+#endif
 }
 
 static int compare_doubles(const void *a, const void *b) {
@@ -194,6 +198,7 @@ static int compare_doubles(const void *a, const void *b) {
 }
 
 static double get_input_double(const char* prompt) {
+#ifdef USE_NCURSES
     int r = wrow / 2;
     int c = wcol / 2 - 15;
     
@@ -218,6 +223,10 @@ static double get_input_double(const char* prompt) {
     nodelay(stdscr, TRUE);
     
     return atof(buf);
+#else
+    (void)prompt;
+    return 0.0;
+#endif
 }
 
 errno_t termview_screen(const char *imagename, termview_options_t options)
@@ -236,10 +245,12 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
     TUI_init_terminal(&wrow, &wcol);
 
+#ifdef USE_NCURSES
     if (has_colors()) {
         has_color_support = true;
         init_colormaps();
     }
+#endif
 
     double *display_buffer = NULL;
     int buffer_size = 0;
@@ -249,11 +260,13 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
         int ch = get_singlechar_nonblock();
         switch(ch) {
             case 'q': loop = 0; break;
+#ifdef USE_NCURSES
             case KEY_RESIZE:
                 getmaxyx(stdscr, wrow, wcol);
                 clear();
                 refresh();
                 break;
+#endif
             case 'c':
                 current_options.colormap = (current_options.colormap + 1) % COLORMAP_NB;
                 break;
@@ -299,6 +312,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 view_center_x = 0.5;
                 view_center_y = 0.5;
                 break;
+#ifdef USE_NCURSES
             // Pan keys
             case KEY_LEFT:
                 view_center_x -= 0.1 / view_zoom;
@@ -316,12 +330,15 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 view_center_y += 0.1 / view_zoom;
                 if (view_center_y > 1.0) view_center_y = 1.0;
                 break;
+#endif
         }
 
         if (loop == 0) break;
 
         // Display
+#ifdef USE_NCURSES
         erase();
+#endif
         
         uint32_t xsize = img.md[0].size[0];
         uint32_t ysize = img.md[0].size[1];
@@ -434,9 +451,12 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 // Draw Pixel
                 if (current_options.colormap == COLORMAP_GREYSCALE || !has_color_support) {
                     int char_idx = (int)(norm_val * (charset_len - 1));
+#ifdef USE_NCURSES
                     mvaddch(i, j, charset[char_idx]);
+#endif
                 } else {
                     int pair = 0;
+#ifdef USE_NCURSES
                     if (has_256_color) {
                         int base = BASE_256_HEAT;
                         if (current_options.colormap == COLORMAP_COLD) base = BASE_256_COLD;
@@ -454,6 +474,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                     attron(COLOR_PAIR(pair));
                     mvaddch(i, j, ' ');
                     attroff(COLOR_PAIR(pair));
+#endif
                 }
             }
         }
@@ -465,6 +486,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 double norm_val = 1.0 - (double)i / (disp_rows - 1);
                 
                 int pair = 0;
+#ifdef USE_NCURSES
                 if (has_256_color) {
                     int base = BASE_256_HEAT;
                     if (current_options.colormap == COLORMAP_COLD) base = BASE_256_COLD;
@@ -489,6 +511,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 if (i == 0) mvprintw(i, bar_col_start+3, "%.2g", max_val);
                 if (i == disp_rows/2) mvprintw(i, bar_col_start+3, "%.2g", (min_val+max_val)/2);
                 if (i == disp_rows-1) mvprintw(i, bar_col_start+3, "%.2g", min_val);
+#endif
             }
         }
 
@@ -518,11 +541,13 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
             }
         }
 
+#ifdef USE_NCURSES
         mvprintw(info_row, 0, "Image: %s [%d x %d] Type: %d", img.md[0].name, xsize, ysize, img.md[0].datatype);
         mvprintw(info_row + 1, 0, "Val: [%.4g : %.4g] Zoom: %.2fx", min_val, max_val, view_zoom);
         mvprintw(info_row + 2, 0, "[C]map: %s  [S]cale: %s  [R]ange: %s  (l:Lock m:Man q:Quit)", cmap_str, scale_str, range_str);
 
         refresh();
+#endif
         usleep(50000);
     }
 

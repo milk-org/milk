@@ -12,7 +12,14 @@
 
 #include "standalone_dependencies.h"
 #include "streamCTRL.h"
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#else
+#define printw(...) printf(__VA_ARGS__)
+#define attron(a)
+#define attroff(a)
+#define A_BOLD 0
+#endif
 #include <string.h>
 #include <time.h>
 

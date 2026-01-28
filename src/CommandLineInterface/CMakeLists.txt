@@ -9,11 +9,17 @@ option(python_module "Compile Python Wrappers" OFF)
 project(CLIcore C)
 
 find_package(PkgConfig REQUIRED)
-find_package(GSL QUIET REQUIRED)
+if(USE_GSL)
+    find_package(GSL QUIET REQUIRED)
+endif()
 pkg_check_modules(FFTW REQUIRED fftw3)
 pkg_check_modules(FFTWF REQUIRED fftw3f)
-pkg_check_modules(NCURSES REQUIRED ncurses)
-pkg_check_modules(READLINE REQUIRED readline)
+if(USE_NCURSES)
+    pkg_check_modules(NCURSES REQUIRED ncurses)
+endif()
+if(USE_READLINE)
+    pkg_check_modules(READLINE REQUIRED readline)
+endif()
 find_package(OpenMP)
 
 pkg_check_modules(HWLOC hwloc)
@@ -79,7 +85,7 @@ endif()
 
 target_link_libraries(CLIcore
                       PUBLIC m
-                              readline
+                              $<$<BOOL:${USE_READLINE}>:readline>
                               ${CFITSIO_LIBRARIES}
                               dl
                               rt
@@ -87,8 +93,10 @@ target_link_libraries(CLIcore
                               ${FFTW_LIBRARIES}
                               ${FFTWF_LIBRARIES}
                               ${CMAKE_THREAD_LIBS_INIT}
-                              ${NCURSES_LIBRARIES}
-                              milkTUI
+                              $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>
+                              $<$<BOOL:${USE_NCURSES}>:milkTUI>
+                              $<$<BOOL:${USE_NCURSES}>:milkprocessinfoTUI>
+                              $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
                               milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps)
 
 if(${HWLOC_FOUND})
@@ -101,15 +109,15 @@ target_include_directories(CLIcore
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
                                   ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
-                                  ${HWLOC_INCLUDE_DIR} ${NCURSES_INCLUDE_DIR})
+                                  ${HWLOC_INCLUDE_DIR} $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
 target_compile_options(CLIcore PUBLIC)
 
 target_link_directories(CLIcore
-                        PUBLIC ${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
+                        PUBLIC $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}> ${HWLOC_LIBRARY_DIRS})
 
 target_link_libraries(CLIcore
                       PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
-                             ${NCURSES_LIBRARIES} )
+                             $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}> )
 
 if(${python_module})
   add_subdirectory(python_module)
@@ -126,7 +134,7 @@ install(FILES CLIcore.h
               cmdsettings.h
               milkDebugTools.h
               standalone_dependencies.h
-              ../libmilkTUI/timeutils.h
+              ../libmilkcore/timeutils.h
               DESTINATION include/${SRCNAME})
 
 install(FILES CLIcore/CLIcore_UI.h

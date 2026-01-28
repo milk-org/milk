@@ -10,6 +10,10 @@
 typedef int errno_t;
 #endif
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 /** @brief print to screen, or not
  *
  * mode=0 : printf (stdout)
@@ -88,6 +92,7 @@ typedef int errno_t;
 
 
 
+
 typedef struct
 {
     int  index;
@@ -133,22 +138,31 @@ errno_t TUI_inittermios(short unsigned int *wrow, short unsigned int *wcol);
 
 void TUI_clearscreen(short unsigned int *wrow, short unsigned int *wcol);
 
+#ifdef USE_NCURSES
 void TUI_handle_winch(int sig);
 
 errno_t TUI_initncurses(short unsigned int *wrowptr, short unsigned int *wcolptr);
+#endif
 
 errno_t TUI_init_terminal(short unsigned int *wrowptr,
                           short unsigned int *wcolptr);
-errno_t TUI_get_terminal_size(short unsigned int *wrowptr,
-                              short unsigned int *wcolptr);
 
 errno_t TUI_exit();
 
 void TUI_atexit();
 
+#ifdef USE_NCURSES
 errno_t TUI_ncurses_refresh();
 
 errno_t TUI_ncurses_erase();
+
+errno_t TUI_get_terminal_size(short unsigned int *wrowptr,
+                              short unsigned int *wcolptr);
+#else
+static inline errno_t TUI_ncurses_refresh() { return 0; }
+static inline errno_t TUI_ncurses_erase() { return 0; }
+static inline errno_t TUI_get_terminal_size(short unsigned int *wrowptr, short unsigned int *wcolptr) { (void)wrowptr; (void)wcolptr; return 0; }
+#endif
 
 errno_t TUI_stdio_clear();
 
@@ -160,62 +174,104 @@ int get_singlechar_block();
 
 // useful macros
 
-
+#ifndef TUITOOLS_C
+#ifdef USE_NCURSES
 #define INSERT_TUI_SETUP                                                       \
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);                              \
-    if (getenv("MILK_TUIPRINT_STDIO"))                                         \
+    if(getenv("MILK_TUIPRINT_STDIO"))                                          \
     {                                                                          \
         TUI_set_screenprintmode(SCREENPRINT_STDIO);                            \
         printf("\e[1;1H\e[2J");                                                \
     }                                                                          \
-    if (getenv("MILK_TUIPRINT_NONE"))                                          \
+                                                                           \
+    if(getenv("MILK_TUIPRINT_NONE"))                                           \
     {                                                                          \
         TUI_set_screenprintmode(SCREENPRINT_NONE);                             \
     }                                                                          \
+                                                                           \
     TUI_init_terminal(&wrow, &wcol);                                           \
-    if (TUI_get_screenprintmode() == SCREENPRINT_NCURSES)                      \
+    if(TUI_get_screenprintmode() == SCREENPRINT_NCURSES)                       \
     {                                                                          \
         keypad(stdscr, TRUE);                                                  \
         nodelay(stdscr, TRUE);                                                 \
         curs_set(0);                                                           \
     }                                                                          \
+                                                                           \
     int       TUIpause = 0;                                                    \
     TUISCREEN TUIscreenarray[10];
 
+#define INSTERT_TUI_KEYCONTROLS                                                \
+    int TUIinputkch  = -1;                                                     \
+    {                                                                          \
+        int TUIinputkch0 = getch();                                            \
+        while(TUIinputkch0 != -1)                                              \
+        {                                                                      \
+            switch(TUIinputkch0)                                               \
+            {                                                                  \
+                case 'x':                                                      \
+                    processinfo->CTRLval = 3;                                  \
+                    break;                                                     \
+                case 'p':                                                      \
+                    if(TUIpause == 1)                                          \
+                    {                                                          \
+                        TUIpause = 0;                                          \
+                    }                                                          \
+                    else                                                       \
+                    {                                                          \
+                        TUIpause = 1;                                          \
+                    }                                                          \
+                    break;                                                     \
+                default:                                                       \
+                    TUIinputkch = TUIinputkch0;                                \
+                    break;                                                     \
+            }                                                                  \
+            TUIinputkch0 = getch();                                            \
+        }                                                                      \
+        for(int scrindex = 0; scrindex < NBTUIscreen; scrindex++)              \
+        {                                                                      \
+            if(TUIinputkch == TUIscreenarray[scrindex].keych)                  \
+            {                                                                  \
+                TUIscreen = TUIscreenarray[scrindex].index;                    \
+            }                                                                  \
+        }                                                                      \
+    }
+#else
+#define INSERT_TUI_SETUP                                                       \
+    TUI_set_screenprintmode(SCREENPRINT_STDIO);                                \
+    TUI_init_terminal(&wrow, &wcol);                                           \
+    int       TUIpause = 0;                                                    \
+    TUISCREEN TUIscreenarray[10];
 
 #define INSTERT_TUI_KEYCONTROLS                                                \
     int TUIinputkch  = -1;                                                     \
-    int TUIinputkch0 = getch();                                                \
-    while (TUIinputkch0 != -1)                                                 \
     {                                                                          \
-        switch (TUIinputkch0)                                                  \
+        int TUIinputkch0 = get_singlechar_nonblock();                          \
+        while(TUIinputkch0 != -1)                                              \
         {                                                                      \
-        case 'x':                                                              \
-            processinfo->CTRLval = 3;                                          \
-            break;                                                             \
-        case 'p':                                                              \
-            if (TUIpause == 1)                                                 \
+            switch(TUIinputkch0)                                               \
             {                                                                  \
-                TUIpause = 0;                                                  \
+                case 'x':                                                      \
+                    processinfo->CTRLval = 3;                                  \
+                    break;                                                     \
+                case 'p':                                                      \
+                    TUIpause = !TUIpause;                                          \
+                    break;                                                     \
+                default:                                                       \
+                    TUIinputkch = TUIinputkch0;                                \
+                    break;                                                     \
             }                                                                  \
-            else                                                               \
-            {                                                                  \
-                TUIpause = 1;                                                  \
-            }                                                                  \
-            break;                                                             \
-        default:                                                               \
-            TUIinputkch = TUIinputkch0;                                        \
-            break;                                                             \
+            TUIinputkch0 = get_singlechar_nonblock();                          \
         }                                                                      \
-        TUIinputkch0 = getch();                                                \
-    }                                                                          \
-    for (int scrindex = 0; scrindex < NBTUIscreen; scrindex++)                 \
-    {                                                                          \
-        if (TUIinputkch == TUIscreenarray[scrindex].keych)                     \
+        for(int scrindex = 0; scrindex < NBTUIscreen; scrindex++)              \
         {                                                                      \
-            TUIscreen = TUIscreenarray[scrindex].index;                        \
+            if(TUIinputkch == TUIscreenarray[scrindex].keych)                  \
+            {                                                                  \
+                TUIscreen = TUIscreenarray[scrindex].index;                    \
+            }                                                                  \
         }                                                                      \
     }
+#endif
+#endif
 
 
 #define INSERT_TUI_SCREEN_MENU                                                 \

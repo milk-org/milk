@@ -5,12 +5,20 @@
 
 #include <limits.h> // CHAR_BIT
 
+#include <stdio.h>
+
+#include "milkDebugTools.h"
 #include "fps.h"
-#include "fps_internal.h"
-
-#include "fps_GetTypeString.h"
-
+#ifdef USE_NCURSES
 #include "TUItools.h"
+#else
+#define AECBOLDHIGREEN ""
+#define AECNORMAL      ""
+#define TUI_printfw(...) printf(__VA_ARGS__)
+#endif
+
+#include "fps_PrintParameterInfo.h"
+
 
 errno_t
 functionparameter_PrintParameterInfo(

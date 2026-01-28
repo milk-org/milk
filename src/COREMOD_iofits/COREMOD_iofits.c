@@ -1,11 +1,4 @@
-/**
- * @file    COREMOD_iofits.c
- * @brief   I/O for FITS files
- *
- * Uses CFITSIO library
- */
-
-#define MODULE_SHORTNAME_DEFAULT ""
+#define MODULE_SHORTNAME_DEFAULT "iofits"
 #define MODULE_DESCRIPTION       "Read/Write FITS files"
 
 #include "COREMOD_iofits_common.h"
@@ -18,6 +11,9 @@
 #include "savefits.h"
 
 COREMOD_IOFITS_DATA COREMOD_iofits_data;
+
+// External function from savefits.c
+extern errno_t save_fl_fits(const char *inputimname, const char *outputFITSname);
 
 INIT_MODULE_LIB(COREMOD_iofits)
 
@@ -34,4 +30,10 @@ static errno_t init_module_CLI()
     // add atexit functions here
 
     return RETURN_SUCCESS;
+}
+
+// Dummy function to ensure symbols are exported
+void COREMOD_iofits_export_dummy() {
+    saveFITS_opt_trunc(NULL, 0, NULL, 0, NULL, NULL, 0, NULL);
+    save_fl_fits(NULL, NULL);
 }

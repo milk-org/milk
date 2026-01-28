@@ -17,7 +17,9 @@ typedef const char *__restrict CONST_WORD;
 
 #include "CLIcore.h"
 
+#ifdef USE_NCURSES
 #include "TUItools.h"
+#endif
 #include "CommandLineInterface/IMGID.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 

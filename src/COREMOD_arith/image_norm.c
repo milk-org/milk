@@ -1,227 +1,138 @@
-#include "ImageStreamIO/ImageStruct.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <math.h>
-
 #include "CLIcore.h"
 #include "image_norm.h"
-#include "COREMOD_memory/COREMOD_memory.h"
+#include "fps.h"
+#include "processinfo.h"
+#include "ImageStreamIO.h"
 
-// input image names
-static char *inimname;
+char     *norm_inimname  = NULL;
+char     *norm_outimname = NULL;
+uint32_t *norm_sliceaxis = NULL;
+static uint64_t processinfo_change_cnt_local = 0;
 
-static char *outimname;
-
-static uint32_t *sliceaxis;
-static long      fpi_sliceaxis = -1;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in0name",
-        "input image 0",
-        "im0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outname",
-        "output image",
-        "im0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".axis",
-        "norm axis",
-        "0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &sliceaxis,
-        &fpi_sliceaxis
-    },
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "normslice",
-    "image norm by slice",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("Image norm for each slice of array\n");
-
-    return RETURN_SUCCESS;
-}
-
-errno_t image_slicenorm_IMGID(
-    IMGID *inimg,
-    IMGID *outimg,
-    uint8_t sliceaxis
-)
-{
-    DEBUG_TRACE_FSTART();
-
+errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
     resolveIMGID(inimg, ERRMODE_ABORT);
-
     resolveIMGID(outimg, ERRMODE_NULL);
-    if( outimg->ID == -1)
-    {
-        copyIMGID(inimg, outimg);
-    }
-
-    for ( uint8_t axis = 0; axis < inimg->md->naxis; axis++ )
-    {
-        if ( axis != sliceaxis )
-        {
-            outimg->size[axis] = 1;
-        }
-    }
+    if(outimg->ID == -1) copyIMGID(inimg, outimg);
+    for (uint8_t axis = 0; axis < inimg->md->naxis; axis++)
+        if (axis != sliceaxis) outimg->size[axis] = 1;
     outimg->datatype = _DATATYPE_FLOAT;
-
     createimagefromIMGID(outimg);
-
-    uint32_t sizescan[3];
-    sizescan[0] = inimg->md->size[0];
-    sizescan[1] = inimg->md->size[1];
-    sizescan[2] = inimg->md->size[2];
-    if( inimg->md->naxis < 3 )
-    {
-        sizescan[2] = 1;
-    }
-    if( inimg->md->naxis < 2 )
-    {
-        sizescan[1] = 1;
-    }
-
-    double * __restrict normarray = (double*) malloc(sizeof(double) * sizescan[sliceaxis]);
-    for( uint32_t ii=0; ii<inimg->md->size[sliceaxis]; ii++)
-    {
-        normarray[ii] = 0.0;
-    }
-
-    uint32_t pixcoord[3];
-
-    for( uint32_t ii = 0; ii < sizescan[0]; ii++)
-    {
-        pixcoord[0] = ii;
-        for( uint32_t jj = 0; jj < sizescan[1]; jj++)
-        {
-            pixcoord[1] = jj;
-            for( uint32_t kk = 0; kk < sizescan[2]; kk++)
-            {
-                pixcoord[2] = kk;
-
-                uint64_t pixi = kk * sizescan[1] * sizescan[0];
-                pixi += jj * sizescan[0];
-                pixi += ii;
-
-                double val = 0.0;
-                switch ( inimg->datatype )
-                {
-                case _DATATYPE_UINT8 :
-                    val = inimg->im->array.UI8[pixi] * inimg->im->array.UI8[pixi];
-                    break;
-                case _DATATYPE_INT8 :
-                    val = inimg->im->array.SI8[pixi] * inimg->im->array.SI8[pixi];
-                    break;
-                case _DATATYPE_UINT16 :
-                    val = inimg->im->array.UI16[pixi] * inimg->im->array.UI16[pixi];
-                    break;
-                case _DATATYPE_INT16 :
-                    val = inimg->im->array.SI16[pixi] * inimg->im->array.SI16[pixi];
-                    break;
-                case _DATATYPE_UINT32 :
-                    val = inimg->im->array.UI32[pixi] * inimg->im->array.UI32[pixi];
-                    break;
-                case _DATATYPE_INT32 :
-                    val = inimg->im->array.SI32[pixi] * inimg->im->array.SI32[pixi];
-                    break;
-                case _DATATYPE_UINT64 :
-                    val = inimg->im->array.UI64[pixi] * inimg->im->array.UI64[pixi];
-                    break;
-                case _DATATYPE_INT64 :
-                    val = inimg->im->array.SI64[pixi] * inimg->im->array.SI64[pixi];
-                    break;
-                case _DATATYPE_FLOAT :
-                    val = inimg->im->array.F[pixi] * inimg->im->array.F[pixi];
-                    break;
-                case _DATATYPE_DOUBLE :
-                    val = inimg->im->array.D[pixi] * inimg->im->array.D[pixi];
-                    break;
+    uint32_t sizes[3] = {inimg->md->size[0], inimg->md->size[1], inimg->md->size[2]};
+    if(inimg->md->naxis < 3) sizes[2] = 1;
+    if(inimg->md->naxis < 2) sizes[1] = 1;
+    double *normarray = (double*)calloc(sizes[sliceaxis], sizeof(double));
+    for(uint32_t i=0; i<sizes[0]; i++)
+        for(uint32_t j=0; j<sizes[1]; j++)
+            for(uint32_t k=0; k<sizes[2]; k++) {
+                uint64_t idx = (uint64_t)k*sizes[1]*sizes[0] + (uint64_t)j*sizes[0] + i;
+                double v = 0;
+                switch(inimg->datatype) {
+                    case _DATATYPE_FLOAT: v = inimg->im->array.F[idx]; break;
+                    case _DATATYPE_DOUBLE: v = inimg->im->array.D[idx]; break;
                 }
-                normarray[pixcoord[sliceaxis]] += val;
+                uint32_t coords[3] = {i,j,k}; normarray[coords[sliceaxis]] += v*v;
             }
-        }
-    }
-
-    for( uint32_t ii=0; ii < sizescan[sliceaxis]; ii++ )
-    {
-        //printf("morm %3u : %lf\n", ii, normarray[ii]);
-        outimg->im->array.F[ii] = sqrt(normarray[ii]);
-    }
-
+    for(uint32_t i=0; i<sizes[sliceaxis]; i++) outimg->im->array.F[i] = sqrt(normarray[i]);
     free(normarray);
-
-    DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-errno_t image_slicenorm(
-    const char *inname,
-    const char *outname,
-    uint8_t sliceaxis
-)
-{
-    IMGID inimg = mkIMGID_from_name(inname);
-    IMGID outimg = mkIMGID_from_name(outname);
-
-    return image_slicenorm_IMGID(&inimg, &outimg, sliceaxis);
+errno_t image_slicenorm(const char *inname, const char *outname, uint8_t sliceaxis) {
+    IMGID idin = mkIMGID_from_name(inname), idout = mkIMGID_from_name(outname);
+    return image_slicenorm_IMGID(&idin, &idout, sliceaxis);
 }
 
-static errno_t compute_function()
-{
-    DEBUG_TRACE_FSTART();
-
-    IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
-
-    IMGID outimg = mkIMGID_from_name(outimname);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-    {
-
-        image_slicenorm_IMGID(
-            &inimg,
-            &outimg,
-            *sliceaxis
-        );
-
-        processinfo_update_output_stream(processinfo, outimg.im, NULL);
+void image_norm_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *inimg, IMAGE *outimg) {
+    if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
+        fps_to_processinfo(fps, processinfo); processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
     }
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    if (!norm_sliceaxis) return;
+    IMGID idin, idout; idin.im = inimg; idin.md = &inimg->md[0]; idout.im = outimg; idout.md = &outimg->md[0];
+    image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
+}
 
-    DEBUG_TRACE_FEXIT();
+
+/* ================================================================== */
+/* STANDALONE IMPLEMENTATION                                          */
+
+int FPSINIT_normslice(const char *fps_name, const char *keywords, const char *description) {
+    FUNCTION_PARAMETER_STRUCT fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
+    if (keywords) strncpy(fps.md->keywordarray, keywords, FPS_KEYWORDARRAY_STRMAXLEN-1);
+    if (description) strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN-1);
+    strncpy(fps.md->helptext, NORMSLICE_HELPTEXT, FPS_HELPTEXT_STRMAXLEN-1);
+    fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
+#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+    { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+    NORMSLICE_PARAMS(X_FPS_INIT)
+#undef X_FPS_INIT
+    fps_add_processinfo_entries(&fps);
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+int FPSCONF_normslice(const char *fps_name, int loop) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (loop) {
+        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
+        norm_inimname  = functionparameter_GetParamPtr_STRING(&fps, ".in0name");
+        norm_outimname = functionparameter_GetParamPtr_STRING(&fps, ".outname");
+        norm_sliceaxis = functionparameter_GetParamPtr_UINT32(&fps, ".axis");
+        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { function_parameter_FPCONFloopstep(&fps); usleep(10000); }
+    } else { fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT); function_parameter_FPCONFloopstep(&fps); }
+    function_parameter_FPCONFexit(&fps); return 0;
+}
+
+FPS_MAKE_STANDALONE_CONFSTOP(normslice)
+FPS_MAKE_STANDALONE_RUNSTOP(normslice)
+
+int FPSRUN_normslice(const char *fps_name) {
+    FUNCTION_PARAMETER_STRUCT fps;
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) return 1;
+    norm_inimname  = functionparameter_GetParamPtr_STRING(&fps, ".in0name");
+    norm_outimname = functionparameter_GetParamPtr_STRING(&fps, ".outname");
+    norm_sliceaxis = functionparameter_GetParamPtr_UINT32(&fps, ".axis");
+    IMAGE iin; if (ImageStreamIO_read_sharedmem_image_toIMAGE(norm_inimname, &iin) != 0) return 1;
+    IMGID idin, idout; idin.im = &iin; idin.md = &iin.md[0]; idout = makeIMGID_blank();
+    image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
+    PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "normslice Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
+    processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    fps_to_processinfo(&fps, pinfo); processinfo_loopstart(pinfo);
+    while(processinfo_loopstep(pinfo)) {
+        processinfo_waitoninputstream(pinfo); if (pinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
+        processinfo_exec_start(pinfo); image_norm_compute(&fps, pinfo, &iin, idout.im); processinfo_exec_end(pinfo);
+        processinfo_update_output_stream(pinfo, idout.im, &iin);
+    }
+    processinfo_cleanExit(pinfo); function_parameter_struct_disconnect(&fps); return 0;
+}
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE("normslice", normslice, NORMSLICE_HELPTEXT)
+#endif
+
+static CLICMDARGDEF farg[] = {
+#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+    { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+    NORMSLICE_PARAMS(X_CLI_DEF)
+#undef X_CLI_DEF
+};
+
+static CLICMDDATA CLIcmddata = { "normslice", "image norm by slice", CLICMD_FIELDS_DEFAULTS };
+
+static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
+
+static errno_t compute_function() {
+    IMGID idin = mkIMGID_from_name(norm_inimname); resolveIMGID(&idin, ERRMODE_ABORT);
+    IMGID idout = mkIMGID_from_name(norm_outimname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    image_norm_compute(data.fpsptr, processinfo, idin.im, idout.im);
+    processinfo_update_output_stream(processinfo, idout.im, idin.im);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
     return RETURN_SUCCESS;
 }
 
 INSERT_STD_FPSCLIfunctions
-
-// Register function in CLI
-errno_t
-CLIADDCMD_COREMOD_arith__image_normslice()
-{
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
-    INSERT_STD_CLIREGISTERFUNC
-
-    return RETURN_SUCCESS;
-}
+errno_t CLIADDCMD_COREMOD_arith__image_normslice() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }

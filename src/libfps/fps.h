@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "cmdsettings.h"
 #include "timeutils.h"
+#include "processinfo_signals.h"
 
 typedef long imageID;
 typedef long variableID;
@@ -422,10 +423,12 @@ typedef struct
 
 int function_parameter_printlist(FUNCTION_PARAMETER *funcparamarray, long NBparamMAX);
 
+#ifdef USE_NCURSES
 errno_t functionparameter_CTRLscreen(uint32_t mode,
                                      char    *fpsnamemask,
                                      char    *fpsCTRLfifoname,
                                      double  timeout_sec);
+#endif
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(const char *fpsname, uint32_t mode);
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(const char *fpsname, uint32_t mode, long NBparamMAX);
@@ -454,6 +457,11 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 #include "fps_scan.h"
 #include "fps_shmdirname.h"
 #include "fps_WriteParameterToDisk.h"
+
+#include "fps_CONFstop.h"
+#include "fps_RUNstop.h"
+#include "fps_processinfo.h"
+#include "fps_tmux.h"
 
 #include "fps_processinfo_entries.h"
 
@@ -566,7 +574,7 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
             treq.tv_sec  = 0;                                                  \
             treq.tv_nsec = 50000;                                              \
             nanosleep(&treq, &trem);                                           \
-            if (data.signal_INT == 1)                                          \
+            if (processinfo_signal_INT == 1)                                   \
             {                                                                  \
                 fps.localstatus &= ~FPS_LOCALSTATUS_CONFLOOP;                  \
             }                                                                  \
@@ -604,7 +612,7 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
             PRINT_ERROR("snprintf string truncation");                         \
             abort();                                                           \
         }                                                                      \
-        processinfo = processinfo_setup(data.FPS_name,                         \
+        processinfo = processinfo_setup(FPS_name,                              \
                                         pinfodescr,                            \
                                         "startup",                             \
                                         __FUNCTION__,                          \
@@ -625,15 +633,12 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
         extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];          \
         extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
         extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
-        fpsarray = data.fpsarray;                                              \
-        snprintf(data.FPS_name,STRINGMAXLEN_FPS_NAME,  "%s-%06ld", (shortname), (long) getpid());      \
-        data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
-        FPS_CMDCODE = data.FPS_CMDCODE;                                        \
-        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);           \
-        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+        snprintf(FPS_name,STRINGMAXLEN_FPS_NAME,  "%s-%06ld", (shortname), (long) getpid());      \
+        FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
+        strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
         strncpy(FPS_callfuncname, "autorun", FPS_CALLFUNCNAME_STRMAXLEN - 1);  \
         FPSCONF_##funcstring();                                                \
-        function_parameter_struct_connect(data.FPS_name,                       \
+        function_parameter_struct_connect(FPS_name,                            \
                                           &fps,                                \
                                           FPSCONNECT_SIMPLE);                  \
     } while (0)
@@ -649,16 +654,13 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
         extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];          \
         extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
         extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
-        fpsarray = data.fpsarray;                                              \
         FUNCTION_PARAMETER_STRUCT fps;                                         \
-        snprintf(data.FPS_name, STRINGMAXLEN_FPS_NAME, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
-        data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
-        FPS_CMDCODE = data.FPS_CMDCODE;                                        \
-        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);           \
-        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+        snprintf(FPS_name, STRINGMAXLEN_FPS_NAME, "%s-%06ld", CLIcmddata.key, (long) getpid());   \
+        FPS_CMDCODE = FPSCMDCODE_FPSINIT;                                 \
+        strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
         strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
         FPSCONFfunction();                                                     \
-        function_parameter_struct_connect(data.FPS_name,                       \
+        function_parameter_struct_connect(FPS_name,                            \
                                           &fps,                                \
                                           FPSCONNECT_SIMPLE);                  \
         CLIargs_to_FPSparams_setval(farg, CLIcmddata.nbarg, &fps);             \
@@ -680,16 +682,14 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
         extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];          \
         extern FUNCTION_PARAMETER_STRUCT *fpsarray;                            \
         function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);            \
-        if (data.FPS_CMDCODE != 0)                                             \
+        if (FPS_CMDCODE != 0)                                                  \
         {                                                                      \
             printf("DEBUG: FPS command detected (code %u)\n",                  \
-                   data.FPS_CMDCODE);                                          \
+                   FPS_CMDCODE);                                               \
             FPS_CONFfunc = FPSCONFfunction;                                    \
             FPS_RUNfunc  = FPSRUNfunction;                                     \
-            FPS_CMDCODE  = data.FPS_CMDCODE;                                   \
-            fpsarray     = data.fpsarray;                                      \
-            strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);        \
-            strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+            strncpy(FPS_name, FPS_name, STRINGMAXLEN_FPS_NAME - 1);             \
+            strncpy(FPS_callprogname, "milk", FPS_CALLPROGNAME_STRMAXLEN - 1); \
             strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
             function_parameter_execFPScmd();                                   \
             return RETURN_SUCCESS;                                             \

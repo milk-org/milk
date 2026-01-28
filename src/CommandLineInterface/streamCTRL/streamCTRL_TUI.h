@@ -138,7 +138,11 @@ extern "C"
 #endif
 
 
+#ifdef USE_NCURSES
 errno_t streamCTRL_CTRLscreen();
+#else
+static inline errno_t streamCTRL_CTRLscreen() { return 0; }
+#endif
 
 
 
