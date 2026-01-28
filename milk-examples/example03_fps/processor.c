@@ -44,6 +44,81 @@
 
 #include "ImageStreamIO.h"
 
+#ifdef MILK_MODULE
+#include "CLIcore.h"
+#endif
+
+// Global parameter pointers (shared between Standalone and CLI)
+static char *in_name_ptr = NULL;
+static char *out_name_ptr = NULL;
+static uint32_t *roi_size_ptr = NULL;
+static uint32_t *off_x_ptr = NULL;
+
+/**
+ * @brief Shared processing logic for one loop iteration.
+ */
+static void processor03_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *input_image, IMAGE *output_image) {
+    // RE-READ PARAMETERS DYNAMICALLY
+    if (fps) {
+        fps_to_processinfo(fps, processinfo);
+    }
+
+    if (!off_x_ptr || !roi_size_ptr) return;
+
+    uint32_t off_x = *off_x_ptr;
+    uint32_t roi_size = *roi_size_ptr;
+
+    uint32_t in_w = input_image->md[0].size[0];
+    float *in_data = (float*)input_image->array.raw;
+    float *out_data = (float*)output_image->array.raw;
+
+    for(uint32_t y=0; y<roi_size; y++) {
+        for(uint32_t x=0; x<roi_size; x++) {
+            if (x + off_x < in_w)
+                out_data[y*roi_size + x] = in_data[y*in_w + (x + off_x)];
+            else
+                out_data[y*roi_size + x] = 0;
+        }
+    }
+    printf(".");
+    fflush(stdout);
+}
+
+/**
+ * @brief Shared validation logic for configuration loop.
+ */
+static void processor03_validate() {
+    if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) return;
+
+    IMAGE input_image;
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) == 0) {
+        uint32_t width = input_image.md[0].size[0];
+        if (*off_x_ptr + *roi_size_ptr > width) {
+            // Clamp off_x first
+            if (*off_x_ptr > width) {
+                *off_x_ptr = 0;
+            }
+            // Then adjust if still too large
+            if (*off_x_ptr + *roi_size_ptr > width) {
+                if (*roi_size_ptr > width) {
+                    *roi_size_ptr = width;
+                    *off_x_ptr = 0;
+                } else {
+                    *off_x_ptr = width - *roi_size_ptr;
+                }
+            }
+        }
+        ImageStreamIO_closeIm(&input_image);
+    }
+}
+
+
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* STANDALONE IMPLEMENTATION                                                                       */
+/* =============================================================================================== */
+/* =============================================================================================== */
+
 /**
  * @brief Performs one-time setup of the Function Parameter Structure (FPS).
  * This creates the shared memory segment and initializes default values.
@@ -76,7 +151,6 @@ int FPSINIT_processor(const char *fps_name, const char *keywords, const char *de
     // ------------------------------------------------------------------------
     // REGISTER CUSTOM PARAMETERS
     // ------------------------------------------------------------------------
-    // These appear in the FPS tools (e.g., milk-fpsCTRL)
     char *in_name = "stream03";
     function_parameter_add_entry(&fps, ".in_name", "Input Stream Name", FPTYPE_STRING, FPFLAG_DEFAULT_INPUT, (void*)in_name, NULL);
 
@@ -156,24 +230,19 @@ void handle_tmux(const char *fps_name, const char *command, int argc, char *argv
     }
 }
 
-
-
 /**
- * @brief The Configuration process.
- * This process typically runs in the background and validates parameter changes.
- * @param loop If non-zero, run an infinite monitoring loop.
+ * @brief The Configuration process (Standalone).
  */
 int FPSCONF_processor(const char *fps_name, int loop) {
     FUNCTION_PARAMETER_STRUCT fps;
 
     if (loop) {
         printf("Starting configuration process loop for '%s'\n", fps_name);
-        // Connect as configuration owner and set the loop bit
         fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
 
-        char *in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
-        uint32_t *roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
-        uint32_t *off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
+        in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+        roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+        off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
 
         if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) {
             fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
@@ -181,38 +250,14 @@ int FPSCONF_processor(const char *fps_name, int loop) {
             return 1;
         }
 
-        // Monitoring loop for validation
         while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) {
             if (function_parameter_FPCONFloopstep(&fps)) {
-                // Logic to validate dependencies between parameters
-                // For example, ensuring off_x + roi_size < stream_width
-
-                IMAGE input_image;
-                if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) == 0) {
-                    uint32_t width = input_image.md[0].size[0];
-                    if (*off_x_ptr + *roi_size_ptr > width) {
-                        // Clamp off_x first
-                        if (*off_x_ptr > width) {
-                            *off_x_ptr = 0;
-                        }
-                        // Then adjust if still too large (meaning roi_size is big or off_x is pushing it)
-                        if (*off_x_ptr + *roi_size_ptr > width) {
-                            if (*roi_size_ptr > width) {
-                                *roi_size_ptr = width;
-                                *off_x_ptr = 0;
-                            } else {
-                                *off_x_ptr = width - *roi_size_ptr;
-                            }
-                        }
-                    }
-                    ImageStreamIO_closeIm(&input_image);
-                }
+                processor03_validate();
             }
             usleep(10000);
         }
     } else {
         printf("Running single configuration step for '%s'\n", fps_name);
-        // Connect without setting the loop bit
         fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
         function_parameter_FPCONFloopstep(&fps);
     }
@@ -221,50 +266,34 @@ int FPSCONF_processor(const char *fps_name, int loop) {
     return 0;
 }
 
-/**
- * @brief Stop the configuration process.
- */
 int FPSCONFSTOP_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Stopping configuration process for '%s'\n", fps_name);
-
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
     }
-
     functionparameter_CONFstop(&fps);
     function_parameter_struct_disconnect(&fps);
-
     return 0;
 }
 
-
-/**
- * @brief Stop the run process.
- */
 int FPSRUNSTOP_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Stopping run process for '%s'\n", fps_name);
-
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
     }
-
-    // 1. Signal through FPS
     functionparameter_RUNstop(&fps);
     function_parameter_struct_disconnect(&fps);
 
-    // 2. Signal through processinfo shared memory
     char procdname[STRINGMAXLEN_DIR_NAME];
     processinfo_procdirname(procdname);
-
     DIR *d = opendir(procdname);
     if (d) {
         struct dirent *dir;
         while ((dir = readdir(d)) != NULL) {
-            // Looking for proc.<fps_name>.<PID>.shm
             char prefix[256];
             snprintf(prefix, sizeof(prefix), "proc.%s.", fps_name);
             if (strncmp(dir->d_name, prefix, strlen(prefix)) == 0) {
@@ -274,7 +303,7 @@ int FPSRUNSTOP_processor(const char *fps_name) {
                 PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
                 if (pinfo != (PROCESSINFO *)MAP_FAILED) {
                     printf("Signaling process PID %d to exit...\n", (int)pinfo->PID);
-                    pinfo->CTRLval = 3; // Request exit
+                    pinfo->CTRLval = 3;
                     munmap(pinfo, sizeof(PROCESSINFO));
                     close(fd);
                 }
@@ -282,29 +311,24 @@ int FPSRUNSTOP_processor(const char *fps_name) {
         }
         closedir(d);
     }
-
     return 0;
 }
 
-
 /**
- * @brief The main Processing loop.
- * Reads data, processes it according to FPS parameters, and reports status.
+ * @brief The main Processing loop (Standalone).
  */
 int FPSRUN_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
 
-    // 1. CONNECT TO FPS
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", fps_name);
         return 1;
     }
 
-    // 2. RETRIEVE CURRENT PARAMETERS
-    char *in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
-    char *out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
-    uint32_t *roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
-    uint32_t *off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
+    in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+    out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
+    roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+    off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
 
     if (!in_name_ptr || !out_name_ptr || !roi_size_ptr || !off_x_ptr) {
         fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
@@ -312,7 +336,6 @@ int FPSRUN_processor(const char *fps_name) {
         return 1;
     }
 
-    // 3. INITIALIZE STREAMS
     IMAGE input_image;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(in_name_ptr, &input_image) != 0) {
         fprintf(stderr, "Error connecting to input %s\n", in_name_ptr);
@@ -325,24 +348,14 @@ int FPSRUN_processor(const char *fps_name) {
         return 1;
     }
 
-    // 4. SETUP PROCESS MONITORING
     PROCESSINFO *processinfo = processinfo_setup((char*)fps_name, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     if (!processinfo) return 1;
 
-    // Capture SIGINT and other signals
     processinfo_CatchSignals();
-
-    // Use current FPS settings to configure ProcessInfo triggers/priority
     processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
     fps_to_processinfo(&fps, processinfo);
-
     processinfo_loopstart(processinfo);
 
-    float *in_data = (float*)input_image.array.raw;
-    float *out_data = (float*)output_image.array.raw;
-    uint32_t in_w = input_image.md[0].size[0];
-
-    // 5. MAIN LOOP
     int loopOK = 1;
     while(loopOK) {
         loopOK = processinfo_loopstep(processinfo);
@@ -353,48 +366,25 @@ int FPSRUN_processor(const char *fps_name) {
 
         processinfo_exec_start(processinfo);
 
-        // RE-READ PARAMETERS DYNAMICALLY
-        // This allows real-time adjustment of processing logic (e.g., changing off_x via TUI)
-        fps_to_processinfo(&fps, processinfo);
-        uint32_t off_x = *off_x_ptr;
-        uint32_t roi_size = *roi_size_ptr;
-
-        for(uint32_t y=0; y<roi_size; y++) {
-            for(uint32_t x=0; x<roi_size; x++) {
-                if (x + off_x < in_w)
-                    out_data[y*roi_size + x] = in_data[y*in_w + (x + off_x)];
-                else
-                    out_data[y*roi_size + x] = 0;
-            }
-        }
-        printf(".");
-        fflush(stdout);
-
+        processor03_compute(&fps, processinfo, &input_image, &output_image);
 
         processinfo_exec_end(processinfo);
         processinfo_update_output_stream(processinfo, &output_image, &input_image);
     }
 
-    // Cleanup
     processinfo_cleanExit(processinfo);
     function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
-
-
-/**
- * @brief Main dispatcher for Example 03.
- */
+#ifndef MILK_MODULE
 int main(int argc, char *argv[]) {
-    // Basic argument check
     if (argc < 2) {
         printf("Usage: %s <fpsinit|confstart|confstep|confstop|runstart|runstop> [Options]\n", "milk-example-03-processor");
         printf("Run '%s -h' for detailed help.\n", "milk-example-03-processor");
         return 1;
     }
 
-    // Help display
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
         printf("\nUsage: %s <Command> [Options]\n\n", "milk-example-03-processor");
         printf("Description:\n");
@@ -424,14 +414,12 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // Default settings
     char fps_name[STRINGMAXLEN_FPS_NAME] = "processor03";
     int use_tmux = 0;
     char *command = NULL;
     char *keywords = NULL;
     char *description = NULL;
 
-    // Argument parsing
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-tmux") == 0) {
             use_tmux = 1;
@@ -451,7 +439,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Dispatching
     if (use_tmux) {
         handle_tmux(fps_name, command, argc, argv, keywords, description);
         return 0;
@@ -474,3 +461,105 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Invalid command: %s\n", command);
     return 1;
 }
+#endif
+
+
+/* =============================================================================================== */
+/* =============================================================================================== */
+/* MODULE IMPLEMENTATION (milk-CLI)                                                                */
+/* =============================================================================================== */
+/* =============================================================================================== */
+
+#ifdef MILK_MODULE
+
+#define MODULE_SHORTNAME_DEFAULT "proc03"
+#define MODULE_DESCRIPTION "Example processor 03 module"
+
+static CLICMDARGDEF farg[] =
+{
+    {
+        CLIARG_STR, ".in_name", "input stream name", "stream03",
+        CLIARG_VISIBLE_DEFAULT, (void **) &in_name_ptr, NULL
+    },
+    {
+        CLIARG_STR, ".out_name", "output stream name", "stream03_proc",
+        CLIARG_VISIBLE_DEFAULT, (void **) &out_name_ptr, NULL
+    },
+    {
+        CLIARG_UINT32, ".roi_size", "ROI size", "50",
+        CLIARG_VISIBLE_DEFAULT, (void **) &roi_size_ptr, NULL
+    },
+    {
+        CLIARG_UINT32, ".off_x", "offset X", "0",
+        CLIARG_VISIBLE_DEFAULT, (void **) &off_x_ptr, NULL
+    }
+};
+
+static errno_t customCONFcheck() {
+    // farg linkage is handled by STD_FARG_LINKfunction in FPSCONFfunction macro
+    // but pointers must be valid.
+    // In CLI mode, STD_FARG_LINKfunction links the global variables (in_name_ptr etc)
+    // to the FPS entries.
+    // So we can directly call validation.
+    processor03_validate();
+    return RETURN_SUCCESS;
+}
+
+static CLICMDDATA CLIcmddata =
+{
+    "processor03",
+    "processor03 example with FPS",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+// Help function
+static errno_t help_function() {
+    return RETURN_SUCCESS;
+}
+
+// Compute function called by FPSRUNfunction
+static errno_t compute_function() {
+    DEBUG_TRACE_FSTART();
+
+    // Resolve input image
+    IMGID inimg = mkIMGID_from_name(in_name_ptr);
+    resolveIMGID(&inimg, ERRMODE_ABORT);
+
+    // Create output image
+    // Note: standalone uses createIm_gpu with explicit params.
+    // Here we need to replicate that.
+    IMGID outimg = mkIMGID_from_name(out_name_ptr);
+    outimg.naxis = 2;
+    outimg.size[0] = *roi_size_ptr;
+    outimg.size[1] = *roi_size_ptr;
+    outimg.datatype = _DATATYPE_FLOAT;
+    imcreateIMGID(&outimg);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    processor03_compute(data.fpsptr, processinfo, inimg.im, outimg.im);
+
+    processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+INSERT_STD_FPSCLIfunctions
+
+errno_t CLIADDCMD_processor03() {
+    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+
+INIT_MODULE_LIB(processor03)
+
+static errno_t init_module_CLI() {
+    CLIADDCMD_processor03();
+    return RETURN_SUCCESS;
+}
+
+#endif
