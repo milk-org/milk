@@ -55,7 +55,7 @@
 // GLOBAL PARAMETERS (SHARED)
 // ===============================================================================================
 char *in_name_ptr = NULL;
-char *out_name_ptr = NULL;
+char *proc_out_name_ptr = NULL;
 uint32_t *roi_size_ptr = NULL;
 uint32_t *off_x_ptr = NULL;
 
@@ -228,11 +228,11 @@ int FPSRUN_processor(const char *fps_name) {
     }
 
     in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
-    out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
+    proc_out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
     roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
     off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
 
-    if (!in_name_ptr || !out_name_ptr || !roi_size_ptr || !off_x_ptr) {
+    if (!in_name_ptr || !proc_out_name_ptr || !roi_size_ptr || !off_x_ptr) {
         fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
         function_parameter_struct_disconnect(&fps);
         return 1;
@@ -246,7 +246,7 @@ int FPSRUN_processor(const char *fps_name) {
 
     IMAGE output_image;
     uint32_t dims[2] = {*roi_size_ptr, *roi_size_ptr};
-    if (ImageStreamIO_createIm_gpu(&output_image, out_name_ptr, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
+    if (ImageStreamIO_createIm_gpu(&output_image, proc_out_name_ptr, 2, dims, _DATATYPE_FLOAT, -1, 1, 10, 0, 0, 0) != 0) {
         return 1;
     }
 
