@@ -27,7 +27,9 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin, int truncate, const char *outputF
     char fnametmp[STRINGMAXLEN_FILENAME], fnametmpext[STRINGMAXLEN_FILENAME];
     WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp", outputFITSname, (int) getpid(), (long) self_id);
     WRITE_FILENAME(fnametmpext, "%s%s", fnametmp, FITSIOext);
+#ifndef FPS_STANDALONE
     resolveIMGID(imgin, ERRMODE_WARN);
+#endif
     if(imgin->ID == -1) return RETURN_SUCCESS;
     int bitpix = (outputbitpix != 0) ? outputbitpix : ImageStreamIO_FITSIObitpix(imgin->md->datatype);
     if (bitpix == -1) bitpix = FLOAT_IMG;
@@ -48,6 +50,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin, int truncate, const char *outputF
     return RETURN_SUCCESS;
 }
 
+#ifndef FPS_STANDALONE
 errno_t saveFITS_opt_trunc(const char *inputimname, int truncate, const char *outputFITSname, int outputbitpix, const char *importheaderfile, IMAGE_KEYWORD *kwarray, int kwarraysize, const char *FITSIOext) {
     IMGID id = mkIMGID_from_name(inputimname);
     return saveFITS_opt_trunc_IMGID(&id, truncate, outputFITSname, outputbitpix, importheaderfile, kwarray, kwarraysize, FITSIOext);
@@ -75,6 +78,7 @@ errno_t saveall_fits(const char *savedirname) {
 errno_t save_fits(const char *inputimname, const char *outputFITSname) {
     return saveFITS(inputimname, outputFITSname, 0, NULL, NULL, 0);
 }
+#endif
 
 void savefits_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *imgin) {
     if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
@@ -138,6 +142,7 @@ int FPSRUN_savefits(const char *fps_name) {
 FPS_MAIN_STANDALONE("savefits", savefits, SAVEFITS_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     SAVEFITS_PARAMS(X_CLI_DEF)
@@ -158,3 +163,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif

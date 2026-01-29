@@ -102,6 +102,7 @@ int FPSRUN_crop2D(const char *fps_name) {
 FPS_MAIN_STANDALONE("crop2D", crop2D, CROP2D_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     CROP2D_PARAMS(X_CLI_DEF)
@@ -124,3 +125,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMODE_arith__crop2D() { CLIcmddata.FPS_customCONFcheck = image_crop2D_validate; INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif
