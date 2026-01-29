@@ -15,9 +15,11 @@ uint32_t *immerge_mergeaxis = NULL;
 static uint64_t processinfo_change_cnt_local = 0;
 
 errno_t image_marge(IMGID inimg0, IMGID inimg1, IMGID *outimg, uint8_t mergeaxis) {
+#ifndef FPS_STANDALONE
     resolveIMGID(&inimg0, ERRMODE_ABORT);
     resolveIMGID(&inimg1, ERRMODE_ABORT);
     resolveIMGID(outimg, ERRMODE_NULL);
+#endif
     if(outimg->ID == -1) copyIMGID(&inimg0, outimg);
     if (mergeaxis < 3) {
         uint32_t s0 = (inimg0.md->size[mergeaxis] == 0) ? 1 : inimg0.md->size[mergeaxis];
@@ -25,7 +27,14 @@ errno_t image_marge(IMGID inimg0, IMGID inimg1, IMGID *outimg, uint8_t mergeaxis
         outimg->size[mergeaxis] = s0 + s1;
     } else return RETURN_FAILURE;
     outimg->naxis = (outimg->size[2] > 1) ? 3 : ((outimg->size[1] > 1) ? 2 : 1);
+#ifndef FPS_STANDALONE
     createimagefromIMGID(outimg);
+#else
+    outimg->im = (IMAGE*) malloc(sizeof(IMAGE));
+    strncpy(outimg->name, immerge_outimname, 79);
+    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->naxis, outimg->size, outimg->datatype, -1, 1, 10, 0, 0, 0);
+    outimg->md = outimg->im->md;
+#endif
     size_t ts = ImageStreamIO_typesize(outimg->datatype);
     if (mergeaxis == outimg->naxis-1) {
         size_t sz0 = ts * inimg0.md->nelement;
@@ -100,7 +109,12 @@ int FPSRUN_immerge(const char *fps_name) {
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(immerge_inimname0, &i0) != 0) return 1;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(immerge_inimname1, &i1) != 0) return 1;
     IMGID id0, id1, idout; id0.im = &i0; id0.md = &i0.md[0]; id1.im = &i1; id1.md = &i1.md[0];
-    idout = makeIMGID_blank(); image_marge(id0, id1, &idout, *immerge_mergeaxis);
+#ifndef FPS_STANDALONE
+    idout = makeIMGID_blank(); 
+#else
+    idout.ID = -1; idout.im = NULL; idout.md = NULL;
+#endif
+    image_marge(id0, id1, &idout, *immerge_mergeaxis);
     PROCESSINFO *processinfo = processinfo_setup((char*)fps_name, "immerge Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     processinfo_waitoninputstream_init(processinfo, &i0, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
     fps_to_processinfo(&fps, processinfo); processinfo_loopstart(processinfo);
@@ -116,6 +130,7 @@ int FPSRUN_immerge(const char *fps_name) {
 FPS_MAIN_STANDALONE("immerge", immerge, IMMERGE_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
     { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
@@ -140,3 +155,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_arith__image_merge() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif

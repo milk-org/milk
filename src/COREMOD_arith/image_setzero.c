@@ -11,6 +11,7 @@
 char *imsetzero_inimname = NULL;
 static uint64_t processinfo_change_cnt_local = 0;
 
+#ifndef FPS_STANDALONE
 errno_t image_setzero_IMGID(IMGID *inimg) {
     resolveIMGID(inimg, ERRMODE_ABORT);
     memset(inimg->im->array.raw, 0, ImageStreamIO_typesize(inimg->md->datatype) * inimg->md->nelement);
@@ -20,6 +21,7 @@ errno_t image_setzero_IMGID(IMGID *inimg) {
 errno_t image_setzero(IMGID inimg) {
     return image_setzero_IMGID(&inimg);
 }
+#endif
 
 void image_setzero_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *inimg) {
     if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
@@ -77,6 +79,7 @@ int FPSRUN_imzero(const char *fps_name) {
 FPS_MAIN_STANDALONE("imzero", imzero, IMSETZERO_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     IMSETZERO_PARAMS(X_CLI_DEF)
@@ -98,3 +101,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_arith__imsetzero() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif
