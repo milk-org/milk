@@ -15,13 +15,22 @@ uint32_t *norm_sliceaxis = NULL;
 static uint64_t processinfo_change_cnt_local = 0;
 
 errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
+#ifndef FPS_STANDALONE
     resolveIMGID(inimg, ERRMODE_ABORT);
     resolveIMGID(outimg, ERRMODE_NULL);
+#endif
     if(outimg->ID == -1) copyIMGID(inimg, outimg);
     for (uint8_t axis = 0; axis < inimg->md->naxis; axis++)
         if (axis != sliceaxis) outimg->size[axis] = 1;
     outimg->datatype = _DATATYPE_FLOAT;
+#ifndef FPS_STANDALONE
     createimagefromIMGID(outimg);
+#else
+    outimg->im = (IMAGE*) malloc(sizeof(IMAGE));
+    strncpy(outimg->name, norm_outimname, 79);
+    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->naxis, outimg->size, outimg->datatype, -1, 1, 10, 0, 0, 0);
+    outimg->md = outimg->im->md;
+#endif
     uint32_t sizes[3] = {inimg->md->size[0], inimg->md->size[1], inimg->md->size[2]};
     if(inimg->md->naxis < 3) sizes[2] = 1;
     if(inimg->md->naxis < 2) sizes[1] = 1;
@@ -42,10 +51,12 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
     return RETURN_SUCCESS;
 }
 
+#ifndef FPS_STANDALONE
 errno_t image_slicenorm(const char *inname, const char *outname, uint8_t sliceaxis) {
     IMGID idin = mkIMGID_from_name(inname), idout = mkIMGID_from_name(outname);
     return image_slicenorm_IMGID(&idin, &idout, sliceaxis);
 }
+#endif
 
 void image_norm_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *inimg, IMAGE *outimg) {
     if (fps && fps->md->processinfo_change_cnt != processinfo_change_cnt_local) {
@@ -113,6 +124,7 @@ int FPSRUN_normslice(const char *fps_name) {
 FPS_MAIN_STANDALONE("normslice", normslice, NORMSLICE_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
     { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
@@ -136,3 +148,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_arith__image_normslice() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif

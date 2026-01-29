@@ -90,6 +90,7 @@ int FPSRUN_setpix(const char *fps_name) {
 FPS_MAIN_STANDALONE("setpix", setpix, SETPIX_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     SETPIX_PARAMS(X_CLI_DEF)
@@ -111,3 +112,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_arith__imset_2Dpix() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif

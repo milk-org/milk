@@ -219,7 +219,7 @@ macro(add_milk_standalone FUNC_NAME SOURCE_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps ImageStreamIO CLIcore m)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkprocessinfo ImageStreamIO ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endmacro()
 
