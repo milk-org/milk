@@ -132,29 +132,8 @@ int FPSINIT_processor(
     const char *description)
 {
     FUNCTION_PARAMETER_STRUCT fps;
-    printf("Initializing FPS '%s'...\n", fps_name);
-
-    // Setup the shared memory segment
-    fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
-    strncpy(fps.md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1);
-    fps.md->sourceline = __LINE__;
-
-    if (keywords != NULL) {
-        strncpy(fps.md->keywordarray, keywords, FPS_KEYWORDARRAY_STRMAXLEN - 1);
-    }
-    if (description != NULL) {
-        strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN - 1);
-    }
-
-    // Set detailed help text for the TUI
-    strncpy(fps.md->helptext, PROCESSOR_HELPTEXT, FPS_HELPTEXT_STRMAXLEN - 1);
-
-    // Set default ProcessInfo loop settings
-    strncpy(fps.cmdset.triggerstreamname, "stream03", STRINGMAXLEN_IMAGE_NAME - 1);
-    fps.cmdset.procinfo_loopcntMax = -1;
-    fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
-    fps.cmdset.triggertimeout.tv_sec = 10;
-    fps.cmdset.triggertimeout.tv_nsec = 0;
+    FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, PROCESSOR_HELPTEXT);
+    FPS_INIT_PROCINFO_DEFAULTS(fps, "stream03", 10);
 
     // Use X-Macro to add all parameters to the FPS
 #define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
@@ -182,37 +161,23 @@ int FPSCONF_processor(
     const char *fps_name,
     int loop)
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    FPS_CONF_STD_BODY(fps_name, loop, 
+        {
+            // Map local pointers to FPS shared memory entries
+            in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+            roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+            off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
 
-    if (loop) {
-        printf("Starting configuration process loop for '%s'\n", fps_name);
-        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_CONFSTART);
-
-        // Map local pointers to FPS shared memory entries
-        in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
-        roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
-        off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
-
-        if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) {
-            fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
-            function_parameter_FPCONFexit(&fps);
-            return 1;
-        }
-
-        // Configuration loop
-        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) {
-            if (function_parameter_FPCONFloopstep(&fps)) {
-                processor03_validate();
+            if (!in_name_ptr || !roi_size_ptr || !off_x_ptr) {
+                fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
+                function_parameter_FPCONFexit(&fps);
+                return 1;
             }
-            usleep(10000);
+        },
+        {
+            processor03_validate();
         }
-    } else {
-        printf("Running single configuration step for '%s'\n", fps_name);
-        fps = function_parameter_FPCONFsetup(fps_name, FPSCMDCODE_FPSINIT);
-        function_parameter_FPCONFloopstep(&fps);
-    }
-
-    function_parameter_FPCONFexit(&fps);
+    );
     return 0;
 }
 
@@ -227,24 +192,19 @@ FPS_MAKE_STANDALONE_RUNSTOP(processor)
  */
 int FPSRUN_processor(const char *fps_name) {
     FUNCTION_PARAMETER_STRUCT fps;
+    FPS_RUN_STD_PREAMBLE(fps_name, fps, {
+        // Map local pointers
+        in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
+        proc_out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
+        roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
+        off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
 
-    // Connect to the FPS created by fpsinit
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_RUN) == -1) {
-        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", fps_name);
-        return 1;
-    }
-
-    // Map local pointers
-    in_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".in_name");
-    proc_out_name_ptr = functionparameter_GetParamPtr_STRING(&fps, ".out_name");
-    roi_size_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".roi_size");
-    off_x_ptr = functionparameter_GetParamPtr_UINT32(&fps, ".off_x");
-
-    if (!in_name_ptr || !proc_out_name_ptr || !roi_size_ptr || !off_x_ptr) {
-        fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
-        function_parameter_struct_disconnect(&fps);
-        return 1;
-    }
+        if (!in_name_ptr || !proc_out_name_ptr || !roi_size_ptr || !off_x_ptr) {
+            fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
+            function_parameter_struct_disconnect(&fps);
+            return 1;
+        }
+    });
 
     // Connect to source stream
     IMAGE input_image;
@@ -260,41 +220,14 @@ int FPSRUN_processor(const char *fps_name) {
         return 1;
     }
 
-    // Setup ProcessInfo for monitoring
-    PROCESSINFO *processinfo = processinfo_setup((char*)fps_name, "Ex03 Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
-    if (!processinfo) return 1;
+    PROCESSINFO *processinfo;
+    FPS_RUN_PROCESSINFO_SETUP(processinfo, fps_name, "Ex03 Run", "Looping", &input_image, fps);
 
-    processinfo_CatchSignals();
-    // Configure hardware-accelerated trigger (semaphore)
-    processinfo_waitoninputstream_init(processinfo, &input_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
-    
-    // Initial sync of settings
-    fps_to_processinfo(&fps, processinfo);
-    processinfo_loopstart(processinfo);
-
-    int loopOK = 1;
-    while(loopOK) {
-        // Heartbeat and control check
-        loopOK = processinfo_loopstep(processinfo);
-        if(!loopOK) break;
-
-        // Wait for next frame from source
-        processinfo_waitoninputstream(processinfo);
-        if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
-
-        // Record execution start time
-        processinfo_exec_start(processinfo);
-
+    FPS_RUN_PROCESSINFO_LOOP(processinfo, fps, &input_image, &output_image, {
         // Perform computation
         processor03_compute(&fps, processinfo, &input_image, &output_image);
+    });
 
-        // Record execution end time and update stream metadata (counter, semaphores)
-        processinfo_exec_end(processinfo);
-        processinfo_update_output_stream(processinfo, &output_image, &input_image);
-    }
-
-    processinfo_cleanExit(processinfo);
-    function_parameter_struct_disconnect(&fps);
     return 0;
 }
 

@@ -202,5 +202,5 @@ add_milk_standalone(stream_ave stream_ave.c)
 # Standalone executable
 add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
 target_include_directories(milk-fpsexec-cnt2push PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
-target_link_libraries(milk-fpsexec-cnt2push ImageStreamIO pthread rt)
+target_link_libraries(milk-fpsexec-cnt2push ImageStreamIO m)
 install(TARGETS milk-fpsexec-cnt2push DESTINATION bin)

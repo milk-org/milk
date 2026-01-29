@@ -834,6 +834,99 @@ int main(int argc, char *argv[]) { \
     return 1; \
 }
 
+/**
+ * @brief Standard initialization preamble for FPSINIT function
+ */
+#define FPS_INIT_STD_PREAMBLE(VARfps, VARfps_name, VARkeywords, VARdescription, VARhelptext) \
+    printf("Initializing FPS '%s'...\n", VARfps_name); \
+    (VARfps) = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT); \
+    strncpy((VARfps).md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1); \
+    (VARfps).md->sourceline = __LINE__; \
+    if ((VARkeywords) != NULL) { \
+        strncpy((VARfps).md->keywordarray, (VARkeywords), FPS_KEYWORDARRAY_STRMAXLEN - 1); \
+    } \
+    if ((VARdescription) != NULL) { \
+        strncpy((VARfps).md->description, (VARdescription), FPS_DESCR_STRMAXLEN - 1); \
+    } \
+    strncpy((VARfps).md->helptext, (VARhelptext), FPS_HELPTEXT_STRMAXLEN - 1);
+
+/**
+ * @brief Standard ProcessInfo default settings for FPSINIT
+ */
+#define FPS_INIT_PROCINFO_DEFAULTS(VARfps, VARtriggerstream, VARtimeout_sec) \
+    strncpy((VARfps).cmdset.triggerstreamname, (VARtriggerstream), STRINGMAXLEN_IMAGE_NAME - 1); \
+    (VARfps).cmdset.procinfo_loopcntMax = -1; \
+    (VARfps).cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE; \
+    (VARfps).cmdset.triggertimeout.tv_sec = (VARtimeout_sec); \
+    (VARfps).cmdset.triggertimeout.tv_nsec = 0;
+
+/**
+ * @brief Standard body for FPSCONF function
+ * 
+ * @param VARfps_name Name of the FPS
+ * @param VARloop Loop flag (1 for loop, 0 for single step)
+ * @param BLOCK_VAR_MAP Code block to map parameters (e.g. { ptr = ...; })
+ * @param BLOCK_VALIDATE Code block to validate parameters (e.g. { validate(); })
+ */
+#define FPS_CONF_STD_BODY(VARfps_name, VARloop, BLOCK_VAR_MAP, BLOCK_VALIDATE) \
+    FUNCTION_PARAMETER_STRUCT fps; \
+    if (VARloop) { \
+        printf("Starting configuration process loop for '%s'\n", VARfps_name); \
+        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_CONFSTART); \
+        BLOCK_VAR_MAP \
+        while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { \
+            if (function_parameter_FPCONFloopstep(&fps)) { \
+                BLOCK_VALIDATE \
+            } \
+            usleep(10000); \
+        } \
+    } else { \
+        printf("Running single configuration step for '%s'\n", VARfps_name); \
+        fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT); \
+        BLOCK_VAR_MAP \
+        function_parameter_FPCONFloopstep(&fps); \
+    } \
+    function_parameter_FPCONFexit(&fps);
+
+/**
+ * @brief Standard connection and parameter mapping for FPSRUN
+ */
+#define FPS_RUN_STD_PREAMBLE(VARfps_name, VARfps, BLOCK_VAR_MAP) \
+    if (function_parameter_struct_connect(VARfps_name, &(VARfps), FPSCONNECT_RUN) == -1) { \
+        fprintf(stderr, "Error: FPS '%s' not found. Run 'fpsinit' first.\n", VARfps_name); \
+        return 1; \
+    } \
+    BLOCK_VAR_MAP
+
+/**
+ * @brief Standard setup for ProcessInfo in FPSRUN
+ */
+#define FPS_RUN_PROCESSINFO_SETUP(VARprocessinfo, VARfps_name, VARdesc_short, VARdesc_detail, VARinput_image, VARfps) \
+    VARprocessinfo = processinfo_setup((char*)VARfps_name, VARdesc_short, VARdesc_detail, __FUNCTION__, __FILE__, __LINE__); \
+    if (!VARprocessinfo) return 1; \
+    processinfo_CatchSignals(); \
+    processinfo_waitoninputstream_init(VARprocessinfo, VARinput_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1); \
+    fps_to_processinfo(&(VARfps), VARprocessinfo); \
+    processinfo_loopstart(VARprocessinfo);
+
+/**
+ * @brief Standard loop for FPSRUN
+ */
+#define FPS_RUN_PROCESSINFO_LOOP(VARprocessinfo, VARfps, VARinput_image, VARoutput_image, BLOCK_COMPUTE) \
+    int loopOK = 1; \
+    while(loopOK) { \
+        loopOK = processinfo_loopstep(VARprocessinfo); \
+        if(!loopOK) break; \
+        processinfo_waitoninputstream(VARprocessinfo); \
+        if (VARprocessinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue; \
+        processinfo_exec_start(VARprocessinfo); \
+        BLOCK_COMPUTE \
+        processinfo_exec_end(VARprocessinfo); \
+        processinfo_update_output_stream(VARprocessinfo, VARoutput_image, VARinput_image); \
+    } \
+    processinfo_cleanExit(VARprocessinfo); \
+    function_parameter_struct_disconnect(&(VARfps));
+
 /** @} */ // end group fpsmacro
 
 #endif // FPS_H
