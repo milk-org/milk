@@ -63,7 +63,7 @@ target_include_directories(${LIBNAME} PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO milkcore m rt milkprocessinfo)
+target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo)
 
 
 if(USE_NCURSES)
@@ -91,7 +91,7 @@ endif()
 
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
-install(FILES fps.h fps_internal.h fps_globals.h ../libmilkcore/timeutils.h DESTINATION include/libfps)
+install(FILES fps.h fps_internal.h fps_globals.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
 
 if(USE_NCURSES)
 # ==========================================

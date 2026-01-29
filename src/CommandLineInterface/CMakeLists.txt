@@ -134,7 +134,7 @@ install(FILES CLIcore.h
               cmdsettings.h
               milkDebugTools.h
               standalone_dependencies.h
-              ../libmilkcore/timeutils.h
+              ../libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
 
 install(FILES CLIcore/CLIcore_UI.h
