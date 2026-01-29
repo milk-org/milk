@@ -9,7 +9,7 @@ include_directories(${MILK_ROOT}/src/ImageStreamIO)
 include_directories(${MILK_ROOT}/src)
 include_directories(${MILK_ROOT}/src/libprocessinfo)
 include_directories(${MILK_ROOT}/src/libfps)
-include_directories(${MILK_ROOT}/src/libmilkcore)
+
 include_directories(${MILK_ROOT}/src/libmilkTUI)
 include_directories(${MILK_ROOT}/src/CommandLineInterface)
 include_directories(${MILK_ROOT}/src/CommandLineInterface/streamCTRL)
@@ -18,7 +18,7 @@ include_directories(${MILK_ROOT}/src/CommandLineInterface/CLIcore)
 link_directories(${MILK_ROOT}/_build/src/ImageStreamIO)
 link_directories(${MILK_ROOT}/_build/src/libprocessinfo)
 link_directories(${MILK_ROOT}/_build/src/libfps)
-link_directories(${MILK_ROOT}/_build/src/libmilkcore)
+
 link_directories(${MILK_ROOT}/_build/src/CommandLineInterface)
 
 # The libraries are targets in the parent project if added via add_subdirectory,
@@ -29,13 +29,13 @@ add_executable(milk-fpsexec-example-03-writer writer.c)
 
 
 
-target_link_libraries(milk-fpsexec-example-03-writer milkfps milkprocessinfo ImageStreamIO ${TUI_LIBS} m rt)
+target_link_libraries(milk-fpsexec-example-03-writer milkfps milkprocessinfo ImageStreamIO m rt)
 
 
 
 add_executable(milk-fpsexec-example-03-processor processor.c)
 
-target_link_libraries(milk-fpsexec-example-03-processor milkfps milkprocessinfo ImageStreamIO ${TUI_LIBS} m rt)
+target_link_libraries(milk-fpsexec-example-03-processor milkfps milkprocessinfo ImageStreamIO m rt)
 
 
 
