@@ -25,6 +25,8 @@ set(SOURCES
         processinfo_update_output_stream.c
         processinfo_WriteMessage.c
         processtools_trigger.c
+        quicksort.c
+        timeutils.c
     )
     
     # Core library (no TUI/ncurses dependency)
@@ -67,7 +69,7 @@ set(SOURCES
     )
     
     # Link dependencies
-    target_link_libraries(milkprocessinfo ImageStreamIO milkcore rt pthread m)
+    target_link_libraries(milkprocessinfo ImageStreamIO rt pthread m)
         
     install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
     
@@ -89,6 +91,8 @@ install(FILES
     processinfo_signals.h
     processinfo_update_output_stream.h
     processinfo_WriteMessage.h
+    quicksort.h
+    timeutils.h
     DESTINATION include)
 
 if(USE_NCURSES)
