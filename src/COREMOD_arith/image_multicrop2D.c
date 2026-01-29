@@ -131,6 +131,7 @@ int FPSRUN_multicrop(const char *fps_name) {
 FPS_MAIN_STANDALONE("multicrop", multicrop, MULTICROP2D_HELPTEXT)
 #endif
 
+#ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
 #define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
     { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
@@ -154,3 +155,4 @@ static errno_t compute_function() {
 
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMODE_arith__multicrop2D() { CLIcmddata.FPS_customCONFcheck = image_multicrop2D_validate; INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
+#endif
