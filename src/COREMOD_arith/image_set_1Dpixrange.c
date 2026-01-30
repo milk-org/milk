@@ -86,7 +86,7 @@ int FPSRUN_setpix1D(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("setpix1D", setpix1D, SETPIX1D_HELPTEXT)
+FPS_MAIN_STANDALONE("setpix1D", setpix1D, SETPIX1D_HELPTEXT, SETPIX1D_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

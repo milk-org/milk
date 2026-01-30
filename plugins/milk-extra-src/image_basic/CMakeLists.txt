@@ -70,3 +70,8 @@ target_link_libraries(${LIBNAME} PRIVATE CLIcore)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+
+add_milk_standalone(imgbasic-cubecollapse cubecollapse.c)
+add_milk_standalone(imgbasic-rotateim imrotate.c)
+add_milk_standalone(imgbasic-resizeim imresize.c)
+

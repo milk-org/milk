@@ -323,7 +323,7 @@ int fpsCTRL_TUI_process_user_key(
                     snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
                 
                 EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s runstart -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" %s %s:runstart\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 
@@ -339,7 +339,7 @@ int fpsCTRL_TUI_process_user_key(
                     snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
                 
                 EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s runstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 
@@ -366,7 +366,7 @@ int fpsCTRL_TUI_process_user_key(
                     snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
                 
                 EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s confstart -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 
@@ -382,7 +382,7 @@ int fpsCTRL_TUI_process_user_key(
                     snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
                 
                 EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s confstop -n %s\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
+                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:confstop\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
             }
             break;
 

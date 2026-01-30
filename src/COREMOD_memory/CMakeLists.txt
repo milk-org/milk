@@ -197,7 +197,7 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
-add_milk_standalone(stream_ave stream_ave.c)
+add_milk_standalone(mem-streamave stream_ave.c)
 
 # Standalone executable
 add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
