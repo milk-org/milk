@@ -76,7 +76,7 @@ int FPSRUN_imzero(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("imzero", imzero, IMSETZERO_HELPTEXT)
+FPS_MAIN_STANDALONE("imzero", imzero, IMSETZERO_HELPTEXT, IMSETZERO_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

@@ -127,7 +127,7 @@ int FPSRUN_immerge(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("immerge", immerge, IMMERGE_HELPTEXT)
+FPS_MAIN_STANDALONE("immerge", immerge, IMMERGE_HELPTEXT, IMMERGE_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

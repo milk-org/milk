@@ -82,7 +82,7 @@ int FPSRUN_setrow(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("setrow", setrow, SETROW_HELPTEXT)
+FPS_MAIN_STANDALONE("setrow", setrow, SETROW_HELPTEXT, SETROW_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

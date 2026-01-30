@@ -99,7 +99,7 @@ int FPSRUN_crop2D(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("crop2D", crop2D, CROP2D_HELPTEXT)
+FPS_MAIN_STANDALONE("crop2D", crop2D, CROP2D_HELPTEXT, CROP2D_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

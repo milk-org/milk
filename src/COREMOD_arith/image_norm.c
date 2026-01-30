@@ -121,7 +121,7 @@ int FPSRUN_normslice(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("normslice", normslice, NORMSLICE_HELPTEXT)
+FPS_MAIN_STANDALONE("normslice", normslice, NORMSLICE_HELPTEXT, NORMSLICE_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

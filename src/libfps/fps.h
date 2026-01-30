@@ -748,56 +748,216 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
     return 0; \
 }
 
+// Helper for X_HELP_PRINT to extract the first argument from variadic args
+#define GET_1ST_ARG_HELPER(arg1, ...) arg1
+#define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
+
+#ifndef CLICMDARG_FLAG_DEFAULT
+#define CLICMDARG_FLAG_DEFAULT 0x00000000
+#endif
+#ifndef CLICMDARG_FLAG_NOCLI
+#define CLICMDARG_FLAG_NOCLI 0x00000001
+#endif
+
+// Define CLIARG macros if not already defined (to handle standalone compilation without CLIcore headers)
+#ifndef CLIARG_VISIBLE_DEFAULT
+#define CLIARG_VISIBLE_DEFAULT CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
+#endif
+#ifndef CLIARG_HIDDEN_DEFAULT
+#define CLIARG_HIDDEN_DEFAULT CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
+#endif
+#ifndef CLIARG_OUTPUT_DEFAULT
+#define CLIARG_OUTPUT_DEFAULT CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_OUTPUT
+#endif
+
+#ifndef COLORRESET
+#define COLORRESET     "\033[0m"
+#endif
+#ifndef COLORARGCLI
+#define COLORARGCLI    "\033[36m" // argument part of CLI call: cyan
+#endif
+#ifndef COLORARGnotCLI
+#define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
+#endif
+
+#ifndef COLORCOMMAND
+#define COLORCOMMAND   "\033[32m" // command: green
+#endif
+#ifndef COLORHEADER
+#define COLORHEADER    "\033[1m"  // header: bold
+#endif
+#ifndef COLOROPTION
+#define COLOROPTION    "\033[33m" // option: yellow
+#endif
+
+#define X_HELP_PRINT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, ...) \
+    { \
+        char valuestring[256]; \
+        uint64_t flags = GET_1ST_ARG((__VA_ARGS__)); \
+        int is_hidden = (flags & CLICMDARG_FLAG_NOCLI); \
+        char type_str[20] = "???"; \
+        if (fps_type == FPTYPE_FLOAT32) strcpy(type_str, "float32"); \
+        else if (fps_type == FPTYPE_UINT32) strcpy(type_str, "uint32"); \
+        else if (fps_type == FPTYPE_INT32) strcpy(type_str, "int32"); \
+        else if (fps_type == FPTYPE_INT64) strcpy(type_str, "int64"); \
+        else if (fps_type == FPTYPE_UINT64) strcpy(type_str, "uint64"); \
+        else if (fps_type == FPTYPE_STRING) strcpy(type_str, "string"); \
+        else if (fps_type == FPTYPE_FILENAME) strcpy(type_str, "filename"); \
+        else if (fps_type == FPTYPE_STREAMNAME) strcpy(type_str, "stream"); \
+        else if (fps_type == FPTYPE_FLOAT64) strcpy(type_str, "float64"); \
+        else if (fps_type == FPTYPE_ONOFF) strcpy(type_str, "onoff"); \
+        \
+        snprintf(valuestring, 256, "[%7s]  %s", type_str, def_str); \
+        \
+        if (!is_hidden) { \
+            if (show_help_color) \
+                printf("%6d   " COLORARGCLI "%-16s" COLORRESET " %-24s %s\n", CLIargcnt, key, valuestring, descr); \
+            else \
+                printf("%6d   %-16s %-24s %s\n", CLIargcnt, key, valuestring, descr); \
+        } else { \
+            if (show_help_color) \
+                printf("[hidden] " COLORARGnotCLI "%-16s" COLORRESET " %-24s %s\n", key, valuestring, descr); \
+            else \
+                printf("[hidden] %-16s %-24s %s\n", key, valuestring, descr); \
+        } \
+        CLIargcnt++; \
+    }
+
 /** @brief Macro to generate standalone main function
  */
-#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX, HELPTEXT) \
+#define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX, HELPTEXT, PARAMS_MACRO) \
 int main(int argc, char *argv[]) { \
     char fps_name[STRINGMAXLEN_FPS_NAME] = DEFAULT_FPS_NAME; \
+    char arg_fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
     int use_tmux = 0; \
     int show_help = 0; \
+    int show_help_color = 0; \
     char *command = NULL; \
     char *keywords = NULL; \
     char *description = NULL; \
+    char *colon_pos = NULL; \
     for (int i = 1; i < argc; i++) { \
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) { \
             show_help = 1; \
+        } else if (strcmp(argv[i], "-hc") == 0 || strcmp(argv[i], "--help-color") == 0) { \
+            show_help = 1; \
+            show_help_color = 1; \
         } else if (strcmp(argv[i], "-tmux") == 0) { \
             use_tmux = 1; \
-        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
-            strncpy(fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
         } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
             keywords = argv[++i]; \
         } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
             description = argv[++i]; \
         } else if (command == NULL) { \
             command = argv[i]; \
+            /* Check for fpsname:command format */ \
+            if ((colon_pos = strchr(command, ':')) != NULL) { \
+                *colon_pos = '\0'; \
+                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1); \
+                command = colon_pos + 1; \
+            } \
         } \
     } \
+    if (strlen(arg_fps_name) > 0) { \
+        strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1); \
+    } \
     if (show_help || (argc < 2)) { \
-        printf("\nUsage: %s <Command> [Options]\n\n", argv[0]); \
-        printf("Description:\n  Standalone FPS application.\n\n"); \
-        printf("Commands:\n"); \
-        printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n"); \
-        printf("  confstart  Run the configuration monitoring loop.\n"); \
-        printf("  confstep   Run a single configuration monitoring step.\n"); \
-        printf("  confstop   Stop the configuration monitoring loop.\n"); \
-        printf("  runstart   Run the main processing loop.\n"); \
-        printf("  runstop    Stop the main processing loop.\n\n"); \
-        printf("Options:\n"); \
-        printf("  -n, --name NAME          Specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
-        printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
-        printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
-        printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n\n"); \
+        if (show_help_color) { \
+            printf("\n" COLORHEADER "Usage:" COLORRESET " %s " COLOROPTION "[fpsname:]" COLORRESET COLORCOMMAND "<Command>" COLORRESET " " COLOROPTION "[Options]" COLORRESET "\n\n", argv[0]); \
+            printf(COLORHEADER "Description:" COLORRESET "\n  Standalone FPS application.\n\n"); \
+            printf(COLORHEADER "Commands:" COLORRESET "\n"); \
+            printf("  " COLORCOMMAND "fpsinit" COLORRESET "    One-time setup: creates the FPS shared memory segment.\n"); \
+            printf("  " COLORCOMMAND "fps" COLORRESET "        Print content of the FPS.\n"); \
+            printf("  " COLORCOMMAND "fpslist" COLORRESET "    List all FPS instances matching this executable.\n"); \
+            printf("  " COLORCOMMAND "confstart" COLORRESET "  Run the configuration monitoring loop.\n"); \
+            printf("  " COLORCOMMAND "confstep" COLORRESET "   Run a single configuration monitoring step.\n"); \
+            printf("  " COLORCOMMAND "confstop" COLORRESET "   Stop the configuration monitoring loop.\n"); \
+            printf("  " COLORCOMMAND "runstart" COLORRESET "   Run the main processing loop.\n"); \
+            printf("  " COLORCOMMAND "runstop" COLORRESET "    Stop the main processing loop.\n\n"); \
+            printf(COLORHEADER "Options:" COLORRESET "\n"); \
+            printf("  " COLOROPTION "fpsname:" COLORRESET "           Optional prefix to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  " COLOROPTION "-k, --keywords KEYWORDS" COLORRESET "  Specify FPS keywords (default: NULL).\n"); \
+            printf("  " COLOROPTION "-d, --description DESC" COLORRESET "   Specify FPS description (default: NULL).\n"); \
+            printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
+            printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message.\n"); \
+            printf("  " COLOROPTION "-hc, --help-color" COLORRESET "        Show this help message with color.\n\n"); \
+        } else { \
+            printf("\nUsage: %s [fpsname:]<Command> [Options]\n\n", argv[0]); \
+            printf("Description:\n  Standalone FPS application.\n\n"); \
+            printf("Commands:\n"); \
+            printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n"); \
+            printf("  fps        Print content of the FPS.\n"); \
+            printf("  fpslist    List all FPS instances matching this executable.\n"); \
+            printf("  confstart  Run the configuration monitoring loop.\n"); \
+            printf("  confstep   Run a single configuration monitoring step.\n"); \
+            printf("  confstop   Stop the configuration monitoring loop.\n"); \
+            printf("  runstart   Run the main processing loop.\n"); \
+            printf("  runstop    Stop the main processing loop.\n\n"); \
+            printf("Options:\n"); \
+            printf("  fpsname:                 Optional prefix to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
+            printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
+            printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
+            printf("  -h, --help               Show this help message.\n"); \
+            printf("  -hc, --help-color        Show this help message with color.\n\n"); \
+        } \
         if (HELPTEXT[0] != '\0') { \
-            printf("Detailed Help:\n"); \
+            if (show_help_color) printf(COLORHEADER "Detailed Help:" COLORRESET "\n"); \
+            else printf("Detailed Help:\n"); \
             printf("--------------\n"); \
             printf("%s\n\n", HELPTEXT); \
         } \
+        if (show_help_color) printf(COLORHEADER "CLI call arguments:" COLORRESET "\n"); \
+        else printf("CLI call arguments:\n"); \
+        int CLIargcnt = 0; \
+        PARAMS_MACRO(X_HELP_PRINT) \
+        printf("\n"); \
         return 0; \
     } \
     if (command == NULL) { \
         fprintf(stderr, "Error: Missing command argument.\n"); \
         return 1; \
+    } \
+    if (strcmp(command, "fps") == 0) { \
+        char cmd[STRINGMAXLEN_FPS_NAME + 20]; \
+        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", fps_name); \
+        return system(cmd); \
+    } else if (strcmp(command, "fpslist") == 0) { \
+        FUNCTION_PARAMETER_STRUCT *fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT)); \
+        if (fpsarray == NULL) return 1; \
+        for(int i = 0; i < NB_FPS_MAX; i++) fpsarray[i].SMfd = -1; \
+        KEYWORD_TREE_NODE *keywnode = (KEYWORD_TREE_NODE *) calloc(NB_KEYWNODE_MAX, sizeof(KEYWORD_TREE_NODE)); \
+        if (keywnode == NULL) { free(fpsarray); return 1; } \
+        int NBkwn = 0, NBfps = 0; \
+        long NBpindex = 0; \
+        functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, 0); \
+        if (NBfps > 0) { \
+            char *exec_basename = strrchr(argv[0], '/'); \
+            if (exec_basename) exec_basename++; else exec_basename = argv[0]; \
+            int found = 0; \
+            for(int i = 0; i < NBfps; i++) { \
+                char *fps_exec_basename = strrchr(fpsarray[i].md->execfullpath, '/'); \
+                if (fps_exec_basename) fps_exec_basename++; else fps_exec_basename = fpsarray[i].md->execfullpath; \
+                if (strcmp(exec_basename, fps_exec_basename) == 0) { \
+                    if (!found) { \
+                        printf("%-30s %-10s %s\n", "FPS Name", "Status", "Description"); \
+                        printf("------------------------------------------------------------\n"); \
+                        found = 1; \
+                    } \
+                    char status_str[32] = "UNKNOWN"; \
+                    if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) strcpy(status_str, "CONF"); \
+                    else if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) strcpy(status_str, "RUN"); \
+                    printf("%-30s %-10s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->description); \
+                } \
+                function_parameter_struct_disconnect(&fpsarray[i]); \
+            } \
+            if (!found) printf("No matching FPS instances found for executable '%s'.\n", exec_basename); \
+        } else { \
+            printf("No FPS instances found.\n"); \
+        } \
+        free(keywnode); \
+        free(fpsarray); \
+        return 0; \
     } \
     if (use_tmux) { \
         char path[1024]; \
@@ -805,11 +965,23 @@ int main(int argc, char *argv[]) { \
             if (realpath(argv[0], path) == NULL) strncpy(path, argv[0], 1023); \
         } \
         char name_arg[256] = ""; \
+        /* fps name is now part of command, but tmux dispatch expects args? No, tmux dispatch sends command line. */ \
+        /* We need to reconstruct command line for tmux */ \
+        /* The previous implementation used -n name. Now we prepend name: */ \
         if (strcmp(fps_name, DEFAULT_FPS_NAME) != 0) { \
-            snprintf(name_arg, sizeof(name_arg), " -n %s", fps_name); \
+             /* Should we pass fps_name separately? functionparameter_FPS_tmux_send_dispatch logic check needed */ \
+             /* But simpler: pass reconstructed command "fpsname:command" */ \
+             /* functionparameter_FPS_tmux_send_dispatch takes (char *fpsname, char *cmd, char *execpath, char *arg) */ \
+             /* It constructs "tmux send-keys ... execpath cmd arg" */ \
+             /* We want "tmux send-keys ... execpath fpsname:cmd" */ \
+             snprintf(name_arg, sizeof(name_arg), " %s:%s", fps_name, command); \
+             /* Wait, command is already parsed. */ \
+        } else { \
+             snprintf(name_arg, sizeof(name_arg), " %s", command); \
         } \
         functionparameter_FPS_tmux_standalone_setup(fps_name); \
-        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) { \
+        /* Hack: pass empty command to tmux dispatch, and full command in arg */ \
+        if (functionparameter_FPS_tmux_send_dispatch(fps_name, "", path, name_arg) == 0) { \
             return 0; \
         } \
         if (strcmp(command, "fpsinit") == 0) { \

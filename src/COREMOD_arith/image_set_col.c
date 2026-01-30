@@ -83,7 +83,7 @@ int FPSRUN_setcol(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("setcol", setcol, SETCOL_HELPTEXT)
+FPS_MAIN_STANDALONE("setcol", setcol, SETCOL_HELPTEXT, SETCOL_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

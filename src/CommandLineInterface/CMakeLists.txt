@@ -82,6 +82,13 @@ if (OPENMP_C_FOUND)
   target_link_libraries(CLIcore PUBLIC OpenMP::OpenMP_C)
 endif()
 
+if(USE_READLINE)
+    target_compile_definitions(CLIcore PUBLIC USE_READLINE)
+endif()
+
+if(USE_NCURSES)
+    target_compile_definitions(CLIcore PUBLIC USE_NCURSES)
+endif()
 
 target_link_libraries(CLIcore
                       PUBLIC m
