@@ -95,4 +95,4 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
-add_milk_standalone(savefits savefits.c)
+add_milk_standalone(iofits-saveFITS savefits.c)

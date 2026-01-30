@@ -139,7 +139,7 @@ int FPSRUN_savefits(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("savefits", savefits, SAVEFITS_HELPTEXT)
+FPS_MAIN_STANDALONE("savefits", savefits, SAVEFITS_HELPTEXT, SAVEFITS_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

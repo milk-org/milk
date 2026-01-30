@@ -250,5 +250,5 @@ int FPSRUN_writer(const char *fps_name) {
 }
 
 #ifndef MILK_MODULE
-FPS_MAIN_STANDALONE("writer03", writer, WRITER_HELPTEXT)
+FPS_MAIN_STANDALONE("writer03", writer, WRITER_HELPTEXT, WRITER_PARAMS)
 #endif

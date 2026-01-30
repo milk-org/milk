@@ -133,11 +133,11 @@ target_link_libraries(milk-fps-list PUBLIC
 install(TARGETS milk-fps-list DESTINATION bin)
 
 # ==========================================
-# milk-fps-print executable
+# milk-fps-info executable
 # ==========================================
 
-add_executable(milk-fps-print milk-fps-print.c)
-target_link_libraries(milk-fps-print PUBLIC 
+add_executable(milk-fps-info milk-fps-info.c)
+target_link_libraries(milk-fps-info PUBLIC 
     milkfps
     milkprocessinfo 
     ImageStreamIO
@@ -147,5 +147,5 @@ target_link_libraries(milk-fps-print PUBLIC
     m
 )
 
-install(TARGETS milk-fps-print DESTINATION bin)
+install(TARGETS milk-fps-info DESTINATION bin)
 endif()
