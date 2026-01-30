@@ -569,6 +569,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         DEBUG_TRACEPOINT("Start CLI loop");
 
         data.CMDexecuted = 0;
+        data.CLIexecuteCMDready = 0;
 
         if((fp = fopen("STOPCLI", "r")) != NULL)
         {

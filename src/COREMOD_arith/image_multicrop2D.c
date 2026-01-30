@@ -128,7 +128,7 @@ int FPSRUN_multicrop(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("multicrop", multicrop, MULTICROP2D_HELPTEXT)
+FPS_MAIN_STANDALONE("multicrop", multicrop, MULTICROP2D_HELPTEXT, MULTICROP2D_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

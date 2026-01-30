@@ -3,13 +3,22 @@
 
 #include <fftw3.h>
 
+#include "dofft.h"
+
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "wisdom.h"
+#include "fps.h"
+#include "processinfo.h"
+#include "ImageStreamIO.h"
 
 #define FFTWOPTMODE FFTW_ESTIMATE
+
+char *dofft_inimname  = NULL;
+char *dofft_outimname = NULL;
+int  *dofft_dir       = NULL;
 
 // ==========================================
 // Forward declaration(s)
@@ -72,16 +81,23 @@ errno_t fft_do2dfft_cli()
 // Register CLI command(s)
 // ==========================================
 
+#ifndef FPS_STANDALONE
+static CLICMDARGDEF farg[] = {
+#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+    DOFFT_PARAMS(X_CLI_DEF)
+#undef X_CLI_DEF
+};
+static CLICMDDATA CLIcmddata = { "dofft", "perform 2D complex FFT", CLICMD_FIELDS_DEFAULTS };
+static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
+static errno_t compute_function() { do2dfft(dofft_inimname, dofft_outimname); return RETURN_SUCCESS; }
+INSERT_STD_FPSCLIfunctions
+#endif
+
 errno_t dofft_addCLIcmd()
 {
-    RegisterCLIcommand(
-        "dofft",
-        __FILE__,
-        fft_do2dfft_cli,
-        "perform FFT",
-        "<input> <output>",
-        "fofft in out",
-        "int do2dfft(const char *in_name, const char *out_name)");
+#ifndef FPS_STANDALONE
+    INSERT_STD_CLIREGISTERFUNC
+#endif
 
     RegisterCLIcommand(
         "do1Dfft",
@@ -305,7 +321,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
             OK = 1;
             if(datatype == _DATATYPE_COMPLEX_FLOAT)
             {
-                inptr =
+                inptr = 
                     (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
                 if(inptr == NULL)
                 {
@@ -313,7 +329,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
                     abort();
                 }
 
-                outptr =
+                outptr = 
                     (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
                 if(outptr == NULL)
                 {
@@ -345,7 +361,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
             }
             else
             {
-                inptr_double =
+                inptr_double = 
                     (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
                 if(inptr_double == NULL)
                 {
@@ -353,7 +369,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
                     abort();
                 }
 
-                outptr_double =
+                outptr_double = 
                     (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
                 if(outptr_double == NULL)
                 {
@@ -523,7 +539,7 @@ imageID do1drfft(const char *__restrict in_name,
                     abort();
                 }
 
-                outptr =
+                outptr = 
                     (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
                 if(outptr == NULL)
                 {
@@ -531,7 +547,7 @@ imageID do1drfft(const char *__restrict in_name,
                     abort();
                 }
 
-                plan =
+                plan = 
                     fftwf_plan_dft_r2c_1d(naxes[0], inptr, outptr, FFTWOPTMODE);
 
                 for(jj = 0; jj < naxes[1]; jj++)
@@ -559,7 +575,7 @@ imageID do1drfft(const char *__restrict in_name,
                     abort();
                 }
 
-                outptr_double =
+                outptr_double = 
                     (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
                 if(outptr_double == NULL)
                 {
@@ -1399,8 +1415,8 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                 fprintf(stdout, "\n");
             }
 
-            fftw_execute(plan_double);
-            fftw_destroy_plan(plan_double);
+            fftwf_execute(plan);
+            fftwf_destroy_plan(plan);
 
             if(dir == -1)
             {
@@ -1454,7 +1470,7 @@ imageID do2drfft(const char *in_name, const char *out_name)
 
     IDout = FFT_do2drfft(in_name, out_name, -1);
 
-    return IDout;
+    return (IDout);
 }
 
 imageID do2drffti(const char *in_name, const char *out_name)
@@ -1463,5 +1479,56 @@ imageID do2drffti(const char *in_name, const char *out_name)
 
     IDout = FFT_do2drfft(in_name, out_name, 1);
 
-    return IDout;
+    return (IDout);
 }
+
+void dofft_step(IMAGE *imgin, IMAGE *imgout, int dir)
+{
+    int naxes[2] = { (int)imgin->md[0].size[1], (int)imgin->md[0].size[0] };
+    if ( imgin->md[0].datatype == _DATATYPE_COMPLEX_FLOAT ) {
+        fftwf_plan plan = fftwf_plan_dft_2d(naxes[0], naxes[1], (fftwf_complex*) imgin->array.CF, (fftwf_complex*) imgout->array.CF, dir, FFTW_ESTIMATE);
+        fftwf_execute(plan);
+        fftwf_destroy_plan(plan);
+    } else if ( imgin->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE ) {
+        fftw_plan plan = fftw_plan_dft_2d(naxes[0], naxes[1], (fftw_complex*) imgin->array.CD, (fftw_complex*) imgout->array.CD, dir, FFTW_ESTIMATE);
+        fftw_execute(plan);
+        fftw_destroy_plan(plan);
+    }
+}
+
+#ifdef FPS_STANDALONE
+int FPSINIT_dofft(const char *fps_name, const char *keywords, const char *description) {
+    FUNCTION_PARAMETER_STRUCT fps; FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, DOFFT_HELPTEXT); FPS_INIT_PROCINFO_DEFAULTS(fps, "im1", 1);
+#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+    DOFFT_PARAMS(X_FPS_INIT)
+#undef X_FPS_INIT
+    fps_add_processinfo_entries(&fps);
+    function_parameter_FPCONFexit(&fps);
+    return 0;
+}
+int FPSCONF_dofft(const char *fps_name, int loop) { FPS_CONF_STD_BODY(fps_name, loop, { dofft_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name"); dofft_outimname = functionparameter_GetParamPtr_STRING(&fps, ".out_name"); dofft_dir = functionparameter_GetParamPtr_INT32(&fps, ".dir"); }, { }); return 0; }
+FPS_MAKE_STANDALONE_CONFSTOP(dofft) 
+FPS_MAKE_STANDALONE_RUNSTOP(dofft)
+int FPSRUN_dofft(const char *fps_name) {
+    FUNCTION_PARAMETER_STRUCT fps; FPS_RUN_STD_PREAMBLE(fps_name, fps, { dofft_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name"); dofft_outimname = functionparameter_GetParamPtr_STRING(&fps, ".out_name"); dofft_dir = functionparameter_GetParamPtr_INT32(&fps, ".dir"); });
+    IMAGE iin; if (ImageStreamIO_read_sharedmem_image_toIMAGE(dofft_inimname, &iin) != 0) return 1;
+    IMAGE iout; uint32_t size[2] = { (uint32_t)iin.md[0].size[0], (uint32_t)iin.md[0].size[1] };
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(dofft_outimname, &iout) != 0) { ImageStreamIO_createIm(&iout, dofft_outimname, 2, size, iin.md[0].datatype, 1, 10, 0); }
+    PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
+    processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
+    fps_to_processinfo(&fps, pinfo);
+    processinfo_loopstart(pinfo);
+    while(processinfo_loopstep(pinfo)) {
+        processinfo_waitoninputstream(pinfo);
+        if (pinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT) continue;
+        processinfo_exec_start(pinfo);
+        dofft_step(&iin, &iout, *dofft_dir);
+        processinfo_exec_end(pinfo);
+        ImageStreamIO_UpdateIm(&iout);
+    }
+    processinfo_cleanExit(pinfo);
+    function_parameter_struct_disconnect(&fps);
+    return 0;
+}
+FPS_MAIN_STANDALONE("dofft", dofft, DOFFT_HELPTEXT, DOFFT_PARAMS)
+#endif

@@ -1,5 +1,8 @@
-/** @file imrotate.h
- */
+#ifndef IMAGE_BASIC_IMROTATE_H
+#define IMAGE_BASIC_IMROTATE_H
+
+#include "fps.h"
+#include "processinfo.h"
 
 errno_t imrotate_addCLIcmd();
 
@@ -17,3 +20,18 @@ imageID basic_rotate_int(const char *__restrict ID_name,
 imageID basic_rotate2(const char *__restrict ID_name_in,
                       const char *__restrict ID_name_out,
                       float angle);
+
+#define IMROTATE_PARAMS(X) \
+    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*,  ".in_name",  "input image",   "im1", "im1", &imrotate_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
+    X(CLIARG_STR,     FPTYPE_STREAMNAME, char*,  ".out_name", "output image",  "out1", "out1", &imrotate_outimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
+    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float,  ".angle",    "rotate angle",  "0.0", 0.0,   &imrotate_angle,    (void*)&val, CLIARG_VISIBLE_DEFAULT)
+
+extern char  *imrotate_inimname;
+extern char  *imrotate_outimname;
+extern float *imrotate_angle;
+
+#define IMROTATE_HELPTEXT \
+    "rotateim: rotate 2D image\n" \
+    "========================\n"
+
+#endif

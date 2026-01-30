@@ -86,7 +86,7 @@ int FPSRUN_set3Daxes(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("set3Daxes", set3Daxes, SET3DAXES_HELPTEXT)
+FPS_MAIN_STANDALONE("set3Daxes", set3Daxes, SET3DAXES_HELPTEXT, SET3DAXES_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE

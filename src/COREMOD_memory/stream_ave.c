@@ -98,7 +98,7 @@ int FPSRUN_stream_ave(const char *fps_name) {
 }
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE("stream_ave", stream_ave, STREAMAVE_HELPTEXT)
+FPS_MAIN_STANDALONE("stream_ave", stream_ave, STREAMAVE_HELPTEXT, STREAMAVE_PARAMS)
 #endif
 
 #ifndef FPS_STANDALONE
