@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.17)
 project(milk LANGUAGES C)
 
 
-# Examples :
+# Examples : 
 # cmake .. -DUSE_CUDA=ON -DINSTALLMAKEDEFAULT=ON
 # cmake .. -DUSE_CUDA=ON -DUSE_MAGMA=ON
 # cmake .. -DCMAKE_BUILD_TYPE=Debug
@@ -221,7 +221,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkprocessinfo ImageStreamIO ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -229,9 +229,9 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
     add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}" "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
-    target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkprocessinfo ImageStreamIO ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkfft milkimagegen milkimagefilter milkimagebasic ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -252,9 +252,16 @@ string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
   string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
-  if (NOT ${lsrcdir} EQUAL "")
-    message("ADDING SUBDIR = ${lsrcdir}")
-    add_subdirectory ( ${lsrcdir} )
+  if (NOT "${lsrcdir}" STREQUAL "")
+    if(IS_ABSOLUTE "${lsrcdir}")
+        set(abs_lsrcdir "${lsrcdir}")
+    else()
+        set(abs_lsrcdir "${CMAKE_CURRENT_SOURCE_DIR}/${lsrcdir}")
+    endif()
+    if(EXISTS "${abs_lsrcdir}/CMakeLists.txt")
+        message("ADDING SUBDIR = ${lsrcdir}")
+        add_subdirectory ( ${lsrcdir} )
+    endif()
   endif()
 endforeach()
 
@@ -278,8 +285,15 @@ add_subdirectory(src/libprocessinfo)
 add_executable(milk src/CLImain.c)
 
 
-# note: set -SOURCEDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" for autoload
-set(BUILD_FLAGS "-DPACKAGE_NAME=\\\"milk\\\" -DCONFIGDIR=\\\"${PROJECT_SOURCE_DIR}/config\\\" -DINSTALLDIR=\\\"${CMAKE_INSTALL_PREFIX}\\\" -DSOURCEDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DABSSRCTOPDIR=\\\"${PROJECT_SOURCE_DIR}\\\" -DPACKAGE_BUGREPORT=\\\"https://github.com/milk-org/milk/issues\\\"" )
+# note: set -SOURCEDIR=\" ${CMAKE_INSTALL_PREFIX}\" for autoload
+add_definitions(
+    -DPACKAGE_NAME="milk"
+    -DCONFIGDIR="/config"
+    -DINSTALLDIR=""
+    -DSOURCEDIR=""
+    -DABSSRCTOPDIR=""
+    -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues"
+)
 
 
 target_link_libraries(milk PUBLIC ${libname})
@@ -297,7 +311,6 @@ endif(USE_CUDA)
 
 
 
-set_target_properties(milk PROPERTIES COMPILE_FLAGS "${BUILD_FLAGS}" )
 
 message("====================================================")
 get_target_property(milkcompopts milk COMPILE_OPTIONS)
@@ -425,38 +438,38 @@ endif()
 
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
-			scripts/milk-all
-			scripts/milk-argparse
-			scripts/milk-check
+                        scripts/milk-all
+                        scripts/milk-argparse
+                        scripts/milk-check
       scripts/milk-commands
-			scripts/milk-cubeslice2shm
-			scripts/milk-exec
-      						scripts/milk-fpslist-addentry
-      						scripts/milk-cr2tofits
-      			
-			scripts/milk-FITS2shm
+                        scripts/milk-cubeslice2shm
+                        scripts/milk-exec
+                                                scripts/milk-fpslist-addentry
+                                                scripts/milk-cr2tofits
+      
+                        scripts/milk-FITS2shm
       scripts/milk-fitsheader
-			scripts/milk-fpsmkcmd
-			scripts/milk-fpsinit
-			scripts/milk-logshim
-			scripts/milk-logshimkill
-			scripts/milk-logshimoff
-			scripts/milk-logshimon
-			scripts/milk-logshimstat
-			scripts/milk-makecsetandrt
-			scripts/merge3DfitsTelemetry
+                        scripts/milk-fpsmkcmd
+                        scripts/milk-fpsinit
+                        scripts/milk-logshim
+                        scripts/milk-logshimkill
+                        scripts/milk-logshimoff
+                        scripts/milk-logshimon
+                        scripts/milk-logshimstat
+                        scripts/milk-makecsetandrt
+                        scripts/merge3DfitsTelemetry
       scripts/milk-images-merge
-			scripts/milk-scriptexample
-			scripts/milk-script-std-config
-			scripts/milk-streamlink
+                        scripts/milk-scriptexample
+                        scripts/milk-script-std-config
+                        scripts/milk-streamlink
       scripts/milk-stream-scan
-			scripts/milk-shm2FITS
-			scripts/milk-shm2FITSloop
-			scripts/milk-shmim-rm
-			scripts/milk-shmim-zero
-			scripts/tmuxkillall
-			scripts/tmuxsessionname
-			scripts/waitforfile
+                        scripts/milk-shm2FITS
+                        scripts/milk-shm2FITSloop
+                        scripts/milk-shmim-rm
+                        scripts/milk-shmim-zero
+                        scripts/tmuxkillall
+                        scripts/tmuxsessionname
+                        scripts/waitforfile
       DESTINATION bin)
 
 
