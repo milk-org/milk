@@ -149,3 +149,46 @@ target_link_libraries(milk-fps-info PUBLIC
 
 install(TARGETS milk-fps-info DESTINATION bin)
 endif()
+
+# ==========================================
+# generic milk-fps- commands
+# ==========================================
+
+set(FPS_GENERIC_CMDS
+    milk-fps-confstart
+    milk-fps-confstop
+    milk-fps-runstart
+    milk-fps-runstop
+    milk-fps-confstep
+)
+
+foreach(cmd ${FPS_GENERIC_CMDS})
+    add_executable(${cmd} milk-fps-cmd.c)
+    target_link_libraries(${cmd} PUBLIC 
+        milkfps
+        milkprocessinfo 
+        ImageStreamIO
+        CLIcore
+        ${NCURSES_LIBRARIES}
+        pthread
+        m
+    )
+    install(TARGETS ${cmd} DESTINATION bin)
+endforeach()
+
+# ==========================================
+# milk-fps-set executable
+# ==========================================
+
+add_executable(milk-fps-set milk-fps-set.c)
+target_link_libraries(milk-fps-set PUBLIC 
+    milkfps
+    milkprocessinfo 
+    ImageStreamIO
+    CLIcore
+    
+    pthread
+    m
+)
+
+install(TARGETS milk-fps-set DESTINATION bin)

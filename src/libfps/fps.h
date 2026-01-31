@@ -881,6 +881,13 @@ int main(int argc, char *argv[]) { \
             printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
             printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message.\n"); \
             printf("  " COLOROPTION "-hc, --help-color" COLORRESET "        Show this help message with color.\n\n"); \
+            printf(COLORHEADER "Notes:" COLORRESET "\n"); \
+            printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
+            printf("    " COLORCOMMAND "milk-fps-confstart" COLORRESET " <fpsname>\n"); \
+            printf("    " COLORCOMMAND "milk-fps-confstop" COLORRESET "  <fpsname>\n"); \
+            printf("    " COLORCOMMAND "milk-fps-runstart" COLORRESET "  <fpsname>\n"); \
+            printf("    " COLORCOMMAND "milk-fps-runstop" COLORRESET "   <fpsname>\n"); \
+            printf("    " COLORCOMMAND "milk-fps-confstep" COLORRESET "  <fpsname>\n\n"); \
         } else { \
             printf("\nUsage: %s [fpsname:]<Command> [Options]\n\n", argv[0]); \
             printf("Description:\n  Standalone FPS application.\n\n"); \
@@ -900,6 +907,13 @@ int main(int argc, char *argv[]) { \
             printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
             printf("  -h, --help               Show this help message.\n"); \
             printf("  -hc, --help-color        Show this help message with color.\n\n"); \
+            printf("Notes:\n"); \
+            printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
+            printf("    milk-fps-confstart <fpsname>\n"); \
+            printf("    milk-fps-confstop  <fpsname>\n"); \
+            printf("    milk-fps-runstart  <fpsname>\n"); \
+            printf("    milk-fps-runstop   <fpsname>\n"); \
+            printf("    milk-fps-confstep  <fpsname>\n\n"); \
         } \
         if (HELPTEXT[0] != '\0') { \
             if (show_help_color) printf(COLORHEADER "Detailed Help:" COLORRESET "\n"); \
