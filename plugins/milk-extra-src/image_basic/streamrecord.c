@@ -67,7 +67,7 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
     long          kk;
     char         *ptr;
 
-    IDstream = image_ID(streamname);
+    IDstream = image_ID(streamname, data.image, data.NB_MAX_IMAGE);
     xsize    = data.image[IDstream].md[0].size[0];
     ysize    = data.image[IDstream].md[0].size[1];
     zsize    = NBframes;

@@ -52,7 +52,7 @@ static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\
 
 imageID basic_rotate(const char *__restrict ID_name, const char *__restrict IDout_name, float angle)
 {
-    IMGID in = mkIMGID_from_name(ID_name); resolveIMGID(&in, ERRMODE_ABORT);
+    IMGID in = mkIMGID_from_name(ID_name); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(IDout_name, in.md->size[0], in.md->size[1]);
     imrotate_step(in.im, out.im, angle);
     ImageStreamIO_UpdateIm(out.im); return out.ID;

@@ -60,11 +60,11 @@ static errno_t compute_function()
     // connect to input
     //
     IMGID imgin = mkIMGID_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     int64_t insize = imgin.md->size[0]*imgin.md->size[1];
 
     IMGID imgmap = mkIMGID_from_name(mapsname);
-    resolveIMGID(&imgmap, ERRMODE_ABORT);
+    resolveIMGID(&imgmap, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // read map size
     // Note: currently assumes 2D ... to be updated

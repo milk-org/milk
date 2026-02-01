@@ -160,8 +160,8 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
                       "_fm_measvec",
                       NULL));
 
-    IDmvec     = image_ID("_fm_measvec");
-    IDrecm     = image_ID("_fm_recm");
+    IDmvec     = image_ID("_fm_measvec", data.image, data.NB_MAX_IMAGE);
+    IDrecm     = image_ID("_fm_recm", data.image, data.NB_MAX_IMAGE);
     uint32_t m = data.image[IDrecm].md[0].size[1];
     uint32_t n = data.image[IDrecm].md[0].size[0];
     // printf("m=%ld n=%ld\n", m, n);

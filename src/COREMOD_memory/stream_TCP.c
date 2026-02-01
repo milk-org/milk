@@ -150,7 +150,7 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
     int     rv;
     long    loopcnt = 0;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     IMAGE *img_p = &data.image[ID];
 
     char pinfomsg[200];
@@ -317,7 +317,7 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     int loopOK = 1;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     img_p = &data.image[ID];
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
@@ -824,13 +824,13 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd->name);
+    ID = image_ID(imgmd->name, data.image, data.NB_MAX_IMAGE);
     printf("ID: %ld\n", ID);
 
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd->name);
+        ID = read_sharedmem_image(imgmd->name, data.image, data.NB_MAX_IMAGE);
         printf("ID: %ld\n", ID);
     }
 

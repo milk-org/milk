@@ -108,10 +108,10 @@ errno_t image_vect_multiply(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT);
-    resolveIMGID(&imgvec, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgvec, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    resolveIMGID(imgout, ERRMODE_NULL);
+    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
     // Create output
     //
@@ -181,10 +181,10 @@ static errno_t compute_function()
     // input
 
     IMGID imgimin = mkIMGID_from_name(iminname);
-    resolveIMGID(&imgimin, ERRMODE_ABORT);
+    resolveIMGID(&imgimin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgvec = mkIMGID_from_name(vecname);
-    resolveIMGID(&imgvec, ERRMODE_ABORT);
+    resolveIMGID(&imgvec, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // output
 

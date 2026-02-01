@@ -96,7 +96,7 @@ int permut(const char *ID_name)
     //  printf("permut image %s ...", ID_name);
     // fflush(stdout);
 
-    ID    = image_ID(ID_name);
+    ID    = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[ID].md[0].naxis;
 
     naxes0 = data.image[ID].md[0].size[0];

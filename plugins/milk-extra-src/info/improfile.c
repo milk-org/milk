@@ -86,7 +86,7 @@ errno_t profile(const char *ID_name,
     int *mask;
     long IDmask; // if profmask exists
 
-    ID        = image_ID(ID_name);
+    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0]  = data.image[ID].md[0].size[0];
     naxes[1]  = data.image[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
@@ -126,7 +126,7 @@ errno_t profile(const char *ID_name,
         abort();
     }
 
-    IDmask = image_ID("profmask");
+    IDmask = image_ID("profmask", data.image, data.NB_MAX_IMAGE);
     if(IDmask != -1)
     {
         for(unsigned long ii = 0; ii < nelements; ii++)

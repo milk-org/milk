@@ -80,14 +80,14 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     uint8_t datatype;
 
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     naxisin  = data.image[ID].md[0].naxis;
     datatype = data.image[ID].md[0].datatype;
 
 
-    IDpixindex = image_ID(IDpixindex_name);
-    IDpixmult  = image_ID(IDpixmult_name);
+    IDpixindex = image_ID(IDpixindex_name, data.image, data.NB_MAX_IMAGE);
+    IDpixmult  = image_ID(IDpixmult_name, data.image, data.NB_MAX_IMAGE);
     NBpix      = data.image[IDpixindex].md[0].nelement;
 
 

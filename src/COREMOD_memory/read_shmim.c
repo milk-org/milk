@@ -40,105 +40,102 @@ static errno_t help_function()
     return RETURN_SUCCESS;
 }
 
-IMGID read_sharedmem_img(
-    const char * restrict sname
+
+
+
+
+imageID RegisterIMGID(
+    IMGID *img,
+    IMAGE *imagearray,
+    long NB_images
 )
 {
-    IMGID img;
-    img.ID = -1;
+    imageID ID = -1;
 
-    if(strlen(sname) != 0)
+    if (imagearray == NULL)
     {
-        // check if already loaded
-        imageID ID = image_ID(sname);
-        if(ID == -1)
+        // If no array provided, we close the image and return 0 (success) or -1 (fail)
+        // This corresponds to non-CLI mode check
+        if (img->ID != -1)
         {
-            IMAGE  *image;
-            img.ID = next_avail_image_ID(-1);
-            image = &data.image[img.ID];
-
-            if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-                    IMAGESTREAMIO_SUCCESS)
-            {
-                printf("read shared mem image failed -> ID = -1\n");
-                fflush(stdout);
-                img.ID = -1;
-            }
-            else
-            {
-                img.im = &data.image[img.ID];
-                img.md = &data.image[img.ID].md[0];
-                strcpy(img.name, sname);
-            }
+            ImageStreamIO_closeIm(img->im);
+            free(img->im);
+            img->ID = 0;
+            return 0;
         }
-        else
-        {
-            img.ID = ID;
-            strcpy(img.name, sname);
-            img.im        = &data.image[img.ID];
-            img.md        = &data.image[img.ID].md[0];
-            img.createcnt = data.image[img.ID].createcnt;
-            // Populate the IMGID from the imageID metadata
-            updateIMGIDcreationparams(&img);
-        }
+        return -1;
     }
 
-    return(img);
-}
-
-imageID read_sharedmem_image(
-    const char * restrict sname
-)
-{
-    IMGID img = read_sharedmem_img(sname);
-    return(img.ID);
-}
-
-/*
-imageID ID    = -1;
-imageID IDmem = 0;
-IMAGE  *image;
-
-if(strlen(sname) != 0)
-{
-    DEBUG_TRACEPOINT("looking for next ID");
-    IDmem = next_avail_image_ID();
-    DEBUG_TRACEPOINT("Next ID = %ld", IDmem);
-
-    image = &data.image[IDmem];
-
-    if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-            IMAGESTREAMIO_SUCCESS)
+    // Check if already loaded
+    ID = image_ID(img->name, imagearray, NB_images);
+    if(ID != -1)
     {
-        printf("read shared mem image failed -> ID = -1\n");
-        fflush(stdout);
-        ID = -1;
+        // Already loaded: close the one we just opened and point to the existing one
+        if (img->im != NULL)
+        {
+            ImageStreamIO_closeIm(img->im);
+            free(img->im);
+        }
+        img->ID = ID;
+        img->im = &imagearray[ID];
+        img->md = &imagearray[ID].md[0];
+        img->createcnt = imagearray[ID].createcnt;
+        updateIMGIDcreationparams(img);
     }
     else
     {
-        IMGID img = mkIMGID_from_name(sname);
-        //DEBUG_TRACEPOINT("resolving image");
-        //ID = resolveIMGID(&img, ERRMODE_ABORT);
-        img.ID = IDmem;
+        // Not loaded: find slot and move it
+        ID = next_avail_image_ID(-1);
+        if (ID != -1)
+        {
+            // We assume imagearray has enough space and ID is valid index
+            // Move content
+            memcpy(&imagearray[ID], img->im, sizeof(IMAGE));
+            // Free temporary structure
+            free(img->im);
 
-        //ID = image_ID(sname);
-        printf("read shared mem image success -> ID = %ld\n", img.ID);
-        ID = img.ID;
-        fflush(stdout);
+            img->ID = ID;
+            img->im = &imagearray[ID];
+            img->md = &imagearray[ID].md[0];
+            // img.createcnt = data.image[img.ID].createcnt; // Should be set? ImageStreamIO doesn't set createcnt?
+            // Actually createcnt is in IMAGE struct, so it was copied.
 
-        image_keywords_list(img);
+            imagearray[ID].used = 1; // next_avail_image_ID sets this, but just to be sure if we used different logic
+
+            updateIMGIDcreationparams(img);
+        }
+        else
+        {
+            // No space available
+            if (img->im != NULL)
+            {
+                ImageStreamIO_closeIm(img->im);
+                free(img->im);
+            }
+            img->ID = -1;
+        }
     }
 
-    if(data.MEM_MONITOR == 1)
-    {
-        list_image_ID_ncurses();
-    }
     return ID;
 }
-else
+
+
+imageID read_sharedmem_image(
+    const char * restrict sname,
+    IMAGE *imagearray,
+    long NB_images
+)
 {
-    return -1;
-}*/
+    IMGID img = read_sharedmem_img(sname);
+    if (img.ID == -1)
+    {
+        return -1;
+    }
+
+    return RegisterIMGID(&img, imagearray, NB_images);
+}
+
+
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support
 static errno_t compute_function()
@@ -147,7 +144,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    read_sharedmem_image(insname);
+    read_sharedmem_image(insname, data.image, data.NB_MAX_IMAGE);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

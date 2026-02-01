@@ -100,7 +100,7 @@ static errno_t help_function() {
 static errno_t monitor_logic(IMGID *imgptr) {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imgptr, ERRMODE_ABORT);
+    resolveIMGID(imgptr, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     uint32_t xsize = imgptr->md->size[0];
     uint32_t ysize = imgptr->md->size[1];
@@ -149,7 +149,7 @@ static errno_t compute_function() {
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

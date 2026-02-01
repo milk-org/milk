@@ -118,7 +118,7 @@ static errno_t compute_function()
     int diplaycntinterval = (int)((1.0 / *updatefrequency) / pinfotdelay);
     int dispcnt           = 0;
 
-    imageID ID        = image_ID(instreamname);
+    imageID ID        = image_ID(instreamname, data.image, data.NB_MAX_IMAGE);
     int     TUIscreen = 2;
     int     sem       = -1;
 

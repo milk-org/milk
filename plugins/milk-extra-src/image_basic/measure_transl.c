@@ -53,11 +53,11 @@ double basic_measure_transl(const char *__restrict ID_name1,
     step1 = SCALE;
     step2 = SCALE;
 
-    ID1    = image_ID(ID_name1);
+    ID1    = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
     size1x = data.image[ID1].md[0].size[0];
     size1y = data.image[ID1].md[0].size[1];
 
-    ID2    = image_ID(ID_name2);
+    ID2    = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     size2x = data.image[ID2].md[0].size[0];
     size2y = data.image[ID2].md[0].size[1];
 
@@ -92,7 +92,7 @@ double basic_measure_transl(const char *__restrict ID_name1,
     vlim = (double) img_percentile("_im1mask", 0.8);
     printf("vlim = %g\n", vlim);
     save_fl_fits("_im1mask", "_im1mask.0.fits");
-    ID1mask   = image_ID("_im1mask");
+    ID1mask   = image_ID("_im1mask", data.image, data.NB_MAX_IMAGE);
     xsizemask = data.image[ID1mask].md[0].size[0];
     ysizemask = data.image[ID1mask].md[0].size[1];
 

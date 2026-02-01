@@ -23,8 +23,8 @@ arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
     imageID ID1;
     imageID ID2;
 
-    ID1    = image_ID(ID1_name);
-    ID2    = image_ID(ID2_name);
+    ID1    = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
+    ID2    = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
     atype1 = data.image[ID1].md[0].datatype;
     atype2 = data.image[ID2].md[0].datatype;
 
@@ -59,8 +59,8 @@ arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name);
-    ID2       = image_ID(ID2_name);
+    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 
@@ -96,8 +96,8 @@ errno_t arith_image_Cmult(const char *ID1_name,
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name);
-    ID2       = image_ID(ID2_name);
+    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 
@@ -133,8 +133,8 @@ int arith_image_Cdiv(const char *ID1_name,
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name);
-    ID2       = image_ID(ID2_name);
+    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
     datatype1 = data.image[ID1].md[0].datatype;
     datatype2 = data.image[ID2].md[0].datatype;
 

@@ -197,7 +197,7 @@ int functionparameter_FPS_tmux_init(
              funcstring_maxlen,
              " function fpsrunstart {\n"
              "echo \"STARTING RUN PROCESS\"\n"
-             "MILK_FPSPROCINFO=1 %s -n %s \\\"\\\${TCSETCMDPREFIX} %s%s "
+             "MILK_FPSPROCINFO=1 %s -n %s \\\"\\${TCSETCMDPREFIX} %s%s "
              "_RUNSTART_ %s\\\"\n"
              "}\n",
              progexec,
@@ -295,26 +295,28 @@ int functionparameter_FPS_tmux_send_dispatch(
 )
 {
     char cmd_str[2048];
-    const char *args = extra_args ? extra_args : "";
+    const char *window = "ctrl";
+    int window_index = 0;
 
-    if (strcmp(command, "confstart") == 0) {
-        snprintf(cmd_str, sizeof(cmd_str), "%s confstart%s", exec_path, args);
-        functionparameter_FPS_tmux_send(fps_name, "conf", cmd_str);
-        printf("Dispatched 'confstart' to tmux window %s:conf\n", fps_name);
-        return 0;
-    } else if (strcmp(command, "confstep") == 0) {
-        snprintf(cmd_str, sizeof(cmd_str), "%s confstep%s", exec_path, args);
-        functionparameter_FPS_tmux_send(fps_name, "conf", cmd_str);
-        printf("Dispatched 'confstep' to tmux window %s:conf\n", fps_name);
-        return 0;
+    if ( (strcmp(command, "confstart") == 0) || (strcmp(command, "confstep") == 0) ) {
+        window = "conf";
+        window_index = 1;
     } else if (strcmp(command, "runstart") == 0) {
-        snprintf(cmd_str, sizeof(cmd_str), "%s runstart%s", exec_path, args);
-        functionparameter_FPS_tmux_send(fps_name, "run", cmd_str);
-        printf("Dispatched 'runstart' to tmux window %s:run\n", fps_name);
-        return 0;
+        window = "run";
+        window_index = 2;
+    } else if ( (strcmp(command, "confstop") == 0) || (strcmp(command, "runstop") == 0) ) {
+        window = "ctrl";
+        window_index = 0;
+    } else {
+        // Only dispatch specific commands to tmux windows
+        return 1;
     }
+
+    snprintf(cmd_str, sizeof(cmd_str), "%s%s", exec_path, extra_args);
+    functionparameter_FPS_tmux_send(fps_name, window, cmd_str);
+    printf("running command %s in tmux window %s:%d\n", cmd_str, fps_name, window_index);
     
-    return 1;
+    return 0;
 }
 
 /** @brief Get path to current executable

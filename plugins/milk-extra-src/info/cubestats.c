@@ -81,14 +81,14 @@ imageID info_cubestats(const char *ID_name,
     double valn1, valn2, v1, v2, valxp, vcorr;
     long   k1, k2, kc;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     if(data.image[ID].md[0].naxis != 3)
     {
         printf("ERROR: info_cubestats requires 3D image\n");
         exit(0);
     }
 
-    IDm = image_ID(IDmask_name);
+    IDm = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
 
     xysize = data.image[ID].md[0].size[0] * data.image[ID].md[0].size[1];
 

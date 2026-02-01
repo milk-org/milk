@@ -28,7 +28,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin, int truncate, const char *outputF
     WRITE_FILENAME(fnametmp, "%s.%d.%ld.tmp", outputFITSname, (int) getpid(), (long) self_id);
     WRITE_FILENAME(fnametmpext, "%s%s", fnametmp, FITSIOext);
 #ifndef FPS_STANDALONE
-    resolveIMGID(imgin, ERRMODE_WARN);
+    resolveIMGID(imgin, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 #endif
     if(imgin->ID == -1) return RETURN_SUCCESS;
     int bitpix = (outputbitpix != 0) ? outputbitpix : ImageStreamIO_FITSIObitpix(imgin->md->datatype);
@@ -154,7 +154,7 @@ static CLICMDDATA CLIcmddata = { "saveFITS", "save image as FITS", CLICMD_FIELDS
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID in = mkIMGID_from_name(savefits_inimname); resolveIMGID(&in, ERRMODE_ABORT);
+    IMGID in = mkIMGID_from_name(savefits_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     savefits_compute(data.fpsptr, processinfo, in.im);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

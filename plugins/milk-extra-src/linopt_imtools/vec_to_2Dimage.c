@@ -94,9 +94,9 @@ errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
     imageID IDpixindex, IDpixmult;
     long    NBpix;
 
-    IDvec      = image_ID(IDvec_name);
-    IDpixindex = image_ID(IDpixindex_name);
-    IDpixmult  = image_ID(IDpixmult_name);
+    IDvec      = image_ID(IDvec_name, data.image, data.NB_MAX_IMAGE);
+    IDpixindex = image_ID(IDpixindex_name, data.image, data.NB_MAX_IMAGE);
+    IDpixmult  = image_ID(IDpixmult_name, data.image, data.NB_MAX_IMAGE);
     NBpix      = data.image[IDpixindex].md[0].nelement;
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(ID_name, xsize, ysize, &ID));

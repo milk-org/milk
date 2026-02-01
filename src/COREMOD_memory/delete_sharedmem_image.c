@@ -42,7 +42,7 @@ errno_t destroy_shared_image_ID(const char *__restrict imname)
 {
     imageID ID;
 
-    ID = image_ID(imname);
+    ID = image_ID(imname, data.image, data.NB_MAX_IMAGE);
     if((ID != -1) && (data.image[ID].md[0].shared == 1))
     {
         ImageStreamIO_destroyIm(&data.image[ID]);

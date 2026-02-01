@@ -60,7 +60,7 @@ imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
     int                 fd;
     unsigned short int *valarray;
 
-    ID    = image_ID(IDname);
+    ID    = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
 

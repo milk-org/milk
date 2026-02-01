@@ -47,10 +47,10 @@ errno_t image_copy_shm_IMGID(
     IMGID *imgshm
 )
 {
-    resolveIMGID(img, ERRMODE_ABORT);
+    resolveIMGID(img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // check if shared memory destination exists
-    resolveIMGID(imgshm, ERRMODE_NULL);
+    resolveIMGID(imgshm, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if( imgshm->ID != -1)
     {
         // image exists - checking if compatible size and type

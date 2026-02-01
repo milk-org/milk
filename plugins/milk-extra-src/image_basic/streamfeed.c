@@ -83,7 +83,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
         PRINT_ERROR("seteuid error");
     }
 
-    ID     = image_ID(IDname);
+    ID     = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     xsize  = data.image[ID].md[0].size[0];
     ysize  = data.image[ID].md[0].size[1];
     xysize = xsize * ysize;
@@ -93,7 +93,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     printf("frequ = %f Hz\n", frequ);
     printf("tdelay = %ld us\n", tdelay);
 
-    IDs = image_ID(streamname);
+    IDs = image_ID(streamname, data.image, data.NB_MAX_IMAGE);
     if((xsize != data.image[IDs].md[0].size[0]) ||
             (ysize != data.image[IDs].md[0].size[1]))
     {

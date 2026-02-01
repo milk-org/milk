@@ -16,8 +16,8 @@ static uint64_t processinfo_change_cnt_local = 0;
 
 errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
 #ifndef FPS_STANDALONE
-    resolveIMGID(inimg, ERRMODE_ABORT);
-    resolveIMGID(outimg, ERRMODE_NULL);
+    resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 #endif
     if(outimg->ID == -1) copyIMGID(inimg, outimg);
     for (uint8_t axis = 0; axis < inimg->md->naxis; axis++)
@@ -137,7 +137,7 @@ static CLICMDDATA CLIcmddata = { "normslice", "image norm by slice", CLICMD_FIEL
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID idin = mkIMGID_from_name(norm_inimname); resolveIMGID(&idin, ERRMODE_ABORT);
+    IMGID idin = mkIMGID_from_name(norm_inimname); resolveIMGID(&idin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID idout = mkIMGID_from_name(norm_outimname);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_norm_compute(data.fpsptr, processinfo, idin.im, idout.im);

@@ -623,7 +623,7 @@ errno_t CLI_execute_line()
         for(int i = 0; i < data.calctmp_imindex; i++)
         {
             CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
-            if(image_ID(calctmpimname) != -1)
+            if(image_ID(calctmpimname, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 if(data.Debug == 1)
                 {

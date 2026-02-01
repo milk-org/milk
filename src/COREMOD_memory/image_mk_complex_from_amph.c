@@ -55,8 +55,8 @@ errno_t mk_complex_from_amph_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imginamp, ERRMODE_ABORT);
-    resolveIMGID(imginpha, ERRMODE_ABORT);
+    resolveIMGID(imginamp, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imginpha, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;

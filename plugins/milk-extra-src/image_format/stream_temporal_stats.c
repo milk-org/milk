@@ -272,7 +272,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = mkIMGID_from_name(in_name);
-    resolveIMGID(&in_img, ERRMODE_ABORT);
+    resolveIMGID(&in_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // Set in_img to be the trigger
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_name);
@@ -297,24 +297,24 @@ static errno_t compute_function()
 
     // Resolve or create outputs, per need
     IMGID out_ave_img = mkIMGID_from_name(out_ave_name);
-    if(resolveIMGID(&out_ave_img, ERRMODE_WARN))
+    if(resolveIMGID(&out_ave_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
     {
         PRINT_WARNING(
             "WARNING - output average image not found and being created");
         in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
         in_img.datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_ave_img, ERRMODE_ABORT);
+        resolveIMGID(&out_ave_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
     IMGID out_std_img = mkIMGID_from_name(out_std_name);
-    if(resolveIMGID(&out_std_img, ERRMODE_WARN))
+    if(resolveIMGID(&out_std_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
     {
         PRINT_WARNING("WARNING - output std image not found and being created");
         in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
         in_img.datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_std_img, ERRMODE_ABORT);
+        resolveIMGID(&out_std_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
     /*

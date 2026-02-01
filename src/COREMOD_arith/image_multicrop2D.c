@@ -144,7 +144,7 @@ static CLICMDDATA CLIcmddata = { "multicrop2D", "crop 2D image, multiple crops",
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID in = mkIMGID_from_name(multicrop_insname); resolveIMGID(&in, ERRMODE_ABORT);
+    IMGID in = mkIMGID_from_name(multicrop_insname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2D(multicrop_outsname, *multicrop_outxsize, *multicrop_outysize, in.md->datatype);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_multicrop2D_compute(data.fpsptr, processinfo, in.im, out.im);

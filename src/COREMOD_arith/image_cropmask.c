@@ -133,7 +133,7 @@ static errno_t compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = mkIMGID_from_name(cminsname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     //long m = imgin.md->size[0] * imgin.md->size[1];
 

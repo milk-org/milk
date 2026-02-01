@@ -97,7 +97,7 @@ basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n2)
     long    naxes[2], naxes_out[2];
     int     i, j;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     naxes[0]     = data.image[ID].md[0].size[0];
     naxes[1]     = data.image[ID].md[0].size[1];
@@ -131,7 +131,7 @@ imageID basic_expand3D(
     long    naxes[3], naxes_out[3];
     int     i, j, k;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     naxes[0] = data.image[ID].md[0].size[0];
     if(data.image[ID].md[0].naxis > 1)

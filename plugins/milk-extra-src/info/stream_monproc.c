@@ -240,12 +240,12 @@ errno_t stream_monitor_run(
 
     // Connect to input image
     IMGID inimg = mkIMGID_from_name(inimname_arg);
-    resolveIMGID(&inimg, ERRMODE_WARN);
+    resolveIMGID(&inimg, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     if (inimg.ID == -1) {
         // Not found, try to load from SHM
-        read_sharedmem_image(inimname_arg);
-        resolveIMGID(&inimg, ERRMODE_ABORT);
+        read_sharedmem_image(inimname_arg, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
     uint32_t xsize  = inimg.size[0];

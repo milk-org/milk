@@ -60,7 +60,7 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
     long   *coord;
     long    npix;
 
-    ID    = image_ID(IDname);
+    ID    = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[ID].md[0].naxis;
     coord = (long *) malloc(sizeof(long) * naxis);
     if(coord == NULL)

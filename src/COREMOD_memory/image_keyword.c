@@ -88,7 +88,7 @@ long image_write_keyword_L(const char *IDname,
     imageID ID;
     long    kw, NBkw, kw0;
 
-    ID   = image_ID(IDname);
+    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
@@ -124,7 +124,7 @@ long image_write_keyword_D(const char *IDname,
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname);
+    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
@@ -160,7 +160,7 @@ long image_write_keyword_S(const char *IDname,
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname);
+    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     NBkw = data.image[ID].md[0].NBkw;
 
     kw = 0;
@@ -193,7 +193,7 @@ imageID image_list_keywords(
     imageID ID;
     long    kw;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
 
     int kwcnt = 0;
     for(kw = 0; kw < data.image[ID].md->NBkw; kw++)
@@ -238,7 +238,7 @@ long image_read_keyword_D(const char *IDname, const char *kname, double *val)
     long       kw;
     long       kw0;
 
-    ID  = image_ID(IDname);
+    ID  = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     kw0 = -1;
     for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
     {
@@ -259,7 +259,7 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
     long       kw;
     long       kw0;
 
-    ID  = image_ID(IDname);
+    ID  = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     kw0 = -1;
     for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
     {
