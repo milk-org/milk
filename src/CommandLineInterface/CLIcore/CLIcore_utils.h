@@ -812,7 +812,7 @@ static inline imageID resolveIMGID(
  */
 static inline IMGID
 stream_connect(
-    char *__restrict imname
+    const char *__restrict imname
 )
 {
     IMGID img = mkIMGID_from_name(imname);
@@ -830,7 +830,7 @@ stream_connect(
 
 
 static inline IMGID stream_connect_create_2D(
-    char *__restrict imname,
+    const char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint8_t  datatype
@@ -904,7 +904,7 @@ static inline IMGID stream_connect_create_2D(
  */
 static inline IMGID
 stream_connect_create_2Df32(
-    char *__restrict imname,
+    const char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize
 )
@@ -913,7 +913,7 @@ stream_connect_create_2Df32(
 }
 
 static inline IMGID stream_connect_create_3D(
-    char *__restrict imname,
+    const char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize,
@@ -992,7 +992,7 @@ static inline IMGID stream_connect_create_3D(
  * @return IMGID
  */
 static inline IMGID stream_connect_create_3Df32(
-    char *__restrict imname,
+    const char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize)
