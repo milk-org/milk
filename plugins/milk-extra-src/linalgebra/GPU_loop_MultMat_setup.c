@@ -84,7 +84,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
             char name[200];
 
             sprintf(name, "aol%ld_looptiming", loopnb);
-            IDtiming = image_ID(name);
+            IDtiming = image_ID(name, data.image, data.NB_MAX_IMAGE);
 
             if (IDtiming == -1)
             {
@@ -117,7 +117,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
         // Load Control Matrix
         //
         printf("Using Matrix %s\n", IDcontrM_name);
-        imageID IDcontrM            = image_ID(IDcontrM_name);
+        imageID IDcontrM            = image_ID(IDcontrM_name, data.image, data.NB_MAX_IMAGE);
         gpumatmultconf[index].CM_ID = IDcontrM;
         printf("    size : [");
         for(int dim = 0; dim < data.image[IDcontrM].md->naxis; dim++)
@@ -180,9 +180,9 @@ errno_t GPU_loop_MultMat_setup(int         index,
         gpumatmultconf[index].cMat = data.image[IDcontrM].array.F;
 
         /// Load Input vectors
-        IDwfsim                      = image_ID(IDwfsim_name);
+        IDwfsim                      = image_ID(IDwfsim_name, data.image, data.NB_MAX_IMAGE);
         gpumatmultconf[index].wfsVec = data.image[IDwfsim].array.F;
-        IDwfsref                     = image_ID(IDwfsim_name);
+        IDwfsref                     = image_ID(IDwfsim_name, data.image, data.NB_MAX_IMAGE);
         gpumatmultconf[index].wfsRef = data.image[IDwfsref].array.F;
 
         if(orientation == 0)
@@ -225,7 +225,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
         printf("Setting up gpumatmultconf\n");
         fflush(stdout);
 
-        if((gpumatmultconf[index].IDout = image_ID(IDoutdmmodes_name)) == -1)
+        if((gpumatmultconf[index].IDout = image_ID(IDoutdmmodes_name, data.image, data.NB_MAX_IMAGE)) == -1)
         {
             uint32_t *sizearraytmp;
 

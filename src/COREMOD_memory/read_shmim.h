@@ -12,6 +12,16 @@ IMGID read_sharedmem_img(
     const char *sname
 );
 
-imageID read_sharedmem_image(const char *name);
+imageID RegisterIMGID(
+    IMGID *img,
+    IMAGE *imagearray,
+    long NB_images
+);
+
+imageID read_sharedmem_image(
+    const char *sname,
+    IMAGE *imagearray,
+    long NB_images
+);
 
 #endif

@@ -87,7 +87,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     printf("[SVD start]");
     fflush(stdout);
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     n = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1];
     m = data.image[IDin].md[0].size[2];
@@ -142,7 +142,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     /** Write rotation matrix to go from DM modes to eigenmodes */
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
-    ID_VTmatrix     = image_ID("SVD_VTm");
+    ID_VTmatrix     = image_ID("SVD_VTm", data.image, data.NB_MAX_IMAGE);
     if(ID_VTmatrix != -1)
     {
         delete_image_ID("SVD_VTm", DELETE_IMAGE_ERRMODE_WARNING);

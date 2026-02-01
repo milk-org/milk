@@ -21,7 +21,7 @@ double arith_image_total_IMGID(IMGID *imgin)
     uint64_t    nelement;
     uint8_t     datatype;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     datatype = imgin->md[0].datatype;
 
     nelement = imgin->md[0].nelement;
@@ -171,7 +171,7 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     uint64_t    nelement;
     uint8_t     datatype;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     datatype = imgin->md[0].datatype;
 
     nelement = imgin->md[0].nelement;

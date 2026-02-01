@@ -50,7 +50,7 @@ static CLICMDDATA CLIcmddata =
 
 errno_t image_keyword_addD(IMGID img, char *kwname, double kwval, char *comment)
 {
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     int NBkw = img.md->NBkw; // max nb kw
 

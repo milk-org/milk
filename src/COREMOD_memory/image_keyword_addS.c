@@ -55,7 +55,7 @@ errno_t image_keyword_addS(
     char *comment
 )
 {
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     int NBkw = img.md->NBkw; // max nb kw
 

@@ -58,7 +58,7 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     imageID IDcoeff;
     uint8_t datatype;
 
-    IDmodes  = image_ID(IDmodes_name);
+    IDmodes  = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
     datatype = data.image[IDmodes].md[0].datatype;
 
     uint32_t xsize = data.image[IDmodes].md[0].size[0];
@@ -77,7 +77,7 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
         FUNC_CHECK_RETURN(create_2Dimage_ID_double(ID_name, xsize, ysize, &ID));
     }
 
-    IDcoeff = image_ID(IDcoeff_name);
+    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
 
     if(datatype == _DATATYPE_FLOAT)
     {

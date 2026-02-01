@@ -101,7 +101,7 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         fp = fopen("imstat.info.txt", "w");
     }
 
-    ID = image_ID_noaccessupdate(ID_name);
+    ID = image_ID_noaccessupdate(ID_name, data.image, data.NB_MAX_IMAGE);
     if(ID != -1)
     {
         nelements = data.image[ID].md[0].nelement;

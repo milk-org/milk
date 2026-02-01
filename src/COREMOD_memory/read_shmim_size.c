@@ -76,7 +76,7 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     FILE           *fp;
     imageID         ID = -1;
 
-    if((ID = image_ID(name)) == -1)
+    if((ID = image_ID(name, data.image, data.NB_MAX_IMAGE)) == -1)
     {
         WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
 

@@ -61,7 +61,7 @@ imageID break_cube(const char *restrict ID_name)
     long     i;
     char     framename[STRINGMAXLEN_IMGNAME];
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     naxes[2] = data.image[ID].md[0].size[2];

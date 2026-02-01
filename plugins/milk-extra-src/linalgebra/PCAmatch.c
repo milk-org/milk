@@ -391,10 +391,10 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgmodesA = mkIMGID_from_name(modesA);
-    resolveIMGID(&imgmodesA, ERRMODE_ABORT);
+    resolveIMGID(&imgmodesA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgmodesB = mkIMGID_from_name(modesB);
-    resolveIMGID(&imgmodesB, ERRMODE_ABORT);
+    resolveIMGID(&imgmodesB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
     fflush(stdout);

@@ -40,9 +40,9 @@ errno_t fft_DFT(const char *IDin_name,
 
     imageID IDcosXX, IDcosYY, IDsinXX, IDsinYY;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
-    IDinmask        = image_ID(IDinmask_name);
+    IDinmask        = image_ID(IDinmask_name, data.image, data.NB_MAX_IMAGE);
     uint32_t xsize  = data.image[IDinmask].md[0].size[0];
     uint32_t ysize  = data.image[IDinmask].md[0].size[1];
     uint64_t xysize = xsize;
@@ -153,7 +153,7 @@ errno_t fft_DFT(const char *IDin_name,
             }
     }
 
-    IDoutmask = image_ID(IDoutmask_name);
+    IDoutmask = image_ID(IDoutmask_name, data.image, data.NB_MAX_IMAGE);
 
     uint32_t NBptsout       = 0;
     uint32_t NBpixact_iiout = 0;
@@ -463,11 +463,11 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         printf("---------------FORCING IMAGINARY PART TO ZERO-------------\n");
     }
 
-    ID_DFTmask00 = image_ID("_DFTmask00");
+    ID_DFTmask00 = image_ID("_DFTmask00", data.image, data.NB_MAX_IMAGE);
 
     printf("zfactor = %f\n", zfactor);
 
-    IDin            = image_ID(pupin_name);
+    IDin            = image_ID(pupin_name, data.image, data.NB_MAX_IMAGE);
     xsize           = data.image[IDin].md[0].size[0];
     ysize           = data.image[IDin].md[0].size[1];
     uint64_t xysize = (uint64_t) xsize;
@@ -525,7 +525,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         // Construct focal plane mask for DFT
         // If amplitude >eps, turn pixel ON, save result in _fpmzmask
         //
-        IDfpmz = image_ID(fpmz_name);
+        IDfpmz = image_ID(fpmz_name, data.image, data.NB_MAX_IMAGE);
         FUNC_CHECK_RETURN(
             create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 
@@ -636,7 +636,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         /*  if(FORCE_IMZERO==1) // Remove tip-tilt in focal plane mask imaginary part
         {
         imresidual = 0.0;
-        ID = image_ID("_foc0");
+        ID = image_ID("_foc0", data.image, data.NB_MAX_IMAGE);
         ID1 = create_2Dimage_ID("imresidual", xsize, ysize);
         for(ii=0; ii<xsize*ysize; ii++)
         {
@@ -751,13 +751,13 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
 
     imageID ID_DFTmask00;
 
-    imageID  IDin   = image_ID(pupin_name);
+    imageID  IDin   = image_ID(pupin_name, data.image, data.NB_MAX_IMAGE);
     uint32_t xsize  = data.image[IDin].md[0].size[0];
     uint32_t ysize  = data.image[IDin].md[0].size[1];
     uint64_t xysize = xsize;
     xysize *= ysize;
 
-    ID_DFTmask00 = image_ID("_DFTmask00");
+    ID_DFTmask00 = image_ID("_DFTmask00", data.image, data.NB_MAX_IMAGE);
 
     printf("zfactor = %f\n", zfactor);
 
@@ -789,7 +789,7 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
         }
 
     // ! Why read and re-create ?
-    IDfpmz = image_ID(fpmz_name);
+    IDfpmz = image_ID(fpmz_name, data.image, data.NB_MAX_IMAGE);
     FUNC_CHECK_RETURN(
         create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 

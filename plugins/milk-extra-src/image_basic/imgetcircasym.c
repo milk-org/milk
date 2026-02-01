@@ -169,7 +169,7 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
 
     printf("%u %u\n", naxes[0], naxes[1]);
     create_2Dimage_ID(ID_out_name, naxes[0], naxes[1], NULL);
-    IDout = image_ID(ID_out_name);
+    IDout = image_ID(ID_out_name, data.image, data.NB_MAX_IMAGE);
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
@@ -207,7 +207,7 @@ imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
     printf("get non-circular symmetric component from image %s\n", ID_name);
     fflush(stdout);
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     IDout = IMAGE_BASIC_get_circasym_component_byID(ID,
             ID_out_name,

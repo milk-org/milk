@@ -247,7 +247,7 @@ imageID IMG_REDUCE_cubesimplestat(const char *IDin_name)
 
     long IDave, IDrms;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
@@ -295,7 +295,7 @@ errno_t clean_bad_pix(const char *IDin_name, const char *IDbadpix_name)
     long    left, fixed;
     long    xysize;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     xsize  = data.image[IDin].md[0].size[0];
     ysize  = data.image[IDin].md[0].size[1];
@@ -317,12 +317,12 @@ errno_t clean_bad_pix(const char *IDin_name, const char *IDbadpix_name)
     }
 
     copy_image_ID(IDbadpix_name, "badpix_tmp", 0);
-    IDbadpix = image_ID("badpix_tmp");
+    IDbadpix = image_ID("badpix_tmp", data.image, data.NB_MAX_IMAGE);
     copy_image_ID("badpix_tmp", "newbadpix_tmp", 0);
-    IDbadpix1 = image_ID("newbadpix_tmp");
+    IDbadpix1 = image_ID("newbadpix_tmp", data.image, data.NB_MAX_IMAGE);
 
     //    copy_image_ID(IDin_name, "bpcleaned_tmp");
-    //   IDouttmp = image_ID("bpcleaned_tmp");
+    //   IDouttmp = image_ID("bpcleaned_tmp", data.image, data.NB_MAX_IMAGE);
 
     left = 1;
     while(left != 0)
@@ -423,7 +423,7 @@ long IMG_REDUCE_cleanbadpix_fast_precompute(const char *IDmask_name)
     printf("Pre-computing bad pixel compensation operations\n");
     fflush(stdout);
 
-    IDbadpix = image_ID(IDmask_name);
+    IDbadpix = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
     xsize    = data.image[IDbadpix].md[0].size[0];
     ysize    = data.image[IDbadpix].md[0].size[1];
 
@@ -603,7 +603,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
     long      ii, kk;
     int       naxis;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(sizearray == NULL)
@@ -628,10 +628,10 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
 
     xysize = sizearray[0] * sizearray[1];
 
-    IDdark = image_ID("dark"); // use if it exists
+    IDdark = image_ID("dark", data.image, data.NB_MAX_IMAGE); // use if it exists
     list_image_ID();
 
-    IDout = image_ID(IDoutname);
+    IDout = image_ID(IDoutname, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         printf("Creating output image\n");
@@ -755,7 +755,7 @@ errno_t IMG_REDUCE_correlMatrix(const char *IDin_name,
     double  v, tot;
     double  tot1, tot2;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
@@ -763,7 +763,7 @@ errno_t IMG_REDUCE_correlMatrix(const char *IDin_name,
 
     xysize = xsize * ysize;
 
-    IDmask = image_ID(IDmask_name);
+    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
     create_2Dimage_ID(IDout_name, zsize, zsize, &IDout);
 
     for(kk1 = 0; kk1 < zsize; kk1++)
@@ -828,15 +828,15 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
 
     uint32_t *imsizearray;
 
-    IDin  = image_ID(IDin_name);
+    IDin  = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
 
     brad = 2;
 
-    IDref = image_ID(IDref_name);
+    IDref = image_ID(IDref_name, data.image, data.NB_MAX_IMAGE);
 
-    IDout = image_ID(IDout_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         if(mode == 0)
@@ -866,13 +866,13 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
         }
     }
 
-    IDcent = image_ID("_tmp_centerim");
+    IDcent = image_ID("_tmp_centerim", data.image, data.NB_MAX_IMAGE);
     if(IDcent == -1)
     {
         create_2Dimage_ID("_tmp_centerim", xcentsize, ycentsize, &IDcent);
     }
 
-    IDcentref = image_ID("_tmp_centerimref");
+    IDcentref = image_ID("_tmp_centerimref", data.image, data.NB_MAX_IMAGE);
     if(IDcentref == -1)
     {
         create_2Dimage_ID("_tmp_centerimref", xcentsize, ycentsize, &IDcentref);
@@ -912,11 +912,11 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
 
         /** compute offset */
         fft_correlation("_tmp_centerim", "_tmp_centerimref", "outcorr");
-        //IDcorr = image_ID("outcorr");
+        //IDcorr = image_ID("outcorr", data.image, data.NB_MAX_IMAGE);
         fftzoom("outcorr", "outcorrz", zfactor);
         //            save_fits("outcorr", "outcorr0.fits");
 
-        IDcorrz = image_ID("outcorrz");
+        IDcorrz = image_ID("outcorrz", data.image, data.NB_MAX_IMAGE);
         xsizez  = data.image[IDcorrz].md[0].size[0];
         ysizez  = data.image[IDcorrz].md[0].size[1];
 
@@ -1003,7 +1003,7 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
                sizeof(float) * xsize * ysize);
         fft_image_translate("tinim", "_translout", -centx, -centy);
         delete_image_ID("tinim", DELETE_IMAGE_ERRMODE_WARNING);
-        IDtout = image_ID("_translout");
+        IDtout = image_ID("_translout", data.image, data.NB_MAX_IMAGE);
         //save_fits("_translout","_translout.fits");
 
         printf("zsize = %ld   vmin = %10f   offset = %+8.3f %+8.3f\n",
@@ -1078,7 +1078,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     double  vmin;
     imageID IDdiff;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
@@ -1087,7 +1087,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     xysize = xsize * ysize;
 
     /// remove dark
-    if((IDdark = image_ID("calib_dark")) != -1)
+    if((IDdark = image_ID("calib_dark", data.image, data.NB_MAX_IMAGE)) != -1)
     {
         printf("REMOVING DARK ...");
         fflush(stdout);
@@ -1113,7 +1113,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     }
 
     /// remove bad pixels
-    if(image_ID("calib_badpix") != -1)
+    if(image_ID("calib_badpix", data.image, data.NB_MAX_IMAGE) != -1)
     {
         printf("REMOVING BAD PIXELS ...");
         fflush(stdout);
@@ -1246,7 +1246,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
                             "translout",
                             xcent[kk] - 0.5 * xsize1,
                             ycent[kk] - 0.5 * ysize1);
-        IDt2 = image_ID("translout");
+        IDt2 = image_ID("translout", data.image, data.NB_MAX_IMAGE);
 
         for(ii = 0; ii < xysize1; ii++)
         {
@@ -1288,7 +1288,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     IMG_REDUCE_correlMatrix("cropPSF", "corrmask", "cropPSF_corr");
     save_fits("cropPSF_corr", "cropPSF_corr.fits");
 
-    ID   = image_ID("cropPSF_corr");
+    ID   = image_ID("cropPSF_corr", data.image, data.NB_MAX_IMAGE);
     kk1  = 0;
     kk2  = 500;
     vmin = data.image[ID].array.F[kk2 * zsize + kk1] * 2.0;
@@ -1308,7 +1308,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     create_2Dimage_ID("imp1", xsize1, ysize1, &ID1);
     create_2Dimage_ID("imp2", xsize1, ysize1, &ID2);
     create_2Dimage_ID("imdiff", xsize1, ysize1, &IDdiff);
-    ID = image_ID("cropPSF");
+    ID = image_ID("cropPSF", data.image, data.NB_MAX_IMAGE);
 
     list_image_ID();
 

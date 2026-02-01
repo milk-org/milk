@@ -172,9 +172,9 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
 
     printf("Function %s\n", __FUNCTION__);
 
-    IDR    = image_ID(IDnameR);
-    IDG    = image_ID(IDnameG);
-    IDB    = image_ID(IDnameB);
+    IDR    = image_ID(IDnameR, data.image, data.NB_MAX_IMAGE);
+    IDG    = image_ID(IDnameG, data.image, data.NB_MAX_IMAGE);
+    IDB    = image_ID(IDnameB, data.image, data.NB_MAX_IMAGE);
     width  = (uint32_t) data.image[IDR].md[0].size[0];
     height = (uint32_t) data.image[IDR].md[0].size[1];
 

@@ -23,7 +23,7 @@ errno_t create_image_ID_IMGID(
                      img->shared,
                      img->NBkw,
                      img->CBsize);
-    if(image_ID(img->name) == -1)
+    if(image_ID(img->name, data.image, data.NB_MAX_IMAGE) == -1)
     {
         img->ID = next_avail_image_ID(img->ID);
         ImageStreamIO_createIm(&data.image[img->ID],
@@ -38,7 +38,7 @@ errno_t create_image_ID_IMGID(
     else
     {
         // Cannot create image : name already in use
-        img->ID = image_ID(img->name);
+        img->ID = image_ID(img->name, data.image, data.NB_MAX_IMAGE);
         if(data.image[img->ID].md->datatype != img->datatype)
         {
             FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong type",

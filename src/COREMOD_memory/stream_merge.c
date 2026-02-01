@@ -69,12 +69,12 @@ static errno_t compute_function()
     {
         sprintf(input_name, "%s_%d", stream_basename, ii);
         img_in_arr[ii] = mkIMGID_from_name(input_name);
-        resolveIMGID(&img_in_arr[ii], ERRMODE_ABORT);
+        resolveIMGID(&img_in_arr[ii], ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
     // Open output image
     IMGID img_out = mkIMGID_from_name(stream_basename);
-    resolveIMGID(&img_out, ERRMODE_WARN);
+    resolveIMGID(&img_out, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     // Perform some data offset computations.
     // So that we know WHERE the memcopies should go and how big they should be.

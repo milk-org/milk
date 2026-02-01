@@ -157,7 +157,7 @@ linopt_compute_SVDpseudoInverse(
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
     if(ID_Rmatrix == -1)
     {
         printf("ERROR: matrix %s not found in memory\n", ID_Rmatrix_name);

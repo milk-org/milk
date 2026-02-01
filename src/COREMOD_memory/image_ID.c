@@ -6,7 +6,7 @@
 #include "CLIcore.h"
 
 /* ID number corresponding to a name */
-imageID image_ID(const char *name)
+imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -14,24 +14,29 @@ imageID image_ID(const char *name)
     int     loopOK;
     imageID tmpID = 0;
 
+    if(imagearray == NULL)
+    {
+        return -1;
+    }
+
     i      = 0;
     loopOK = 1;
     while(loopOK == 1)
     {
-        if(data.image[i].used == 1)
+        if(imagearray[i].used == 1)
         {
-            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                    (data.image[i].name[strlen(name)] == '\0'))
+            if((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
+                    (imagearray[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
                 clock_gettime(CLOCK_MILK,
-                              &data.image[i].md[0].lastaccesstime);
+                              &imagearray[i].md[0].lastaccesstime);
             }
         }
         i++;
 
-        if(i == data.NB_MAX_IMAGE)
+        if(i == NB_images)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -44,7 +49,7 @@ imageID image_ID(const char *name)
 }
 
 /* ID number corresponding to a name */
-imageID image_ID_noaccessupdate(const char *name)
+imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, long NB_images)
 {
     DEBUG_TRACE_FSTART();
 
@@ -52,14 +57,19 @@ imageID image_ID_noaccessupdate(const char *name)
     imageID tmpID = 0;
     int     loopOK;
 
+    if(imagearray == NULL)
+    {
+        return -1;
+    }
+
     i      = 0;
     loopOK = 1;
     while(loopOK == 1)
     {
-        if(data.image[i].used == 1)
+        if(imagearray[i].used == 1)
         {
-            if((strncmp(name, data.image[i].name, strlen(name)) == 0) &&
-                    (data.image[i].name[strlen(name)] == '\0'))
+            if((strncmp(name, imagearray[i].name, strlen(name)) == 0) &&
+                    (imagearray[i].name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -67,7 +77,7 @@ imageID image_ID_noaccessupdate(const char *name)
         }
         i++;
 
-        if(i == data.NB_MAX_IMAGE)
+        if(i == NB_images)
         {
             loopOK = 0;
             tmpID  = -1;

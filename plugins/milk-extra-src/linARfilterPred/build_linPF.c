@@ -224,7 +224,7 @@ static errno_t compute_function()
     // connect to input telemetry
     //
     IMGID imgin = mkIMGID_from_name(inname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
@@ -326,7 +326,7 @@ static errno_t compute_function()
     /// Otherwise, all variables are active\n
     /// The number of active input variables is stored in NBpixin.
 
-    imageID IDinmask = image_ID("inmask");
+    imageID IDinmask = image_ID("inmask", data.image, data.NB_MAX_IMAGE);
     long    NBpixin  = 0;
     if(IDinmask == -1)
     {
@@ -388,7 +388,7 @@ static errno_t compute_function()
         abort();
     }
 
-    imageID IDoutmask = image_ID("outmask");
+    imageID IDoutmask = image_ID("outmask", data.image, data.NB_MAX_IMAGE);
     long    NBpixout  = 0;
     if(IDoutmask == -1)
     {
@@ -551,7 +551,7 @@ static errno_t compute_function()
     ///
     /// Necessary as input may be continuously changing between consecutive loop iterations.
     ///
-    IDincp = image_ID("PFin_copy");
+    IDincp = image_ID("PFin_copy", data.image, data.NB_MAX_IMAGE);
     memcpy(data.image[IDincp].array.F,
            imgin.im->array.F,
            sizeof(float) * inNBelem);
@@ -676,7 +676,7 @@ static errno_t compute_function()
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = mkIMGID_from_name("PFmatD");
-        resolveIMGID(&imgin, ERRMODE_ABORT);
+        resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
@@ -744,7 +744,7 @@ static errno_t compute_function()
 
 
 
-    imageID IDmatC = image_ID("psinv");
+    imageID IDmatC = image_ID("psinv", data.image, data.NB_MAX_IMAGE);
 
     ///
     /// ### Assemble Predictive Filter
@@ -760,7 +760,7 @@ static errno_t compute_function()
 
 
 
-    imageID IDoutPF2Dn = image_ID("psinvPFmat");
+    imageID IDoutPF2Dn = image_ID("psinvPFmat", data.image, data.NB_MAX_IMAGE);
     if(IDoutPF2Dn == -1)
     {
         printf("------------------- CPU computing PF matrix\n");

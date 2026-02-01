@@ -147,7 +147,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     list_image_ID();
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
 
     datatype = data.image[ID_Rmatrix].md[0].datatype;
     if(datatype != _DATATYPE_FLOAT)

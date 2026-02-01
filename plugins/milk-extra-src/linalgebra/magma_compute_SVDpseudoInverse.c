@@ -319,7 +319,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     /// (assuming here that vector = column of the matrix)
     ///
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
     datatype   = data.image[ID_Rmatrix].md[0].datatype;
 
     if(data.image[ID_Rmatrix].md[0].naxis == 3)
@@ -1440,7 +1440,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     }
     else
     {
-        ID_Cmatrix = image_ID(ID_Cmatrix_name);
+        ID_Cmatrix = image_ID(ID_Cmatrix_name, data.image, data.NB_MAX_IMAGE);
     }
 
     magma_queue_sync(magmaqueue);
@@ -1590,7 +1590,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     magma_queue_sync(magmaqueue);
     clock_gettime(CLOCK_MILK, &t12);
 
-    ID_PFfmdat = image_ID("PFfmdat");
+    ID_PFfmdat = image_ID("PFfmdat", data.image, data.NB_MAX_IMAGE);
     if(ID_PFfmdat != -1)
     {
         printf("Transp(Ainv)     N x M   = %d x %d\n", N, M);

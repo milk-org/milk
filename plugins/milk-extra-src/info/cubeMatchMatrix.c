@@ -79,13 +79,13 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
     long kdiffmax = 1005;
     long kmax     = 10;
 
-    IDin   = image_ID(IDin_name);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize  = data.image[IDin].md[0].size[0];
     ysize  = data.image[IDin].md[0].size[1];
     zsize  = data.image[IDin].md[0].size[2];
     xysize = xsize * ysize;
 
-    IDout = image_ID(IDout_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
 
     if(IDout == -1)
     {
@@ -197,7 +197,7 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
     }
     fclose(fpout);
 
-    ID0    = image_ID("imcfull");
+    ID0    = image_ID("imcfull", data.image, data.NB_MAX_IMAGE);
     xsize  = data.image[ID0].md[0].size[0];
     ysize  = data.image[ID0].md[0].size[1];
     xysize = xsize * ysize;

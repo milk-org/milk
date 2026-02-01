@@ -141,7 +141,7 @@ imageID arith_image_crop(const char *ID_name,
         end_c[i]   = 0;
     }
 
-    IDin = image_ID(ID_name);
+    IDin = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     if(IDin == -1)
     {
         PRINT_ERROR("Missing input image = %s", ID_name);
@@ -685,7 +685,7 @@ imageID arith_image_extract2D(const char *in_name,
     imageID      IDout;
     uint_fast8_t k;
 
-    ID    = image_ID(in_name);
+    ID    = image_ID(in_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[ID].md[0].naxis;
 
     start = (long *) malloc(sizeof(long) * naxis);

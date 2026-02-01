@@ -116,7 +116,7 @@ static errno_t imfilter_im2D_1pixblurr(
     // custom stream process function code
 
     // resolve imgpos
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
     // create eigenvalues array if needed
@@ -272,7 +272,7 @@ static errno_t compute_function()
 
     // input
     IMGID imgin = mkIMGID_from_name(iminname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // output
     IMGID imgout  = mkIMGID_from_name(imoutname);

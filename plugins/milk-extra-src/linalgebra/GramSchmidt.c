@@ -89,9 +89,9 @@ errno_t GramSchmidt(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imginm, ERRMODE_ABORT);
+    resolveIMGID(&imginm, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    resolveIMGID(&imgaux, ERRMODE_WARN);
+    resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
     // Compute cross product on input
@@ -200,13 +200,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginm = mkIMGID_from_name(inmodes);
-    resolveIMGID(&imginm, ERRMODE_ABORT);
+    resolveIMGID(&imginm, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
     IMGID imgoutm  = mkIMGID_from_name(outmodes);
 
     IMGID imgaux = mkIMGID_from_name(auxmat);
-    resolveIMGID(&imgaux, ERRMODE_WARN);
+    resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
 

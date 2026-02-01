@@ -381,10 +381,10 @@ imageID image_format_reconstruct_from_RGGBchan(
     imageID ID00, ID01, ID10, ID11;
 
 
-    IDr = image_ID(IDr_name);
-    IDg1 = image_ID(IDg1_name);
-    IDg2 = image_ID(IDg2_name);
-    IDb = image_ID(IDb_name);
+    IDr = image_ID(IDr_name, data.image, data.NB_MAX_IMAGE);
+    IDg1 = image_ID(IDg1_name, data.image, data.NB_MAX_IMAGE);
+    IDg2 = image_ID(IDg2_name, data.image, data.NB_MAX_IMAGE);
+    IDb = image_ID(IDb_name, data.image, data.NB_MAX_IMAGE);
     xsize1 = data.image[IDr].md[0].size[0];
     ysize1 = data.image[IDr].md[0].size[1];
 
@@ -469,7 +469,7 @@ imageID IMAGE_FORMAT_requantize(
     long ii;
     long xsize, ysize;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
 
@@ -514,7 +514,7 @@ imageID IMAGE_FORMAT_dequantize(
     long ii;
     long xsize, ysize;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
 

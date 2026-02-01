@@ -101,12 +101,12 @@ errno_t image_slicenormalize(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&inimg, ERRMODE_ABORT);
-    resolveIMGID(&maskimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&maskimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    resolveIMGID(&imgaux, ERRMODE_NULL);
+    resolveIMGID(&imgaux, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
-    resolveIMGID(outimg, ERRMODE_NULL);
+    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if(outimg->ID == -1)
     {
         copyIMGID(&inimg, outimg);
@@ -378,13 +378,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID maskimg = mkIMGID_from_name(maskimname);
-    resolveIMGID(&maskimg, ERRMODE_ABORT);
+    resolveIMGID(&maskimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgaux = mkIMGID_from_name(auxin);
-    resolveIMGID(&imgaux, ERRMODE_WARN);
+    resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     IMGID outimg = mkIMGID_from_name(outimname);
 

@@ -114,7 +114,7 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
     datatype   = data.image[ID_Rmatrix].md[0].datatype;
 
     if(data.image[ID_Rmatrix].md[0].naxis == 3)

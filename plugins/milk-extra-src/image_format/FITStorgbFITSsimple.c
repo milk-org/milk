@@ -45,7 +45,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
         FastMode = 1;
     }
 
-    ID    = image_ID(ID_name);
+    ID    = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     Xsize = data.image[ID].md[0].size[0];
     Ysize = data.image[ID].md[0].size[1];
 
@@ -83,7 +83,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
     if(FastMode == 0)
     {
         // bias
-        IDbias = image_ID("bias");
+        IDbias = image_ID("bias", data.image, data.NB_MAX_IMAGE);
         if(IDbias == -1)
         {
             create_2Dimage_ID("bias", Xsize, Ysize, &IDbias);
@@ -94,7 +94,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
         }
 
         // dark
-        IDdark = image_ID("dark");
+        IDdark = image_ID("dark", data.image, data.NB_MAX_IMAGE);
         if(IDdark == -1)
         {
             create_2Dimage_ID("dark", Xsize, Ysize, &IDdark);
@@ -105,7 +105,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
         }
 
         // bad pixel map
-        IDbadpix = image_ID("badpix");
+        IDbadpix = image_ID("badpix", data.image, data.NB_MAX_IMAGE);
         if(IDbadpix == -1)
         {
             create_2Dimage_ID("badpix", Xsize, Ysize, &IDbadpix);
@@ -116,10 +116,10 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
         }
 
         copy_image_ID("badpix", "badpix1", 0);
-        IDbp = image_ID("badpix1");
+        IDbp = image_ID("badpix1", data.image, data.NB_MAX_IMAGE);
 
         // flat field
-        IDflat = image_ID("flat");
+        IDflat = image_ID("flat", data.image, data.NB_MAX_IMAGE);
         if(IDflat == -1)
         {
             create_2Dimage_ID("flat", Xsize, Ysize, &IDflat);
@@ -209,21 +209,21 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
 
         case 0:
 
-            if(image_ID(ID_name_r) != -1)
+            if(image_ID(ID_name_r, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_r, DELETE_IMAGE_ERRMODE_WARNING);
             }
             create_2Dimage_ID(ID_name_r, Xsize, Ysize, &IDr);
             create_2Dimage_ID("imrc", Xsize, Ysize, &IDrc);
 
-            if(image_ID(ID_name_g) != -1)
+            if(image_ID(ID_name_g, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_g, DELETE_IMAGE_ERRMODE_WARNING);
             }
             create_2Dimage_ID(ID_name_g, Xsize, Ysize, &IDg);
             create_2Dimage_ID("imgc", Xsize, Ysize, &IDgc);
 
-            if(image_ID(ID_name_b) != -1)
+            if(image_ID(ID_name_b, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_b, DELETE_IMAGE_ERRMODE_WARNING);
             }
@@ -580,21 +580,21 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
             break;
 
         case 1:
-            if(image_ID(ID_name_r) != -1)
+            if(image_ID(ID_name_r, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_r, DELETE_IMAGE_ERRMODE_WARNING);
             }
             create_2Dimage_ID(ID_name_r, Xsize / 2, Ysize / 2, &IDr);
             create_2Dimage_ID("imrc", Xsize / 2, Ysize / 2, &IDrc);
 
-            if(image_ID(ID_name_g) != -1)
+            if(image_ID(ID_name_g, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_g, DELETE_IMAGE_ERRMODE_WARNING);
             }
             create_2Dimage_ID(ID_name_g, Xsize / 2, Ysize / 2, &IDg);
             create_2Dimage_ID("imgc", Xsize / 2, Ysize / 2, &IDgc);
 
-            if(image_ID(ID_name_b) != -1)
+            if(image_ID(ID_name_b, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(ID_name_b, DELETE_IMAGE_ERRMODE_WARNING);
             }

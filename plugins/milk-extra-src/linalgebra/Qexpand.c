@@ -216,7 +216,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgincoeffM = mkIMGID_from_name(incoeffM);
-    resolveIMGID(&imgincoeffM, ERRMODE_ABORT);
+    resolveIMGID(&imgincoeffM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
     fflush(stdout);

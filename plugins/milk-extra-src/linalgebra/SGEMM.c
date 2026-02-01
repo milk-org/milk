@@ -713,10 +713,10 @@ static errno_t compute_function()
     // input
 
     IMGID imginA = mkIMGID_from_name(inmatA);
-    resolveIMGID(&imginA, ERRMODE_ABORT);
+    resolveIMGID(&imginA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imginB = mkIMGID_from_name(inmatB);
-    resolveIMGID(&imginB, ERRMODE_ABORT);
+    resolveIMGID(&imginB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 

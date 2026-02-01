@@ -18,7 +18,7 @@ variableID create_variable_ID(const char *name, double value)
     ID = -1;
     //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
 
-    i1 = image_ID(name);
+    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
     //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
 
     i2 = variable_ID(name);
@@ -59,7 +59,7 @@ variableID create_variable_long_ID(const char *name, long value)
     long       i1, i2;
 
     ID = -1;
-    i1 = image_ID(name);
+    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
     i2 = variable_ID(name);
 
     if(i1 != -1)
@@ -97,7 +97,7 @@ variableID create_variable_string_ID(const char *name, const char *value)
     long       i1, i2;
 
     ID = -1;
-    i1 = image_ID(name);
+    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
     i2 = variable_ID(name);
 
     if(i1 != -1)

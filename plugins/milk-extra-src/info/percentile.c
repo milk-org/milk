@@ -16,7 +16,7 @@ float img_percentile_float(const char *ID_name, float p)
     uint64_t nelements;
     uint64_t n;
 
-    ID        = image_ID(ID_name);
+    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0]  = data.image[ID].md[0].size[0];
     naxes[1]  = data.image[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
@@ -60,7 +60,7 @@ double img_percentile_double(const char *ID_name, double p)
     uint64_t nelements;
     uint64_t n;
 
-    ID        = image_ID(ID_name);
+    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0]  = data.image[ID].md[0].size[0];
     naxes[1]  = data.image[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
@@ -99,7 +99,7 @@ double img_percentile(const char *ID_name, double p)
     uint8_t datatype;
     double  value = 0.0;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     datatype = data.image[ID].md[0].datatype;
 
     if(datatype == _DATATYPE_FLOAT)

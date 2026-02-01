@@ -190,7 +190,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
 
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
-    IDtrig = image_ID(IDtrig_name);
+    IDtrig = image_ID(IDtrig_name, data.image, data.NB_MAX_IMAGE);
 
     printf("Creating arrays\n");
     fflush(stdout);
