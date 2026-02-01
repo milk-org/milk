@@ -125,8 +125,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     PROCESSINFO *processinfo;
 
-    IDin  = image_ID(inputstream_name);
-    IDmap = image_ID(IDmap_name);
+    IDin  = image_ID(inputstream_name, data.image, data.NB_MAX_IMAGE);
+    IDmap = image_ID(IDmap_name, data.image, data.NB_MAX_IMAGE);
     // Size of IDmap is different depending if forward or reverse lookup !
     // Reverse = 0: same size as IDin
     // Reverse = 1: same size as IDout

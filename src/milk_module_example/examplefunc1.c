@@ -100,7 +100,7 @@ static errno_t example_compute_2Dimage_total(
     // Resolve image if not already resolved.
     // This is a low-overhead function if the image is already in memory and imgptr already pointing to it.
     // If not already connected, the function will use imgptr->name to try to connect to it.
-    resolveIMGID(imgptr, ERRMODE_ABORT);
+    resolveIMGID(imgptr, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     // Abort if unable to resolve.
     // Upon success, these are available for use:
     // imgptr->name, imgptr->naxis, imgptr->ID, imgptr->size, imgptr->im

@@ -67,7 +67,7 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
     uint32_t *sizearray;
     imageID   IDpixindex, IDpixmult;
 
-    ID = image_ID(IDmask_name);
+    ID = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
 
     size = data.image[ID].md[0].nelement;
 

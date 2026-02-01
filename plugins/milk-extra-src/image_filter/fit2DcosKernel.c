@@ -70,7 +70,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
     xstep = x0array[0 * NBgridpts1D + 1] - x0array[0 * NBgridpts1D + 0];
     ystep = y0array[1 * NBgridpts1D + 0] - y0array[0 * NBgridpts1D + 0];
 
-    ID   = image_ID(IDname);
+    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     size = data.image[ID].md[0].size[0];
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("testim", size, size, &ID1));

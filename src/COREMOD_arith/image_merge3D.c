@@ -16,9 +16,9 @@ static uint64_t processinfo_change_cnt_local = 0;
 
 errno_t image_marge(IMGID inimg0, IMGID inimg1, IMGID *outimg, uint8_t mergeaxis) {
 #ifndef FPS_STANDALONE
-    resolveIMGID(&inimg0, ERRMODE_ABORT);
-    resolveIMGID(&inimg1, ERRMODE_ABORT);
-    resolveIMGID(outimg, ERRMODE_NULL);
+    resolveIMGID(&inimg0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 #endif
     if(outimg->ID == -1) copyIMGID(&inimg0, outimg);
     if (mergeaxis < 3) {
@@ -143,8 +143,8 @@ static CLICMDDATA CLIcmddata = { "immerge", "merge images along axis", CLICMD_FI
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID id0 = mkIMGID_from_name(immerge_inimname0); resolveIMGID(&id0, ERRMODE_ABORT);
-    IMGID id1 = mkIMGID_from_name(immerge_inimname1); resolveIMGID(&id1, ERRMODE_ABORT);
+    IMGID id0 = mkIMGID_from_name(immerge_inimname0); resolveIMGID(&id0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID id1 = mkIMGID_from_name(immerge_inimname1); resolveIMGID(&id1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID idout = mkIMGID_from_name(immerge_outimname);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_merge_compute(data.fpsptr, processinfo, id0.im, id1.im, idout.im);

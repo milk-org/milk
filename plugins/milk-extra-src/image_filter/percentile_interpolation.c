@@ -33,7 +33,7 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
         step = 1;
     }
 
-    ID    = image_ID(ID_name);
+    ID    = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
 
@@ -43,7 +43,7 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
     create_2Dimage_ID("_tmppercintf", xsize1, ysize1, &ID1);
 
     // identify mask if it exists
-    IDpercmask = image_ID("_percmask");
+    IDpercmask = image_ID("_percmask", data.image, data.NB_MAX_IMAGE);
 
     array = (double *) malloc(sizeof(double) * boxrad * boxrad * 4);
     if(array == NULL)
@@ -188,7 +188,7 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
     double      x, v1, v2;
     double      pstart, pend;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     xsize = data.image[ID].md[0].size[0];
     ysize = data.image[ID].md[0].size[1];
@@ -276,7 +276,7 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
                        (long)(3.0 * sigma),
                        "_testpercim2");
 
-        ID2 = image_ID("_testpercim2");
+        ID2 = image_ID("_testpercim2", data.image, data.NB_MAX_IMAGE);
         for(ii = 0; ii < xsize * ysize; ii++)
         {
             data.image[IDc].array.F[k * xsize * ysize + ii] =

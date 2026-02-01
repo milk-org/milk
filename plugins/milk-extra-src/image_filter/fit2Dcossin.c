@@ -92,7 +92,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
     }
     //  exit(0);
 
-    ID   = image_ID(IDname);
+    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     size = data.image[ID].md[0].size[0];
     printf("SIZE = %ld\n", size);
     create_2Dimage_ID("residual", size, size, &IDres);

@@ -20,7 +20,7 @@ imageID autocorrelation(const char *IDin_name, const char *IDout_name)
     imageID  IDout;
     uint64_t nelement;
 
-    IDin     = image_ID(IDin_name);
+    IDin     = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     nelement = data.image[IDin].md[0].nelement;
 
     char atmp1name[STRINGMAXLEN_IMGNAME];
@@ -58,7 +58,7 @@ imageID autocorrelation(const char *IDin_name, const char *IDout_name)
     delete_image_ID(atmp1name, DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID(aphaname, DELETE_IMAGE_ERRMODE_WARNING);
 
-    IDout = image_ID("IDout_name");
+    IDout = image_ID("IDout_name", data.image, data.NB_MAX_IMAGE);
 
     return (IDout);
 }

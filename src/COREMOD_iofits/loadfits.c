@@ -504,7 +504,7 @@ errno_t load_fits_IMGID(
         barray = NULL;
     }
 
-    resolveIMGID(imgout, errmode);
+    resolveIMGID(imgout, errmode, data.image, data.NB_MAX_IMAGE);
 
 // keywords to ignore
     char *keywordignore[] = {"BITPIX",

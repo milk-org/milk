@@ -365,7 +365,7 @@ errno_t linopt_imtools_makeCPAmodes(
     // If mask exists, compute distance to mask for extrapolation
     //
     int MASKext = 0; // toggles to 1 if applying mask for extrapolation
-    resolveIMGID(&imgmask, ERRMODE_WARN);
+    resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgpixdist = mkIMGID_from_name("pixdist");
 
@@ -836,7 +836,7 @@ static errno_t compute_function()
     // optional mask
     //
     IMGID imgmask = mkIMGID_from_name(maskim);
-    resolveIMGID(&imgmask, ERRMODE_WARN);
+    resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgoutm = mkIMGID_from_name(outimname);
 

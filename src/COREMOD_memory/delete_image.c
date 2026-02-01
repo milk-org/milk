@@ -290,7 +290,7 @@ errno_t delete_image_ID(
     DEBUG_TRACE_FSTART();
 
     IMGID   img = mkIMGID_from_name(imname);
-    imageID ID  = resolveIMGID(&img, errmode);
+    imageID ID  = resolveIMGID(&img, errmode, data.image, data.NB_MAX_IMAGE);
 
     if(ID != -1)
     {

@@ -453,11 +453,11 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     delete_image_ID("tmp2dinterpslx", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmp2dinterpsly", DELETE_IMAGE_ERRMODE_WARNING);
 
-    IDxerr = image_ID("tmp2dinterpxerrg");
-    IDyerr = image_ID("tmp2dinterpyerrg");
-    IDslx  = image_ID("tmp2dinterpslxg");
-    IDsly  = image_ID("tmp2dinterpslyg");
-    ID     = image_ID(ID_name);
+    IDxerr = image_ID("tmp2dinterpxerrg", data.image, data.NB_MAX_IMAGE);
+    IDyerr = image_ID("tmp2dinterpyerrg", data.image, data.NB_MAX_IMAGE);
+    IDslx  = image_ID("tmp2dinterpslxg", data.image, data.NB_MAX_IMAGE);
+    IDsly  = image_ID("tmp2dinterpslyg", data.image, data.NB_MAX_IMAGE);
+    ID     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     for(ii = 0; ii < xsize; ii++)
         for(jj = 0; jj < ysize; jj++)
@@ -474,7 +474,7 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     delete_image_ID("tmp2dinterpslxg", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmp2dinterpslyg", DELETE_IMAGE_ERRMODE_WARNING);
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     delete_image_ID("kerg", DELETE_IMAGE_ERRMODE_WARNING);
 
     return (ID);

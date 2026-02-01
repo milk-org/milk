@@ -114,9 +114,9 @@ errno_t linopt_compute_linRM_from_inout(
     //ngpu = 0;
     setenv("CUDA_VISIBLE_DEVICES", "3,4", 1);
 
-    IDin  = image_ID(IDinput_name);
-    IDout = image_ID(IDoutput_name);
-    IDRM  = image_ID(IDRM_name);
+    IDin  = image_ID(IDinput_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDoutput_name, data.image, data.NB_MAX_IMAGE);
+    IDRM  = image_ID(IDRM_name, data.image, data.NB_MAX_IMAGE);
 
     insize   = data.image[IDin].md[0].size[2];
     xsizeout = data.image[IDRM].md[0].size[0];
@@ -126,7 +126,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     if(autoMask_MODE == 0)
     {
-        IDinmask = image_ID(IDinmask_name);
+        IDinmask = image_ID(IDinmask_name, data.image, data.NB_MAX_IMAGE);
     }
     else
     {
@@ -213,7 +213,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     list_image_ID();
     save_fits("pokeMinv", "pokeMinv.fits");
-    IDpinv = image_ID("pokeMinv");
+    IDpinv = image_ID("pokeMinv", data.image, data.NB_MAX_IMAGE);
 
     // multiply measurements by pokeMinv
     create_3Dimage_ID("_respmat",
@@ -238,7 +238,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     // COMPUTE SOLUTION QUALITY
 
-    IDRM = image_ID("_respmat");
+    IDRM = image_ID("_respmat", data.image, data.NB_MAX_IMAGE);
 
     create_2Dimage_ID("_tmplicli", xsizeout, ysizeout, &IDtmp);
     create_3Dimage_ID("testout", xsizeout, ysizeout, insize, &IDout1);

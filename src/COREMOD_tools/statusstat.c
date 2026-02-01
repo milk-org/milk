@@ -80,7 +80,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
 
     long cnttot;
 
-    IDstat = image_ID(IDstat_name);
+    IDstat = image_ID(IDstat_name, data.image, data.NB_MAX_IMAGE);
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(sizearray == NULL)

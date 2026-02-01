@@ -100,7 +100,7 @@ errno_t images_to_cube(const char *restrict img_name,
 
     CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
 
-    ID1 = image_ID(imname);
+    ID1 = image_ID(imname, data.image, data.NB_MAX_IMAGE);
     if(ID1 == -1)
     {
         PRINT_ERROR("Image \"%s\" does not exist", imname);
@@ -134,7 +134,7 @@ errno_t images_to_cube(const char *restrict img_name,
         printf("Adding image %s -> %ld/%ld ... ", img_name, frame, nbframes);
         fflush(stdout);
 
-        ID1 = image_ID(imname);
+        ID1 = image_ID(imname, data.image, data.NB_MAX_IMAGE);
         if(ID1 == -1)
         {
             PRINT_ERROR("Image \"%s\" does not exist - skipping", imname);

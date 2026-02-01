@@ -84,7 +84,7 @@ imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
     imageID IDin;
     imageID IDout = -1;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     image_basic_SwapAxis2D_byID(IDin, IDout_name);
 
     return IDout;

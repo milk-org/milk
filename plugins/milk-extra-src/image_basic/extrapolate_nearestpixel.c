@@ -24,11 +24,11 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
 
     long IDmask1;
 
-    IDin   = image_ID(IDin_name);
-    IDmask = image_ID(IDmask_name);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
 
     list_image_ID();
-    IDmask1 = image_ID("_mask1");
+    IDmask1 = image_ID("_mask1", data.image, data.NB_MAX_IMAGE);
     if(IDmask1 != -1)
     {
         printf("USING MASK\n");

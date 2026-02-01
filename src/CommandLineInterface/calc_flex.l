@@ -185,7 +185,7 @@ return TKFUNC_imd_d;
 if(data.Debug>0){printf("Found string %s\n", yytext);}
 strcpy(yylval.string, yytext);
 if(variable_ID(yytext)!=-1) {if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS A VARIABLE\n", yytext);} return TKVAR;}
-if(image_ID(yytext)!=-1) {if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS AN IMAGE\n", yytext);} return TKIMAGE;}
+if(image_ID(yytext, data.image, data.NB_MAX_IMAGE)!=-1) {if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS AN IMAGE\n", yytext);} return TKIMAGE;}
 if(data.cmdNBarg==0)
 {
 data.cmdindex = -1;

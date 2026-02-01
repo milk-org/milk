@@ -109,8 +109,8 @@ imageID basic_add(const char *__restrict ID_name1,
     uint8_t datatype1, datatype2, datatype;
     int     datatypeOK;
 
-    ID1       = image_ID(ID_name1);
-    ID2       = image_ID(ID_name2);
+    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     naxes1[0] = data.image[ID1].md[0].size[0];
     naxes1[1] = data.image[ID1].md[0].size[1];
     naxes2[0] = data.image[ID2].md[0].size[0];
@@ -252,8 +252,8 @@ imageID basic_add3D(const char *__restrict ID_name1,
     uint8_t datatype1, datatype2, datatype;
     int     datatypeOK;
 
-    ID1       = image_ID(ID_name1);
-    ID2       = image_ID(ID_name2);
+    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     naxes1[0] = data.image[ID1].md[0].size[0];
     naxes1[1] = data.image[ID1].md[0].size[1];
     naxes1[2] = data.image[ID1].md[0].size[2];

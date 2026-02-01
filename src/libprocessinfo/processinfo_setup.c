@@ -18,15 +18,15 @@
 /**
  * @brief Initialize and register a process for MILK process management.
  *
- * This function performs the first-time setup of a process's shared memory 
+ * This function performs the first-time setup of a process's shared memory
  * status structure.
  *
  * Logic flow:
  * 1.  Ensure the processinfo instance name is valid.
  * 2.  Call `processinfo_shm_create` to physically create and map the SHM segment.
- * 3.  Initialize metadata fields: loop status (INIT), source code location, 
+ * 3.  Initialize metadata fields: loop status (INIT), source code location,
  *     description, and initial message.
- * 4.  Set default values for loop control: infinite loop, no timing measurement, 
+ * 4.  Set default values for loop control: infinite loop, no timing measurement,
  *     and no real-time priority.
  */
 PROCESSINFO *processinfo_setup(
@@ -39,6 +39,9 @@ PROCESSINFO *processinfo_setup(
     int         linenumber)
 {
     DEBUG_TRACE_FSTART();
+
+    printf("DEBUG  %s [%d] %s\n", __FILE__, __LINE__, __FUNCTION__);
+    fflush(stdout);
 
     static PROCESSINFO *processinfo = NULL;
     static int processinfoActive = 0;
@@ -59,12 +62,12 @@ PROCESSINFO *processinfo_setup(
             if(slen < 1)
             {
                 PRINT_ERROR("snprintf wrote <1 char");
-                abort(); 
+                abort();
             }
             if(slen >= STRINGMAXLEN_PROCESSINFO_NAME)
             {
                 PRINT_ERROR("snprintf string truncation");
-                abort(); 
+                abort();
             }
         }
 
@@ -73,8 +76,6 @@ PROCESSINFO *processinfo_setup(
         processinfo = processinfo_shm_create(pinfoname0, 0);
 
         DEBUG_TRACEPOINT(" ");
-
-        // processinfo_CatchSignals(); // Removed: user responsibility
     }
 
     DEBUG_TRACEPOINT(" ");
@@ -102,8 +103,8 @@ PROCESSINFO *processinfo_setup(
 /**
  * @brief Log an error and perform a clean exit.
  *
- * This function is used to handle fatal loop errors. it sets the loop 
- * status to ERROR, writes the error message to SHM, and then calls 
+ * This function is used to handle fatal loop errors. it sets the loop
+ * status to ERROR, writes the error message to SHM, and then calls
  * `processinfo_cleanExit` to detach.
  */
 errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
@@ -118,7 +119,7 @@ errno_t processinfo_error(PROCESSINFO *processinfo, char *errmsgstring)
  * @brief Finalize process initialization and enter active loop state.
  *
  * This function should be called just before entering the main processing loop.
- * It resets the loop counter, sets status to ACTIVE, and attempts to set 
+ * It resets the loop counter, sets status to ACTIVE, and attempts to set
  * the process's real-time scheduler priority if configured.
  */
 errno_t processinfo_loopstart(PROCESSINFO *processinfo)

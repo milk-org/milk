@@ -21,7 +21,7 @@ imageID fft_structure_function(const char *ID_in, const char *ID_out)
     uint8_t  datatype;
 
     autocorrelation(ID_in, ID_out);
-    IDout    = image_ID(ID_out);
+    IDout    = image_ID(ID_out, data.image, data.NB_MAX_IMAGE);
     nelement = data.image[IDout].md[0].nelement;
 
     datatype = data.image[IDout].md[0].datatype;

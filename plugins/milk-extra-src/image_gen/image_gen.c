@@ -1599,7 +1599,7 @@ imageID IMAGE_gen_segments2WFmodes(const char *prefix,
                 printf("ERROR: Invalid number of didits\n");
                 exit(0);
         }
-        IDarray[seg] = image_ID(imname);
+        IDarray[seg] = image_ID(imname, data.image, data.NB_MAX_IMAGE);
         if(IDarray[seg] != -1)
         {
             seg++;
@@ -1851,7 +1851,7 @@ imageID make_hexsegpupil(
         printf("\n");
     }
 
-    IDmap1 = image_ID("indexmap");
+    IDmap1 = image_ID("indexmap", data.image, data.NB_MAX_IMAGE);
     size1  = data.image[IDmap1].md[0].size[0];
 
     size2 = size * size;
@@ -2393,7 +2393,7 @@ int make_rnd1(const char *ID_name, long l1, long l2, const char *options)
 
 
    create_2Dimage_ID(ID_name,l1,l2);
-   ID = image_ID(ID_name);
+   ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
    naxes[0] = data.image[ID].md[0].size[0];
    naxes[1] = data.image[ID].md[0].size[1];
    nelements=naxes[0]*naxes[1];
@@ -3199,7 +3199,7 @@ imageID make_tile(const char *IDin_name, uint32_t size, const char *IDout_name)
     imageID  IDin, IDout;
 
     create_2Dimage_ID(IDout_name, size, size, &IDout);
-    IDin   = image_ID(IDin_name);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     sizex0 = data.image[IDin].md[0].size[0];
     sizey0 = data.image[IDin].md[0].size[1];
 
@@ -3229,7 +3229,7 @@ image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name)
     imageID  IDout = -1;
     uint32_t xsize, ysize, zsize;
 
-    IDin  = image_ID(IDin_name);
+    IDin  = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[IDin].md[0].naxis;
 
     if(axis > naxis - 1)

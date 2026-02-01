@@ -73,7 +73,7 @@ imageID image_basic_3Dto2D(const char *__restrict IDname)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     image_basic_3Dto2D_byID(ID);
 
     return ID;

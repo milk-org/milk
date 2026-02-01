@@ -19,7 +19,7 @@ imageID basic_stretch(const char *__restrict name_in,
     imageID  IDout;
     long     i, j;
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -66,7 +66,7 @@ imageID basic_stretch_range(const char *__restrict name_in,
     float    eps = 1.0e-5;
     float    u, t, tmp;
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -147,7 +147,7 @@ imageID basic_stretchc(const char *__restrict name_in,
     long     i, j;
     long     Xcenter, Ycenter;
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
     Xcenter  = naxes[0] / 2;

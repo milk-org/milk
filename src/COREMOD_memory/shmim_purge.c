@@ -59,10 +59,10 @@ errno_t shmim_purge(const char *strfilter)
     for(int sindex = 0; sindex < NBstream; sindex++)
     {
         printf(" STREAM %3d   %s\n", sindex, streaminfo[sindex].sname);
-        imageID ID = image_ID(streaminfo[sindex].sname);
+        imageID ID = image_ID(streaminfo[sindex].sname, data.image, data.NB_MAX_IMAGE);
         if(ID == -1)
         {
-            ID = read_sharedmem_image(streaminfo[sindex].sname);
+            ID = read_sharedmem_image(streaminfo[sindex].sname, data.image, data.NB_MAX_IMAGE);
         }
         DEBUG_TRACEPOINT("stream %s loaded ID %ld",
                          streaminfo[sindex].sname,

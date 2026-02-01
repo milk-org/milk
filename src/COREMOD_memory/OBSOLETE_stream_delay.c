@@ -283,7 +283,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     // ERROR HANDLING
     if(IDin == -1)
@@ -325,7 +325,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
-    IDout = image_ID(IDout_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)  // CREATE IT
     {
         arraytmp    = (uint32_t *) malloc(sizeof(uint32_t) * 2);

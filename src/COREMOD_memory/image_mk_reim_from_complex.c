@@ -57,7 +57,7 @@ errno_t mk_reim_from_complex_IMGID(
 
     uint8_t  datatype;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     datatype = imgin->md[0].datatype;
     uint8_t naxis    = imgin->md[0].naxis;
     for(int i = 0; i < naxis; i++)

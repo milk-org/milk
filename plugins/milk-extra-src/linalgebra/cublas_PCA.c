@@ -443,7 +443,7 @@ static errno_t compute_function()
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
     IMGID img = mkIMGID_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     printf("PCA of %s\n", inimname);
 

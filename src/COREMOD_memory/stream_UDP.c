@@ -196,7 +196,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     int loopOK = 1; // Master flag
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
 
     if((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
@@ -658,11 +658,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd[0].name);
+    ID = image_ID(imgmd[0].name, data.image, data.NB_MAX_IMAGE);
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd[0].name);
+        ID = read_sharedmem_image(imgmd[0].name, data.image, data.NB_MAX_IMAGE);
     }
 
     list_image_ID();

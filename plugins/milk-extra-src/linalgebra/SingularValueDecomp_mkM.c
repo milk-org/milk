@@ -121,9 +121,9 @@ errno_t SVDmkM(
 
     list_image_ID();
 
-    resolveIMGID(&imgU, ERRMODE_ABORT);
-    resolveIMGID(&imgS, ERRMODE_ABORT);
-    resolveIMGID(&imgV, ERRMODE_ABORT);
+    resolveIMGID(&imgU, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // un-normalized modes
     //printf("Creating image from %s\n", imgU.md->name);
@@ -174,13 +174,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginU = mkIMGID_from_name(inmatU);
-    resolveIMGID(&imginU, ERRMODE_ABORT);
+    resolveIMGID(&imginU, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imginS = mkIMGID_from_name(invecS);
-    resolveIMGID(&imginS, ERRMODE_ABORT);
+    resolveIMGID(&imginS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imginV = mkIMGID_from_name(inmatV);
-    resolveIMGID(&imginV, ERRMODE_ABORT);
+    resolveIMGID(&imginV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 

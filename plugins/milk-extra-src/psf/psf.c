@@ -108,8 +108,8 @@ imageID PSF_makeChromatPSF(const char *amp_name,
     float coeff, mcoeff, tmp;
     float eps = 1.0e-5;
 
-    IDamp = image_ID(amp_name);
-    IDpha = image_ID(pha_name);
+    IDamp = image_ID(amp_name, data.image, data.NB_MAX_IMAGE);
+    IDpha = image_ID(pha_name, data.image, data.NB_MAX_IMAGE);
 
     xsize = data.image[IDamp].md[0].size[0];
     ysize = data.image[IDamp].md[0].size[1];
@@ -173,7 +173,7 @@ imageID PSF_makeChromatPSF(const char *amp_name,
         arith_image_cstpow("tmpamp", 2.0, "tmpint");
         delete_image_ID("tmpamp", DELETE_IMAGE_ERRMODE_WARNING);
         list_image_ID();
-        IDin = image_ID("tmpint");
+        IDin = image_ID("tmpint", data.image, data.NB_MAX_IMAGE);
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
             {
@@ -218,7 +218,7 @@ errno_t PSF_finddiskcent(const char *ID_name, float rad, float *result)
     float    xcstart, xcend, ycstart, ycend;
     long     NBiter = 20;
 
-    ID   = image_ID(ID_name);
+    ID   = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     size = data.image[ID].md[0].size[0];
     step = 0.1 * size;
 
@@ -310,7 +310,7 @@ errno_t PSF_measurePhotocenter(const char *ID_name)
     float    iitot, jjtot, tot;
     float    v;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -348,7 +348,7 @@ float measure_enc_NRJ(const char *ID_name,
     long     arraysize;
     float    value;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -422,7 +422,7 @@ errno_t measure_enc_NRJ1(const char *ID_name,
 
     printf("Center is %f %f\n", xcenter, ycenter);
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -496,7 +496,7 @@ float measure_FWHM(
     long   i;
     float  FWHM;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     //nelements = naxes[0] * naxes[1];
@@ -602,7 +602,7 @@ center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
     /* first approximation given by barycenter after median of image */
     median_filter(ID_name, "PSFctmp", 1);
 
-    ID       = image_ID("PSFctmp");
+    ID       = image_ID("PSFctmp", data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -693,7 +693,7 @@ errno_t fast_center_PSF(const char *ID_name,
 
     long iimin, iimax, jjmin, jjmax;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -807,7 +807,7 @@ errno_t center_PSF_alone(const char *ID_name)
         abort();
     }
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -853,7 +853,7 @@ errno_t center_star(const char *ID_in_name, double *x_star, double *y_star)
 
     limit = 1.0 / 10000000000.0;
 
-    ID_in    = image_ID(ID_in_name);
+    ID_in    = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID_in].md[0].size[0];
     naxes[1] = data.image[ID_in].md[0].size[1];
     n1       = (long) x_star[0];
@@ -979,7 +979,7 @@ float get_sigma(const char *ID_name, float x, float y, const char *options)
 
     n1       = (long) x;
     n2       = (long) y;
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -1165,7 +1165,7 @@ float get_sigma_alone(const char *ID_name)
         abort();
     }
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -1229,7 +1229,7 @@ errno_t extract_psf(const char *ID_name, const char *out_name, long size)
         abort();
     }
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -1281,7 +1281,7 @@ extract_psf_photcent(const char *ID_name, const char *out_name, long size)
     uint32_t naxes[2];
     long     ii, jj, ii0, jj0, ii1, jj1;
 
-    IDin     = image_ID(ID_name);
+    IDin     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -1367,7 +1367,7 @@ psf_variance(const char *ID_out_m, const char *ID_out_v, const char *options)
                 (options[i + str_pos] == '\n'))
         {
             file_name[j] = '\0';
-            IDn[file_nb] = image_ID(file_name);
+            IDn[file_nb] = image_ID(file_name, data.image, data.NB_MAX_IMAGE);
             printf("%d %s \n", IDn[file_nb], file_name);
             file_nb += 1;
             j = 0;
@@ -1424,8 +1424,8 @@ imageID combine_2psf(const char *ID_name,
     uint32_t naxes[2];
     float    dist;
 
-    ID1      = image_ID(ID_name1);
-    ID2      = image_ID(ID_name2);
+    ID1      = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2      = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID1].md[0].size[0];
     naxes[1] = data.image[ID1].md[0].size[1];
     create_2Dimage_ID(ID_name, naxes[0], naxes[1], &IDout);
@@ -1485,7 +1485,7 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
         abort();
     }
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -1523,7 +1523,7 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
                               Csize,
                               ((long) xcenter[0]) - Csize / 2,
                               ((long) ycenter[0]) - Csize / 2);
-        ID   = image_ID("tmpsr");
+        ID   = image_ID("tmpsr", data.image, data.NB_MAX_IMAGE);
         peak = 0.0;
         for(ii = Csize / 2 - 5; ii < Csize / 2 + 5; ii++)
             for(jj = Csize / 2 - 5; jj < Csize / 2 + 5; jj++)
@@ -1544,7 +1544,7 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
                 }
 
         fftzoom("tmpsr", "tmpsrz", fzoomfactor);
-        ID = image_ID("tmpsrz");
+        ID = image_ID("tmpsrz", data.image, data.NB_MAX_IMAGE);
         peakii *= fzoomfactor;
         peakjj *= fzoomfactor;
         total1 = 0.0;
@@ -1612,7 +1612,7 @@ PSF_coaddbest(const char *IDcin_name, const char *IDout_name, float r_pix)
     double  *flux_array;
     long    *imgindex;
 
-    IDcin = image_ID(IDcin_name);
+    IDcin = image_ID(IDcin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDcin].md[0].size[0];
     ysize = data.image[IDcin].md[0].size[1];
     ksize = data.image[IDcin].md[0].size[2];
@@ -1711,7 +1711,7 @@ errno_t PSF_sequence_measure(const char *IDin_name,
         abort();
     }
 
-    IDin   = image_ID(IDin_name);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize  = data.image[IDin].md[0].size[0];
     ysize  = data.image[IDin].md[0].size[1];
     xysize = xsize * ysize;

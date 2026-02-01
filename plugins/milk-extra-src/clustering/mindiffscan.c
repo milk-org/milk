@@ -65,7 +65,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", outdname);
 
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     uint32_t xsize = img.md->size[0];
     uint32_t ysize = img.md->size[1];
@@ -85,7 +85,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
     // FLUX MINIMIZATION MODE: ACTIVE PIXELS
     long    fluxpixcnt = 0;
-    imageID IDmaskflux = image_ID("maskfluxim");
+    imageID IDmaskflux = image_ID("maskfluxim", data.image, data.NB_MAX_IMAGE);
     long   *fluxpix    = NULL;
     if(IDmaskflux != -1)
     {
@@ -110,7 +110,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     }
 
     // looking for selection mask image
-    imageID IDmask = image_ID("maskim");
+    imageID IDmask = image_ID("maskim", data.image, data.NB_MAX_IMAGE);
     if(IDmask == -1)
     {
         printf("Creating default mask image %ld pixel\n", xysize);
@@ -177,7 +177,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     save_fl_fits("mindiffscan_imc", "mindiffscan_imc.fits");
 
     // looking for distmat image
-    imageID IDdmat = image_ID("distmat");
+    imageID IDdmat = image_ID("distmat", data.image, data.NB_MAX_IMAGE);
     if(IDdmat == -1)
     {
         printf("Computing distmat");

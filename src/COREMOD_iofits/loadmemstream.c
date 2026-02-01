@@ -60,7 +60,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
     if(*imLOC == STREAM_LOAD_SOURCE_NOTFOUND)  // still searching
     {
         // Does image exist in memory ?
-        ID = image_ID(sname);
+        ID = image_ID(sname, data.image, data.NB_MAX_IMAGE);
         if(ID == -1)
         {
             imLOCALMEM = 0;
@@ -132,7 +132,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if(FPFLAG_STREAM_LOAD_FORCE_SHAREMEM & *streamflag)
         {
             // search SHAREMEM
-            ID = read_sharedmem_image(sname);
+            ID = read_sharedmem_image(sname, data.image, data.NB_MAX_IMAGE);
             if(ID == -1)
             {
                 *imLOC = STREAM_LOAD_SOURCE_EXITFAILURE; // fail
@@ -428,7 +428,7 @@ imageID COREMOD_IOFITS_LoadMemStream(
                                sname);
                 functionparameter_outlog("LOADMEMSTREAM", msg);
             }
-            ID = read_sharedmem_image(sname);
+            ID = read_sharedmem_image(sname, data.image, data.NB_MAX_IMAGE);
             if(ID != -1)
             {
                 *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;

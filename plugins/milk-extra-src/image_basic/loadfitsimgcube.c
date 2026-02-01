@@ -124,7 +124,7 @@ long load_fitsimages_cube(const char *__restrict strfilter,
         fname1[strlen(fname) - 5] = '\0';
         load_fits(fname, fname1, 1, NULL);
         printf("Image %s loaded -> %s\n", fname, fname1);
-        ID = image_ID(fname1);
+        ID = image_ID(fname1, data.image, data.NB_MAX_IMAGE);
         for(uint64_t ii = 0; ii < xsize * ysize; ii++)
         {
             data.image[IDout].array.F[xsize * ysize * cnt + ii] =

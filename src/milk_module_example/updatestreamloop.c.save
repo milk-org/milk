@@ -164,7 +164,7 @@ static errno_t FPSRUNfunction()
      * Pre-loop testing, anything that would prevent loop from starting should issue message\n
      * Set processloopOK to 0 if tests fail.
      */
-    imageID IDin = image_ID(fps_IDin_name);
+    imageID IDin = image_ID(fps_IDin_name, data.image, data.NB_MAX_IMAGE);
 
     /** ### Specify input trigger
      *

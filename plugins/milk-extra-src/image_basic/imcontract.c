@@ -92,7 +92,7 @@ basic_contract(const char *ID_name, const char *ID_name_out, int n1, int n2)
     uint32_t naxes[2], naxes_out[2];
     int      i, j;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -126,7 +126,7 @@ imageID basic_contract3D(
     uint32_t *naxes_out;
     uint8_t   datatype;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     datatype = data.image[ID].md[0].datatype;
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
@@ -158,7 +158,7 @@ imageID basic_contract3D(
         create_image_ID(ID_name_out, 3, naxes_out, datatype, 0, 0, 0, NULL);
     }
 
-    ID_out = image_ID(ID_name_out);
+    ID_out = image_ID(ID_name_out, data.image, data.NB_MAX_IMAGE);
 
     switch(datatype)
     {

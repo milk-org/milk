@@ -102,7 +102,7 @@ errno_t COREMOD_MEMORY_image_set_status(const char *IDname, int status)
 {
     imageID ID;
 
-    ID                          = image_ID(IDname);
+    ID                          = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     data.image[ID].md[0].status = status;
 
     return RETURN_SUCCESS;
@@ -112,7 +112,7 @@ errno_t COREMOD_MEMORY_image_set_cnt0(const char *IDname, int cnt0)
 {
     imageID ID;
 
-    ID                        = image_ID(IDname);
+    ID                        = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     data.image[ID].md[0].cnt0 = cnt0;
 
     return RETURN_SUCCESS;
@@ -122,7 +122,7 @@ errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1)
 {
     imageID ID;
 
-    ID                        = image_ID(IDname);
+    ID                        = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     data.image[ID].md[0].cnt1 = cnt1;
 
     return RETURN_SUCCESS;

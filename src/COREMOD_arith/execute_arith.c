@@ -502,7 +502,7 @@ int execute_arith(const char *cmd1)
             word_type[i]    = ARITHTOKENTYPE_VARIABLE;
             found_word_type = 1;
         }
-        if((image_ID(word[i]) != -1) && (found_word_type == 0))
+        if((image_ID(word[i], data.image, data.NB_MAX_IMAGE) != -1) && (found_word_type == 0))
         {
             word_type[i]    = ARITHTOKENTYPE_IMAGE;
             found_word_type = 1;
@@ -1788,7 +1788,7 @@ int execute_arith(const char *cmd1)
                 {
                     delete_variable_ID(word[0]);
                 }
-                if(image_ID(word[0]) != -1)
+                if(image_ID(word[0], data.image, data.NB_MAX_IMAGE) != -1)
                 {
                     delete_image_ID(word[0], DELETE_IMAGE_ERRMODE_WARNING);
                 }
@@ -1819,7 +1819,7 @@ int execute_arith(const char *cmd1)
             {
                 delete_variable_ID(name);
             }
-            if(image_ID(name) != -1)
+            if(image_ID(name, data.image, data.NB_MAX_IMAGE) != -1)
             {
                 delete_image_ID(name, DELETE_IMAGE_ERRMODE_WARNING);
             }

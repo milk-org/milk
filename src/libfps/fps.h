@@ -848,6 +848,8 @@ int main(int argc, char *argv[]) { \
             keywords = argv[++i]; \
         } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
             description = argv[++i]; \
+        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) { \
+            strncpy(arg_fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1); \
         } else if (command == NULL) { \
             command = argv[i]; \
             /* Check for fpsname:command format */ \
@@ -875,7 +877,8 @@ int main(int argc, char *argv[]) { \
             printf("  " COLORCOMMAND "runstart" COLORRESET "   Run the main processing loop.\n"); \
             printf("  " COLORCOMMAND "runstop" COLORRESET "    Stop the main processing loop.\n\n"); \
             printf(COLORHEADER "Options:" COLORRESET "\n"); \
-            printf("  " COLOROPTION "fpsname:" COLORRESET "           Optional prefix to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  " COLOROPTION "fpsname:" COLORRESET "           Optional prefix (or use -n) to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  " COLOROPTION "-n, --name FPSNAME" COLORRESET "       Specify FPS name.\n"); \
             printf("  " COLOROPTION "-k, --keywords KEYWORDS" COLORRESET "  Specify FPS keywords (default: NULL).\n"); \
             printf("  " COLOROPTION "-d, --description DESC" COLORRESET "   Specify FPS description (default: NULL).\n"); \
             printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
@@ -901,7 +904,8 @@ int main(int argc, char *argv[]) { \
             printf("  runstart   Run the main processing loop.\n"); \
             printf("  runstop    Stop the main processing loop.\n\n"); \
             printf("Options:\n"); \
-            printf("  fpsname:                 Optional prefix to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  fpsname:                 Optional prefix (or use -n) to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
+            printf("  -n, --name FPSNAME       Specify FPS name.\n"); \
             printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
             printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
             printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
@@ -994,8 +998,7 @@ int main(int argc, char *argv[]) { \
              snprintf(name_arg, sizeof(name_arg), " %s", command); \
         } \
         functionparameter_FPS_tmux_standalone_setup(fps_name); \
-        /* Hack: pass empty command to tmux dispatch, and full command in arg */ \
-        if (functionparameter_FPS_tmux_send_dispatch(fps_name, "", path, name_arg) == 0) { \
+        if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) { \
             return 0; \
         } \
         if (strcmp(command, "fpsinit") == 0) { \

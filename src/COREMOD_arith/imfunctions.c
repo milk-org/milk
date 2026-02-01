@@ -53,7 +53,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     IMGID *imgout,
     double (*pt2function)(double))
 {
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     DEBUG_TRACEPOINT("arith_image_function_d_d  %s %s\n", imgin->name, imgout->name);
 
@@ -221,7 +221,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
 {
     long ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     imgout->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
@@ -399,7 +399,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
 {
     long      ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     imgout->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
@@ -751,7 +751,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
 {
     long ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     imgout->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
@@ -1068,7 +1068,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
 
     // printf("arith_image_function_1_1_inplace\n");
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     datatype = data.image[ID].md[0].datatype;
 
     //    datatypeout = _DATATYPE_FLOAT;
@@ -1219,10 +1219,10 @@ errno_t arith_image_function_2_1_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(inimg1, ERRMODE_ABORT);
-    resolveIMGID(inimg2, ERRMODE_ABORT);
+    resolveIMGID(inimg1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(inimg2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    resolveIMGID(outimg, ERRMODE_NULL);
+    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if( outimg->ID == -1)
     {
         copyIMGID(inimg1, outimg);
@@ -1558,8 +1558,8 @@ errno_t arith_image_function_2_1_inplace(
     imageID ID1;
     imageID ID2;
 
-    ID1 = image_ID(ID_name1);
-    ID2 = image_ID(ID_name2);
+    ID1 = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2 = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
 
     arith_image_function_2_1_inplace_byID(ID1, ID2, pt2function);
 
@@ -1586,8 +1586,8 @@ errno_t arith_image_function_CF_CF__CF(
     uint8_t   datatype1; //, datatype2;
     long      i;
 
-    ID1       = image_ID(ID_name1);
-    ID2       = image_ID(ID_name2);
+    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     datatype1 = data.image[ID1].md[0].datatype;
     //datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
@@ -1638,8 +1638,8 @@ errno_t arith_image_function_CD_CD__CD(
     uint8_t   datatype1; //, datatype2;
     long      i;
 
-    ID1       = image_ID(ID_name1);
-    ID2       = image_ID(ID_name2);
+    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     datatype1 = data.image[ID1].md[0].datatype;
     //datatype2 = data.image[ID2].md[0].datatype;
     naxis = data.image[ID1].md[0].naxis;
@@ -1676,7 +1676,7 @@ errno_t arith_image_function_CD_CD__CD(
 int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, double (*pt2function)(double, double))
 {
     long ii;
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     imgout->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++) imgout->size[i] = imgin->md->size[i];
     imgout->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
@@ -1746,12 +1746,12 @@ int arith_image_function_1f_1_inplace_byID(long ID, double f1, double (*pt2funct
 
 int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*pt2function)(double, double))
 {
-    return arith_image_function_1f_1_inplace_byID(image_ID(ID_name), f1, pt2function);
+    return arith_image_function_1f_1_inplace_byID(image_ID(ID_name, data.image, data.NB_MAX_IMAGE), f1, pt2function);
 }
 
 int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout, double (*pt2function)(double, double, double))
 {
-    long ii; resolveIMGID(imgin, ERRMODE_ABORT);
+    long ii; resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     imgout->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++) imgout->size[i] = imgin->md->size[i];
     imgout->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
@@ -1793,7 +1793,7 @@ int arith_image_function_1ff_1_inplace_byID(long ID, double f1, double f2, doubl
 
 int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2, double (*pt2function)(double, double, double))
 {
-    return arith_image_function_1ff_1_inplace_byID(image_ID(ID_name), f1, f2, pt2function);
+    return arith_image_function_1ff_1_inplace_byID(image_ID(ID_name, data.image, data.NB_MAX_IMAGE), f1, f2, pt2function);
 }
 
 /* Specialized optimized arithmetic functions */
@@ -1802,8 +1802,8 @@ int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin, ERRMODE_ABORT); \
-    resolveIMGID(imgout, ERRMODE_NULL); \
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
     if(imgout->ID == -1) copyIMGID(imgin, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
@@ -1850,9 +1850,9 @@ ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh)
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin1, ERRMODE_ABORT); \
-    resolveIMGID(imgin2, ERRMODE_ABORT); \
-    resolveIMGID(imgout, ERRMODE_NULL); \
+    resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
     if(imgout->ID == -1) copyIMGID(imgin1, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
@@ -1889,8 +1889,8 @@ ARITH_OPTIMIZED_FUNCTION(div, /)
 errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin, ERRMODE_ABORT); \
-    resolveIMGID(imgout, ERRMODE_NULL); \
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
     if(imgout->ID == -1) copyIMGID(imgin, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
@@ -1926,9 +1926,9 @@ ARITH_CST_OPTIMIZED_FUNCTION(div, /)
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin1, ERRMODE_ABORT); \
-    resolveIMGID(imgin2, ERRMODE_ABORT); \
-    resolveIMGID(imgout, ERRMODE_NULL); \
+    resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
+    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
     if(imgout->ID == -1) copyIMGID(imgin1, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
