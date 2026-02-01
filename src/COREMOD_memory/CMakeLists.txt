@@ -83,6 +83,7 @@ set(INCLUDEFILES
     image_copy.h
     image_copy_shm.h
     image_ID.h
+    imageID.h
     image_keyword.h
     image_keyword_addD.h
     image_keyword_addL.h
