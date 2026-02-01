@@ -18,7 +18,7 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
     char tmpzname[STRINGMAXLEN_IMGNAME];
     char tmpz1name[STRINGMAXLEN_IMGNAME];
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
@@ -31,7 +31,7 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
 
     permut(ID_name);
     permut(tmpzname);
-    ID = image_ID(tmpzname);
+    ID = image_ID(tmpzname, data.image, data.NB_MAX_IMAGE);
 
     WRITE_IMAGENAME(tmpz1name, "_tmpz1_%d", (int) getpid());
 
@@ -75,7 +75,7 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
     char tmpz2name[STRINGMAXLEN_IMGNAME];
     char tbename[STRINGMAXLEN_IMGNAME];
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
@@ -89,7 +89,7 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
 
     permut(ID_name);
     permut(tmpzname);
-    ID = image_ID(tmpzname);
+    ID = image_ID(tmpzname, data.image, data.NB_MAX_IMAGE);
 
     CREATE_IMAGENAME(tmpz1name, "_tmpz1_%d", (int) getpid());
 

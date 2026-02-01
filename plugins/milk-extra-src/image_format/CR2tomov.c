@@ -272,11 +272,11 @@ errno_t CR2tomov()
                         delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
                         chname_image_ID("imbc","imb");
                         }*/
-                    ID    = image_ID("imr");
+                    ID    = image_ID("imr", data.image, data.NB_MAX_IMAGE);
                     xsize = data.image[ID].md[0].size[0];
                     ysize = data.image[ID].md[0].size[1];
 
-                    IDrtot = image_ID("imrtot");
+                    IDrtot = image_ID("imrtot", data.image, data.NB_MAX_IMAGE);
                     if(IDrtot == -1)
                     {
                         create_2Dimage_ID("imrtot", xsize, ysize, &IDrtot);
@@ -284,9 +284,9 @@ errno_t CR2tomov()
                         create_2Dimage_ID("imbtot", xsize, ysize, &IDbtot);
                     }
 
-                    IDr = image_ID("imr");
-                    IDg = image_ID("img");
-                    IDb = image_ID("imb");
+                    IDr = image_ID("imr", data.image, data.NB_MAX_IMAGE);
+                    IDg = image_ID("img", data.image, data.NB_MAX_IMAGE);
+                    IDb = image_ID("imb", data.image, data.NB_MAX_IMAGE);
 
                     for(ii = 0; ii < xsize * ysize; ii++)
                     {
@@ -847,9 +847,9 @@ errno_t CR2tomov()
                           delete_image_ID("imrp");
                           delete_image_ID("imgp");
                           delete_image_ID("imbp");
-                          IDr1 = image_ID("imr_c");
-                          IDg1 = image_ID("img_c");
-                          IDb1 = image_ID("imb_c");
+                          IDr1 = image_ID("imr_c", data.image, data.NB_MAX_IMAGE);
+                          IDg1 = image_ID("img_c", data.image, data.NB_MAX_IMAGE);
+                          IDb1 = image_ID("imb_c", data.image, data.NB_MAX_IMAGE);
                           for(ii=0;ii<xsize*ysize;ii++)
                             {
                               data.image[IDr].array.F[ii] += data.image[IDr1].array.F[ii];

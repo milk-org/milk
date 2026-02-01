@@ -76,7 +76,7 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
     imageID  IDout;
     float    ifloat, x;
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     nb_step  = naxes[0] / 2;

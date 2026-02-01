@@ -63,8 +63,8 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
     uint8_t val_datatype;
     long    ii, i;
 
-    IDindex  = image_ID(ID_index_name);
-    IDvalues = image_ID(ID_values_name);
+    IDindex  = image_ID(ID_index_name, data.image, data.NB_MAX_IMAGE);
+    IDvalues = image_ID(ID_values_name, data.image, data.NB_MAX_IMAGE);
 
     xsize    = data.image[IDindex].md[0].size[0];
     ysize    = data.image[IDindex].md[0].size[1];

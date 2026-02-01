@@ -249,7 +249,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID outimg = mkIMGID_from_name(outimname);
     imcreatelikewiseIMGID(&outimg, &inimg);
@@ -344,7 +344,7 @@ CLIADDCMD_COREMOD_memory__streamdelay()
 
     create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
-    IDout = image_ID(IDout_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)   // CREATE IT
     {
         arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);

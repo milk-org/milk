@@ -228,7 +228,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
                           "outcoeffim0",
                           1,
                           NULL));
-        imageID IDout0 = image_ID("outcoeffim0");
+        imageID IDout0 = image_ID("outcoeffim0", data.image, data.NB_MAX_IMAGE);
 
         for(uint_fast32_t m = 0; m < NBmodes; m++)
         {

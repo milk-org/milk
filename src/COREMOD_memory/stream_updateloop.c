@@ -177,7 +177,7 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     schedpar.sched_priority = RT_priority;
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
 
-    IDin            = image_ID(IDin_name);
+    IDin            = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     long      naxis = data.image[IDin].md[0].naxis;
     uint32_t *arraysize;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -193,7 +193,7 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     int     NBslice  = arraysize[2];
 
     // check that IDout has same format
-    IDout = image_ID(IDout_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
     if(data.image[IDout].md[0].size[0] != data.image[IDin].md[0].size[0])
     {
         printf("ERROR: in and out have different size\n");
@@ -342,10 +342,10 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     SyncSlice = 0;
     if(NBcubes == 1)
     {
-        IDin[0] = image_ID(IDinname);
+        IDin[0] = image_ID(IDinname, data.image, data.NB_MAX_IMAGE);
 
         // in single cube mode, optional sync stream drives updates to next slice within cube
-        IDsync = image_ID(IDsync_name);
+        IDsync = image_ID(IDsync_name, data.image, data.NB_MAX_IMAGE);
         if(IDsync != -1)
         {
             SyncSlice = 1;
@@ -355,14 +355,14 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     }
     else
     {
-        IDsync = image_ID(IDsync_name);
+        IDsync = image_ID(IDsync_name, data.image, data.NB_MAX_IMAGE);
         sync_semwaitindex =
             ImageStreamIO_getsemwaitindex(&data.image[IDsync], semtrig);
 
         for(cubeindex = 0; cubeindex < NBcubes; cubeindex++)
         {
             sprintf(imname, "%s_%03ld", IDinname, cubeindex);
-            IDin[cubeindex] = image_ID(imname);
+            IDin[cubeindex] = image_ID(imname, data.image, data.NB_MAX_IMAGE);
         }
         offsetfr = (long)(0.5 + 1.0 * offsetus / usperiod);
 
@@ -387,7 +387,7 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     datatype = data.image[IDin[0]].md[0].datatype;
 
-    IDout = image_ID(IDoutname);
+    IDout = image_ID(IDoutname, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
@@ -595,7 +595,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     printf("Creating / connecting to image stream ...\n");
     fflush(stdout);
 
-    IDin      = image_ID(IDinname);
+    IDin      = image_ID(IDinname, data.image, data.NB_MAX_IMAGE);
     naxis     = data.image[IDin].md[0].naxis;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
@@ -609,7 +609,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     datatype = data.image[IDin].md[0].datatype;
 
-    IDout = image_ID(IDoutname);
+    IDout = image_ID(IDoutname, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
@@ -621,7 +621,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
                 data.image[IDin].md[0].size[1] *
                 ImageStreamIO_typesize(datatype);
 
-    IDsync = image_ID(IDsync_name);
+    IDsync = image_ID(IDsync_name, data.image, data.NB_MAX_IMAGE);
 
     kk  = 0;
     kk1 = 0;

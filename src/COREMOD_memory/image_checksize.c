@@ -13,7 +13,7 @@ int check_2Dsize(const char *ID_name, uint32_t xsize, uint32_t ysize)
     imageID ID;
 
     retval = 1;
-    ID     = image_ID(ID_name);
+    ID     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     if(data.image[ID].md[0].naxis != 2)
     {
         retval = 0;
@@ -42,7 +42,7 @@ int check_3Dsize(const char *ID_name,
     imageID ID;
 
     retval = 1;
-    ID     = image_ID(ID_name);
+    ID     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     if(data.image[ID].md[0].naxis != 3)
     {
         /*      printf("Wrong naxis : %ld - should be 3\n",data.image[ID].md[0].naxis);*/
@@ -78,7 +78,7 @@ int COREMOD_MEMORY_check_2Dsize(const char *IDname,
     int     sizeOK = 1; // 1 if size matches
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(data.image[ID].md[0].naxis != 2)
     {
         printf(
@@ -120,7 +120,7 @@ int COREMOD_MEMORY_check_3Dsize(const char *IDname,
     int     sizeOK = 1; // 1 if size matches
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(data.image[ID].md[0].naxis != 3)
     {
         printf(

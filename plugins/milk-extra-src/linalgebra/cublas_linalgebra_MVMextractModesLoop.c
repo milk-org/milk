@@ -638,7 +638,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     // CONNECT TO INPUT STREAM
     long IDin;
-    IDin = image_ID(in_stream);
+    IDin = image_ID(in_stream, data.image, data.NB_MAX_IMAGE);
 
     // ERROR HANDLING
     if(IDin == -1)
@@ -668,7 +668,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     long IDintot;
-    IDintot        = image_ID(intot_stream);
+    IDintot        = image_ID(intot_stream, data.image, data.NB_MAX_IMAGE);
     int INNORMMODE = 0; // 1 if input normalized
 
     if(IDintot == -1)
@@ -684,7 +684,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     // CONNECT TO WFS REFERENCE STREAM
     long IDref;
-    IDref = image_ID(IDrefin_name);
+    IDref = image_ID(IDrefin_name, data.image, data.NB_MAX_IMAGE);
     if(IDref == -1)
     {
         create_2Dimage_ID("_tmprefin",
@@ -706,7 +706,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         // Extract modes.
         // This is the default geometry, no need to remap
         //
-        IDmodes = image_ID(IDmodes_name);
+        IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
         n       = data.image[IDmodes].md[0].size[2];
         NBmodes = n;
     }
@@ -716,7 +716,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         // Expand from DM to WFS
         // Remap to new matrix tmpmodes
         //
-        ID = image_ID(IDmodes_name);
+        ID = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
         printf("Modes: ID = %ld   %s\n", ID, IDmodes_name);
         fflush(stdout);
 
@@ -782,7 +782,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
 
-    IDrefout = image_ID(IDrefout_name);
+    IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
     if(IDrefout == -1)
     {
         arraytmp[0] = NBmodes;
@@ -796,7 +796,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     // CONNNECT TO OUTPUT STREAM
 
-    ID_modeval = image_ID(IDmodes_val_name);
+    ID_modeval = image_ID(IDmodes_val_name, data.image, data.NB_MAX_IMAGE);
     if(ID_modeval == -1)
     {
         // CREATE IT
@@ -974,7 +974,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = TRACEsize;
         sizearraytmp[1] = NBmodes;
-        IDtrace         = image_ID(traceim_name);
+        IDtrace         = image_ID(traceim_name, data.image, data.NB_MAX_IMAGE);
         imOK            = 1;
         if(IDtrace == -1)
         {
@@ -1026,7 +1026,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name);
+        IDprocave       = image_ID(process_ave_name, data.image, data.NB_MAX_IMAGE);
         imOK            = 1;
         if(IDprocave == -1)
         {
@@ -1075,7 +1075,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms       = image_ID(process_rms_name);
+        IDprocrms       = image_ID(process_rms_name, data.image, data.NB_MAX_IMAGE);
         imOK            = 1;
         if(IDprocrms == -1)
         {
@@ -1374,7 +1374,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                                           sizeof(float) * NBmodes,
                                           cudaMemcpyDeviceToHost);
 
-                    IDrefout = image_ID(IDrefout_name);
+                    IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
                     if(IDrefout != -1)
                         for(k = 0; k < NBmodes; k++)
                         {

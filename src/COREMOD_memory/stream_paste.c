@@ -89,8 +89,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
     uint8_t            datatype;
     int                FrameIndex;
 
-    ID0 = image_ID(IDstream0_name);
-    ID1 = image_ID(IDstream1_name);
+    ID0 = image_ID(IDstream0_name, data.image, data.NB_MAX_IMAGE);
+    ID1 = image_ID(IDstream1_name, data.image, data.NB_MAX_IMAGE);
 
     xsize    = data.image[ID0].md[0].size[0];
     ysize    = data.image[ID0].md[0].size[1];
@@ -105,7 +105,7 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
     arraysize[0] = 2 * xsize;
     arraysize[1] = ysize;
 
-    IDout = image_ID(IDstreamout_name);
+    IDout = image_ID(IDstreamout_name, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         create_image_ID(IDstreamout_name,

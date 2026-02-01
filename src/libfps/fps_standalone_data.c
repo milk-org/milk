@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-/* 
+/*
  * fitsio.h often expects LONGLONG to be defined.
  * It is typically defined by system headers if _GNU_SOURCE is present,
  * but we provide a fallback here just in case.
@@ -17,13 +17,13 @@
 
 /**
  * @brief Global data structure for standalone FPS executables.
- * 
+ *
  * Defined here to satisfy runtime symbol lookups from shared libraries
  * that reference 'data' but are linked without libCLIcore.
  */
 DATA __attribute__((used)) data;
 
-/* 
+/*
  * Minimal implementations of CLI registration functions to satisfy
  * runtime symbol lookups in modules that call them during initialization.
  */
@@ -58,7 +58,7 @@ uint32_t RegisterCLIcmd(
     return 0;
 }
 
-imageID image_ID(const char *name)
+imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 {
     return -1;
 }

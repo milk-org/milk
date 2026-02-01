@@ -175,7 +175,7 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
 
     printf("  cnt0 = %ld \n", data.image[ID].md->cnt0);
     printf("  cnt1 = %ld \n", data.image[ID].md->cnt1);
@@ -215,10 +215,10 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname);
+        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
     }
 
     ImageStreamIO_sempost(&data.image[ID], index);
@@ -255,10 +255,10 @@ COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname);
+        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
     }
 
     ImageStreamIO_sempost_loop(&data.image[ID], index, dtus);
@@ -273,10 +273,10 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname);
+        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
     }
 
     ImageStreamIO_semwait(&data.image[ID], index);
@@ -388,10 +388,10 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname);
+        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
     }
 
     ImageStreamIO_semflush(&data.image[ID], index);

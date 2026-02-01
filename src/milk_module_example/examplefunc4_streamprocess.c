@@ -203,7 +203,7 @@ static errno_t streamprocess(
 
     // resolve image
     // This function call has low overhead, as it will acknowledge existing image
-    resolveIMGID(inimg, ERRMODE_ABORT);
+    resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     uint32_t xsize  = inimg->size[0];
     uint32_t ysize  = inimg->size[1];
@@ -252,7 +252,7 @@ static errno_t compute_function()
     IMGID inimg = mkIMGID_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
     // Once the image is resolved, this function will execute very quickly, only checking if resolved
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // If the image may not be in memory, use resolveloadIMGID instead
     // This will attempt to load the image from shared memory

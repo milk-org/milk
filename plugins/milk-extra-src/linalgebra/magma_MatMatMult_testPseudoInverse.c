@@ -117,8 +117,8 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
-    IDmatA    = image_ID(IDmatA_name);
-    IDmatAinv = image_ID(IDmatAinv_name);
+    IDmatA    = image_ID(IDmatA_name, data.image, data.NB_MAX_IMAGE);
+    IDmatAinv = image_ID(IDmatAinv_name, data.image, data.NB_MAX_IMAGE);
 
     if(data.image[IDmatA].md[0].naxis == 3)
     {

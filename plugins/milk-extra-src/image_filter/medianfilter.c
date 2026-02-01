@@ -30,7 +30,7 @@ imageID median_filter(const char *__restrict ID_name,
         abort();
     }
 
-    ID       = image_ID(ID_name);
+    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     printf("name = %s, ID = %ld, Size = %ld %ld (%d)\n",
@@ -41,7 +41,7 @@ imageID median_filter(const char *__restrict ID_name,
            filter_size);
     fflush(stdout);
     copy_image_ID(ID_name, out_name, 0);
-    IDout = image_ID(out_name);
+    IDout = image_ID(out_name, data.image, data.NB_MAX_IMAGE);
 
     for(jj = filter_size; jj < naxes[1] - filter_size; jj++)
         for(ii = filter_size; ii < naxes[0] - filter_size; ii++)

@@ -141,7 +141,7 @@ int basic_lmin_im(
     long naxes[2];
     float tmp;
 
-    IDin = image_ID(ID_name);
+    IDin = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -178,7 +178,7 @@ int basic_lmax_im(
     long naxes[2];
     float tmp;
 
-    IDin = image_ID(ID_name);
+    IDin = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -217,8 +217,8 @@ long basic_diff(const char *ID_name1, const char *ID_name2,
     long naxes1[2], naxes2[2], naxes[2];
     long xmin, ymin, xmax, ymax; // extrema in the ID1 coordinates
 
-    ID1 = image_ID(ID_name1);
-    ID2 = image_ID(ID_name2);
+    ID1 = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
+    ID2 = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     naxes1[0] = data.image[ID1].md[0].size[0];
     naxes1[1] = data.image[ID1].md[0].size[1];
     naxes2[0] = data.image[ID2].md[0].size[0];
@@ -248,7 +248,7 @@ long basic_diff(const char *ID_name1, const char *ID_name2,
     }
 
     create_2Dimage_ID(ID_name_out, (xmax - xmin), (ymax - ymin));
-    ID_out = image_ID(ID_name_out);
+    ID_out = image_ID(ID_name_out, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID_out].md[0].size[0];
     naxes[1] = data.image[ID_out].md[0].size[1];
 
@@ -284,7 +284,7 @@ int basic_add_cst(const char *ID_name, float f1, int sign) // add a constant
     long ii, jj;
     long naxes[2];
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -316,7 +316,7 @@ imageID basic_extract(
     char name[SBUFFERSIZE];
     int n;
 
-    ID_in = image_ID(ID_in_name);
+    ID_in = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
     n = snprintf(name, SBUFFERSIZE, "%s", ID_out_name);
     if(n >= SBUFFERSIZE)
     {
@@ -325,7 +325,7 @@ imageID basic_extract(
 
     create_2Dimage_ID(name, n1, n2);
     fflush(stdout);
-    ID_out = image_ID(ID_out_name);
+    ID_out = image_ID(ID_out_name, data.image, data.NB_MAX_IMAGE);
     for(ii = 0; ii < n1; ii++)
         for(jj = 0; jj < n2; jj++)
         {
@@ -344,7 +344,7 @@ int basic_trunc_circ(const char *ID_name, float f1)
     long ii, jj;
     long naxes[2];
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -379,12 +379,12 @@ imageID basic_zoom2(
 
 
     execute_arith(lstring);
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     naxes_out[0] = naxes[0];
     naxes_out[1] = naxes[1];
-    ID_out = image_ID(ID_name_out);
+    ID_out = image_ID(ID_name_out, data.image, data.NB_MAX_IMAGE);
 
     for(uint32_t jj = 0; jj < naxes[1] / 2; jj++)
         for(uint32_t ii = 0; ii < naxes[0] / 2; ii++)
@@ -438,7 +438,7 @@ imageID basic_padd(
     imageID ID_out; // ID for the output image
     uint32_t naxes[2], naxes_out[2];
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -446,7 +446,7 @@ imageID basic_padd(
     naxes_out[1] = naxes[1] + 2 * n2;
 
     create_2Dimage_ID(ID_name_out, naxes_out[0], naxes_out[1]);
-    ID_out = image_ID(ID_name_out);
+    ID_out = image_ID(ID_name_out, data.image, data.NB_MAX_IMAGE);
 
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
@@ -469,7 +469,7 @@ imageID basic_fliph(
     uint32_t tmp_long;
     float temp;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -499,7 +499,7 @@ imageID basic_flipv(
     uint32_t tmp_long;
     float temp;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -528,7 +528,7 @@ imageID basic_fliphv(
     uint32_t tmp_long;
     float temp;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -605,7 +605,7 @@ int basic_median(
                 || (options[i + str_pos] == '\n'))
         {
             file_name[j] = '\0';
-            IDn[file_nb] = image_ID(file_name);
+            IDn[file_nb] = image_ID(file_name, data.image, data.NB_MAX_IMAGE);
             printf("%d %s \n", (int) IDn[file_nb], file_name);
             file_nb += 1;
             j = 0;
@@ -621,7 +621,7 @@ int basic_median(
     naxes[0] = data.image[IDn[0]].md[0].size[0];
     naxes[1] = data.image[IDn[0]].md[0].size[1];
     create_2Dimage_ID(ID_name, naxes[0], naxes[1]);
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
 
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
@@ -663,7 +663,7 @@ imageID basic_renorm_max(
     long naxes[2];
     float max;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -705,7 +705,7 @@ int basic_translate(
     int n0, n1;
     float coeff;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     onaxes[0] = naxes[0];
@@ -724,7 +724,7 @@ int basic_translate(
         delete_image_ID("out_transl_re_tmp");
         delete_image_ID("out_transl_im_tmp");
 
-        ID = image_ID("out_transl_pha_tmp");
+        ID = image_ID("out_transl_pha_tmp", data.image, data.NB_MAX_IMAGE);
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
@@ -734,7 +734,7 @@ int basic_translate(
             }
 
         coeff = 1.0 / (naxes[0] * naxes[1]);
-        ID = image_ID("out_transl_ampl_tmp");
+        ID = image_ID("out_transl_ampl_tmp", data.image, data.NB_MAX_IMAGE);
         for(jj = 0; jj < naxes[1]; jj++)
             for(ii = 0; ii < naxes[0]; ii++)
             {
@@ -758,7 +758,7 @@ int basic_translate(
         delete_image_ID("tmp1t");
         basic_extract("tmp2t", "tmp3t", pow(2, n0 + 1), pow(2, n1 + 1), 0, 0);
         delete_image_ID("tmp2t");
-        ID = image_ID("tmp3t");
+        ID = image_ID("tmp3t", data.image, data.NB_MAX_IMAGE);
         naxes[0] = data.image[ID].md[0].size[0];
         naxes[1] = data.image[ID].md[0].size[1];
         create_2Dimage_ID("zero_tmp", naxes[0], naxes[1]);
@@ -771,7 +771,7 @@ int basic_translate(
         delete_image_ID("out_transl_re_tmp");
         delete_image_ID("out_transl_im_tmp");
 
-        ID = image_ID("out_transl_pha_tmp");
+        ID = image_ID("out_transl_pha_tmp", data.image, data.NB_MAX_IMAGE);
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
@@ -780,7 +780,7 @@ int basic_translate(
                         (jj - naxes[1] / 2);
             }
         coeff = 1.0 / (naxes[0] * naxes[1]);
-        ID = image_ID("out_transl_ampl_tmp");
+        ID = image_ID("out_transl_ampl_tmp", data.image, data.NB_MAX_IMAGE);
         for(jj = 0; jj < naxes[1]; jj++)
             for(ii = 0; ii < naxes[0]; ii++)
             {
@@ -816,10 +816,10 @@ float basic_correlation(
     uint32_t naxes1[2];
     uint32_t naxes2[2];
 
-    ID1 = image_ID(ID_name1);
+    ID1 = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
     naxes1[0] = data.image[ID1].md[0].size[0];
     naxes1[1] = data.image[ID1].md[0].size[1];
-    ID2 = image_ID(ID_name2);
+    ID2 = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
     naxes2[0] = data.image[ID2].md[0].size[0];
     naxes2[1] = data.image[ID2].md[0].size[1];
 
@@ -868,7 +868,7 @@ int gauss_histo_image(
     float *impr = NULL;
     float *imprinv = NULL;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
@@ -1074,7 +1074,7 @@ imageID basic_cube_center(
     long *tx = NULL;
     long *ty = NULL;
 
-    IDin = image_ID(ID_in_name);
+    IDin = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
     ksize = data.image[IDin].md[0].size[2];
@@ -1167,7 +1167,7 @@ imageID cube_average(
     long cnt;
     long cnt1;
 
-    IDin = image_ID(ID_in_name);
+    IDin = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDin].md[0].size[0];
     ysize = data.image[IDin].md[0].size[1];
     ksize = data.image[IDin].md[0].size[2];

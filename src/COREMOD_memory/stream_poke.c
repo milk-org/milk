@@ -43,7 +43,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID img = mkIMGID_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     processinfo_update_output_stream(processinfo, img.im, NULL);

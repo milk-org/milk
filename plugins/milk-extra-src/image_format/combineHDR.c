@@ -348,7 +348,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
     }
 
     gauss_filter("imlayer", "imlayerg", 50.0, 150);
-    imageID IDlayerg = image_ID("imlayerg");
+    imageID IDlayerg = image_ID("imlayerg", data.image, data.NB_MAX_IMAGE);
 
     // construct HDR image
     imageID IDout;

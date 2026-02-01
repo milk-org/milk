@@ -470,7 +470,7 @@ static void *save_telemetry_fits_function(
         fclose(fp);
     }
 
-    tret = image_ID(tmsg->iname);
+    tret = image_ID(tmsg->iname, data.image, data.NB_MAX_IMAGE);
 
     struct timespec tend;
     clock_gettime(CLOCK_MILK, &tend);
@@ -495,7 +495,7 @@ static errno_t compute_function()
                                           STREAMSAVE_THREAD_MESSAGE));
 
     IMGID inimg = mkIMGID_from_name(streamname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     if(inimg.md->naxis == 3)
     {

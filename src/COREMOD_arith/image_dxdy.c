@@ -15,7 +15,7 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     uint8_t   datatype = imgin->md[0].datatype;
     uint8_t   naxis    = imgin->md[0].naxis;
     if(naxis != 2)
@@ -67,7 +67,7 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imgin, ERRMODE_ABORT);
+    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     uint8_t   datatype = imgin->md[0].datatype;
     uint8_t   naxis    = imgin->md[0].naxis;
     if(naxis != 2)

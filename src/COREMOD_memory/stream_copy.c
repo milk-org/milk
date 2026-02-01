@@ -55,10 +55,10 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgin = mkIMGID_from_name(inimname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     IMGID imgout = mkIMGID_from_name(outimname);
-    resolveIMGID(&imgout, ERRMODE_ABORT);
+    resolveIMGID(&imgout, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     uint64_t im_in_datasize = ImageStreamIO_typesize(imgin.im->md->datatype) *
                               imgin.im->md->nelement;

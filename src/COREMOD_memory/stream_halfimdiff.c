@@ -76,7 +76,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
     uint8_t            datatype;
     uint8_t            datatypeout;
 
-    ID0 = image_ID(IDstream_name);
+    ID0 = image_ID(IDstream_name, data.image, data.NB_MAX_IMAGE);
 
     xsizein = data.image[ID0].md[0].size[0];
     ysizein = data.image[ID0].md[0].size[1];
@@ -137,7 +137,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
             break;
     }
 
-    IDout = image_ID(IDstreamout_name);
+    IDout = image_ID(IDstreamout_name, data.image, data.NB_MAX_IMAGE);
     if(IDout == -1)
     {
         create_image_ID(IDstreamout_name,

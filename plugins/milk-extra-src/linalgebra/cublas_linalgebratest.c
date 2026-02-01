@@ -94,8 +94,8 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
 
     // CHECK RESULT
     /*   arraysizetmp = (long*) malloc(sizeof(long)*3);
-       ID_R = image_ID("Rmat");
-       ID_C = image_ID("Cmat");
+       ID_R = image_ID("Rmat", data.image, data.NB_MAX_IMAGE);
+       ID_C = image_ID("Cmat", data.image, data.NB_MAX_IMAGE);
 
        if(data.image[ID_R].md[0].naxis==3)
        {

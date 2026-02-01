@@ -16,7 +16,7 @@ imageID filter_CubePercentile(const char *__restrict IDcin_name,
     long    ii, kk;
     float  *array;
 
-    IDcin = image_ID(IDcin_name);
+    IDcin = image_ID(IDcin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDcin].md[0].size[0];
     ysize = data.image[IDcin].md[0].size[1];
     zsize = data.image[IDcin].md[0].size[2];
@@ -58,7 +58,7 @@ imageID filter_CubePercentileLimit(const char *__restrict IDcin_name,
     long    cnt;
     float   v1;
 
-    IDcin = image_ID(IDcin_name);
+    IDcin = image_ID(IDcin_name, data.image, data.NB_MAX_IMAGE);
     xsize = data.image[IDcin].md[0].size[0];
     ysize = data.image[IDcin].md[0].size[1];
     zsize = data.image[IDcin].md[0].size[2];

@@ -67,7 +67,7 @@ static errno_t compute_function() {
 
     // Resolve input stream from name (pointer was set by CLI arg binding)
     IMGID inimg = mkIMGID_from_name(in_name_ptr);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // Resolve/Create output stream
     IMGID outimg = mkIMGID_from_name(proc_out_name_ptr);

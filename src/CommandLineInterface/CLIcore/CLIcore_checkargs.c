@@ -918,7 +918,7 @@ errno_t CLI_checkarg_array(
                         strncpy(data.cmdargtoken[CLIarg + 1].val.string,
                                 data.cmd[cmdi].argdata[arg].val.s,
                                 STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
-                        if(image_ID(data.cmd[cmdi].argdata[arg].val.s) != -1)
+                        if(image_ID(data.cmd[cmdi].argdata[arg].val.s, data.image, data.NB_MAX_IMAGE) != -1)
                         {
                             // if image exists
                             data.cmdargtoken[CLIarg + 1].type = CLIARG_IMG;

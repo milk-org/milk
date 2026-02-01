@@ -79,7 +79,7 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(inimg, ERRMODE_ABORT);
+    resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     if (inimg->md->naxis != 3)
     {
@@ -118,7 +118,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = mkIMGID_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // create stream with name outname
     IMGID outimg;

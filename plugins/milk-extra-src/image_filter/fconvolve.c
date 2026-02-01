@@ -67,10 +67,10 @@ imageID fconvolve(const char *__restrict name_in,
     long    naxes[2];
     imageID IDout;
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
-    IDke     = image_ID(name_ke);
+    IDke     = image_ID(name_ke, data.image, data.NB_MAX_IMAGE);
     if((naxes[0] != data.image[IDke].md[0].size[0]) ||
             (naxes[1] != data.image[IDke].md[0].size[1]))
     {
@@ -101,7 +101,7 @@ imageID fconvolve(const char *__restrict name_in,
     delete_image_ID("tmpre", DELETE_IMAGE_ERRMODE_WARNING);
     permut(name_out);
 
-    IDout = image_ID(name_out);
+    IDout = image_ID(name_out, data.image, data.NB_MAX_IMAGE);
 
     return IDout;
 }
@@ -122,10 +122,10 @@ imageID fconvolve_padd(const char *__restrict name_in,
     long    naxespadd[2];
     long    ii, jj;
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
-    IDke     = image_ID(name_ke);
+    IDke     = image_ID(name_ke, data.image, data.NB_MAX_IMAGE);
     if((naxes[0] != data.image[IDke].md[0].size[0]) ||
             (naxes[1] != data.image[IDke].md[0].size[1]))
     {
@@ -172,8 +172,8 @@ imageID fconvolve_padd(const char *__restrict name_in,
     delete_image_ID("tmpkepadd", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmpim1padd", DELETE_IMAGE_ERRMODE_WARNING);
 
-    ID1 = image_ID("tmpconv1");
-    ID2 = image_ID("tmpconv2");
+    ID1 = image_ID("tmpconv1", data.image, data.NB_MAX_IMAGE);
+    ID2 = image_ID("tmpconv2", data.image, data.NB_MAX_IMAGE);
     create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout);
 
     for(ii = 0; ii < naxes[0]; ii++)
@@ -199,7 +199,7 @@ imageID fconvolve_1(const char *__restrict name_in,
     imageID IDin;
     long    naxes[2];
 
-    IDin     = image_ID(name_in);
+    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[IDin].md[0].size[0];
     naxes[1] = data.image[IDin].md[0].size[1];
 
@@ -215,7 +215,7 @@ imageID fconvolve_1(const char *__restrict name_in,
     arith_image_cstmult("tmpre", 1.0 / naxes[0] / naxes[1], name_out);
     delete_image_ID("tmpre", DELETE_IMAGE_ERRMODE_WARNING);
     permut(name_out);
-    imageID IDout = image_ID(name_out);
+    imageID IDout = image_ID(name_out, data.image, data.NB_MAX_IMAGE);
 
     return IDout;
 }
@@ -239,7 +239,7 @@ imageID fconvolveblock(const char *__restrict name_in,
     float   alpha = 4.0;
 
     overlap = (long)(blocksize / 10);
-    IDin    = image_ID(name_in);
+    IDin    = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
     xsize   = data.image[IDin].md[0].size[0];
     ysize   = data.image[IDin].md[0].size[1];
 
@@ -272,7 +272,7 @@ imageID fconvolveblock(const char *__restrict name_in,
                     }
                 }
             fconvolve("tmpblock", name_ke, "tmpblockc");
-            IDtmpout = image_ID("tmpblockc");
+            IDtmpout = image_ID("tmpblockc", data.image, data.NB_MAX_IMAGE);
             for(ii = 0; ii < blocksize; ii++)
                 for(jj = 0; jj < blocksize; jj++)
                 {

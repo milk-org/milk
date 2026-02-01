@@ -324,7 +324,7 @@ imageID linopt_imtools_image_construct_stream(
 
 
 
-    IDmodes = image_ID(IDmodes_name);
+    IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
     //datatype = data.image[IDmodes].md[0].datatype;
 
     xsize = data.image[IDmodes].md[0].size[0];
@@ -342,8 +342,8 @@ imageID linopt_imtools_image_construct_stream(
         NOSEM = 0;
     }
 
-    IDout = image_ID(IDout_name);
-    IDcoeff = image_ID(IDcoeff_name);
+    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
+    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
 
     while(1 == 1)
     {
@@ -446,12 +446,12 @@ double linopt_imtools_match_slow(
     params[0] = 0.0;
 
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
 
-    IDmask = image_ID(IDmask_name);
-    IDref = image_ID(IDref_name);
+    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
+    IDref = image_ID(IDref_name, data.image, data.NB_MAX_IMAGE);
     n = data.image[IDref].md[0].size[2];
 
     printf("Number of points = %ld x %ld\n", naxes[0]*naxes[1], n);
@@ -727,12 +727,12 @@ double linopt_imtools_match(
     gsl_matrix *cov;
     double chisq;
 
-    ID = image_ID(ID_name);
+    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     naxes[0] = data.image[ID].md[0].size[0];
     naxes[1] = data.image[ID].md[0].size[1];
     n = naxes[0] * naxes[1];
-    IDmask = image_ID(IDmask_name);
-    IDref = image_ID(IDref_name);
+    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
+    IDref = image_ID(IDref_name, data.image, data.NB_MAX_IMAGE);
     p = data.image[IDref].md[0].size[2];
 
     // some verification

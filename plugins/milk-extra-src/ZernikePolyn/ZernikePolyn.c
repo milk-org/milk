@@ -497,7 +497,7 @@ mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rpix)
     zernike_init();
 
     create_3Dimage_ID(ID_namec, SIZE, SIZE, zer_nb, &ID);
-    //    ID = image_ID("ztmp");
+    //    ID = image_ID("ztmp", data.image, data.NB_MAX_IMAGE);
 
     r = (double *) malloc(SIZE * SIZE * sizeof(double));
     if(r == NULL)
@@ -574,14 +574,14 @@ double get_zer(const char *ID_name, long zer_nb, double radius)
     char    fname[200];
     char    fname1[200];
 
-    ID   = image_ID(ID_name);
+    ID   = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     SIZE = data.image[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius);
 
     sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
     sprintf(fname1, "Z_%ld", zer_nb);
 
-    if((ID = image_ID(fname1)) == -1)
+    if((ID = image_ID(fname1, data.image, data.NB_MAX_IMAGE)) == -1)
     {
         if(file_exists(fname) == 1)
         {
@@ -613,14 +613,14 @@ get_zer_crop(const char *ID_name, long zer_nb, double radius, double radius1)
     char    fname[200];
     char    fname1[200];
 
-    ID   = image_ID(ID_name);
+    ID   = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     SIZE = data.image[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius1);
 
     sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
     sprintf(fname1, "Z_%ld", zer_nb);
 
-    if((ID = image_ID(fname1)) == -1)
+    if((ID = image_ID(fname1, data.image, data.NB_MAX_IMAGE)) == -1)
     {
         if(file_exists(fname) == 1)
         {
@@ -681,7 +681,7 @@ int remove_zerns(const char *ID_name,
     long    SIZE;
 
     copy_image_ID(ID_name, ID_name_out, 0);
-    ID   = image_ID(ID_name);
+    ID   = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     SIZE = data.image[ID].md[0].size[0];
     for(int i = 0; i < max_zer; i++)
     {
@@ -705,13 +705,13 @@ long ZERNIKEPOLYN_rmPiston(const char *ID_name, const char *IDmask_name)
     long    xsize, ysize, zsize, xysize;
     long    ii, kk;
 
-    ID     = image_ID(ID_name);
+    ID     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     xsize  = data.image[ID].md[0].size[0];
     ysize  = data.image[ID].md[0].size[1];
     zsize  = data.image[ID].md[0].size[2];
     xysize = xsize * ysize;
 
-    IDmask = image_ID(IDmask_name);
+    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
 
     for(kk = 0; kk < zsize; kk++)
     {
@@ -744,7 +744,7 @@ int remove_TTF(const char *ID_name, const char *ID_name_out, double radius)
 
     //  printf("-- %s  --- %s --\n",ID_name,ID_name_out);
     copy_image_ID(ID_name, ID_name_out, 0);
-    ID   = image_ID(ID_name);
+    ID   = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
     SIZE = data.image[ID].md[0].size[0];
     make_disk("disktmpttf", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius);
     //  list_image_ID();
@@ -796,7 +796,7 @@ double fit_zer(const char *ID_name,
 
     copy_image_ID(ID_name, "resid", 0);
 
-    ID   = image_ID("resid");
+    ID   = image_ID("resid", data.image, data.NB_MAX_IMAGE);
     SIZE = data.image[ID].md[0].size[0];
     IDdisk =
         make_disk("dtmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, 0.999 * radius);
@@ -820,7 +820,7 @@ double fit_zer(const char *ID_name,
             sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", i);
             sprintf(fname1, "Z_%ld", i);
 
-            if((IDZ = image_ID(fname1)) == -1)
+            if((IDZ = image_ID(fname1, data.image, data.NB_MAX_IMAGE)) == -1)
             {
                 if(file_exists(fname) == 1)
                 {

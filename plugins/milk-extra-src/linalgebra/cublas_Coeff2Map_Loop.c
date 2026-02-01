@@ -152,7 +152,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     if(offsetmode == 1)
     {
         beta     = 1.0;
-        IDoffset = image_ID(IDoffset_name);
+        IDoffset = image_ID(IDoffset_name, data.image, data.NB_MAX_IMAGE);
 
         if(IDoffset == -1)
         {
@@ -161,7 +161,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         }
     }
 
-    IDoutmap = image_ID(IDoutmap_name);
+    IDoutmap = image_ID(IDoutmap_name, data.image, data.NB_MAX_IMAGE);
     if(IDoutmap == -1)
     {
         printf("ERROR: missing output stream\n");
@@ -232,14 +232,14 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
 
     // load modes to GPU
 
-    IDcoeff = image_ID(IDcoeff_name);
+    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
     NBmodes = 1;
     for(uint8_t k = 0; k < data.image[IDcoeff].md[0].naxis; k++)
     {
         NBmodes *= data.image[IDcoeff].md[0].size[k];
     }
 
-    IDmodes = image_ID(IDmodes_name);
+    IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
     uint64_t mdim;
     if(data.image[IDmodes].md[0].naxis == 3)
     {

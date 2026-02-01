@@ -317,7 +317,7 @@ static errno_t compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = mkIMGID_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     long m = imgin.md->size[0] * imgin.md->size[1];
 
@@ -328,7 +328,7 @@ static errno_t compute_function()
     float *masked_pix = NULL;  //Array to hold the pixel values
 
     IMGID imgmask = mkIMGID_from_name(inmasksname);
-    if(resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
+    if(resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
         if(imgmask.md->size[0] == imgin.md->size[0]
@@ -383,7 +383,7 @@ static errno_t compute_function()
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     imageID IDintot;
-    IDintot = image_ID(intot_stream);
+    IDintot = image_ID(intot_stream, data.image, data.NB_MAX_IMAGE);
     int INNORMMODE = 0; // 1 if input normalized
 
     if(IDintot == -1)
@@ -403,7 +403,7 @@ static errno_t compute_function()
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref = -1;
     IMGID imginref = mkIMGID_from_name(inrefsname);
-    resolveIMGID(&imginref, ERRMODE_WARN);
+    resolveIMGID(&imginref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
     if(imginref.ID == -1)
     {
         create_2Dimage_ID("_tmprefin",
@@ -423,12 +423,12 @@ static errno_t compute_function()
 
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
     IMGID imgoutref = mkIMGID_from_name(outrefsname);
-    resolveIMGID(&imgoutref, ERRMODE_WARN);
+    resolveIMGID(&imgoutref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
     // CONNECT TO MODES STREAM
     IMGID imgmodes = mkIMGID_from_name(immodes);
-    resolveIMGID(&imgmodes, ERRMODE_ABORT);
+    resolveIMGID(&imgmodes, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // Could this be IMGIDcompare?
     if(imgmodes.md->datatype != _DATATYPE_FLOAT)
@@ -535,7 +535,7 @@ static errno_t compute_function()
 
     uint32_t *arraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
 
-    // IDrefout = image_ID(IDrefout_name);
+    // IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
     imageID IDrefout = -1; // TODO handle this
     if(IDrefout == -1)
     {
@@ -764,7 +764,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = TRACEsize;
         sizearraytmp[1] = NBmodes;
-        IDtrace = image_ID(traceim_name);
+        IDtrace = image_ID(traceim_name, data.image, data.NB_MAX_IMAGE);
         int imOK = 1;
         if(IDtrace == -1)
         {
@@ -821,7 +821,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name);
+        IDprocave       = image_ID(process_ave_name, data.image, data.NB_MAX_IMAGE);
         int imOK = 1;
         if(IDprocave == -1)
         {
@@ -870,7 +870,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms = image_ID(process_rms_name);
+        IDprocrms = image_ID(process_rms_name, data.image, data.NB_MAX_IMAGE);
         imOK = 1;
         if(IDprocrms == -1)
         {
@@ -1286,7 +1286,7 @@ static errno_t compute_function()
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
 
-                IDrefout = image_ID(outrefsname);
+                IDrefout = image_ID(outrefsname, data.image, data.NB_MAX_IMAGE);
                 if(IDrefout != -1)
                     for(long k = 0; k < NBmodes; k++)
                     {

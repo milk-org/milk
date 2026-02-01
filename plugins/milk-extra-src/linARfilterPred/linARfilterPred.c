@@ -657,8 +657,8 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     printf("Selecting block %ld ...\n", blkNB);
     fflush(stdout);
 
-    IDin    = image_ID(IDin_name);
-    IDblknb = image_ID(IDblknb_name);
+    IDin    = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDblknb = image_ID(IDblknb_name, data.image, data.NB_MAX_IMAGE);
     naxis   = data.image[IDin].md[0].naxis;
     mmax    = data.image[IDblknb].md[0].size[0];
 
@@ -766,7 +766,7 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name,
 
     uint32_t *imsizeout;
 
-    IDin     = image_ID(IDin_name);
+    IDin     = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     xsize    = data.image[IDin].md[0].size[0];
     ysize    = data.image[IDin].md[0].size[1];
     xsizeout = xsize * NBstep;
@@ -962,7 +962,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     create_image_ID(imname, 2, imsize, _DATATYPE_FLOAT, 1, 0, 0, &IDPFparam);
     free(imsize);
 
-    if((IDPFparam = image_ID(imname)) != -1)
+    if((IDPFparam = image_ID(imname, data.image, data.NB_MAX_IMAGE)) != -1)
     {
         ExternalPFparam                  = 1;
         data.image[IDPFparam].array.F[0] = PFlag;
@@ -998,7 +998,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// subset of the telemetry variables to be considered.
 
     /// ### Read input telemetry image IDin_name to measure xsize, ysize and number of samples
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     switch(data.image[IDin].md[0].naxis)
     {
@@ -1083,7 +1083,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// Otherwise, all variables are active\n
     /// The number of active input variables is stored in NBpixin.
 
-    IDinmask = image_ID("inmask");
+    IDinmask = image_ID("inmask", data.image, data.NB_MAX_IMAGE);
     if(IDinmask == -1)
     {
         NBpixin = 0; //xsize*ysize;
@@ -1145,7 +1145,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         abort();
     }
 
-    IDoutmask = image_ID("outmask");
+    IDoutmask = image_ID("outmask", data.image, data.NB_MAX_IMAGE);
     if(IDoutmask == -1)
     {
         NBpixout = 0; //xsize*ysize;
@@ -1221,7 +1221,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         create_2Dimage_ID("PFmatD", NBmvec + mvecsize, mvecsize, &IDmatA);
     }
 
-    IDmatA = image_ID("PFmatD");
+    IDmatA = image_ID("PFmatD", data.image, data.NB_MAX_IMAGE);
 
     /// Data matrix conventions :
     /// - each column (ii = cst) is a measurement
@@ -1299,7 +1299,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         ///
         /// Necessary as input may be continuously changing between consecutive loop iterations.
         ///
-        IDincp = image_ID("PFin_copy");
+        IDincp = image_ID("PFin_copy", data.image, data.NB_MAX_IMAGE);
         memcpy(data.image[IDincp].array.F,
                data.image[IDin].array.F,
                sizeof(float) * inNBelem);
@@ -1437,7 +1437,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             save_fits("PF_VTmat", "PF_VTmat.fits");
             save_fits("PFmatC", "PFmatC.fits");
         }
-        IDmatC = image_ID("PFmatC");
+        IDmatC = image_ID("PFmatC", data.image, data.NB_MAX_IMAGE);
 
         ///
         /// ### Assemble Predictive Filter
@@ -1504,11 +1504,11 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             }
             else
             {
-                IDoutPF2D = image_ID(IDoutPF_name);
+                IDoutPF2D = image_ID(IDoutPF_name, data.image, data.NB_MAX_IMAGE);
             }
         }
 
-        IDoutmask = image_ID("outmask");
+        IDoutmask = image_ID("outmask", data.image, data.NB_MAX_IMAGE);
 
         printf("===========================================================\n");
         printf("ASSEMBLING OUTPUT\n");
@@ -1519,7 +1519,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("  PForder  = %ld\n", PForder);
         printf("===========================================================\n");
 
-        long IDoutPF2Dn = image_ID("psinvPFmat");
+        long IDoutPF2Dn = image_ID("psinvPFmat", data.image, data.NB_MAX_IMAGE);
         if(IDoutPF2Dn == -1)
         {
             printf("------------------- CPU computing PF matrix\n");
@@ -1699,8 +1699,8 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
     //    long jj; // output index
     //    long kk; // time step index
 
-    IDfilt = image_ID(IDfilt_name);
-    IDin   = image_ID(IDin_name);
+    IDfilt = image_ID(IDfilt_name, data.image, data.NB_MAX_IMAGE);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
 
     PForder   = data.image[IDfilt].md[0].size[2];
     NBpix_in  = data.image[IDfilt].md[0].size[0];
@@ -1846,8 +1846,8 @@ imageID LINARFILTERPRED_Apply_LinPredictor(const char *IDfilt_name,
 
     imageID IDoutf;
 
-    IDin   = image_ID(IDin_name);
-    IDfilt = image_ID(IDfilt_name);
+    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDfilt = image_ID(IDfilt_name, data.image, data.NB_MAX_IMAGE);
 
     switch(data.image[IDin].md[0].naxis)
     {
@@ -1935,7 +1935,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
     uint8_t   naxis;
 
     // IDPF should be square
-    IDPF    = image_ID(IDPF_name);
+    IDPF    = image_ID(IDPF_name, data.image, data.NB_MAX_IMAGE);
     NBmode  = data.image[IDPF].md[0].size[0];
     NBmode2 = NBmode * NBmode;
     assert(data.image[IDPF].md[0].size[0] == data.image[IDPF].md[0].size[1]);
@@ -1952,7 +1952,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
     sizearray[1] = NBmode;
     naxis        = 2;
 
-    IDPFM = image_ID(IDPFM_name);
+    IDPFM = image_ID(IDPFM_name, data.image, data.NB_MAX_IMAGE);
 
     if(IDPFM == -1)
     {
@@ -2070,16 +2070,16 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     long IDmasterout;
     char imname[200];
 
-    IDmodevalIN = image_ID(IDmodevalIN_name);
+    IDmodevalIN = image_ID(IDmodevalIN_name, data.image, data.NB_MAX_IMAGE);
     NBmodeIN0   = data.image[IDmodevalIN].md[0].size[0];
 
-    IDPFM     = image_ID(IDPFM_name);
+    IDPFM     = image_ID(IDPFM_name, data.image, data.NB_MAX_IMAGE);
     NBmodeOUT = data.image[IDPFM].md[0].size[1];
 
     sprintf(imname, "aol%ld_modevalPF", loop);
-    IDmasterout = image_ID(imname);
+    IDmasterout = image_ID(imname, data.image, data.NB_MAX_IMAGE);
 
-    IDinmask = image_ID("inmask");
+    IDinmask = image_ID("inmask", data.image, data.NB_MAX_IMAGE);
     if(IDinmask != -1)
     {
         NBinmaskpix = 0;
@@ -2144,7 +2144,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     if((SAVEMODE > 0) || (IDmasterout != -1))
     {
-        IDoutmask = image_ID("outmask");
+        IDoutmask = image_ID("outmask", data.image, data.NB_MAX_IMAGE);
         if(IDoutmask == -1)
         {
             printf("ERROR: outmask image required\n");
@@ -2193,7 +2193,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     sizearray[0] = NBmodeOUT;
     sizearray[1] = 1;
     naxis        = 2;
-    IDPFout      = image_ID(IDPFout_name);
+    IDPFout      = image_ID(IDPFout_name, data.image, data.NB_MAX_IMAGE);
 
     if(IDPFout == -1)
     {
@@ -2597,7 +2597,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         exit(0);
     }
 
-    IDin  = image_ID(IDin_name);
+    IDin  = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[IDin].md[0].naxis;
 
     nbvar = 1;

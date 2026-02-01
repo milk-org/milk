@@ -198,7 +198,7 @@ imageID FFT_do1dfft(const char *__restrict in_name,
     fftw_complex  *inptr_double, *outptr_double;
     uint8_t        datatype;
 
-    IDin  = image_ID(in_name);
+    IDin  = image_ID(in_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[IDin].md[0].naxis;
 
     naxes = (int *) malloc(naxis * sizeof(int));
@@ -434,7 +434,7 @@ imageID do1drfft(const char *__restrict in_name,
     double        *inptr_double;
     uint8_t        datatype;
 
-    IDin  = image_ID(in_name);
+    IDin  = image_ID(in_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[IDin].md[0].naxis;
 
     naxes = (int *) malloc(naxis * sizeof(int));
@@ -777,7 +777,7 @@ imageID FFT_do2dfft(const char *in_name, const char *out_name, int dir)
     char    ffttmpcpyname[STRINGMAXLEN_IMGNAME];
     uint8_t datatype;
 
-    IDin  = image_ID(in_name);
+    IDin  = image_ID(in_name, data.image, data.NB_MAX_IMAGE);
     naxis = data.image[IDin].md[0].naxis;
 
     naxes = (int *) malloc(naxis * sizeof(int));
@@ -1063,7 +1063,7 @@ imageID FFT_do2drfft(const char *__restrict in_name,
     uint8_t datatype;
     uint8_t datatypeout;
 
-    IDin = image_ID(in_name);
+    IDin = image_ID(in_name, data.image, data.NB_MAX_IMAGE);
 
     datatype = data.image[IDin].md[0].datatype;
     naxis    = data.image[IDin].md[0].naxis;

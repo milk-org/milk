@@ -109,7 +109,7 @@ errno_t image_format_extract_RGGBchan(
     DEBUG_TRACE_FSTART();
 
     // input image is required
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
