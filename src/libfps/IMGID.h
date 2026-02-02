@@ -54,9 +54,9 @@ typedef struct
     IMAGE_METADATA *md;
 
     // TEMPLATE
-    // Requested image params
-    // Used to create image or test if existing image matches
-    // These fields do not always match the image content
+    // Requested image params.
+    // Used to create image or test if existing image matches.
+    // These fields do not always match the image content.
     //
     uint8_t  datatype;
     int      naxis;
@@ -546,6 +546,12 @@ static inline IMGID read_sharedmem_img(
     return(img);
 }
 
+// Create image from IMGID
+static inline void mkimage(IMGID * img)
+{
+    ImageStreamIO_createIm(img->im, img->name, img->naxis, img->size, img->datatype, img->shared, img->NBkw, img->CBsize);
+    img->createcnt++;
+}
 
 
 
