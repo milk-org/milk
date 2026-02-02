@@ -44,6 +44,8 @@
 #include "COREMOD_memory/fps_list.h"
 
 #include "COREMOD_memory/image_ID.h"
+#include "COREMOD_memory/read_shmim.h"
+#include "COREMOD_memory/imageID.h"
 #include "COREMOD_memory/image_checksize.h"
 #include "COREMOD_memory/image_complex.h"
 #include "COREMOD_memory/image_copy.h"
@@ -56,7 +58,6 @@
 #include "COREMOD_memory/list_image.h"
 #include "COREMOD_memory/list_variable.h"
 #include "COREMOD_memory/logshmim.h"
-#include "COREMOD_memory/read_shmim.h"
 #include "COREMOD_memory/saveall.h"
 #include "COREMOD_memory/stream_TCP.h"
 #include "COREMOD_memory/stream_ave.h"
