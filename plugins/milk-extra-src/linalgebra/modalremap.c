@@ -140,7 +140,7 @@ errno_t ModalRemap(
 
     list_image_ID();
 
-    IMGID imgC0  = mkIMGID_from_name("coeffM0");
+    IMGID imgC0  = imgid_make_from_name("coeffM0");
     printf("Decompose %s %s -> %s\n", imgU0.name, imgM0.name, imgC0.name);
     fflush(stdout);
     // Decompose inM according to U0
@@ -156,7 +156,7 @@ errno_t ModalRemap(
 
     // evaluate fit quality
     {
-        IMGID imgM1comp = mkIMGID_from_name("imsig");
+        IMGID imgM1comp = imgid_make_from_name("imsig");
         resolveIMGID(&imgM1comp, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
         FILE *fp = fopen("modalremap.log", "w");
@@ -168,7 +168,7 @@ errno_t ModalRemap(
 
 
         // Expand back to original space
-        IMGID imgM0m  = mkIMGID_from_name("imM0m");
+        IMGID imgM0m  = imgid_make_from_name("imM0m");
         computeSGEMM(imgU0, imgC0, &imgM0m, 0, 0, GPUdev);
 
         // compute residual for each frame, and total
@@ -268,17 +268,17 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM0 = mkIMGID_from_name(inM);
+    IMGID imginM0 = imgid_make_from_name(inM);
     resolveIMGID(&imginM0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginU0 = mkIMGID_from_name(inU0);
+    IMGID imginU0 = imgid_make_from_name(inU0);
     resolveIMGID(&imginU0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginU1 = mkIMGID_from_name(inU1);
+    IMGID imginU1 = imgid_make_from_name(inU1);
     resolveIMGID(&imginU1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
-    IMGID imgoutM1  = mkIMGID_from_name(outM);
+    IMGID imgoutM1  = imgid_make_from_name(outM);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

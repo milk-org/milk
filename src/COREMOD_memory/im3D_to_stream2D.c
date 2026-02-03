@@ -117,12 +117,12 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // create stream with name outname
     IMGID outimg;
-    outimg = makeIMGID_2D(outname, inimg.size[0], inimg.size[1]);
+    outimg = imgid_make_from_name_2D(outname, inimg.size[0], inimg.size[1]);
     outimg.shared = 1;
     outimg.datatype = inimg.md->datatype;
 

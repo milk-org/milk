@@ -114,7 +114,7 @@ static CLICMDDATA CLIcmddata = { "crop2D", "crop 2D image", CLICMD_FIELDS_DEFAUL
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID iin = mkIMGID_from_name(cropinsname); resolveIMGID(&iin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID iin = imgid_make_from_name(cropinsname); resolveIMGID(&iin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID iout = stream_connect_create_2D(outsname, *cropxsize, *cropysize, iin.md->datatype);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_crop2D_compute(data.fpsptr, processinfo, iin.im, iout.im);

@@ -113,13 +113,13 @@ errno_t image_format_extract_RGGBchan(
 
 
 
-    copyIMGID(&imgin, &imgoutR);
+    imgid_copy(&imgin, &imgoutR);
     imgoutR.size[0] = imgin.size[0] / 2;
     imgoutR.size[1] = imgin.size[1] / 2;
 
-    copyIMGID(&imgoutR, &imgoutG1);
-    copyIMGID(&imgoutR, &imgoutG2);
-    copyIMGID(&imgoutR, &imgoutB);
+    imgid_copy(&imgoutR, &imgoutG1);
+    imgid_copy(&imgoutR, &imgoutG2);
+    imgid_copy(&imgoutR, &imgoutB);
 
     createimagefromIMGID(&imgoutR);
     createimagefromIMGID(&imgoutG1);
@@ -215,11 +215,11 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_format_extract_RGGBchan(mkIMGID_from_name(inim),
-                                  mkIMGID_from_name(outimR),
-                                  mkIMGID_from_name(outimG1),
-                                  mkIMGID_from_name(outimG2),
-                                  mkIMGID_from_name(outimB));
+    image_format_extract_RGGBchan(imgid_make_from_name(inim),
+                                  imgid_make_from_name(outimR),
+                                  imgid_make_from_name(outimG1),
+                                  imgid_make_from_name(outimG2),
+                                  imgid_make_from_name(outimB));
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

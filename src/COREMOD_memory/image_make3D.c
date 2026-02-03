@@ -71,7 +71,7 @@ imageID make_3Dimage_IMGID(IMGID *img)
 
 imageID make_3Dimage(const char *name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
 {
-    IMGID img = makeIMGID_3D(name, xsize, ysize, zsize);
+    IMGID img = imgid_make_from_name_3D(name, xsize, ysize, zsize);
     return make_3Dimage_IMGID(&img);
 }
 
@@ -79,7 +79,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = makeIMGID_3D(outimname, *imxsize, *imysize, *imzsize);
+    IMGID img = imgid_make_from_name_3D(outimname, *imxsize, *imysize, *imzsize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

@@ -316,7 +316,7 @@ static errno_t compute_function()
     int initref = 0; // 1 when reference has been processed
 
     // CONNECT TO INPUT STREAM
-    IMGID imgin = mkIMGID_from_name(insname);
+    IMGID imgin = imgid_make_from_name(insname);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     long m = imgin.md->size[0] * imgin.md->size[1];
@@ -327,7 +327,7 @@ static errno_t compute_function()
     uint32_t *mask_idx = NULL;  //Array holding the indices of the 1 pixels
     float *masked_pix = NULL;  //Array to hold the pixel values
 
-    IMGID imgmask = mkIMGID_from_name(inmasksname);
+    IMGID imgmask = imgid_make_from_name(inmasksname);
     if(resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
@@ -402,7 +402,7 @@ static errno_t compute_function()
 
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref = -1;
-    IMGID imginref = mkIMGID_from_name(inrefsname);
+    IMGID imginref = imgid_make_from_name(inrefsname);
     resolveIMGID(&imginref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
     if(imginref.ID == -1)
     {
@@ -422,15 +422,15 @@ static errno_t compute_function()
 
 
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
-    IMGID imgoutref = mkIMGID_from_name(outrefsname);
+    IMGID imgoutref = imgid_make_from_name(outrefsname);
     resolveIMGID(&imgoutref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
     // CONNECT TO MODES STREAM
-    IMGID imgmodes = mkIMGID_from_name(immodes);
+    IMGID imgmodes = imgid_make_from_name(immodes);
     resolveIMGID(&imgmodes, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    // Could this be IMGIDcompare?
+    // Could this be imgid_compare?
     if(imgmodes.md->datatype != _DATATYPE_FLOAT)
     {
         PRINT_ERROR("Cannot operate with modes other than FP32!!!s");

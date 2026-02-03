@@ -223,7 +223,7 @@ static errno_t compute_function()
 
     // connect to input telemetry
     //
-    IMGID imgin = mkIMGID_from_name(inname);
+    IMGID imgin = imgid_make_from_name(inname);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
@@ -675,7 +675,7 @@ static errno_t compute_function()
     {
         // input PFmatD is stored as 2D array
         //
-        IMGID imgin = mkIMGID_from_name("PFmatD");
+        IMGID imgin = imgid_make_from_name("PFmatD");
         resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
@@ -688,15 +688,15 @@ static errno_t compute_function()
 
         // eigenvectors array
         delete_image_ID("eigenvec", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgevec = mkIMGID_from_name("eigenvec");
+        IMGID imgevec = imgid_make_from_name("eigenvec");
 
         // eigenvalues array
         delete_image_ID("eigenval", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgeval = mkIMGID_from_name("eigenval");
+        IMGID imgeval = imgid_make_from_name("eigenval");
 
         // eigenvalues array
         delete_image_ID("matU", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgU = mkIMGID_from_name("matU");
+        IMGID imgU = imgid_make_from_name("matU");
 
 
         int GPUdev = 0;

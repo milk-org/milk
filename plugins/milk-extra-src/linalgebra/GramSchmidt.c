@@ -96,7 +96,7 @@ errno_t GramSchmidt(
 
     // Compute cross product on input
     //
-    //IMGID imginxp  = mkIMGID_from_name("_outxp");
+    //IMGID imginxp  = imgid_make_from_name("_outxp");
     //computeSGEMM(imginm, imginm, &imginxp, 1, 0, GPUdev);
 
 
@@ -199,13 +199,13 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginm = mkIMGID_from_name(inmodes);
+    IMGID imginm = imgid_make_from_name(inmodes);
     resolveIMGID(&imginm, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
-    IMGID imgoutm  = mkIMGID_from_name(outmodes);
+    IMGID imgoutm  = imgid_make_from_name(outmodes);
 
-    IMGID imgaux = mkIMGID_from_name(auxmat);
+    IMGID imgaux = imgid_make_from_name(auxmat);
     resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
