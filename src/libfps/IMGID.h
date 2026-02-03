@@ -531,7 +531,7 @@ static inline IMGID imgid_connect(
 {
     IMGID img_connected = {0}; // Local variable to hold the connected image
     img_connected.ID = -1;
-    
+
     if (strlen(sname) == 0) return img_connected;
 
     IMAGE *image = (IMAGE*) malloc(sizeof(IMAGE));
@@ -555,16 +555,16 @@ static inline IMGID imgid_connect(
         img_connected.im = image;
         img_connected.md = image->md;
         strcpy(img_connected.name, sname);
-        img_connected.ID = 0; 
-        
+        img_connected.ID = 0;
+
         // Now check if it matches the template 'img' if FLAG is set
         if (FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE) {
-            
+
             // Compare img_connected with img (template)
             // img is the template here.
-            
+
             uint64_t diff = imgid_compare(img_connected, *img);
-            
+
             if (diff == 0) {
                 // Match!
                 // Copy connection info to *img
@@ -584,29 +584,29 @@ static inline IMGID imgid_connect(
                     return *img;
                 }
                 if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
-                     // Re-create
-                     // First free the memory of the image we connected to (but shouldn't close it, just free wrapper)
-                     free(image); 
-                     
-                     // Create new one using `img` params.
-                     strcpy(img->name, sname);
-                     
-                     // Allocate new IMAGE for it?
-                     img->im = (IMAGE*) malloc(sizeof(IMAGE));
-                     if(img->im == NULL) {
-                         img->ID = -1;
-                         return *img;
-                     }
-                     img->shared = 1; // Enforce shared for connect
-                     imgid_mkimage(img);
-                     
-                     if (img->createcnt > 0) {
-                          img->ID = 0;
-                     } else {
-                         free(img->im);
-                         img->ID = -1;
-                     }
-                     return *img;
+                    // Re-create
+                    // First free the memory of the image we connected to (but shouldn't close it, just free wrapper)
+                    free(image);
+
+                    // Create new one using `img` params.
+                    strcpy(img->name, sname);
+
+                    // Allocate new IMAGE for it?
+                    img->im = (IMAGE*) malloc(sizeof(IMAGE));
+                    if(img->im == NULL) {
+                        img->ID = -1;
+                        return *img;
+                    }
+                    img->shared = 1; // Enforce shared for connect
+                    imgid_mkimage(img);
+
+                    if (img->createcnt > 0) {
+                        img->ID = 0;
+                    } else {
+                        free(img->im);
+                        img->ID = -1;
+                    }
+                    return *img;
                 }
             }
         } else {
@@ -634,7 +634,7 @@ static inline IMGID imgid_connect(
         img->ID = -1;
         return *img;
     }
-    
+
     return img_connected; // Should not reach here
 }
 
