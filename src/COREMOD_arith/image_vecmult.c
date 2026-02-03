@@ -180,15 +180,15 @@ static errno_t compute_function()
 
     // input
 
-    IMGID imgimin = mkIMGID_from_name(iminname);
+    IMGID imgimin = imgid_make_from_name(iminname);
     resolveIMGID(&imgimin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgvec = mkIMGID_from_name(vecname);
+    IMGID imgvec = imgid_make_from_name(vecname);
     resolveIMGID(&imgvec, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // output
 
-    IMGID imgout  = mkIMGID_from_name(imoutname);
+    IMGID imgout  = imgid_make_from_name(imoutname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

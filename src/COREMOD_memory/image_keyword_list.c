@@ -66,7 +66,7 @@ errno_t image_keywords_list(IMGID img)
 
 static errno_t compute_function()
 {
-    image_keywords_list(mkIMGID_from_name(inimname));
+    image_keywords_list(imgid_make_from_name(inimname));
     return RETURN_SUCCESS;
 }
 

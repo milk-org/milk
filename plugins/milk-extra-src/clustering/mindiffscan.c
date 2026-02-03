@@ -419,7 +419,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    imcube_mindiffscan(mkIMGID_from_name(farg_inimname),
+    imcube_mindiffscan(imgid_make_from_name(farg_inimname),
                        farg_outdname,
                        *farg_kNNsize);
 

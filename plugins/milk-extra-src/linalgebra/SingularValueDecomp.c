@@ -504,7 +504,7 @@ errno_t compute_SVD(
 
         // store singular values
         delete_image_ID("SV", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgSV = mkIMGID_from_name("SV");
+        IMGID imgSV = imgid_make_from_name("SV");
         imgSV.naxis = 2;
         imgSV.datatype = _DATATYPE_FLOAT;
         imgSV.size[0] = NBmode;
@@ -519,7 +519,7 @@ errno_t compute_SVD(
 
         // store inv of singular values
         delete_image_ID("SVinv", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgSVinv = mkIMGID_from_name("SVinv");
+        IMGID imgSVinv = imgid_make_from_name("SVinv");
         imgSVinv.naxis = 2;
         imgSVinv.datatype = _DATATYPE_FLOAT;
         imgSVinv.size[0] = NBmode;
@@ -619,7 +619,7 @@ errno_t compute_SVD(
         {
             // assumes tall matrix
             //
-            IMGID imgmNsvec1 = mkIMGID_from_name("matNtemp");
+            IMGID imgmNsvec1 = imgid_make_from_name("matNtemp");
             if(imgmNsvec1.ID == -1)
             {
                 imgmNsvec1.naxis = 2;
@@ -667,7 +667,7 @@ errno_t compute_SVD(
             if((compSVDmode & COMPSVD_COMP_CHECKPSINV))
             {
 
-                IMGID imgpsinvcheck = mkIMGID_from_name("psinvcheck");
+                IMGID imgpsinvcheck = imgid_make_from_name("psinvcheck");
                 if(mshape == inMshape_tall)
                 {
                     // inNdim < inMdim
@@ -685,7 +685,7 @@ errno_t compute_SVD(
     {
         // un-normalized modes
         delete_image_ID(SVDunmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgunmodes = mkIMGID_from_name(SVDunmodesname);
+        IMGID imgunmodes = imgid_make_from_name(SVDunmodesname);
         imgunmodes.naxis = imgU->md->naxis;
         imgunmodes.datatype = imgU->md->datatype;
         imgunmodes.size[0] = imgU->md->size[0];
@@ -711,7 +711,7 @@ errno_t compute_SVD(
         }
 
         delete_image_ID("SVDinrec", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        IMGID iminrec = imgid_make_from_name("SVDinrec");
         computeSGEMM(imgunmodes, *imgV, &iminrec, 0, 1, GPUdev);
     }
 
@@ -723,7 +723,7 @@ errno_t compute_SVD(
     {
         // un-normalized modes
         delete_image_ID(SVDvnmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgvnmodes = mkIMGID_from_name(SVDvnmodesname);
+        IMGID imgvnmodes = imgid_make_from_name(SVDvnmodesname);
         imgvnmodes.naxis = imgV->md->naxis;
         imgvnmodes.datatype = imgV->md->datatype;
         imgvnmodes.size[0] = imgV->md->size[0];
@@ -749,7 +749,7 @@ errno_t compute_SVD(
             }
         }
 
-        //IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        //IMGID iminrec = imgid_make_from_name("SVDinrec");
         //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
     }
 
@@ -770,14 +770,14 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM = mkIMGID_from_name(inM);
+    IMGID imginM = imgid_make_from_name(inM);
     resolveIMGID(&imginM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
-    IMGID imgU  = mkIMGID_from_name(outU);
-    IMGID imgS  = mkIMGID_from_name(outS);
-    IMGID imgV  = mkIMGID_from_name(outV);
+    IMGID imgU  = imgid_make_from_name(outU);
+    IMGID imgS  = imgid_make_from_name(outS);
+    IMGID imgV  = imgid_make_from_name(outV);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

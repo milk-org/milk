@@ -239,7 +239,7 @@ errno_t stream_monitor_run(
     }
 
     // Connect to input image
-    IMGID inimg = mkIMGID_from_name(inimname_arg);
+    IMGID inimg = imgid_make_from_name(inimname_arg);
     resolveIMGID(&inimg, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     if (inimg.ID == -1) {

@@ -157,9 +157,9 @@ errno_t mk_reim_from_complex(const char *in_name,
                              const char *im_name,
                              int         sharedmem)
 {
-    IMGID imgin = mkIMGID_from_name(in_name);
-    IMGID imgre = mkIMGID_from_name(re_name);
-    IMGID imgim = mkIMGID_from_name(im_name);
+    IMGID imgin = imgid_make_from_name(in_name);
+    IMGID imgre = imgid_make_from_name(re_name);
+    IMGID imgim = imgid_make_from_name(im_name);
     imgre.shared = sharedmem;
     imgim.shared = sharedmem;
 
@@ -172,9 +172,9 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    IMGID imgin = mkIMGID_from_name(inimname);
-    IMGID imgre = mkIMGID_from_name(outreimname);
-    IMGID imgim = mkIMGID_from_name(outimimname);
+    IMGID imgin = imgid_make_from_name(inimname);
+    IMGID imgre = imgid_make_from_name(outreimname);
+    IMGID imgim = imgid_make_from_name(outimimname);
 
     mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
 

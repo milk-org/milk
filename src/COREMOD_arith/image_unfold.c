@@ -106,7 +106,7 @@ errno_t image_unfold(
     resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if( outimg->ID == -1)
     {
-        copyIMGID(&inimg, outimg);
+        imgid_copy(&inimg, outimg);
     }
 
     // output image size
@@ -233,10 +233,10 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID outimg = mkIMGID_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

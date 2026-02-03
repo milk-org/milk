@@ -52,7 +52,7 @@ errno_t saveFITS_opt_trunc_IMGID(IMGID *imgin, int truncate, const char *outputF
 
 #ifndef FPS_STANDALONE
 errno_t saveFITS_opt_trunc(const char *inputimname, int truncate, const char *outputFITSname, int outputbitpix, const char *importheaderfile, IMAGE_KEYWORD *kwarray, int kwarraysize, const char *FITSIOext) {
-    IMGID id = mkIMGID_from_name(inputimname);
+    IMGID id = imgid_make_from_name(inputimname);
     return saveFITS_opt_trunc_IMGID(&id, truncate, outputFITSname, outputbitpix, importheaderfile, kwarray, kwarraysize, FITSIOext);
 }
 
@@ -154,7 +154,7 @@ static CLICMDDATA CLIcmddata = { "saveFITS", "save image as FITS", CLICMD_FIELDS
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID in = mkIMGID_from_name(savefits_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(savefits_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     savefits_compute(data.fpsptr, processinfo, in.im);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

@@ -273,7 +273,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgpos = mkIMGID_from_name(inpos);
+    IMGID imgpos = imgid_make_from_name(inpos);
     resolveIMGID(&imgpos, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // link/create output image/stream

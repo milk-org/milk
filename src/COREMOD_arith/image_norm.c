@@ -19,7 +19,7 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
     resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 #endif
-    if(outimg->ID == -1) copyIMGID(inimg, outimg);
+    if(outimg->ID == -1) imgid_copy(inimg, outimg);
     for (uint8_t axis = 0; axis < inimg->md->naxis; axis++)
         if (axis != sliceaxis) outimg->size[axis] = 1;
     outimg->datatype = _DATATYPE_FLOAT;
@@ -53,7 +53,7 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
 
 #ifndef FPS_STANDALONE
 errno_t image_slicenorm(const char *inname, const char *outname, uint8_t sliceaxis) {
-    IMGID idin = mkIMGID_from_name(inname), idout = mkIMGID_from_name(outname);
+    IMGID idin = imgid_make_from_name(inname), idout = imgid_make_from_name(outname);
     return image_slicenorm_IMGID(&idin, &idout, sliceaxis);
 }
 #endif
@@ -107,7 +107,7 @@ int FPSRUN_normslice(const char *fps_name) {
     norm_outimname = functionparameter_GetParamPtr_STRING(&fps, ".outname");
     norm_sliceaxis = functionparameter_GetParamPtr_UINT32(&fps, ".axis");
     IMAGE iin; if (ImageStreamIO_read_sharedmem_image_toIMAGE(norm_inimname, &iin) != 0) return 1;
-    IMGID idin, idout; idin.im = &iin; idin.md = &iin.md[0]; idout = makeIMGID_blank();
+    IMGID idin, idout; idin.im = &iin; idin.md = &iin.md[0]; idout = imgid_make();
     image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
     PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "normslice Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
@@ -137,8 +137,8 @@ static CLICMDDATA CLIcmddata = { "normslice", "image norm by slice", CLICMD_FIEL
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID idin = mkIMGID_from_name(norm_inimname); resolveIMGID(&idin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    IMGID idout = mkIMGID_from_name(norm_outimname);
+    IMGID idin = imgid_make_from_name(norm_inimname); resolveIMGID(&idin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID idout = imgid_make_from_name(norm_outimname);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_norm_compute(data.fpsptr, processinfo, idin.im, idout.im);
     processinfo_update_output_stream(processinfo, idout.im, idin.im);

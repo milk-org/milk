@@ -206,13 +206,13 @@ static errno_t compute_function()
 
     // Connect to 2D input stream
     //
-    IMGID imgin = mkIMGID_from_name(indata);
+    IMGID imgin = imgid_make_from_name(indata);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     long NBmodeINmax = imgin.md->size[0] * imgin.md->size[1];
 
     // connect to 2D predictive filter (PF) matrix
     //
-    IMGID imgPFmat = mkIMGID_from_name(PFmat);
+    IMGID imgPFmat = imgid_make_from_name(PFmat);
     resolveIMGID(&imgPFmat, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     long NBmodeOUT = imgPFmat.md->size[1];
 
@@ -224,7 +224,7 @@ static errno_t compute_function()
     // 0: inactive input
     // 1: active input
     //
-    IMGID imginmask = mkIMGID_from_name(inmask);
+    IMGID imginmask = imgid_make_from_name(inmask);
     resolveIMGID(&imginmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     long  NBinmaskpix = 0;
@@ -291,7 +291,7 @@ static errno_t compute_function()
     // create input buffer holding recent input values
     //
     printf("Creating input buffer\n");
-    IMGID imginbuff = makeIMGID_2D("iminbuff", NBmodeIN, NBPFstep);
+    IMGID imginbuff = imgid_make_from_name_2D("iminbuff", NBmodeIN, NBPFstep);
     createimagefromIMGID(&imginbuff);
 
 
@@ -299,7 +299,7 @@ static errno_t compute_function()
     // create input buffer holding recent input values
     //
     printf("Creating output buffer\n");
-    IMGID imgoutbuff = makeIMGID_2D("imoutbuff", NBmodeOUT, 1);
+    IMGID imgoutbuff = imgid_make_from_name_2D("imoutbuff", NBmodeOUT, 1);
     createimagefromIMGID(&imgoutbuff);
 
 
@@ -307,7 +307,7 @@ static errno_t compute_function()
     // The buffer is used to measure residual OL error as a function of latency
     //
     printf("Creating output time buffer\n");
-    IMGID imgoutTbuff = makeIMGID_2D("imoutTbuff", NBmodeOUT, NBPFstep);
+    IMGID imgoutTbuff = imgid_make_from_name_2D("imoutTbuff", NBmodeOUT, NBPFstep);
     createimagefromIMGID(&imgoutTbuff);
 
 
@@ -316,10 +316,10 @@ static errno_t compute_function()
 
     // Connect to output mask and data stream
     //
-    IMGID imgout = mkIMGID_from_name(outdata);
+    IMGID imgout = imgid_make_from_name(outdata);
     resolveIMGID(&imgout, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgoutmask = mkIMGID_from_name(outmask);
+    IMGID imgoutmask = imgid_make_from_name(outmask);
     resolveIMGID(&imgoutmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
@@ -395,7 +395,7 @@ static errno_t compute_function()
             // outmask exists, but outdata does not
             // create outdata according to outmask
             //
-            copyIMGID(&imgoutmask, &imgout);
+            imgid_copy(&imgoutmask, &imgout);
             imgout.datatype = _DATATYPE_FLOAT;
             createimagefromIMGID(&imgout);
         }

@@ -109,7 +109,7 @@ static errno_t compute_function()
 
     // Check that the input image is in memory,
     // and link it to img if it is
-    IMGID img = mkIMGID_from_name(inimname);
+    IMGID img = imgid_make_from_name(inimname);
     resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

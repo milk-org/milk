@@ -26,7 +26,7 @@ errno_t mk_reim_from_amph_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgC = mkIMGID_from_name("Ctmp");
+    IMGID imgC = imgid_make_from_name("Ctmp");
     imgC.shared = 0;
 
     FUNC_CHECK_RETURN(mk_complex_from_amph_IMGID(imgam, imgph, &imgC));
@@ -46,10 +46,10 @@ errno_t mk_reim_from_amph(const char *am_name,
                           const char *im_out_name,
                           int         sharedmem)
 {
-    IMGID imgam = mkIMGID_from_name(am_name);
-    IMGID imgph = mkIMGID_from_name(ph_name);
-    IMGID imgre = mkIMGID_from_name(re_out_name);
-    IMGID imgim = mkIMGID_from_name(im_out_name);
+    IMGID imgam = imgid_make_from_name(am_name);
+    IMGID imgph = imgid_make_from_name(ph_name);
+    IMGID imgre = imgid_make_from_name(re_out_name);
+    IMGID imgim = imgid_make_from_name(im_out_name);
     imgre.shared = sharedmem;
     imgim.shared = sharedmem;
 
@@ -65,7 +65,7 @@ errno_t mk_amph_from_reim_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgC = mkIMGID_from_name("Ctmp");
+    IMGID imgC = imgid_make_from_name("Ctmp");
     imgC.shared = 0;
 
     FUNC_CHECK_RETURN(mk_complex_from_reim_IMGID(imgre, imgim, &imgC));
@@ -85,10 +85,10 @@ errno_t mk_amph_from_reim(const char *re_name,
                           const char *ph_out_name,
                           int         sharedmem)
 {
-    IMGID imgre = mkIMGID_from_name(re_name);
-    IMGID imgim = mkIMGID_from_name(im_name);
-    IMGID imgam = mkIMGID_from_name(am_out_name);
-    IMGID imgph = mkIMGID_from_name(ph_out_name);
+    IMGID imgre = imgid_make_from_name(re_name);
+    IMGID imgim = imgid_make_from_name(im_name);
+    IMGID imgam = imgid_make_from_name(am_out_name);
+    IMGID imgph = imgid_make_from_name(ph_out_name);
     imgam.shared = sharedmem;
     imgph.shared = sharedmem;
 

@@ -51,7 +51,7 @@ static void imresize_step(IMAGE *imgin, IMAGE *imgout)
 #ifndef FPS_STANDALONE
 long basic_resizeim(const char *imname_in, const char *imname_out, long xsizeout, long ysizeout)
 {
-    IMGID in = mkIMGID_from_name(imname_in); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(imname_in); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(imname_out, xsizeout, ysizeout);
     imresize_step(in.im, out.im);
     ImageStreamIO_UpdateIm(out.im); return 0;

@@ -207,8 +207,8 @@ errno_t arith_image_function_im_im__d_d(
     const char *__restrict ID_out,
     double (*pt2function)(double))
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
 
     return arith_image_function_im_im__d_d_IMGID(&imgin, &imgout, pt2function);
 }
@@ -383,8 +383,8 @@ errno_t arith_image_function_imd_im__dd_d(
     const char *__restrict ID_out,
     double (*pt2function)(double, double))
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
 
     return arith_image_function_imd_im__dd_d_IMGID(&imgin, v0, &imgout, pt2function);
 }
@@ -572,8 +572,8 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
                               double,
                               double))
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
 
     return arith_image_function_imdd_im__ddd_d_IMGID(&imgin, v0, v1, &imgout, pt2function);
 }
@@ -901,8 +901,8 @@ errno_t arith_image_function_1_1(const char *ID_name,
                                  const char *ID_out,
                                  double (*pt2function)(double))
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
 
     return arith_image_function_1_1_IMGID(&imgin, &imgout, pt2function);
 }
@@ -1225,7 +1225,7 @@ errno_t arith_image_function_2_1_IMGID(
     resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if( outimg->ID == -1)
     {
-        copyIMGID(inimg1, outimg);
+        imgid_copy(inimg1, outimg);
     }
 
     // output naxis is max of inputs
@@ -1494,9 +1494,9 @@ errno_t arith_image_function_2_1(
     double (*pt2function)(double, double)
 )
 {
-    IMGID inimg1 = mkIMGID_from_name(ID_name1);
-    IMGID inimg2 = mkIMGID_from_name(ID_name2);
-    IMGID outimg = mkIMGID_from_name(ID_out);
+    IMGID inimg1 = imgid_make_from_name(ID_name1);
+    IMGID inimg2 = imgid_make_from_name(ID_name2);
+    IMGID outimg = imgid_make_from_name(ID_out);
     return arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
 }
 
@@ -1725,7 +1725,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 
 int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out, double (*pt2function)(double, double))
 {
-    IMGID imgin = mkIMGID_from_name(ID_name); IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_function_1f_1_IMGID(&imgin, f1, &imgout, pt2function);
 }
 
@@ -1772,7 +1772,7 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
 
 int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out, double (*pt2function)(double, double, double))
 {
-    IMGID imgin = mkIMGID_from_name(ID_name); IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_function_1ff_1_IMGID(&imgin, f1, f2, &imgout, pt2function);
 }
 
@@ -1804,7 +1804,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
     DEBUG_TRACE_FSTART(); \
     resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) copyIMGID(imgin, imgout); \
+    if(imgout->ID == -1) imgid_copy(imgin, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
@@ -1853,7 +1853,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
     resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) copyIMGID(imgin1, imgout); \
+    if(imgout->ID == -1) imgid_copy(imgin1, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
@@ -1891,7 +1891,7 @@ errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *
     DEBUG_TRACE_FSTART(); \
     resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) copyIMGID(imgin, imgout); \
+    if(imgout->ID == -1) imgid_copy(imgin, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
@@ -1929,7 +1929,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
     resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
     resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) copyIMGID(imgin1, imgout); \
+    if(imgout->ID == -1) imgid_copy(imgin1, imgout); \
     imcreateIMGID(imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \

@@ -494,7 +494,7 @@ static errno_t compute_function()
     STREAMSAVE_THREAD_MESSAGE *tmsg = (STREAMSAVE_THREAD_MESSAGE *) malloc(sizeof(
                                           STREAMSAVE_THREAD_MESSAGE));
 
-    IMGID inimg = mkIMGID_from_name(streamname);
+    IMGID inimg = imgid_make_from_name(streamname);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     if(inimg.md->naxis == 3)

@@ -57,8 +57,8 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
 
 imageID arith_image_dx(const char *ID_name, const char *IDout_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(IDout_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(IDout_name);
 
     return arith_image_dx_IMGID(&imgin, &imgout);
 }
@@ -113,8 +113,8 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 
 imageID arith_image_dy(const char *ID_name, const char *IDout_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(IDout_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(IDout_name);
 
     return arith_image_dy_IMGID(&imgin, &imgout);
 }
