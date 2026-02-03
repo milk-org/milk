@@ -161,7 +161,7 @@ double arith_image_total_IMGID(IMGID *imgin)
 
 double arith_image_total(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_total_IMGID(&imgin);
 }
 
@@ -311,6 +311,6 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 
 double arith_image_sumsquare(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_sumsquare_IMGID(&imgin);
 }

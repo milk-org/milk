@@ -141,8 +141,8 @@ static errno_t compute_function()
 
 
     // Note how we are accessing the image from its name.
-    IMGID img = mkIMGID_from_name(inimname);
-    // The function mkIMGID_from_name takes the name as argument and forms an IMGID from it.
+    IMGID img = imgid_make_from_name(inimname);
+    // The function imgid_make_from_name takes the name as argument and forms an IMGID from it.
     // At this point the connection to the image has not been established. This will be done
     // on the first call of resolveIMGID inside the compute function.
 

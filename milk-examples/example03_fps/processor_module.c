@@ -66,11 +66,11 @@ static errno_t compute_function() {
     DEBUG_TRACE_FSTART();
 
     // Resolve input stream from name (pointer was set by CLI arg binding)
-    IMGID inimg = mkIMGID_from_name(in_name_ptr);
+    IMGID inimg = imgid_make_from_name(in_name_ptr);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // Resolve/Create output stream
-    IMGID outimg = mkIMGID_from_name(proc_out_name_ptr);
+    IMGID outimg = imgid_make_from_name(proc_out_name_ptr);
     outimg.naxis = 2;
     outimg.size[0] = *roi_size_ptr;
     outimg.size[1] = *roi_size_ptr;

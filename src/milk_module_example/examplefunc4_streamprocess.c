@@ -214,7 +214,7 @@ static errno_t streamprocess(
     // Delaying creation of the image until here is necessary if the image size or type needs
     // to be determined within this function.
     //
-    // We have called copyIMGID in compute_function(), so outimg metadata is already filled up.
+    // We have called imgid_copy in compute_function(), so outimg metadata is already filled up.
     // Otherwise, we would edit these lines:
     // outimg->naxis = 2;
     // outimg->size[0] = xsize;
@@ -249,7 +249,7 @@ static errno_t compute_function()
 
     // Check if image is in memory
     // First, create an IMGIG with the image name
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
     // Once the image is resolved, this function will execute very quickly, only checking if resolved
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
@@ -261,10 +261,10 @@ static errno_t compute_function()
     // Create output image/stream.
     // Here we only fill in the name.
     // The image itself will be created in the compute function.
-    IMGID outimg = mkIMGID_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
 
     // If we are sure we want outimg to be the same format (size, type etc) as inimg, we can use:
-    copyIMGID(&inimg, &outimg);
+    imgid_copy(&inimg, &outimg);
 
     // Alternate way: FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
 

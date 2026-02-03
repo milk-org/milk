@@ -201,8 +201,8 @@ imageID copy_image_ID(
     int shared
 )
 {
-    IMGID imgin  = mkIMGID_from_name(name);
-    IMGID imgout = mkIMGID_from_name(newname);
+    IMGID imgin  = imgid_make_from_name(name);
+    IMGID imgout = imgid_make_from_name(newname);
 
     return copy_image_ID_IMGID(&imgin, &imgout, shared);
 }
@@ -239,7 +239,7 @@ imageID chname_image_ID(
     const char *restrict new_name
 )
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
 
     return chname_image_ID_IMGID(&imgin, new_name);
 }
@@ -316,8 +316,8 @@ errno_t COREMOD_MEMORY_cp2shm(
     const char *restrict IDshmname
 )
 {
-    IMGID imgin  = mkIMGID_from_name(IDname);
-    IMGID imgout = mkIMGID_from_name(IDshmname);
+    IMGID imgin  = imgid_make_from_name(IDname);
+    IMGID imgout = imgid_make_from_name(IDshmname);
 
     return COREMOD_MEMORY_cp2shm_IMGID(&imgin, &imgout);
 }

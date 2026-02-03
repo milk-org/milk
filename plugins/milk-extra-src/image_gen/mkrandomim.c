@@ -121,7 +121,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
-    IMGID img  = makeIMGID_2D(outim.name, *outim.xsize, *outim.ysize);
+    IMGID img  = imgid_make_from_name_2D(outim.name, *outim.xsize, *outim.ysize);
     img.shared = *outim.shared;
     //img.NBkw   = *outim.NBkw;
     //img.CBsize = *outim.CBsize;

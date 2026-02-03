@@ -248,13 +248,13 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID outimg = mkIMGID_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
     imcreatelikewiseIMGID(&outimg, &inimg);
 
-    IMGID bufferimg    = makeIMGID_3D("streamdelaybuff",
+    IMGID bufferimg    = imgid_make_from_name_3D("streamdelaybuff",
                                       inimg.size[0],
                                       inimg.size[1],
                                       *timebuffsize);

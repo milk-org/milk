@@ -128,7 +128,7 @@ errno_t SVDmkM(
     // un-normalized modes
     //printf("Creating image from %s\n", imgU.md->name);
 
-    IMGID imgunmodes = mkIMGID_from_name("XXSVDunmodes");
+    IMGID imgunmodes = imgid_make_from_name("XXSVDunmodes");
     imgunmodes.naxis = imgU.md->naxis;
     imgunmodes.datatype = imgU.md->datatype;
     imgunmodes.size[0] = imgU.md->size[0];
@@ -173,19 +173,19 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginU = mkIMGID_from_name(inmatU);
+    IMGID imginU = imgid_make_from_name(inmatU);
     resolveIMGID(&imginU, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginS = mkIMGID_from_name(invecS);
+    IMGID imginS = imgid_make_from_name(invecS);
     resolveIMGID(&imginS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginV = mkIMGID_from_name(inmatV);
+    IMGID imginV = imgid_make_from_name(inmatV);
     resolveIMGID(&imginV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
 
-    IMGID imgoutM  = mkIMGID_from_name(outmatM);
+    IMGID imgoutM  = imgid_make_from_name(outmatM);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

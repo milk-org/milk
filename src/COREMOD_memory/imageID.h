@@ -42,7 +42,7 @@ static inline imageID RegisterIMGID(
         img->im = &imagearray[ID];
         img->md = &imagearray[ID].md[0];
         img->createcnt = imagearray[ID].createcnt;
-        updateIMGIDcreationparams(img);
+        imgid_update_creationparams(img);
     }
     else
     {
@@ -64,7 +64,7 @@ static inline imageID RegisterIMGID(
 
             imagearray[ID].used = 1; // next_avail_image_ID sets this, but just to be sure if we used different logic
 
-            updateIMGIDcreationparams(img);
+            imgid_update_creationparams(img);
         }
         else
         {
@@ -116,7 +116,7 @@ static inline imageID resolveIMGID(
             img->createcnt = imagearray[img->ID].createcnt;
 
             // Populate the IMGID from the imageID metadata
-            updateIMGIDcreationparams(img);
+            imgid_update_creationparams(img);
         }
     }
 
@@ -172,7 +172,7 @@ stream_connect(
     const char *__restrict imname
 )
 {
-    IMGID img = mkIMGID_from_name(imname);
+    IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     if(img.ID == -1)
@@ -280,7 +280,7 @@ static inline IMGID stream_connect_create_2D(
     uint8_t  datatype
 )
 {
-    IMGID img = mkIMGID_from_name(imname);
+    IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
@@ -295,13 +295,13 @@ static inline IMGID stream_connect_create_2D(
     {
         // if in local memory,
         // create blank img for comparison
-        IMGID imgc      = makeIMGID_blank();
+        IMGID imgc      = imgid_make();
         imgc.datatype   = datatype;
         imgc.naxis      = 2;
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
         imgc.NBkw       = NB_KEYWNODE_MAX;
-        uint64_t imgerr = IMGIDcompare(img, imgc);
+        uint64_t imgerr = imgid_compare(img, imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
@@ -330,7 +330,7 @@ static inline IMGID stream_connect_create_2D(
         img.im        = &data.image[ID];
         img.md        = data.image[ID].md;
         img.createcnt = data.image[ID].createcnt;
-        updateIMGIDcreationparams(&img);
+        imgid_update_creationparams(&img);
     }
 
     return img;
@@ -364,7 +364,7 @@ static inline IMGID stream_connect_create_3D(
     uint8_t  datatype
 )
 {
-    IMGID img = mkIMGID_from_name(imname);
+    IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
@@ -379,14 +379,14 @@ static inline IMGID stream_connect_create_3D(
     {
         // if in local memory,
         // create blank img for comparison
-        IMGID imgc      = makeIMGID_blank();
+        IMGID imgc      = imgid_make();
         imgc.datatype   = datatype;
         imgc.naxis      = 3;
         imgc.size[0]    = xsize;
         imgc.size[1]    = ysize;
         imgc.size[2]    = zsize;
         imgc.NBkw       = NB_KEYWNODE_MAX;
-        uint64_t imgerr = IMGIDcompare(img, imgc);
+        uint64_t imgerr = imgid_compare(img, imgc);
         printf("%lu errors\n", imgerr);
 
         // if doesn't pass test, erase from local memory
@@ -418,7 +418,7 @@ static inline IMGID stream_connect_create_3D(
         img.im        = &data.image[ID];
         img.md        = data.image[ID].md;
         img.createcnt = data.image[ID].createcnt;
-        updateIMGIDcreationparams(&img);
+        imgid_update_creationparams(&img);
     }
 
     return img;

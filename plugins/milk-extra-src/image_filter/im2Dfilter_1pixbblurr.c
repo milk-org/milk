@@ -271,11 +271,11 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     // input
-    IMGID imgin = mkIMGID_from_name(iminname);
+    IMGID imgin = imgid_make_from_name(iminname);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // output
-    IMGID imgout  = mkIMGID_from_name(imoutname);
+    IMGID imgout  = imgid_make_from_name(imoutname);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

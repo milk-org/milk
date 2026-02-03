@@ -712,17 +712,17 @@ static errno_t compute_function()
 
     // input
 
-    IMGID imginA = mkIMGID_from_name(inmatA);
+    IMGID imginA = imgid_make_from_name(inmatA);
     resolveIMGID(&imginA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginB = mkIMGID_from_name(inmatB);
+    IMGID imginB = imgid_make_from_name(inmatB);
     resolveIMGID(&imginB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
 
     // output
 
-    IMGID imgM  = mkIMGID_from_name(outM);
+    IMGID imgM  = imgid_make_from_name(outM);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

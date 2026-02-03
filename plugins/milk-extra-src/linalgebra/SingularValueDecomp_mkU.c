@@ -200,18 +200,18 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM = mkIMGID_from_name(inmatM);
+    IMGID imginM = imgid_make_from_name(inmatM);
     resolveIMGID(&imginM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginV = mkIMGID_from_name(inmatV);
+    IMGID imginV = imgid_make_from_name(inmatV);
     resolveIMGID(&imginV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imginS = mkIMGID_from_name(invecS);
+    IMGID imginS = imgid_make_from_name(invecS);
     resolveIMGID(&imginS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
-    IMGID imgoutU  = mkIMGID_from_name(outmatU);
-    IMGID imgoutUS  = mkIMGID_from_name(outmatUS);
+    IMGID imgoutU  = imgid_make_from_name(outmatU);
+    IMGID imgoutUS  = imgid_make_from_name(outmatUS);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

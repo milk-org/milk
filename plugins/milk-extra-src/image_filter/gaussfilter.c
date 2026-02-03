@@ -73,7 +73,7 @@ static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\
 
 imageID gauss_filter(const char *ID_name, const char *out_name, float sigma, int filter_size)
 {
-    IMGID in = mkIMGID_from_name(ID_name); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(ID_name); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(out_name, in.md->size[0], in.md->size[1]);
     gauss_filter_step(in.im, out.im, sigma, filter_size);
     ImageStreamIO_UpdateIm(out.im); return out.ID;

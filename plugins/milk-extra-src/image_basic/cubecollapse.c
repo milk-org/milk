@@ -38,7 +38,7 @@ static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\
 
 imageID cube_collapse(const char *ID_in_name, const char *ID_out_name)
 {
-    IMGID in = mkIMGID_from_name(ID_in_name); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(ID_in_name); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(ID_out_name, in.md->size[0], in.md->size[1]);
     cube_collapse_step(in.im, out.im);
     ImageStreamIO_UpdateIm(out.im); return out.ID;

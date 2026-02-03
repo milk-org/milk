@@ -368,7 +368,7 @@ static imageID image_PCAdecomp(
         (void) cudaStat;
     }
 
-    IMGID imgAres = makeIMGID_3D("imAres",
+    IMGID imgAres = imgid_make_from_name_3D("imAres",
                                  img->md->size[0],
                                  img->md->size[1],
                                  img->md->size[2]);
@@ -442,7 +442,7 @@ static errno_t compute_function()
 
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
-    IMGID img = mkIMGID_from_name(inimname);
+    IMGID img = imgid_make_from_name(inimname);
     resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     printf("PCA of %s\n", inimname);

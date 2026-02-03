@@ -321,21 +321,21 @@ errno_t linopt_imtools_makeCPAmodes(
     long sizexy = sizex * sizey;
 
 
-    IMGID imgx = mkIMGID_from_name("cpa_tmpx");
+    IMGID imgx = imgid_make_from_name("cpa_tmpx");
     imgx.naxis = 2;
     imgx.datatype = _DATATYPE_FLOAT;
     imgx.size[0] = sizex;
     imgx.size[1] = sizey;
     createimagefromIMGID(&imgx);
 
-    IMGID imgy = mkIMGID_from_name("cpa_tmpy");
+    IMGID imgy = imgid_make_from_name("cpa_tmpy");
     imgy.naxis = 2;
     imgy.datatype = _DATATYPE_FLOAT;
     imgy.size[0] = sizex;
     imgy.size[1] = sizey;
     createimagefromIMGID(&imgy);
 
-    IMGID imgr = mkIMGID_from_name("cpa_tmpr");
+    IMGID imgr = imgid_make_from_name("cpa_tmpr");
     imgr.naxis = 2;
     imgr.datatype = _DATATYPE_FLOAT;
     imgr.size[0] = sizex;
@@ -367,7 +367,7 @@ errno_t linopt_imtools_makeCPAmodes(
     int MASKext = 0; // toggles to 1 if applying mask for extrapolation
     resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgpixdist = mkIMGID_from_name("pixdist");
+    IMGID imgpixdist = imgid_make_from_name("pixdist");
 
     if(imgmask.ID != -1)
     {
@@ -835,10 +835,10 @@ static errno_t compute_function()
 
     // optional mask
     //
-    IMGID imgmask = mkIMGID_from_name(maskim);
+    IMGID imgmask = imgid_make_from_name(maskim);
     resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgoutm = mkIMGID_from_name(outimname);
+    IMGID imgoutm = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {

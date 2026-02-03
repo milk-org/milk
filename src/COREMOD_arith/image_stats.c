@@ -33,7 +33,7 @@ double arith_image_mean_IMGID(IMGID *imgin)
 
 double arith_image_mean(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_mean_IMGID(&imgin);
 }
 
@@ -238,7 +238,7 @@ double arith_image_min_IMGID(IMGID *imgin)
 
 double arith_image_min(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_min_IMGID(&imgin);
 }
 
@@ -443,7 +443,7 @@ double arith_image_max_IMGID(IMGID *imgin)
 
 double arith_image_max(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_max_IMGID(&imgin);
 }
 
@@ -635,7 +635,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
 
 double arith_image_percentile(const char *ID_name, double fraction)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_percentile_IMGID(&imgin, fraction);
 }
 
@@ -650,6 +650,6 @@ double arith_image_median_IMGID(IMGID *imgin)
 
 double arith_image_median(const char *ID_name)
 {
-    IMGID imgin = mkIMGID_from_name(ID_name);
+    IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_median_IMGID(&imgin);
 }

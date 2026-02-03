@@ -68,12 +68,12 @@ static errno_t compute_function()
     for(int ii = 0; ii < n_input; ++ii)
     {
         sprintf(input_name, "%s_%d", stream_basename, ii);
-        img_in_arr[ii] = mkIMGID_from_name(input_name);
+        img_in_arr[ii] = imgid_make_from_name(input_name);
         resolveIMGID(&img_in_arr[ii], ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
     // Open output image
-    IMGID img_out = mkIMGID_from_name(stream_basename);
+    IMGID img_out = imgid_make_from_name(stream_basename);
     resolveIMGID(&img_out, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
     // Perform some data offset computations.

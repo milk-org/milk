@@ -20,7 +20,7 @@ errno_t image_marge(IMGID inimg0, IMGID inimg1, IMGID *outimg, uint8_t mergeaxis
     resolveIMGID(&inimg1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 #endif
-    if(outimg->ID == -1) copyIMGID(&inimg0, outimg);
+    if(outimg->ID == -1) imgid_copy(&inimg0, outimg);
     if (mergeaxis < 3) {
         uint32_t s0 = (inimg0.md->size[mergeaxis] == 0) ? 1 : inimg0.md->size[mergeaxis];
         uint32_t s1 = (inimg1.md->size[mergeaxis] == 0) ? 1 : inimg1.md->size[mergeaxis];
@@ -110,7 +110,7 @@ int FPSRUN_immerge(const char *fps_name) {
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(immerge_inimname1, &i1) != 0) return 1;
     IMGID id0, id1, idout; id0.im = &i0; id0.md = &i0.md[0]; id1.im = &i1; id1.md = &i1.md[0];
 #ifndef FPS_STANDALONE
-    idout = makeIMGID_blank(); 
+    idout = imgid_make(); 
 #else
     idout.ID = -1; idout.im = NULL; idout.md = NULL;
 #endif
@@ -143,9 +143,9 @@ static CLICMDDATA CLIcmddata = { "immerge", "merge images along axis", CLICMD_FI
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID id0 = mkIMGID_from_name(immerge_inimname0); resolveIMGID(&id0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    IMGID id1 = mkIMGID_from_name(immerge_inimname1); resolveIMGID(&id1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    IMGID idout = mkIMGID_from_name(immerge_outimname);
+    IMGID id0 = imgid_make_from_name(immerge_inimname0); resolveIMGID(&id0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID id1 = imgid_make_from_name(immerge_inimname1); resolveIMGID(&id1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID idout = imgid_make_from_name(immerge_outimname);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_merge_compute(data.fpsptr, processinfo, id0.im, id1.im, idout.im);
     processinfo_update_output_stream(processinfo, idout.im, id0.im);
