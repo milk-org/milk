@@ -23,9 +23,10 @@ imageID core functions are provided as static inline type in imageID.h.
 
 ## Coding practices
 
-Images and streams should be accessed as IMGID as much as possible. ImageID and image array features should only be used in milk-CLI mode to expose images and streams to the CLI, and should not be used in fps-standalone implementation.
+Images and streams should be accessed as IMGID as much as possible.
+ImageID and image array features should only be used in milk-CLI mode to expose images and streams to the CLI, and should not be used in fps-standalone implementation.
 
-A CLI wrapper to a function will use names (strings) as arguments.
+
 
 
 
@@ -119,33 +120,16 @@ If successful, IMGID.ID is set to 0 and the IMGID fields point to the image and 
 
 
 
+## CLI wrapper
 
+A CLI wrapper to a function will use names (strings) as arguments.
 
+All functions should avoid using the image array in data (data.image) as much as possible in order to avoid dependencies to CommandLineInterface. Inserting and reading to and from data.image should be done only by CLI wrappers and should not be used in fps-standalone implementations. This is to ensure that the fps-standalone code is not dependent on the CLI. This also ensures that the CLI can be removed without affecting the fps-standalone code. This is important for modularity and maintainability.
 
-
-
-
-## imageID functions
-
-These functions are to manage image access with an array of images, such as in milk-CLI mode.
-
+resolveIMGID() and  registerIMGID() functions are used to manage image access with an array of images, such as in milk-CLI mode.
 Functions are static inline type in COREMOD_memory/imageID.h
 
-### Registering an IMGID in the image array
-
-```c
-imageID registerIMGID(
-    IMGID *img,
-    IMAGE *imagearray,
-    long NB_images
-)
-```
-
-The function registered the IMGID as an entry in the imagearray, and returns the imageID index to which the IMGID has been registered in the array.
-
-
-
-### Resolving an imageID from image name
+### Resolving an imageID from image name (CLI wrapper input)
 
 ```c
 static inline imageID resolveIMGID(
@@ -157,6 +141,43 @@ static inline imageID resolveIMGID(
 ```
 
 When an image is accessed by its name, the function resolveIMGID() will look for image's ID corresponding the IMGID's name field (this is called "resolving" the image), and writes it to IMGID.ID. If the image has already been resolved, then the function quickly returns its ID.
+
+Example use:
+```c
+// Create IMGID
+IMGID img = imgid_make_from_name("im1");
+// Resolve IMGID
+// This will set img.ID to the index of "im1" in the image array
+// or -1 if not found
+imageID ID = resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+```
+
+
+### Registering an IMGID in the image array (CLI wrapper output)
+
+```c
+imageID registerIMGID(
+    IMGID *img,
+    IMAGE *imagearray,
+    long NB_images
+)
+```
+
+The function registered the IMGID as an entry in the imagearray, and returns the imageID index to which the IMGID has been registered in the array.
+
+Example use:
+```c
+// Create IMGID
+IMGID img = imgid_make_from_name("im1");
+// Resolve IMGID
+// This will set img.ID to the index of "im1" in the image array
+// or -1 if not found
+imageID ID = registerIMGID(&img, data.image, data.NB_MAX_IMAGE);
+```
+
+
+
+
 
 
 ## Use cases, examples
@@ -182,7 +203,7 @@ In CLI mode, the image will be accessed by name, so it is imperative to avoid du
 
 ```c
 // Create IMGID
-IMGID img = imgid_make_from_name("im1")
+IMGID img = imgid_make_from_name("im1");
 img.naxis = 2;
 img.size[0] = 128;
 img.size[1] = 128;
@@ -240,3 +261,8 @@ If format check fails, re-create the stream to the correct format.
 // Create new stream if not matching
 imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_CREATE);
 ```
+
+
+## Function arguments
+
+Arguments of type FPTYPE_STREAMNAME are automatically connected to streams.
