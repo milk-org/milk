@@ -109,7 +109,7 @@ errno_t image_slicenormalize(
     resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
     if(outimg->ID == -1)
     {
-        copyIMGID(&inimg, outimg);
+        imgid_copy(&inimg, outimg);
     }
 
     outimg->datatype = _DATATYPE_FLOAT;
@@ -377,16 +377,16 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID maskimg = mkIMGID_from_name(maskimname);
+    IMGID maskimg = imgid_make_from_name(maskimname);
     resolveIMGID(&maskimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgaux = mkIMGID_from_name(auxin);
+    IMGID imgaux = imgid_make_from_name(auxin);
     resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
-    IMGID outimg = mkIMGID_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

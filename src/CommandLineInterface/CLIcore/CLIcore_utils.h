@@ -154,7 +154,7 @@ typedef struct
 // connect to and/or create output 2D image/stream
 //
 #define FARG_OUTIM2DCREATE(imkey, img, data_type)                              \
-        IMGID img = mkIMGID_from_name(imkey.name);                             \
+        IMGID img = imgid_make_from_name(imkey.name);                             \
         img.shared = *imkey.shared;                                            \
         img.NBkw   = *imkey.NBkw;                                              \
         img.CBsize = *imkey.CBsize;                                            \

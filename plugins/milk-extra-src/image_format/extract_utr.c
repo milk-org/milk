@@ -312,7 +312,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID in_img = mkIMGID_from_name(in_imname);
+    IMGID in_img = imgid_make_from_name(in_imname);
     resolveIMGID(&in_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // Set in_img to be the trigger
@@ -324,7 +324,7 @@ static errno_t compute_function()
     }
 
     // Resolve or create outputs, per need
-    IMGID out_img = mkIMGID_from_name(out_imname);
+    IMGID out_img = imgid_make_from_name(out_imname);
     if(resolveIMGID(&out_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
     {
         PRINT_WARNING("WARNING - output image not found and being created");

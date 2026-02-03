@@ -8,6 +8,8 @@
 #define IMGID_H
 
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -20,9 +22,15 @@ typedef const char *CONST_WORD;
 typedef const char *__restrict CONST_WORD;
 #endif
 
+#ifndef errno_t
+typedef int errno_t;
+#endif
+
 #define IMGID_NB_KEYWO_MAX 10
 
-
+#define IMGID_CONNECT_NOCHECK      0
+#define IMGID_CONNECT_CHECK_FAIL   1
+#define IMGID_CONNECT_CHECK_CREATE 2
 
 
 
@@ -77,22 +85,22 @@ typedef struct
  * All fields are uninitialized
  * Can be used for comparison
 */
-static inline IMGID makeIMGID_blank()
+static inline IMGID imgid_make()
 {
     IMGID img;
 
     // default values for image creation
-    img.datatype = _DATATYPE_UNINITIALIZED;
-    img.naxis    = -1;
+    img.datatype = _DATATYPE_FLOAT;
+    img.naxis    = 0;
     img.size[0]  = 0;
     img.size[1]  = 0;
     img.size[2]  = 0;
-    img.shared   = -1;
-    img.NBkw     = -1;
-    img.CBsize   = -1;
+    img.shared   = 0;
+    img.NBkw     = IMGID_NB_KEYWO_MAX;
+    img.CBsize   = 0;
 
     img.ID        = -1;
-    img.createcnt = -1;
+    img.createcnt = 0;
     strncpy(img.name, "", STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
@@ -113,7 +121,7 @@ static inline IMGID makeIMGID_blank()
  * "c20>im1" : 20-sized circular buffer
  * "tf64>im1" : datatype is double (64 bit floating point)
 */
-static inline IMGID mkIMGID_from_name(CONST_WORD name)
+static inline IMGID imgid_make_from_name(CONST_WORD name)
 {
     IMGID img = {0};
 
@@ -233,14 +241,13 @@ static inline IMGID mkIMGID_from_name(CONST_WORD name)
 
 
 
-
-static inline IMGID makeIMGID_2D(
+static inline IMGID imgid_make_from_name_2D(
     CONST_WORD name,
     uint32_t xsize,
     uint32_t ysize
 )
 {
-    IMGID img   = mkIMGID_from_name(name);
+    IMGID img   = imgid_make_from_name(name);
     img.naxis   = 2;
     img.size[0] = xsize;
     img.size[1] = ysize;
@@ -248,14 +255,14 @@ static inline IMGID makeIMGID_2D(
     return img;
 }
 
-static inline IMGID makeIMGID_3D(
+static inline IMGID imgid_make_from_name_3D(
     CONST_WORD name,
     uint32_t xsize,
     uint32_t ysize,
     uint32_t zsize
 )
 {
-    IMGID img   = mkIMGID_from_name(name);
+    IMGID img   = imgid_make_from_name(name);
     img.naxis   = 3;
     img.size[0] = xsize;
     img.size[1] = ysize;
@@ -266,7 +273,7 @@ static inline IMGID makeIMGID_3D(
 
 
 
-static inline void copyIMGID(
+static inline void imgid_copy(
     IMGID *imgin,
     IMGID *imgout
 )
@@ -286,7 +293,7 @@ static inline void copyIMGID(
 
 
 
-static inline void updateIMGIDcreationparams(IMGID *img)
+static inline void imgid_update_creationparams(IMGID *img)
 {
     img->datatype = img->md->datatype;
     img->naxis    = img->md->naxis;
@@ -307,7 +314,7 @@ static inline void updateIMGIDcreationparams(IMGID *img)
  * @brief Check if img complies to imgtemplate
  *
  */
-static inline uint64_t IMGIDcompare(
+static inline uint64_t imgid_compare(
     IMGID img,
     IMGID imgtemplate
 )
@@ -408,7 +415,7 @@ static inline uint64_t IMGIDcompare(
  * @brief Check if img complies to imgtemplate
  *
  */
-static inline uint64_t IMGIDmdcompare(
+static inline uint64_t imgid_compare_md(
     IMGID img,
     IMGID imgtemplate
 )
@@ -506,54 +513,129 @@ static inline uint64_t IMGIDmdcompare(
 }
 
 
-
-
-// Read ImageStreamIO from shared memory
-//
-static inline IMGID read_sharedmem_img(
-    CONST_WORD sname
-)
-{
-    IMGID img;
-    img.ID = -1;
-
-    if(strlen(sname) != 0)
-    {
-        // Allocating IMAGE structure
-        IMAGE *image = (IMAGE*) malloc(sizeof(IMAGE));
-        if (image == NULL)
-        {
-            return img;
-        }
-
-        if(ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) !=
-                IMAGESTREAMIO_SUCCESS)
-        {
-            printf("read shared mem image failed -> ID = -1\n");
-            fflush(stdout);
-            free(image);
-            img.ID = -1;
-        }
-        else
-        {
-            img.im = image;
-            img.md = image->md;
-            strcpy(img.name, sname);
-            img.ID = 0; // Temporary ID indicating success
-        }
-    }
-
-    return(img);
-}
-
 // Create image from IMGID
-static inline void mkimage(IMGID * img)
+static inline void imgid_mkimage(IMGID * img)
 {
     ImageStreamIO_createIm(img->im, img->name, img->naxis, img->size, img->datatype, img->shared, img->NBkw, img->CBsize);
     img->createcnt++;
 }
 
 
+// Read ImageStreamIO from shared memory
+//
+static inline IMGID imgid_connect(
+    CONST_WORD sname,
+    IMGID *img,
+    int FLAG
+)
+{
+    IMGID img_connected = {0}; // Local variable to hold the connected image
+    img_connected.ID = -1;
+    
+    if (strlen(sname) == 0) return img_connected;
 
+    IMAGE *image = (IMAGE*) malloc(sizeof(IMAGE));
+    if (image == NULL) return img_connected;
+
+    int success = 0;
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, image) == IMAGESTREAMIO_SUCCESS) {
+        success = 1;
+    } else {
+        if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+            success = 0;
+        } else {
+            free(image);
+            img->ID = -1; // Propagate failure
+            return img_connected;
+        }
+    }
+
+    if (success) {
+        // We have an image connected.
+        img_connected.im = image;
+        img_connected.md = image->md;
+        strcpy(img_connected.name, sname);
+        img_connected.ID = 0; 
+        
+        // Now check if it matches the template 'img' if FLAG is set
+        if (FLAG == IMGID_CONNECT_CHECK_FAIL || FLAG == IMGID_CONNECT_CHECK_CREATE) {
+            
+            // Compare img_connected with img (template)
+            // img is the template here.
+            
+            uint64_t diff = imgid_compare(img_connected, *img);
+            
+            if (diff == 0) {
+                // Match!
+                // Copy connection info to *img
+                img->im = img_connected.im;
+                img->md = img_connected.md;
+                strcpy(img->name, img_connected.name);
+                img->ID = 0;
+                // Update creation params from what we found
+                imgid_update_creationparams(img);
+                return *img;
+            } else {
+                // Mismatch
+                if (FLAG == IMGID_CONNECT_CHECK_FAIL) {
+                    printf("Image format mismatch\n");
+                    free(image);
+                    img->ID = -1;
+                    return *img;
+                }
+                if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+                     // Re-create
+                     // First free the memory of the image we connected to (but shouldn't close it, just free wrapper)
+                     free(image); 
+                     
+                     // Create new one using `img` params.
+                     strcpy(img->name, sname);
+                     
+                     // Allocate new IMAGE for it?
+                     img->im = (IMAGE*) malloc(sizeof(IMAGE));
+                     if(img->im == NULL) {
+                         img->ID = -1;
+                         return *img;
+                     }
+                     img->shared = 1; // Enforce shared for connect
+                     imgid_mkimage(img);
+                     
+                     if (img->createcnt > 0) {
+                          img->ID = 0;
+                     } else {
+                         free(img->im);
+                         img->ID = -1;
+                     }
+                     return *img;
+                }
+            }
+        } else {
+            // No check, just copy info
+            img->im = img_connected.im;
+            img->md = img_connected.md;
+            strcpy(img->name, img_connected.name);
+            img->ID = 0;
+            // Update creation params from what we found
+            imgid_update_creationparams(img);
+            return *img;
+        }
+    } else {
+        // Read failed (does not exist?)
+        if (FLAG == IMGID_CONNECT_CHECK_CREATE) {
+            // Create it
+            strcpy(img->name, sname);
+            img->im = image; // use the allocated struct
+            img->shared = 1;
+            imgid_mkimage(img);
+            img->ID = 0;
+            return *img;
+        }
+        free(image);
+        img->ID = -1;
+        return *img;
+    }
+    
+    return img_connected; // Should not reach here
+}
 
 #endif

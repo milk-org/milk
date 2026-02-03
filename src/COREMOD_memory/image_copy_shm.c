@@ -54,7 +54,7 @@ errno_t image_copy_shm_IMGID(
     if( imgshm->ID != -1)
     {
         // image exists - checking if compatible size and type
-        if( IMGIDmdcompare(*img, *imgshm) > 0 )
+        if( imgid_compare_md(*img, *imgshm) > 0 )
         {
             // image formats are incompatible
             // delete output
@@ -71,7 +71,7 @@ errno_t image_copy_shm_IMGID(
 
     if ( imgshm->ID == -1 )
     {
-        copyIMGID( img, imgshm );
+        imgid_copy( img, imgshm );
         imgshm->shared = 1;
 
         createimagefromIMGID(imgshm);
@@ -97,8 +97,8 @@ errno_t image_copy_shm(
     const char *outname
 )
 {
-    IMGID imgin = mkIMGID_from_name(inname);
-    IMGID imgshm = mkIMGID_from_name(outname);
+    IMGID imgin = imgid_make_from_name(inname);
+    IMGID imgshm = imgid_make_from_name(outname);
 
     return image_copy_shm_IMGID(&imgin, &imgshm);
 }
@@ -110,8 +110,8 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    IMGID imgin = mkIMGID_from_name(inimname);
-    IMGID imgshm = mkIMGID_from_name(outimname);
+    IMGID imgin = imgid_make_from_name(inimname);
+    IMGID imgshm = imgid_make_from_name(outimname);
 
     image_copy_shm_IMGID(&imgin, &imgshm);
 

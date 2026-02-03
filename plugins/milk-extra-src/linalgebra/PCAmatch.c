@@ -228,7 +228,7 @@ errno_t PCAmatch(
 
 
     // residual0
-    IMGID imgimres0  = mkIMGID_from_name("imres0");
+    IMGID imgimres0  = imgid_make_from_name("imres0");
     imgimres0.naxis   = 2;
     imgimres0.size[0] = imgmodesA.md->size[0];
     imgimres0.size[1] = imgmodesA.md->size[1];
@@ -353,7 +353,7 @@ errno_t PCAmatch(
 
 
 
-    IMGID imgimres  = mkIMGID_from_name("imres");
+    IMGID imgimres  = imgid_make_from_name("imres");
     imgimres.naxis   = 2;
     imgimres.size[0] = imgmodesA.md->size[0];
     imgimres.size[1] = imgmodesA.md->size[1];
@@ -390,10 +390,10 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgmodesA = mkIMGID_from_name(modesA);
+    IMGID imgmodesA = imgid_make_from_name(modesA);
     resolveIMGID(&imgmodesA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    IMGID imgmodesB = mkIMGID_from_name(modesB);
+    IMGID imgmodesB = imgid_make_from_name(modesB);
     resolveIMGID(&imgmodesB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
@@ -402,20 +402,20 @@ static errno_t compute_function()
 
     printf("outcoeffA = %s\n", outcoeffA);
     fflush(stdout);
-    IMGID imgoutcA  = mkIMGID_from_name(outcoeffA);
+    IMGID imgoutcA  = imgid_make_from_name(outcoeffA);
 
     printf("outcoeffB = %s\n", outcoeffB);
     fflush(stdout);
-    IMGID imgoutcB  = mkIMGID_from_name(outcoeffB);
+    IMGID imgoutcB  = imgid_make_from_name(outcoeffB);
 
 
     printf("imgoutimA = %s\n", outimA);
     fflush(stdout);
-    IMGID imgoutimA  = mkIMGID_from_name(outimA);
+    IMGID imgoutimA  = imgid_make_from_name(outimA);
 
     printf("imgoutimB = %s\n", outimB);
     fflush(stdout);
-    IMGID imgoutimB  = mkIMGID_from_name(outimB);
+    IMGID imgoutimB  = imgid_make_from_name(outimB);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

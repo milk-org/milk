@@ -113,7 +113,7 @@ static CLICMDDATA CLIcmddata = { "streamave", "average stream of images", CLICMD
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID in = mkIMGID_from_name(streamave_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(streamave_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     uint64_t xys = in.md[0].size[0] * in.md[0].size[1];
     double *d1 = malloc(sizeof(double)*xys), *d2 = malloc(sizeof(double)*xys);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

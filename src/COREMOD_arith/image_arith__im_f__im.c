@@ -25,8 +25,8 @@ int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstfmod_IMGID(&imgin, f1, &imgout);
 }
 
@@ -37,8 +37,8 @@ int arith_image_cstadd_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstadd_IMGID(&imgin, f1, &imgout);
 }
 
@@ -49,8 +49,8 @@ int arith_image_cstsub_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstsub(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstsub_IMGID(&imgin, f1, &imgout);
 }
 
@@ -61,8 +61,8 @@ int arith_image_cstsubm_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstsubm(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstsubm_IMGID(&imgin, f1, &imgout);
 }
 
@@ -73,8 +73,8 @@ int arith_image_cstmult_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstmult(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstmult_IMGID(&imgin, f1, &imgout);
 }
 
@@ -85,8 +85,8 @@ int arith_image_cstdiv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstdiv(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstdiv_IMGID(&imgin, f1, &imgout);
 }
 
@@ -97,8 +97,8 @@ int arith_image_cstdiv1_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstdiv1(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstdiv1_IMGID(&imgin, f1, &imgout);
 }
 
@@ -109,8 +109,8 @@ int arith_image_cstpow_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstpow(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstpow_IMGID(&imgin, f1, &imgout);
 }
 
@@ -121,8 +121,8 @@ int arith_image_cstmaxv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstmaxv(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstmaxv_IMGID(&imgin, f1, &imgout);
 }
 
@@ -133,8 +133,8 @@ int arith_image_cstminv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_cstminv(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_cstminv_IMGID(&imgin, f1, &imgout);
 }
 
@@ -145,8 +145,8 @@ int arith_image_csttestlt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_csttestlt(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_csttestlt_IMGID(&imgin, f1, &imgout);
 }
 
@@ -157,8 +157,8 @@ int arith_image_csttestmt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 int arith_image_csttestmt(const char *ID_name, double f1, const char *ID_out)
 {
-    IMGID imgin  = mkIMGID_from_name(ID_name);
-    IMGID imgout = mkIMGID_from_name(ID_out);
+    IMGID imgin  = imgid_make_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_out);
     return arith_image_csttestmt_IMGID(&imgin, f1, &imgout);
 }
 

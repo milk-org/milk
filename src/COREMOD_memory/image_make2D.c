@@ -76,7 +76,7 @@ imageID make_2Dimage_IMGID(IMGID *img)
 
 imageID make_2Dimage(const char *name, uint32_t xsize, uint32_t ysize)
 {
-    IMGID img = makeIMGID_2D(name, xsize, ysize);
+    IMGID img = imgid_make_from_name_2D(name, xsize, ysize);
     return make_2Dimage_IMGID(&img);
 }
 
@@ -84,7 +84,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = makeIMGID_2D(outimname, *imxsize, *imysize);
+    IMGID img = imgid_make_from_name_2D(outimname, *imxsize, *imysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

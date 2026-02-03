@@ -52,7 +52,7 @@ static errno_t compute_function() {
     DEBUG_TRACE_FSTART();
 
     // Resolve/Create output stream
-    IMGID outimg = mkIMGID_from_name(out_name_ptr);
+    IMGID outimg = imgid_make_from_name(out_name_ptr);
     outimg.naxis = 2;
     outimg.size[0] = *width_ptr;
     outimg.size[1] = *height_ptr;

@@ -215,12 +215,12 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgincoeffM = mkIMGID_from_name(incoeffM);
+    IMGID imgincoeffM = imgid_make_from_name(incoeffM);
     resolveIMGID(&imgincoeffM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
     fflush(stdout);
-    IMGID imgoutcoeffM  = mkIMGID_from_name(outcoeffM);
+    IMGID imgoutcoeffM  = imgid_make_from_name(outcoeffM);
 
 
 

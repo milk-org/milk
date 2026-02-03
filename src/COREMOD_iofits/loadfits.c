@@ -625,7 +625,7 @@ errno_t load_fits(
     imageID *IDout
 )
 {
-    IMGID imgout = mkIMGID_from_name(ID_name);
+    IMGID imgout = imgid_make_from_name(ID_name);
 
     errno_t retval = load_fits_IMGID(file_name, &imgout, errmode);
 
@@ -643,7 +643,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    IMGID imgout = mkIMGID_from_name(outimname);
+    IMGID imgout = imgid_make_from_name(outimname);
     FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, *FITSIOerrmode));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

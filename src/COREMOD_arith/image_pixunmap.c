@@ -59,11 +59,11 @@ static errno_t compute_function()
 
     // connect to input
     //
-    IMGID imgin = mkIMGID_from_name(insname);
+    IMGID imgin = imgid_make_from_name(insname);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     int64_t insize = imgin.md->size[0]*imgin.md->size[1];
 
-    IMGID imgmap = mkIMGID_from_name(mapsname);
+    IMGID imgmap = imgid_make_from_name(mapsname);
     resolveIMGID(&imgmap, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
     // read map size
@@ -106,7 +106,7 @@ static errno_t compute_function()
         outdatatype = _DATATYPE_FLOAT;
     }
 
-    IMGID imgout = mkIMGID_from_name(outim.name);
+    IMGID imgout = imgid_make_from_name(outim.name);
     imgout.shared = *outim.shared;
     if(*outim.shared == 1)
     {

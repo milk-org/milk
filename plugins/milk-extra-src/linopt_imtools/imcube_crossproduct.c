@@ -98,7 +98,7 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
 
     uint64_t xysize = xsize * ysize;
 
-    IMGID imgout = makeIMGID_2D(imoutname, zsize0, zsize1);
+    IMGID imgout = imgid_make_from_name_2D(imoutname, zsize0, zsize1);
     createimagefromIMGID(&imgout);
 
     // compute mask sum
@@ -145,9 +145,9 @@ static errno_t compute_function()
 
     // connect to input mode values array and get number of modes
     //
-    IMGID imginc0 = mkIMGID_from_name(inimc0);
-    IMGID imginc1 = mkIMGID_from_name(inimc1);
-    IMGID imgmask = mkIMGID_from_name(inimmask);
+    IMGID imginc0 = imgid_make_from_name(inimc0);
+    IMGID imginc1 = imgid_make_from_name(inimc1);
+    IMGID imgmask = imgid_make_from_name(inimmask);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

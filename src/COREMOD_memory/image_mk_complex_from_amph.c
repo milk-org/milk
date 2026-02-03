@@ -288,9 +288,9 @@ errno_t mk_complex_from_amph(
     int         sharedmem
 )
 {
-    IMGID imgamp = mkIMGID_from_name(am_name);
-    IMGID imgpha = mkIMGID_from_name(ph_name);
-    IMGID imgoutC  = mkIMGID_from_name(out_name);
+    IMGID imgamp = imgid_make_from_name(am_name);
+    IMGID imgpha = imgid_make_from_name(ph_name);
+    IMGID imgoutC  = imgid_make_from_name(out_name);
     imgoutC.shared = sharedmem;
 
     return mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
@@ -300,9 +300,9 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgamp = mkIMGID_from_name(inampimname);
-    IMGID imgpha = mkIMGID_from_name(inphaimname);
-    IMGID imgoutC  = mkIMGID_from_name(outimname);
+    IMGID imgamp = imgid_make_from_name(inampimname);
+    IMGID imgpha = imgid_make_from_name(inphaimname);
+    IMGID imgoutC  = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 

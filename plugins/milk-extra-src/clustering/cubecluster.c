@@ -227,7 +227,7 @@ static CLICMDARGDEF farg[] = {
 static CLICMDDATA CLIcmddata = { "cubeclust", "compute cube cluster", CLICMD_FIELDS_DEFAULTS };
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 static errno_t compute_function() { 
-    IMGID img = mkIMGID_from_name(farg_inimname); 
+    IMGID img = imgid_make_from_name(farg_inimname); 
     if (resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE) != 0) return RETURN_FAILURE;
     imcube_makecluster_core(img.im, farg_outdname); 
     return RETURN_SUCCESS; 

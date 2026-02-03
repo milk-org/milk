@@ -55,7 +55,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    IMGID img = mkIMGID_from_name(imname);
+    IMGID img = imgid_make_from_name(imname);
     FUNC_CHECK_RETURN(delete_image_IMGID(&img, (int) *errmode));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
@@ -289,7 +289,7 @@ errno_t delete_image_ID(
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID   img = mkIMGID_from_name(imname);
+    IMGID   img = imgid_make_from_name(imname);
     imageID ID  = resolveIMGID(&img, errmode, data.image, data.NB_MAX_IMAGE);
 
     if(ID != -1)

@@ -91,7 +91,7 @@ static CLICMDDATA CLIcmddata = { "imzero", "set all image pixels to zero value",
 static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
 
 static errno_t compute_function() {
-    IMGID in = mkIMGID_from_name(imsetzero_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    IMGID in = imgid_make_from_name(imsetzero_inimname); resolveIMGID(&in, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     image_setzero_compute(data.fpsptr, processinfo, in.im);
     processinfo_update_output_stream(processinfo, in.im, NULL);

@@ -21,7 +21,7 @@ errno_t write_clustCFave(
 
             // WRITE CF ave file to disk
 
-            IMGID imgCFave = makeIMGID_2D("CFave", ctree->xsize, ctree->ysize);
+            IMGID imgCFave = imgid_make_from_name_2D("CFave", ctree->xsize, ctree->ysize);
             createimagefromIMGID(&imgCFave);
 
             uint64_t xysize = ctree->xsize;

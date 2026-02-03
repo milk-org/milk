@@ -187,7 +187,7 @@ static errno_t compute_function()
 
     zernike_init();
 
-    IMGID imgout = makeIMGID_3D(outzcubename, *xsize, *ysize, *NBzermode);
+    IMGID imgout = imgid_make_from_name_3D(outzcubename, *xsize, *ysize, *NBzermode);
     createimagefromIMGID(&imgout);
 
     uint64_t xysize = *xsize;
