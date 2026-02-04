@@ -64,14 +64,14 @@ errno_t mk_complex_from_amph_IMGID(
     uint8_t naxisamp = imginamp->md->naxis;
     uint8_t naxispha = imginpha->md->naxis;
     uint64_t xysize = imginamp->md->size[0];
-    imgoutC->size[0] = imginamp->md->size[0];
-    imgoutC->size[1] = 1;
+    imgoutC->mdt->size[0] = imginamp->md->size[0];
+    imgoutC->mdt->size[1] = 1;
 
     uint8_t naxis = naxisamp;
     if(naxisamp > 1)
     {
         xysize *= imginamp->md->size[1];
-        imgoutC->size[1] = imginamp->md->size[1];
+        imgoutC->mdt->size[1] = imginamp->md->size[1];
     }
     if(naxispha > naxisamp)
     {
@@ -95,14 +95,14 @@ errno_t mk_complex_from_amph_IMGID(
         zsize = zsizepha;
     }
 
-    imgoutC->naxis = naxis;
-    imgoutC->size[2] = zsize;
+    imgoutC->mdt->naxis = naxis;
+    imgoutC->mdt->size[2] = zsize;
 
     //printf("xysize = %lu\n", xysize);
 
     if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
     {
-        imgoutC->datatype = _DATATYPE_COMPLEX_FLOAT;
+        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_FLOAT;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
@@ -145,7 +145,7 @@ errno_t mk_complex_from_amph_IMGID(
     else if((datatype_am == _DATATYPE_FLOAT) &&
             (datatype_ph == _DATATYPE_DOUBLE))
     {
-        imgoutC->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
@@ -188,7 +188,7 @@ errno_t mk_complex_from_amph_IMGID(
     else if((datatype_am == _DATATYPE_DOUBLE) &&
             (datatype_ph == _DATATYPE_FLOAT))
     {
-        imgoutC->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
@@ -231,7 +231,7 @@ errno_t mk_complex_from_amph_IMGID(
     else if((datatype_am == _DATATYPE_DOUBLE) &&
             (datatype_ph == _DATATYPE_DOUBLE))
     {
-        imgoutC->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
@@ -291,9 +291,13 @@ errno_t mk_complex_from_amph(
     IMGID imgamp = imgid_make_from_name(am_name);
     IMGID imgpha = imgid_make_from_name(ph_name);
     IMGID imgoutC  = imgid_make_from_name(out_name);
-    imgoutC.shared = sharedmem;
+    imgoutC.mdt->shared = sharedmem;
 
-    return mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
+    errno_t ret = mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
+    imgid_free(&imgamp);
+    imgid_free(&imgpha);
+    imgid_free(&imgoutC);
+    return ret;
 }
 
 static errno_t compute_function()
@@ -313,6 +317,10 @@ static errno_t compute_function()
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgamp);
+    imgid_free(&imgpha);
+    imgid_free(&imgoutC);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

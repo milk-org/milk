@@ -107,17 +107,18 @@ static errno_t compute_function()
     }
 
     IMGID imgout = imgid_make_from_name(outim.name);
-    imgout.shared = *outim.shared;
+    imgout.mdt->shared = *outim.shared;
     if(*outim.shared == 1)
     {
+        imgid_free(&imgout);
         imgout = stream_connect_create_2D(outim.name, x1Dsize, 1, outdatatype);
     }
     else
     {
-        imgout.naxis = 2;
-        imgout.size[0] = x1Dsize;
-        imgout.size[1] = 1;
-        imgout.datatype = outdatatype;
+        imgout.mdt->naxis = 2;
+        imgout.mdt->size[0] = x1Dsize;
+        imgout.mdt->size[1] = 1;
+        imgout.mdt->datatype = outdatatype;
         createimagefromIMGID(&imgout);
     }
     imcreateIMGID(&imgout);
@@ -297,6 +298,9 @@ static errno_t compute_function()
     free(map_1Dpixindex);
 
     DEBUG_TRACE_FEXIT();
+    imgid_free(&imgin);
+    imgid_free(&imgmap);
+    imgid_free(&imgout);
     return RETURN_SUCCESS;
 }
 

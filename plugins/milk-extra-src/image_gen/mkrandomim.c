@@ -122,12 +122,12 @@ static errno_t compute_function()
 
     DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
     IMGID img  = imgid_make_from_name_2D(outim.name, *outim.xsize, *outim.ysize);
-    img.shared = *outim.shared;
+    img.mdt->shared = *outim.shared;
     //img.NBkw   = *outim.NBkw;
     //img.CBsize = *outim.CBsize;
 
-    printf("NBkw   = %d\n", img.NBkw);
-    printf("CBsize = %d\n", img.CBsize);
+    printf("NBkw   = %d\n", img.mdt->NBkw);
+    printf("CBsize = %d\n", img.mdt->CBsize);
 
 
 
@@ -157,6 +157,7 @@ static errno_t compute_function()
     processinfo_update_output_stream(processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&img);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

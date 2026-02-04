@@ -126,11 +126,11 @@ errno_t Qexpand(
 
 
     // output vectors
-    imgoutcoeffM->datatype = _DATATYPE_FLOAT;
-    imgoutcoeffM->naxis = 2;
+    imgoutcoeffM->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutcoeffM->mdt->naxis = 2;
 
-    imgoutcoeffM->size[axis] = vecdimout;
-    imgoutcoeffM->size[vecindexaxis] = NBvec;
+    imgoutcoeffM->mdt->size[axis] = vecdimout;
+    imgoutcoeffM->mdt->size[vecindexaxis] = NBvec;
 
     printf("CREATING %s\n", imgoutcoeffM->name);
     fflush(stdout);
@@ -241,7 +241,8 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imgincoeffM);
+    imgid_free(&imgoutcoeffM);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

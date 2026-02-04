@@ -54,8 +54,9 @@ imageID read_sharedmem_image(
     long NB_images
 )
 {
-    IMGID img = imgid_make();
-    imgid_connect(sname, &img, IMGID_CONNECT_NOCHECK);
+    IMGID img = imgid_make_from_name(sname);
+    resolveIMGID(&img, ERRMODE_ABORT, imagearray, NB_images);
+    imgid_connect(&img, IMGID_CONNECT_NOCHECK);
     if (img.ID == -1)
     {
         return -1;

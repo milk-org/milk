@@ -114,8 +114,8 @@ errno_t image_format_extract_RGGBchan(
 
 
     imgid_copy(&imgin, &imgoutR);
-    imgoutR.size[0] = imgin.size[0] / 2;
-    imgoutR.size[1] = imgin.size[1] / 2;
+    imgoutR.mdt->size[0] = imgin.md->size[0] / 2;
+    imgoutR.mdt->size[1] = imgin.md->size[1] / 2;
 
     imgid_copy(&imgoutR, &imgoutG1);
     imgid_copy(&imgoutR, &imgoutG2);
@@ -126,22 +126,22 @@ errno_t image_format_extract_RGGBchan(
     createimagefromIMGID(&imgoutG2);
     createimagefromIMGID(&imgoutB);
 
-    uint32_t xsize = imgin.size[0];
+    uint32_t xsize = imgin.md->size[0];
 
     list_image_ID();
 
 
 
-    switch(imgin.datatype)
+    switch(imgin.md->datatype)
     {
 
         case _DATATYPE_FLOAT:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.F[pixi] =
                         imgin.im->array.F[(jj1 + 1) * xsize + ii1];
@@ -155,12 +155,12 @@ errno_t image_format_extract_RGGBchan(
             break;
 
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.D[pixi] =
                         imgin.im->array.D[(jj1 + 1) * xsize + ii1];
@@ -175,12 +175,12 @@ errno_t image_format_extract_RGGBchan(
 
 
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.UI16[pixi] =
                         imgin.im->array.UI16[(jj1 + 1) * xsize + ii1];
@@ -215,12 +215,19 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_format_extract_RGGBchan(imgid_make_from_name(inim),
-                                  imgid_make_from_name(outimR),
-                                  imgid_make_from_name(outimG1),
-                                  imgid_make_from_name(outimG2),
-                                  imgid_make_from_name(outimB));
+    IMGID img_in = imgid_make_from_name(inim);
+    IMGID img_outR = imgid_make_from_name(outimR);
+    IMGID img_outG1 = imgid_make_from_name(outimG1);
+    IMGID img_outG2 = imgid_make_from_name(outimG2);
+    IMGID img_outB = imgid_make_from_name(outimB);
 
+    image_format_extract_RGGBchan(img_in, img_outR, img_outG1, img_outG2, img_outB);
+
+    imgid_free(&img_in);
+    imgid_free(&img_outR);
+    imgid_free(&img_outG1);
+    imgid_free(&img_outG2);
+    imgid_free(&img_outB);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

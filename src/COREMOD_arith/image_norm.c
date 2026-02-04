@@ -21,14 +21,14 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
 #endif
     if(outimg->ID == -1) imgid_copy(inimg, outimg);
     for (uint8_t axis = 0; axis < inimg->md->naxis; axis++)
-        if (axis != sliceaxis) outimg->size[axis] = 1;
-    outimg->datatype = _DATATYPE_FLOAT;
+        if (axis != sliceaxis) outimg->mdt->size[axis] = 1;
+    outimg->mdt->datatype = _DATATYPE_FLOAT;
 #ifndef FPS_STANDALONE
     createimagefromIMGID(outimg);
 #else
     outimg->im = (IMAGE*) malloc(sizeof(IMAGE));
     strncpy(outimg->name, norm_outimname, 79);
-    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->naxis, outimg->size, outimg->datatype, -1, 1, 10, 0, 0, 0);
+    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->mdt->naxis, outimg->mdt->size, outimg->mdt->datatype, -1, 1, 10, 0, 0, 0);
     outimg->md = outimg->im->md;
 #endif
     uint32_t sizes[3] = {inimg->md->size[0], inimg->md->size[1], inimg->md->size[2]};
@@ -40,7 +40,7 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
             for(uint32_t k=0; k<sizes[2]; k++) {
                 uint64_t idx = (uint64_t)k*sizes[1]*sizes[0] + (uint64_t)j*sizes[0] + i;
                 double v = 0;
-                switch(inimg->datatype) {
+                switch(inimg->mdt->datatype) {
                     case _DATATYPE_FLOAT: v = inimg->im->array.F[idx]; break;
                     case _DATATYPE_DOUBLE: v = inimg->im->array.D[idx]; break;
                 }
@@ -54,7 +54,9 @@ errno_t image_slicenorm_IMGID(IMGID *inimg, IMGID *outimg, uint8_t sliceaxis) {
 #ifndef FPS_STANDALONE
 errno_t image_slicenorm(const char *inname, const char *outname, uint8_t sliceaxis) {
     IMGID idin = imgid_make_from_name(inname), idout = imgid_make_from_name(outname);
-    return image_slicenorm_IMGID(&idin, &idout, sliceaxis);
+    errno_t ret = image_slicenorm_IMGID(&idin, &idout, sliceaxis);
+    imgid_free(&idin); imgid_free(&idout);
+    return ret;
 }
 #endif
 
@@ -63,8 +65,11 @@ void image_norm_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo
         fps_to_processinfo(fps, processinfo); processinfo_change_cnt_local = fps->md->processinfo_change_cnt;
     }
     if (!norm_sliceaxis) return;
-    IMGID idin, idout; idin.im = inimg; idin.md = &inimg->md[0]; idout.im = outimg; idout.md = &outimg->md[0];
+    IMGID idin, idout; 
+    idin = imgid_make(); idin.im = inimg; idin.md = &inimg->md[0]; imgid_update_creationparams(&idin);
+    idout = imgid_make(); idout.im = outimg; idout.md = &outimg->md[0]; imgid_update_creationparams(&idout);
     image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
+    imgid_free(&idin); imgid_free(&idout);
 }
 
 
@@ -107,7 +112,9 @@ int FPSRUN_normslice(const char *fps_name) {
     norm_outimname = functionparameter_GetParamPtr_STRING(&fps, ".outname");
     norm_sliceaxis = functionparameter_GetParamPtr_UINT32(&fps, ".axis");
     IMAGE iin; if (ImageStreamIO_read_sharedmem_image_toIMAGE(norm_inimname, &iin) != 0) return 1;
-    IMGID idin, idout; idin.im = &iin; idin.md = &iin.md[0]; idout = imgid_make();
+    IMGID idin, idout; 
+    idin = imgid_make(); idin.im = &iin; idin.md = &iin.md[0]; imgid_update_creationparams(&idin);
+    idout = imgid_make();
     image_slicenorm_IMGID(&idin, &idout, *norm_sliceaxis);
     PROCESSINFO *pinfo = processinfo_setup((char*)fps_name, "normslice Run", "Looping", __FUNCTION__, __FILE__, __LINE__);
     processinfo_waitoninputstream_init(pinfo, &iin, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1);
@@ -117,7 +124,9 @@ int FPSRUN_normslice(const char *fps_name) {
         processinfo_exec_start(pinfo); image_norm_compute(&fps, pinfo, &iin, idout.im); processinfo_exec_end(pinfo);
         processinfo_update_output_stream(pinfo, idout.im, &iin);
     }
-    processinfo_cleanExit(pinfo); function_parameter_struct_disconnect(&fps); return 0;
+    processinfo_cleanExit(pinfo); function_parameter_struct_disconnect(&fps); 
+    imgid_free(&idin); imgid_free(&idout);
+    return 0;
 }
 
 #ifdef FPS_STANDALONE
@@ -143,6 +152,7 @@ static errno_t compute_function() {
     image_norm_compute(data.fpsptr, processinfo, idin.im, idout.im);
     processinfo_update_output_stream(processinfo, idout.im, idin.im);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    imgid_free(&idin); imgid_free(&idout);
     return RETURN_SUCCESS;
 }
 

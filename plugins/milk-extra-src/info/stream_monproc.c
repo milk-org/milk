@@ -248,8 +248,8 @@ errno_t stream_monitor_run(
         resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
-    uint32_t xsize  = inimg.size[0];
-    uint32_t ysize  = inimg.size[1];
+    uint32_t xsize  = inimg.md->size[0];
+    uint32_t ysize  = inimg.md->size[1];
     uint64_t xysize = (uint64_t) xsize * ysize;
     uint8_t datatype = inimg.md->datatype;
     int typesize = ImageStreamIO_typesize(datatype);
@@ -582,12 +582,17 @@ errno_t stream_monitor_run(
     for(int b = 0; b < numbin; b++) {
         free(arraysum[b]);
         free(arraysumsq[b]);
+        imgid_free(&imgoutbin[b]);
+        imgid_free(&imgoutbinrms[b]);
     }
     free(arraysum);
     free(arraysumsq);
     free(bincounter);
     free(imgoutbin);
     free(imgoutbinrms);
+    imgid_free(&inimg);
+    imgid_free(&cbimg);
+    imgid_free(&cbtimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

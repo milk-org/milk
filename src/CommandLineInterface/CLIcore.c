@@ -372,6 +372,17 @@ errno_t CLI_startup()
 
     data.progStatus = 0;
 
+    // Initialize installdir
+    char *installdir_env = getenv("MILK_INSTALLDIR");
+    if(installdir_env != NULL)
+    {
+        strncpy(data.installdir, installdir_env, STRINGMAXLEN_DIRNAME - 1);
+    }
+    else
+    {
+        strncpy(data.installdir, "/usr/local/milk", STRINGMAXLEN_DIRNAME - 1);
+    }
+
     data.Debug         = 0;
     data.overwrite     = 0;
     data.precision     = 0;  // float is default precision

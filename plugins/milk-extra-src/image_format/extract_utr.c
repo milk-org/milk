@@ -328,7 +328,7 @@ static errno_t compute_function()
     if(resolveIMGID(&out_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
     {
         PRINT_WARNING("WARNING - output image not found and being created");
-        in_img.datatype = _DATATYPE_FLOAT; // To be passed to out_img
+        in_img.mdt->datatype = _DATATYPE_FLOAT; // To be passed to out_img
         imcreatelikewiseIMGID(&out_img, &in_img);
         resolveIMGID(&out_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
@@ -760,6 +760,9 @@ static errno_t compute_function()
         free(last_valid[pp]);
         free(save_first_read[pp]);
     }
+
+    imgid_free(&in_img);
+    imgid_free(&out_img);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

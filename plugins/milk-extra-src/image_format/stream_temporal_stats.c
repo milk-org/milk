@@ -106,7 +106,7 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
 
     if(reset)
     {
-        switch(in_img.datatype)
+        switch(in_img.md->datatype)
         {
             case _DATATYPE_UINT8:
                 FOREACH_CAST(0, n_pixels, UI8, float);
@@ -147,7 +147,7 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
     }
     else
     {
-        switch(in_img.datatype)
+        switch(in_img.md->datatype)
         {
             case _DATATYPE_UINT8:
                 FOREACH_CASTADD(0, n_pixels, UI8, float);
@@ -199,7 +199,7 @@ errno_t ave_finalize(IMGID out_ave_img, void *sum_x, int n_frames_acc)
     out_ave_img.md->write = TRUE;
 
     // Two possible datatypes: float or double
-    if(out_ave_img.datatype == _DATATYPE_FLOAT)
+    if(out_ave_img.md->datatype == _DATATYPE_FLOAT)
     {
         float *ptr_sumx = (float *) sum_x;
         for(int ii = 0; ii < n_pixels; ++ii)
@@ -207,7 +207,7 @@ errno_t ave_finalize(IMGID out_ave_img, void *sum_x, int n_frames_acc)
             out_ave_img.im->array.F[ii] = ptr_sumx[ii] / n_frames_acc;
         }
     }
-    else if(out_ave_img.datatype == _DATATYPE_DOUBLE)
+    else if(out_ave_img.md->datatype == _DATATYPE_DOUBLE)
     {
         double *ptr_sumx = (double *) sum_x;
         for(int ii = 0; ii < n_pixels; ++ii)
@@ -231,7 +231,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
     out_std_img.md->write = TRUE;
 
     // Two possible datatypes: float or double
-    if(out_std_img.datatype == _DATATYPE_FLOAT)
+    if(out_std_img.md->datatype == _DATATYPE_FLOAT)
     {
         float *ptr_sumx  = (float *) sum_x;
         float *ptr_sumxx = (float *) sum_xx;
@@ -243,7 +243,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
                      (n_frames_acc - 1));
         }
     }
-    else if(out_std_img.datatype == _DATATYPE_DOUBLE)
+    else if(out_std_img.md->datatype == _DATATYPE_DOUBLE)
     {
         double *ptr_sumx  = (double *) sum_x;
         double *ptr_sumxx = (double *) sum_xx;
@@ -301,9 +301,9 @@ static errno_t compute_function()
     {
         PRINT_WARNING(
             "WARNING - output average image not found and being created");
-        in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
+        in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
-        in_img.datatype = _DATATYPE_INPUT; // Revert !
+        in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
         resolveIMGID(&out_ave_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
@@ -311,9 +311,9 @@ static errno_t compute_function()
     if(resolveIMGID(&out_std_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
     {
         PRINT_WARNING("WARNING - output std image not found and being created");
-        in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
+        in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
-        in_img.datatype = _DATATYPE_INPUT; // Revert !
+        in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
         resolveIMGID(&out_std_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     }
 
@@ -422,6 +422,10 @@ static errno_t compute_function()
 
     free(sum_x);
     free(sum_xx);
+
+    imgid_free(&in_img);
+    imgid_free(&out_ave_img);
+    imgid_free(&out_std_img);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

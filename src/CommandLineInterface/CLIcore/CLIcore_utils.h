@@ -155,16 +155,16 @@ typedef struct
 //
 #define FARG_OUTIM2DCREATE(imkey, img, data_type)                              \
         IMGID img = imgid_make_from_name(imkey.name);                             \
-        img.shared = *imkey.shared;                                            \
-        img.NBkw   = *imkey.NBkw;                                              \
-        img.CBsize = *imkey.CBsize;                                            \
+        img.mdt->shared = *imkey.shared;                                            \
+        img.mdt->NBkw   = *imkey.NBkw;                                              \
+        img.mdt->CBsize = *imkey.CBsize;                                            \
         if(*imkey.shared == 1) {                                               \
           img = stream_connect_create_2D(imkey.name, *imkey.xsize, *imkey.ysize, data_type); \
         } else {                                                               \
-          img.naxis = 2;                                                       \
-          img.size[0] = *imkey.xsize;                                          \
-          img.size[1] = *imkey.ysize;                                          \
-          img.datatype = data_type;                                            \
+          img.mdt->naxis = 2;                                                       \
+          img.mdt->size[0] = *imkey.xsize;                                          \
+          img.mdt->size[1] = *imkey.ysize;                                          \
+          img.mdt->datatype = data_type;                                            \
           createimagefromIMGID(&img);                                          \
         }                                                                      \
         imcreateIMGID(&img);

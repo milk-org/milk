@@ -298,6 +298,9 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&imgpos);
+    imgid_free(&imgout);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

@@ -72,7 +72,7 @@ errno_t image_copy_shm_IMGID(
     if ( imgshm->ID == -1 )
     {
         imgid_copy( img, imgshm );
-        imgshm->shared = 1;
+        imgshm->mdt->shared = 1;
 
         createimagefromIMGID(imgshm);
     }
@@ -100,7 +100,10 @@ errno_t image_copy_shm(
     IMGID imgin = imgid_make_from_name(inname);
     IMGID imgshm = imgid_make_from_name(outname);
 
-    return image_copy_shm_IMGID(&imgin, &imgshm);
+    errno_t ret = image_copy_shm_IMGID(&imgin, &imgshm);
+    imgid_free(&imgin);
+    imgid_free(&imgshm);
+    return ret;
 }
 
 // adding INSERT_STD_PROCINFO statements enables processinfo support
@@ -108,14 +111,17 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
     IMGID imgin = imgid_make_from_name(inimname);
     IMGID imgshm = imgid_make_from_name(outimname);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     image_copy_shm_IMGID(&imgin, &imgshm);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgin);
+    imgid_free(&imgshm);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

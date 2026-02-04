@@ -205,8 +205,8 @@ static errno_t streamprocess(
     // This function call has low overhead, as it will acknowledge existing image
     resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    uint32_t xsize  = inimg->size[0];
-    uint32_t ysize  = inimg->size[1];
+    uint32_t xsize  = inimg->mdt->size[0];
+    uint32_t ysize  = inimg->mdt->size[1];
     uint64_t xysize = xsize * ysize;
 
 
@@ -216,13 +216,13 @@ static errno_t streamprocess(
     //
     // We have called imgid_copy in compute_function(), so outimg metadata is already filled up.
     // Otherwise, we would edit these lines:
-    // outimg->naxis = 2;
-    // outimg->size[0] = xsize;
-    // outimg->size[1] = ysize;
-    // outimg->datatype = _DATATYPE_FLOAT;
-    // outimg->shared = inimg->shared;
-    // outimg->NBkw = inimg->NBkw;
-    // outimg->CBsize = 0;
+    // outimg->mdt->naxis = 2;
+    // outimg->mdt->size[0] = xsize;
+    // outimg->mdt->size[1] = ysize;
+    // outimg->mdt->datatype = _DATATYPE_FLOAT;
+    // outimg->mdt->shared = inimg->mdt->shared;
+    // outimg->mdt->NBkw = inimg->mdt->NBkw;
+    // outimg->mdt->CBsize = 0;
 
     // Create image if not already done.
     // Otherwise, just proceed
@@ -299,6 +299,9 @@ static errno_t compute_function()
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&inimg);
+    imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
