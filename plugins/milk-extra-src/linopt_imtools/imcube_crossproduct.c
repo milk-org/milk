@@ -91,10 +91,10 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
     resolveIMGID(&imgcube1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
     resolveIMGID(&imgmask, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
-    uint32_t xsize  = imgcube0.size[0];
-    uint32_t ysize  = imgcube0.size[1];
-    uint32_t zsize0 = imgcube0.size[2];
-    uint32_t zsize1 = imgcube1.size[2];
+    uint32_t xsize  = imgcube0.md->size[0];
+    uint32_t ysize  = imgcube0.md->size[1];
+    uint32_t zsize0 = imgcube0.md->size[2];
+    uint32_t zsize1 = imgcube1.md->size[2];
 
     uint64_t xysize = xsize * ysize;
 
@@ -124,6 +124,7 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
             imgout.im->array.F[kk1 * zsize0 + kk0] = tmpv / masksum;
         }
     }
+    imgid_free(&imgout);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
@@ -154,6 +155,10 @@ static errno_t compute_function()
     imcube_crossproduct(imginc0, imginc1, imgmask, imout);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imginc0);
+    imgid_free(&imginc1);
+    imgid_free(&imgmask);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

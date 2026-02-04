@@ -24,25 +24,25 @@ errno_t image_marge(IMGID inimg0, IMGID inimg1, IMGID *outimg, uint8_t mergeaxis
     if (mergeaxis < 3) {
         uint32_t s0 = (inimg0.md->size[mergeaxis] == 0) ? 1 : inimg0.md->size[mergeaxis];
         uint32_t s1 = (inimg1.md->size[mergeaxis] == 0) ? 1 : inimg1.md->size[mergeaxis];
-        outimg->size[mergeaxis] = s0 + s1;
+        outimg->mdt->size[mergeaxis] = s0 + s1;
     } else return RETURN_FAILURE;
-    outimg->naxis = (outimg->size[2] > 1) ? 3 : ((outimg->size[1] > 1) ? 2 : 1);
+    outimg->mdt->naxis = (outimg->mdt->size[2] > 1) ? 3 : ((outimg->mdt->size[1] > 1) ? 2 : 1);
 #ifndef FPS_STANDALONE
     createimagefromIMGID(outimg);
 #else
     outimg->im = (IMAGE*) malloc(sizeof(IMAGE));
     strncpy(outimg->name, immerge_outimname, 79);
-    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->naxis, outimg->size, outimg->datatype, -1, 1, 10, 0, 0, 0);
+    ImageStreamIO_createIm_gpu(outimg->im, outimg->name, outimg->mdt->naxis, outimg->mdt->size, outimg->mdt->datatype, -1, 1, 10, 0, 0, 0);
     outimg->md = outimg->im->md;
 #endif
-    size_t ts = ImageStreamIO_typesize(outimg->datatype);
-    if (mergeaxis == outimg->naxis-1) {
+    size_t ts = ImageStreamIO_typesize(outimg->mdt->datatype);
+    if (mergeaxis == outimg->mdt->naxis-1) {
         size_t sz0 = ts * inimg0.md->nelement;
         memcpy(outimg->im->array.raw, inimg0.im->array.raw, sz0);
         memcpy(((char*)outimg->im->array.raw) + sz0, inimg1.im->array.raw, ts * inimg1.md->nelement);
     } else {
-        uint64_t b0 = inimg0.size[0], b1 = inimg1.size[0];
-        if (mergeaxis == 1) { b0 *= inimg0.size[1]; b1 *= inimg1.size[1]; }
+        uint64_t b0 = inimg0.mdt->size[0], b1 = inimg1.mdt->size[0];
+        if (mergeaxis == 1) { b0 *= inimg0.mdt->size[1]; b1 *= inimg1.mdt->size[1]; }
         uint64_t po = 0, p0 = 0, p1 = 0;
         while (po < outimg->md->nelement) {
             memcpy(((char*)outimg->im->array.raw) + po*ts, ((char*)inimg0.im->array.raw) + p0*ts, ts*b0);
@@ -63,7 +63,16 @@ void image_merge_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinf
     id0.im = inimg0; id0.md = &inimg0->md[0];
     id1.im = inimg1; id1.md = &inimg1->md[0];
     idout.im = outimg; idout.md = &outimg->md[0];
+    // WARNING: id0, id1, idout are temporary and mdt is uninitialized pointer if not made with imgid_make
+    // But image_marge uses mdt!
+    // We must initialize mdt for them if we pass them to image_marge
+    id0 = imgid_make(); id0.im = inimg0; id0.md = &inimg0->md[0]; imgid_update_creationparams(&id0);
+    id1 = imgid_make(); id1.im = inimg1; id1.md = &inimg1->md[0]; imgid_update_creationparams(&id1);
+    idout = imgid_make(); idout.im = outimg; idout.md = &outimg->md[0]; imgid_update_creationparams(&idout);
+    
     image_marge(id0, id1, &idout, *immerge_mergeaxis);
+    
+    imgid_free(&id0); imgid_free(&id1); imgid_free(&idout);
 }
 
 /* ================================================================== */
@@ -108,10 +117,14 @@ int FPSRUN_immerge(const char *fps_name) {
     IMAGE i0, i1;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(immerge_inimname0, &i0) != 0) return 1;
     if (ImageStreamIO_read_sharedmem_image_toIMAGE(immerge_inimname1, &i1) != 0) return 1;
-    IMGID id0, id1, idout; id0.im = &i0; id0.md = &i0.md[0]; id1.im = &i1; id1.md = &i1.md[0];
+    IMGID id0, id1, idout; 
+    id0 = imgid_make(); id0.im = &i0; id0.md = &i0.md[0]; imgid_update_creationparams(&id0);
+    id1 = imgid_make(); id1.im = &i1; id1.md = &i1.md[0]; imgid_update_creationparams(&id1);
+    
 #ifndef FPS_STANDALONE
     idout = imgid_make(); 
 #else
+    idout = imgid_make(); // must make it
     idout.ID = -1; idout.im = NULL; idout.md = NULL;
 #endif
     image_marge(id0, id1, &idout, *immerge_mergeaxis);
@@ -123,7 +136,9 @@ int FPSRUN_immerge(const char *fps_name) {
         processinfo_exec_start(processinfo); image_merge_compute(&fps, processinfo, &i0, &i1, idout.im); processinfo_exec_end(processinfo);
         processinfo_update_output_stream(processinfo, idout.im, &i0);
     }
-    processinfo_cleanExit(processinfo); function_parameter_struct_disconnect(&fps); return 0;
+    processinfo_cleanExit(processinfo); function_parameter_struct_disconnect(&fps); 
+    imgid_free(&id0); imgid_free(&id1); imgid_free(&idout);
+    return 0;
 }
 
 #ifdef FPS_STANDALONE
@@ -150,9 +165,9 @@ static errno_t compute_function() {
     image_merge_compute(data.fpsptr, processinfo, id0.im, id1.im, idout.im);
     processinfo_update_output_stream(processinfo, idout.im, id0.im);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    imgid_free(&id0); imgid_free(&id1); imgid_free(&idout);
     return RETURN_SUCCESS;
 }
-
 INSERT_STD_FPSCLIfunctions
 errno_t CLIADDCMD_COREMOD_arith__image_merge() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
 #endif

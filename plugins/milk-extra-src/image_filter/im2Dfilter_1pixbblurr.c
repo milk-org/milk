@@ -122,17 +122,17 @@ static errno_t imfilter_im2D_1pixblurr(
     // create eigenvalues array if needed
     if( imgout->ID == -1)
     {
-        imgout->naxis   = 2;
-        imgout->size[0] = imgin.size[0];
-        imgout->size[1] = imgin.size[1];
-        imgout->shared = imgin.shared;
-        imgout->datatype = _DATATYPE_FLOAT;
+        imgout->mdt->naxis   = 2;
+        imgout->mdt->size[0] = imgin.md->size[0];
+        imgout->mdt->size[1] = imgin.md->size[1];
+        imgout->mdt->shared = imgin.md->shared;
+        imgout->mdt->datatype = _DATATYPE_FLOAT;
         createimagefromIMGID(imgout);
     }
 
 
-    uint32_t xsize = imgin.size[0];
-    uint32_t ysize = imgin.size[1];
+    uint32_t xsize = imgin.md->size[0];
+    uint32_t ysize = imgin.md->size[1];
 
 
     float coeff1 = amp; // side pixels (x4)
@@ -287,6 +287,9 @@ static errno_t compute_function()
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgin);
+    imgid_free(&imgout);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

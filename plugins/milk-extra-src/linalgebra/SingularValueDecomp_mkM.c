@@ -129,25 +129,25 @@ errno_t SVDmkM(
     //printf("Creating image from %s\n", imgU.md->name);
 
     IMGID imgunmodes = imgid_make_from_name("XXSVDunmodes");
-    imgunmodes.naxis = imgU.md->naxis;
-    imgunmodes.datatype = imgU.md->datatype;
-    imgunmodes.size[0] = imgU.md->size[0];
-    imgunmodes.size[1] = imgU.md->size[1];
-    imgunmodes.size[2] = imgU.md->size[2];
+    imgunmodes.mdt->naxis = imgU.md->naxis;
+    imgunmodes.mdt->datatype = imgU.md->datatype;
+    imgunmodes.mdt->size[0] = imgU.md->size[0];
+    imgunmodes.mdt->size[1] = imgU.md->size[1];
+    imgunmodes.mdt->size[2] = imgU.md->size[2];
 
-    printf("Creating temp img XXSVDunmodes  %d x %d x %d\n", imgunmodes.size[0], imgunmodes.size[1], imgunmodes.size[2]);
+    printf("Creating temp img XXSVDunmodes  %d x %d x %d\n", imgunmodes.mdt->size[0], imgunmodes.mdt->size[1], imgunmodes.mdt->size[2]);
     createimagefromIMGID(&imgunmodes);
 
     list_image_ID();
 
-    int lastaxis = imgunmodes.naxis-1;
-    long framesize = imgunmodes.size[0];
+    int lastaxis = imgunmodes.mdt->naxis-1;
+    long framesize = imgunmodes.mdt->size[0];
     if(lastaxis==2)
     {
-        framesize *= imgunmodes.size[1];
+        framesize *= imgunmodes.mdt->size[1];
     }
 
-    for(int kk=0; kk<imgunmodes.size[lastaxis]; kk++)
+    for(int kk=0; kk<imgunmodes.mdt->size[lastaxis]; kk++)
     {
         float mfact = imgS.im->array.F[kk];
         for(long ii=0; ii<framesize; ii++)
@@ -160,6 +160,7 @@ errno_t SVDmkM(
 
     computeSGEMM(imgunmodes, imgV, imgM, 0, 1, GPUdev);
     delete_image_ID(imgunmodes.name, DELETE_IMAGE_ERRMODE_WARNING);
+    imgid_free(&imgunmodes);
 
 
     DEBUG_TRACE_FEXIT();
@@ -200,7 +201,10 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginU);
+    imgid_free(&imginS);
+    imgid_free(&imginV);
+    imgid_free(&imgoutM);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

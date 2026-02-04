@@ -85,9 +85,9 @@ functionparameter_PrintParameterInfo(
         int digit = fpsentry->parray[pindex].fpflag & mask ? 1 : 0;
         if(digit == 1)
         {
-            printf(AECBOLDHIGREEN);
+            printf("%s", AECBOLDHIGREEN);
             printf("%d", digit);
-            printf(AECNORMAL);
+            printf("%s", AECNORMAL);
         }
         else
         {
@@ -101,9 +101,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ACTIVE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "ACTIVE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -112,9 +112,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_USED)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "USED");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -123,9 +123,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_VISIBLE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "VISIBLE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -138,9 +138,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "WRITE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -149,9 +149,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITECONF)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "WRITECONF");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -160,9 +160,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITERUN)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "WRITERUN");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -171,9 +171,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_WRITESTATUS)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "WRITESTATUS");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -184,9 +184,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_LOG)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "LOG");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -195,9 +195,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCHANGE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "SAVEONCHANGE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -206,9 +206,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_SAVEONCLOSE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "SAVEONCLOSE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -221,9 +221,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_IMPORTED)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "IMPORTED");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -232,9 +232,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_FEEDBACK)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "FEEDBACK");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -243,9 +243,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ONOFF)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "ONOFF");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -258,9 +258,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKINIT)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "CHECKINIT");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -269,9 +269,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_MINLIMIT)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "MINLIMIT");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -280,9 +280,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_MAXLIMIT)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "MAXLIMIT");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -291,9 +291,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_ERROR)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "ERROR");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -304,9 +304,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_LOCALMEM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_LOCALMEM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -315,9 +315,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_SHAREMEM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_SHAREMEM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -326,9 +326,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFFITS)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFFITS");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -337,9 +337,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_FORCE_CONFNAME)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_FORCE_CONFNAME");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -351,9 +351,9 @@ functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag &
             FPFLAG_STREAM_LOAD_SKIPSEARCH_LOCALMEM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_LOCALMEM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -363,9 +363,9 @@ functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag &
             FPFLAG_STREAM_LOAD_SKIPSEARCH_SHAREMEM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_SHAREMEM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -375,9 +375,9 @@ functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag &
             FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFFITS)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFFITS");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -387,9 +387,9 @@ functionparameter_PrintParameterInfo(
     if(fpsentry->parray[pindex].fpflag &
             FPFLAG_STREAM_LOAD_SKIPSEARCH_CONFNAME)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_SKIPSEARCH_CONFNAME");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -400,9 +400,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_SHAREMEM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_SHAREMEM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -411,9 +411,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_LOAD_UPDATE_CONFFITS)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_LOAD_UPDATE_CONFFITS");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -422,9 +422,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_CONF_REQUIRED)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "FILE/FPS/STREAM_CONF_REQUIRED");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -433,9 +433,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_FILE_RUN_REQUIRED)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "FILE/FPS/STREAM_RUN_REQUIRED");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -446,9 +446,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_DATATYPE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_DATATYPE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -457,9 +457,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT8)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT8");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -468,9 +468,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT8)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT8");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -479,9 +479,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT16)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT16");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -492,9 +492,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT16)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT16");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -503,9 +503,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT32)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT32");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -514,9 +514,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT32)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT32");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -525,9 +525,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_UINT64)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_UINT64");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -538,9 +538,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_INT64)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_INT64");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -549,9 +549,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_HALF)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_HALF");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -560,9 +560,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_FLOAT)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_FLOAT");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -571,9 +571,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_TEST_DATATYPE_DOUBLE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_TEST_DATATYPE_DOUBLE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -584,9 +584,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_1D)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_1D");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -595,9 +595,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_2D)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_2D");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -606,9 +606,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_3D)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_3D");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -617,9 +617,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_XSIZE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_XSIZE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -630,9 +630,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_YSIZE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_YSIZE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -641,9 +641,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_ENFORCE_ZSIZE)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_ENFORCE_ZSIZE");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -652,9 +652,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_CHECKSTREAM)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "CHECKSTREAM");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {
@@ -663,9 +663,9 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].fpflag & FPFLAG_STREAM_MEMLOADREPORT)
     {
-        printf(AECBOLDHIGREEN);
+        printf("%s", AECBOLDHIGREEN);
         printf("%*s", flagstringlen, "STREAM_MEMLOADREPORT");
-        printf(AECNORMAL);
+        printf("%s", AECNORMAL);
     }
     else
     {

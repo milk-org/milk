@@ -61,20 +61,20 @@ errno_t mk_amph_from_complex_IMGID(
 
     for(uint8_t i = 0; i < naxis; i++)
     {
-        imgamp->size[i] = imgin->md[0].size[i];
-        imgpha->size[i] = imgin->md[0].size[i];
+        imgamp->mdt->size[i] = imgin->md[0].size[i];
+        imgpha->mdt->size[i] = imgin->md[0].size[i];
     }
-    imgamp->naxis = naxis;
-    imgpha->naxis = naxis;
+    imgamp->mdt->naxis = naxis;
+    imgpha->mdt->naxis = naxis;
 
     uint64_t nelement = imgin->md[0].nelement;
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT)  // single precision
     {
-        imgamp->datatype = _DATATYPE_FLOAT;
+        imgamp->mdt->datatype = _DATATYPE_FLOAT;
         createimagefromIMGID(imgamp);
 
-        imgpha->datatype = _DATATYPE_FLOAT;
+        imgpha->mdt->datatype = _DATATYPE_FLOAT;
         createimagefromIMGID(imgpha);
 
         imgamp->md[0].write = 1;
@@ -114,10 +114,10 @@ errno_t mk_amph_from_complex_IMGID(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)  // double precision
     {
-        imgamp->datatype = _DATATYPE_DOUBLE;
+        imgamp->mdt->datatype = _DATATYPE_DOUBLE;
         createimagefromIMGID(imgamp);
 
-        imgpha->datatype = _DATATYPE_DOUBLE;
+        imgpha->mdt->datatype = _DATATYPE_DOUBLE;
         createimagefromIMGID(imgpha);
 
         imgamp->md[0].write = 1;
@@ -172,25 +172,33 @@ errno_t mk_amph_from_complex(const char *in_name,
     IMGID imgin = imgid_make_from_name(in_name);
     IMGID imgamp = imgid_make_from_name(am_name);
     IMGID imgpha = imgid_make_from_name(ph_name);
-    imgamp.shared = sharedmem;
-    imgpha.shared = sharedmem;
+    imgamp.mdt->shared = sharedmem;
+    imgpha.mdt->shared = sharedmem;
 
-    return mk_amph_from_complex_IMGID(&imgin, &imgamp, &imgpha);
+    errno_t ret = mk_amph_from_complex_IMGID(&imgin, &imgamp, &imgpha);
+    imgid_free(&imgin);
+    imgid_free(&imgamp);
+    imgid_free(&imgpha);
+    return ret;
 }
 
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
     IMGID imgin = imgid_make_from_name(inimname);
     IMGID imgamp = imgid_make_from_name(outampimname);
     IMGID imgpha = imgid_make_from_name(outphaimname);
 
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
     mk_amph_from_complex_IMGID(&imgin, &imgamp, &imgpha);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgin);
+    imgid_free(&imgamp);
+    imgid_free(&imgpha);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

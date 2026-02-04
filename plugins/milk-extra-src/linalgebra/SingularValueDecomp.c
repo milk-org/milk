@@ -357,9 +357,9 @@ errno_t compute_SVD(
     // create eigenvalues array if needed
     if(imgS->ID == -1)
     {
-        imgS->naxis   = 2;
-        imgS->size[0] = Ndim;
-        imgS->size[1] = 1;
+        imgS->mdt->naxis   = 2;
+        imgS->mdt->size[0] = Ndim;
+        imgS->mdt->size[1] = 1;
         createimagefromIMGID(imgS);
     }
 
@@ -449,16 +449,16 @@ errno_t compute_SVD(
             {
                 if(Vdim0 == 0)
                 {
-                    imgV->naxis = 2;
-                    imgV->size[0] = inNdim;
-                    imgV->size[1] = NBmode; //inNdim;
+                    imgV->mdt->naxis = 2;
+                    imgV->mdt->size[0] = inNdim;
+                    imgV->mdt->size[1] = NBmode; //inNdim;
                 }
                 else
                 {
-                    imgV->naxis = 3;
-                    imgV->size[0] = Vdim0;
-                    imgV->size[1] = inNdim / Vdim0;
-                    imgV->size[2] = NBmode; //inNdim;
+                    imgV->mdt->naxis = 3;
+                    imgV->mdt->size[0] = Vdim0;
+                    imgV->mdt->size[1] = inNdim / Vdim0;
+                    imgV->mdt->size[2] = NBmode; //inNdim;
                 }
                 createimagefromIMGID(imgV);
             }
@@ -469,17 +469,17 @@ errno_t compute_SVD(
 
             if(imgU->ID == -1)
             {
-                imgU->naxis = imgin.md->naxis;
+                imgU->mdt->naxis = imgin.md->naxis;
                 if(imgin.md->naxis == 3)
                 {
-                    imgU->size[0] = inMdim0;
-                    imgU->size[1] = inMdim1;
-                    imgU->size[2] = NBmode; //inMdim;
+                    imgU->mdt->size[0] = inMdim0;
+                    imgU->mdt->size[1] = inMdim1;
+                    imgU->mdt->size[2] = NBmode; //inMdim;
                 }
                 else
                 {
-                    imgU->size[0] = inMdim;
-                    imgU->size[1] = NBmode; //inMdim;
+                    imgU->mdt->size[0] = inMdim;
+                    imgU->mdt->size[1] = NBmode; //inMdim;
                 }
                 createimagefromIMGID(imgU);
                 printf("[%d] imgU Created ==============================\n", __LINE__);
@@ -505,10 +505,10 @@ errno_t compute_SVD(
         // store singular values
         delete_image_ID("SV", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgSV = imgid_make_from_name("SV");
-        imgSV.naxis = 2;
-        imgSV.datatype = _DATATYPE_FLOAT;
-        imgSV.size[0] = NBmode;
-        imgSV.size[1] = 1;
+        imgSV.mdt->naxis = 2;
+        imgSV.mdt->datatype = _DATATYPE_FLOAT;
+        imgSV.mdt->size[0] = NBmode;
+        imgSV.mdt->size[1] = 1;
         createimagefromIMGID(&imgSV);
         for(int k = 0; k < NBmode; k++)
         {
@@ -520,10 +520,10 @@ errno_t compute_SVD(
         // store inv of singular values
         delete_image_ID("SVinv", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgSVinv = imgid_make_from_name("SVinv");
-        imgSVinv.naxis = 2;
-        imgSVinv.datatype = _DATATYPE_FLOAT;
-        imgSVinv.size[0] = NBmode;
-        imgSVinv.size[1] = 1;
+        imgSVinv.mdt->naxis = 2;
+        imgSVinv.mdt->datatype = _DATATYPE_FLOAT;
+        imgSVinv.mdt->size[0] = NBmode;
+        imgSVinv.mdt->size[1] = 1;
         createimagefromIMGID(&imgSVinv);
         for(int k = 0; k < NBmode; k++)
         {
@@ -543,6 +543,8 @@ errno_t compute_SVD(
         free(d);
         free(e);
         free(t);
+        imgid_free(&imgSV);
+        imgid_free(&imgSVinv);
 
         // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
     }
@@ -622,10 +624,10 @@ errno_t compute_SVD(
             IMGID imgmNsvec1 = imgid_make_from_name("matNtemp");
             if(imgmNsvec1.ID == -1)
             {
-                imgmNsvec1.naxis = 2;
+                imgmNsvec1.mdt->naxis = 2;
 
-                imgmNsvec1.size[0] = Ndim;
-                imgmNsvec1.size[1] = NBmode;
+                imgmNsvec1.mdt->size[0] = Ndim;
+                imgmNsvec1.mdt->size[1] = NBmode;
 
                 createimagefromIMGID(&imgmNsvec1);
             }
@@ -660,6 +662,7 @@ errno_t compute_SVD(
 
                 delete_image(&imgmNsvec1, DELETE_IMAGE_ERRMODE_EXIT);
             }
+            imgid_free(&imgmNsvec1);
 
 
             // Check inverse
@@ -673,6 +676,7 @@ errno_t compute_SVD(
                     // inNdim < inMdim
                     computeSGEMM(imgpsinv, imgin, &imgpsinvcheck, 0, 0, GPUdev);
                 }
+                imgid_free(&imgpsinvcheck);
             }
         }
 
@@ -686,21 +690,21 @@ errno_t compute_SVD(
         // un-normalized modes
         delete_image_ID(SVDunmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgunmodes = imgid_make_from_name(SVDunmodesname);
-        imgunmodes.naxis = imgU->md->naxis;
-        imgunmodes.datatype = imgU->md->datatype;
-        imgunmodes.size[0] = imgU->md->size[0];
-        imgunmodes.size[1] = imgU->md->size[1];
-        imgunmodes.size[2] = imgU->md->size[2];
+        imgunmodes.mdt->naxis = imgU->md->naxis;
+        imgunmodes.mdt->datatype = imgU->md->datatype;
+        imgunmodes.mdt->size[0] = imgU->md->size[0];
+        imgunmodes.mdt->size[1] = imgU->md->size[1];
+        imgunmodes.mdt->size[2] = imgU->md->size[2];
         createimagefromIMGID(&imgunmodes);
 
-        int lastaxis = imgunmodes.naxis - 1;
-        long framesize = imgunmodes.size[0];
+        int lastaxis = imgunmodes.mdt->naxis - 1;
+        long framesize = imgunmodes.mdt->size[0];
         if(lastaxis == 2)
         {
-            framesize *= imgunmodes.size[1];
+            framesize *= imgunmodes.mdt->size[1];
         }
 
-        for(int kk = 0; kk < imgunmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgunmodes.mdt->size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
             for(long ii = 0; ii < framesize; ii++)
@@ -713,6 +717,8 @@ errno_t compute_SVD(
         delete_image_ID("SVDinrec", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID iminrec = imgid_make_from_name("SVDinrec");
         computeSGEMM(imgunmodes, *imgV, &iminrec, 0, 1, GPUdev);
+        imgid_free(&imgunmodes);
+        imgid_free(&iminrec);
     }
 
 
@@ -724,21 +730,21 @@ errno_t compute_SVD(
         // un-normalized modes
         delete_image_ID(SVDvnmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgvnmodes = imgid_make_from_name(SVDvnmodesname);
-        imgvnmodes.naxis = imgV->md->naxis;
-        imgvnmodes.datatype = imgV->md->datatype;
-        imgvnmodes.size[0] = imgV->md->size[0];
-        imgvnmodes.size[1] = imgV->md->size[1];
-        imgvnmodes.size[2] = imgV->md->size[2];
+        imgvnmodes.mdt->naxis = imgV->md->naxis;
+        imgvnmodes.mdt->datatype = imgV->md->datatype;
+        imgvnmodes.mdt->size[0] = imgV->md->size[0];
+        imgvnmodes.mdt->size[1] = imgV->md->size[1];
+        imgvnmodes.mdt->size[2] = imgV->md->size[2];
         createimagefromIMGID(&imgvnmodes);
 
-        int lastaxis = imgvnmodes.naxis - 1;
-        long framesize = imgvnmodes.size[0];
+        int lastaxis = imgvnmodes.mdt->naxis - 1;
+        long framesize = imgvnmodes.mdt->size[0];
         if(lastaxis == 2)
         {
-            framesize *= imgvnmodes.size[1];
+            framesize *= imgvnmodes.mdt->size[1];
         }
 
-        for(int kk = 0; kk < imgvnmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgvnmodes.mdt->size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
             //printf("mfact %4d = %f\n", kk, mfact);
@@ -751,6 +757,7 @@ errno_t compute_SVD(
 
         //IMGID iminrec = imgid_make_from_name("SVDinrec");
         //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
+        imgid_free(&imgvnmodes);
     }
 
 
@@ -787,6 +794,11 @@ static errno_t compute_function()
         compute_SVD(imginM, &imgU, &imgS, &imgV, *Vdim0, *svdlim, *maxNBmode, *GPUdevice, *compmode, "SVDunmodes", "SVDvnmodes");
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imginM);
+    imgid_free(&imgU);
+    imgid_free(&imgS);
+    imgid_free(&imgV);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

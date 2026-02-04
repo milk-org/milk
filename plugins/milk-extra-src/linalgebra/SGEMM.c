@@ -317,25 +317,25 @@ errno_t computeSGEMM(
     if(Mdim1_active == 0)
     {
         // 2D output
-        outimg->naxis = 2;
-        outimg->size[0] = outMdim;
-        outimg->size[1] = outNdim;
-        outimg->size[2] = 1;
+        outimg->mdt->naxis = 2;
+        outimg->mdt->size[0] = outMdim;
+        outimg->mdt->size[1] = outNdim;
+        outimg->mdt->size[2] = 1;
 
     }
     else
     {
         // 3D output
-        outimg->naxis = 3;
-        outimg->size[0] = Mdim0;
-        outimg->size[1] = Mdim1;
-        outimg->size[2] = outNdim;
+        outimg->mdt->naxis = 3;
+        outimg->mdt->size[0] = Mdim0;
+        outimg->mdt->size[1] = Mdim1;
+        outimg->mdt->size[2] = outNdim;
     }
 
-    printf("OUTPUT  M %d   N %d  (%d %d %d)\n", outMdim, outNdim, outimg->size[0],
-           outimg->size[1], outimg->size[2]);
+    printf("OUTPUT  M %d   N %d  (%d %d %d)\n", outMdim, outNdim, outimg->mdt->size[0],
+           outimg->mdt->size[1], outimg->mdt->size[2]);
 
-    outimg->datatype = _DATATYPE_FLOAT;
+    outimg->mdt->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(outimg);
 
 
@@ -738,7 +738,9 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginA);
+    imgid_free(&imginB);
+    imgid_free(&imgM);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

@@ -110,7 +110,7 @@ errno_t image_unfold(
     }
 
     // output image size
-    outimg->naxis = inimg.md->naxis - 1;
+    outimg->mdt->naxis = inimg.md->naxis - 1;
 
     // remove missing axis
     {
@@ -119,7 +119,7 @@ errno_t image_unfold(
         {
             if( axin != axisA )
             {
-                outimg->size[axout] = inimg.md->size[axin];
+                outimg->mdt->size[axout] = inimg.md->size[axin];
                 axout ++;
             }
         }
@@ -139,7 +139,7 @@ errno_t image_unfold(
     // overflow destination axis to grow
     uint8_t axis1 = 0;
     uint8_t axisC = 0; // in input image
-    if( (axis0 == 0 ) && (outimg->naxis >1) )
+    if( (axis0 == 0 ) && (outimg->mdt->naxis >1) )
     {
         axis1 = 1;
         axisC = 1;
@@ -148,7 +148,7 @@ errno_t image_unfold(
     int mdimsize = 0;
     if( axis0 == axis1 )
     {
-        outimg->size[axis0] *= inimg.md->size[axisA];
+        outimg->mdt->size[axis0] *= inimg.md->size[axisA];
     }
     else
     {
@@ -169,10 +169,10 @@ errno_t image_unfold(
             mdim0 = colsize;
         }
 
-        outimg->size[axis0] *= mdim0;
-        outimg->size[axis1] *= mdim1;
+        outimg->mdt->size[axis0] *= mdim0;
+        outimg->mdt->size[axis1] *= mdim1;
 
-        mdimsize = inimg.md->size[axisC] * outimg->size[axis0];
+        mdimsize = inimg.md->size[axisC] * outimg->mdt->size[axis0];
     }
 
     createimagefromIMGID(outimg);
@@ -254,6 +254,9 @@ static errno_t compute_function()
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&inimg);
+    imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
