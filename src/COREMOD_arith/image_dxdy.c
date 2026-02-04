@@ -24,17 +24,17 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
         abort();
     }
 
-    imgout->naxis = 2;
-    imgout->size[0] = imgin->md[0].size[0];
-    imgout->size[1] = imgin->md[0].size[1];
-    imgout->datatype = datatype;
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
+    imgout->mdt->naxis = 2;
+    imgout->mdt->size[0] = imgin->md[0].size[0];
+    imgout->mdt->size[1] = imgin->md[0].size[1];
+    imgout->mdt->datatype = datatype;
+    imgout->mdt->shared = data.SHARED_DFT;
+    imgout->mdt->NBkw   = NB_KEYWNODE_MAX;
 
     imcreateIMGID(imgout);
 
-    uint32_t xsize = imgout->size[0];
-    uint32_t ysize = imgout->size[1];
+    uint32_t xsize = imgout->mdt->size[0];
+    uint32_t ysize = imgout->mdt->size[1];
 
     for(uint32_t jj = 0; jj < ysize; jj++)
     {
@@ -60,7 +60,10 @@ imageID arith_image_dx(const char *ID_name, const char *IDout_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(IDout_name);
 
-    return arith_image_dx_IMGID(&imgin, &imgout);
+    imageID ID = arith_image_dx_IMGID(&imgin, &imgout);
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ID;
 }
 
 imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
@@ -76,17 +79,17 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
         abort();
     }
 
-    imgout->naxis = 2;
-    imgout->size[0] = imgin->md[0].size[0];
-    imgout->size[1] = imgin->md[0].size[1];
-    imgout->datatype = datatype;
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
+    imgout->mdt->naxis = 2;
+    imgout->mdt->size[0] = imgin->md[0].size[0];
+    imgout->mdt->size[1] = imgin->md[0].size[1];
+    imgout->mdt->datatype = datatype;
+    imgout->mdt->shared = data.SHARED_DFT;
+    imgout->mdt->NBkw   = NB_KEYWNODE_MAX;
 
     imcreateIMGID(imgout);
 
-    uint32_t xsize = imgout->size[0];
-    uint32_t ysize = imgout->size[1];
+    uint32_t xsize = imgout->mdt->size[0];
+    uint32_t ysize = imgout->mdt->size[1];
 
     for(uint32_t ii = 0; ii < xsize; ii++)
     {
@@ -116,5 +119,8 @@ imageID arith_image_dy(const char *ID_name, const char *IDout_name)
     IMGID imgin = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(IDout_name);
 
-    return arith_image_dy_IMGID(&imgin, &imgout);
+    imageID ID = arith_image_dy_IMGID(&imgin, &imgout);
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ID;
 }

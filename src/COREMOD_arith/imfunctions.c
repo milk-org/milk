@@ -53,25 +53,28 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     IMGID *imgout,
     double (*pt2function)(double))
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
 
     DEBUG_TRACEPOINT("arith_image_function_d_d  %s %s\n", imgin->name, imgout->name);
 
-    imgout->naxis = imgin->md->naxis;
+    imgout->mdt->naxis = imgin->md->naxis;
     for(uint8_t i = 0; i < imgin->md->naxis; i++)
     {
-        imgout->size[i] = imgin->md->size[i];
+        imgout->mdt->size[i] = imgin->md->size[i];
     }
 
-    imgout->datatype = _DATATYPE_FLOAT;
+    imgout->mdt->datatype = _DATATYPE_FLOAT;
     if(imgin->md->datatype == _DATATYPE_DOUBLE)
     {
-        imgout->datatype = _DATATYPE_DOUBLE;
+        imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
-
-    imcreateIMGID(imgout);
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
 
     uint_fast64_t nelement = imgin->md->nelement;
     uint8_t       datatype = imgin->md->datatype;
@@ -210,7 +213,23 @@ errno_t arith_image_function_im_im__d_d(
     IMGID imgin  = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(ID_out);
 
-    return arith_image_function_im_im__d_d_IMGID(&imgin, &imgout, pt2function);
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    errno_t ret = arith_image_function_im_im__d_d_IMGID(&imgin, &imgout, pt2function);
+    
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    
+    return ret;
 }
 
 errno_t arith_image_function_imd_im__dd_d_IMGID(
@@ -221,23 +240,26 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
 {
     long ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
 
-    imgout->naxis = imgin->md->naxis;
+    imgout->mdt->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
     {
-        imgout->size[i] = imgin->md->size[i];
+        imgout->mdt->size[i] = imgin->md->size[i];
     }
 
-    imgout->datatype = _DATATYPE_FLOAT;
+    imgout->mdt->datatype = _DATATYPE_FLOAT;
     if(imgin->md->datatype == _DATATYPE_DOUBLE)
     {
-        imgout->datatype = _DATATYPE_DOUBLE;
+        imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
-
-    imcreateIMGID(imgout);
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
 
     uint_fast64_t nelement = imgin->md->nelement;
     uint8_t       datatype = imgin->md->datatype;
@@ -385,8 +407,23 @@ errno_t arith_image_function_imd_im__dd_d(
 {
     IMGID imgin  = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(ID_out);
+    
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
-    return arith_image_function_imd_im__dd_d_IMGID(&imgin, v0, &imgout, pt2function);
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    errno_t ret = arith_image_function_imd_im__dd_d_IMGID(&imgin, v0, &imgout, pt2function);
+    
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ret;
 }
 
 errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
@@ -399,23 +436,26 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
 {
     long      ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
 
-    imgout->naxis = imgin->md->naxis;
+    imgout->mdt->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
     {
-        imgout->size[i] = imgin->md->size[i];
+        imgout->mdt->size[i] = imgin->md->size[i];
     }
 
-    imgout->datatype = _DATATYPE_FLOAT;
+    imgout->mdt->datatype = _DATATYPE_FLOAT;
     if(imgin->md->datatype == _DATATYPE_DOUBLE)
     {
-        imgout->datatype = _DATATYPE_DOUBLE;
+        imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
-
-    imcreateIMGID(imgout);
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
 
     uint_fast64_t nelement = imgin->md->nelement;
     uint8_t       datatype = imgin->md->datatype;
@@ -574,8 +614,23 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
 {
     IMGID imgin  = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(ID_out);
+    
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
 
-    return arith_image_function_imdd_im__ddd_d_IMGID(&imgin, v0, v1, &imgout, pt2function);
+    errno_t ret = arith_image_function_imdd_im__ddd_d_IMGID(&imgin, v0, v1, &imgout, pt2function);
+
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ret;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -751,23 +806,26 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
 {
     long ii;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
 
-    imgout->naxis = imgin->md->naxis;
+    imgout->mdt->naxis = imgin->md->naxis;
     for(int i = 0; i < imgin->md->naxis; i++)
     {
-        imgout->size[i] = imgin->md->size[i];
+        imgout->mdt->size[i] = imgin->md->size[i];
     }
 
-    imgout->datatype = _DATATYPE_FLOAT;
+    imgout->mdt->datatype = _DATATYPE_FLOAT;
     if(imgin->md->datatype == _DATATYPE_DOUBLE)
     {
-        imgout->datatype = _DATATYPE_DOUBLE;
+        imgout->mdt->datatype = _DATATYPE_DOUBLE;
     }
-    imgout->shared = data.SHARED_DFT;
-    imgout->NBkw   = NB_KEYWNODE_MAX;
-
-    imcreateIMGID(imgout);
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
 
     uint_fast64_t nelement = imgin->md->nelement;
     uint8_t       datatype = imgin->md->datatype;
@@ -903,8 +961,23 @@ errno_t arith_image_function_1_1(const char *ID_name,
 {
     IMGID imgin  = imgid_make_from_name(ID_name);
     IMGID imgout = imgid_make_from_name(ID_out);
+    
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
-    return arith_image_function_1_1_IMGID(&imgin, &imgout, pt2function);
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    errno_t ret = arith_image_function_1_1_IMGID(&imgin, &imgout, pt2function);
+    
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ret;
 }
 
 // imagein -> imagein (in place)
@@ -1219,20 +1292,18 @@ errno_t arith_image_function_2_1_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(inimg1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(inimg2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    if (inimg1->im == NULL || inimg2->im == NULL) { return RETURN_FAILURE; }
 
-    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
-    if( outimg->ID == -1)
+    if( outimg->im == NULL)
     {
         imgid_copy(inimg1, outimg);
     }
 
     // output naxis is max of inputs
-    outimg->naxis = inimg1->md->naxis;
+    outimg->mdt->naxis = inimg1->md->naxis;
     if ( inimg2->md->naxis > inimg1->md->naxis )
     {
-        outimg->naxis = inimg2->md->naxis;
+        outimg->mdt->naxis = inimg2->md->naxis;
     }
 
     // axis expansion flags
@@ -1244,7 +1315,7 @@ errno_t arith_image_function_2_1_IMGID(
     uint64_t nbpix = 1;
     uint64_t nbpix1 = 1;
     uint64_t nbpix2 = 1;
-    for ( uint8_t axis = 0; axis < outimg->naxis; axis++)
+    for ( uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
     {
         in1expand[axis] = 1;
         in2expand[axis] = 1;
@@ -1276,13 +1347,13 @@ errno_t arith_image_function_2_1_IMGID(
             if( size1 == 1 )
             {
                 in1expand[axis] = 0;
-                outimg->size[axis] = size2;
+                outimg->mdt->size[axis] = size2;
 
             }
             else if ( size2 == 1)
             {
                 in2expand[axis] = 0;
-                outimg->size[axis] = size1;
+                outimg->mdt->size[axis] = size1;
             }
             else
             {
@@ -1290,30 +1361,35 @@ errno_t arith_image_function_2_1_IMGID(
                 abort();
             }
         }
-        nbpix *= outimg->size[axis];
+        nbpix *= outimg->mdt->size[axis];
     }
-    for ( uint8_t axis = outimg->naxis; axis<3; axis++)
+    for ( uint8_t axis = outimg->mdt->naxis; axis<3; axis++)
     {
-        outimg->size[axis] = 1;
+        outimg->mdt->size[axis] = 1;
         in1expand[axis] = 1;
         in2expand[axis] = 1;
     }
 
-    outimg->datatype = _DATATYPE_FLOAT; // default
+    outimg->mdt->datatype = _DATATYPE_FLOAT; // default
     if(inimg1->md->datatype == _DATATYPE_DOUBLE)
     {
-        outimg->datatype = _DATATYPE_DOUBLE;
+        outimg->mdt->datatype = _DATATYPE_DOUBLE;
     }
     if(inimg2->md->datatype == _DATATYPE_DOUBLE)
     {
-        outimg->datatype = _DATATYPE_DOUBLE;
+        outimg->mdt->datatype = _DATATYPE_DOUBLE;
     }
 
-    imcreateIMGID(outimg);
+    if (outimg->im == NULL) {
+        outimg->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(outimg->im);
+    }
+    imgid_mkimage(outimg);
 
     // Metadata caching
     uint64_t nelement = outimg->md->nelement;
-    uint8_t datatype = outimg->datatype;
+    uint8_t datatype = outimg->mdt->datatype;
     uint8_t datatype1 = inimg1->md->datatype;
     uint8_t datatype2 = inimg2->md->datatype;
 
@@ -1325,7 +1401,7 @@ errno_t arith_image_function_2_1_IMGID(
     }
     else
     {
-        for (uint8_t axis = 0; axis < outimg->naxis; axis++)
+        for (uint8_t axis = 0; axis < outimg->mdt->naxis; axis++)
         {
             if (inimg1->md->size[axis] != inimg2->md->size[axis])
             {
@@ -1412,21 +1488,21 @@ errno_t arith_image_function_2_1_IMGID(
     uint64_t * __restrict inpix1 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
     uint64_t * __restrict inpix2 = (uint64_t *) malloc(sizeof(uint64_t) * nbpix);
 
-    for ( uint32_t ii = 0; ii < outimg->size[0]; ii++ )
+    for ( uint32_t ii = 0; ii < outimg->mdt->size[0]; ii++ )
     {
         uint32_t ii1 = ii * in1expand[0];
         uint32_t ii2 = ii * in2expand[0];
 
-        for ( uint32_t jj = 0; jj < outimg->size[1]; jj++ )
+        for ( uint32_t jj = 0; jj < outimg->mdt->size[1]; jj++ )
         {
             uint32_t jj1 = jj * in1expand[1];
             uint32_t jj2 = jj * in2expand[1];
 
-            for ( uint32_t kk = 0; kk < outimg->size[2]; kk++ )
+            for ( uint32_t kk = 0; kk < outimg->mdt->size[2]; kk++ )
             {
                 uint64_t outpixi = ii;
-                outpixi +=  jj * outimg->size[0];
-                outpixi +=  kk * outimg->size[1] * outimg->size[0];
+                outpixi +=  jj * outimg->mdt->size[0];
+                outpixi +=  kk * outimg->mdt->size[1] * outimg->mdt->size[0];
 
                 uint32_t kk1 = kk * in1expand[2];
                 uint32_t kk2 = kk * in2expand[2];
@@ -1455,11 +1531,11 @@ errno_t arith_image_function_2_1_IMGID(
         for(uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im, ii);
     }
 
-    if ( outimg->datatype == _DATATYPE_FLOAT )
+    if ( outimg->mdt->datatype == _DATATYPE_FLOAT )
     {
         for(uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
     }
-    else if ( outimg->datatype == _DATATYPE_DOUBLE )
+    else if ( outimg->mdt->datatype == _DATATYPE_DOUBLE )
     {
         for(uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
     }
@@ -1497,7 +1573,25 @@ errno_t arith_image_function_2_1(
     IMGID inimg1 = imgid_make_from_name(ID_name1);
     IMGID inimg2 = imgid_make_from_name(ID_name2);
     IMGID outimg = imgid_make_from_name(ID_out);
-    return arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
+
+    resolveIMGID(&inimg1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+
+    if (outimg.ID == -1) {
+        outimg.mdt->shared = data.SHARED_DFT;
+        outimg.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    errno_t ret = arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
+    
+    if (outimg.ID == -1 && outimg.im != NULL) {
+        RegisterIMGID(&outimg, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&inimg1);
+    imgid_free(&inimg2);
+    imgid_free(&outimg);
+    return ret;
 }
 
 errno_t arith_image_function_2_1_inplace_byID(
@@ -1676,15 +1770,23 @@ errno_t arith_image_function_CD_CD__CD(
 int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, double (*pt2function)(double, double))
 {
     long ii;
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    imgout->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++) imgout->size[i] = imgin->md->size[i];
-    imgout->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    imgout->shared = data.SHARED_DFT; imgout->NBkw = NB_KEYWNODE_MAX;
-    imcreateIMGID(imgout);
+    
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
+
+    imgout->mdt->naxis = imgin->md->naxis;
+    for(int i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
+    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
+
     uint_fast64_t nelement = imgin->md->nelement;
 
-    if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT)
+    if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
     {
         float *ptr = imgin->im->array.F;
         float *out = imgout->im->array.F;
@@ -1696,7 +1798,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
              out[ii] = (float)pt2function((double)ptr[ii], f1);
         }
     }
-    else if (imgin->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE)
+    else if (imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE)
     {
         double *ptr = imgin->im->array.D;
         double *out = imgout->im->array.D;
@@ -1716,7 +1818,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
         for(ii = 0; ii < nelement; ii++)
         {
             double v = get_pixel_double(imgin->im, ii);
-            if (imgout->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
+            if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1);
             else imgout->im->array.D[ii] = pt2function(v, f1);
         }
     }
@@ -1726,7 +1828,23 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out, double (*pt2function)(double, double))
 {
     IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_function_1f_1_IMGID(&imgin, f1, &imgout, pt2function);
+    
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    int ret = arith_image_function_1f_1_IMGID(&imgin, f1, &imgout, pt2function);
+    
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ret;
 }
 
 int arith_image_function_1f_1_inplace_byID(long ID, double f1, double (*pt2function)(double, double))
@@ -1751,12 +1869,21 @@ int arith_image_function_1f_1_inplace(const char *ID_name, double f1, double (*p
 
 int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *imgout, double (*pt2function)(double, double, double))
 {
-    long ii; resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    imgout->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++) imgout->size[i] = imgin->md->size[i];
-    imgout->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
-    imgout->shared = data.SHARED_DFT; imgout->NBkw = NB_KEYWNODE_MAX;
-    imcreateIMGID(imgout);
+    long ii; 
+    
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
+
+    imgout->mdt->naxis = imgin->md->naxis;
+    for(int i = 0; i < imgin->md->naxis; i++) imgout->mdt->size[i] = imgin->md->size[i];
+    imgout->mdt->datatype = (imgin->md->datatype == _DATATYPE_DOUBLE) ? _DATATYPE_DOUBLE : _DATATYPE_FLOAT;
+    
+    if (imgout->im == NULL) {
+        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
+    } else {
+        ImageStreamIO_closeIm(imgout->im);
+    }
+    imgid_mkimage(imgout);
+
     uint_fast64_t nelement = imgin->md->nelement;
 #ifdef _OPENMP
     #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
@@ -1764,7 +1891,7 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
     for(ii = 0; ii < nelement; ii++)
     {
         double v = get_pixel_double(imgin->im, ii);
-        if (imgout->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1, f2);
+        if (imgout->mdt->datatype == _DATATYPE_FLOAT) imgout->im->array.F[ii] = (float)pt2function(v, f1, f2);
         else imgout->im->array.D[ii] = pt2function(v, f1, f2);
     }
     return (0);
@@ -1773,7 +1900,23 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
 int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out, double (*pt2function)(double, double, double))
 {
     IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_function_1ff_1_IMGID(&imgin, f1, f2, &imgout, pt2function);
+    
+    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    
+    if (imgout.ID == -1) {
+        imgout.mdt->shared = data.SHARED_DFT;
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    }
+
+    int ret = arith_image_function_1ff_1_IMGID(&imgin, f1, f2, &imgout, pt2function);
+    
+    if (imgout.ID == -1 && imgout.im != NULL) {
+        RegisterIMGID(&imgout, data.image, data.NB_MAX_IMAGE);
+    }
+    imgid_free(&imgin);
+    imgid_free(&imgout);
+    return ret;
 }
 
 int arith_image_function_1ff_1_inplace_byID(long ID, double f1, double f2, double (*pt2function)(double, double, double))
@@ -1802,19 +1945,20 @@ int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) imgid_copy(imgin, imgout); \
-    imcreateIMGID(imgout); \
+    if (imgin->im == NULL) { return RETURN_FAILURE; } \
+    if(imgout->im == NULL) imgid_copy(imgin, imgout); \
+    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
+    else { ImageStreamIO_closeIm(imgout->im); } \
+    imgid_mkimage(imgout); \
     uint64_t nelement = imgout->md->nelement; \
-    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
         float *p1 = imgin->im->array.F; \
         float *po = imgout->im->array.F; \
         _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i]); \
     } \
-    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
         double *p1 = imgin->im->array.D; \
         double *po = imgout->im->array.D; \
@@ -1850,13 +1994,13 @@ ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh)
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) imgid_copy(imgin1, imgout); \
-    imcreateIMGID(imgout); \
+    if (imgin1->im == NULL || imgin2->im == NULL) { return RETURN_FAILURE; } \
+    if(imgout->im == NULL) imgid_copy(imgin1, imgout); \
+    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
+    else { ImageStreamIO_closeIm(imgout->im); } \
+    imgid_mkimage(imgout); \
     uint64_t nelement = imgout->md->nelement; \
-    if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
         float *p1 = imgin1->im->array.F; \
         float *p2 = imgin2->im->array.F; \
@@ -1864,7 +2008,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
         _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op p2[i]; \
     } \
-    else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
         double *p1 = imgin1->im->array.D; \
         double *p2 = imgin2->im->array.D; \
@@ -1889,12 +2033,13 @@ ARITH_OPTIMIZED_FUNCTION(div, /)
 errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) imgid_copy(imgin, imgout); \
-    imcreateIMGID(imgout); \
+    if (imgin->im == NULL) { return RETURN_FAILURE; } \
+    if(imgout->im == NULL) imgid_copy(imgin, imgout); \
+    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
+    else { ImageStreamIO_closeIm(imgout->im); } \
+    imgid_mkimage(imgout); \
     uint64_t nelement = imgout->md->nelement; \
-    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
         float *p1 = imgin->im->array.F; \
         float *po = imgout->im->array.F; \
@@ -1902,7 +2047,7 @@ errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *
         _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op cf1; \
     } \
-    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
         double *p1 = imgin->im->array.D; \
         double *po = imgout->im->array.D; \
@@ -1926,13 +2071,13 @@ ARITH_CST_OPTIMIZED_FUNCTION(div, /)
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
-    resolveIMGID(imgin1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgin2, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE); \
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE); \
-    if(imgout->ID == -1) imgid_copy(imgin1, imgout); \
-    imcreateIMGID(imgout); \
+    if (imgin1->im == NULL || imgin2->im == NULL) { return RETURN_FAILURE; } \
+    if(imgout->im == NULL) imgid_copy(imgin1, imgout); \
+    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
+    else { ImageStreamIO_closeIm(imgout->im); } \
+    imgid_mkimage(imgout); \
     uint64_t nelement = imgout->md->nelement; \
-    if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->datatype == _DATATYPE_FLOAT) \
+    if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
         float *p1 = imgin1->im->array.F; \
         float *p2 = imgin2->im->array.F; \
@@ -1940,7 +2085,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
         _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i], (double)p2[i]); \
     } \
-    else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->datatype == _DATATYPE_DOUBLE) \
+    else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
         double *p1 = imgin1->im->array.D; \
         double *p2 = imgin2->im->array.D; \

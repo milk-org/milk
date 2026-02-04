@@ -40,8 +40,8 @@ PROCESSINFO *processinfo_setup(
 {
     DEBUG_TRACE_FSTART();
 
-    printf("DEBUG  %s [%d] %s\n", __FILE__, __LINE__, __FUNCTION__);
-    fflush(stdout);
+    //printf("DEBUG  %s [%d] %s\n", __FILE__, __LINE__, __FUNCTION__);
+    //fflush(stdout);
 
     static PROCESSINFO *processinfo = NULL;
     static int processinfoActive = 0;

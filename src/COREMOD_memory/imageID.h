@@ -190,12 +190,12 @@ stream_connect(
 static inline imageID createimagefromIMGID(IMGID *img)
 {
     create_image_ID(img->name,
-                    img->naxis,
-                    img->size,
-                    img->datatype,
-                    img->shared,
-                    img->NBkw,
-                    img->CBsize,
+                    img->mdt->naxis,
+                    img->mdt->size,
+                    img->mdt->datatype,
+                    img->mdt->shared,
+                    img->mdt->NBkw,
+                    img->mdt->CBsize,
                     &img->ID);
 
     img->im        = &data.image[img->ID];
@@ -222,25 +222,25 @@ static inline imageID imcreatelikewiseIMGID(
             printf("Creating image %s from %s, shared = %d, kw = %d\n",
                    target_img->name,
                    source_img->name,
-                   source_img->shared,
-                   source_img->NBkw);
+                   source_img->mdt->shared,
+                   source_img->mdt->NBkw);
         }
         else
         {
             printf("Creating image %s, shared = %d, kw = %d\n",
                    source_img->name,
-                   source_img->shared,
-                   source_img->NBkw);
+                   source_img->mdt->shared,
+                   source_img->mdt->NBkw);
         }
 
         DEBUG_TRACEPOINT("Creating 2D image");
         create_image_ID(target_img->name,
-                        source_img->naxis,
-                        source_img->size,
-                        source_img->datatype,
-                        source_img->shared,
-                        source_img->NBkw,
-                        source_img->CBsize,
+                        source_img->mdt->naxis,
+                        source_img->mdt->size,
+                        source_img->mdt->datatype,
+                        source_img->mdt->shared,
+                        source_img->mdt->NBkw,
+                        source_img->mdt->CBsize,
                         &target_img->ID);
         DEBUG_TRACEPOINT(" ");
         target_img->im        = &data.image[target_img->ID];
@@ -248,14 +248,14 @@ static inline imageID imcreatelikewiseIMGID(
         target_img->createcnt = data.image[target_img->ID].createcnt;
 
 
-        target_img->size[0] = source_img->size[0];
-        if(source_img->naxis > 1)
+        target_img->mdt->size[0] = source_img->mdt->size[0];
+        if(source_img->mdt->naxis > 1)
         {
-            target_img->size[1] = source_img->size[1];
+            target_img->mdt->size[1] = source_img->mdt->size[1];
         }
-        if(source_img->naxis > 2)
+        if(source_img->mdt->naxis > 2)
         {
-            target_img->size[2] = source_img->size[2];
+            target_img->mdt->size[2] = source_img->mdt->size[2];
         }
     }
     return target_img->ID;
@@ -296,11 +296,11 @@ static inline IMGID stream_connect_create_2D(
         // if in local memory,
         // create blank img for comparison
         IMGID imgc      = imgid_make();
-        imgc.datatype   = datatype;
-        imgc.naxis      = 2;
-        imgc.size[0]    = xsize;
-        imgc.size[1]    = ysize;
-        imgc.NBkw       = NB_KEYWNODE_MAX;
+        imgc.mdt->datatype   = datatype;
+        imgc.mdt->naxis      = 2;
+        imgc.mdt->size[0]    = xsize;
+        imgc.mdt->size[1]    = ysize;
+        imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
         printf("%lu errors\n", imgerr);
 
@@ -380,12 +380,12 @@ static inline IMGID stream_connect_create_3D(
         // if in local memory,
         // create blank img for comparison
         IMGID imgc      = imgid_make();
-        imgc.datatype   = datatype;
-        imgc.naxis      = 3;
-        imgc.size[0]    = xsize;
-        imgc.size[1]    = ysize;
-        imgc.size[2]    = zsize;
-        imgc.NBkw       = NB_KEYWNODE_MAX;
+        imgc.mdt->datatype   = datatype;
+        imgc.mdt->naxis      = 3;
+        imgc.mdt->size[0]    = xsize;
+        imgc.mdt->size[1]    = ysize;
+        imgc.mdt->size[2]    = zsize;
+        imgc.mdt->NBkw       = NB_KEYWNODE_MAX;
         uint64_t imgerr = imgid_compare(img, imgc);
         printf("%lu errors\n", imgerr);
 

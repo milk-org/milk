@@ -62,20 +62,20 @@ errno_t mk_reim_from_complex_IMGID(
     uint8_t naxis    = imgin->md[0].naxis;
     for(int i = 0; i < naxis; i++)
     {
-        imgre->size[i] = imgin->md[0].size[i];
-        imgim->size[i] = imgin->md[0].size[i];
+        imgre->mdt->size[i] = imgin->md[0].size[i];
+        imgim->mdt->size[i] = imgin->md[0].size[i];
     }
-    imgre->naxis = naxis;
-    imgim->naxis = naxis;
+    imgre->mdt->naxis = naxis;
+    imgim->mdt->naxis = naxis;
 
     uint64_t nelement = imgin->md[0].nelement;
 
     if(datatype == _DATATYPE_COMPLEX_FLOAT)  // single precision
     {
-        imgre->datatype = _DATATYPE_FLOAT;
+        imgre->mdt->datatype = _DATATYPE_FLOAT;
         createimagefromIMGID(imgre);
 
-        imgim->datatype = _DATATYPE_FLOAT;
+        imgim->mdt->datatype = _DATATYPE_FLOAT;
         createimagefromIMGID(imgim);
 
         imgre->md[0].write = 1;
@@ -108,10 +108,10 @@ errno_t mk_reim_from_complex_IMGID(
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)  // double precision
     {
-        imgre->datatype = _DATATYPE_DOUBLE;
+        imgre->mdt->datatype = _DATATYPE_DOUBLE;
         createimagefromIMGID(imgre);
 
-        imgim->datatype = _DATATYPE_DOUBLE;
+        imgim->mdt->datatype = _DATATYPE_DOUBLE;
         createimagefromIMGID(imgim);
 
         imgre->md[0].write = 1;
@@ -160,25 +160,33 @@ errno_t mk_reim_from_complex(const char *in_name,
     IMGID imgin = imgid_make_from_name(in_name);
     IMGID imgre = imgid_make_from_name(re_name);
     IMGID imgim = imgid_make_from_name(im_name);
-    imgre.shared = sharedmem;
-    imgim.shared = sharedmem;
+    imgre.mdt->shared = sharedmem;
+    imgim.mdt->shared = sharedmem;
 
-    return mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
+    errno_t ret = mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
+    imgid_free(&imgin);
+    imgid_free(&imgre);
+    imgid_free(&imgim);
+    return ret;
 }
 
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
     IMGID imgin = imgid_make_from_name(inimname);
     IMGID imgre = imgid_make_from_name(outreimname);
     IMGID imgim = imgid_make_from_name(outimimname);
 
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
     mk_reim_from_complex_IMGID(&imgin, &imgre, &imgim);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgin);
+    imgid_free(&imgre);
+    imgid_free(&imgim);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

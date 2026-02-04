@@ -149,21 +149,21 @@ errno_t compute_SVDU(
 
     uint64_t framesize;
     uint32_t nbframe;
-    imgU->naxis = imgUS->naxis;
-    imgU->datatype = imgUS->md->datatype;
+    imgU->mdt->naxis = imgUS->md->naxis;
+    imgU->mdt->datatype = imgUS->md->datatype;
     switch(imgUS->md->naxis)
     {
     case 2 :
-        imgU->size[0] = imgUS->md->size[0];
-        imgU->size[1] = imgUS->md->size[1];
+        imgU->mdt->size[0] = imgUS->md->size[0];
+        imgU->mdt->size[1] = imgUS->md->size[1];
         framesize = imgUS->md->size[0];
         nbframe = imgUS->md->size[1];
         break;
 
     case 3 :
-        imgU->size[0] = imgUS->md->size[0];
-        imgU->size[1] = imgUS->md->size[1];
-        imgU->size[2] = imgUS->md->size[2];
+        imgU->mdt->size[0] = imgUS->md->size[0];
+        imgU->mdt->size[1] = imgUS->md->size[1];
+        imgU->mdt->size[2] = imgUS->md->size[2];
         framesize = imgUS->md->size[0] * imgUS->md->size[1];
         nbframe = imgUS->md->size[2];
         break;
@@ -227,7 +227,11 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginM);
+    imgid_free(&imginV);
+    imgid_free(&imginS);
+    imgid_free(&imgoutU);
+    imgid_free(&imgoutUS);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

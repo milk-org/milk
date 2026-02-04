@@ -322,24 +322,24 @@ errno_t linopt_imtools_makeCPAmodes(
 
 
     IMGID imgx = imgid_make_from_name("cpa_tmpx");
-    imgx.naxis = 2;
-    imgx.datatype = _DATATYPE_FLOAT;
-    imgx.size[0] = sizex;
-    imgx.size[1] = sizey;
+    imgx.mdt->naxis = 2;
+    imgx.mdt->datatype = _DATATYPE_FLOAT;
+    imgx.mdt->size[0] = sizex;
+    imgx.mdt->size[1] = sizey;
     createimagefromIMGID(&imgx);
 
     IMGID imgy = imgid_make_from_name("cpa_tmpy");
-    imgy.naxis = 2;
-    imgy.datatype = _DATATYPE_FLOAT;
-    imgy.size[0] = sizex;
-    imgy.size[1] = sizey;
+    imgy.mdt->naxis = 2;
+    imgy.mdt->datatype = _DATATYPE_FLOAT;
+    imgy.mdt->size[0] = sizex;
+    imgy.mdt->size[1] = sizey;
     createimagefromIMGID(&imgy);
 
     IMGID imgr = imgid_make_from_name("cpa_tmpr");
-    imgr.naxis = 2;
-    imgr.datatype = _DATATYPE_FLOAT;
-    imgr.size[0] = sizex;
-    imgr.size[1] = sizey;
+    imgr.mdt->naxis = 2;
+    imgr.mdt->datatype = _DATATYPE_FLOAT;
+    imgr.mdt->size[0] = sizex;
+    imgr.mdt->size[1] = sizey;
     createimagefromIMGID(&imgr);
 
     list_image_ID();
@@ -375,10 +375,10 @@ errno_t linopt_imtools_makeCPAmodes(
         printf("processing mask\n");
         fflush(stdout);
 
-        imgpixdist.naxis = 2;
-        imgpixdist.datatype = _DATATYPE_FLOAT;
-        imgpixdist.size[0] = sizex;
-        imgpixdist.size[1] = sizey;
+        imgpixdist.mdt->naxis = 2;
+        imgpixdist.mdt->datatype = _DATATYPE_FLOAT;
+        imgpixdist.mdt->size[0] = sizex;
+        imgpixdist.mdt->size[1] = sizey;
         createimagefromIMGID(&imgpixdist);
 
 
@@ -570,11 +570,11 @@ errno_t linopt_imtools_makeCPAmodes(
     printf("%ld modes\n", NBmax);
 
 
-    imgoutm->naxis = 3;
-    imgoutm->datatype = _DATATYPE_FLOAT;
-    imgoutm->size[0] = sizex;
-    imgoutm->size[1] = sizey;
-    imgoutm->size[2] = NBmax;
+    imgoutm->mdt->naxis = 3;
+    imgoutm->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutm->mdt->size[0] = sizex;
+    imgoutm->mdt->size[1] = sizey;
+    imgoutm->mdt->size[2] = NBmax;
     createimagefromIMGID(imgoutm);
 
 
@@ -786,6 +786,10 @@ errno_t linopt_imtools_makeCPAmodes(
     FUNC_CHECK_RETURN(
         delete_image_ID("cpa_tmpr", DELETE_IMAGE_ERRMODE_WARNING));
 
+    imgid_free(&imgx);
+    imgid_free(&imgy);
+    imgid_free(&imgr);
+    imgid_free(&imgpixdist);
 
     if(outNBmax != NULL)
     {
@@ -866,6 +870,9 @@ static errno_t compute_function()
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&imgmask);
+    imgid_free(&imgoutm);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

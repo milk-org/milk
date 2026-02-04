@@ -339,21 +339,21 @@ static errno_t compute_function()
     {
         // compate image sizes (not type)
         int compOK = 1;
-        if(imgout.naxis != imgoutmask.naxis)
+        if(imgout.md->naxis != imgoutmask.md->naxis)
         {
             printf("ERROR: naxis %d %d values don't match\n",
-                   imgout.naxis,
-                   imgoutmask.naxis);
+                   imgout.md->naxis,
+                   imgoutmask.md->naxis);
             compOK = 0;
         }
-        for(int dim = 0; dim < imgout.naxis; dim++)
+        for(int dim = 0; dim < imgout.md->naxis; dim++)
         {
-            if(imgout.size[dim] != imgoutmask.size[dim])
+            if(imgout.md->size[dim] != imgoutmask.md->size[dim])
             {
                 printf("ERROR: size[%d] %d %d values don't match\n",
                        dim,
-                       imgout.size[dim],
-                       imgoutmask.size[dim]);
+                       imgout.md->size[dim],
+                       imgoutmask.md->size[dim]);
                 compOK = 0;
             }
         }
@@ -396,7 +396,7 @@ static errno_t compute_function()
             // create outdata according to outmask
             //
             imgid_copy(&imgoutmask, &imgout);
-            imgout.datatype = _DATATYPE_FLOAT;
+            imgout.mdt->datatype = _DATATYPE_FLOAT;
             createimagefromIMGID(&imgout);
         }
         else
@@ -405,7 +405,7 @@ static errno_t compute_function()
             // 2D array
             //
             imgout = stream_connect_create_2Df32(outdata, NBmodeOUT, 1);
-            imgout = stream_connect_create_2Df32(outmask, NBmodeOUT, 1);
+            imgoutmask = stream_connect_create_2Df32(outmask, NBmodeOUT, 1);
             for(uint32_t ii = 0; ii < NBmodeOUT; ii++)
             {
                 imgoutmask.im->array.SI8[ii] = 1;
@@ -729,6 +729,16 @@ static errno_t compute_function()
     free(inmaskindex);
     free(OLRMS2res);
     free(OLRMS2avedt);
+
+    imgid_free(&imgin);
+    imgid_free(&imgPFmat);
+    imgid_free(&imginmask);
+    imgid_free(&imginbuff);
+    imgid_free(&imgoutbuff);
+    imgid_free(&imgoutTbuff);
+    imgid_free(&imgout);
+    imgid_free(&imgoutmask);
+    imgid_free(&imgoutPFstat);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

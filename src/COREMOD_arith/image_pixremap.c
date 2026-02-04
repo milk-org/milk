@@ -76,17 +76,18 @@ static errno_t compute_function()
     // output size is same as input size (default)
 
     IMGID imgout = imgid_make_from_name(outim.name);
-    imgout.shared = *outim.shared;
+    imgout.mdt->shared = *outim.shared;
     if(*outim.shared == 1)
     {
+        imgid_free(&imgout);
         imgout = stream_connect_create_2D(outim.name, xsize, ysize, imgin.md->datatype);
     }
     else
     {
-        imgout.naxis = 2;
-        imgout.size[0] = xsize;
-        imgout.size[1] = ysize;
-        imgout.datatype = imgin.md->datatype;
+        imgout.mdt->naxis = 2;
+        imgout.mdt->size[0] = xsize;
+        imgout.mdt->size[1] = ysize;
+        imgout.mdt->datatype = imgin.md->datatype;
         createimagefromIMGID(&imgout);
     }
     imcreateIMGID(&imgout);
@@ -206,6 +207,9 @@ static errno_t compute_function()
 
     free(map_outpixindex);
     free(map_inpixindex);
+    imgid_free(&imgin);
+    imgid_free(&imgmap);
+    imgid_free(&imgout);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

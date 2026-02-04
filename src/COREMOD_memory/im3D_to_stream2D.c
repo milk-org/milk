@@ -87,9 +87,9 @@ static errno_t extract_slice_to_2D(IMGID *inimg, IMGID *outimg, long slice_idx)
     }
 
 
-    uint32_t xsize = inimg->size[0];
-    uint32_t ysize = inimg->size[1];
-    uint32_t zsize = inimg->size[2];
+    uint32_t xsize = inimg->mdt->size[0];
+    uint32_t ysize = inimg->mdt->size[1];
+    uint32_t zsize = inimg->mdt->size[2];
 
     if (slice_idx < 0 || slice_idx >= zsize)
     {
@@ -122,9 +122,9 @@ static errno_t compute_function()
 
     // create stream with name outname
     IMGID outimg;
-    outimg = imgid_make_from_name_2D(outname, inimg.size[0], inimg.size[1]);
-    outimg.shared = 1;
-    outimg.datatype = inimg.md->datatype;
+    outimg = imgid_make_from_name_2D(outname, inimg.mdt->size[0], inimg.mdt->size[1]);
+    outimg.mdt->shared = 1;
+    outimg.mdt->datatype = inimg.md->datatype;
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -137,7 +137,7 @@ static errno_t compute_function()
         else
         {
             // Loop through slices
-            *slice_index = (*slice_index + 1) % inimg.size[2];
+            *slice_index = (*slice_index + 1) % inimg.mdt->size[2];
             extract_slice_to_2D(&inimg, &outimg, *slice_index);
         }
 
@@ -145,6 +145,9 @@ static errno_t compute_function()
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&inimg);
+    imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

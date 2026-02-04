@@ -630,10 +630,10 @@ errno_t compute_basis_rotate_match(
 
 // Create output
 //
-    imgArot->naxis = 2;
-    imgArot->size[0] = Adim;
-    imgArot->size[1] = Adim;
-    imgArot->datatype = _DATATYPE_FLOAT;
+    imgArot->mdt->naxis = 2;
+    imgArot->mdt->size[0] = Adim;
+    imgArot->mdt->size[1] = Adim;
+    imgArot->mdt->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(imgArot);
     for(uint64_t ii = 0; ii < Adim*Adim; ii++ )
     {
@@ -684,7 +684,8 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginAB);
+    imgid_free(&imgoutArot);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
