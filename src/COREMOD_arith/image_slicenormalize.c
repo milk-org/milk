@@ -112,7 +112,7 @@ errno_t image_slicenormalize(
         imgid_copy(&inimg, outimg);
     }
 
-    outimg->datatype = _DATATYPE_FLOAT;
+    outimg->mdt->datatype = _DATATYPE_FLOAT;
 
     createimagefromIMGID(outimg);
 
@@ -212,7 +212,7 @@ errno_t image_slicenormalize(
 
                 double valm; // masked value
 
-                switch(inimg.datatype)
+                switch(inimg.md->datatype)
                 {
                     case _DATATYPE_UINT8 :
                         valm = maskimg.im->array.F[pixim] * inimg.im->array.UI8[pixi];
@@ -287,7 +287,7 @@ errno_t image_slicenormalize(
                 pixi += jj * sizescan[0];
                 pixi += ii;
 
-                switch(inimg.datatype)
+                switch(inimg.md->datatype)
                 {
                     // REMOVED FROM DEF BEHAVIOR: no mean sub.
                     // case _DATATYPE_UINT8 :
@@ -405,6 +405,11 @@ static errno_t compute_function()
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&inimg);
+    imgid_free(&maskimg);
+    imgid_free(&imgaux);
+    imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

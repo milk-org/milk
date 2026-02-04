@@ -13,8 +13,12 @@ IMGID is the preferred way to call images and streams as function arguments, usu
 
 IMGID core functions are provided as static inline type in IMGID.h.
 
+IMGID structure holds a metadata template (mdt) that is used to create and check images. To create an image or stream, the template is set to the desired values (image type, size etc), and the image is creating according to these values. Checking image size/type against the template allows for a stream connection to be conditional on a match.
+
 
 ## Image array and imageID
+
+TODO: move image array and imageID management from CLI to libfps.
 
 milk-CLI holds an array of images in memory, so that they can be called by name in CLI mode. The array of images is data.image, with number of elements data.NB_MAX_IMAGE. Images that are in local memory can then quickly be accessed by their index ID, an integer (type imageID). In this mode, IMGID holds the index value IMGID.ID.
 
@@ -169,9 +173,6 @@ Example use:
 ```c
 // Create IMGID
 IMGID img = imgid_make_from_name("im1");
-// Resolve IMGID
-// This will set img.ID to the index of "im1" in the image array
-// or -1 if not found
 imageID ID = registerIMGID(&img, data.image, data.NB_MAX_IMAGE);
 ```
 
@@ -210,6 +211,9 @@ img.size[1] = 128;
 
 // Create image and allocate image memory
 imgid_mkimage(&img);
+
+// When done
+imgid_free(&img);
 ```
 
 ### Creating a stream
@@ -218,7 +222,7 @@ Creating a stream may overwrite an existing stream. If that is OK and no check i
 
 ```c
 // Create IMGID
-IMGID img = imgid_make_from_name("im1")
+IMGID img = imgid_make_from_name("im1");
 img.naxis = 2;
 img.size[0] = 128;
 img.size[1] = 128;
@@ -226,6 +230,9 @@ img.shared = 1;
 
 // Create image and allocate image memory
 imgid_mkimage(&img);
+
+// When done
+imgid_free(&img);
 ```
 
 ### Connecting to a stream with checks
@@ -248,6 +255,9 @@ img.size[1] = 128;
 // Test if datatype, naxis, size, type, NBkw and CBsize match
 // fail if not matching
 imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_FAIL);
+
+// When done
+imgid_free(&img);
 ```
 
 #### Create mode
@@ -256,12 +266,25 @@ If format check passes, connection is successful: use the existing stream.
 If format check fails, re-create the stream to the correct format.
 
 ```c
+// Create IMGID
+IMGID img1 = imgid_make();
+img.naxis = 2;
+img.size[0] = 128;
+img.size[1] = 128;
 // Connect to stream
 // Test if datatype, naxis, size, type, NBkw and CBsize match
 // Create new stream if not matching
 imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_CREATE);
 ```
 
+For convenience, use these functions are available:
+```c
+// 2D array, float32
+imgid_connect_create_2Df32("streamname1", &img1, uint32_t xsize, uint32_t ysize);
+
+// 3D array, float32
+imgid_connect_create_3Df32("streamname1", &img1, uint32_t xsize, uint32_t ysize, uint32_t zsize);
+```
 
 ## Function arguments
 

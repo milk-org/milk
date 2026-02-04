@@ -255,10 +255,10 @@ static errno_t compute_function()
     imcreatelikewiseIMGID(&outimg, &inimg);
 
     IMGID bufferimg    = imgid_make_from_name_3D("streamdelaybuff",
-                                      inimg.size[0],
-                                      inimg.size[1],
+                                      inimg.mdt->size[0],
+                                      inimg.mdt->size[1],
                                       *timebuffsize);
-    bufferimg.datatype = inimg.datatype;
+    bufferimg.mdt->datatype = inimg.mdt->datatype;
     imcreateIMGID(&bufferimg);
 
     struct timespec *timeinarray;
@@ -299,6 +299,9 @@ static errno_t compute_function()
 
     free(timeinarray);
     free(warray);
+    imgid_free(&inimg);
+    imgid_free(&outimg);
+    imgid_free(&bufferimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

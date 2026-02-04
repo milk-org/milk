@@ -165,19 +165,19 @@ errno_t PCAmatch(
 
     // output vectors
 
-    imgoutcA->datatype = _DATATYPE_FLOAT;
-    imgoutcA->naxis = 2;
-    imgoutcA->size[0] = NBmodesA;
-    imgoutcA->size[1] = 1;
+    imgoutcA->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutcA->mdt->naxis = 2;
+    imgoutcA->mdt->size[0] = NBmodesA;
+    imgoutcA->mdt->size[1] = 1;
     printf("CREATING %s\n", imgoutcA->name);
     fflush(stdout);
     createimagefromIMGID(imgoutcA);
 
 
-    imgoutcB->datatype = _DATATYPE_FLOAT;
-    imgoutcB->naxis = 2;
-    imgoutcB->size[0] = NBmodesA;
-    imgoutcB->size[1] = 1;
+    imgoutcB->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutcB->mdt->naxis = 2;
+    imgoutcB->mdt->size[0] = NBmodesA;
+    imgoutcB->mdt->size[1] = 1;
     printf("CREATING %s\n", imgoutcB->name);
     fflush(stdout);
     createimagefromIMGID(imgoutcB);
@@ -229,9 +229,9 @@ errno_t PCAmatch(
 
     // residual0
     IMGID imgimres0  = imgid_make_from_name("imres0");
-    imgimres0.naxis   = 2;
-    imgimres0.size[0] = imgmodesA.md->size[0];
-    imgimres0.size[1] = imgmodesA.md->size[1];
+    imgimres0.mdt->naxis   = 2;
+    imgimres0.mdt->size[0] = imgmodesA.md->size[0];
+    imgimres0.mdt->size[1] = imgmodesA.md->size[1];
     createimagefromIMGID(&imgimres0);
 
     double resim0 = 0.0;
@@ -354,9 +354,9 @@ errno_t PCAmatch(
 
 
     IMGID imgimres  = imgid_make_from_name("imres");
-    imgimres.naxis   = 2;
-    imgimres.size[0] = imgmodesA.md->size[0];
-    imgimres.size[1] = imgmodesA.md->size[1];
+    imgimres.mdt->naxis   = 2;
+    imgimres.mdt->size[0] = imgmodesA.md->size[0];
+    imgimres.mdt->size[1] = imgmodesA.md->size[1];
     createimagefromIMGID(&imgimres);
 
     double resim = 0.0;
@@ -373,7 +373,10 @@ errno_t PCAmatch(
     printf("GAIN = %f\n", resim0/resim);
     printf("\n");
 
-
+    imgid_free(&imgAtoB);
+    imgid_free(&imgBtoA);
+    imgid_free(&imgimres0);
+    imgid_free(&imgimres);
 
 
 
@@ -442,7 +445,12 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imgmodesA);
+    imgid_free(&imgmodesB);
+    imgid_free(&imgoutcA);
+    imgid_free(&imgoutcB);
+    imgid_free(&imgoutimA);
+    imgid_free(&imgoutimB);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

@@ -100,8 +100,8 @@ static errno_t compute_function()
     for(int kk = 0;  kk < n_input; ++kk)
     {
         offset_bytes[kk] = acc;
-        size_bytes[kk] = img_in_arr[kk].size[0] * ImageStreamIO_typesize(
-                             img_in_arr[kk].datatype);
+        size_bytes[kk] = img_in_arr[kk].mdt->size[0] * ImageStreamIO_typesize(
+                             img_in_arr[kk].mdt->datatype);
         acc += size_bytes[kk]; // Wildly assuming naxis=1 here.
 
         sem_idxs[kk] = ImageStreamIO_getsemwaitindex(img_in_arr[kk].im, 0);
@@ -144,7 +144,14 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     // Mem cleanup
+    for(int ii = 0; ii < n_input; ++ii) {
+        imgid_free(&img_in_arr[ii]);
+    }
     free(img_in_arr);
+    imgid_free(&img_out);
+    free(offset_bytes);
+    free(size_bytes);
+    free(sem_idxs);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
