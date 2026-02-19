@@ -14,7 +14,7 @@ static CLICMDARGDEF farg[] = {{
         ".outim",
         "output image",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -23,7 +23,7 @@ static CLICMDARGDEF farg[] = {{
         ".size",
         "size",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &sizeout,
         NULL
     },
@@ -32,7 +32,7 @@ static CLICMDARGDEF farg[] = {{
         ".kmax",
         "k max",
         "100",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &kmaxval,
         NULL
     },
@@ -41,7 +41,7 @@ static CLICMDARGDEF farg[] = {{
         ".radius",
         "radius [pix]",
         "160.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radiusval,
         NULL
     },
@@ -50,7 +50,7 @@ static CLICMDARGDEF farg[] = {{
         ".rfactlim",
         "radius factor limit",
         "2.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radfactorlimval,
         NULL
     }

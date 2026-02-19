@@ -26,7 +26,7 @@ static CLICMDARGDEF farg[] =
         ".inamp",
         "input WF ampl",
         "ima",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inamp,
         NULL
     },
@@ -35,7 +35,7 @@ static CLICMDARGDEF farg[] =
         ".inpha",
         "input WF phase",
         "imp",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inpha,
         NULL
     },
@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         ".outa",
         "output WF ampl",
         "outa",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outamp,
         NULL
     },
@@ -53,7 +53,7 @@ static CLICMDARGDEF farg[] =
         ".outp",
         "output WF phase",
         "outp",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outpha,
         NULL
     }

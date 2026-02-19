@@ -44,7 +44,15 @@ int FPSINIT_setpix(const char *fps_name, const char *keywords, const char *descr
     if (description) strncpy(fps.md->description, description, FPS_DESCR_STRMAXLEN-1);
     strncpy(fps.md->helptext, SETPIX_HELPTEXT, FPS_HELPTEXT_STRMAXLEN-1);
     fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_SEMAPHORE;
-#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
+{ \
+    c_type val = def_val; \
+    void *vptr = &val; \
+    if (FPTYPE_IS_STRING(fps_type)) { \
+        vptr = *(void**)&val; \
+    } \
+    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+}
     SETPIX_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
     fps_add_processinfo_entries(&fps);
@@ -92,7 +100,7 @@ FPS_MAIN_STANDALONE("setpix", setpix, SETPIX_HELPTEXT, SETPIX_PARAMS)
 
 #ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
-#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+#define X_CLI_DEF(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) { fps_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     SETPIX_PARAMS(X_CLI_DEF)
 #undef X_CLI_DEF
 };

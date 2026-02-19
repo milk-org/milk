@@ -11,7 +11,7 @@ static CLICMDARGDEF farg[] = {{
         ".modes",
         "modes image cube",
         "imcmode",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &modesimname,
         NULL
     },
@@ -20,7 +20,7 @@ static CLICMDARGDEF farg[] = {{
         ".invec",
         "input vector",
         "imvec",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &invecname,
         NULL
     },
@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] = {{
         ".outim",
         "output image",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     }

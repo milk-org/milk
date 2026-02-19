@@ -136,11 +136,15 @@ int FPSINIT_processor(
     FPS_INIT_PROCINFO_DEFAULTS(fps, "stream03", 10);
 
     // Use X-Macro to add all parameters to the FPS
-#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
-    { \
-        c_type val = def_val; \
-        function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); \
-    }
+#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
+{ \
+    c_type val = def_val; \
+    void *vptr = &val; \
+    if (FPTYPE_IS_STRING(fps_type)) { \
+        vptr = *(void**)&val; \
+    } \
+    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+}
     PROCESSOR_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
 

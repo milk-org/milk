@@ -27,7 +27,7 @@ static CLICMDARGDEF farg[] = {{
         ".inim",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -36,7 +36,7 @@ static CLICMDARGDEF farg[] = {{
         ".modes",
         "modes image cube",
         "imcmode",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &modesimname,
         NULL
     },
@@ -45,7 +45,7 @@ static CLICMDARGDEF farg[] = {{
         ".mask",
         "mask image",
         "immask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &maskimname,
         NULL
     },
@@ -54,7 +54,7 @@ static CLICMDARGDEF farg[] = {{
         ".SVDeps",
         "SVD cutoff",
         "0.001",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &SVDeps,
         NULL
     },
@@ -63,7 +63,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimcoeff",
         "output coeff image",
         "immask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeffimname,
         NULL
     },
@@ -72,7 +72,7 @@ static CLICMDARGDEF farg[] = {{
         ".reuse",
         "reuse configuration flag",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &reuse,
         NULL
     }

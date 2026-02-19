@@ -45,7 +45,7 @@ static CLICMDARGDEF farg[] =
         ".inM",
         "input image",
         "inM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inM,
         &fpi_inM
     },
@@ -54,7 +54,7 @@ static CLICMDARGDEF farg[] =
         ".inU0",
         "input space mode",
         "inU0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inU0,
         &fpi_inU0
     },
@@ -63,7 +63,7 @@ static CLICMDARGDEF farg[] =
         ".inU1",
         "output space mode",
         "inU1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inU1,
         &fpi_inU1
     },
@@ -72,7 +72,7 @@ static CLICMDARGDEF farg[] =
         ".outM",
         "output M",
         "outM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outM,
         &fpi_outM
     },
@@ -82,7 +82,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }

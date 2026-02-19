@@ -33,10 +33,10 @@ errno_t CLIADDCMD_COREMOD_arith__imset_3Daxes();
 /* ================================================================== */
 
 #define SET3DAXES_PARAMS(X) \
-    X(CLIARG_IMG,    FPTYPE_STREAMNAME, char*,    ".imname", "input image", "im1", "im1", &set3d_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".size0",  "axis 0 size", "128", 128,   &set3d_size0,    (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".size1",  "axis 1 size", "128", 128,   &set3d_size1,    (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".size2",  "axis 2 size", "128", 128,   &set3d_size2,    (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(   FPTYPE_STREAMNAME, char*,    ".imname", "input image", "im1", "im1", &set3d_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".size0",  "axis 0 size", "128", 128,   &set3d_size0, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".size1",  "axis 1 size", "128", 128,   &set3d_size1, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".size2",  "axis 2 size", "128", 128,   &set3d_size2, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 #define SET3DAXES_HELPTEXT \
     "set3Daxes: set 3D image axes size\n" \

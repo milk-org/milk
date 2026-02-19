@@ -37,7 +37,7 @@ enum FPS_status : uint32_t
 
 enum FPS_type : uint32_t
 {
-    AUTO         = FPTYPE_AUTO,
+    AUTO         = 0,
     UNDEF        = FPTYPE_UNDEF,
     INT32        = FPTYPE_INT32,
     UINT32       = FPTYPE_UINT32,

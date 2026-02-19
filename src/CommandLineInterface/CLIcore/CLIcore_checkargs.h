@@ -10,36 +10,36 @@
 
 #include "../cmdsettings.h"
 
+#include "libfps/fps.h"
+
 // testing argument type for command line interface
 // CLI ARGS consist of two 16-bit fields
 // lower 16-bit is format input type in CLI
 // higher 16-bit can be more specific and used for conversion
 
 #define CLIARG_MISSING      0x00000000
-#define CLIARG_FLOAT        0x00000001 // floating point number, defaults to float64
-#define CLIARG_LONG         0x00000002 // integer, default to int64
-#define CLIARG_STR_NOT_IMG  0x00000003 // string, not existing image
-#define CLIARG_IMG          0x00000004 // existing image or stream
-#define CLIARG_STR          0x00000005 // string
-#define CLIARG_FILENAME     0x00000006
-#define CLIARG_FITSFILENAME 0x00000007
-#define CLIARG_FPSNAME      0x00000008
+#define CLIARG_FLOAT        FPTYPE_FLOAT64 // floating point number, defaults to float64
+#define CLIARG_LONG         FPTYPE_INT64 // integer, default to int64
+#define CLIARG_STR_NOT_IMG  FPTYPE_STRING_NOT_STREAM // string, not existing image
+#define CLIARG_IMG          FPTYPE_STREAMNAME // existing image or stream
+#define CLIARG_STR          FPTYPE_STRING // string
+#define CLIARG_FILENAME     FPTYPE_FILENAME
+#define CLIARG_FITSFILENAME FPTYPE_FITSFILENAME
+#define CLIARG_FPSNAME      FPTYPE_FPSNAME
 
 
-#define CLIARG_FLOAT32 0x00010001 // same as float
-#define CLIARG_FLOAT64 0x00020001 // same as double
+#define CLIARG_FLOAT32 FPTYPE_FLOAT32 // same as float
+#define CLIARG_FLOAT64 FPTYPE_FLOAT64 // same as double
 
 // integer types
-#define CLIARG_ONOFF  0x00030002
-#define CLIARG_INT32  0x00010002
-#define CLIARG_UINT32 0x00110002
-#define CLIARG_INT64  0x00020002 // same as LONG
-#define CLIARG_UINT64 0x00120002
+#define CLIARG_ONOFF  FPTYPE_ONOFF
+#define CLIARG_INT32  FPTYPE_INT32
+#define CLIARG_UINT32 FPTYPE_UINT32
+#define CLIARG_INT64  FPTYPE_INT64 // same as LONG
+#define CLIARG_UINT64 FPTYPE_UINT64
 
 // image/stream types
-#define CLIARG_STREAM 0x00010004 // stream
-
-
+#define CLIARG_STREAM FPTYPE_STREAMNAME // stream
 
 
 #define STRINGMAXLEN_FPSCLIARG_TAG       100
@@ -47,17 +47,10 @@
 #define STRINGMAXLEN_FPSCLIARG_EXAMPLE   100
 #define STRINGMAXLEN_FPSCLIARG_LASTENTRY 100
 
-#define CLICMDARG_FLAG_DEFAULT 0x00000000
-
-#define CLICMDARG_FLAG_NOCLI 0x00000001 // 1 if argument is not part or CLI call
-// If set to 1, the argument value is not specified as part of the
-// command line function call in the CLI
-#define CLICMDARG_FLAG_NOFPS 0x00000002 // 1 if argument is not part or FPS
-
 typedef struct
 {
-    // Type is one of CLIARG_XXXX
-    int type;
+    // Type is one of FPTYPE_XXXX
+    uint64_t type;
 
     // tag is hierarchical set of words separated by dot: "word1.word2.word3"
     char fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
@@ -67,12 +60,6 @@ typedef struct
 
     // example value, will be used as default
     char example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
-
-    // CLICMDARG flag
-    uint64_t flag;
-
-    // see FPTYPE_ in function_parameters.h
-    uint64_t fptype;
 
     // see FPFLAG_  in function_parameters.h
     uint64_t fpflag;
@@ -87,7 +74,7 @@ typedef struct
 
 typedef struct
 {
-    int type;
+    uint64_t type;
     struct
     {
         double numf;
@@ -99,12 +86,11 @@ typedef struct
 #define STRINGMAXLEN_CLICMDARG 256
 typedef struct
 {
-    int      type;   // Command line argument type
-    uint64_t fptype; // FPS type (could be more speccific than CLI type)
+    uint64_t type;   // Command line argument type
     char     fpstag[STRINGMAXLEN_FPSCLIARG_TAG];
     char     descr[STRINGMAXLEN_FPSCLIARG_DESCR];
     char     example[STRINGMAXLEN_FPSCLIARG_EXAMPLE];
-    uint64_t flag;
+    uint64_t fpflag;
     union
     {
         float  f32;

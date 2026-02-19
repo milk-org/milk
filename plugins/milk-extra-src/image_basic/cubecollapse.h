@@ -11,8 +11,8 @@ imageID cube_collapse(const char *__restrict ID_in_name,
 /* ================================================================== */
 
 #define CUBECOLLAPSE_PARAMS(X) \
-    X(CLIARG_IMG, FPTYPE_STREAMNAME, char*, ".in_name",  "input cube image",  "im1", "im1", &cubecollapse_inimname, (void*)val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR, FPTYPE_STREAMNAME, char*, ".out_name", "output 2D image",   "out1", "out1", &cubecollapse_outimname, (void*)val, CLIARG_VISIBLE_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*, ".in_name",  "input cube image",  "im1", "im1", &cubecollapse_inimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_STREAMNAME, char*, ".out_name", "output 2D image",   "out1", "out1", &cubecollapse_outimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 extern char *cubecollapse_inimname;
 extern char *cubecollapse_outimname;

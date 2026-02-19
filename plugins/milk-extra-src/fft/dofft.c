@@ -83,7 +83,7 @@ errno_t fft_do2dfft_cli()
 
 #ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
-#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+#define X_CLI_DEF(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) { fps_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     DOFFT_PARAMS(X_CLI_DEF)
 #undef X_CLI_DEF
 };
@@ -1499,7 +1499,15 @@ void dofft_step(IMAGE *imgin, IMAGE *imgout, int dir)
 #ifdef FPS_STANDALONE
 int FPSINIT_dofft(const char *fps_name, const char *keywords, const char *description) {
     FUNCTION_PARAMETER_STRUCT fps; FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, DOFFT_HELPTEXT); FPS_INIT_PROCINFO_DEFAULTS(fps, "im1", 1);
-#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
+{ \
+    c_type val = def_val; \
+    void *vptr = &val; \
+    if (FPTYPE_IS_STRING(fps_type)) { \
+        vptr = *(void**)&val; \
+    } \
+    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+}
     DOFFT_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
     fps_add_processinfo_entries(&fps);

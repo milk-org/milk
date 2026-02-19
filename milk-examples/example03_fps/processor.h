@@ -75,13 +75,13 @@ void processor03_validate();
  * 7.  DEF_VAL:    Default value as a literal (for C initialization).
  * 8.  PTR_ADDR:   The address of the global extern pointer defined above.
  * 9.  VAL_EXPR:   Expression used to pass the value pointer to FPS initialization.
- * 10. CLI_FLAGS:  Visibility and behavior flags for the Milk CLI (CLIARG_VISIBLE_DEFAULT, etc.).
+ * 10. CLI_FLAGS:  Visibility and behavior flags for the Milk CLI ((FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), etc.).
  */
 #define PROCESSOR_PARAMS(X) \
-    X(CLIARG_STR,    FPTYPE_STRING, char*,    ".in_name",  "Input Stream Name",  "stream03",      "stream03",      &in_name_ptr,      (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,    FPTYPE_STRING, char*,    ".out_name", "Output Stream Name", "stream03_proc", "stream03_proc", &proc_out_name_ptr, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".roi_size", "ROI Size",           "50",            50,              &roi_size_ptr,     (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".off_x",    "Offset X",           "0",             0,               &off_x_ptr,        (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(   FPTYPE_STRING, char*,    ".in_name",  "Input Stream Name",  "stream03",      "stream03",      &in_name_ptr,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(   FPTYPE_STRING, char*,    ".out_name", "Output Stream Name", "stream03_proc", "stream03_proc", &proc_out_name_ptr,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32, uint32_t, ".roi_size", "ROI Size",           "50",            50,              &roi_size_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32, uint32_t, ".off_x",    "Offset X",           "0",             0,               &off_x_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 /**
  * @brief Detailed help text for the processor.

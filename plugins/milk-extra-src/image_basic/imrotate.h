@@ -22,9 +22,9 @@ imageID basic_rotate2(const char *__restrict ID_name_in,
                       float angle);
 
 #define IMROTATE_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*,  ".in_name",  "input image",   "im1", "im1", &imrotate_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,     FPTYPE_STREAMNAME, char*,  ".out_name", "output image",  "out1", "out1", &imrotate_outimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float,  ".angle",    "rotate angle",  "0.0", 0.0,   &imrotate_angle,    (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(    FPTYPE_STREAMNAME, char*,  ".in_name",  "input image",   "im1", "im1", &imrotate_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(    FPTYPE_STREAMNAME, char*,  ".out_name", "output image",  "out1", "out1", &imrotate_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float,  ".angle",    "rotate angle",  "0.0", 0.0,   &imrotate_angle, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 extern char  *imrotate_inimname;
 extern char  *imrotate_outimname;

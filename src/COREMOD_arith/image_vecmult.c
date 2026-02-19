@@ -26,7 +26,7 @@ static CLICMDARGDEF farg[] =
         ".iminname",
         "input image name",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &iminname,
         &fpi_iminname
     },
@@ -35,7 +35,7 @@ static CLICMDARGDEF farg[] =
         ".vecname",
         "input vector name",
         "vec",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &vecname,
         &fpi_vecname
     },
@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         ".imoutname",
         "output image name",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imoutname,
         &fpi_imoutname
     },
@@ -53,7 +53,7 @@ static CLICMDARGDEF farg[] =
         ".axis",
         "multiplication axis",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &multaxis,
         &fpi_multaxis
     }

@@ -50,7 +50,7 @@ static CLICMDARGDEF farg[] =
         ".insname",
         "input stream",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &instreamname,
         NULL
     },
@@ -59,7 +59,7 @@ static CLICMDARGDEF farg[] =
         ".frequ",
         "frequency [Hz]",
         "3.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &updatefrequency,
         NULL
     }

@@ -42,7 +42,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -51,7 +51,7 @@ static CLICMDARGDEF farg[] =
         ".tbinflag",
         "time binning flag (bit i sets bin 2^i)",
         "48",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &tbinflag,
         &fpi_tbinflag
     },
@@ -60,7 +60,7 @@ static CLICMDARGDEF farg[] =
         ".cbsize",
         "circular buffer size",
         "64",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &cbbuffersize,
         &fpi_cbbuffersize
     }

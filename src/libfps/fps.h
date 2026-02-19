@@ -39,7 +39,6 @@ typedef long variableID;
 #define FUNCTION_PARAMETER_KEYWORD_STRMAXLEN 64
 #define FUNCTION_PARAMETER_KEYWORD_MAXLEVEL  20
 
-#define FPTYPE_AUTO    0x00000000 // automatic typing
 #define FPTYPE_UNDEF   0x00000001
 #define FPTYPE_INT32   0x00000002
 #define FPTYPE_UINT32  0x00000004
@@ -66,6 +65,13 @@ typedef long variableID;
 #define FPTYPE_PROCESS 0x00010000
 
 #define FPTYPE_FPSNAME 0x00020000 // connection to another FPS
+
+#define FPTYPE_STRING_NOT_STREAM 0x00040000 // string that is NOT a stream/image
+
+#define FPTYPE_IS_STRING(type) \
+    ((type == FPTYPE_STRING) || (type == FPTYPE_FILENAME) || (type == FPTYPE_FITSFILENAME) || \
+     (type == FPTYPE_EXECFILENAME) || (type == FPTYPE_DIRNAME) || (type == FPTYPE_STREAMNAME) || \
+     (type == FPTYPE_FPSNAME) || (type == FPTYPE_STRING_NOT_STREAM))
 
 #define STRINGMAXLEN_FPSTYPE  20
 
@@ -157,6 +163,9 @@ typedef long variableID;
 #define FPFLAG_STREAM_TEST_DATATYPE_INT32 0x0000004000000000 // test if stream of type INT32   (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_UINT64 0x0000008000000000 // test if stream of type UINT64  (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_INT64 0x0000010000000000 // test if stream of type INT64   (OR test)
+
+#define FPFLAG_PRIMARY_CLI_INPUT 0x0000000000000008 // primary parameter: required CLI arg + TUI highlight
+#define FPFLAG_CLI_INPUT 0x0000020000000000 // parameter is expected to be specified by user on CLI
 #define FPFLAG_STREAM_TEST_DATATYPE_HALF 0x0000020000000000 // test if stream of type HALF    (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_FLOAT 0x0000040000000000 // test if stream of type FLOAT   (OR test)
 #define FPFLAG_STREAM_TEST_DATATYPE_DOUBLE 0x0000080000000000 // test if stream of type DOUBLE  (OR test)
@@ -752,24 +761,6 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #define GET_1ST_ARG_HELPER(arg1, ...) arg1
 #define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
 
-#ifndef CLICMDARG_FLAG_DEFAULT
-#define CLICMDARG_FLAG_DEFAULT 0x00000000
-#endif
-#ifndef CLICMDARG_FLAG_NOCLI
-#define CLICMDARG_FLAG_NOCLI 0x00000001
-#endif
-
-// Define CLIARG macros if not already defined (to handle standalone compilation without CLIcore headers)
-#ifndef CLIARG_VISIBLE_DEFAULT
-#define CLIARG_VISIBLE_DEFAULT CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
-#endif
-#ifndef CLIARG_HIDDEN_DEFAULT
-#define CLIARG_HIDDEN_DEFAULT CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
-#endif
-#ifndef CLIARG_OUTPUT_DEFAULT
-#define CLIARG_OUTPUT_DEFAULT CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_OUTPUT
-#endif
-
 #ifndef COLORRESET
 #define COLORRESET     "\033[0m"
 #endif
@@ -790,11 +781,10 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #define COLOROPTION    "\033[33m" // option: yellow
 #endif
 
-#define X_HELP_PRINT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, ...) \
+#define X_HELP_PRINT(fps_type, c_type, key, descr, def_str, ptr_name, get_func, flags, ...) \
     { \
         char valuestring[256]; \
-        uint64_t flags = GET_1ST_ARG((__VA_ARGS__)); \
-        int is_hidden = (flags & CLICMDARG_FLAG_NOCLI); \
+        int is_hidden = !(flags & FPFLAG_PRIMARY_CLI_INPUT); \
         char type_str[20] = "???"; \
         if (fps_type == FPTYPE_FLOAT32) strcpy(type_str, "float32"); \
         else if (fps_type == FPTYPE_UINT32) strcpy(type_str, "uint32"); \
