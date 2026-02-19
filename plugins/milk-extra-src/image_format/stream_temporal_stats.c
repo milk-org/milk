@@ -30,7 +30,7 @@ static CLICMDARGDEF farg[] = {{
         ".in_name",
         "input image",
         "in_name",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &in_name,
         NULL
     },
@@ -39,7 +39,7 @@ static CLICMDARGDEF farg[] = {{
         ".n_frames",
         "Stats every n frames max",
         "n_frames",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ptr_n_frames,
         NULL
     },
@@ -48,7 +48,7 @@ static CLICMDARGDEF farg[] = {{
         ".timeout",
         "Stats at timeout (sec)",
         "timeout",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ptr_timeout,
         NULL
     }

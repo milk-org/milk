@@ -30,7 +30,7 @@ static CLICMDARGDEF farg[] = {{
         ".imcube0",
         "input image cube 0",
         "imc0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimc0,
         &fpi_inimc0
     },
@@ -39,7 +39,7 @@ static CLICMDARGDEF farg[] = {{
         ".imcube1",
         "input image cube 1",
         "imc1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimc1,
         &fpi_inimc1
     },
@@ -48,7 +48,7 @@ static CLICMDARGDEF farg[] = {{
         ".immask",
         "pixel mask",
         "immask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimmask,
         &fpi_inimmask
     },
@@ -57,7 +57,7 @@ static CLICMDARGDEF farg[] = {{
         ".outim",
         "output matrix",
         "outm",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imout,
         &fpi_imout
     }

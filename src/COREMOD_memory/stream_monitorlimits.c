@@ -31,7 +31,7 @@ static CLICMDARGDEF farg[] = {
         ".in_name",
         "input stream",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&inimname,
         NULL
     },
@@ -40,7 +40,7 @@ static CLICMDARGDEF farg[] = {
         ".dtus",
         "loop period [us]",
         "100000",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&dtus,
         &fpi_dtus
     },
@@ -49,7 +49,7 @@ static CLICMDARGDEF farg[] = {
         ".minON",
         "minimum limit toggle",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&minON,
         &fpi_minON
     },
@@ -58,7 +58,7 @@ static CLICMDARGDEF farg[] = {
         ".minVal",
         "minimum limit value",
         "0.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&minVal,
         &fpi_minVal
     },
@@ -67,7 +67,7 @@ static CLICMDARGDEF farg[] = {
         ".maxON",
         "maximum limit toggle",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&maxON,
         &fpi_maxON
     },
@@ -76,7 +76,7 @@ static CLICMDARGDEF farg[] = {
         ".maxVal",
         "maximum limit value",
         "1000.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **)&maxVal,
         &fpi_maxVal
     }

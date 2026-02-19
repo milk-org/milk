@@ -34,7 +34,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -43,7 +43,7 @@ static CLICMDARGDEF farg[] =
         ".min",
         "min value",
         "0.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &valmin,
         NULL
     },
@@ -52,7 +52,7 @@ static CLICMDARGDEF farg[] =
         ".max",
         "max value",
         "1.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &valmax,
         NULL
     },
@@ -61,7 +61,7 @@ static CLICMDARGDEF farg[] =
         ".out_name",
         "output image",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     }

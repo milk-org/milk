@@ -23,7 +23,7 @@ static CLICMDARGDEF farg[] =
         ".in_sname",
         "input stream",
         "ims1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -32,7 +32,7 @@ static CLICMDARGDEF farg[] =
         ".out_sname",
         "output stream",
         "ims2",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     }

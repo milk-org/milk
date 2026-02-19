@@ -31,7 +31,7 @@ static CLICMDARGDEF farg[] = {{
         ".inim",
         "input RGGB image",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inim,
         &fpi_inim
     },
@@ -40,7 +40,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimR",
         "output R image",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimR,
         &fpi_outimR
     },
@@ -49,7 +49,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimG1",
         "output G1 image",
         "outimG1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimG1,
         &fpi_outimG1
     },
@@ -58,7 +58,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimG2",
         "output G2 image",
         "outimG2",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimG2,
         &fpi_outimG2
     },
@@ -67,7 +67,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimB",
         "output B image",
         "outimB",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimB,
         &fpi_outimB
     }

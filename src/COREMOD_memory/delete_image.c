@@ -25,7 +25,7 @@ static CLICMDARGDEF farg[] =
         ".imname",
         "image name",
         "im",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imname,
         NULL
     },
@@ -34,7 +34,7 @@ static CLICMDARGDEF farg[] =
         ".errmode",
         "errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &errmode,
         NULL
     }

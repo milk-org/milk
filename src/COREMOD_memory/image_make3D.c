@@ -13,7 +13,7 @@ static CLICMDARGDEF farg[] = {{
         ".out_name",
         "output image",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -22,7 +22,7 @@ static CLICMDARGDEF farg[] = {{
         ".xsize",
         "x size",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imxsize,
         NULL
     },
@@ -31,7 +31,7 @@ static CLICMDARGDEF farg[] = {{
         ".ysize",
         "y size",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imysize,
         NULL
     },
@@ -40,7 +40,7 @@ static CLICMDARGDEF farg[] = {{
         ".zsize",
         "z size",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imzsize,
         NULL
     }

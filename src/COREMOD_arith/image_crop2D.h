@@ -35,12 +35,12 @@ errno_t CLIADDCMD_COREMODE_arith__crop2D();
 /* ================================================================== */
 
 #define CROP2D_PARAMS(X) \
-    X(CLIARG_IMG,    FPTYPE_STREAMNAME, char*,    ".insname",    "Input stream name",  "inim",  "inim",  &cropinsname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,    FPTYPE_STREAMNAME, char*,    ".outsname",   "Output stream name", "outim", "outim", &outsname,    (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".cropxstart", "crop x coord start", "30",    30,      &cropxstart,  (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".cropxsize",  "crop x coord size",  "32",    32,      &cropxsize,   (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".cropystart", "crop y coord start", "20",    20,      &cropystart,  (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".cropysize",  "crop y coord size",  "32",    32,      &cropysize,   (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(   FPTYPE_STREAMNAME, char*,    ".insname",    "Input stream name",  "inim",  "inim",  &cropinsname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(   FPTYPE_STREAMNAME, char*,    ".outsname",   "Output stream name", "outim", "outim", &outsname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".cropxstart", "crop x coord start", "30",    30,      &cropxstart, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".cropxsize",  "crop x coord size",  "32",    32,      &cropxsize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".cropystart", "crop y coord start", "20",    20,      &cropystart, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".cropysize",  "crop y coord size",  "32",    32,      &cropysize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 #define CROP2D_HELPTEXT \
     "Crop 2D: extract sub-region from image stream\n" \

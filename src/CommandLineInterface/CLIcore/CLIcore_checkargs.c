@@ -60,9 +60,8 @@ static int CLI_checkarg0(
 
         // Argument should be float32 or float64
         //
-        case CLIARG_FLOAT32: // should be float32
-        case CLIARG_FLOAT64: // should be float64
-        case CLIARG_FLOAT: // to be deprecated
+        case FPTYPE_FLOAT32: // should be float32
+        case FPTYPE_FLOAT64: // should be float64
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -146,7 +145,7 @@ static int CLI_checkarg0(
                 // Token is image
                 // -> not OK
                 //
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     if(errmsg == 1)
                     {
                         printf(
@@ -162,7 +161,7 @@ static int CLI_checkarg0(
                 // Token is string
                 // -> not OK
                 //
-                case CLIARG_STR:
+                case FPTYPE_STRING:
                     if(errmsg == 1)
                     {
                         printf(
@@ -192,12 +191,11 @@ static int CLI_checkarg0(
 
         // Argument should be integer
         //
-        case CLIARG_INT32:  // should be int32
-        case CLIARG_INT64:  // should be int64
-        case CLIARG_UINT32: // should be  uint32
-        case CLIARG_UINT64: // should be uint64
-        case CLIARG_ONOFF:  // should be on/off (= uint64)
-        case CLIARG_LONG: // to be deprecated
+        case FPTYPE_INT32:  // should be int32
+        case FPTYPE_INT64:  // should be int64
+        case FPTYPE_UINT32: // should be  uint32
+        case FPTYPE_UINT64: // should be uint64
+        case FPTYPE_ONOFF:  // should be on/off (= uint64)
             DEBUG_TRACEPOINT("ARG is CLIARG_XINTXX\n");
             switch(data.cmdargtoken[CLIargnum].type)
             {
@@ -241,7 +239,7 @@ static int CLI_checkarg0(
                 case CLIARG_STR_NOT_IMG:
                     //printf("token is CLIARG_STR_NOT_IMG\n");
 
-                    if(funcargtype == CLIARG_ONOFF)
+                    if(funcargtype == FPTYPE_ONOFF)
                     {
                         // if argument is ONOFF, check if string is "on", "off", "ON", "OFF"
                         // and convert to ONOFF integer
@@ -322,7 +320,7 @@ static int CLI_checkarg0(
                     break;
 
 
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     //printf("token is CLIARG_IMG\n");
                     if(errmsg == 1)
                     {
@@ -333,9 +331,9 @@ static int CLI_checkarg0(
                     rval = 1;
                     break;
 
-                case CLIARG_STR:
+                case FPTYPE_STRING:
                     //printf("token is CLIARG_STR\n");
-                    if(funcargtype == CLIARG_ONOFF)
+                    if(funcargtype == FPTYPE_ONOFF)
                     {
                         if((strcmp(data.cmdargtoken[CLIargnum].val.string, "on") == 0)
                                 || (strcmp(data.cmdargtoken[CLIargnum].val.string, "ON") == 0))
@@ -370,7 +368,7 @@ static int CLI_checkarg0(
 
         // Argument should be string, but not image
         //
-        case CLIARG_STR_NOT_IMG:
+        case FPTYPE_STRING_NOT_STREAM:
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -420,7 +418,7 @@ static int CLI_checkarg0(
                 // Token is image
                 // -> not OK
                 //
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     if(errmsg == 1)
                     {
                         printf("  arg %d (image %s) not a non-img-string\n",
@@ -434,7 +432,7 @@ static int CLI_checkarg0(
                 // Token is string
                 // -> not OK
                 //
-                case CLIARG_STR:
+                case FPTYPE_STRING:
                     printf("arg %d is command (=\"%s\"), but should be string\n",
                            CLIargnum,
                            data.cmdargtoken[CLIargnum].val.string);
@@ -455,7 +453,7 @@ static int CLI_checkarg0(
 
         // Argument should be existing image
         //
-        case CLIARG_IMG:
+        case FPTYPE_STREAMNAME:
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -513,7 +511,7 @@ static int CLI_checkarg0(
                 // Token is image
                 // -> OK
                 //
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     rval = 0;
                     break;
 
@@ -521,7 +519,7 @@ static int CLI_checkarg0(
                 // Token is string
                 // -> not OK
                 //
-                case CLIARG_STR:
+                case FPTYPE_STRING:
                     if(errmsg == 1)
                     {
                         printf("  arg %d (string \"%s\") not an image\n",
@@ -543,7 +541,7 @@ static int CLI_checkarg0(
 
         // Argument should be string (image or not)
         //
-        case CLIARG_STR:
+        case FPTYPE_STRING:
             switch(data.cmdargtoken[CLIargnum].type)
             {
 
@@ -594,7 +592,7 @@ static int CLI_checkarg0(
                 // Token is image
                 // -> OK
                 //
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     rval = 0;
                     break;
 
@@ -602,7 +600,7 @@ static int CLI_checkarg0(
                 // Token is string
                 // -> OK
                 //
-                case CLIARG_STR:
+                case FPTYPE_STRING:
                     rval = 0;
                     break;
 
@@ -611,6 +609,14 @@ static int CLI_checkarg0(
                     break;
             }
             break;
+
+        case FPTYPE_FILENAME:
+        case FPTYPE_FITSFILENAME:
+        case FPTYPE_FPSNAME:
+        case FPTYPE_DIRNAME:
+        case FPTYPE_EXECFILENAME:
+             rval = 0; // these are currently treated as strings without specific validation in this function
+             break;
 
         default :
             printf("Can't resolve arg type\n");
@@ -844,9 +850,6 @@ errno_t CLI_checkarg_array(
                 strcpy(argtypestring, "STRnIMG");
                 break;
             case CLIARG_IMG:
-                strcpy(argtypestring, "IMG");
-                break;
-            case CLIARG_STREAM:
                 strcpy(argtypestring, "STREAM");
                 break;
             case CLIARG_STR:
@@ -854,7 +857,7 @@ errno_t CLI_checkarg_array(
                 break;
         }
 
-        if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI))
+        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             int cmdi = data.cmdindex;
 
@@ -863,6 +866,15 @@ errno_t CLI_checkarg_array(
                              CLIarg,
                              argtypestring,
                              fpscliarg[arg].fpstag);
+
+            if(CLIarg + 1 >= data.cmdNBarg) // Missing mandatory argument
+            {
+                printf("Error: Missing mandatory argument %d (%s: %s)\n", CLIarg, fpscliarg[arg].fpstag, fpscliarg[arg].descr);
+                help_command(data.cmd[data.cmdindex].key);
+                argcheck_process_flag = 0;
+                DEBUG_TRACE_FEXIT();
+                return RETURN_CLICHECKARGARRAY_FAILURE;
+            }
 
             if(strcmp(data.cmdargtoken[CLIarg + 1].val.string, ".") == 0)
             {
@@ -1037,19 +1049,18 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
     DEBUG_TRACE_FSTART();
 
     int NBarg_processed = 0;
+    int cmdi = data.cmdindex;
 
     for(int arg = 0; arg < nbarg; arg++)
     {
-        if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOFPS))
+        // if argument is part of FPS
+        switch(fpscliarg[arg].type)
         {
-            // if argument is part of FPS
-            switch(fpscliarg[arg].type)
-            {
                 case CLIARG_FLOAT32:
                     functionparameter_SetParamValue_FLOAT32(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numf);
+                        data.cmd[cmdi].argdata[arg].val.f32);
                     NBarg_processed++;
                     break;
 
@@ -1057,7 +1068,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_FLOAT64(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numf);
+                        data.cmd[cmdi].argdata[arg].val.f64);
                     NBarg_processed++;
                     break;
 
@@ -1065,7 +1076,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_ONOFF(
                         fps,
                         fpscliarg[arg].fpstag,
-                        (int) data.cmdargtoken[arg + 1].val.numl);
+                        (int) data.cmd[cmdi].argdata[arg].val.i64);
                     NBarg_processed++;
                     break;
 
@@ -1073,7 +1084,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_INT32(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numl);
+                        data.cmd[cmdi].argdata[arg].val.i32);
                     NBarg_processed++;
                     break;
 
@@ -1081,7 +1092,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_UINT32(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numl);
+                        data.cmd[cmdi].argdata[arg].val.ui32);
                     NBarg_processed++;
                     break;
 
@@ -1089,7 +1100,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_INT64(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numl);
+                        data.cmd[cmdi].argdata[arg].val.i64);
                     NBarg_processed++;
                     break;
 
@@ -1097,7 +1108,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_UINT64(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.numl);
+                        data.cmd[cmdi].argdata[arg].val.ui64);
                     NBarg_processed++;
                     break;
 
@@ -1105,7 +1116,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_STRING(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.string);
+                        data.cmd[cmdi].argdata[arg].val.s);
                     NBarg_processed++;
                     break;
 
@@ -1113,15 +1124,7 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_STRING(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.string);
-                    NBarg_processed++;
-                    break;
-
-                case CLIARG_STREAM:
-                    functionparameter_SetParamValue_STRING(
-                        fps,
-                        fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.string);
+                        data.cmd[cmdi].argdata[arg].val.s);
                     NBarg_processed++;
                     break;
 
@@ -1129,11 +1132,10 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
                     functionparameter_SetParamValue_STRING(
                         fps,
                         fpscliarg[arg].fpstag,
-                        data.cmdargtoken[arg + 1].val.string);
+                        data.cmd[cmdi].argdata[arg].val.s);
                     NBarg_processed++;
                     break;
             }
-        }
     }
 
     DEBUG_TRACE_FEXIT();
@@ -1155,19 +1157,16 @@ int CMDargs_to_FPSparams_create(
     long fpi             = 0;
 
 
-    for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
+    for(int argi = 0; argi < data.cmd[data.cmdindex].nbparam; argi++)
     {
-        if(!(data.cmd[data.cmdindex].argdata[argi].flag &
-                CLICMDARG_FLAG_NOFPS))
-        {
-            // if argument is part of FPS
-            long tmpvall = 0;
+        // if argument is part of FPS
+        long tmpvall = 0;
 
-            switch(data.cmd[data.cmdindex].argdata[argi].type)
-            {
+        switch(data.cmd[data.cmdindex].argdata[argi].type)
+        {
                 // float point types
 
-                case CLIARG_FLOAT32:
+                case FPTYPE_FLOAT32:
                 {
                     float tmpf = data.cmd[data.cmdindex].argdata[argi].val.f32;
                     function_parameter_add_entry(
@@ -1175,14 +1174,14 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_FLOAT32,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpf,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                case CLIARG_FLOAT64:
+                case FPTYPE_FLOAT64:
                 {
                     double tmplf = data.cmd[data.cmdindex].argdata[argi].val.f64;
                     function_parameter_add_entry(
@@ -1190,7 +1189,7 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_FLOAT64,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmplf,
                         NULL);
                     NBarg_processed++;
@@ -1199,7 +1198,7 @@ int CMDargs_to_FPSparams_create(
 
                 // integer typtes
 
-                case CLIARG_ONOFF: // default to INT64
+                case FPTYPE_ONOFF: // default to INT64
                 {
                     tmpvall = data.cmd[data.cmdindex].argdata[argi].val.ui64;
                     function_parameter_add_entry(
@@ -1207,25 +1206,14 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_ONOFF,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpvall,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                /* case CLIARG_LONG: // default to INT64
-                 {
-                     tmpvall = data.cmd[data.cmdindex].argdata[argi].val.l;
-                     function_parameter_add_entry(fps, data.cmd[data.cmdindex].argdata[argi].fpstag,
-                                                  data.cmd[data.cmdindex].argdata[argi].descr,
-                                                  FPTYPE_INT64, FPFLAG_DEFAULT_INPUT, &tmpvall,
-                                                  NULL);
-                     NBarg_processed++;
-                 }
-                 break;*/
-
-                case CLIARG_INT32:
+                case FPTYPE_INT32:
                 {
                     int32_t tmpi32 = data.cmd[data.cmdindex].argdata[argi].val.i32;
                     function_parameter_add_entry(
@@ -1233,14 +1221,14 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_INT32,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpi32,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                case CLIARG_UINT32:
+                case FPTYPE_UINT32:
                 {
                     uint32_t tmpui32 =
                         data.cmd[data.cmdindex].argdata[argi].val.ui32;
@@ -1249,14 +1237,14 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_UINT32,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpui32,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                case CLIARG_INT64:
+                case FPTYPE_INT64:
                 {
                     int64_t tmpi64 = data.cmd[data.cmdindex].argdata[argi].val.i64;
                     function_parameter_add_entry(
@@ -1264,14 +1252,14 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_INT64,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpi64,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                case CLIARG_UINT64:
+                case FPTYPE_UINT64:
                 {
                     uint64_t tmpui64 =
                         data.cmd[data.cmdindex].argdata[argi].val.ui64;
@@ -1280,86 +1268,63 @@ int CMDargs_to_FPSparams_create(
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_UINT64,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         &tmpui64,
                         NULL);
                     NBarg_processed++;
                 }
                 break;
 
-                case CLIARG_STR_NOT_IMG:
+                case FPTYPE_STRING_NOT_STREAM:
+                case FPTYPE_STRING:
                     function_parameter_add_entry(
                         fps,
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_STRING,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         data.cmd[data.cmdindex].argdata[argi].val.s,
                         NULL);
                     NBarg_processed++;
                     break;
 
-                case CLIARG_IMG:
+                case FPTYPE_STREAMNAME:
                     function_parameter_add_entry(
                         fps,
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_STREAMNAME,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         data.cmd[data.cmdindex].argdata[argi].val.s,
                         NULL);
                     NBarg_processed++;
                     break;
 
-                case CLIARG_STREAM:
-                    function_parameter_add_entry(
-                        fps,
-                        data.cmd[data.cmdindex].argdata[argi].fpstag,
-                        data.cmd[data.cmdindex].argdata[argi].descr,
-                        FPTYPE_STREAMNAME,
-                        FPFLAG_DEFAULT_INPUT,
-                        data.cmd[data.cmdindex].argdata[argi].val.s,
-                        NULL);
-                    NBarg_processed++;
-                    break;
-
-                case CLIARG_STR:
-                    function_parameter_add_entry(
-                        fps,
-                        data.cmd[data.cmdindex].argdata[argi].fpstag,
-                        data.cmd[data.cmdindex].argdata[argi].descr,
-                        FPTYPE_STRING,
-                        FPFLAG_DEFAULT_INPUT,
-                        data.cmd[data.cmdindex].argdata[argi].val.s,
-                        NULL);
-                    NBarg_processed++;
-                    break;
-
-                case CLIARG_FILENAME:
+                case FPTYPE_FILENAME:
                     function_parameter_add_entry(
                         fps,
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_FILENAME,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         data.cmd[data.cmdindex].argdata[argi].val.s,
                         NULL);
                     NBarg_processed++;
                     break;
 
-                case CLIARG_FITSFILENAME:
+                case FPTYPE_FITSFILENAME:
                     function_parameter_add_entry(
                         fps,
                         data.cmd[data.cmdindex].argdata[argi].fpstag,
                         data.cmd[data.cmdindex].argdata[argi].descr,
                         FPTYPE_FITSFILENAME,
-                        FPFLAG_DEFAULT_INPUT,
+                        data.cmd[data.cmdindex].argdata[argi].fpflag,
                         data.cmd[data.cmdindex].argdata[argi].val.s,
                         NULL);
                     NBarg_processed++;
                     break;
 
-                case CLIARG_FPSNAME:
+                case FPTYPE_FPSNAME:
                     //printf("ADDING FPS ENTRY %s at index %d\n", data.cmd[data.cmdindex].argdata[argi].fpstag, argi);
                     function_parameter_add_entry(
                         fps,
@@ -1374,7 +1339,6 @@ int CMDargs_to_FPSparams_create(
                     NBarg_processed++;
                     break;
             }
-        }
     }
 
     DEBUG_TRACE_FEXIT();
@@ -1408,7 +1372,7 @@ void *get_farg_ptr(
     }
     else
     {
-        for(int argi = 0; argi < data.cmd[data.cmdindex].nbarg; argi++)
+        for(int argi = 0; argi < data.cmd[data.cmdindex].nbparam; argi++)
         {
             if(strcmp(data.cmd[data.cmdindex].argdata[argi].fpstag, tag) == 0)
             {

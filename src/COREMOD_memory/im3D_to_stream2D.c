@@ -20,7 +20,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input 3D image",
         "im3D",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] =
         ".outname",
         "output stream name",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outname,
         NULL
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] =
         ".slice_index",
         "initial slice index",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &slice_index,
         NULL
     }
@@ -48,7 +48,7 @@ static CLICMDARGDEF farg[] =
         ".loop_mode",
         "loop through slices",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &loop_mode,
         NULL
     }

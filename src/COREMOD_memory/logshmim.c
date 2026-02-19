@@ -96,7 +96,7 @@ static CLICMDARGDEF farg[] =
         ".sname",
         "stream image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &streamname,
         NULL
     },
@@ -105,7 +105,7 @@ static CLICMDARGDEF farg[] =
         ".saveON",
         "toggle save on/off",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &saveON,
         &fpi_saveON
     },
@@ -114,7 +114,7 @@ static CLICMDARGDEF farg[] =
         ".lastcubeON",
         "toggle last cube on/off",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &lastcubeON,
         &fpi_lastcubeON
     },
@@ -123,7 +123,7 @@ static CLICMDARGDEF farg[] =
         ".nextcube",
         "force jump to next cube",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &nextcube,
         &fpi_nextcube
     },
@@ -132,7 +132,7 @@ static CLICMDARGDEF farg[] =
         ".cubesize",
         "cube size, nb frame per cube",
         "10000",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cubesize,
         &fpi_cubesize
     },
@@ -141,7 +141,7 @@ static CLICMDARGDEF farg[] =
         ".dirname",
         "log directory",
         "/mnt/datalog/",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &savedirname,
         &fpi_savedirname
     },
@@ -150,7 +150,7 @@ static CLICMDARGDEF farg[] =
         ".frameindex",
         "frame index within cube (output)",
         "0",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &frameindex,
         &fpi_frameindex
     },
@@ -159,7 +159,7 @@ static CLICMDARGDEF farg[] =
         ".framecnt",
         "frame counter since stated logging (output)",
         "0",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &framecnt,
         &fpi_framecnt
     },
@@ -168,7 +168,7 @@ static CLICMDARGDEF farg[] =
         ".maxframecnt",
         "max frame count",
         "100000000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &maxframecnt,
         &fpi_maxframecnt
     },
@@ -177,7 +177,7 @@ static CLICMDARGDEF farg[] =
         ".filecnt",
         "file counter (output)",
         "0",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &filecnt,
         &fpi_filecnt
     },
@@ -186,7 +186,7 @@ static CLICMDARGDEF farg[] =
         ".maxfilecnt",
         "max file counter (output)",
         "100000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &maxfilecnt,
         &fpi_maxfilecnt
     },
@@ -195,7 +195,7 @@ static CLICMDARGDEF farg[] =
         ".outfname",
         "output file name",
         "0",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &outfname,
         NULL
     },
@@ -204,7 +204,7 @@ static CLICMDARGDEF farg[] =
         ".compress",
         "toggle compression on/off",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &compressON,
         &fpi_compressON
     },
@@ -213,7 +213,7 @@ static CLICMDARGDEF farg[] =
         ".savetime",
         "time taken to save",
         "0",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &savetime,
         &fpi_savetime
     },
@@ -222,7 +222,7 @@ static CLICMDARGDEF farg[] =
         ".writerRTprio",
         "writer real-time priority",
         "10",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &writerRTprio,
         &fpi_writerRTprio
     },

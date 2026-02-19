@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] =
         ".stream_basename",
         "output stream & input stream basename",
         "stream_basename",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &stream_basename,
         NULL
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] =
         ".n_input",
         "number of inputs to concatenate",
         "n_input",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ptr_n_input,
         NULL
     }

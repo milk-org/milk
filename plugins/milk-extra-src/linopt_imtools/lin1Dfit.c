@@ -41,7 +41,7 @@ static CLICMDARGDEF farg[] = {{
         ".indat",
         "input file",
         "data.txt",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &infname,
         NULL
     },
@@ -50,7 +50,7 @@ static CLICMDARGDEF farg[] = {{
         ".NBpt",
         "number of sample points",
         "1000",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &NBptval,
         NULL
     },
@@ -59,7 +59,7 @@ static CLICMDARGDEF farg[] = {{
         ".maxorder",
         "maximum polynomial order",
         "8",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &maxorderval,
         NULL
     },
@@ -68,7 +68,7 @@ static CLICMDARGDEF farg[] = {{
         ".outdat",
         "output file",
         "fitsol.txt",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outfname,
         NULL
     },
@@ -77,7 +77,7 @@ static CLICMDARGDEF farg[] = {{
         ".mode",
         "fit mode",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &modeval,
         NULL
     }

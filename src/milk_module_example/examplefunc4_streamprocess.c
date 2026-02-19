@@ -50,7 +50,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -59,7 +59,7 @@ static CLICMDARGDEF farg[] =
         ".out_name",
         "output image",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -69,7 +69,7 @@ static CLICMDARGDEF farg[] =
         ".cntindex",
         "counter index",
         "5",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &cntindex,
         &fpi_cntindex
     },
@@ -78,7 +78,7 @@ static CLICMDARGDEF farg[] =
         ".cntindexmax",
         "counter index max value",
         "100",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &cntindexmax,
         &fpi_cntindexmax
     },
@@ -87,7 +87,7 @@ static CLICMDARGDEF farg[] =
         ".option.ex0mode",
         "toggle0",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &ex0mode,
         &fpi_ex0mode
     },
@@ -96,7 +96,7 @@ static CLICMDARGDEF farg[] =
         ".option.ex1mode",
         "toggle1 conditional on toggle0",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &ex1mode,
         &fpi_ex1mode
     }

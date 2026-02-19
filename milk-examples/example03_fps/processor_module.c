@@ -17,7 +17,7 @@
  */
 static CLICMDARGDEF farg[] =
 {
-#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
+#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
     { \
         cli_type, key, descr, def_str, \
         cli_flags, (void **) ptr_addr, NULL \

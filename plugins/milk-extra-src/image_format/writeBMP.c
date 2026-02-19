@@ -18,7 +18,7 @@ static CLICMDARGDEF farg[] = {{
         ".bmp_fname",
         "BMP file name",
         "out.bmp",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &BMPfname,
         NULL
     },
@@ -27,7 +27,7 @@ static CLICMDARGDEF farg[] = {{
         ".imRname",
         "Red channel image",
         "imR",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imRname,
         NULL
     },
@@ -36,7 +36,7 @@ static CLICMDARGDEF farg[] = {{
         ".imGname",
         "Green channel image",
         "imG",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imGname,
         NULL
     },
@@ -45,7 +45,7 @@ static CLICMDARGDEF farg[] = {{
         ".imBname",
         "Blue channel image",
         "imB",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imBname,
         NULL
     }

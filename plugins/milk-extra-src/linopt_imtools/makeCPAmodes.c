@@ -59,7 +59,7 @@ static CLICMDARGDEF farg[] =
         ".out_name",
         "output image",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -68,7 +68,7 @@ static CLICMDARGDEF farg[] =
         ".sizex",
         "sizex",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &sizexout,
         NULL
     },
@@ -77,7 +77,7 @@ static CLICMDARGDEF farg[] =
         ".sizey",
         "sizey",
         "512",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &sizeyout,
         NULL
     },
@@ -86,7 +86,7 @@ static CLICMDARGDEF farg[] =
         ".align.centered",
         "on if centered",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &centered,
         &fpi_centered
     },
@@ -95,7 +95,7 @@ static CLICMDARGDEF farg[] =
         ".align.xcenter",
         "x axis center",
         "200",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &xcent,
         NULL
     },
@@ -104,7 +104,7 @@ static CLICMDARGDEF farg[] =
         ".align.ycenter",
         "y axis center",
         "200",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &ycent,
         NULL
     },
@@ -113,7 +113,7 @@ static CLICMDARGDEF farg[] =
         ".rCPAmin",
         "minimum radial cycle per aperture",
         "-1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &rCPAminval,
         NULL
     },
@@ -122,7 +122,7 @@ static CLICMDARGDEF farg[] =
         ".rCPAmax",
         "maximum radial cycle per aperture",
         "1008.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &rCPAmaxval,
         NULL
     },
@@ -131,7 +131,7 @@ static CLICMDARGDEF farg[] =
         ".CPAmax",
         "maximum cycle per aperture",
         "8.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &CPAmaxval,
         NULL
     },
@@ -140,7 +140,7 @@ static CLICMDARGDEF farg[] =
         ".deltaCPA",
         "CPA interval",
         "0.8",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &deltaCPAval,
         NULL
     },
@@ -149,7 +149,7 @@ static CLICMDARGDEF farg[] =
         ".radius",
         "disk radius",
         "160.0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radiusval,
         NULL
     },
@@ -158,7 +158,7 @@ static CLICMDARGDEF farg[] =
         ".radfactlim",
         "radius factor limit",
         "1.5",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radiusfactorlimval,
         NULL
     },
@@ -167,7 +167,7 @@ static CLICMDARGDEF farg[] =
         ".fpowerlaw",
         "frequency power law (amp x f^a)",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &fpowerlaw,
         NULL
     },
@@ -176,7 +176,7 @@ static CLICMDARGDEF farg[] =
         ".fpowerlaw_minf",
         "frequency power law min freq",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &fpowerlaw_minf,
         NULL
     },
@@ -185,7 +185,7 @@ static CLICMDARGDEF farg[] =
         ".fpowerlaw_maxf",
         "frequency power law max freq",
         "100.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &fpowerlaw_maxf,
         NULL
     },
@@ -194,7 +194,7 @@ static CLICMDARGDEF farg[] =
         ".writefile",
         "write file flag",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &writefileval,
         NULL
     },
@@ -203,7 +203,7 @@ static CLICMDARGDEF farg[] =
         ".maskim",
         "optional mask for extrapolation",
         "mask",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &maskim,
         NULL
     },
@@ -212,7 +212,7 @@ static CLICMDARGDEF farg[] =
         ".extrfactor",
         "extrapolation factor [radian]",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &extrfactor,
         NULL
     },
@@ -221,7 +221,7 @@ static CLICMDARGDEF farg[] =
         ".extroffset",
         "extrapolation offset [pix]",
         "0.5",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &extroffset,
         NULL
     }

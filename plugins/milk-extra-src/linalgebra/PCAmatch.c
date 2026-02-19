@@ -50,7 +50,7 @@ static CLICMDARGDEF farg[] =
         ".modesA",
         "input modes A",
         "inmA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &modesA,
         &fpi_modesA
     },
@@ -59,7 +59,7 @@ static CLICMDARGDEF farg[] =
         ".modesB",
         "input modes B",
         "inmB",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &modesB,
         &fpi_modesB
     },
@@ -68,7 +68,7 @@ static CLICMDARGDEF farg[] =
         ".outcoeffA",
         "output coeffs A",
         "outcA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeffA,
         &fpi_outcoeffA
     },
@@ -77,7 +77,7 @@ static CLICMDARGDEF farg[] =
         ".outcoeffB",
         "output coeffs B",
         "outcB",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeffB,
         &fpi_outcoeffB
     },
@@ -86,7 +86,7 @@ static CLICMDARGDEF farg[] =
         ".outimA",
         "output image A",
         "outcA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimA,
         &fpi_outimA
     },
@@ -95,7 +95,7 @@ static CLICMDARGDEF farg[] =
         ".outimB",
         "output image B",
         "outcB",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimB,
         &fpi_outimB
     },
@@ -105,7 +105,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }

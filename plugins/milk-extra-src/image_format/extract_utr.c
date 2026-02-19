@@ -31,7 +31,7 @@ static CLICMDARGDEF farg[] = {{
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &in_imname,
         NULL
     },
@@ -40,7 +40,7 @@ static CLICMDARGDEF farg[] = {{
         ".out_name",
         "up-the-ramp image",
         "out2",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &out_imname,
         NULL
     },
@@ -49,7 +49,7 @@ static CLICMDARGDEF farg[] = {{
         ".sat_value",
         "Saturation threshold",
         "satval",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ptr_sat_value,
         NULL
     }

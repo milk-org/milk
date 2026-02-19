@@ -35,7 +35,7 @@ static CLICMDARGDEF farg[] =
         ".iminname",
         "input image name",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &iminname,
         &fpi_iminname
     },
@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         ".imoutname",
         "output image name",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imoutname,
         &fpi_imoutname
     },
@@ -53,7 +53,7 @@ static CLICMDARGDEF farg[] =
         ".blurramp",
         "value of side pixs (total = 1 for 3 pix)",
         "1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &blurramp,
         &fpi_blurramp
     },
@@ -62,7 +62,7 @@ static CLICMDARGDEF farg[] =
         ".axis",
         "number of times operation is performed",
         "1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &NBloop,
         &fpi_NBloop
     }

@@ -51,7 +51,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT, // This will be exposed as a function argument in the milk CLI, which has to be entered
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), // This will be exposed as a function argument in the milk CLI, which has to be entered
         (void **) &inimname,
         NULL
     },
@@ -60,7 +60,7 @@ static CLICMDARGDEF farg[] =
         ".scaling",
         "scaling coefficient",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
+        FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
         (void **) &scoeff,
         NULL
     }
