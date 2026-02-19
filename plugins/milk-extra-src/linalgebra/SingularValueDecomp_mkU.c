@@ -44,7 +44,7 @@ static CLICMDARGDEF farg[] =
         ".inM",
         "input matrix M",
         "inM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmatM,
         &fpi_inmatM
     },
@@ -53,7 +53,7 @@ static CLICMDARGDEF farg[] =
         ".inV",
         "input matrix V",
         "inV",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmatV,
         &fpi_inmatV
     },
@@ -62,7 +62,7 @@ static CLICMDARGDEF farg[] =
         ".inS",
         "input singular values vec",
         "inS",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &invecS,
         &fpi_invecS
     },
@@ -72,7 +72,7 @@ static CLICMDARGDEF farg[] =
         ".outU",
         "output U",
         "outU",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outmatU,
         &fpi_outmatU
     },
@@ -82,7 +82,7 @@ static CLICMDARGDEF farg[] =
         ".outUS",
         "output US",
         "outU",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outmatUS,
         &fpi_outmatUS
     },
@@ -92,7 +92,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }

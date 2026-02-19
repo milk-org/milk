@@ -37,7 +37,7 @@ static CLICMDARGDEF farg[] =
         ".incoeffM",
         "input coeffs matrix",
         "inM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &incoeffM,
         &fpi_incoeffM
     },
@@ -46,7 +46,7 @@ static CLICMDARGDEF farg[] =
         ".outcoeffM",
         "output coeffs matrix",
         "outcA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeffM,
         &fpi_outcoeffM
     },
@@ -55,7 +55,7 @@ static CLICMDARGDEF farg[] =
         ".axis",
         "axis",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &axis,
         &fpi_axis
     }

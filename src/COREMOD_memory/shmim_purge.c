@@ -22,7 +22,7 @@ static CLICMDARGDEF farg[] = {{
         ".strfilter",
         "string filter",
         "im",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &stringfilter,
         NULL
     }

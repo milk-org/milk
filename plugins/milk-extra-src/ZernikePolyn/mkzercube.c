@@ -53,7 +53,7 @@ static CLICMDARGDEF farg[] =
         ".outimg",
         "output image name",
         "zerc",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outzcubename,
         &fpi_outzcubename
     },
@@ -62,7 +62,7 @@ static CLICMDARGDEF farg[] =
         ".xsize",
         "X size",
         "50",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &xsize,
         &fpi_xsize
     },
@@ -71,7 +71,7 @@ static CLICMDARGDEF farg[] =
         ".ysize",
         "Y size",
         "50",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ysize,
         &fpi_ysize
     },
@@ -80,7 +80,7 @@ static CLICMDARGDEF farg[] =
         ".xcent",
         "X center",
         "24.5",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &xcent,
         &fpi_xcent
     },
@@ -89,7 +89,7 @@ static CLICMDARGDEF farg[] =
         ".ycent",
         "Y center",
         "24.5",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &ycent,
         &fpi_ycent
     },
@@ -98,7 +98,7 @@ static CLICMDARGDEF farg[] =
         ".rad",
         "radius",
         "24.5",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radius,
         &fpi_radius
     },
@@ -107,7 +107,7 @@ static CLICMDARGDEF farg[] =
         ".radmaskfact",
         "masking radius factor",
         "1.2",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &radiusmaskfactor,
         &fpi_radiusmaskfactor
     },
@@ -116,7 +116,7 @@ static CLICMDARGDEF farg[] =
         ".TTfactor",
         "amplitude factor on TTr",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &TTfactor,
         &fpi_TTfactor
     },
@@ -125,7 +125,7 @@ static CLICMDARGDEF farg[] =
         ".NBzermode",
         "Number modes",
         "5",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &NBzermode,
         &fpi_NBzermode
     }

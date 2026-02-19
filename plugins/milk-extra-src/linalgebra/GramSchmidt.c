@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] =
         ".inmodes",
         "input modes",
         "inm",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmodes,
         &fpi_inmodes
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] =
         ".outmodes",
         "output modes",
         "outm",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outmodes,
         &fpi_outmodes
     },
@@ -47,7 +47,7 @@ static CLICMDARGDEF farg[] =
         ".auxmat",
         "optional aux matrix, co-transformed",
         "auxmat",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &auxmat,
         &fpi_auxmat
     },
@@ -57,7 +57,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }

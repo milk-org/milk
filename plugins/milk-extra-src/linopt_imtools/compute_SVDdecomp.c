@@ -14,7 +14,7 @@ static CLICMDARGDEF farg[] = {{
         ".inc",
         "input 3D cube",
         "imc",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imcinname,
         NULL
     },
@@ -23,7 +23,7 @@ static CLICMDARGDEF farg[] = {{
         ".outm",
         "output modes",
         "outm",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -32,7 +32,7 @@ static CLICMDARGDEF farg[] = {{
         ".outcoeff",
         "output coeffs",
         "outcoeff",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeffname,
         NULL
     }

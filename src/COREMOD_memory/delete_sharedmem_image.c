@@ -20,7 +20,7 @@ static CLICMDARGDEF farg[] = {{
         ".imname",
         "image name",
         "im",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imname,
         NULL
     }

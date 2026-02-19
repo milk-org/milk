@@ -61,11 +61,11 @@ void writer03_validate();
  * Defines CLI types, FPS types, and default values for all writer parameters.
  */
 #define WRITER_PARAMS(X) \
-    X(CLIARG_STR,    FPTYPE_STRING,  char*,    ".out_name", "Output Stream Name", "stream03", "stream03", &out_name_ptr, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,  uint32_t, ".width",    "Stream Width",       "200",      200,         &width_ptr,    (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,  uint32_t, ".height",   "Stream Height",      "200",      200,         &height_ptr,   (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32, float,    ".freq_x",   "Spatial Freq X",     "0.1",      0.1f,        &freq_x_ptr,   (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32, float,    ".freq_y",   "Spatial Freq Y",     "0.05",     0.05f,       &freq_y_ptr,   (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(   FPTYPE_STRING,  char*,    ".out_name", "Output Stream Name", "stream03", "stream03", &out_name_ptr,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,  uint32_t, ".width",    "Stream Width",       "200",      200,         &width_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,  uint32_t, ".height",   "Stream Height",      "200",      200,         &height_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32, float,    ".freq_x",   "Spatial Freq X",     "0.1",      0.1f,        &freq_x_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32, float,    ".freq_y",   "Spatial Freq Y",     "0.05",     0.05f,       &freq_y_ptr, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 /**
  * @brief Detailed help text for the writer.

@@ -28,7 +28,7 @@ static CLICMDARGDEF farg[] =
         ".matAB",
         "input decomposition of modes B in basis A",
         "matA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmatAB,
         &fpi_inmatAB
     },
@@ -37,7 +37,7 @@ static CLICMDARGDEF farg[] =
         ".matArot",
         "output rotation matrix",
         "matA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outmatArot,
         &fpi_outmatArot
     },
@@ -46,7 +46,7 @@ static CLICMDARGDEF farg[] =
         ".optmode",
         "optimization mode",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &optmode,
         &fpi_optmode
     }

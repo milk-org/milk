@@ -76,7 +76,7 @@ static CLICMDARGDEF farg[] =
         ".inM",
         "input matrix",
         "inM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inM,
         &fpi_inM
     },
@@ -86,7 +86,7 @@ static CLICMDARGDEF farg[] =
         ".outU",
         "output U",
         "outU",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outU,
         &fpi_outU
     },
@@ -95,7 +95,7 @@ static CLICMDARGDEF farg[] =
         ".outS",
         "output ingular values",
         "outS",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outS,
         &fpi_outS
     },
@@ -105,7 +105,7 @@ static CLICMDARGDEF farg[] =
         ".outV",
         "output V",
         "outV",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outV,
         &fpi_outV
     },
@@ -114,7 +114,7 @@ static CLICMDARGDEF farg[] =
         ".Vdim0",
         "first dimension of V if 3D, 0 if 2D",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &Vdim0,
         &fpi_Vdim0
     },
@@ -124,7 +124,7 @@ static CLICMDARGDEF farg[] =
         ".svdlim",
         "SVD limit",
         "0.01",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &svdlim,
         &fpi_svdlim
     },
@@ -133,7 +133,7 @@ static CLICMDARGDEF farg[] =
         ".maxNBmode",
         "Maximum number of modes",
         "10000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &maxNBmode,
         &fpi_maxNBmode
     },
@@ -143,7 +143,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     },
@@ -153,7 +153,7 @@ static CLICMDARGDEF farg[] =
         ".compmode",
         "flag: optional computations and checks",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &compmode,
         &fpi_compmode
     }

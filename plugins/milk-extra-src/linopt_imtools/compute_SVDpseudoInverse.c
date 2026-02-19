@@ -25,7 +25,7 @@ static CLICMDARGDEF farg[] =
         ".inim",
         "input image",
         "im",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -34,7 +34,7 @@ static CLICMDARGDEF farg[] =
         ".outim",
         "output image",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -43,7 +43,7 @@ static CLICMDARGDEF farg[] =
         ".svdeps",
         "SVD cutoff",
         "0.001",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &SVD_epsilon,
         NULL
     },
@@ -52,7 +52,7 @@ static CLICMDARGDEF farg[] =
         ".maxNBmode",
         "Maximum NB modes",
         "10000",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &max_NBmodes,
         NULL
     },
@@ -61,7 +61,7 @@ static CLICMDARGDEF farg[] =
         ".outimVT",
         "output VT matrix",
         "outVTmat",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimVTmatname,
         NULL
     },
@@ -70,7 +70,7 @@ static CLICMDARGDEF farg[] =
         ".GPU",
         "use GPU",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &useGPU,
         NULL
     }

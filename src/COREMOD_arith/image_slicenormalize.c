@@ -24,7 +24,7 @@ static CLICMDARGDEF farg[] =
         ".in0name",
         "input image 0",
         "im0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -33,7 +33,7 @@ static CLICMDARGDEF farg[] =
         ".maskim",
         "input image mask",
         "imm",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &maskimname,
         NULL
     },
@@ -42,7 +42,7 @@ static CLICMDARGDEF farg[] =
         ".outname",
         "output image",
         "im0n",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -51,7 +51,7 @@ static CLICMDARGDEF farg[] =
         ".axis",
         "norm axis",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &sliceaxis,
         &fpi_sliceaxis
     },
@@ -60,7 +60,7 @@ static CLICMDARGDEF farg[] =
         ".auxin",
         "auxillary input image, in-place update",
         "auxin",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &auxin,
         NULL
     },
@@ -69,7 +69,7 @@ static CLICMDARGDEF farg[] =
         ".RMS",
         "output RMS=1 over mask",
         "OFF",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &modeRMS,
         NULL
     }

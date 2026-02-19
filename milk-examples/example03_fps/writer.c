@@ -133,11 +133,15 @@ int FPSINIT_writer(
     // Free-running mode
     fps.cmdset.triggermode = PROCESSINFO_TRIGGERMODE_IMMEDIATE; 
 
-#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) \
-    { \
-        c_type val = def_val; \
-        function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); \
-    }
+#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
+{ \
+    c_type val = def_val; \
+    void *vptr = &val; \
+    if (FPTYPE_IS_STRING(fps_type)) { \
+        vptr = *(void**)&val; \
+    } \
+    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+}
     WRITER_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
 

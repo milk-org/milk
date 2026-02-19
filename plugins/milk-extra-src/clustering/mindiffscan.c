@@ -18,7 +18,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image cube",
         "imc1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &farg_inimname,
         NULL
     },
@@ -27,7 +27,7 @@ static CLICMDARGDEF farg[] =
         ".outdname",
         "output directory name",
         "outd",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &farg_outdname,
         NULL
     },
@@ -36,7 +36,7 @@ static CLICMDARGDEF farg[] =
         ".kNNsize",
         "number of samples in cluster",
         "20",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &farg_kNNsize,
         NULL
     }

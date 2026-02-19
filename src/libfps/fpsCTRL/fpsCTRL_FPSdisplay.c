@@ -9,6 +9,7 @@
 #include "TUItools.h"
 #include "fpsCTRL_globals.h"
 
+#include "fps_TUI_shim.h"
 #include "fpsCTRL_FPSdisplay.h"
 #include "print_nodeinfo.h"
 #include "level0node_summary.h"
@@ -436,7 +437,14 @@ errno_t fpsCTRL_FPSdisplay(
                         }
                     }
 
-                    TUI_printfw(" %-*.*s", max_kw_width[cl], max_kw_width[cl], fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
+                    TUI_printfw(" ");
+                    if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
+                        screenprint_setcolor(COLOR_BLACK_ON_WHITE);
+                    }
+                    TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
+                    if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
+                        screenprint_unsetcolor(COLOR_BLACK_ON_WHITE);
+                    }
 
                     if (is_resolved_stream) {
                         screenprint_unsetcolor(2);

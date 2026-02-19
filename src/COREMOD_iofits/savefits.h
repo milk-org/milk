@@ -41,10 +41,10 @@ errno_t CLIADDCMD_COREMOD_iofits__saveFITS();
  */
 
 #define SAVEFITS_PARAMS(X) \
-    X(CLIARG_IMG,   FPTYPE_STREAMNAME, char*, ".in_name",   "input image",       "im1",      "im1",      &savefits_inimname,  (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,   FPTYPE_FILENAME,   char*, ".out_fname", "output FITS file",  "out.fits", "out.fits", &savefits_outfname,  (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_INT32, FPTYPE_INT32,      int,   ".bitpix",    "FITS bitpix",       "0",        0,          &savefits_outbitpix, (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_STR,   FPTYPE_FILENAME,   char*, ".in_header", "header import file", "",         "",         &savefits_inheader,  (void*)val,  CLIARG_HIDDEN_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*, ".in_name",   "input image",       "im1",      "im1",      &savefits_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FILENAME,   char*, ".out_fname", "output FITS file",  "out.fits", "out.fits", &savefits_outfname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_INT32,      int,   ".bitpix",    "FITS bitpix",       "0",        0,          &savefits_outbitpix, FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_FILENAME,   char*, ".in_header", "header import file", "",         "",         &savefits_inheader,  FPFLAG_DEFAULT_INPUT)
 
 #define SAVEFITS_HELPTEXT \
     "saveFITS: save image as FITS\n" \

@@ -45,21 +45,21 @@ errno_t CLIADDCMD_COREMODE_arith__multicrop2D();
 /* ================================================================== */
 
 #define MULTICROP_WPARAMS(X, wn) \
-    X(CLIARG_ONOFF,  FPTYPE_ONOFF,  int64_t,  ".w"#wn".active",      "crop window active",        "0",  0, &multicrop_wactive[wn],      (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_ONOFF,  FPTYPE_ONOFF,  int64_t,  ".w"#wn".addmode",     "1:add, 0:replace",          "0",  0, &multicrop_waddmode[wn],     (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropxstart",  "crop x coord start",        "30", 30, &multicrop_wcropxstart[wn],  (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropxsize",   "crop x coord size",         "30", 30, &multicrop_wcropxsize[wn],   (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropystart",  "crop y coord start",        "30", 30, &multicrop_wcropystart[wn],  (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropysize",   "crop y coord size",         "30", 30, &multicrop_wcropysize[wn],   (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropxpos",    "x placement in output",     "30", 30, &multicrop_wcropxpos[wn],    (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropypos",    "y placement in output",     "30", 30, &multicrop_wcropypos[wn],    (void*)&val, CLIARG_HIDDEN_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32, uint32_t, ".w"#wn".cropbinfact", "binning factor",            "1",  1, &multicrop_wbinfact[wn],     (void*)&val, CLIARG_HIDDEN_DEFAULT)
+    X( FPTYPE_ONOFF,  int64_t,  ".w"#wn".active",      "crop window active",        "0",  0, &multicrop_wactive[wn], FPFLAG_DEFAULT_INPUT) \
+    X( FPTYPE_ONOFF,  int64_t,  ".w"#wn".addmode",     "1:add, 0:replace",          "0",  0, &multicrop_waddmode[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropxstart",  "crop x coord start",        "30", 30, &multicrop_wcropxstart[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropxsize",   "crop x coord size",         "30", 30, &multicrop_wcropxsize[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropystart",  "crop y coord start",        "30", 30, &multicrop_wcropystart[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropysize",   "crop y coord size",         "30", 30, &multicrop_wcropysize[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropxpos",    "x placement in output",     "30", 30, &multicrop_wcropxpos[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropypos",    "y placement in output",     "30", 30, &multicrop_wcropypos[wn], FPFLAG_DEFAULT_INPUT) \
+    X(FPTYPE_UINT32, uint32_t, ".w"#wn".cropbinfact", "binning factor",            "1",  1, &multicrop_wbinfact[wn], FPFLAG_DEFAULT_INPUT)
 
 #define MULTICROP2D_PARAMS(X) \
-    X(CLIARG_IMG,    FPTYPE_STREAMNAME, char*,    ".insname",  "input stream name",  "inim",  "inim", &multicrop_insname,  (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,    FPTYPE_STREAMNAME, char*,    ".outsname", "output stream name", "outim", "outim",&multicrop_outsname,  (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".outxsize", "output x size",      "200",   200,    &multicrop_outxsize, (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32, FPTYPE_UINT32,     uint32_t, ".outysize", "output y size",      "200",   200,    &multicrop_outysize, (void*)&val, CLIARG_VISIBLE_DEFAULT) \
+    X(   FPTYPE_STREAMNAME, char*,    ".insname",  "input stream name",  "inim",  "inim", &multicrop_insname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(   FPTYPE_STREAMNAME, char*,    ".outsname", "output stream name", "outim", "outim",&multicrop_outsname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".outxsize", "output x size",      "200",   200,    &multicrop_outxsize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".outysize", "output y size",      "200",   200,    &multicrop_outysize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
     MULTICROP_WPARAMS(X, 0) MULTICROP_WPARAMS(X, 1) MULTICROP_WPARAMS(X, 2) MULTICROP_WPARAMS(X, 3) \
     MULTICROP_WPARAMS(X, 4) MULTICROP_WPARAMS(X, 5) MULTICROP_WPARAMS(X, 6) MULTICROP_WPARAMS(X, 7)
 

@@ -506,10 +506,12 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
                            char        *outargstring)
 {
     char tmpstr[STRINGMAXLEN_CMD_SYNTAX];
+    tmpstr[0] = '\0';
 
+    int CLIargcnt = 0;
     for(int arg = 0; arg < nbarg; arg++)
     {
-        if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI))
+        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             char typestring[100] = "?";
 
@@ -552,9 +554,10 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
                 break;
             }
 
-            if(arg == 0)
+            char tmpstr1[STRINGMAXLEN_CMD_SYNTAX];
+            if(CLIargcnt == 0)
             {
-                snprintf(tmpstr,
+                snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX,
                          "<%s [%s] ->(%s)>",
                          fpscliarg[arg].descr,
@@ -563,22 +566,21 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             }
             else
             {
-                char tmpstr1[STRINGMAXLEN_CMD_SYNTAX];
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX - 1,
                          " <%s [%s] ->(%s)>",
                          fpscliarg[arg].descr,
                          typestring,
                          fpscliarg[arg].fpstag);
-
-
-                // max number of chars we can write
-                int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
-                if(n > 2)
-                {
-                    strncat(tmpstr, tmpstr1, n - 1);
-                }
             }
+
+            // max number of chars we can write
+            int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
+            if(n > (int) strlen(tmpstr1))
+            {
+                strcat(tmpstr, tmpstr1);
+            }
+            CLIargcnt++;
         }
     }
     strncpy(outargstring, tmpstr, STRINGMAXLEN_CMD_SYNTAX - 1);
@@ -602,7 +604,7 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
 
     for(int arg = 0; arg < nbarg; arg++)
     {
-        if(!(fpscliarg[arg].flag & CLICMDARG_FLAG_NOCLI))
+        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
         {
             char tmpstr1[STRINGMAXLEN_CMD_EXAMPLE];
             snprintf(tmpstr1,
@@ -611,10 +613,10 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
                      fpscliarg[arg].example);
 
             // max number of chars we can write
-            int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr1);
-            if(n > 2)
+            int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr);
+            if(n > (int) strlen(tmpstr1))
             {
-                strncat(tmpstr, tmpstr1, n - 1);
+                strcat(tmpstr, tmpstr1);
             }
         }
     }
@@ -768,29 +770,12 @@ errno_t help_command(
             //printf("  CLI#       tagname             Value         description\n");
 
             int CLIargcnt = 0;
-            for(int argi = 0; argi < data.cmd[cmdi].nbarg; argi++)
+            for(int argi = 0; argi < data.cmd[cmdi].nbparam; argi++)
             {
-                //int colorcode = colorcodeargCLI;
-
-                if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
-                {
-                    printf("%6d  ", CLIargcnt);
-                }
-                else
-                {
-                    printf("[hidden]");
-                }
-                CLIargcnt++;
-
                 char valuestring[STRINGMAXLEN_CLICMDARG] = "???";
 
                 switch(data.cmd[cmdi].argdata[argi].type)
                 {
-                /*case CLIARG_FLOAT:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ float ]  %f",
-                                   data.cmd[cmdi].argdata[argi].val.f);
-                    break;*/
-
                 case CLIARG_FLOAT32:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
@@ -811,11 +796,6 @@ errno_t help_command(
                                    "[ ONOFF ]  %ld",
                                    data.cmd[cmdi].argdata[argi].val.ui64);
                     break;
-
-                /*case CLIARG_LONG:
-                    SNPRINTF_CHECK(valuestring, STRINGMAXLEN_CLICMDARG, "[ long  ]  %ld",
-                                   data.cmd[cmdi].argdata[argi].val.l);
-                    break;*/
 
                 case CLIARG_INT32:
                     SNPRINTF_CHECK(valuestring,
@@ -855,35 +835,23 @@ errno_t help_command(
                 case CLIARG_IMG:
                     SNPRINTF_CHECK(valuestring,
                                    STRINGMAXLEN_CLICMDARG,
-                                   "[  IMG  ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
-                    break;
-
-                case CLIARG_STR:
-                    SNPRINTF_CHECK(valuestring,
-                                   STRINGMAXLEN_CLICMDARG,
-                                   "[  STR  ]  %s",
-                                   data.cmd[cmdi].argdata[argi].val.s);
-                    break;
-
-                case CLIARG_STREAM:
-                    SNPRINTF_CHECK(valuestring,
-                                   STRINGMAXLEN_CLICMDARG,
-                                   "[ STREA ]  %s",
+                                   "[ STREAM]  %s",
                                    data.cmd[cmdi].argdata[argi].val.s);
                     break;
                 }
 
-                if(!(data.cmd[cmdi].argdata[argi].flag & CLICMDARG_FLAG_NOCLI))
+                if(data.cmd[cmdi].argdata[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
                 {
-                    printf(COLORARGCLI " %-16s" COLORRESET " %-24s %s\n",
+                    printf("%6d   " COLORARGCLI " %-16s" COLORRESET " %-24s %s\n",
+                           CLIargcnt,
                            data.cmd[cmdi].argdata[argi].fpstag,
                            valuestring,
                            data.cmd[cmdi].argdata[argi].descr);
+                    CLIargcnt++;
                 }
                 else
                 {
-                    printf(COLORARGnotCLI " %-16s" COLORRESET " %-24s %s\n",
+                    printf("[hidden] " COLORARGnotCLI " %-16s" COLORRESET " %-24s %s\n",
                            data.cmd[cmdi].argdata[argi].fpstag,
                            valuestring,
                            data.cmd[cmdi].argdata[argi].descr);

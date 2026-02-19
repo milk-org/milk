@@ -51,7 +51,7 @@ static CLICMDARGDEF farg[] =
         ".AOloopindex",
         "AO loop index",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &AOloopindex,
         NULL
     },
@@ -61,7 +61,7 @@ static CLICMDARGDEF farg[] =
         ".indata",
         "input data stream",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &indata,
         NULL
     },
@@ -71,7 +71,7 @@ static CLICMDARGDEF farg[] =
         ".inmask",
         "input data mask",
         "inmask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmask,
         NULL
     },
@@ -81,7 +81,7 @@ static CLICMDARGDEF farg[] =
         ".PFmat",
         "predictive filter matrix",
         "PFmat",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &PFmat,
         NULL
     },
@@ -91,7 +91,7 @@ static CLICMDARGDEF farg[] =
         ".outdata",
         "output data stream",
         "outPF",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outdata,
         NULL
     },
@@ -101,7 +101,7 @@ static CLICMDARGDEF farg[] =
         ".outmask",
         "output data mask",
         "outmask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outmask,
         NULL
     },
@@ -111,7 +111,7 @@ static CLICMDARGDEF farg[] =
         ".outPFstat",
         "output PF stats image",
         "outPFstat",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outPFstat,
         NULL
     },
@@ -121,7 +121,7 @@ static CLICMDARGDEF farg[] =
         ".GPUset",
         "column-separated list of GPUs",
         ":0:",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUsetstr,
         &fpi_GPUsetstr
     },
@@ -131,7 +131,7 @@ static CLICMDARGDEF farg[] =
         ".comp.residual",
         "compute residual mismatch",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &compOLresidual,
         &fpi_compOLresidual
     },
@@ -141,7 +141,7 @@ static CLICMDARGDEF farg[] =
         ".comp.OLresidualNBpt",
         "sampling size for OL residual",
         "1000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &compOLresidualNBpt,
         &fpi_compOLresidualNBpt
     }

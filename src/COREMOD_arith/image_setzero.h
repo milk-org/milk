@@ -31,7 +31,7 @@ errno_t CLIADDCMD_COREMOD_arith__imsetzero();
 /* ================================================================== */
 
 #define IMSETZERO_PARAMS(X) \
-    X(CLIARG_IMG, FPTYPE_STREAMNAME, char*, ".imname", "input image", "im1", "im1", &imsetzero_inimname, (void*)val, CLIARG_VISIBLE_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*, ".imname", "input image", "im1", "im1", &imsetzero_inimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 #define IMSETZERO_HELPTEXT \
     "imzero: set all image pixels to zero\n" \

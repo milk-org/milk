@@ -79,7 +79,7 @@ static CLICMDARGDEF farg[] =
         ".inname",
         "input telemetry",
         "indata",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inname,
         NULL
     },
@@ -89,7 +89,7 @@ static CLICMDARGDEF farg[] =
         ".PForder",
         "predictive filter order",
         "10",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &PForder,
         &fpi_PForder
     },
@@ -99,7 +99,7 @@ static CLICMDARGDEF farg[] =
         ".PFlatency",
         "time latency [frame]",
         "2.7",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &PFlatency,
         &fpi_PFlatency
     },
@@ -109,7 +109,7 @@ static CLICMDARGDEF farg[] =
         ".SVDeps",
         "SVD cutoff",
         "0.001",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &SVDeps,
         &fpi_SVDeps
     },
@@ -119,7 +119,7 @@ static CLICMDARGDEF farg[] =
         ".reglambda",
         "regularization coefficient",
         "0.001",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &reglambda,
         &fpi_reglambda
     },
@@ -128,7 +128,7 @@ static CLICMDARGDEF farg[] =
         ".outPFname",
         "output filter",
         "outPF",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outPFname,
         NULL
     },
@@ -137,7 +137,7 @@ static CLICMDARGDEF farg[] =
         ".loopgain",
         "loop gain",
         "0.2",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &loopgain,
         &fpi_loopgain
     },
@@ -146,7 +146,7 @@ static CLICMDARGDEF farg[] =
         ".out3Dfilt",
         "write output 3D filter",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &out3Dwrite,
         &fpi_out3Dwrite
     },
@@ -155,7 +155,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }
