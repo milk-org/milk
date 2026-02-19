@@ -542,20 +542,33 @@ uint32_t RegisterCLIcmd(
 
     // assemble argument syntax string for help
     char argstring[STRINGMAXLEN_CMD_SYNTAX];
-    CLIhelp_make_argstring(CLIcmddata.funcfpscliarg,
-                           CLIcmddata.nbarg,
+    CLICMDARGDEF *farg_visible = (CLICMDARGDEF *) malloc(sizeof(CLICMDARGDEF) * CLIcmddata.nbarg);
+    int nbarg_visible = 0;
+    for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    {
+        if(CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            farg_visible[nbarg_visible] = CLIcmddata.funcfpscliarg[argi];
+            nbarg_visible++;
+        }
+    }
+
+    CLIhelp_make_argstring(farg_visible,
+                           nbarg_visible,
                            argstring);
     strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
 
 
     // assemble example string for help
     char cmdexamplestring[STRINGMAXLEN_CMD_EXAMPLE];
-    CLIhelp_make_cmdexamplestring(CLIcmddata.funcfpscliarg,
-                                  CLIcmddata.nbarg,
+    CLIhelp_make_cmdexamplestring(farg_visible,
+                                  nbarg_visible,
                                   CLIcmddata.key,
                                   cmdexamplestring);
     strncpy(data.cmd[data.NBcmd].example, cmdexamplestring,
             STRINGMAXLEN_CMD_EXAMPLE - 1);
+
+    free(farg_visible);
 
 
     strncpy(data.cmd[data.NBcmd].Ccall, "--callstring--",
@@ -565,7 +578,17 @@ uint32_t RegisterCLIcmd(
     DEBUG_TRACEPOINT(
         "define arguments to CLI function from content of "
         "CLIcmddata.funcfpscliarg");
-    data.cmd[data.NBcmd].nbarg = CLIcmddata.nbarg;
+    data.cmd[data.NBcmd].nbarg = 0; // count only primary mandatory arguments
+    for(int argi = 0; argi < CLIcmddata.nbarg; argi++)
+    {
+        if(CLIcmddata.funcfpscliarg[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            data.cmd[data.NBcmd].nbarg++;
+        }
+    }
+
+    // Still allocate the full array for all parameters (including hidden ones)
+    data.cmd[data.NBcmd].nbparam = CLIcmddata.nbarg;
     if(CLIcmddata.nbarg > 0)
     {
         data.cmd[data.NBcmd].argdata =
@@ -575,8 +598,8 @@ uint32_t RegisterCLIcmd(
         {
             data.cmd[data.NBcmd].argdata[argi].type =
                 CLIcmddata.funcfpscliarg[argi].type;
-            data.cmd[data.NBcmd].argdata[argi].flag =
-                CLIcmddata.funcfpscliarg[argi].flag;
+            data.cmd[data.NBcmd].argdata[argi].fpflag =
+                CLIcmddata.funcfpscliarg[argi].fpflag;
 
             strncpy(data.cmd[data.NBcmd].argdata[argi].descr,
                     CLIcmddata.funcfpscliarg[argi].descr,
@@ -594,64 +617,49 @@ uint32_t RegisterCLIcmd(
             switch(data.cmd[data.NBcmd].argdata[argi].type)
             {
 
-                /*case CLIARG_FLOAT:
-                    data.cmd[data.NBcmd].argdata[argi].val.f = atof(
-                                CLIcmddata.funcfpscliarg[argi].example);
-                    break;*/
-
-                case CLIARG_FLOAT32:
+                case FPTYPE_FLOAT32:
                     data.cmd[data.NBcmd].argdata[argi].val.f32 =
                         atof(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_FLOAT64:
+                case FPTYPE_FLOAT64:
                     data.cmd[data.NBcmd].argdata[argi].val.f64 =
                         atof(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                /*case CLIARG_LONG:
-                    data.cmd[data.NBcmd].argdata[argi].val.l = atol(
-                                CLIcmddata.funcfpscliarg[argi].example);
-                    break;*/
-
-                case CLIARG_INT32:
+                case FPTYPE_INT32:
                     data.cmd[data.NBcmd].argdata[argi].val.i32 =
                         (int32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_UINT32:
+                case FPTYPE_UINT32:
                     data.cmd[data.NBcmd].argdata[argi].val.ui32 =
                         (uint32_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_INT64:
+                case FPTYPE_INT64:
                     data.cmd[data.NBcmd].argdata[argi].val.i64 =
                         (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_UINT64:
+                case FPTYPE_UINT64:
                     data.cmd[data.NBcmd].argdata[argi].val.ui64 =
                         (uint64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_ONOFF:
+                case FPTYPE_ONOFF:
                     data.cmd[data.NBcmd].argdata[argi].val.ui64 =
                         (int64_t) atol(CLIcmddata.funcfpscliarg[argi].example);
                     break;
 
-                case CLIARG_STR_NOT_IMG:
-                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                            CLIcmddata.funcfpscliarg[argi].example,
-                            STRINGMAXLEN_CLICMDARG - 1);
-                    break;
-
-                case CLIARG_IMG:
-                    strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
-                            CLIcmddata.funcfpscliarg[argi].example,
-                            STRINGMAXLEN_CLICMDARG - 1);
-                    break;
-
-                case CLIARG_STR:
+                case FPTYPE_STRING:
+                case FPTYPE_STRING_NOT_STREAM:
+                case FPTYPE_STREAMNAME:
+                case FPTYPE_FILENAME:
+                case FPTYPE_FITSFILENAME:
+                case FPTYPE_FPSNAME:
+                case FPTYPE_DIRNAME:
+                case FPTYPE_EXECFILENAME:
                     strncpy(data.cmd[data.NBcmd].argdata[argi].val.s,
                             CLIcmddata.funcfpscliarg[argi].example,
                             STRINGMAXLEN_CLICMDARG - 1);

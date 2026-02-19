@@ -69,7 +69,7 @@ static CLICMDARGDEF farg[] =
         ".matA",
         "input matrix A",
         "matA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmatA,
         &fpi_inmatA
     },
@@ -78,7 +78,7 @@ static CLICMDARGDEF farg[] =
         ".matB",
         "input matrix B",
         "matA",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmatB,
         &fpi_inmatB
     },
@@ -87,7 +87,7 @@ static CLICMDARGDEF farg[] =
         ".transpA",
         "transpose A",
         "OFF",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &transpA,
         &fpi_transpA
     },
@@ -96,7 +96,7 @@ static CLICMDARGDEF farg[] =
         ".transpB",
         "transpose B",
         "OFF",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &transpB,
         &fpi_transpB
     },
@@ -105,7 +105,7 @@ static CLICMDARGDEF farg[] =
         ".outM",
         "output matrix",
         "out",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outM,
         &fpi_outM
     },
@@ -115,7 +115,7 @@ static CLICMDARGDEF farg[] =
         ".GPUdevice",
         "GPU device, 99 for CPU",
         "-1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &GPUdevice,
         &fpi_GPUdevice
     }

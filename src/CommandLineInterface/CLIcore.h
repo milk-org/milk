@@ -284,7 +284,8 @@ typedef struct
     char Ccall[STRINGMAXLEN_CMD_CCALL];
 
     // command arguments and parameters
-    int nbarg;
+    int nbarg;   // Number of visible CLI arguments
+    int nbparam; // Total number of parameters (visible + hidden)
 
     CLICMDARGDATA *argdata; // arguments and parameters to function
 

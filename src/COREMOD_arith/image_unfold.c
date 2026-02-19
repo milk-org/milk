@@ -30,7 +30,7 @@ static CLICMDARGDEF farg[] =
         ".inim",
         "input image",
         "im0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -39,7 +39,7 @@ static CLICMDARGDEF farg[] =
         ".outim",
         "output image",
         "imout",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -48,7 +48,7 @@ static CLICMDARGDEF farg[] =
         ".axisA",
         "axis to merged",
         "2",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &axisA,
         &fpi_axisA
     },
@@ -57,7 +57,7 @@ static CLICMDARGDEF farg[] =
         ".axisB",
         "merge into this axis",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &axisB,
         &fpi_axisB
     },
@@ -66,7 +66,7 @@ static CLICMDARGDEF farg[] =
         ".colsize",
         "column size",
         "10",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &colsize,
         &fpi_colsize
     }

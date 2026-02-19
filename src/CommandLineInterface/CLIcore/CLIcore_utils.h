@@ -23,13 +23,6 @@ typedef const char *__restrict CONST_WORD;
 #include "CommandLineInterface/IMGID.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#define CLIARG_VISIBLE_DEFAULT                                                 \
-    CLICMDARG_FLAG_DEFAULT, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
-#define CLIARG_HIDDEN_DEFAULT                                                  \
-    CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_INPUT
-#define CLIARG_OUTPUT_DEFAULT                                                  \
-    CLICMDARG_FLAG_NOCLI, FPTYPE_AUTO, FPFLAG_DEFAULT_OUTPUT
-
 #define CLICMD_FIELDS_FPSPROC                                                  \
     __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,                       \
         CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, NULL, NULL, NULL
@@ -58,7 +51,7 @@ typedef struct
 #define FARG_INPUTIM(imkey)                                                    \
     {                                                                          \
         CLIARG_STR, "." #imkey ".name", "input image", #imkey,                 \
-            CLIARG_VISIBLE_DEFAULT, (void **) &imkey.name                      \
+            (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), (void **) &imkey.name                      \
     }
 
 
@@ -83,7 +76,7 @@ typedef struct
      "." #imkey ".name",           \
      "output image",               \
      #imkey,                       \
-     CLIARG_VISIBLE_DEFAULT,       \
+     (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),       \
      (void **) &imkey.name,        \
      NULL}
 
@@ -92,7 +85,7 @@ typedef struct
          "." #imkey ".xsize",      \
          "x size",                 \
          "256",                    \
-         CLIARG_VISIBLE_DEFAULT,   \
+         (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),   \
          (void **) &imkey.xsize,   \
          NULL}
 
@@ -101,7 +94,7 @@ typedef struct
          "." #imkey ".ysize",      \
          "y size",                 \
          "256",                    \
-         CLIARG_VISIBLE_DEFAULT,   \
+         (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),   \
          (void **) &imkey.ysize,   \
          NULL}
 
@@ -111,7 +104,7 @@ typedef struct
          "." #imkey ".shared",     \
          "shared flag",            \
          "0",                      \
-         CLIARG_HIDDEN_DEFAULT,    \
+         FPFLAG_DEFAULT_INPUT,    \
          (void **) &imkey.shared,  \
          NULL}
 
@@ -121,7 +114,7 @@ typedef struct
          "." #imkey ".NBkw",       \
          "number keywords",        \
          "10",                     \
-         CLIARG_HIDDEN_DEFAULT,    \
+         FPFLAG_DEFAULT_INPUT,    \
          (void **) &imkey.NBkw,    \
          NULL}
 
@@ -131,7 +124,7 @@ typedef struct
          "." #imkey ".CBsize",     \
          "circ buffer size",       \
          "0",                      \
-         CLIARG_HIDDEN_DEFAULT,    \
+         FPFLAG_DEFAULT_INPUT,    \
          (void **) &imkey.CBsize,  \
          NULL}
 

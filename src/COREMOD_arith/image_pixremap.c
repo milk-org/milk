@@ -23,7 +23,7 @@ static CLICMDARGDEF farg[] =
         ".insname",
         "input image name",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &insname,
         NULL
     },
@@ -32,7 +32,7 @@ static CLICMDARGDEF farg[] =
         ".map",
         "mapping image name",
         "mapim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &mapsname,
         NULL
     },

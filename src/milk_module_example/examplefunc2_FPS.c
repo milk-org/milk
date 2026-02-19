@@ -25,7 +25,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -34,7 +34,7 @@ static CLICMDARGDEF farg[] =
         ".scaling",
         "scaling coefficient",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
+        FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
         (void **) &scoeff,
         NULL
     }

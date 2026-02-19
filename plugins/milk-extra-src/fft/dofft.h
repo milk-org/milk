@@ -8,9 +8,9 @@
 errno_t dofft_addCLIcmd();
 
 #define DOFFT_PARAMS(X) \
-    X(CLIARG_IMG, FPTYPE_STREAMNAME, char*, ".in_name",  "input complex image",  "im1", "im1", &dofft_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR, FPTYPE_STREAMNAME, char*, ".out_name", "output complex image", "out1","out1",&dofft_outimname,(void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_INT32, FPTYPE_INT32,    int,   ".dir",      "FFT direction",        "-1",  -1,    &dofft_dir,       (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*, ".in_name",  "input complex image",  "im1", "im1", &dofft_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_STREAMNAME, char*, ".out_name", "output complex image", "out1","out1",&dofft_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_INT32,    int,   ".dir",      "FFT direction",        "-1",  -1,    &dofft_dir, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 extern char *dofft_inimname;
 extern char *dofft_outimname;

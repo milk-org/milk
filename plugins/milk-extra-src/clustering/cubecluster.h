@@ -8,14 +8,14 @@
 errno_t CLIADDCMD_clustering__imcube_mkcluster();
 
 #define CUBECLUSTER_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*, ".in_name",      "input image cube",      "imc1", "imc1", &farg_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,     FPTYPE_STREAMNAME, char*, ".outdname",     "output directory name", "outd", "outd", &farg_outdname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float, ".T",             "threshold",             "1.0",  1.0,   &threshold,       (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".B",          "branch number",         "10",   10,    &branchB,         (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".leafposmode","leaf position mode",    "1",    1,     &leafposmode,     (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".NBCFmax",    "max number of CFs",     "2048", 2048,  &NBCFmax,         (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_ONOFF,   FPTYPE_ONOFF,      int64_t, ".opt.rebuild", "rebuild tree after scan","1",    1,     &optrebuild,      (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_ONOFF,   FPTYPE_ONOFF,      int64_t, ".opt.condense","condense tree after scan","1",   1,     &optcondense,     (void*)&val, CLIARG_HIDDEN_DEFAULT)
+    X(    FPTYPE_STREAMNAME, char*, ".in_name",      "input image cube",      "imc1", "imc1", &farg_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(    FPTYPE_STREAMNAME, char*, ".outdname",     "output directory name", "outd", "outd", &farg_outdname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float, ".T",             "threshold",             "1.0",  1.0,   &threshold, FPFLAG_DEFAULT_INPUT)  \
+    X( FPTYPE_UINT32,     uint32_t, ".B",          "branch number",         "10",   10,    &branchB, FPFLAG_DEFAULT_INPUT)  \
+    X( FPTYPE_UINT32,     uint32_t, ".leafposmode","leaf position mode",    "1",    1,     &leafposmode, FPFLAG_DEFAULT_INPUT)  \
+    X( FPTYPE_UINT32,     uint32_t, ".NBCFmax",    "max number of CFs",     "2048", 2048,  &NBCFmax, FPFLAG_DEFAULT_INPUT)  \
+    X(  FPTYPE_ONOFF,      int64_t, ".opt.rebuild", "rebuild tree after scan","1",    1,     &optrebuild, FPFLAG_DEFAULT_INPUT)  \
+    X(  FPTYPE_ONOFF,      int64_t, ".opt.condense","condense tree after scan","1",   1,     &optcondense, FPFLAG_DEFAULT_INPUT)
 
 extern char     *farg_inimname;
 extern char     *farg_outdname;

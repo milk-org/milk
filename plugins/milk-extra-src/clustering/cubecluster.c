@@ -16,14 +16,14 @@
 #ifndef CLUSTERING_CUBECLUSTER_H
 #define CLUSTERING_CUBECLUSTER_H
 #define CUBECLUSTER_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*, ".in_name",      "input image cube",      "imc1", "imc1", &farg_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,     FPTYPE_STREAMNAME, char*, ".outdname",     "output directory name", "outd", "outd", &farg_outdname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float, ".T",             "threshold",             "1.0",  1.0,   &threshold,       (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".B",          "branch number",         "10",   10,    &branchB,         (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".leafposmode","leaf position mode",    "1",    1,     &leafposmode,     (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".NBCFmax",    "max number of CFs",     "2048", 2048,  &NBCFmax,         (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_ONOFF,   FPTYPE_ONOFF,      int64_t, ".opt.rebuild", "rebuild tree after scan","1",    1,     &optrebuild,      (void*)&val, CLIARG_HIDDEN_DEFAULT)  \
-    X(CLIARG_ONOFF,   FPTYPE_ONOFF,      int64_t, ".opt.condense","condense tree after scan","1",   1,     &optcondense,     (void*)&val, CLIARG_HIDDEN_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*, ".in_name",      "input image cube",      "imc1", "imc1", &farg_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_STREAMNAME, char*, ".outdname",     "output directory name", "outd", "outd", &farg_outdname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float, ".T",             "threshold",             "1.0",  1.0,   &threshold, FPFLAG_DEFAULT_INPUT)  \
+    X(FPTYPE_UINT32,     uint32_t, ".B",          "branch number",         "10",   10,    &branchB, FPFLAG_DEFAULT_INPUT)  \
+    X(FPTYPE_UINT32,     uint32_t, ".leafposmode","leaf position mode",    "1",    1,     &leafposmode, FPFLAG_DEFAULT_INPUT)  \
+    X(FPTYPE_UINT32,     uint32_t, ".NBCFmax",    "max number of CFs",     "2048", 2048,  &NBCFmax, FPFLAG_DEFAULT_INPUT)  \
+    X(FPTYPE_ONOFF,      int64_t, ".opt.rebuild", "rebuild tree after scan","1",    1,     &optrebuild, FPFLAG_DEFAULT_INPUT)  \
+    X(FPTYPE_ONOFF,      int64_t, ".opt.condense","condense tree after scan","1",   1,     &optcondense, FPFLAG_DEFAULT_INPUT)
 #endif
 
 #include "CLIcore.h"
@@ -220,7 +220,7 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
 
 #ifndef FPS_STANDALONE
 static CLICMDARGDEF farg[] = {
-#define X_CLI_DEF(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { cli_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
+#define X_CLI_DEF(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) { fps_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
     CUBECLUSTER_PARAMS(X_CLI_DEF)
 #undef X_CLI_DEF
 };
@@ -239,7 +239,15 @@ errno_t CLIADDCMD_clustering__imcube_mkcluster() { INSERT_STD_CLIREGISTERFUNC re
 #ifdef FPS_STANDALONE
 int FPSINIT_cubeclust(const char *fps_name, const char *keywords, const char *description) {
     FUNCTION_PARAMETER_STRUCT fps; FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, CUBECLUSTER_HELPTEXT); FPS_INIT_PROCINFO_DEFAULTS(fps, "im1", 1);
-#define X_FPS_INIT(cli_type, fps_type, c_type, key, descr, def_str, def_val, ptr_addr, val_expr, cli_flags) { c_type val = def_val; function_parameter_add_entry(&fps, key, descr, fps_type, FPFLAG_DEFAULT_INPUT, val_expr, NULL); }
+#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
+{ \
+    c_type val = def_val; \
+    void *vptr = &val; \
+    if (FPTYPE_IS_STRING(fps_type)) { \
+        vptr = *(void**)&val; \
+    } \
+    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+}
     CUBECLUSTER_PARAMS(X_FPS_INIT)
 #undef X_FPS_INIT
     fps_add_processinfo_entries(&fps);

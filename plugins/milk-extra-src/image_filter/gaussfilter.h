@@ -18,10 +18,10 @@ imageID gauss_3Dfilter(const char *__restrict ID_name,
 /* ================================================================== */
 
 #define GAUSSFILT_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*,  ".in_name",     "input image",            "im1",  "im1", &gaussfilt_inimname,   (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_STR,     FPTYPE_STREAMNAME, char*,  ".out_name",    "output image",           "out1", "out1", &gaussfilt_outimname,  (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float,  ".sigma",       "gaussian sigma",         "2.0",  2.0,   &gaussfilt_sigma,      (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_INT32,   FPTYPE_INT32,      int,    ".filter_size", "filter box size",        "5",    5,     &gaussfilt_filtersize, (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(    FPTYPE_STREAMNAME, char*,  ".in_name",     "input image",            "im1",  "im1", &gaussfilt_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(    FPTYPE_STREAMNAME, char*,  ".out_name",    "output image",           "out1", "out1", &gaussfilt_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float,  ".sigma",       "gaussian sigma",         "2.0",  2.0,   &gaussfilt_sigma, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(  FPTYPE_INT32,      int,    ".filter_size", "filter box size",        "5",    5,     &gaussfilt_filtersize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 extern char  *gaussfilt_inimname;
 extern char  *gaussfilt_outimname;

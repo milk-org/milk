@@ -36,10 +36,10 @@ errno_t CLIADDCMD_COREMOD_arith__imset_1Dpixrange();
  */
 
 #define SETPIX1D_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*,    ".imname", "input image",  "im1", "im1", &setpix1d_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float,    ".pixval", "pixel value",  "3.2", 3.2f,  &setpix1d_pixval,   (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".mini",   "min index",    "10",  10,    &setpix1d_minindex, (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".maxi",   "max index",    "50",  50,    &setpix1d_maxindex, (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(FPTYPE_STREAMNAME, char*,    ".imname", "input image",  "im1", "im1", &setpix1d_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float,    ".pixval", "pixel value",  "3.2", 3.2f,  &setpix1d_pixval, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".mini",   "min index",    "10",  10,    &setpix1d_minindex, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_UINT32,     uint32_t, ".maxi",   "max index",    "50",  50,    &setpix1d_maxindex, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 #define SETPIX1D_HELPTEXT \
     "setpix1Drange: set image pixel value over range\n" \

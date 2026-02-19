@@ -95,7 +95,7 @@ static CLICMDARGDEF farg[] =
         ".GPUindex",
         "GPU index, 99 for CPU",
         "0",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &GPUindex,
         &fpi_GPUindex
     },
@@ -104,7 +104,7 @@ static CLICMDARGDEF farg[] =
         ".insname",
         "input stream name",
         "inV",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &insname,
         &fpi_insname
     },
@@ -113,7 +113,7 @@ static CLICMDARGDEF farg[] =
         ".inmasksname",
         "nput mask stream name",
         "inV",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmasksname,
         &fpi_inmasksname
     },
@@ -122,7 +122,7 @@ static CLICMDARGDEF farg[] =
         ".immodes",
         "modes stream name",
         "mat",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &immodes,
         &fpi_immodes
     },
@@ -131,7 +131,7 @@ static CLICMDARGDEF farg[] =
         ".outcoeff",
         "output coefficients",
         "outV",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outcoeff,
         &fpi_outcoeff
     },
@@ -140,7 +140,7 @@ static CLICMDARGDEF farg[] =
         ".outinit",
         "output init mode",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &outinit,
         &fpi_outinit
     },
@@ -149,7 +149,7 @@ static CLICMDARGDEF farg[] =
         ".option.axmode",
         "0 for normal mode extraction, 1 for expansion",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &axmode,
         &fpi_axmode
     },
@@ -158,7 +158,7 @@ static CLICMDARGDEF farg[] =
         ".option.PROCESS",
         "processing flag",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &PROCESS,
         &fpi_PROCESS
     },
@@ -167,7 +167,7 @@ static CLICMDARGDEF farg[] =
         ".option.TRACEMODE",
         "writing trace",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &TRACEMODE,
         &fpi_TRACEMODE
     },
@@ -176,7 +176,7 @@ static CLICMDARGDEF farg[] =
         ".option.MODENORM",
         "input modes normalization",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &MODENORM,
         &fpi_MODENORM
     },
@@ -185,7 +185,7 @@ static CLICMDARGDEF farg[] =
         ".option.sname_intot",
         "optional input normalization stream",
         "null",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &intot_stream,
         &fpi_intot_stream
     },
@@ -194,7 +194,7 @@ static CLICMDARGDEF farg[] =
         ".option.sname_refin",
         "optional input reference to be subtracted stream",
         "null",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inrefsname,
         &fpi_inrefsname
     },
@@ -203,7 +203,7 @@ static CLICMDARGDEF farg[] =
         ".option.sname_refout",
         "optional output reference to be subtracted stream",
         "null",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outrefsname,
         &fpi_outrefsname
     },
@@ -212,7 +212,7 @@ static CLICMDARGDEF farg[] =
         ".option.twait",
         "insert time wait [us] at each iteration",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &twait,
         &fpi_twait
     },
@@ -221,7 +221,7 @@ static CLICMDARGDEF farg[] =
         ".option.mmax",
         "partial computation: max m index value",
         "100000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &mmax,
         &fpi_mmax
     },
@@ -230,7 +230,7 @@ static CLICMDARGDEF farg[] =
         ".option.nmax",
         "partial computation: max n index value",
         "100000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &nmax,
         &fpi_nmax
     }

@@ -10,7 +10,7 @@ static CLICMDARGDEF farg[] = {{
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -19,7 +19,7 @@ static CLICMDARGDEF farg[] = {{
         ".kwname",
         "keyword name",
         "KW1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &kwname,
         NULL
     },
@@ -28,7 +28,7 @@ static CLICMDARGDEF farg[] = {{
         ".kwval",
         "keyword value",
         "1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &kwval,
         NULL
     },
@@ -37,7 +37,7 @@ static CLICMDARGDEF farg[] = {{
         ".comment",
         "comment",
         "keyword comment",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &comment,
         NULL
     }

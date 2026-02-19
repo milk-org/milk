@@ -30,7 +30,7 @@ static CLICMDARGDEF farg[] =
         ".inpos",
         "points positions, filename",
         "pts.dat",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inpos,
         NULL
     },
@@ -40,7 +40,7 @@ static CLICMDARGDEF farg[] =
         ".radius",
         "radius",
         "0.1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &radius,
         &fpi_radius
     },
@@ -49,7 +49,7 @@ static CLICMDARGDEF farg[] =
         ".gapsize",
         "gap size",
         "0.1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &gapsize,
         &fpi_gapsize
     }

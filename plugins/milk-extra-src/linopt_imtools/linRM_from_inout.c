@@ -18,7 +18,7 @@ static CLICMDARGDEF farg[] = {{
         ".inimname",
         "input image",
         "im",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inputimname,
         NULL
     },
@@ -27,7 +27,7 @@ static CLICMDARGDEF farg[] = {{
         ".inmaskname",
         "mask image",
         "mask",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inmaskname,
         NULL
     },
@@ -36,7 +36,7 @@ static CLICMDARGDEF farg[] = {{
         ".mrespimname",
         "measured response images",
         "mresp",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &mrespimname,
         NULL
     },
@@ -45,7 +45,7 @@ static CLICMDARGDEF farg[] = {{
         ".outRM",
         "output RM image",
         "ourRM",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outRMimname,
         NULL
     }

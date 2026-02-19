@@ -33,7 +33,7 @@ static CLICMDARGDEF farg[] =
         ".infname",
         "input file",
         "imfname",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &infilename,
         NULL
     },
@@ -42,7 +42,7 @@ static CLICMDARGDEF farg[] =
         ".outimname",
         "output image name",
         "outimname",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -51,7 +51,7 @@ static CLICMDARGDEF farg[] =
         ".errmode",
         "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
         "1",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &FITSIOerrmode,
         NULL
     }

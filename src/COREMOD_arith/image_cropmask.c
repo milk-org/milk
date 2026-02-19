@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] =
         ".insname",
         "input stream name",
         "inim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cminsname,
         &fpi_cminsname
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] =
         ".masksname",
         "mask stream name",
         "maskim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &masksname,
         &fpi_masksname
     },
@@ -47,7 +47,7 @@ static CLICMDARGDEF farg[] =
         ".outsname",
         "output stream name",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outsname,
         &fpi_outsname
     },
@@ -56,7 +56,7 @@ static CLICMDARGDEF farg[] =
         ".cropxstart",
         "crop x coord start",
         "30",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cropxstart,
         &fpi_cropxstart
     },
@@ -65,7 +65,7 @@ static CLICMDARGDEF farg[] =
         ".cropxsize",
         "crop x coord size",
         "32",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cropxsize,
         &fpi_cropxsize
     },
@@ -74,7 +74,7 @@ static CLICMDARGDEF farg[] =
         ".cropystart",
         "crop y coord start",
         "20",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cropystart,
         &fpi_cropystart
     },
@@ -83,7 +83,7 @@ static CLICMDARGDEF farg[] =
         ".cropysize",
         "crop y coord size",
         "32",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cropysize,
         &fpi_cropysize
     }

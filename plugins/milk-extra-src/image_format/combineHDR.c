@@ -20,7 +20,7 @@ static CLICMDARGDEF farg[] = {{
         ".flistname",
         "file list name",
         "HDRfilelist.txt",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &flistname,
         NULL
     },
@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] = {{
         ".satlevel",
         "Saturation level",
         "satval",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &satlevel,
         NULL
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] = {{
         ".biaslevel",
         "Bias level",
         "biasval",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &biaslevel,
         NULL
     },
@@ -47,7 +47,7 @@ static CLICMDARGDEF farg[] = {{
         ".outimname",
         "output image",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     }

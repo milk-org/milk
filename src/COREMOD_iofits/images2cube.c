@@ -29,7 +29,7 @@ static CLICMDARGDEF farg[] =
         ".imgname",
         "input image name format",
         "im_",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &imgname,
         NULL
     },
@@ -38,7 +38,7 @@ static CLICMDARGDEF farg[] =
         ".nbframes",
         "number of frames",
         "100",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &nbframes,
         NULL
     },
@@ -47,7 +47,7 @@ static CLICMDARGDEF farg[] =
         ".cubename",
         "output cube name",
         "imc",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &cubename,
         NULL
     }

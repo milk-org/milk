@@ -34,7 +34,7 @@ static CLICMDARGDEF farg[] = {{
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -43,7 +43,7 @@ static CLICMDARGDEF farg[] = {{
         ".out_name",
         "output image",
         "out1",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimname,
         NULL
     },
@@ -52,7 +52,7 @@ static CLICMDARGDEF farg[] = {{
         ".delaysec",
         "delay [s]",
         "0.001",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &delaysec,
         NULL
     },
@@ -61,7 +61,7 @@ static CLICMDARGDEF farg[] = {{
         ".timebuffsize",
         "time buffer size",
         "10000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &timebuffsize,
         NULL
     },
@@ -70,7 +70,7 @@ static CLICMDARGDEF farg[] = {{
         ".option.timeavemode",
         "Enable time window averaging (>0)",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &avemode,
         &fpi_avemode
     },
@@ -79,7 +79,7 @@ static CLICMDARGDEF farg[] = {{
         ".option.timeavedtns",
         "Averaging time window width [ns]",
         "10000",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &avedtns,
         &fpi_timeavedtns
     },
@@ -88,7 +88,7 @@ static CLICMDARGDEF farg[] = {{
         ".status.framelag",
         "current time lag frame index",
         "100",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &statusframelag,
         NULL
     },
@@ -97,7 +97,7 @@ static CLICMDARGDEF farg[] = {{
         ".status.kkin",
         "input cube slice index",
         "100",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &statuskkin,
         NULL
     },
@@ -106,7 +106,7 @@ static CLICMDARGDEF farg[] = {{
         ".status.kkout",
         "output cube slice index",
         "100",
-        CLIARG_OUTPUT_DEFAULT,
+        FPFLAG_DEFAULT_OUTPUT,
         (void **) &statuskkout,
         NULL
     }

@@ -33,10 +33,10 @@ errno_t CLIADDCMD_COREMOD_arith__imset_2Dpix();
 /* ================================================================== */
 
 #define SETPIX_PARAMS(X) \
-    X(CLIARG_IMG,     FPTYPE_STREAMNAME, char*,    ".imname", "input image",  "im1", "im1", &setpix_inimname, (void*)val,  CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_FLOAT32, FPTYPE_FLOAT32,    float,    ".pixval", "pixel value",  "3.2", 3.2f,  &setpix_pixval,   (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".col",    "col index",    "100", 100,   &setpix_colindex, (void*)&val, CLIARG_VISIBLE_DEFAULT) \
-    X(CLIARG_UINT32,  FPTYPE_UINT32,     uint32_t, ".row",    "row index",    "100", 100,   &setpix_rowindex, (void*)&val, CLIARG_VISIBLE_DEFAULT)
+    X(    FPTYPE_STREAMNAME, char*,    ".imname", "input image",  "im1", "im1", &setpix_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X(FPTYPE_FLOAT32,    float,    ".pixval", "pixel value",  "3.2", 3.2f,  &setpix_pixval, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X( FPTYPE_UINT32,     uint32_t, ".col",    "col index",    "100", 100,   &setpix_colindex, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
+    X( FPTYPE_UINT32,     uint32_t, ".row",    "row index",    "100", 100,   &setpix_rowindex, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
 
 #define SETPIX_HELPTEXT \
     "setpix: set image pixel value\n" \

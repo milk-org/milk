@@ -26,7 +26,7 @@ static CLICMDARGDEF farg[] =
         " (1: gauss)\n"
         " (2: truncated gauss)\n",
         "0",
-        CLIARG_HIDDEN_DEFAULT,
+        FPFLAG_DEFAULT_INPUT,
         (void **) &distrib,
         NULL
     }

@@ -12,7 +12,7 @@ static CLICMDARGDEF farg[] = {{
         ".imre_name",
         "input imaginary image",
         "imC",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &inimname,
         NULL
     },
@@ -21,7 +21,7 @@ static CLICMDARGDEF farg[] = {{
         ".imim_name",
         "output real image",
         "outre",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outreimname,
         NULL
     },
@@ -30,7 +30,7 @@ static CLICMDARGDEF farg[] = {{
         ".out_name",
         "output imaginary image",
         "outim",
-        CLIARG_VISIBLE_DEFAULT,
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
         (void **) &outimimname,
         NULL
     }
