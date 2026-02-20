@@ -6,6 +6,7 @@ src/config.h
 src/milk_config.h
 local
 lib
+.cache
 
 _tmplist.txt
 .vscode
