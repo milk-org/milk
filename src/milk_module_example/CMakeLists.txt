@@ -6,6 +6,7 @@ set(SOURCEFILES
 	examplefunc2_FPS.c
 	examplefunc3_updatestreamloop.c
 	examplefunc4_streamprocess.c
+	examplefunc_fps_cli_poc.c
 )
 
 # list include files (.h) that should be installed on system
@@ -55,3 +56,9 @@ target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
+
+add_executable(fpsclitest examplefunc_fps_cli_poc.c)
+target_link_libraries(fpsclitest ${LINKLIBS} ${LIBNAME})
+target_include_directories(fpsclitest PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
+install(TARGETS fpsclitest DESTINATION bin)
+
