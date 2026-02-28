@@ -10,6 +10,8 @@ endif()
 
 set(SOURCEFILES
     fps_add_entry.c
+    fps_SetParamCLIindex.c
+    fps_print_info.c
     fps_checkparameter.c
     fps_connect.c
     fps_connectExternalFPS.c

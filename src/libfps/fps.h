@@ -242,6 +242,7 @@ typedef struct
     } info;
 
     long cnt0;
+    int cli_index; // CLI argument index (-1 if not CLI arg)
 
 } FUNCTION_PARAMETER;
 
@@ -446,6 +447,8 @@ uint16_t function_parameter_FPCONFexit(FUNCTION_PARAMETER_STRUCT *fps);
 uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 
 #include "fps_add_entry.h"
+#include "fps_SetParamCLIindex.h"
+#include "fps_print_info.h"
 #include "fps_checkparameter.h"
 #include "fps_connect.h"
 #include "fps_connectExternalFPS.h"
@@ -757,10 +760,6 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
     return 0; \
 }
 
-// Helper for X_HELP_PRINT to extract the first argument from variadic args
-#define GET_1ST_ARG_HELPER(arg1, ...) arg1
-#define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
-
 #ifndef COLORRESET
 #define COLORRESET     "\033[0m"
 #endif
@@ -770,7 +769,6 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #ifndef COLORARGnotCLI
 #define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
 #endif
-
 #ifndef COLORCOMMAND
 #define COLORCOMMAND   "\033[32m" // command: green
 #endif
@@ -780,6 +778,16 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #ifndef COLOROPTION
 #define COLOROPTION    "\033[33m" // option: yellow
 #endif
+#ifndef COLORPRIMARY
+#define COLORPRIMARY   "\033[1;36m" // primary CLI argument: bold cyan
+#endif
+#ifndef COLORNORMAL
+#define COLORNORMAL    "\033[0;37m" // normal text
+#endif
+
+// Helper for X_HELP_PRINT to extract the first argument from variadic args
+#define GET_1ST_ARG_HELPER(arg1, ...) arg1
+#define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
 
 #define X_HELP_PRINT(fps_type, c_type, key, descr, def_str, ptr_name, get_func, flags, ...) \
     { \
@@ -918,6 +926,7 @@ int main(int argc, char *argv[]) { \
         if (show_help_color) printf(COLORHEADER "CLI call arguments:" COLORRESET "\n"); \
         else printf("CLI call arguments:\n"); \
         int CLIargcnt = 0; \
+        (void) CLIargcnt; \
         PARAMS_MACRO(X_HELP_PRINT) \
         printf("\n"); \
         return 0; \
@@ -927,9 +936,14 @@ int main(int argc, char *argv[]) { \
         return 1; \
     } \
     if (strcmp(command, "fps") == 0) { \
-        char cmd[STRINGMAXLEN_FPS_NAME + 20]; \
-        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", fps_name); \
-        return system(cmd); \
+        FUNCTION_PARAMETER_STRUCT fps; \
+        if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+            fprintf(stderr, "Error: cannot connect to FPS '%s'.\n", fps_name); \
+            return 1; \
+        } \
+        function_parameter_print_info(&fps, 0, 0); \
+        function_parameter_struct_disconnect(&fps); \
+        return 0; \
     } else if (strcmp(command, "fpslist") == 0) { \
         FUNCTION_PARAMETER_STRUCT *fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT)); \
         if (fpsarray == NULL) return 1; \

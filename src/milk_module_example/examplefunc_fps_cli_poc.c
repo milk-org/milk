@@ -1,514 +1,409 @@
 /**
  * @file    examplefunc_fps_cli_poc.c
- * @brief   POC for unifying FPS and CLI arguments
+ * @brief   Proof of Concept (POC) for Unifying FPS and CLI Arguments
  *
- * This example demonstrates:
- * 1. Defining parameters primarily via FPS.
- * 2. Using a binding structure to link FPS parameters to local variables.
- * 3. Parsing CLI arguments to update FPS values.
+ * This implementation demonstrates the "FPS-as-Primary" architecture.
+ * Traditional MILK modules define CLI arguments in a static CLICMDARGDEF array,
+ * which is then manually mapped to Function Parameter Structure (FPS) entries.
+ *
+ * This POC reverses that dependency:
+ * 1. Parameters are defined ONCE in a unified structure (MY_PARAMS macro).
+ * 2. This definition automatically populates both:
+ *    - The FPS Shared Memory (for external control via milk-fps-set).
+ *    - The CLI argument mapping (for order-based positional arguments).
+ * 3. Local C variables are synchronized with FPS entries automatically.
+ *
+ * Benefits:
+ * - Single source of truth for all parameters.
+ * - Automatic CLI help generation derived from FPS descriptions.
+ * - Support for both module-based (milk CLI) and standalone execution.
  */
 
 #include "CLIcore.h"
-#include "fps_add_entry.h" // For function_parameter_add_entry
+#include "fps_add_entry.h"
+#include <stdlib.h>
 
 // =============================================================================
-// PROPOSED NEW INFRASTRUCTURE (To be moved to CLIcore / libfps later)
+// PARAMETER DEFINITIONS
+// =============================================================================
+
+/* Local variables that the computation logic will actually use.
+ * In this architecture, they are "synced" with FPS shared memory.
+ */
+static double  param_gain = 1.0;
+static long    param_iter = 10;
+static int32_t param_mode = 0;
+static int32_t param_verbose = 0;
+static float   param_threshold = 0.5;
+static char    param_input_stream[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char    param_output_path[FUNCTION_PARAMETER_STRMAXLEN] = "/tmp/output.fits";
+
+/**
+ * @brief Unified Parameter Macro (X-Macro Pattern)
+ *
+ * This macro centralizes the definition of all parameters.
+ * Syntax: X(keyword, local_ptr, fptype, cli_index, fpflag, description)
+ *
+ * - keyword:   The name in the FPS (e.g. "gain" -> "exfpscli.gain")
+ * - local_ptr: Pointer to the local C variable for syncing.
+ * - fptype:    The MILK Function Parameter Type (FPTYPE_FLOAT64, etc.)
+ * - cli_index: The 0-based position in the CLI call (milk-fpsclitest <arg0> <arg1>)
+ * - fpflag:    Standard FPS flags (FPFLAG_DEFAULT_INPUT, etc.)
+ * - description: Human-readable help text.
+ */
+#define MY_PARAMS(X) \
+    X("gain",         &param_gain,      FPTYPE_FLOAT64,    0, FPFLAG_DEFAULT_INPUT, "Gain parameter") \
+    X("iterations",   &param_iter,      FPTYPE_INT64,      1, FPFLAG_DEFAULT_INPUT, "Number of iterations") \
+    X("mode",         &param_mode,      FPTYPE_INT32,      2, FPFLAG_DEFAULT_INPUT, "Execution mode") \
+    X("verbose",      &param_verbose,   FPTYPE_ONOFF,      3, FPFLAG_DEFAULT_INPUT, "Verbose output") \
+    X("threshold",    &param_threshold, FPTYPE_FLOAT32,    4, FPFLAG_DEFAULT_INPUT, "Detection threshold") \
+    X("input_stream", param_input_stream, FPTYPE_STREAMNAME, -1, FPFLAG_DEFAULT_INPUT, "Input stream name") \
+    X("output_path",  param_output_path,  FPTYPE_STRING,      5, FPFLAG_DEFAULT_INPUT, "Output file path")
+
+
+// =============================================================================
+// INFRASTRUCTURE HELPERS
 // =============================================================================
 
 /**
- * @brief Binding structure between FPS keyword and local C variable
+ * @brief Binding structure between FPS keyword and local C variable.
+ *
+ * This structure effectively replaces CLICMDARGDEF by linking FPS keywords
+ * directly to the memory locations of local variables.
  */
 typedef struct
 {
-    const char *fpskeyword; // FPS keyword (e.g. "params.gain")
-    void       *ptr;        // Pointer to local variable
-    uint64_t    type;       // Expected type (FPTYPE_...)
-    int         cli_index;  // 0-based index in CLI arguments (-1 if not in CLI)
-    uint64_t    fpflag;     // FPS flags (e.g. FPFLAG_DEFAULT_INPUT)
-    const char *descr;      // Description for FPS
+    const char *fpskeyword; /**< FPS keyword (e.g. "gain") */
+    void       *ptr;        /**< Pointer to local variable for syncing */
+    uint64_t    type;       /**< Expected type (FPTYPE_...) */
+    int         cli_index;  /**< 0-based index in CLI arguments (-1 if not in CLI) */
+    uint64_t    fpflag;     /**< FPS flags (e.g. FPFLAG_DEFAULT_INPUT) */
+    const char *descr;      /**< Description for FPS and CLI help */
 } FPS_CLI_BINDING;
 
 /**
- * @brief Initialize FPS from bindings
- * 
- * Ensures all parameters in bindings exist in FPS.
+ * @brief Expansion of MY_PARAMS into an array of bindings.
  */
-errno_t FPS_init_from_bindings(
+#define X_BINDING(kw, ptr, type, cli_idx, flag, desc) \
+    { kw, ptr, type, cli_idx, flag, desc },
+
+static FPS_CLI_BINDING my_bindings[] = {
+    MY_PARAMS(X_BINDING)
+};
+
+static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+/**
+ * @brief Initialize FPS from bindings.
+ *
+ * Iterates through the bindings and ensures the corresponding entries exist
+ * in the FPS structure. If they don't exist, they are created with the 
+ * provided metadata and the current values of the local variables.
+ */
+static errno_t FPS_init_from_bindings(
     FUNCTION_PARAMETER_STRUCT *fps,
     FPS_CLI_BINDING           *bindings,
-    int                        nb_bindings
+    int                        nb_b
 )
 {
-    for(int i=0; i<nb_bindings; i++)
+    for(int i = 0; i < nb_b; i++)
     {
-        // Add entry if not exists (or update if exists)
-        // Note: function_parameter_add_entry handles check internally
+        long pindex;
+        uint64_t fpflag = bindings[i].fpflag;
+        if (bindings[i].cli_index >= 0) {
+            fpflag |= FPFLAG_PRIMARY_CLI_INPUT;
+        }
+
         function_parameter_add_entry(
             fps,
             bindings[i].fpskeyword,
             bindings[i].descr,
             bindings[i].type,
-            bindings[i].fpflag,
-            NULL, // Don't set value pointer yet, we do it via binding sync
-            NULL
+            fpflag,
+            bindings[i].ptr, // Initialize FPS value from the local C variable
+            &pindex
         );
+        functionparameter_SetParamCLIindex(fps, pindex, bindings[i].cli_index);
     }
     return RETURN_SUCCESS;
 }
+
+/* Global argc/argv for standalone argument capture */
+static int   standalone_argc = 0;
+static char **standalone_argv = NULL;
 
 /**
- * @brief Process CLI arguments and update FPS
- * 
- * Matches CLI arguments (by index) to bindings, then updates FPS.
- * Also syncs FPS values to local pointers.
- * 
- * @param fps Connected FPS structure
- * @param bindings Array of bindings
- * @param nb_bindings Number of bindings
- * @param cli_args_start Index in CLIcmddata.cmdargtoken where args start (usually 1)
+ * @brief Sync CLI arguments to FPS and local variables.
+ *
+ * This is the core "Unification" function. It performs two steps:
+ * 1. Updates FPS Shared Memory values from CLI command line tokens (if any).
+ * 2. Updates local C variables from the (possibly updated) FPS values.
+ *
+ * This ensures that the computation logic always uses the most up-to-date
+ * values, whether they came from the CLI call or from an external milk-fps-set.
  */
-errno_t FPS_process_CLI_and_sync(
+static errno_t FPS_process_CLI_and_sync(
     FUNCTION_PARAMETER_STRUCT *fps,
     FPS_CLI_BINDING           *bindings,
-    int                        nb_bindings
+    int                        nb_b
 )
 {
-    // 1. Update FPS from CLI arguments
-    for(int i=0; i<nb_bindings; i++)
-    {
-        if(bindings[i].cli_index >= 0)
-        {
-            int arg_idx = bindings[i].cli_index + 1; // +1 because arg 0 is command itself
-            
-            // Check if argument exists provided by user
-            if(data.cmdargtoken[arg_idx].type == CLIARG_MISSING) {
-                // Handle optional/missing args if needed, or error
-                continue; 
-            }
-
-            // Update FPS value from CLI token
-            // We use functionparameter_SetParamValue_... functions usually, 
-            // but here we might need to parse the token string/value.
-            
-            // Simplified logic: get string from token and use fps_set_param_from_string
-            // or write directly to FPS memory if we are in process.
-            
-            // For this POC, let's assume we use the FPS API to set values
-            // We need to resolve the parameter index first
-            long pindex = -1;
-            pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
-            
-            if(pindex != -1) {
-                 // Convert CLI token to appropriate value and set in FPS
-                 // accessing fps->parray[pindex].val...
-                 
-                 // Note: Implementation specific details of copying CLI token 
-                 // to FPS value would go here.
-                 // For now, let's demo FLOAT and INT
-                 
-                 if(bindings[i].type == FPTYPE_FLOAT64) {
-                     double val = data.cmdargtoken[arg_idx].val.numf;
-                     fps->parray[pindex].val.f64[0] = val;
-                 }
-                 else if(bindings[i].type == FPTYPE_INT64) {
-                     long val = data.cmdargtoken[arg_idx].val.numl;
-                     fps->parray[pindex].val.i64[0] = val;
-                 }
-                 // ... handle other types
-            }
-        }
-    }
-
-    // 2. Sync FPS to local pointers available in bindings
-    for(int i=0; i<nb_bindings; i++)
-    {
-        if(bindings[i].ptr != NULL)
-        {
-            long pindex = -1;
-            pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
-            
-            if(pindex != -1)
-            {
-                if(bindings[i].type == FPTYPE_FLOAT64) {
-                    *((double*)bindings[i].ptr) = fps->parray[pindex].val.f64[0];
-                }
-                else if(bindings[i].type == FPTYPE_INT64) {
-                    *((long*)bindings[i].ptr) = fps->parray[pindex].val.i64[0];
-                }
-                 // ... handle other types
-            }
-        }
-    }
+    /* 1. Sync from CLI to FPS if applicable */
     
+    if (standalone_argv != NULL) {
+        /* MODE B: Running as standalone executable */
+        /* We look for the subcommand (runstart, etc.) and take arguments after it */
+        int cmd_pos = -1;
+        for (int j = 1; j < standalone_argc; j++) {
+            if (strcmp(standalone_argv[j], "runstart") == 0 || 
+                strcmp(standalone_argv[j], "confstart") == 0 ||
+                strcmp(standalone_argv[j], "confstep") == 0 ||
+                strcmp(standalone_argv[j], "fpsinit") == 0) {
+                cmd_pos = j;
+                break;
+            }
+        }
+        
+        if (cmd_pos != -1) {
+            for(int i = 0; i < nb_b; i++) {
+                if (bindings[i].cli_index >= 0) {
+                    int arg_idx = cmd_pos + 1 + bindings[i].cli_index;
+                    if (arg_idx < standalone_argc) {
+                        long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
+                        if (pindex != -1) {
+                            if (bindings[i].type == FPTYPE_FLOAT64) {
+                                fps->parray[pindex].val.f64[0] = atof(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_INT64) {
+                                fps->parray[pindex].val.i64[0] = atol(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
+                                fps->parray[pindex].val.i32[0] = atoi(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_FLOAT32) {
+                                fps->parray[pindex].val.f32[0] = (float)atof(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+                                strncpy(fps->parray[pindex].val.string[0], standalone_argv[arg_idx], FUNCTION_PARAMETER_STRMAXLEN - 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } else if (data.cmdindex >= 0) {
+        /* MODE A: Running inside MILK CLI (module mode) */
+        for(int i = 0; i < nb_b; i++) {
+            if (bindings[i].cli_index >= 0) {
+                /* Argument indexing: arg 0 is the command name, so we add 1 */
+                int arg_idx = bindings[i].cli_index + 1;
+                
+                if (data.cmdargtoken[arg_idx].type != CLIARG_MISSING) {
+                    long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
+                    if (pindex != -1) {
+                        /* Update the FPS shared memory value */
+                        if (bindings[i].type == FPTYPE_FLOAT64) {
+                            fps->parray[pindex].val.f64[0] = data.cmdargtoken[arg_idx].val.numf;
+                        } else if (bindings[i].type == FPTYPE_INT64) {
+                            fps->parray[pindex].val.i64[0] = data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
+                            fps->parray[pindex].val.i32[0] = (int32_t)data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_FLOAT32) {
+                            fps->parray[pindex].val.f32[0] = (float)data.cmdargtoken[arg_idx].val.numf;
+                        } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+                            strncpy(fps->parray[pindex].val.string[0], data.cmdargtoken[arg_idx].val.string, FUNCTION_PARAMETER_STRMAXLEN - 1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* 2. Sync from FPS to local C variables */
+    for(int i = 0; i < nb_b; i++) {
+        long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
+        if (pindex != -1) {
+            if (bindings[i].type == FPTYPE_FLOAT64) {
+                *((double *)bindings[i].ptr) = fps->parray[pindex].val.f64[0];
+            } else if (bindings[i].type == FPTYPE_INT64) {
+                *((long *)bindings[i].ptr) = fps->parray[pindex].val.i64[0];
+            } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
+                *((int32_t *)bindings[i].ptr) = fps->parray[pindex].val.i32[0];
+            } else if (bindings[i].type == FPTYPE_FLOAT32) {
+                *((float *)bindings[i].ptr) = fps->parray[pindex].val.f32[0];
+            } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+                strncpy((char *)bindings[i].ptr, fps->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN - 1);
+            }
+        }
+    }
+
     return RETURN_SUCCESS;
 }
 
 
 // =============================================================================
-// EXAMPLE FUNCTION USING NEW ARCHITECTURE
+// COMPUTATION LOGIC
 // =============================================================================
 
-static double param_gain = 1.0;
-static long   param_iter = 10;
-
-// X-Macro definition of parameters for Standalone FPS creation
-#define EXAMPLE_CLI_PARAMS(X) \
-    X(FPTYPE_FLOAT64, double, "gain", "Gain parameter", "1.0", 1.0, &param_gain, FPFLAG_DEFAULT_INPUT) \
-    X(FPTYPE_INT64, long, "iterations", "Number of iterations", "10", 10, &param_iter, FPFLAG_DEFAULT_INPUT)
-
-#define EXAMPLE_CLI_HELPTEXT "Usage: fpsclitest <gain> <iterations>\nExample: fpsclitest 2.5 100\n"
-
-
-// Define bindings for CLI (we still need this array to map indices to keywords)
-static FPS_CLI_BINDING my_bindings[] = {
-    {
-        .fpskeyword = "gain",
-        .ptr        = &param_gain,
-        .type       = FPTYPE_FLOAT64,
-        .cli_index  = 0, // First argument
-        .fpflag     = FPFLAG_DEFAULT_INPUT,
-        .descr      = "Gain parameter"
-    },
-    {
-        .fpskeyword = "iterations",
-        .ptr        = &param_iter,
-        .type       = FPTYPE_INT64,
-        .cli_index  = 1, // Second argument
-        .fpflag     = FPFLAG_DEFAULT_INPUT,
-        .descr      = "Number of iterations"
-    }
-};
-
-
+/**
+ * @brief The actual "heavy lifting" function.
+ *
+ * Note that this function is agnostic of how parameters were set. It simply
+ * uses the local static variables, which are guaranteed to be synced.
+ */
 static errno_t example_fps_computation()
 {
-    printf("Computing with:\n");
-    printf("  Gain: %f\n", param_gain);
-    printf("  Iter: %ld\n", param_iter);
-    return RETURN_SUCCESS;
-}
-
-// -----------------------------------------------------------------------------
-// CLI function implementation (Runs entirely in LOCAL memory)
-// -----------------------------------------------------------------------------
-static errno_t example_fps_cli_wrapper(void)
-{
-    // 1. Manually initialize a completely local FPS structure to avoid shared memory
-    FUNCTION_PARAMETER_STRUCT fps = {0};
-    FUNCTION_PARAMETER_STRUCT_MD fps_md = {0};
-    // Allocate max 10 parameters (enough for our bindings)
-    FUNCTION_PARAMETER fps_parray[10];
-    memset(fps_parray, 0, sizeof(fps_parray));
-    
-    // Link the components together
-    fps.md = &fps_md;
-    fps.parray = fps_parray;
-    fps.md->NBparamMAX = 10;
-    fps.SMfd = -1; // Explicitly flag as NOT using shared memory
-    fps.CMDmode = 0;
-    
-    strncpy(fps.md->name, "example_fps_cli", STRINGMAXLEN_FPS_NAME - 1);
-    
-    // 2. Set FPS core metadata representing CLI help, description, and syntax natively
-    strncpy(fps.md->description, "POC: Test unifying CLI arguments with FPS", FPS_DESCR_STRMAXLEN - 1);
-    strncpy(fps.md->helptext, EXAMPLE_CLI_HELPTEXT, FPS_HELPTEXT_STRMAXLEN - 1);
-    
-    // 3. Ensure parameters exist (Auto-definition)
-    FPS_init_from_bindings(&fps, my_bindings, 2);
-    
-    // 4. Process CLI args -> FPS -> Local Vars
-    // Here we can use CLI_checkarg logic or our custom parsing depending on how deep we want to integrate.
-    FPS_process_CLI_and_sync(&fps, my_bindings, 2);
-    
-    // 5. Run computation
-    example_fps_computation();
-    
-    // 6. Cleanup bypasses shared memory disconnect because SMfd == -1
-    // function_parameter_struct_disconnect(&fps);
-    
-    return RETURN_SUCCESS;
-}
-
-// CLI Registration (New style registration)
-static CLICMDDATA CLIcmddata =
-{
-    "fpsclitest",
-    "Test FPS-CLI unification (New API)",
-    __FILE__,
-    0,     // nbarg (we handle args internally)
-    NULL,  // funcfpscliarg pointer
-    0,     // flags
-    NULL,  // cmdsettings
-    NULL,  // FPS_customCONFsetup
-    NULL   // FPS_customCONFcheck
-};
-
-errno_t CLIADDCMD_milk_module_example__fpscli()
-{
-    // Use the new registration paradigm
-    int cmdindex = RegisterCLIcmd(CLIcmddata, example_fps_cli_wrapper);
-    if (cmdindex < 0) {
-        return RETURN_FAILURE;
-    }
-    
-    // Attach cmdsettings for full compatibility if needed
-    CLIcmddata.cmdsettings = &data.cmd[cmdindex].cmdsettings;
-
+    printf("\n[COMPUTATION] Running with:\n");
+    printf("  Gain        = %f\n", param_gain);
+    printf("  Iterations  = %ld\n", param_iter);
+    printf("  Mode        = %d\n", param_mode);
+    printf("  Verbose     = %s\n", param_verbose ? "ON" : "OFF");
+    printf("  Threshold   = %f\n", param_threshold);
+    printf("  InStream    = %s\n", param_input_stream);
+    printf("  OutPath     = %s\n", param_output_path);
     return RETURN_SUCCESS;
 }
 
 
-// -----------------------------------------------------------------------------
-// STANDALONE IMPLEMENTATION (Uses Shared Memory ecosystem)
-// -----------------------------------------------------------------------------
+// =============================================================================
+// STANDALONE FPS LIFECYCLE (Used by milk-fpsclitest executable)
+// =============================================================================
 
-int FPSINIT_fpsclitest(
-    const char *fps_name,
-    const char *keywords,
-    const char *description)
+/* These functions are called by the main() generated by FPS_MAIN_STANDALONE
+ * when the user runs commands like './milk-fpsclitest fpsinit' or './milk-fpsclitest runstart'.
+ */
+
+int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *description)
 {
     FUNCTION_PARAMETER_STRUCT fps;
-    FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, EXAMPLE_CLI_HELPTEXT);
-    FPS_INIT_PROCINFO_DEFAULTS(fps, "", 10);
-
-    // Use X-Macro to add all parameters to the FPS
-#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
-{ \
-    c_type val = def_val; \
-    void *vptr = &val; \
-    if (FPTYPE_IS_STRING(fps_type)) { \
-        vptr = *(void**)&val; \
-    } \
-    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
-}
-    EXAMPLE_CLI_PARAMS(X_FPS_INIT)
-#undef X_FPS_INIT
-
-    function_parameter_FPCONFexit(&fps);
+    /* Standard preamble handles SHM segment creation/connection */
+    FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, "Unified FPS-CLI POC");
+    
+    /* Populate the SHM from our bindings */
+    FPS_init_from_bindings(&fps, my_bindings, nb_bindings);
+    
+    function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
-
-int FPSCONF_fpsclitest(
-    const char *fps_name,
-    int loop)
+int FPSCONF_exfpscli(const char *fps_name, int loop)
 {
-    double *param_gain_ptr = NULL;
-    long *param_iter_ptr = NULL;
-
-    FPS_CONF_STD_BODY(fps_name, loop, 
-        {
-            // Map local pointers to FPS shared memory entries
-            param_gain_ptr = functionparameter_GetParamPtr_FLOAT64(&fps, "gain");
-            param_iter_ptr = functionparameter_GetParamPtr_INT64(&fps, "iterations");
-
-            if (!param_gain_ptr || !param_iter_ptr) {
-                fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
-                function_parameter_FPCONFexit(&fps);
-                return 1;
-            }
-        },
-        {
-            // Update local copies from the mapped pointers if necessary,
-            // or perform validation
-            param_gain = *param_gain_ptr;
-            param_iter = *param_iter_ptr;
-        }
-    );
-    return 0;
-}
-
-// Generate standard stop commands
-FPS_MAKE_STANDALONE_CONFSTOP(fpsclitest)
-FPS_MAKE_STANDALONE_RUNSTOP(fpsclitest)
-
-int FPSRUN_fpsclitest(const char *fps_name) {
-    FUNCTION_PARAMETER_STRUCT fps;
-    double *param_gain_ptr = NULL;
-    long *param_iter_ptr = NULL;
-
-    FPS_RUN_STD_PREAMBLE(fps_name, fps, {
-        // Map local pointers
-        param_gain_ptr = functionparameter_GetParamPtr_FLOAT64(&fps, "gain");
-        param_iter_ptr = functionparameter_GetParamPtr_INT64(&fps, "iterations");
-
-        if (!param_gain_ptr || !param_iter_ptr) {
-            fprintf(stderr, "Error: Could not retrieve parameter pointers.\n");
-            function_parameter_struct_disconnect(&fps);
-            return 1;
-        }
+    /* FPS_CONF_STD_BODY implements a monitoring loop that watches for 
+     * external changes to the FPS (e.g. from milk-fps-set).
+     */
+    FPS_CONF_STD_BODY(fps_name, loop, {}, {
+        /* Optional: validation of parameters after they change */
     });
+    return 0;
+}
 
-    // Update global static vars so `example_fps_computation` uses correct values
-    param_gain = *param_gain_ptr;
-    param_iter = *param_iter_ptr;
+int FPSRUN_exfpscli(const char *fps_name)
+{
+    FUNCTION_PARAMETER_STRUCT fps;
+    /* Standard preamble connects to the FPS and sets up process info */
+    FPS_RUN_STD_PREAMBLE(fps_name, fps, {
+        /* Sync our local pointers from the current FPS SHM values */
+        FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
+    });
     
-    // Simulate process looping if needed or just one pass
+    /* Execute the core logic */
     example_fps_computation();
     
     function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
-#ifndef MILK_MODULE
-
-int main(int argc, char *argv[]) {
-    char fps_name[STRINGMAXLEN_FPS_NAME] = "fpsclitest";
-    char arg_fps_name[STRINGMAXLEN_FPS_NAME] = "";
-    int use_tmux = 0;
-    int show_help = 0;
-    int show_help_color = 0;
-    char *command = NULL;
-    char *keywords = NULL;
-    char *description = NULL;
-    char *colon_pos = NULL;
-
-    // 1. First Pass: parse specific FPS standalone flags
-    // Let's copy basic parsing logic from FPS_MAIN_STANDALONE
-    int custom_args_start = 1;
-
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
-            show_help = 1;
-        } else if (strcmp(argv[i], "-hc") == 0 || strcmp(argv[i], "--help-color") == 0) {
-            show_help = 1;
-            show_help_color = 1;
-        } else if (strcmp(argv[i], "-tmux") == 0) {
-            use_tmux = 1;
-        } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) {
-            keywords = argv[++i];
-        } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) {
-            description = argv[++i];
-        } else if ((strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--name") == 0) && i + 1 < argc) {
-            strncpy(arg_fps_name, argv[++i], STRINGMAXLEN_FPS_NAME - 1);
-        } else if (command == NULL) {
-            command = argv[i];
-            
-            // Check for fpsname:command format
-            if ((colon_pos = strchr(command, ':')) != NULL) {
-                *colon_pos = '\0';
-                strncpy(arg_fps_name, command, STRINGMAXLEN_FPS_NAME - 1);
-                command = colon_pos + 1;
-            }
-            custom_args_start = i; // This or onwards are execution args
-            break; // Stop parsing standard standalone flags once a positional arg is hit
-        }
-    }
-
-    if (strlen(arg_fps_name) > 0) {
-        strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1);
-    }
-
-    if (show_help || (argc < 2)) {
-        printf("\nUsage: %s [fpsname:]<Command> [Options]\n", argv[0]);
-        printf("       %s [fpsname:]<gain> <iterations>\n\n", argv[0]);
-        printf("Commands:\n");
-        printf("  fpsinit    One-time setup: creates the FPS shared memory segment.\n");
-        printf("  fps        Print content of the FPS.\n");
-        printf("  fpslist    List all FPS instances matching this executable.\n");
-        printf("  confstart  Run the configuration monitoring loop.\n");
-        printf("  confstep   Run a single configuration monitoring step.\n");
-        printf("  confstop   Stop the configuration monitoring loop.\n");
-        printf("  runstart   Run the main processing loop.\n");
-        printf("  runstop    Stop the main processing loop.\n\n");
-        printf("Detailed Help:\n");
-        printf("--------------\n");
-        printf("%s\n\n", EXAMPLE_CLI_HELPTEXT);
-        return 0;
-    }
-
-    if (command == NULL) {
-        fprintf(stderr, "Error: Missing command argument.\n");
-        return 1;
-    }
-
-    // 2. Try handling standard standalone commands
-    if (strcmp(command, "fps") == 0) {
-        char cmd[STRINGMAXLEN_FPS_NAME + 20];
-        snprintf(cmd, sizeof(cmd), "milk-fps-info %s", fps_name);
-        return system(cmd);
-    } else if (strcmp(command, "fpsinit") == 0) {
-        return FPSINIT_fpsclitest(fps_name, keywords, description);
-    } else if (strcmp(command, "confstart") == 0) {
-        return FPSCONF_fpsclitest(fps_name, 1);
-    } else if (strcmp(command, "confstep") == 0) {
-        return FPSCONF_fpsclitest(fps_name, 0);
-    } else if (strcmp(command, "confstop") == 0) {
-        return FPSCONFSTOP_fpsclitest(fps_name);
-    } else if (strcmp(command, "runstart") == 0) {
-        return FPSRUN_fpsclitest(fps_name);
-    } else if (strcmp(command, "runstop") == 0) {
-        return FPSRUNSTOP_fpsclitest(fps_name);
-    }
-
-    // 3. Fallback: Parse positional CLI execution arguments!
-    // At this point, `command` is considered the first positional parameter (e.g. gain)
-    
-    // We connect to the shared memory FPS (or local if it doesn't exist)
-    FUNCTION_PARAMETER_STRUCT fps;
-    int is_connected = 0;
-    
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-        fprintf(stderr, "Warning: FPS '%s' not found. Using local memory execution.\n", fps_name);
-        
-        // Setup local FPS memory
-        FUNCTION_PARAMETER_STRUCT_MD *fps_md_mem = calloc(1, sizeof(FUNCTION_PARAMETER_STRUCT_MD));
-        FUNCTION_PARAMETER *fps_parray_mem = calloc(10, sizeof(FUNCTION_PARAMETER));
-        
-        fps.md = fps_md_mem;
-        fps.parray = fps_parray_mem;
-        fps.md->NBparamMAX = 10;
-        fps.SMfd = -1; 
-        fps.CMDmode = 0;
-        strncpy(fps.md->name, fps_name, STRINGMAXLEN_FPS_NAME - 1);
-        FPS_init_from_bindings(&fps, my_bindings, 2);
-    } else {
-        is_connected = 1;
-    }
-
-    // Parse the positional args using the bindings
-    int arg_idx = custom_args_start;
-    for(int i = 0; i < 2; i++) {
-        if (arg_idx < argc) {
-            long pindex = functionparameter_GetParamIndex(&fps, my_bindings[i].fpskeyword);
-            if (pindex != -1) {
-                if(my_bindings[i].type == FPTYPE_FLOAT64) {
-                    double val = atof(argv[arg_idx]);
-                    fps.parray[pindex].val.f64[0] = val;
-                } else if(my_bindings[i].type == FPTYPE_INT64) {
-                    long val = atol(argv[arg_idx]);
-                    fps.parray[pindex].val.i64[0] = val;
-                }
-            }
-            arg_idx++;
-        }
-    }
-    
-    // Sync FPS to local pointers
-    for(int i = 0; i < 2; i++) {
-        long pindex = functionparameter_GetParamIndex(&fps, my_bindings[i].fpskeyword);
-        if (pindex != -1) {
-            if(my_bindings[i].type == FPTYPE_FLOAT64) {
-                *((double*)my_bindings[i].ptr) = fps.parray[pindex].val.f64[0];
-            } else if(my_bindings[i].type == FPTYPE_INT64) {
-                *((long*)my_bindings[i].ptr) = fps.parray[pindex].val.i64[0];
-            }
-        }
-    }
-
-    // Run the actual computation
-    printf("\n[Standalone FPS Execution]\n");
-    example_fps_computation();
-    
-    // Cleanup
-    if (is_connected) {
-        function_parameter_struct_disconnect(&fps);
-    } else {
-        free(fps.md);
-        free(fps.parray);
-    }
-
+/* Placeholders for stop signals */
+int FPSRUNSTOP_exfpscli(const char *fps_name)
+{
+    (void) fps_name;
     return 0;
 }
-#endif
 
+int FPSCONFSTOP_exfpscli(const char *fps_name)
+{
+    (void) fps_name;
+    return 0;
+}
+
+
+// =============================================================================
+// MILK CLI WRAPPER (Used when loaded as a module)
+// =============================================================================
+
+/**
+ * @brief Wrapper for the 'milk-fpsclitest' command in the MILK CLI.
+ *
+ * This wrapper is called when the user types 'milk-fpsclitest 2.0 50' in milk.
+ */
+static errno_t example_fps_cli_wrapper()
+{
+    FUNCTION_PARAMETER_STRUCT fps;
+    
+    /* Try to connect to existing shared memory FPS */
+    if (function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE) == -1) {
+        /* If it doesn't exist, auto-initialize it */
+        FPSINIT_exfpscli("exfpscli", NULL, "Auto-initialized");
+        function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE);
+    }
+
+    /* Process positional CLI arguments and sync them to our local variables */
+    FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
+    
+    /* Run the computation */
+    example_fps_computation();
+    
+    function_parameter_struct_disconnect(&fps);
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Module registration function.
+ */
+errno_t CLIADDCMD_milk_module_example__fpscli()
+{
+    RegisterCLIcommand(
+        "milk-fpsclitest",         /* Command name in milk */
+        "examplefunc_fps_cli_poc.c",
+        example_fps_cli_wrapper,    /* Function pointer */
+        "Test FPS-CLI unification", /* Short description */
+        "milk-fpsclitest <gain> <iter> <mode> <verbose> <threshold> <outpath>", /* Syntax help */
+        "milk-fpsclitest 2.5 100 1 1 0.7 /tmp/test.fits",   /* Example */
+        "example_fps_cli_wrapper()" /* Internal call string */
+    );
+    return RETURN_SUCCESS;
+}
+
+
+// =============================================================================
+// STANDALONE MAIN
+// =============================================================================
+
+/* Redefine X_HELP_PRINT for the FPS_MAIN_STANDALONE help message generation.
+ * This ensures that './milk-fpsclitest --help' displays parameters correctly.
+ */
+#undef X_HELP_PRINT
+#define X_HELP_PRINT(kw, ptr, type, cli_idx, flag, desc) \
+    { \
+        char cli_idx_str[8]; \
+        if(cli_idx >= 0) sprintf(cli_idx_str, "%2d", cli_idx); \
+        else strcpy(cli_idx_str, " -"); \
+        if(show_help_color && (cli_idx >= 0)) { \
+            printf("  %s %s%-15s%s %s\n", cli_idx_str, COLORPRIMARY, kw, COLORRESET, desc); \
+        } else { \
+            printf("  %s %-15s %s\n", cli_idx_str, kw, desc); \
+        } \
+    }
+
+/**
+ * @brief Generate the standalone main() function with argument capture.
+ *
+ * We use a macro trick to rename the standard main generated by 
+ * FPS_MAIN_STANDALONE, then define our own main to capture argc/argv.
+ */
+#define main main_real
+FPS_MAIN_STANDALONE("exfpscli", exfpscli, "Unified FPS-CLI Demo", MY_PARAMS)
+#undef main
+
+int main(int argc, char *argv[])
+{
+    standalone_argc = argc;
+    standalone_argv = argv;
+    return main_real(argc, argv);
+}
