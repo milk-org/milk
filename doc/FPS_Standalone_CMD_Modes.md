@@ -47,7 +47,7 @@ static errno_t example_fps_cli_wrapper(void) {
 ## 2. Standalone Mode
 
 ### Implementation
-Standalone mode allows executing an FPS-driven module directly as an independent binary (e.g., `./fpsclitest`). It handles native operating system arguments (`argc`, `argv`) while still hooking into the underlying FPS metadata architecture.
+Standalone mode allows executing an FPS-driven module directly as an independent binary (e.g., `./milk-fpsclitest`). It handles native operating system arguments (`argc`, `argv`) while still hooking into the underlying FPS metadata architecture.
 
 This mode relies on either:
 - The standard `FPS_MAIN_STANDALONE` macro provided in `fps.h`.
@@ -70,7 +70,7 @@ Before mapping to business logic, the executable looks for built-in flags and pr
   - `runstart`, `runstop`: Manage the execution loop.
 
 #### B. Direct Execution Fallback (Positional Arguments)
-If the user passes positional arguments that do not match the built-in control commands (e.g., `./fpsclitest 2.5 100`), the standalone implementation operates as a streamlined one-shot execution tool:
+If the user passes positional arguments that do not match the built-in control commands (e.g., `./milk-fpsclitest 2.5 100`), the standalone implementation operates as a streamlined one-shot execution tool:
 
 1. **FPS Handshake:** It attempts to connect to the shared memory FPS (if running). If not found, it provisions a temporary local FPS memory space inline.
 2. **Positional Parsing:** It maps positional `argv` elements strictly against defined `FPS_CLI_BINDING` configurations. String arguments are converted (e.g., `atof`, `atol`) to their matching numerical types.
