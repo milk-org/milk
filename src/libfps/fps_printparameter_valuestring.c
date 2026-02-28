@@ -97,7 +97,7 @@ errno_t functionparameter_PrintParameter_ValueString(
         case FPTYPE_ONOFF:
             {
                 int _slen = snprintf(outstring, stringmaxlen, "%s ONOFF %s", fpsentry->keywordfull, 
-                                     (fpsentry->fpflag & FPFLAG_ONOFF) ? "ON" : "OFF");
+                                     (fpsentry->val.i32[0]) ? "ON" : "OFF");
                 if (_slen >= 0) cmdOK = 1;
             }
             break;
@@ -223,7 +223,7 @@ errno_t functionparameter_GetParamValueString(
             break;
 
         case FPTYPE_ONOFF:
-            if(fpsentry->fpflag & FPFLAG_ONOFF)
+            if(fpsentry->val.i32[0])
             {
                 int _slen = snprintf(outstring, stringmaxlen, "ON");
                 if (_slen >= 0) cmdOK = 1;
