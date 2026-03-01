@@ -35,7 +35,13 @@ errno_t help_module();
 
 errno_t printInfo();
 
+/** @brief Print milk framework overview help */
+void print_milk_main_help(void);
+
+
+
 errno_t list_commands();
+
 
 errno_t list_commands_module(CONST_WORD modulename);
 

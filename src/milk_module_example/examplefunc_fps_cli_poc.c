@@ -24,19 +24,44 @@
 #include <stdlib.h>
 
 // =============================================================================
+// FPS COMPONENT IDENTITY
+// =============================================================================
+
+static struct {
+    const char *fps_name;
+    const char *cmdkey;
+    const char *description;
+} FPS_app_info = {
+    .fps_name    = "exfpscli",
+    .cmdkey      = "fpsclitest",
+    .description = "Test FPS-CLI unification"
+};
+
+// =============================================================================
 // PARAMETER DEFINITIONS
 // =============================================================================
 
 /* Local variables that the computation logic will actually use.
  * In this architecture, they are "synced" with FPS shared memory.
  */
-static double  param_gain = 1.0;
-static long    param_iter = 10;
-static int32_t param_mode = 0;
-static int32_t param_verbose = 0;
-static float   param_threshold = 0.5;
-static char    param_input_stream[FUNCTION_PARAMETER_STRMAXLEN] = "";
-static char    param_output_path[FUNCTION_PARAMETER_STRMAXLEN] = "/tmp/output.fits";
+static int32_t         param_int32        = 0;
+static uint32_t        param_uint32       = 0;
+static int64_t         param_int64        = 0;
+static uint64_t        param_uint64       = 0;
+static float           param_float32      = 0.0f;
+static double          param_float64      = 0.0;
+static pid_t           param_pid          = 0;
+static struct timespec param_timespec     = {0, 0};
+static char   param_filename[FUNCTION_PARAMETER_STRMAXLEN]     = "data.txt";
+static char   param_fitsfilename[FUNCTION_PARAMETER_STRMAXLEN] = "image.fits";
+static char   param_execfilename[FUNCTION_PARAMETER_STRMAXLEN] = "run_me.sh";
+static char   param_dirname[FUNCTION_PARAMETER_STRMAXLEN]      = "/tmp";
+static char   param_streamname[FUNCTION_PARAMETER_STRMAXLEN]   = "cam01";
+static char   param_string[FUNCTION_PARAMETER_STRMAXLEN]       = "hello";
+static int32_t         param_onoff        = 0;
+static char   param_processname[FUNCTION_PARAMETER_STRMAXLEN]  = "process_a";
+static char   param_fpsname[FUNCTION_PARAMETER_STRMAXLEN]      = "otherfps";
+static char   param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_stream";
 
 /**
  * @brief Unified Parameter Macro (X-Macro Pattern)
@@ -47,18 +72,29 @@ static char    param_output_path[FUNCTION_PARAMETER_STRMAXLEN] = "/tmp/output.fi
  * - keyword:   The name in the FPS (e.g. "gain" -> "exfpscli.gain")
  * - local_ptr: Pointer to the local C variable for syncing.
  * - fptype:    The MILK Function Parameter Type (FPTYPE_FLOAT64, etc.)
- * - cli_index: The 0-based position in the CLI call (milk-fpsclitest <arg0> <arg1>)
+ * - is_primary: 1 if this parameter is a primary CLI argument, 0 otherwise.
  * - fpflag:    Standard FPS flags (FPFLAG_DEFAULT_INPUT, etc.)
  * - description: Human-readable help text.
  */
 #define MY_PARAMS(X) \
-    X(".gain",         &param_gain,      FPTYPE_FLOAT64,    0, FPFLAG_DEFAULT_INPUT, "Gain parameter") \
-    X(".iterations",   &param_iter,      FPTYPE_INT64,      1, FPFLAG_DEFAULT_INPUT, "Number of iterations") \
-    X(".mode",         &param_mode,      FPTYPE_INT32,      2, FPFLAG_DEFAULT_INPUT, "Execution mode") \
-    X(".verbose",      &param_verbose,   FPTYPE_ONOFF,      3, FPFLAG_DEFAULT_INPUT, "Verbose output") \
-    X(".threshold",    &param_threshold, FPTYPE_FLOAT32,    4, FPFLAG_DEFAULT_INPUT, "Detection threshold") \
-    X(".input_stream", param_input_stream, FPTYPE_STREAMNAME, -1, FPFLAG_DEFAULT_INPUT, "Input stream name") \
-    X(".output_path",  param_output_path,  FPTYPE_STRING,      5, FPFLAG_DEFAULT_INPUT, "Output file path")
+    X(".p_int32",       &param_int32,      FPTYPE_INT32,        1, FPFLAG_DEFAULT_INPUT, "Example INT32") \
+    X(".p_uint32",      &param_uint32,     FPTYPE_UINT32,       0, FPFLAG_DEFAULT_INPUT, "Example UINT32") \
+    X(".p_int64",       &param_int64,      FPTYPE_INT64,        0, FPFLAG_DEFAULT_INPUT, "Example INT64") \
+    X(".p_uint64",      &param_uint64,     FPTYPE_UINT64,       0, FPFLAG_DEFAULT_INPUT, "Example UINT64") \
+    X(".p_float32",     &param_float32,    FPTYPE_FLOAT32,      0, FPFLAG_DEFAULT_INPUT, "Example FLOAT32") \
+    X(".p_float64",     &param_float64,    FPTYPE_FLOAT64,      0, FPFLAG_DEFAULT_INPUT, "Example FLOAT64") \
+    X(".p_onoff",       &param_onoff,      FPTYPE_ONOFF,        0, FPFLAG_DEFAULT_INPUT, "Example ONOFF") \
+    X(".p_streamname",  param_streamname,  FPTYPE_STREAMNAME,   1, FPFLAG_DEFAULT_INPUT, "Example STREAMNAME") \
+    X(".p_fitsfile",    param_fitsfilename,FPTYPE_FITSFILENAME, 0, FPFLAG_DEFAULT_INPUT, "Example FITSFILENAME") \
+    X(".p_string",      param_string,      FPTYPE_STRING,       0, FPFLAG_DEFAULT_INPUT, "Example STRING") \
+    X(".p_pid",         &param_pid,        FPTYPE_PID,          0, FPFLAG_DEFAULT_INPUT, "Example PID") \
+    X(".p_timespec",    &param_timespec,   FPTYPE_TIMESPEC,     0, FPFLAG_DEFAULT_INPUT, "Example TIMESPEC") \
+    X(".p_filename",    param_filename,    FPTYPE_FILENAME,     0, FPFLAG_DEFAULT_INPUT, "Example FILENAME") \
+    X(".p_execfile",    param_execfilename,FPTYPE_EXECFILENAME, 0, FPFLAG_DEFAULT_INPUT, "Example EXECFILENAME") \
+    X(".p_dirname",     param_dirname,     FPTYPE_DIRNAME,      0, FPFLAG_DEFAULT_INPUT, "Example DIRNAME") \
+    X(".p_process",     param_processname, FPTYPE_PROCESS,      0, FPFLAG_DEFAULT_INPUT, "Example PROCESS") \
+    X(".p_fpsname",     param_fpsname,     FPTYPE_FPSNAME,      0, FPFLAG_DEFAULT_INPUT, "Example FPSNAME") \
+    X(".p_strnotstrm",  param_string_not_stream, FPTYPE_STRING_NOT_STREAM, 0, FPFLAG_DEFAULT_INPUT, "Example STRING_NOT_STREAM")
 
 
 // =============================================================================
@@ -76,7 +112,7 @@ typedef struct
     const char *fpskeyword; /**< FPS keyword (e.g. "gain") */
     void       *ptr;        /**< Pointer to local variable for syncing */
     uint64_t    type;       /**< Expected type (FPTYPE_...) */
-    int         cli_index;  /**< 0-based index in CLI arguments (-1 if not in CLI) */
+    int         is_primary; /**< 1 if this is a primary CLI argument, 0 otherwise */
     uint64_t    fpflag;     /**< FPS flags (e.g. FPFLAG_DEFAULT_INPUT) */
     const char *descr;      /**< Description for FPS and CLI help */
 } FPS_CLI_BINDING;
@@ -84,8 +120,8 @@ typedef struct
 /**
  * @brief Expansion of MY_PARAMS into an array of bindings.
  */
-#define X_BINDING(kw, ptr, type, cli_idx, flag, desc) \
-    { kw, ptr, type, cli_idx, flag, desc },
+#define X_BINDING(kw, ptr, type, is_primary, flag, desc) \
+    { kw, ptr, type, is_primary, flag, desc },
 
 static FPS_CLI_BINDING my_bindings[] = {
     MY_PARAMS(X_BINDING)
@@ -111,12 +147,17 @@ static errno_t FPS_init_from_bindings(
     strncpy(fps->md->callprogname, cmdkey, FPS_CALLPROGNAME_STRMAXLEN - 1);
     strncpy(fps->md->description, description, FPS_DESCR_STRMAXLEN - 1);
 
+    int current_cli_index = 0; /* Auto-increment counter for CLI index */
+    
     for(int i = 0; i < nb_b; i++)
     {
         long pindex;
         uint64_t fpflag = bindings[i].fpflag;
-        if (bindings[i].cli_index >= 0) {
+        int cli_index = -1;
+        
+        if (bindings[i].is_primary) {
             fpflag |= FPFLAG_PRIMARY_CLI_INPUT;
+            cli_index = current_cli_index++;
         }
 
         function_parameter_add_entry(
@@ -128,7 +169,7 @@ static errno_t FPS_init_from_bindings(
             bindings[i].ptr, // Initialize FPS value from the local C variable
             &pindex
         );
-        functionparameter_SetParamCLIindex(fps, pindex, bindings[i].cli_index);
+        functionparameter_SetParamCLIindex(fps, pindex, cli_index);
     }
     return RETURN_SUCCESS;
 }
@@ -154,13 +195,13 @@ static errno_t FPS_process_CLI_and_sync(
 )
 {
     /* 1. Sync from CLI to FPS if applicable */
-    
     if (standalone_argv != NULL) {
         /* MODE B: Running as standalone executable */
         /* We look for the subcommand (runstart, etc.) and take arguments after it */
         int cmd_pos = -1;
         for (int j = 1; j < standalone_argc; j++) {
             if (strcmp(standalone_argv[j], "runstart") == 0 || 
+                strcmp(standalone_argv[j], "run") == 0 ||
                 strcmp(standalone_argv[j], "confstart") == 0 ||
                 strcmp(standalone_argv[j], "confstep") == 0 ||
                 strcmp(standalone_argv[j], "fpsinit") == 0) {
@@ -169,22 +210,54 @@ static errno_t FPS_process_CLI_and_sync(
             }
         }
         
+        /* If no explicit command was found, but we are here, it's likely an implicit 'run' 
+         * where parameters start after the FPS name (or at the beginning if default name).
+         */
+        if (cmd_pos == -1) {
+            /* If the first arg looks like an option or a name, parameters start later.
+             * For now, let's assume parameters start after the first non-option argument 
+             * that isn't a recognized command.
+             */
+            for (int j = 1; j < standalone_argc; j++) {
+                if (standalone_argv[j][0] != '-') {
+                    /* This could be the FPS name OR a parameter. 
+                     * If it's the FPS name, parameters start at j+1.
+                     */
+                    cmd_pos = j; // Assume parameters start here or after
+                    break;
+                }
+            }
+        }
+
         if (cmd_pos != -1) {
+            int current_cli_index = 0;
             for(int i = 0; i < nb_b; i++) {
-                if (bindings[i].cli_index >= 0) {
-                    int arg_idx = cmd_pos + 1 + bindings[i].cli_index;
+                if (bindings[i].is_primary) {
+                    int arg_idx = cmd_pos + 1 + current_cli_index;
+                    current_cli_index++;
+                    
                     if (arg_idx < standalone_argc) {
                         long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
                         if (pindex != -1) {
                             if (bindings[i].type == FPTYPE_FLOAT64) {
                                 fps->parray[pindex].val.f64[0] = atof(standalone_argv[arg_idx]);
-                            } else if (bindings[i].type == FPTYPE_INT64) {
-                                fps->parray[pindex].val.i64[0] = atol(standalone_argv[arg_idx]);
-                            } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
-                                fps->parray[pindex].val.i32[0] = atoi(standalone_argv[arg_idx]);
                             } else if (bindings[i].type == FPTYPE_FLOAT32) {
                                 fps->parray[pindex].val.f32[0] = (float)atof(standalone_argv[arg_idx]);
-                            } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+                            } else if (bindings[i].type == FPTYPE_INT64) {
+                                fps->parray[pindex].val.i64[0] = atoll(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_UINT64) {
+                                fps->parray[pindex].val.ui64[0] = (uint64_t)atoll(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
+                                fps->parray[pindex].val.i32[0] = atoi(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_UINT32) {
+                                fps->parray[pindex].val.ui32[0] = (uint32_t)atoi(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_PID) {
+                                fps->parray[pindex].val.pid[0] = (pid_t)atoi(standalone_argv[arg_idx]);
+                            } else if (bindings[i].type == FPTYPE_TIMESPEC) {
+                                double val = atof(standalone_argv[arg_idx]);
+                                fps->parray[pindex].val.ts[0].tv_sec = (long)val;
+                                fps->parray[pindex].val.ts[0].tv_nsec = (long)((val - (long)val) * 1e9);
+                            } else if (FPTYPE_IS_STRING(bindings[i].type)) {
                                 strncpy(fps->parray[pindex].val.string[0], standalone_argv[arg_idx], FUNCTION_PARAMETER_STRMAXLEN - 1);
                             }
                         }
@@ -194,10 +267,12 @@ static errno_t FPS_process_CLI_and_sync(
         }
     } else if (data.cmdindex >= 0) {
         /* MODE A: Running inside MILK CLI (module mode) */
+        int current_cli_index = 0;
         for(int i = 0; i < nb_b; i++) {
-            if (bindings[i].cli_index >= 0) {
+            if (bindings[i].is_primary) {
                 /* Argument indexing: arg 0 is the command name, so we add 1 */
-                int arg_idx = bindings[i].cli_index + 1;
+                int arg_idx = current_cli_index + 1;
+                current_cli_index++;
                 
                 if (data.cmdargtoken[arg_idx].type != CLIARG_MISSING) {
                     long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
@@ -205,13 +280,23 @@ static errno_t FPS_process_CLI_and_sync(
                         /* Update the FPS shared memory value */
                         if (bindings[i].type == FPTYPE_FLOAT64) {
                             fps->parray[pindex].val.f64[0] = data.cmdargtoken[arg_idx].val.numf;
-                        } else if (bindings[i].type == FPTYPE_INT64) {
-                            fps->parray[pindex].val.i64[0] = data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
-                            fps->parray[pindex].val.i32[0] = (int32_t)data.cmdargtoken[arg_idx].val.numl;
                         } else if (bindings[i].type == FPTYPE_FLOAT32) {
                             fps->parray[pindex].val.f32[0] = (float)data.cmdargtoken[arg_idx].val.numf;
-                        } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+                        } else if (bindings[i].type == FPTYPE_INT64) {
+                            fps->parray[pindex].val.i64[0] = data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_UINT64) {
+                            fps->parray[pindex].val.ui64[0] = (uint64_t)data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
+                            fps->parray[pindex].val.i32[0] = (int32_t)data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_UINT32) {
+                            fps->parray[pindex].val.ui32[0] = (uint32_t)data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_PID) {
+                            fps->parray[pindex].val.pid[0] = (pid_t)data.cmdargtoken[arg_idx].val.numl;
+                        } else if (bindings[i].type == FPTYPE_TIMESPEC) {
+                            double val = data.cmdargtoken[arg_idx].val.numf;
+                            fps->parray[pindex].val.ts[0].tv_sec = (long)val;
+                            fps->parray[pindex].val.ts[0].tv_nsec = (long)((val - (long)val) * 1e9);
+                        } else if (FPTYPE_IS_STRING(bindings[i].type)) {
                             strncpy(fps->parray[pindex].val.string[0], data.cmdargtoken[arg_idx].val.string, FUNCTION_PARAMETER_STRMAXLEN - 1);
                         }
                     }
@@ -227,12 +312,20 @@ static errno_t FPS_process_CLI_and_sync(
             if (bindings[i].type == FPTYPE_FLOAT64) {
                 *((double *)bindings[i].ptr) = fps->parray[pindex].val.f64[0];
             } else if (bindings[i].type == FPTYPE_INT64) {
-                *((long *)bindings[i].ptr) = fps->parray[pindex].val.i64[0];
+                *((int64_t *)bindings[i].ptr) = fps->parray[pindex].val.i64[0];
+            } else if (bindings[i].type == FPTYPE_UINT64) {
+                *((uint64_t *)bindings[i].ptr) = fps->parray[pindex].val.ui64[0];
             } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
                 *((int32_t *)bindings[i].ptr) = fps->parray[pindex].val.i32[0];
+            } else if (bindings[i].type == FPTYPE_UINT32) {
+                *((uint32_t *)bindings[i].ptr) = fps->parray[pindex].val.ui32[0];
             } else if (bindings[i].type == FPTYPE_FLOAT32) {
                 *((float *)bindings[i].ptr) = fps->parray[pindex].val.f32[0];
-            } else if (bindings[i].type == FPTYPE_STREAMNAME || bindings[i].type == FPTYPE_STRING) {
+            } else if (bindings[i].type == FPTYPE_PID) {
+                *((pid_t *)bindings[i].ptr) = fps->parray[pindex].val.pid[0];
+            } else if (bindings[i].type == FPTYPE_TIMESPEC) {
+                *((struct timespec *)bindings[i].ptr) = fps->parray[pindex].val.ts[0];
+            } else if (FPTYPE_IS_STRING(bindings[i].type)) {
                 strncpy((char *)bindings[i].ptr, fps->parray[pindex].val.string[0], FUNCTION_PARAMETER_STRMAXLEN - 1);
             }
         }
@@ -254,14 +347,26 @@ static errno_t FPS_process_CLI_and_sync(
  */
 static errno_t example_fps_computation()
 {
-    printf("\n[COMPUTATION] Running with:\n");
-    printf("  Gain        = %f\n", param_gain);
-    printf("  Iterations  = %ld\n", param_iter);
-    printf("  Mode        = %d\n", param_mode);
-    printf("  Verbose     = %s\n", param_verbose ? "ON" : "OFF");
-    printf("  Threshold   = %f\n", param_threshold);
-    printf("  InStream    = %s\n", param_input_stream);
-    printf("  OutPath     = %s\n", param_output_path);
+    printf("\n[COMPUTATION] Demo of all FPS parameter types:\n");
+    printf("  INT32              = %d\n", param_int32);
+    printf("  UINT32             = %u\n", param_uint32);
+    printf("  INT64              = %ld\n", param_int64);
+    printf("  UINT64             = %lu\n", param_uint64);
+    printf("  FLOAT32            = %f\n", param_float32);
+    printf("  FLOAT64            = %f\n", param_float64);
+    printf("  PID                = %d\n", (int)param_pid);
+    printf("  TIMESPEC           = %ld.%09ld\n", param_timespec.tv_sec, param_timespec.tv_nsec);
+    printf("  FILENAME           = %s\n", param_filename);
+    printf("  FITSFILENAME       = %s\n", param_fitsfilename);
+    printf("  EXECFILENAME       = %s\n", param_execfilename);
+    printf("  DIRNAME            = %s\n", param_dirname);
+    printf("  STREAMNAME         = %s\n", param_streamname);
+    printf("  STRING             = %s\n", param_string);
+    printf("  ONOFF              = %s\n", param_onoff ? "ON" : "OFF");
+    printf("  PROCESS            = %s\n", param_processname);
+    printf("  FPSNAME            = %s\n", param_fpsname);
+    printf("  STRING_NOT_STREAM  = %s\n", param_string_not_stream);
+    
     return RETURN_SUCCESS;
 }
 
@@ -297,7 +402,7 @@ int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *des
     }
     
     /* Populate the SHM from our bindings */
-    FPS_init_from_bindings(&fps, "milk-fpsclitest", "Test FPS-CLI unification", my_bindings, nb_bindings);
+    FPS_init_from_bindings(&fps, FPS_app_info.cmdkey, FPS_app_info.description, my_bindings, nb_bindings);
     
     function_parameter_struct_disconnect(&fps);
     return 0;
@@ -327,7 +432,7 @@ int FPSRUN_exfpscli(const char *fps_name)
     
     if (functionparameter_GetParamIndex(&fps, ".procinfo.enabled") != -1) {
         /* Setup processinfo using the FPS macros */
-        FPS_RUN_PROCESSINFO_SETUP(processinfo, fps_name, "fpscli POC", "Unified FPS-CLI Demo", NULL, fps);
+        FPS_RUN_PROCESSINFO_SETUP(processinfo, fps_name, FPS_app_info.cmdkey, FPS_app_info.description, NULL, fps);
         
         FPS_RUN_PROCESSINFO_LOOP(processinfo, fps, NULL, NULL, {
             example_fps_computation();
@@ -379,10 +484,10 @@ static errno_t CLIfunction(void)
     FUNCTION_PARAMETER_STRUCT fps;
     
     /* Try to connect to existing shared memory FPS */
-    if (function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE) == -1) {
+    if (function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         /* If it doesn't exist, auto-initialize it */
-        FPSINIT_exfpscli("exfpscli", NULL, "Auto-initialized");
-        function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE);
+        FPSINIT_exfpscli(FPS_app_info.fps_name, NULL, "Auto-initialized");
+        function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE);
     }
 
     /* Process positional CLI arguments and sync them to our local variables */
@@ -395,6 +500,13 @@ static errno_t CLIfunction(void)
     return RETURN_SUCCESS;
 }
 
+#define X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
+    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
+
+static CLICMDARGDEF farg[] = {
+    MY_PARAMS(X_FARG)
+};
+
 /**
  * @brief Module registration function.
  */
@@ -403,15 +515,15 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
     FUNCTION_PARAMETER_STRUCT fps;
 
     /* Connect to existing or auto-initialize FPS */
-    if (function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE) == -1) {
-        FPSINIT_exfpscli("exfpscli", NULL, "Test FPS-CLI unification");
-        function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE);
+    if (function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        FPSINIT_exfpscli(FPS_app_info.fps_name, NULL, FPS_app_info.description);
+        function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE);
     }
     
     CLICMDDATA CLIcmddata = {
         "",
         "",
-        CLICMD_FIELDS_NOPARAM
+        CLICMD_FIELDS_DEFAULTS
     };
     strncpy(CLIcmddata.key, fps.md->callprogname, sizeof(CLIcmddata.key) - 1);
     strncpy(CLIcmddata.description, fps.md->description, sizeof(CLIcmddata.description) - 1);
@@ -432,13 +544,13 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
  * We strip the leading dot if it exists for cleaner CLI help output.
  */
 #undef X_HELP_PRINT
-#define X_HELP_PRINT(kw, ptr, type, cli_idx, flag, desc) \
+#define X_HELP_PRINT(kw, ptr, type, is_primary, flag, desc) \
     { \
         char cli_idx_str[8]; \
         const char *disp_kw = (kw[0] == '.') ? &kw[1] : kw; \
-        if(cli_idx >= 0) sprintf(cli_idx_str, "%2d", cli_idx); \
-        else strcpy(cli_idx_str, " -"); \
-        if(show_help_color && (cli_idx >= 0)) { \
+        if(is_primary) sprintf(cli_idx_str, "  *"); \
+        else strcpy(cli_idx_str, "  -"); \
+        if(show_help_color && (is_primary)) { \
             printf("  %s %s%-15s%s %s\n", cli_idx_str, COLORPRIMARY, disp_kw, COLORRESET, desc); \
         } else { \
             printf("  %s %-15s %s\n", cli_idx_str, disp_kw, desc); \
@@ -452,7 +564,7 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
  * FPS_MAIN_STANDALONE, then define our own main to capture argc/argv.
  */
 #define main main_real
-FPS_MAIN_STANDALONE("exfpscli", exfpscli, "Unified FPS-CLI Demo", MY_PARAMS)
+FPS_MAIN_STANDALONE(FPS_app_info.fps_name, exfpscli, FPS_app_info.description, MY_PARAMS)
 #undef main
 
 int main(int argc, char *argv[])

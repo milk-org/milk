@@ -62,6 +62,10 @@ set ( MILK_VERSION_OPTION "" )
 set ( PROJECT_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" )
 set ( PROJECT_DESCRIPTION "Modular Image processing tooLKit" )
 
+set(SOURCEDIR "${PROJECT_SOURCE_DIR}")
+
+
+
 
 
 
@@ -73,6 +77,7 @@ option ( INSTALLMAKEDEFAULT "Make this installation the system default" OFF )
 
 set(CMAKE_LINK_DEPENDS_NO_SHARED true)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}/milk-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+set(INSTALLDIR "${CMAKE_INSTALL_PREFIX}")
 
 
 # Configure a header file to pass some of the CMake settings
@@ -86,6 +91,7 @@ configure_file (
   "${PROJECT_SOURCE_DIR}/src/config.h.in"
   "${PROJECT_SOURCE_DIR}/src/config.h"
   )
+
 
 
 # select most recent version available
@@ -286,14 +292,17 @@ add_executable(milk src/CLImain.c)
 
 
 # note: set -SOURCEDIR=\" ${CMAKE_INSTALL_PREFIX}\" for autoload
+
 add_definitions(
     -DPACKAGE_NAME="milk"
     -DCONFIGDIR="/config"
-    -DINSTALLDIR=""
-    -DSOURCEDIR=""
-    -DABSSRCTOPDIR=""
+    -DINSTALLDIR="${INSTALLDIR}"
+    -DSOURCEDIR="${SOURCEDIR}"
+    -DABSSRCTOPDIR="${SOURCEDIR}"
     -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues"
 )
+
+
 
 
 target_link_libraries(milk PUBLIC ${libname})
@@ -471,6 +480,9 @@ install(PROGRAMS
                         scripts/tmuxsessionname
                         scripts/waitforfile
       DESTINATION bin)
+
+install(FILES doc/help.txt DESTINATION doc)
+
 
 
 # ====================================

@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-# Add milk-help executable
-add_executable(milk-help milk-help.c)
-install(TARGETS milk-help DESTINATION bin)
-
 set(SRCNAME "CommandLineInterface")
-
 
 option(python_module "Compile Python Wrappers" OFF)
 
@@ -36,6 +31,7 @@ find_package(Threads REQUIRED)
 bison_target(MilkBison calc_bison.y ${PROJECT_SOURCE_DIR}/calc_bison.c)
 flex_target(MilkFlex calc_flex.l ${PROJECT_SOURCE_DIR}/calc_flex.c)
 add_flex_bison_dependency(MilkFlex MilkBison)
+
 set(CORE_FILES
     CLIcore.c
     CLIcore/CLIcore_utils.c
@@ -66,6 +62,11 @@ set(CORE_FILES
             streamCTRL/streamCTRL_scan.c
             streamCTRL/streamCTRL_utilfuncs.c
             ${CORE_FILES})
+
+# Add milk-help executable
+add_executable(milk-help milk-help.c)
+target_link_libraries(milk-help PUBLIC CLIcore)
+install(TARGETS milk-help DESTINATION bin)
 
 if(${CFITSIO_FOUND})
   link_directories(${CFITSIO_LIBRARY_DIRS})

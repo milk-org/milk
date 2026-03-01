@@ -81,9 +81,17 @@ errno_t functionparameter_GetTypeString(
     {
         strncat(typestring, "ONOFF ", STRINGMAXLEN_FPSTYPE - 1);
     }
+    if(type & FPTYPE_PROCESS)
+    {
+        strncat(typestring, "PROCESS ", STRINGMAXLEN_FPSTYPE - 1);
+    }
     if(type & FPTYPE_FPSNAME)
     {
         strncat(typestring, "FPSNAME ", STRINGMAXLEN_FPSTYPE - 1);
+    }
+    if(type & FPTYPE_STRING_NOT_STREAM)
+    {
+        strncat(typestring, "STRNOTSTRM ", STRINGMAXLEN_FPSTYPE - 1);
     }
 
     return RETURN_SUCCESS;

@@ -71,7 +71,7 @@ typedef long variableID;
 #define FPTYPE_IS_STRING(type) \
     ((type == FPTYPE_STRING) || (type == FPTYPE_FILENAME) || (type == FPTYPE_FITSFILENAME) || \
      (type == FPTYPE_EXECFILENAME) || (type == FPTYPE_DIRNAME) || (type == FPTYPE_STREAMNAME) || \
-     (type == FPTYPE_FPSNAME) || (type == FPTYPE_STRING_NOT_STREAM))
+     (type == FPTYPE_PROCESS) || (type == FPTYPE_FPSNAME) || (type == FPTYPE_STRING_NOT_STREAM))
 
 #define STRINGMAXLEN_FPSTYPE  20
 
@@ -187,7 +187,7 @@ typedef long variableID;
 
 #define FPFLAG_DEFAULT_STATUS (FPFLAG_ACTIVE | FPFLAG_USED | FPFLAG_VISIBLE)
 
-#define FUNCTION_PARAMETER_NBPARAM_DEFAULT 10 // size of dynamically allocated array of parameters
+#define FUNCTION_PARAMETER_NBPARAM_DEFAULT 100 // size of dynamically allocated array of parameters
 
 typedef struct
 {
@@ -825,7 +825,8 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
  */
 #define FPS_MAIN_STANDALONE(DEFAULT_FPS_NAME, FUNC_PREFIX, HELPTEXT, PARAMS_MACRO) \
 int main(int argc, char *argv[]) { \
-    char fps_name[STRINGMAXLEN_FPS_NAME] = DEFAULT_FPS_NAME; \
+    char fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
+    strncpy(fps_name, DEFAULT_FPS_NAME, STRINGMAXLEN_FPS_NAME - 1); \
     char arg_fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
     int use_tmux = 0; \
     int show_help = 0; \
@@ -860,6 +861,27 @@ int main(int argc, char *argv[]) { \
             } \
         } \
     } \
+    if (command == NULL) { \
+        command = "run"; \
+    } else { \
+        /* Check if the command is a recognized one. If not, it's likely the first parameter. */ \
+        if (strcmp(command, "fpsinit") != 0 && \
+            strcmp(command, "fps") != 0 && \
+            strcmp(command, "fpslist") != 0 && \
+            strcmp(command, "confstart") != 0 && \
+            strcmp(command, "confstep") != 0 && \
+            strcmp(command, "confstop") != 0 && \
+            strcmp(command, "runstart") != 0 && \
+            strcmp(command, "runstop") != 0 && \
+            strcmp(command, "run") != 0) { \
+            /* It's not a recognized command, so we treat it as a parameter for 'run' */ \
+            /* However, if it contains a colon, we already split it into arg_fps_name and command. */ \
+            /* If it was 'fpsname:paramvalue', then command is now 'paramvalue'. */ \
+            /* We should push it back into the argument list for 'run' to pick up. */ \
+            command = "run"; \
+        } \
+    } \
+    \
     if (strlen(arg_fps_name) > 0) { \
         strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1); \
     } \
@@ -1022,7 +1044,7 @@ int main(int argc, char *argv[]) { \
         return FPSCONF_##FUNC_PREFIX(fps_name, 0); \
     } else if (strcmp(command, "confstop") == 0) { \
         return FPSCONFSTOP_##FUNC_PREFIX(fps_name); \
-    } else if (strcmp(command, "runstart") == 0) { \
+    } else if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0) { \
         return FPSRUN_##FUNC_PREFIX(fps_name); \
     } else if (strcmp(command, "runstop") == 0) { \
         return FPSRUNSTOP_##FUNC_PREFIX(fps_name); \
