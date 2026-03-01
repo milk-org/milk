@@ -77,6 +77,7 @@ set(SOURCES
 add_executable(milk-procinfo-help milk-procinfo-help.c)
 install(TARGETS milk-procinfo-help DESTINATION bin)
 
+
 install(FILES 
     processinfo.h
     processtools.h

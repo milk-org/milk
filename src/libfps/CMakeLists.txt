@@ -141,6 +141,7 @@ install(TARGETS milk-fps-list DESTINATION bin)
 add_executable(milk-fps-help milk-fps-help.c)
 install(TARGETS milk-fps-help DESTINATION bin)
 
+
 add_executable(milk-fps-info milk-fps-info.c)
 target_link_libraries(milk-fps-info PUBLIC 
     milkfps

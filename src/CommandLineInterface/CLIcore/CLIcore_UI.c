@@ -40,6 +40,7 @@ void rl_cb_linehandler(char *linein)
 {
     if(NULL == linein)
     {
+        data.CLIloopON = 0;
         return;
     }
 
