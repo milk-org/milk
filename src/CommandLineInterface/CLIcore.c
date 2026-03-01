@@ -882,6 +882,18 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
 
 
+/**
+ * print_session_name - Print the CLI session name.
+ *
+ * Prints the process name set by the -n option.
+ * If no name was given, prints "(none)".
+ */
+static errno_t print_session_name()
+{
+    printf("%s\n", data.processname);
+    return RETURN_SUCCESS;
+}
+
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module
@@ -910,6 +922,14 @@ void runCLI_cmd_init()
                        "no argument",
                        "exitCLI",
                        "exitCLI");
+
+    RegisterCLIcommand("name",
+                       __FILE__,
+                       print_session_name,
+                       "print CLI session name (set by milk -n)",
+                       "no argument",
+                       "name",
+                       "print_session_name()");
 
     RegisterCLIcommand("help",
                        __FILE__,
@@ -1323,5 +1343,28 @@ static int command_line_process_options(int argc, char **argv)
         }
     }
 
+    /* If no -n option was given, build a default session name:
+     * "<unix_timestamp>p<pid>"  e.g. "1740801234p12345"
+     */
+    if(data.processnameflag == 0)
+    {
+        time_t ts = time(NULL);
+        int slen = snprintf(data.processname,
+                            STRINGMAXLEN_PROCESSNAME,
+                            "%ldp%ld",
+                            (long) ts,
+                            (long) CLIPID);
+        if(slen < 1 || slen >= STRINGMAXLEN_PROCESSNAME)
+        {
+            PRINT_ERROR("snprintf error building default processname");
+        }
+        strncpy(data.processname0,
+                data.processname,
+                STRINGMAXLEN_PROCESSNAME - 1);
+        data.processnameflag = 1;
+        prctl(PR_SET_NAME, data.processname, 0, 0, 0);
+    }
+
     return RETURN_SUCCESS;
 }
+
