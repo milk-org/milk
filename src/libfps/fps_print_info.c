@@ -38,6 +38,11 @@ int function_parameter_print_info(
         printf("Keywords        : %s\n", fps->md->keywordarray);
     }
     printf("Parameters      : %ld / %ld active\n", fps->NBparamActive, fps->md->NBparamMAX);
+    if (functionparameter_GetParamIndex(fps, ".procinfo.enabled") != -1) {
+        printf("Processinfo API : ENABLED\n");
+    } else {
+        printf("Processinfo API : DISABLED\n");
+    }
     printf("\n");
 
     // Calculate dynamic widths
@@ -45,7 +50,12 @@ int function_parameter_print_info(
     int val_width = 5; // "Value"
     for (int pindex = 0; pindex < fps->md->NBparamMAX; pindex++) {
         if (fps->parray[pindex].fpflag & FPFLAG_USED) {
-            int kl = strlen(fps->parray[pindex].keywordfull);
+            const char *display_keyword = fps->parray[pindex].keywordfull;
+            int prefix_len = strlen(fps->md->name);
+            if (strncmp(display_keyword, fps->md->name, prefix_len) == 0 && display_keyword[prefix_len] == '.') {
+                display_keyword += prefix_len + 1;
+            }
+            int kl = strlen(display_keyword);
             if (kl > kw_width) kw_width = kl;
 
             char valstring[200];
@@ -112,11 +122,17 @@ int function_parameter_print_info(
                 strcpy(cli_idx_str, "---");
             }
 
+            const char *display_keyword = fps->parray[pindex].keywordfull;
+            int prefix_len = strlen(fps->md->name);
+            if (strncmp(display_keyword, fps->md->name, prefix_len) == 0 && display_keyword[prefix_len] == '.') {
+                display_keyword += prefix_len + 1;
+            }
+
             printf("%4s %s%-*s%s %12s %*s %s\n",
                    cli_idx_str,
                    color_start,
                    kw_width,
-                   fps->parray[pindex].keywordfull,
+                   display_keyword,
                    color_end,
                    type_str,
                    val_width,

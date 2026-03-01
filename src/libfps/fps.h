@@ -842,6 +842,8 @@ int main(int argc, char *argv[]) { \
             show_help_color = 1; \
         } else if (strcmp(argv[i], "-tmux") == 0) { \
             use_tmux = 1; \
+        } else if (strcmp(argv[i], "-procinfo") == 0 || strcmp(argv[i], "--procinfo") == 0) { \
+            /* Option handled by FPSINIT implementation */ \
         } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
             keywords = argv[++i]; \
         } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
@@ -880,6 +882,7 @@ int main(int argc, char *argv[]) { \
             printf("  " COLOROPTION "-k, --keywords KEYWORDS" COLORRESET "  Specify FPS keywords (default: NULL).\n"); \
             printf("  " COLOROPTION "-d, --description DESC" COLORRESET "   Specify FPS description (default: NULL).\n"); \
             printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
+            printf("  " COLOROPTION "-procinfo" COLORRESET "                Enable processinfo support (for fpsinit).\n"); \
             printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message.\n"); \
             printf("  " COLOROPTION "-hc, --help-color" COLORRESET "        Show this help message with color.\n\n"); \
             printf(COLORHEADER "Notes:" COLORRESET "\n"); \
@@ -907,6 +910,7 @@ int main(int argc, char *argv[]) { \
             printf("  -k, --keywords KEYWORDS  Specify FPS keywords (default: NULL).\n"); \
             printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
             printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
+            printf("  -procinfo                Enable processinfo support (for fpsinit).\n"); \
             printf("  -h, --help               Show this help message.\n"); \
             printf("  -hc, --help-color        Show this help message with color.\n\n"); \
             printf("Notes:\n"); \
