@@ -1209,9 +1209,54 @@ void print_milk_main_help(void)
     printf("\n");
     printf("From within the milk shell, you can list\n");
     printf("available commands to see all capabilities:\n");
-    printf("  $ " C_CMD "help\n" C_RST);
     printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                COMMAND LINE OPTIONS                    \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_CMD "  -h, --help      " C_RST "print this message and exit\n");
+    printf(C_CMD "  -v, --version   " C_RST "print version and exit\n");
+    printf(C_CMD "  -i, --info      " C_RST "print version, settings, info and exit\n");
+    printf(C_CMD "  --verbose       " C_RST "be verbose\n");
+    printf(C_CMD "  -d <level>      " C_RST "set debug level at startup\n");
+    printf(C_CMD "  -o, --overwrite " C_RST "overwrite existing FITS files " C_NOTE "(USE WITH CAUTION)\n" C_RST);
+    printf(C_CMD "  -e, --errorexit " C_RST "exit on error\n");
+    printf(C_CMD "  -Z, --idle      " C_RST "only run process when X is idle\n");
+    printf(C_CMD "  -A, --autocomplete " C_RST "enable autocomplete preview\n");
+    printf(C_CMD "  -f, --fifoflag  " C_RST "enable default fifo input\n");
+    printf(C_CMD "  -F <fifoname>   " C_RST "specify custom fifo name\n");
+    printf(C_CMD "  -s <file>       " C_RST "execute startup script\n");
+    printf(C_CMD "  -n <name>       " C_RST "specify process name\n");
+    printf(C_CMD "  -p <priority>   " C_RST "set RT priority (0-99)\n");
 
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                SYNTAX & INTERACTION                    \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Syntax Rules:\n" C_RST);
+    printf("  Spaces separate arguments. Use " C_BOLD "#" C_RST " for comments.\n");
+    printf("  Example: " C_CMD "command arg1 arg2 # comment\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Tab Completion:\n" C_RST);
+    printf("  1st arg: Match commands, then images, then files.\n");
+    printf("  Subsequent: Match images, then files.\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                 IMPORTANT COMMANDS                     \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_CMD "  ? / help        " C_RST "Show this overview\n");
+    printf(C_CMD "  cmd? [cmd]      " C_RST "Help for specific command\n");
+    printf(C_CMD "  m? [module]     " C_RST "List commands in module\n");
+    printf(C_CMD "  h? [string]     " C_RST "Search command descriptions\n");
+    printf(C_CMD "  ci              " C_RST "System info and memory usage\n");
+    printf(C_CMD "  listim / listimf" C_RST "List images in memory\n");
+    printf(C_CMD "  loadfits / savefits " C_RST "FITS file I/O operations\n");
+    printf(C_CMD "  quit / exit     " C_RST "Exit the milk shell\n");
+    printf(C_CMD "  !<syscommand>   " C_RST "Execute shell command\n");
+    printf("\n");
 
     return;
 }

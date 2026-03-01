@@ -451,6 +451,9 @@ errno_t CLI_startup()
     return RETURN_SUCCESS;
 }
 
+// RegisterCLIcmd duplicate removed
+
+
 /* Handle SIGWINCH and window size changes when readline is not active and
    reading a character. */
 static void sighandler(int sig)
