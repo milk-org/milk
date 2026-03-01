@@ -24,7 +24,7 @@
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
 
-#define COLORRESET     "\001\033[0m\002"
+// COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
 #define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
 
@@ -323,11 +323,6 @@ errno_t CLI_execute_line()
     char calctmpimname[STRINGMAXLEN_IMGNAME];
 
 
-    if(data.Debug > 0)
-    {
-        printf("DEBUG: %s %d: Processing CLI input \"%s\"\n", __func__, __LINE__,
-               data.CLIcmdline);
-    }
 
 #ifdef USE_READLINE
     add_history(data.CLIcmdline);
@@ -416,7 +411,6 @@ errno_t CLI_execute_line()
 
         if(data.Debug > 0)
         {
-            printf("DEBUG: %s %d: extract words\n", __func__, __LINE__);
         }
 
         // extract first word
@@ -566,7 +560,7 @@ errno_t CLI_execute_line()
         {
             if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
-                if(data.Debug > 0)
+                if(data.Debug >= 0)
                 {
                     printf("DEBUG: %s %d: EXECUTING COMMAND %ld (%s)\n",
                            __func__, __LINE__,
