@@ -479,9 +479,24 @@ int FPSCONFSTOP_exfpscli(const char *fps_name)
 // MILK CLI WRAPPER (Used when loaded as a module)
 // =============================================================================
 
+#define X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
+    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
+
+static CLICMDARGDEF farg[] = {
+    MY_PARAMS(X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
 static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
+
+    printf("DEBUG: ENTERING CLIfunction for modex.fpsclitest\n");
     
     /* Try to connect to existing shared memory FPS */
     if (function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
@@ -493,19 +508,32 @@ static errno_t CLIfunction(void)
     /* Process positional CLI arguments and sync them to our local variables */
     FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
     
-    /* Run the computation */
-    example_fps_computation();
+    /* Support standard FPS tags like ..procinfo if present */
+    function_parameter_getFPSargs_from_CLIfunc(FPS_app_info.fps_name);
+    if(data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+        function_parameter_struct_disconnect(&fps);
+        return RETURN_SUCCESS;
+    }
+
+    /* Set data.fpsptr for generic tag lookup in CLI_checkarg_array */
+    data.fpsptr = &fps;
+    errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
+    data.fpsptr = NULL;
+
+    printf("DEBUG: nbarg=%d, retval=%d\n", CLIcmddata.nbarg, retval);
+    if(retval == RETURN_SUCCESS)
+    {
+        /* Run the computation */
+        example_fps_computation();
+    }
+    else if(retval == RETURN_CLICHECKARGARRAY_HELP || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        retval = RETURN_SUCCESS;
+    }
     
     function_parameter_struct_disconnect(&fps);
-    return RETURN_SUCCESS;
+    return retval;
 }
-
-#define X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
-    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
-
-static CLICMDARGDEF farg[] = {
-    MY_PARAMS(X_FARG)
-};
 
 /**
  * @brief Module registration function.
@@ -520,11 +548,6 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
         function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE);
     }
     
-    CLICMDDATA CLIcmddata = {
-        "",
-        "",
-        CLICMD_FIELDS_DEFAULTS
-    };
     strncpy(CLIcmddata.key, fps.md->callprogname, sizeof(CLIcmddata.key) - 1);
     strncpy(CLIcmddata.description, fps.md->description, sizeof(CLIcmddata.description) - 1);
 
