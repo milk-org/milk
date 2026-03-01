@@ -560,13 +560,6 @@ errno_t CLI_execute_line()
         {
             if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
-                if(data.Debug >= 0)
-                {
-                    printf("DEBUG: %s %d: EXECUTING COMMAND %ld (%s)\n",
-                           __func__, __LINE__,
-                           data.cmdindex,
-                           data.cmd[data.cmdindex].key);
-                }
                 // Execute CLI command
                 data.CMDerrstatus = data.cmd[data.cmdindex].fp();
 
