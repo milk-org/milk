@@ -11,6 +11,12 @@
 #include "fps_print_info.h"
 #include "fps_printparameter_valuestring.h"
 
+#define C_TITLE  "\033[1;36m"
+#define C_HDR    "\033[1;35m"
+#define C_CMD    "\033[1;32m"
+#define C_NOTE   "\033[1;33m"
+#define C_BOLD   "\033[1m"
+
 int function_parameter_print_info(
     FUNCTION_PARAMETER_STRUCT *fps,
     int verbose,
@@ -21,8 +27,10 @@ int function_parameter_print_info(
         return -1;
     }
 
-    printf("FPS Name        : %s\n", fps->md->name);
-    printf("Description     : %s\n", fps->md->description);
+    printf(C_TITLE "========================================================\n" COLORRESET);
+    printf(C_TITLE " %-20s : " C_HDR "%s" COLORRESET "\n", "FPS Name", fps->md->name);
+    printf(C_TITLE " %-20s : " C_CMD "%s" COLORRESET "\n", "Command Key", fps->md->callprogname);
+    printf(C_TITLE " %-20s : " COLORRESET "%s\n", "Description", fps->md->description);
     
     char * exec_basename = strrchr(fps->md->execfullpath, '/');
     if (exec_basename) {
@@ -30,19 +38,20 @@ int function_parameter_print_info(
     } else {
         exec_basename = fps->md->execfullpath;
     }
-    printf("Exec            : %s\n", exec_basename);
+    printf(C_TITLE " %-20s : " C_CMD "./%s" COLORRESET "\n", "Executable", exec_basename);
 
     if (verbose) {
-        printf("Work Directory  : %s\n", fps->md->workdir);
-        printf("Source File     : %s:%d\n", fps->md->sourcefname, fps->md->sourceline);
-        printf("Keywords        : %s\n", fps->md->keywordarray);
+        printf(C_TITLE " %-20s : " COLORRESET "%s\n", "Work Directory", fps->md->workdir);
+        printf(C_TITLE " %-20s : " COLORRESET "%s:%d\n", "Source File", fps->md->sourcefname, fps->md->sourceline);
+        printf(C_TITLE " %-20s : " COLORRESET "%s\n", "Keywords", fps->md->keywordarray);
     }
-    printf("Parameters      : %ld / %ld active\n", fps->NBparamActive, fps->md->NBparamMAX);
+    printf(C_TITLE " %-20s : " COLORRESET "%ld / %ld active\n", "Parameters", fps->NBparamActive, fps->md->NBparamMAX);
     if (functionparameter_GetParamIndex(fps, ".procinfo.enabled") != -1) {
-        printf("Processinfo API : ENABLED\n");
+        printf(C_TITLE " %-20s : " C_CMD "ENABLED" COLORRESET "\n", "Processinfo API");
     } else {
-        printf("Processinfo API : DISABLED\n");
+        printf(C_TITLE " %-20s : " COLORRESET "DISABLED\n", "Processinfo API");
     }
+    printf(C_TITLE "========================================================\n" COLORRESET);
     printf("\n");
 
     // Calculate dynamic widths
@@ -86,6 +95,7 @@ int function_parameter_print_info(
             
             const char* type_str = "UNKNOWN";
             switch(fps->parray[pindex].type) {
+                case FPTYPE_UNDEF: type_str = "UNDEF"; break;
                 case FPTYPE_INT32: type_str = "INT32"; break;
                 case FPTYPE_UINT32: type_str = "UINT32"; break;
                 case FPTYPE_INT64: type_str = "INT64"; break;
@@ -101,7 +111,9 @@ int function_parameter_print_info(
                 case FPTYPE_STREAMNAME: type_str = "STREAMNAME"; break;
                 case FPTYPE_STRING: type_str = "STRING"; break;
                 case FPTYPE_ONOFF: type_str = "ONOFF"; break;
+                case FPTYPE_PROCESS: type_str = "PROCESS"; break;
                 case FPTYPE_FPSNAME: type_str = "FPSNAME"; break;
+                case FPTYPE_STRING_NOT_STREAM: type_str = "STRING_NOT_STREAM"; break;
             }
 
             const char *color_start = COLORRESET;

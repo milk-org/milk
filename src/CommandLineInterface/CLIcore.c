@@ -380,8 +380,28 @@ errno_t CLI_startup()
     }
     else
     {
+#ifdef INSTALLDIR
+        strncpy(data.installdir, INSTALLDIR, STRINGMAXLEN_DIRNAME - 1);
+#else
         strncpy(data.installdir, "/usr/local/milk", STRINGMAXLEN_DIRNAME - 1);
+#endif
     }
+
+    // Initialize sourcedir
+    char *sourcedir_env = getenv("MILK_SOURCEDIR");
+    if(sourcedir_env != NULL)
+    {
+        strncpy(data.sourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
+    }
+    else
+    {
+#ifdef SOURCEDIR
+        strncpy(data.sourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
+#else
+        strncpy(data.sourcedir, "", STRINGMAXLEN_DIRNAME - 1);
+#endif
+    }
+
 
     data.Debug         = 0;
     data.overwrite     = 0;
@@ -839,6 +859,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin)) {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         CLI_execute_line();
+                    } else {
+                        data.CLIloopON = 0;
                     }
 #endif
                 }
