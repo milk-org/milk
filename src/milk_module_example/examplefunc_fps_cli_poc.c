@@ -52,13 +52,13 @@ static char    param_output_path[FUNCTION_PARAMETER_STRMAXLEN] = "/tmp/output.fi
  * - description: Human-readable help text.
  */
 #define MY_PARAMS(X) \
-    X("gain",         &param_gain,      FPTYPE_FLOAT64,    0, FPFLAG_DEFAULT_INPUT, "Gain parameter") \
-    X("iterations",   &param_iter,      FPTYPE_INT64,      1, FPFLAG_DEFAULT_INPUT, "Number of iterations") \
-    X("mode",         &param_mode,      FPTYPE_INT32,      2, FPFLAG_DEFAULT_INPUT, "Execution mode") \
-    X("verbose",      &param_verbose,   FPTYPE_ONOFF,      3, FPFLAG_DEFAULT_INPUT, "Verbose output") \
-    X("threshold",    &param_threshold, FPTYPE_FLOAT32,    4, FPFLAG_DEFAULT_INPUT, "Detection threshold") \
-    X("input_stream", param_input_stream, FPTYPE_STREAMNAME, -1, FPFLAG_DEFAULT_INPUT, "Input stream name") \
-    X("output_path",  param_output_path,  FPTYPE_STRING,      5, FPFLAG_DEFAULT_INPUT, "Output file path")
+    X(".gain",         &param_gain,      FPTYPE_FLOAT64,    0, FPFLAG_DEFAULT_INPUT, "Gain parameter") \
+    X(".iterations",   &param_iter,      FPTYPE_INT64,      1, FPFLAG_DEFAULT_INPUT, "Number of iterations") \
+    X(".mode",         &param_mode,      FPTYPE_INT32,      2, FPFLAG_DEFAULT_INPUT, "Execution mode") \
+    X(".verbose",      &param_verbose,   FPTYPE_ONOFF,      3, FPFLAG_DEFAULT_INPUT, "Verbose output") \
+    X(".threshold",    &param_threshold, FPTYPE_FLOAT32,    4, FPFLAG_DEFAULT_INPUT, "Detection threshold") \
+    X(".input_stream", param_input_stream, FPTYPE_STREAMNAME, -1, FPFLAG_DEFAULT_INPUT, "Input stream name") \
+    X(".output_path",  param_output_path,  FPTYPE_STRING,      5, FPFLAG_DEFAULT_INPUT, "Output file path")
 
 
 // =============================================================================
@@ -102,10 +102,15 @@ static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
  */
 static errno_t FPS_init_from_bindings(
     FUNCTION_PARAMETER_STRUCT *fps,
+    const char                *cmdkey,
+    const char                *description,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b
 )
 {
+    strncpy(fps->md->callprogname, cmdkey, FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps->md->description, description, FPS_DESCR_STRMAXLEN - 1);
+
     for(int i = 0; i < nb_b; i++)
     {
         long pindex;
@@ -275,8 +280,24 @@ int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *des
     /* Standard preamble handles SHM segment creation/connection */
     FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, "Unified FPS-CLI POC");
     
+    /* Check for -procinfo flag in standalone_argv */
+    int enable_procinfo = 0;
+    if (standalone_argv != NULL) {
+        for (int j = 1; j < standalone_argc; j++) {
+            if (strcmp(standalone_argv[j], "-procinfo") == 0 || strcmp(standalone_argv[j], "--procinfo") == 0) {
+                enable_procinfo = 1;
+                break;
+            }
+        }
+    }
+    
+    if (enable_procinfo) {
+        fps.cmdset.flags |= CLICMDFLAG_PROCINFO;
+        fps_add_processinfo_entries(&fps);
+    }
+    
     /* Populate the SHM from our bindings */
-    FPS_init_from_bindings(&fps, my_bindings, nb_bindings);
+    FPS_init_from_bindings(&fps, "milk-fpsclitest", "Test FPS-CLI unification", my_bindings, nb_bindings);
     
     function_parameter_struct_disconnect(&fps);
     return 0;
@@ -296,29 +317,55 @@ int FPSCONF_exfpscli(const char *fps_name, int loop)
 int FPSRUN_exfpscli(const char *fps_name)
 {
     FUNCTION_PARAMETER_STRUCT fps;
+    PROCESSINFO *processinfo = NULL;
+
     /* Standard preamble connects to the FPS and sets up process info */
     FPS_RUN_STD_PREAMBLE(fps_name, fps, {
         /* Sync our local pointers from the current FPS SHM values */
         FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
     });
     
-    /* Execute the core logic */
-    example_fps_computation();
+    if (functionparameter_GetParamIndex(&fps, ".procinfo.enabled") != -1) {
+        /* Setup processinfo using the FPS macros */
+        FPS_RUN_PROCESSINFO_SETUP(processinfo, fps_name, "fpscli POC", "Unified FPS-CLI Demo", NULL, fps);
+        
+        FPS_RUN_PROCESSINFO_LOOP(processinfo, fps, NULL, NULL, {
+            example_fps_computation();
+        });
+    } else {
+        /* Execute the core logic */
+        example_fps_computation();
+        function_parameter_struct_disconnect(&fps);
+    }
     
-    function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
 /* Placeholders for stop signals */
 int FPSRUNSTOP_exfpscli(const char *fps_name)
 {
-    (void) fps_name;
+    FUNCTION_PARAMETER_STRUCT fps;
+    printf("Stopping run process for '%s'\n", fps_name);
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
+        return 1;
+    }
+    functionparameter_RUNstop(&fps);
+    function_parameter_struct_disconnect(&fps);
+    functionparameter_FPS_processinfo_signal(fps_name, 3);
     return 0;
 }
 
 int FPSCONFSTOP_exfpscli(const char *fps_name)
 {
-    (void) fps_name;
+    FUNCTION_PARAMETER_STRUCT fps;
+    printf("Stopping configuration process for '%s'\n", fps_name);
+    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
+        return 1;
+    }
+    functionparameter_CONFstop(&fps);
+    function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
@@ -327,12 +374,7 @@ int FPSCONFSTOP_exfpscli(const char *fps_name)
 // MILK CLI WRAPPER (Used when loaded as a module)
 // =============================================================================
 
-/**
- * @brief Wrapper for the 'milk-fpsclitest' command in the MILK CLI.
- *
- * This wrapper is called when the user types 'milk-fpsclitest 2.0 50' in milk.
- */
-static errno_t example_fps_cli_wrapper()
+static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
     
@@ -358,15 +400,25 @@ static errno_t example_fps_cli_wrapper()
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
-    RegisterCLIcommand(
-        "milk-fpsclitest",         /* Command name in milk */
-        "examplefunc_fps_cli_poc.c",
-        example_fps_cli_wrapper,    /* Function pointer */
-        "Test FPS-CLI unification", /* Short description */
-        "milk-fpsclitest <gain> <iter> <mode> <verbose> <threshold> <outpath>", /* Syntax help */
-        "milk-fpsclitest 2.5 100 1 1 0.7 /tmp/test.fits",   /* Example */
-        "example_fps_cli_wrapper()" /* Internal call string */
-    );
+    FUNCTION_PARAMETER_STRUCT fps;
+
+    /* Connect to existing or auto-initialize FPS */
+    if (function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE) == -1) {
+        FPSINIT_exfpscli("exfpscli", NULL, "Test FPS-CLI unification");
+        function_parameter_struct_connect("exfpscli", &fps, FPSCONNECT_SIMPLE);
+    }
+    
+    CLICMDDATA CLIcmddata = {
+        "",
+        "",
+        CLICMD_FIELDS_NOPARAM
+    };
+    strncpy(CLIcmddata.key, fps.md->callprogname, sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description, fps.md->description, sizeof(CLIcmddata.description) - 1);
+
+    INSERT_STD_CLIREGISTERFUNC
+
+    function_parameter_struct_disconnect(&fps);
     return RETURN_SUCCESS;
 }
 
@@ -377,17 +429,19 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
 
 /* Redefine X_HELP_PRINT for the FPS_MAIN_STANDALONE help message generation.
  * This ensures that './milk-fpsclitest --help' displays parameters correctly.
+ * We strip the leading dot if it exists for cleaner CLI help output.
  */
 #undef X_HELP_PRINT
 #define X_HELP_PRINT(kw, ptr, type, cli_idx, flag, desc) \
     { \
         char cli_idx_str[8]; \
+        const char *disp_kw = (kw[0] == '.') ? &kw[1] : kw; \
         if(cli_idx >= 0) sprintf(cli_idx_str, "%2d", cli_idx); \
         else strcpy(cli_idx_str, " -"); \
         if(show_help_color && (cli_idx >= 0)) { \
-            printf("  %s %s%-15s%s %s\n", cli_idx_str, COLORPRIMARY, kw, COLORRESET, desc); \
+            printf("  %s %s%-15s%s %s\n", cli_idx_str, COLORPRIMARY, disp_kw, COLORRESET, desc); \
         } else { \
-            printf("  %s %-15s %s\n", cli_idx_str, kw, desc); \
+            printf("  %s %-15s %s\n", cli_idx_str, disp_kw, desc); \
         } \
     }
 

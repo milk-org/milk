@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 
+# Add milk-help executable
+add_executable(milk-help milk-help.c)
+install(TARGETS milk-help DESTINATION bin)
 
 set(SRCNAME "CommandLineInterface")
 
