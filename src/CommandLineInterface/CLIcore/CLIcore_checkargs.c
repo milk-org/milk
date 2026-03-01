@@ -285,6 +285,54 @@ errno_t CLI_checkarg_array(
     printf("DEBUG: ENTERING CLI_checkarg_array, nbarg=%d, cmdNBarg=%ld\n", nbarg, data.cmdNBarg);
     if (data.cmdNBarg > 1) printf("DEBUG: arg1 token value: '%s'\n", data.cmdargtoken[1].val.string);
 
+    // Sync current values from FPS to CLI argdata BEFORE processing
+    if(data.fpsptr != NULL)
+    {
+        for(int arg = 0; arg < nbarg; arg++)
+        {
+            long pindex = functionparameter_GetParamIndex(data.fpsptr, fpscliarg[arg].fpstag);
+            if(pindex != -1)
+            {
+                uint32_t ptype = data.fpsptr->parray[pindex].type;
+                switch(ptype)
+                {
+                    case FPTYPE_FLOAT32:
+                        data.cmd[data.cmdindex].argdata[arg].val.f32 = data.fpsptr->parray[pindex].val.f32[0];
+                        break;
+                    case FPTYPE_FLOAT64:
+                        data.cmd[data.cmdindex].argdata[arg].val.f64 = data.fpsptr->parray[pindex].val.f64[0];
+                        break;
+                    case FPTYPE_INT32:
+                        data.cmd[data.cmdindex].argdata[arg].val.i32 = data.fpsptr->parray[pindex].val.i32[0];
+                        break;
+                    case FPTYPE_UINT32:
+                        data.cmd[data.cmdindex].argdata[arg].val.ui32 = data.fpsptr->parray[pindex].val.ui32[0];
+                        break;
+                    case FPTYPE_INT64:
+                        data.cmd[data.cmdindex].argdata[arg].val.i64 = data.fpsptr->parray[pindex].val.i64[0];
+                        break;
+                    case FPTYPE_UINT64:
+                        data.cmd[data.cmdindex].argdata[arg].val.ui64 = data.fpsptr->parray[pindex].val.ui64[0];
+                        break;
+                    case FPTYPE_ONOFF:
+                        data.cmd[data.cmdindex].argdata[arg].val.i64 = data.fpsptr->parray[pindex].val.i32[0];
+                        break;
+                    case FPTYPE_STRING:
+                    case FPTYPE_STREAMNAME:
+                    case FPTYPE_DIRNAME:
+                    case FPTYPE_FILENAME:
+                    case FPTYPE_FITSFILENAME:
+                    case FPTYPE_EXECFILENAME:
+                    case FPTYPE_FPSNAME:
+                    case FPTYPE_PROCESS:
+                    case FPTYPE_STRING_NOT_STREAM:
+                        strncpy(data.cmd[data.cmdindex].argdata[arg].val.s, data.fpsptr->parray[pindex].val.string[0], STRINGMAXLEN_CLICMDARG - 1);
+                        break;
+                }
+            }
+        }
+    }
+
     int argindexmatch = -1;
     // check if CLI argument 1 is one of the function parameters keys
     // if it is, set argindexmatch to the function parameter index
@@ -341,7 +389,7 @@ errno_t CLI_checkarg_array(
                         functionparameter_SetParamValue_ONOFF(data.fpsptr, data.cmdargtoken[1].val.string, (int)data.cmdargtoken[2].val.numl);
                         break;
                 }
-                printf("Parameter %s value updated in FPS\n", data.cmdargtoken[1].val.string);
+                printf("Parameter %s value updated to %s in FPS\n", data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
                 DEBUG_TRACE_FEXIT();
                 return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
             }
@@ -419,7 +467,7 @@ errno_t CLI_checkarg_array(
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
-        printf("Argument %s value updated\n", fpscliarg[argindexmatch].fpstag);
+        printf("Argument %s value updated to %s\n", fpscliarg[argindexmatch].fpstag, data.cmdargtoken[2].val.string);
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
         DEBUG_TRACE_FEXIT();
