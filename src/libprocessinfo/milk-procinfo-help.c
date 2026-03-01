@@ -1,12 +1,11 @@
 #include <stdio.h>
-#include <stdlib.h>
 
-#define C_RST    "\033[0m"
-#define C_TITLE  "\033[1;36m"
-#define C_HDR    "\033[1;35m"
-#define C_CMD    "\033[32m"
-#define C_BOLD   "\033[1m"
-#define C_NOTE   "\033[33m"
+#define C_TITLE "\033[1;36m"   /* Cyan Bold   -> Main section headers / separators */
+#define C_HDR   "\033[1;34m"   /* Blue Bold   -> Subheaders inside sections */
+#define C_CMD   "\033[1;32m"   /* Green Bold  -> Command names, syntax, execution */
+#define C_NOTE  "\033[1;33m"   /* Yellow Bold -> Tips, Notes, 'run X for more' */
+#define C_BOLD  "\033[1m"      /* White Bold  -> Emphasize specific words */
+#define C_RST   "\033[0m"      /* Reset */
 
 int main()
 {
@@ -49,6 +48,6 @@ int main()
     printf("  $ " C_CMD "milk-fps-set myfps00 procinfo.enabled 1\n" C_RST);
     printf("  $ " C_CMD "milk-fps-runstart myfps00\n" C_RST);
     printf("\n");
-
+    
     return 0;
 }
