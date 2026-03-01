@@ -59,6 +59,8 @@ errno_t load_sharedobj(
     DLib_handle[DLib_index] = dlopen(libname, RTLD_LAZY | RTLD_GLOBAL);
     if(!DLib_handle[DLib_index])
     {
+        printf(KRED "FAILED TO LOAD : %s\n" KRES, libname);
+        fprintf(stderr, KRED "%s\n" KRES, dlerror());
         fprintf(stderr, KRED "%s\n" KRES, dlerror());
         //exit(EXIT_FAILURE);
     }
@@ -103,28 +105,35 @@ errno_t load_module_shared(
         }
     }
 
-    // Assemble absolute path module filename
-    //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
-    DEBUG_TRACEPOINT(
-        "Searching for shared object in directory [data.installdir]/lib : "
-        "%s/lib",
-        data.installdir);
-
+    if(modulename[0] == '/')
     {
-        int slen = snprintf(libname,
-                            STRINGMAXLEN_MODULE_SOFILENAME,
-                            "%s/lib/lib%s.so",
-                            data.installdir,
-                            modulenameLC);
-        if(slen < 1)
+        strncpy(libname, modulename, STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    }
+    else
+    {
+        // Assemble absolute path module filename
+        //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
+        DEBUG_TRACEPOINT(
+            "Searching for shared object in directory [data.installdir]/lib : "
+            "%s/lib",
+            data.installdir);
+
         {
-            PRINT_ERROR("snprintf wrote <1 char");
-            abort(); // can't handle this error any other way
-        }
-        if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
-        {
-            PRINT_ERROR("snprintf string truncation");
-            abort(); // can't handle this error any other way
+            int slen = snprintf(libname,
+                                STRINGMAXLEN_MODULE_SOFILENAME,
+                                "%s/lib/lib%s.so",
+                                data.installdir,
+                                modulenameLC);
+            if(slen < 1)
+            {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_MODULE_SOFILENAME)
+            {
+                PRINT_ERROR("snprintf string truncation");
+                abort(); // can't handle this error any other way
+            }
         }
     }
 
@@ -372,9 +381,12 @@ errno_t RegisterModule(const char *__restrict FileName,
     data.module[data.moduleindex].type = MODULE_TYPE_STARTUP;
 
     //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
-    strncpy(data.module[data.moduleindex].sofilename,
-            "",
-            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    if(data.module[data.moduleindex].sofilename[0] != '/')
+    {
+        strncpy(data.module[data.moduleindex].sofilename,
+                "",
+                STRINGMAXLEN_MODULE_SOFILENAME - 1);
+    }
 
     //strncpy(data.modulesofilename, "", STRINGMAXLEN_MODULE_SOFILENAME - 1);
     strncpy(data.module[data.moduleindex].loadname,
@@ -485,6 +497,7 @@ uint32_t RegisterCLIcmd(
     errno_t (*CLIfptr)()
 )
 {
+    // Command registration logic
     DEBUG_TRACE_FSTART();
 
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
