@@ -495,21 +495,28 @@ static CLICMDDATA CLIcmddata = {
 static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
+    char fpsname_with_session[200];
 
     printf("DEBUG: ENTERING CLIfunction for modex.fpsclitest\n");
     
+    if (data.processname[0] != '\0') {
+        snprintf(fpsname_with_session, sizeof(fpsname_with_session), "%s.%s", FPS_app_info.fps_name, data.processname);
+    } else {
+        strncpy(fpsname_with_session, FPS_app_info.fps_name, sizeof(fpsname_with_session) - 1);
+    }
+
     /* Try to connect to existing shared memory FPS */
-    if (function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+    if (function_parameter_struct_connect(fpsname_with_session, &fps, FPSCONNECT_SIMPLE) == -1) {
         /* If it doesn't exist, auto-initialize it */
-        FPSINIT_exfpscli(FPS_app_info.fps_name, NULL, "Auto-initialized");
-        function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE);
+        FPSINIT_exfpscli(fpsname_with_session, NULL, "Auto-initialized");
+        function_parameter_struct_connect(fpsname_with_session, &fps, FPSCONNECT_SIMPLE);
     }
 
     /* Process positional CLI arguments and sync them to our local variables */
     FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
     
     /* Support standard FPS tags like ..procinfo if present */
-    function_parameter_getFPSargs_from_CLIfunc(FPS_app_info.fps_name);
+    function_parameter_getFPSargs_from_CLIfunc(fpsname_with_session);
     if(data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
         function_parameter_struct_disconnect(&fps);
         return RETURN_SUCCESS;
@@ -540,20 +547,51 @@ static errno_t CLIfunction(void)
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
-    FUNCTION_PARAMETER_STRUCT fps;
+    strncpy(CLIcmddata.key, FPS_app_info.cmdkey, sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description, FPS_app_info.description, sizeof(CLIcmddata.description) - 1);
 
-    /* Connect to existing or auto-initialize FPS */
-    if (function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-        FPSINIT_exfpscli(FPS_app_info.fps_name, NULL, FPS_app_info.description);
-        function_parameter_struct_connect(FPS_app_info.fps_name, &fps, FPSCONNECT_SIMPLE);
+    for(int i = 0; i < nb_bindings; i++) {
+        switch(my_bindings[i].type) {
+            case FPTYPE_INT32:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d", *(int32_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_UINT32:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%u", *(uint32_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_INT64:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%ld", *(int64_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_UINT64:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%lu", *(uint64_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_FLOAT32:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%f", *(float*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_FLOAT64:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%lf", *(double*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_ONOFF:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%ld", *(uint64_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_PID:
+                snprintf(farg[i].example, STRINGMAXLEN_FPSCLIARG_EXAMPLE, "%d", *(pid_t*)my_bindings[i].ptr);
+                break;
+            case FPTYPE_STRING:
+            case FPTYPE_STREAMNAME:
+            case FPTYPE_FILENAME:
+            case FPTYPE_FITSFILENAME:
+            case FPTYPE_FPSNAME:
+            case FPTYPE_DIRNAME:
+            case FPTYPE_EXECFILENAME:
+            case FPTYPE_PROCESS:
+            case FPTYPE_STRING_NOT_STREAM:
+                strncpy(farg[i].example, (char*)my_bindings[i].ptr, STRINGMAXLEN_FPSCLIARG_EXAMPLE - 1);
+                break;
+        }
     }
-    
-    strncpy(CLIcmddata.key, fps.md->callprogname, sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description, fps.md->description, sizeof(CLIcmddata.description) - 1);
 
     INSERT_STD_CLIREGISTERFUNC
 
-    function_parameter_struct_disconnect(&fps);
     return RETURN_SUCCESS;
 }
 
