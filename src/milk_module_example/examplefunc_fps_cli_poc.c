@@ -265,44 +265,6 @@ static errno_t FPS_process_CLI_and_sync(
                 }
             }
         }
-    } else if (data.cmdindex >= 0) {
-        /* MODE A: Running inside MILK CLI (module mode) */
-        int current_cli_index = 0;
-        for(int i = 0; i < nb_b; i++) {
-            if (bindings[i].is_primary) {
-                /* Argument indexing: arg 0 is the command name, so we add 1 */
-                int arg_idx = current_cli_index + 1;
-                current_cli_index++;
-                
-                if (data.cmdargtoken[arg_idx].type != CLIARG_MISSING) {
-                    long pindex = functionparameter_GetParamIndex(fps, bindings[i].fpskeyword);
-                    if (pindex != -1) {
-                        /* Update the FPS shared memory value */
-                        if (bindings[i].type == FPTYPE_FLOAT64) {
-                            fps->parray[pindex].val.f64[0] = data.cmdargtoken[arg_idx].val.numf;
-                        } else if (bindings[i].type == FPTYPE_FLOAT32) {
-                            fps->parray[pindex].val.f32[0] = (float)data.cmdargtoken[arg_idx].val.numf;
-                        } else if (bindings[i].type == FPTYPE_INT64) {
-                            fps->parray[pindex].val.i64[0] = data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_UINT64) {
-                            fps->parray[pindex].val.ui64[0] = (uint64_t)data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_INT32 || bindings[i].type == FPTYPE_ONOFF) {
-                            fps->parray[pindex].val.i32[0] = (int32_t)data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_UINT32) {
-                            fps->parray[pindex].val.ui32[0] = (uint32_t)data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_PID) {
-                            fps->parray[pindex].val.pid[0] = (pid_t)data.cmdargtoken[arg_idx].val.numl;
-                        } else if (bindings[i].type == FPTYPE_TIMESPEC) {
-                            double val = data.cmdargtoken[arg_idx].val.numf;
-                            fps->parray[pindex].val.ts[0].tv_sec = (long)val;
-                            fps->parray[pindex].val.ts[0].tv_nsec = (long)((val - (long)val) * 1e9);
-                        } else if (FPTYPE_IS_STRING(bindings[i].type)) {
-                            strncpy(fps->parray[pindex].val.string[0], data.cmdargtoken[arg_idx].val.string, FUNCTION_PARAMETER_STRMAXLEN - 1);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /* 2. Sync from FPS to local C variables */
@@ -496,8 +458,6 @@ static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
     char fpsname_with_session[200];
-
-    printf("DEBUG: ENTERING CLIfunction for modex.fpsclitest\n");
     
     if (data.processname[0] != '\0') {
         snprintf(fpsname_with_session, sizeof(fpsname_with_session), "%s.%s", FPS_app_info.fps_name, data.processname);
@@ -512,9 +472,6 @@ static errno_t CLIfunction(void)
         function_parameter_struct_connect(fpsname_with_session, &fps, FPSCONNECT_SIMPLE);
     }
 
-    /* Process positional CLI arguments and sync them to our local variables */
-    FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
-    
     /* Support standard FPS tags like ..procinfo if present */
     function_parameter_getFPSargs_from_CLIfunc(fpsname_with_session);
     if(data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
@@ -527,9 +484,11 @@ static errno_t CLIfunction(void)
     errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
     data.fpsptr = NULL;
 
-    printf("DEBUG: nbarg=%d, retval=%d\n", CLIcmddata.nbarg, retval);
     if(retval == RETURN_SUCCESS)
     {
+        /* Sync our local variables from FPS right before running */
+        FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
+
         /* Run the computation */
         example_fps_computation();
     }
