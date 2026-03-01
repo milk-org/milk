@@ -112,6 +112,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
         }
 
         funcparamarray[pindex].fpflag = fpflag;
+        funcparamarray[pindex].cli_index = -1;
 
         // break full keyword into keywords
         strncpy(funcparamarray[pindex].keywordfull,

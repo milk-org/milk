@@ -65,10 +65,15 @@ functionparameter_PrintParameterInfo(
 
     printf("\n");
 
-    printf("------------- FUNCTION PARAMETER \n");
+    const char *display_keyword = fpsentry->parray[pindex].keywordfull;
+    int prefix_len = strlen(fpsentry->md->name);
+    if (strncmp(display_keyword, fpsentry->md->name, prefix_len) == 0 && display_keyword[prefix_len] == '.') {
+        display_keyword += prefix_len + 1;
+    }
+
     printf("[%d] Parameter name : %s\n",
            pindex,
-           fpsentry->parray[pindex].keywordfull);
+           display_keyword);
 
     char typestring[STRINGMAXLEN_FPSTYPE];
     functionparameter_GetTypeString(fpsentry->parray[pindex].type, typestring);
