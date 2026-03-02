@@ -352,7 +352,13 @@ errno_t CLI_checkarg_array(
     {
         if(data.cmdargtoken[1].val.string[0] == '.')
         {
-            long pindex = functionparameter_GetParamIndex(data.fpsptr, data.cmdargtoken[1].val.string);
+            char *fpstag = data.cmdargtoken[1].val.string;
+            if(fpstag[1] == '.') // Handle ".." prefix
+            {
+                fpstag++;
+            }
+
+            long pindex = functionparameter_GetParamIndex(data.fpsptr, fpstag);
             if(pindex != -1)
             {
                 if(data.cmdargtoken[2].type == CLIARG_MISSING)
@@ -368,28 +374,28 @@ errno_t CLI_checkarg_array(
                 switch(ptype)
                 {
                     case FPTYPE_INT64:
-                        functionparameter_SetParamValue_INT64(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_INT64(data.fpsptr, fpstag, data.cmdargtoken[2].val.numl);
                         break;
                     case FPTYPE_UINT64:
-                        functionparameter_SetParamValue_UINT64(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_UINT64(data.fpsptr, fpstag, data.cmdargtoken[2].val.numl);
                         break;
                     case FPTYPE_INT32:
-                        functionparameter_SetParamValue_INT32(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_INT32(data.fpsptr, fpstag, data.cmdargtoken[2].val.numl);
                         break;
                     case FPTYPE_UINT32:
-                        functionparameter_SetParamValue_UINT32(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_UINT32(data.fpsptr, fpstag, data.cmdargtoken[2].val.numl);
                         break;
                     case FPTYPE_FLOAT64:
-                        functionparameter_SetParamValue_FLOAT64(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf);
+                        functionparameter_SetParamValue_FLOAT64(data.fpsptr, fpstag, data.cmdargtoken[2].val.numf);
                         break;
                     case FPTYPE_FLOAT32:
-                        functionparameter_SetParamValue_FLOAT32(data.fpsptr, data.cmdargtoken[1].val.string, (float)data.cmdargtoken[2].val.numf);
+                        functionparameter_SetParamValue_FLOAT32(data.fpsptr, fpstag, (float)data.cmdargtoken[2].val.numf);
                         break;
                     case FPTYPE_PID:
-                        functionparameter_SetParamValue_INT64(data.fpsptr, data.cmdargtoken[1].val.string, (int64_t)data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_INT64(data.fpsptr, fpstag, (int64_t)data.cmdargtoken[2].val.numl);
                         break;
                     case FPTYPE_TIMESPEC:
-                        functionparameter_SetParamValue_TIMESPEC(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.numf);
+                        functionparameter_SetParamValue_TIMESPEC(data.fpsptr, fpstag, data.cmdargtoken[2].val.numf);
                         break;
                     case FPTYPE_STRING:
                     case FPTYPE_STREAMNAME:
@@ -400,13 +406,21 @@ errno_t CLI_checkarg_array(
                     case FPTYPE_FPSNAME:
                     case FPTYPE_PROCESS:
                     case FPTYPE_STRING_NOT_STREAM:
-                        functionparameter_SetParamValue_STRING(data.fpsptr, data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
+                        functionparameter_SetParamValue_STRING(data.fpsptr, fpstag, data.cmdargtoken[2].val.string);
                         break;
                     case FPTYPE_ONOFF:
-                        functionparameter_SetParamValue_ONOFF(data.fpsptr, data.cmdargtoken[1].val.string, (int)data.cmdargtoken[2].val.numl);
+                        functionparameter_SetParamValue_ONOFF(data.fpsptr, fpstag, (int)data.cmdargtoken[2].val.numl);
                         break;
                 }
-                printf("Parameter %s value updated to %s in FPS\n", data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
+
+                char valstr[STRINGMAXLEN_FPSCLIARG_TAG];
+                functionparameter_GetParamValueString(&data.fpsptr->parray[pindex],
+                                                      valstr,
+                                                      STRINGMAXLEN_FPSCLIARG_TAG);
+
+                printf("Parameter %s value updated to %s in FPS\n",
+                       data.cmdargtoken[1].val.string,
+                       valstr);
                 DEBUG_TRACE_FEXIT();
                 return RETURN_CLICHECKARGARRAY_FUNCPARAMSET;
             }
