@@ -20,7 +20,7 @@ long i;
 
 alpha   [A-Za-z?]
 digit     [0-9]
-string    ({alpha}|{digit}|[_.\$])({alpha}|{digit}|[_.\$])*
+string    ({alpha}|{digit}|[_.$:])({alpha}|{digit}|[_.$:])*
 numberl [0-9]+
 numberd	[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
 
@@ -192,7 +192,8 @@ data.cmdindex = -1;
  for(i=0;i<(long) data.NBcmd;i++)
   {
   if(data.Debug>1){printf("DEBUG: FLEX: comparing string \"%s\" to command (%ld %s)\n", yytext, i, data.cmd[i].key);}
-   if(!strcmp(yytext, data.cmd[i].key))
+   size_t cmdlen = strlen(data.cmd[i].key);
+   if(!strncmp(yytext, data.cmd[i].key, cmdlen) && (yytext[cmdlen] == '\0' || yytext[cmdlen] == ':' || yytext[cmdlen] == ' '))
     {
      data.cmdindex = i;
      if(data.Debug>0){printf("DEBUG: FLEX: \"%s\" IS A COMMAND (cmd %ld)\n", yytext, i);}
@@ -231,5 +232,5 @@ return ((int) yytext[0]);
 
 \n	{return ((int) yytext[0]);}
 
-.	printf("DEBUG: FLEX: \"%s\" Unrecognized character\n", yytext);
+.	printf("DEBUG: FLEX: unrecognised char [hex %02X] length %d\n", (unsigned char)yytext[0], yyleng);
 %%

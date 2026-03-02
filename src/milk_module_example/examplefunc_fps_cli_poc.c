@@ -129,6 +129,25 @@ static FPS_CLI_BINDING my_bindings[] = {
 
 static const int nb_bindings = sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+
+// =============================================================================
+// MILK CLI WRAPPER (Used when loaded as a module)
+// =============================================================================
+
+#define X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
+    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
+
+static CLICMDARGDEF farg[] = {
+    MY_PARAMS(X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+
 /**
  * @brief Initialize FPS from bindings.
  *
@@ -266,6 +285,10 @@ static errno_t FPS_process_CLI_and_sync(
                 }
             }
         }
+    } else {
+        /* MODE A: Running as module in milk CLI */
+        /* Sync from CLI argdata (filled by CLI_checkarg_array) to FPS */
+        CLIargs_to_FPSparams_setval(farg, nb_b, fps);
     }
 
     /* 2. Sync from FPS to local C variables */
@@ -348,7 +371,7 @@ int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *des
     /* Standard preamble handles SHM segment creation/connection */
     FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, "Unified FPS-CLI POC");
     
-    /* Check for -procinfo flag in standalone_argv */
+    /* Check for -procinfo flag in standalone_argv or CLI flag */
     int enable_procinfo = 0;
     if (standalone_argv != NULL) {
         for (int j = 1; j < standalone_argc; j++) {
@@ -357,6 +380,10 @@ int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *des
                 break;
             }
         }
+    }
+    
+    if (data.cmd[data.cmdindex].cmdsettings.flags & CLICMDFLAG_PROCINFO) {
+        enable_procinfo = 1;
     }
     
     if (enable_procinfo) {
@@ -438,22 +465,6 @@ int FPSCONFSTOP_exfpscli(const char *fps_name)
 }
 
 
-// =============================================================================
-// MILK CLI WRAPPER (Used when loaded as a module)
-// =============================================================================
-
-#define X_FARG(kw, ptr, fctype, is_primary, flag, desc) \
-    { fctype, kw, desc, "", flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), NULL, NULL },
-
-static CLICMDARGDEF farg[] = {
-    MY_PARAMS(X_FARG)
-};
-
-static CLICMDDATA CLIcmddata = {
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
 
 /**
  * @brief Compute wrapper with processinfo loop support.
@@ -489,18 +500,34 @@ static errno_t CLIfunction(void)
         strncpy(fpsname_with_session, FPS_app_info.fps_name, sizeof(fpsname_with_session) - 1);
     }
 
-    /* Try to connect to existing shared memory FPS */
-    if (function_parameter_struct_connect(fpsname_with_session, &fps, FPSCONNECT_SIMPLE) == -1) {
-        /* If it doesn't exist, auto-initialize it */
-        FPSINIT_exfpscli(fpsname_with_session, NULL, "Auto-initialized");
-        function_parameter_struct_connect(fpsname_with_session, &fps, FPSCONNECT_SIMPLE);
+    /* Support standard FPS tags like ..procinfo if present, and cmdkey:fpsname:action syntax */
+    function_parameter_getFPSargs_from_CLIfunc(fpsname_with_session);
+    
+    /* The parsed fps name (or default) is now in data.FPS_name */
+    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+        return RETURN_SUCCESS;
     }
 
-    /* Support standard FPS tags like ..procinfo if present */
-    function_parameter_getFPSargs_from_CLIfunc(fpsname_with_session);
-    if(data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
-        function_parameter_struct_disconnect(&fps);
+    /* If initialization action was requested via CLI */
+    if (data.FPS_CMDCODE == FPSCMDCODE_FPSINIT || data.FPS_CMDCODE == FPSCMDCODE_FPSINITCREATE) {
+        FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized");
+        /* Return early if the action was JUST to init */
         return RETURN_SUCCESS;
+    }
+    
+    /* If action was just a query (?) or info, we already printed in getFPSargs, we return here */
+    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+        return RETURN_SUCCESS;
+    }
+
+    /* Try to connect to existing shared memory FPS */
+    if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+        /* If it doesn't exist, auto-initialize it and connect */
+        FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized");
+        if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+             printf("Failed to connect to FPS %s\n", data.FPS_name);
+             return RETURN_SUCCESS;
+        }
     }
 
     /* Set data.fpsptr for generic tag lookup and procinfo sync */
@@ -513,7 +540,10 @@ static errno_t CLIfunction(void)
         FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
 
         /* Set FPS name so processinfo_setup() has a valid name string */
-        strncpy(data.FPS_name, fpsname_with_session, STRINGMAXLEN_FPS_NAME - 1);
+        if (data.FPS_name[0] == '\0') {
+            strncpy(data.FPS_name, fpsname_with_session, STRINGMAXLEN_FPS_NAME - 1);
+            data.FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+        }
 
         /* Point cmdsettings to the current command's settings so the
          * INSERT_STD_PROCINFO_COMPUTEFUNC_START/END macros can read flags
