@@ -202,6 +202,7 @@ static errno_t FPS_process_CLI_and_sync(
         for (int j = 1; j < standalone_argc; j++) {
             if (strcmp(standalone_argv[j], "runstart") == 0 || 
                 strcmp(standalone_argv[j], "run") == 0 ||
+                strcmp(standalone_argv[j], "exec") == 0 ||
                 strcmp(standalone_argv[j], "confstart") == 0 ||
                 strcmp(standalone_argv[j], "confstep") == 0 ||
                 strcmp(standalone_argv[j], "fpsinit") == 0) {
@@ -454,6 +455,29 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
+/**
+ * @brief Compute wrapper with processinfo loop support.
+ *
+ * Wraps example_fps_computation() in the standard processinfo loop
+ * macros so that `..procinfo 1` and `..lookcntMax N` are respected
+ * when running from the milk CLI.
+ *
+ * Requires:
+ *  - data.FPS_name set to the FPS name string
+ *  - CLIcmddata.cmdsettings pointing to a valid CMDSETTINGS
+ *  - fps.cmdset zeroed so *ptr  fields are NULL (not garbage)
+ */
+static errno_t compute_function()
+{
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    example_fps_computation();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    return RETURN_SUCCESS;
+}
+
 static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
@@ -479,24 +503,55 @@ static errno_t CLIfunction(void)
         return RETURN_SUCCESS;
     }
 
-    /* Set data.fpsptr for generic tag lookup in CLI_checkarg_array */
+    /* Set data.fpsptr for generic tag lookup and procinfo sync */
     data.fpsptr = &fps;
     errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);
-    data.fpsptr = NULL;
 
     if(retval == RETURN_SUCCESS)
     {
         /* Sync our local variables from FPS right before running */
         FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
 
-        /* Run the computation */
-        example_fps_computation();
+        /* Set FPS name so processinfo_setup() has a valid name string */
+        strncpy(data.FPS_name, fpsname_with_session, STRINGMAXLEN_FPS_NAME - 1);
+
+        /* Point cmdsettings to the current command's settings so the
+         * INSERT_STD_PROCINFO_COMPUTEFUNC_START/END macros can read flags
+         * such as CLICMDFLAG_PROCINFO and procinfo_loopcntMax. */
+        CLIcmddata.cmdsettings = &data.cmd[data.cmdindex].cmdsettings;
+
+        /* When procinfo is enabled, add the standard procinfo entries to
+         * the FPS so cmdset.*ptr fields get properly initialized.
+         * We connect with FPSCONNECT_SIMPLE so fps.cmdset is not
+         * initialized by function_parameter_struct_connect. Zero it
+         * first so pointer fields are NULL (not garbage) and won't be
+         * dereferenced with invalid memory inside compute_function. */
+        if(CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)
+        {
+            memset(&fps.cmdset, 0, sizeof(fps.cmdset));
+            fps.cmdset.procinfo_loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax;
+            fps.cmdset.triggermode         = CLIcmddata.cmdsettings->triggermode;
+            strncpy(fps.cmdset.triggerstreamname,
+                    CLIcmddata.cmdsettings->triggerstreamname,
+                    STRINGMAXLEN_IMAGE_NAME - 1);
+            fps.cmdset.triggerdelay      = CLIcmddata.cmdsettings->triggerdelay;
+            fps.cmdset.triggertimeout    = CLIcmddata.cmdsettings->triggertimeout;
+            fps.cmdset.semindexrequested = CLIcmddata.cmdsettings->semindexrequested;
+            fps.cmdset.RT_priority       = CLIcmddata.cmdsettings->RT_priority;
+            fps.cmdset.procinfo_MeasureTiming = CLIcmddata.cmdsettings->procinfo_MeasureTiming;
+            
+            fps_add_processinfo_entries(&fps);
+        }
+
+        /* Run the computation, with optional procinfo loop */
+        compute_function();
     }
     else if(retval == RETURN_CLICHECKARGARRAY_HELP || retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
     {
         retval = RETURN_SUCCESS;
     }
-    
+
+    data.fpsptr = NULL;
     function_parameter_struct_disconnect(&fps);
     return retval;
 }
@@ -567,14 +622,27 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
 #define X_HELP_PRINT(kw, ptr, type, is_primary, flag, desc) \
     { \
         char cli_idx_str[8]; \
+        char val_str[64] = ""; \
         const char *disp_kw = (kw[0] == '.') ? &kw[1] : kw; \
-        if(is_primary) sprintf(cli_idx_str, "  *"); \
-        else strcpy(cli_idx_str, "  -"); \
-        if(show_help_color && (is_primary)) { \
-            printf("  %s %s%-15s%s %s\n", cli_idx_str, COLORPRIMARY, disp_kw, COLORRESET, desc); \
+        if(is_primary) sprintf(cli_idx_str, "%3d", CLIargcnt); \
+        else strcpy(cli_idx_str, " - "); \
+        if (type == FPTYPE_INT32) sprintf(val_str, "%d", *(int32_t*)ptr); \
+        else if (type == FPTYPE_UINT32) sprintf(val_str, "%u", *(uint32_t*)ptr); \
+        else if (type == FPTYPE_INT64) sprintf(val_str, "%ld", *(int64_t*)ptr); \
+        else if (type == FPTYPE_UINT64) sprintf(val_str, "%lu", *(uint64_t*)ptr); \
+        else if (type == FPTYPE_FLOAT32) sprintf(val_str, "%f", *(float*)ptr); \
+        else if (type == FPTYPE_FLOAT64) sprintf(val_str, "%f", *(double*)ptr); \
+        else if (type == FPTYPE_ONOFF) sprintf(val_str, "%s", (*(int32_t*)ptr) ? "ON" : "OFF"); \
+        else if (FPTYPE_IS_STRING(type)) strncpy(val_str, (char*)ptr, 63); \
+        else if (type == FPTYPE_PID) sprintf(val_str, "%d", (int)*(pid_t*)ptr); \
+        else if (type == FPTYPE_TIMESPEC) sprintf(val_str, "%ld.%09ld", ((struct timespec*)ptr)->tv_sec, ((struct timespec*)ptr)->tv_nsec); \
+        if(show_help_color) { \
+            if (is_primary) printf("  %s %s%-15s%s %-15s %s\n", cli_idx_str, COLORPRIMARY, disp_kw, COLORRESET, val_str, desc); \
+            else printf("  %s %s%-15s%s %-15s %s\n", cli_idx_str, COLORARGnotCLI, disp_kw, COLORRESET, val_str, desc); \
         } else { \
-            printf("  %s %-15s %s\n", cli_idx_str, disp_kw, desc); \
+            printf("  %s %-15s %-15s %s\n", cli_idx_str, disp_kw, val_str, desc); \
         } \
+        if (is_primary) CLIargcnt++; \
     }
 
 /**
