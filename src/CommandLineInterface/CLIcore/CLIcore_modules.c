@@ -474,6 +474,11 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
     strncpy(data.cmd[data.NBcmd].Ccall, CLICcall, STRINGMAXLEN_CMD_CCALL - 1);
 
     data.cmd[data.NBcmd].nbarg = 0;
+
+    // Set defaults
+    data.cmd[data.NBcmd].cmdsettings.procinfo_loopcntMax    = 1;
+    data.cmd[data.NBcmd].cmdsettings.procinfo_MeasureTiming = 1;
+
     data.NBcmd++;
 
     DEBUG_TRACEPOINT("Done1");

@@ -31,6 +31,10 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
     fps.CMDmode = CMDmode;
     fps.SMfd    = -1;
 
+    // Set defaults
+    fps.cmdset.procinfo_loopcntMax    = 1;
+    fps.cmdset.procinfo_MeasureTiming = 1;
+
 
     FPS_TIMESTAMP = 0;
     strcpy(FPS_PROCESS_TYPE, "UNDEF");
