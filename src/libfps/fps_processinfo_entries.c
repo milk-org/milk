@@ -131,11 +131,13 @@ errno_t fps_add_processinfo_entries(
     FPFLAG = FPFLAG_DEFAULT_INPUT | FPFLAG_MINLIMIT;
     FPFLAG &= ~FPFLAG_WRITERUN;
     // value = -1 indicates infinite loop
-    long loopcntMax_default[4] = {fps->cmdset.procinfo_loopcntMax,
-                                  -1,
-                                  5000000,
-                                  1
-                                 };
+    // default: loop once
+    long loopcntMax_default[4] = {1, -1, 5000000, 1 };
+
+    if(fps->cmdset.procinfo_loopcntMax != 0)
+    {
+        loopcntMax_default[0] = fps->cmdset.procinfo_loopcntMax;
+    }
     function_parameter_add_entry(fps,
                                  ".procinfo.loopcntMax",
                                  "max loop cnt",
