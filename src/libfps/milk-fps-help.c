@@ -41,8 +41,8 @@ int main()
 
     printf(C_HDR "Modifying Parameters\n" C_RST);
     printf("Use " C_BOLD "milk-fps-set" C_RST " to change values on-the-fly from bash scripts:\n");
-    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD " gain 1.5\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD " verbose 1\n" C_RST);
+    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD ".gain 1.5\n" C_RST);
+    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD ".verbose 1\n" C_RST);
     printf("\n");
 
     printf(C_HDR "Managing Execution\n" C_RST);
@@ -57,14 +57,16 @@ int main()
 
     printf(C_TITLE "========================================================\n" C_RST);
     printf(C_TITLE "            Standalone Execution           \n" C_RST);
+    printf("\n");
     printf("When providing positional arguments to the CLI, an FPS is\n");
     printf("automatically created/updated, executed once, and disconnected:\n");
-    printf("  $ " C_CMD "./milk-fpsclitest exec 42 cam01\n" C_RST);
+    printf("  $ " C_CMD "./milk-fpsclitest 42 cam01\n" C_RST);
     printf("For more detailed about standalone execution, run:\n");
     printf("  $ " C_CMD "./milk-fpsclitest -h\n" C_RST);
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
     printf(C_TITLE "            Command-line interface (CLI) Execution         \n" C_RST);
+    printf("\n");
     printf("  Function help    : $ " C_CMD "cmd? modex.fpsclitest\n" C_RST); 
     printf("\n");
     printf("  The general syntax is:  cmdkey:" C_FPS "fpsname" C_RST ":action\n");
@@ -74,13 +76,14 @@ int main()
     printf("    initp: Initialize FPS with processinfo\n");
     printf("    ?    : Show FPS content\n");
     printf(C_WARN "Warning: " C_RST "Commands below creates FPS if it does not exist.\n");
-    printf("  Create FPS (no processinfo) : $ " C_CMD "modex.fpsclitest::init\n" C_RST);
-    printf("  Create FPS (processinfo)    : $ " C_CMD "modex.fpsclitest::initp\n" C_RST);
-    printf("  Querry params               : $ " C_CMD "modex.fpsclitest::?\n" C_RST);
-    printf("  Create named FPS            : $ " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":init\n" C_RST);
-    printf("  Querry named FPS            : $ " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":?\n" C_RST);
-    printf("  Run cmd, default FPS        : $ " C_CMD "modex.fpsclitest 3 cam01\n" C_RST);
-    printf("  Run cmd, named FPS          : $ " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD " 3 cam01\n" C_RST);
+    printf("  Create FPS (no processinfo) : milk > " C_CMD "modex.fpsclitest::init\n" C_RST);
+    printf("  Create FPS (processinfo)    : milk > " C_CMD "modex.fpsclitest::initp\n" C_RST);
+    printf("  Querry params               : milk > " C_CMD "modex.fpsclitest::?\n" C_RST);
+    printf("  Change param value          : milk > " C_CMD "modex.fpsclitest .gain 1.5\n" C_RST);
+    printf("  Create named FPS            : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":init\n" C_RST);
+    printf("  Querry named FPS            : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":?\n" C_RST);
+    printf("  Run cmd, default FPS        : milk > " C_CMD "modex.fpsclitest 3 cam01\n" C_RST);
+    printf("  Run cmd, named FPS          : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD " 3 cam01\n" C_RST);
     printf("\n");
     return 0;
 }

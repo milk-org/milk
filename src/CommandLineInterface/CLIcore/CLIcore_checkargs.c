@@ -539,7 +539,43 @@ errno_t CLI_checkarg_array(
             return RETURN_CLICHECKARGARRAY_FAILURE;
         }
 
-        printf("Argument %s value updated to %s\n", fpscliarg[argindexmatch].fpstag, data.cmdargtoken[2].val.string);
+        if((data.fpsptr != NULL) && (data.fpsptr->parray != NULL))
+        {
+            char valstr[STRINGMAXLEN_FPSCLIARG_TAG];
+            long fpsi = -1;
+            if(fpscliarg[argindexmatch].indexptr != NULL)
+            {
+                fpsi = *fpscliarg[argindexmatch].indexptr;
+            }
+            if(fpsi == -1) // If index not yet known, look it up
+            {
+                fpsi = functionparameter_GetParamIndex(
+                           data.fpsptr,
+                           fpscliarg[argindexmatch].fpstag);
+            }
+
+            if((fpsi >= 0) && (fpsi < data.fpsptr->md->NBparamMAX))
+            {
+                functionparameter_GetParamValueString(&data.fpsptr->parray[fpsi],
+                                                      valstr,
+                                                      STRINGMAXLEN_FPSCLIARG_TAG);
+                printf("Argument %s value updated to %s\n",
+                       fpscliarg[argindexmatch].fpstag,
+                       valstr);
+            }
+            else
+            {
+                printf("Argument %s value updated to %s\n",
+                       fpscliarg[argindexmatch].fpstag,
+                       data.cmdargtoken[2].val.string);
+            }
+        }
+        else
+        {
+            printf("Argument %s value updated to %s\n",
+                   fpscliarg[argindexmatch].fpstag,
+                   data.cmdargtoken[2].val.string);
+        }
 
         //printf("arg 1: [%d] %s %f %ld\n", data.cmdargtoken[2].type, data.cmdargtoken[2].val.string, data.cmdargtoken[2].val.numf, data.cmdargtoken[2].val.numl);
         DEBUG_TRACE_FEXIT();
@@ -599,11 +635,22 @@ errno_t CLI_checkarg_array(
 
             if(CLIarg + 1 >= data.cmdNBarg) // Missing mandatory argument
             {
-                printf("Error: Missing mandatory argument %d (%s: %s)\n", CLIarg, fpscliarg[arg].fpstag, fpscliarg[arg].descr);
-                help_command(data.cmd[data.cmdindex].key);
-                argcheck_process_flag = 0;
-                DEBUG_TRACE_FEXIT();
-                return RETURN_CLICHECKARGARRAY_FAILURE;
+                if((data.cmdNBarg == 1) && (data.fpsptr != NULL))
+                {
+                    // Allow no argument call if FPS is connected
+                    continue;
+                }
+                else
+                {
+                    printf("Error: Missing mandatory argument %d (%s: %s)\n",
+                           CLIarg,
+                           fpscliarg[arg].fpstag,
+                           fpscliarg[arg].descr);
+                    help_command(data.cmd[data.cmdindex].key);
+                    argcheck_process_flag = 0;
+                    DEBUG_TRACE_FEXIT();
+                    return RETURN_CLICHECKARGARRAY_FAILURE;
+                }
             }
 
             if(strcmp(data.cmdargtoken[CLIarg + 1].val.string, ".") == 0)
@@ -1141,9 +1188,73 @@ void *get_farg_ptr(
  */
 errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 {
-    // set to 0 as default (no FPS, function will be processed according to CLI rules)
-    data.FPS_CMDCODE = 0;
+    DEBUG_TRACE_FSTART();
 
+    int  INIT_MODE = 0;
+    data.FPS_CMDCODE = 0;
+    char FPS_name[STRINGMAXLEN_FPS_NAME];
+    int FPS_name_set = 0;
+
+    // Initialize FPS_name to default
+    if (fpsname_default != NULL) {
+        strncpy(FPS_name, fpsname_default, STRINGMAXLEN_FPS_NAME - 1);
+        FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+    } else {
+        FPS_name[0] = '\0';
+    }
+
+    // Check if the command itself has colon-separated syntax: cmdkey:fpsname:action
+    char *cmd_str = data.cmdargtoken[0].val.string;
+    char *first_colon = strchr(cmd_str, ':');
+    if (first_colon != NULL) {
+        char *second_colon = strchr(first_colon + 1, ':');
+        
+        // Extract FPS name if present between first and second colon, or after first colon
+        if (first_colon[1] != '\0' && first_colon[1] != ':') {
+            size_t fps_len = second_colon ? (size_t)(second_colon - (first_colon + 1)) : strlen(first_colon + 1);
+            if (fps_len > 0 && fps_len < STRINGMAXLEN_FPS_NAME) {
+                strncpy(FPS_name, first_colon + 1, fps_len);
+                FPS_name[fps_len] = '\0';
+                FPS_name_set = 1;
+            }
+        }
+
+
+        // Extract action if present after second colon
+        if (second_colon != NULL && second_colon[1] != '\0') {
+            char *action = second_colon + 1;
+            if (strcmp(action, "init") == 0) {
+                data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+                data.cmd[data.cmdindex].cmdsettings.flags &= ~CLICMDFLAG_PROCINFO;
+            } else if (strcmp(action, "initp") == 0) {
+                data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+                data.cmd[data.cmdindex].cmdsettings.flags |= CLICMDFLAG_PROCINFO;
+            } else if (strcmp(action, "?") == 0) {
+                // Ignore the command so it doesn't run, but allow FPS args check
+                data.FPS_CMDCODE = FPSCMDCODE_IGNORE;
+                // Print the FPS parameters by connecting to it
+                FUNCTION_PARAMETER_STRUCT tmp_fps;
+                if (function_parameter_struct_connect(FPS_name, &tmp_fps, FPSCONNECT_SIMPLE) == -1) {
+                    printf("FPS %s does not exist.\n", FPS_name);
+                } else {
+                    function_parameter_print_info(&tmp_fps, 0, 0);
+                    function_parameter_struct_disconnect(&tmp_fps);
+                }
+            }
+        }
+    }
+
+    strncpy(data.FPS_name, FPS_name, STRINGMAXLEN_FPS_NAME - 1);
+    data.FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+
+    // Read FPS interface from args
+    if (data.FPS_CMDCODE == 0) {
+        // set to 0 as default if we didn't extract an action above
+        data.FPS_CMDCODE = 0;
+    }
+
+
+    int printinfo = 0;
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     DEBUG_TRACEPOINT("pre-processing CLI arg");
 
@@ -1332,6 +1443,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 
     }
 
+
     // if recognized FPSCMDCODE, use FPS implementation
     if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
     {
@@ -1340,47 +1452,20 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
         // ===============================
 
         // if main CLI process has been named with -n option, then use the process name to construct fpsname
-        if(data.processnameflag == 1)
+        if(FPS_name_set == 0)
         {
-            // Automatically set fps name to be process name up to first instance of character '.'
-            strcpy(FPS_name, data.processname0);
-        }
-        else // otherwise, construct name as follows
-        {
-            // Adopt default name for fpsname
-            int slen = snprintf(FPS_name,
-                                STRINGMAXLEN_FPS_NAME,
-                                "%s",
-                                fpsname_default);
-            if(slen < 1)
+            if(data.processnameflag == 1)
             {
-                PRINT_ERROR("snprintf wrote <1 char");
-                abort(); // can't handle this error any other way
+                // Automatically set fps name to be process name up to first instance of character '.'
+                strcpy(FPS_name, data.processname0);
             }
-            if(slen >= STRINGMAXLEN_FPS_NAME)
+            else // otherwise, construct name as follows
             {
-                PRINT_ERROR(
-                    "snprintf string truncation.\n"
-                    "Full string  : %s\n"
-                    "Truncated to : %s",
-                    fpsname_default,
-                    FPS_name);
-                abort(); // can't handle this error any other way
-            }
-
-            // By convention, if there are optional arguments,
-            // they should be appended to the default fps name
-            //
-            int argindex = 2; // start at arg #2
-            while(strlen(data.cmdargtoken[argindex].val.string) > 0)
-            {
-                char fpsname1[STRINGMAXLEN_FPS_NAME];
-
-                int slen = snprintf(fpsname1,
+                // Adopt default name for fpsname
+                int slen = snprintf(FPS_name,
                                     STRINGMAXLEN_FPS_NAME,
-                                    "%s-%s",
-                                    FPS_name,
-                                    data.cmdargtoken[argindex].val.string);
+                                    "%s",
+                                    fpsname_default);
                 if(slen < 1)
                 {
                     PRINT_ERROR("snprintf wrote <1 char");
@@ -1390,19 +1475,69 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
                 {
                     PRINT_ERROR(
                         "snprintf string truncation.\n"
-                        "Full string  : %s-%s\n"
+                        "Full string  : %s\n"
                         "Truncated to : %s",
-                        FPS_name,
-                        data.cmdargtoken[argindex].val.string,
-                        fpsname1);
+                        fpsname_default,
+                        FPS_name);
                     abort(); // can't handle this error any other way
                 }
-
-                strncpy(FPS_name,
-                        fpsname1,
-                        STRINGMAXLEN_FPS_NAME - 1);
-                argindex++;
             }
+        }
+
+    }
+
+    // Always keep data.FPS_name updated
+    strncpy(data.FPS_name, FPS_name, STRINGMAXLEN_FPS_NAME - 1);
+    data.FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
+
+    // if recognized FPSCMDCODE, use FPS implementation
+    if((data.FPS_CMDCODE != 0) && (data.FPS_CMDCODE != FPSCMDCODE_IGNORE))
+    {
+        // By convention, if there are optional arguments,
+        // they should be appended to the default fps name
+        //
+        int argindex = 2; // start at arg #2
+        while(data.cmdargtoken[argindex].type != CMDARGTOKEN_TYPE_UNSOLVED && strlen(data.cmdargtoken[argindex].val.string) > 0)
+        {
+            if (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_UNSOLVED || 
+                (strcmp(data.cmdargtoken[1].val.string, "_FPSINIT_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_CONFSTART_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_CONFSTOP_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_RUNSTART_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_RUNSTOP_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_TMUXSTART_") != 0 &&
+                 strcmp(data.cmdargtoken[1].val.string, "_TMUXSTOP_") != 0)) {
+                break; // Don't append regular arguments to the FPS name
+            }
+
+            char fpsname1[STRINGMAXLEN_FPS_NAME];
+
+            int slen = snprintf(fpsname1,
+                                STRINGMAXLEN_FPS_NAME,
+                                "%s-%s",
+                                FPS_name,
+                                data.cmdargtoken[argindex].val.string);
+            if(slen < 1)
+            {
+                PRINT_ERROR("snprintf wrote <1 char");
+                abort(); // can't handle this error any other way
+            }
+            if(slen >= STRINGMAXLEN_FPS_NAME)
+            {
+                PRINT_ERROR(
+                    "snprintf string truncation.\n"
+                    "Full string  : %s-%s\n"
+                    "Truncated to : %s",
+                    FPS_name,
+                    data.cmdargtoken[argindex].val.string,
+                    fpsname1);
+                abort(); // can't handle this error any other way
+            }
+
+            strncpy(FPS_name,
+                    fpsname1,
+                    STRINGMAXLEN_FPS_NAME - 1);
+            argindex++;
         }
     }
 
