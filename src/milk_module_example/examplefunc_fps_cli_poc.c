@@ -97,7 +97,60 @@ static char   param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_str
     X(".p_strnotstrm",  param_string_not_stream, FPTYPE_STRING_NOT_STREAM, 0, FPFLAG_DEFAULT_INPUT, "Example STRING_NOT_STREAM")
 
 
+
+
+
+
+
+
 // =============================================================================
+// COMPUTATION LOGIC
+// =============================================================================
+
+/**
+ * @brief The actual "heavy lifting" function.
+ *
+ * Note that this function is agnostic of how parameters were set. It simply
+ * uses the local static variables, which are guaranteed to be synced.
+ */
+static errno_t example_fps_computation()
+{
+    printf("\n[COMPUTATION] Demo of all FPS parameter types:\n");
+    printf("  INT32              = %d\n", param_int32);
+    printf("  UINT32             = %u\n", param_uint32);
+    printf("  INT64              = %ld\n", param_int64);
+    printf("  UINT64             = %lu\n", param_uint64);
+    printf("  FLOAT32            = %f\n", param_float32);
+    printf("  FLOAT64            = %f\n", param_float64);
+    printf("  PID                = %d\n", (int)param_pid);
+    printf("  TIMESPEC           = %ld.%09ld\n", param_timespec.tv_sec, param_timespec.tv_nsec);
+    printf("  FILENAME           = %s\n", param_filename);
+    printf("  FITSFILENAME       = %s\n", param_fitsfilename);
+    printf("  EXECFILENAME       = %s\n", param_execfilename);
+    printf("  DIRNAME            = %s\n", param_dirname);
+    printf("  STREAMNAME         = %s\n", param_streamname);
+    printf("  STRING             = %s\n", param_string);
+    printf("  ONOFF              = %s\n", param_onoff ? "ON" : "OFF");
+    printf("  PROCESS            = %s\n", param_processname);
+    printf("  FPSNAME            = %s\n", param_fpsname);
+    printf("  STRING_NOT_STREAM  = %s\n", param_string_not_stream);
+    
+    return RETURN_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // =============================================================================
 // INFRASTRUCTURE HELPERS
 // =============================================================================
 
@@ -321,40 +374,7 @@ static errno_t FPS_process_CLI_and_sync(
 }
 
 
-// =============================================================================
-// COMPUTATION LOGIC
-// =============================================================================
 
-/**
- * @brief The actual "heavy lifting" function.
- *
- * Note that this function is agnostic of how parameters were set. It simply
- * uses the local static variables, which are guaranteed to be synced.
- */
-static errno_t example_fps_computation()
-{
-    printf("\n[COMPUTATION] Demo of all FPS parameter types:\n");
-    printf("  INT32              = %d\n", param_int32);
-    printf("  UINT32             = %u\n", param_uint32);
-    printf("  INT64              = %ld\n", param_int64);
-    printf("  UINT64             = %lu\n", param_uint64);
-    printf("  FLOAT32            = %f\n", param_float32);
-    printf("  FLOAT64            = %f\n", param_float64);
-    printf("  PID                = %d\n", (int)param_pid);
-    printf("  TIMESPEC           = %ld.%09ld\n", param_timespec.tv_sec, param_timespec.tv_nsec);
-    printf("  FILENAME           = %s\n", param_filename);
-    printf("  FITSFILENAME       = %s\n", param_fitsfilename);
-    printf("  EXECFILENAME       = %s\n", param_execfilename);
-    printf("  DIRNAME            = %s\n", param_dirname);
-    printf("  STREAMNAME         = %s\n", param_streamname);
-    printf("  STRING             = %s\n", param_string);
-    printf("  ONOFF              = %s\n", param_onoff ? "ON" : "OFF");
-    printf("  PROCESS            = %s\n", param_processname);
-    printf("  FPSNAME            = %s\n", param_fpsname);
-    printf("  STRING_NOT_STREAM  = %s\n", param_string_not_stream);
-    
-    return RETURN_SUCCESS;
-}
 
 
 // =============================================================================
@@ -521,6 +541,8 @@ static errno_t CLIfunction(void)
     }
 
     /* Try to connect to existing shared memory FPS */
+    memset(&fps, 0, sizeof(FUNCTION_PARAMETER_STRUCT));
+    fps.SMfd = -1;
     if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         /* If it doesn't exist, auto-initialize it and connect */
         FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized");
