@@ -830,7 +830,7 @@ int main(int argc, char *argv[]) { \
     char arg_fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
     int use_tmux = 0; \
     int show_help = 0; \
-    int show_help_color = 0; \
+    int show_help_color = 1; \
     char *command = NULL; \
     char *keywords = NULL; \
     char *description = NULL; \
@@ -841,6 +841,9 @@ int main(int argc, char *argv[]) { \
         } else if (strcmp(argv[i], "-hc") == 0 || strcmp(argv[i], "--help-color") == 0) { \
             show_help = 1; \
             show_help_color = 1; \
+        } else if (strcmp(argv[i], "-hnc") == 0 || strcmp(argv[i], "--help-no-color") == 0) { \
+            show_help = 1; \
+            show_help_color = 0; \
         } else if (strcmp(argv[i], "-tmux") == 0) { \
             use_tmux = 1; \
         } else if (strcmp(argv[i], "-procinfo") == 0 || strcmp(argv[i], "--procinfo") == 0) { \
@@ -873,6 +876,7 @@ int main(int argc, char *argv[]) { \
             strcmp(command, "confstop") != 0 && \
             strcmp(command, "runstart") != 0 && \
             strcmp(command, "runstop") != 0 && \
+            strcmp(command, "exec") != 0 && \
             strcmp(command, "run") != 0) { \
             /* It's not a recognized command, so we treat it as a parameter for 'run' */ \
             /* However, if it contains a colon, we already split it into arg_fps_name and command. */ \
@@ -897,7 +901,8 @@ int main(int argc, char *argv[]) { \
             printf("  " COLORCOMMAND "confstep" COLORRESET "   Run a single configuration monitoring step.\n"); \
             printf("  " COLORCOMMAND "confstop" COLORRESET "   Stop the configuration monitoring loop.\n"); \
             printf("  " COLORCOMMAND "runstart" COLORRESET "   Run the main processing loop.\n"); \
-            printf("  " COLORCOMMAND "runstop" COLORRESET "    Stop the main processing loop.\n\n"); \
+            printf("  " COLORCOMMAND "runstop" COLORRESET "    Stop the main processing loop.\n"); \
+            printf("  " COLORCOMMAND "exec" COLORRESET "       Execute a command, automatically create FPS if needed. Must also specify positional arguments for the command.\n\n"); \
             printf(COLORHEADER "Options:" COLORRESET "\n"); \
             printf("  " COLOROPTION "fpsname:" COLORRESET "           Optional prefix (or use -n) to specify FPS name (default: %s).\n", DEFAULT_FPS_NAME); \
             printf("  " COLOROPTION "-n, --name FPSNAME" COLORRESET "       Specify FPS name.\n"); \
@@ -905,8 +910,8 @@ int main(int argc, char *argv[]) { \
             printf("  " COLOROPTION "-d, --description DESC" COLORRESET "   Specify FPS description (default: NULL).\n"); \
             printf("  " COLOROPTION "-tmux" COLORRESET "                    Auto-create a tmux session and dispatch commands.\n"); \
             printf("  " COLOROPTION "-procinfo" COLORRESET "                Enable processinfo support (for fpsinit).\n"); \
-            printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message.\n"); \
-            printf("  " COLOROPTION "-hc, --help-color" COLORRESET "        Show this help message with color.\n\n"); \
+            printf("  " COLOROPTION "-h, --help" COLORRESET "               Show this help message (color default).\n"); \
+            printf("  " COLOROPTION "-hnc, --help-no-color" COLORRESET "   Show this help message without color.\n\n"); \
             printf(COLORHEADER "Notes:" COLORRESET "\n"); \
             printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
             printf("    " COLORCOMMAND "milk-fps-confstart" COLORRESET " <fpsname>\n"); \
@@ -933,8 +938,8 @@ int main(int argc, char *argv[]) { \
             printf("  -d, --description DESC   Specify FPS description (default: NULL).\n"); \
             printf("  -tmux                    Auto-create a tmux session and dispatch commands.\n"); \
             printf("  -procinfo                Enable processinfo support (for fpsinit).\n"); \
-            printf("  -h, --help               Show this help message.\n"); \
-            printf("  -hc, --help-color        Show this help message with color.\n\n"); \
+            printf("  -h, --help               Show this help message (color default).\n"); \
+            printf("  -hnc, --help-no-color    Show this help message without color.\n\n"); \
             printf("Notes:\n"); \
             printf("  Alternate ways to perform these operations once the FPS has been created:\n"); \
             printf("    milk-fps-confstart <fpsname>\n"); \
@@ -949,8 +954,15 @@ int main(int argc, char *argv[]) { \
             printf("--------------\n"); \
             printf("%s\n\n", HELPTEXT); \
         } \
-        if (show_help_color) printf(COLORHEADER "CLI call arguments:" COLORRESET "\n"); \
-        else printf("CLI call arguments:\n"); \
+        if (show_help_color) { \
+            printf(COLORHEADER "CLI call arguments:" COLORRESET "\n"); \
+            printf("  %-3s %-15s %-15s %s\n", "Idx", "Keyword", "Default", "Description"); \
+            printf("  %-3s %-15s %-15s %s\n", "---", "-------", "-------", "-----------"); \
+        } else { \
+            printf("CLI call arguments:\n"); \
+            printf("  %-3s %-15s %-15s %s\n", "Idx", "Keyword", "Default", "Description"); \
+            printf("  %-3s %-15s %-15s %s\n", "---", "-------", "-------", "-----------"); \
+        } \
         int CLIargcnt = 0; \
         (void) CLIargcnt; \
         PARAMS_MACRO(X_HELP_PRINT) \
@@ -1044,6 +1056,14 @@ int main(int argc, char *argv[]) { \
         return FPSCONF_##FUNC_PREFIX(fps_name, 0); \
     } else if (strcmp(command, "confstop") == 0) { \
         return FPSCONFSTOP_##FUNC_PREFIX(fps_name); \
+    } else if (strcmp(command, "exec") == 0) { \
+        FUNCTION_PARAMETER_STRUCT fps; \
+        if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+            FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
+        } else { \
+            function_parameter_struct_disconnect(&fps); \
+        } \
+        return FPSRUN_##FUNC_PREFIX(fps_name); \
     } else if (strcmp(command, "runstart") == 0 || strcmp(command, "run") == 0) { \
         return FPSRUN_##FUNC_PREFIX(fps_name); \
     } else if (strcmp(command, "runstop") == 0) { \
