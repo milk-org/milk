@@ -257,51 +257,100 @@ static const int nb_bindings =
 
 
 // =====================================================================
-// 2.2  FPS_init_local()  → libfps
+// 2.2  Local FPS store (multi-instance)  → libfps
 // =====================================================================
 
-static int local_fps_initialized = 0;
-static FUNCTION_PARAMETER_STRUCT local_fps_struct =
-    {NULL, NULL, 0, -1, 0, 0, 0, {0}};
+/** Maximum number of concurrent local FPS instances */
+#define LOCAL_FPS_MAX  64
+
+static int local_fps_count = 0;
+static FUNCTION_PARAMETER_STRUCT
+    local_fps_array[LOCAL_FPS_MAX];
+static int local_fps_used[LOCAL_FPS_MAX];
 
 /**
- * @brief Allocate a process-local (non-SHM) FPS structure.
+ * @brief Find an existing local FPS by name.
  *
- * Used when the FPS name starts with '_', meaning the FPS lives
- * only in the current process address space.
+ * @return  Pointer to the FPS, or NULL if not found.
  */
-static void FPS_init_local(
-    const char *fps_name,
+static FUNCTION_PARAMETER_STRUCT *local_fps_find(
+    const char *name
+)
+{
+    for (int i = 0; i < LOCAL_FPS_MAX; i++) {
+        if (local_fps_used[i] &&
+            local_fps_array[i].md != NULL &&
+            strcmp(local_fps_array[i].md->name,
+                   name) == 0)
+        {
+            return &local_fps_array[i];
+        }
+    }
+    return NULL;
+}
+
+/**
+ * @brief Allocate a new local FPS slot.
+ *
+ * @return  Pointer to the new slot, or NULL if full.
+ */
+static FUNCTION_PARAMETER_STRUCT *local_fps_create(
+    const char *name,
     long        NBparamMAX
 )
 {
-    if (local_fps_initialized) {
-        if (local_fps_struct.md != NULL) {
-            free(local_fps_struct.md);
+    int slot = -1;
+    for (int i = 0; i < LOCAL_FPS_MAX; i++) {
+        if (!local_fps_used[i]) {
+            slot = i;
+            break;
         }
-        if (local_fps_struct.parray != NULL) {
-            free(local_fps_struct.parray);
-        }
-        memset(&local_fps_struct, 0,
-               sizeof(FUNCTION_PARAMETER_STRUCT));
+    }
+    if (slot == -1) {
+        fprintf(stderr,
+            "ERROR: local FPS store full "
+            "(max %d)\n", LOCAL_FPS_MAX);
+        return NULL;
     }
 
-    local_fps_struct.md =
-        malloc(sizeof(FUNCTION_PARAMETER_STRUCT_MD));
-    memset(local_fps_struct.md, 0,
-           sizeof(FUNCTION_PARAMETER_STRUCT_MD));
+    FUNCTION_PARAMETER_STRUCT *fps =
+        &local_fps_array[slot];
+    memset(fps, 0,
+           sizeof(FUNCTION_PARAMETER_STRUCT));
 
-    local_fps_struct.parray =
-        malloc(sizeof(FUNCTION_PARAMETER) * NBparamMAX);
-    memset(local_fps_struct.parray, 0,
-           sizeof(FUNCTION_PARAMETER) * NBparamMAX);
+    fps->md = calloc(
+        1, sizeof(FUNCTION_PARAMETER_STRUCT_MD));
+    fps->parray = calloc(
+        NBparamMAX, sizeof(FUNCTION_PARAMETER));
 
-    strncpy(local_fps_struct.md->name, fps_name,
+    strncpy(fps->md->name, name,
             STRINGMAXLEN_FPS_NAME - 1);
-    local_fps_struct.md->NBparamMAX = NBparamMAX;
-    local_fps_struct.NBparam = 0;
-    local_fps_struct.SMfd = -1;
-    local_fps_initialized = 1;
+    fps->md->NBparamMAX = NBparamMAX;
+    fps->NBparam = 0;
+    fps->SMfd = -1;
+
+    local_fps_used[slot] = 1;
+    local_fps_count++;
+    return fps;
+}
+
+/**
+ * @brief Find or create a local FPS by name.
+ *
+ * @return  Pointer to the FPS, or NULL on failure.
+ */
+static FUNCTION_PARAMETER_STRUCT *
+local_fps_get_or_create(
+    const char *name,
+    long        NBparamMAX
+)
+{
+    FUNCTION_PARAMETER_STRUCT *fps =
+        local_fps_find(name);
+    if (fps != NULL) {
+        return fps;
+    }
+    return local_fps_create(name, NBparamMAX);
 }
 
 
@@ -484,11 +533,8 @@ static errno_t FPS_process_CLI_and_sync(
     for (int i = 0; i < nb_b; i++) {
         long pindex = functionparameter_GetParamIndex(
             fps, bindings[i].fpskeyword);
-        
-        printf("DEBUG: Syncing %s (type %lu) -> pindex %ld\n", 
-               bindings[i].fpskeyword, bindings[i].type, pindex);
+
         if (pindex != -1) {
-            printf("DEBUG:   Found keywordfull: %s\n", fps->parray[pindex].keywordfull);
             if (bindings[i].type == FPTYPE_FLOAT64) {
                 *((double *) bindings[i].ptr) = fps->parray[pindex].val.f64[0];
             } else if (bindings[i].type == FPTYPE_INT64) {
@@ -526,17 +572,48 @@ int FPSINIT_exfpscli(
     const char *description
 )
 {
-    FUNCTION_PARAMETER_STRUCT fps;
-
     if (fps_name[0] == '_') {
-        FPS_init_local(
-            fps_name, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
-        fps = local_fps_struct;
-    } else {
-        FPS_INIT_STD_PREAMBLE(
-            fps, fps_name, keywords, description,
-            "Unified FPS-CLI POC");
+        /*
+         * Local mode: allocate in-process memory only.
+         * No shared memory file is created.
+         */
+        FUNCTION_PARAMETER_STRUCT *lfps =
+            local_fps_get_or_create(
+                fps_name,
+                FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if (lfps == NULL) {
+            return -1;
+        }
+
+        FPS_init_from_bindings(
+            lfps,
+            FPS_app_info.cmdkey,
+            FPS_app_info.description,
+            my_bindings,
+            nb_bindings);
+
+        /* Count active params (normally done
+         * by function_parameter_struct_connect) */
+        {
+            int cnt = 0;
+            long nbmax = lfps->md->NBparamMAX;
+            for (int pi = 0; pi < nbmax; pi++) {
+                if (lfps->parray[pi].fpflag
+                    & FPFLAG_ACTIVE)
+                {
+                    cnt++;
+                }
+            }
+            lfps->NBparamActive = cnt;
+        }
+        return 0;
     }
+
+    /* Shared-memory mode */
+    FUNCTION_PARAMETER_STRUCT fps;
+    FPS_INIT_STD_PREAMBLE(
+        fps, fps_name, keywords, description,
+        "Unified FPS-CLI POC");
 
     /* Check for -procinfo flag */
     int enable_procinfo = 0;
@@ -561,7 +638,6 @@ int FPSINIT_exfpscli(
         fps_add_processinfo_entries(&fps);
     }
 
-    /* Populate the FPS from our bindings */
     FPS_init_from_bindings(
         &fps,
         FPS_app_info.cmdkey,
@@ -569,11 +645,7 @@ int FPSINIT_exfpscli(
         my_bindings,
         nb_bindings);
 
-    if (fps_name[0] == '_') {
-        /* Keep it initialized in local_fps_struct */
-    } else {
-        function_parameter_struct_disconnect(&fps);
-    }
+    function_parameter_struct_disconnect(&fps);
     return 0;
 }
 
@@ -606,13 +678,20 @@ int FPSRUN_exfpscli(const char *fps_name)
     PROCESSINFO *processinfo = NULL;
 
     if (fps_name[0] == '_') {
-        if (!local_fps_initialized ||
-            strcmp(local_fps_struct.md->name,
-                   fps_name) != 0) {
-            FPSINIT_exfpscli(
-                fps_name, NULL, "Auto-initialized local");
+        FUNCTION_PARAMETER_STRUCT *lfps =
+            local_fps_get_or_create(
+                fps_name,
+                FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if (lfps == NULL) {
+            return -1;
         }
-        fps = local_fps_struct;
+        /* First call: populate from bindings */
+        if (lfps->NBparam == 0) {
+            FPSINIT_exfpscli(
+                fps_name, NULL,
+                "Auto-initialized local");
+        }
+        fps = *lfps;
         FPS_process_CLI_and_sync(
             &fps, my_bindings, nb_bindings);
     } else {
@@ -723,7 +802,185 @@ static errno_t compute_function()
 
 
 // =====================================================================
-// 2.11  CLIfunction() — milk CLI entry point  → libfps
+// 2.11  print_fps_query_info() — "?" handler
+// =====================================================================
+
+/**
+ * @brief Print FPS info when user types "command ?"
+ *
+ * Lists all local FPS instances for this function,
+ * scans shm for shared FPS, and prints parameter
+ * values from the last-used FPS or defaults.
+ */
+static void print_fps_query_info(void)
+{
+    printf("\n\033[1;36m=== FPS instances for "
+           "%s ===\033[0m\n\n",
+           FPS_app_info.cmdkey);
+
+    /* ---- Local FPS instances ---- */
+    int local_count = 0;
+    for (int i = 0; i < LOCAL_FPS_MAX; i++) {
+        if (local_fps_used[i] &&
+            local_fps_array[i].md != NULL)
+        {
+            if (local_count == 0) {
+                printf("\033[1;33m  Local FPS "
+                       "(in-process memory):\033[0m\n");
+            }
+            printf("    \033[1;32m%-20s\033[0m  "
+                   "%ld params\n",
+                   local_fps_array[i].md->name,
+                   local_fps_array[i].NBparamActive);
+            local_count++;
+        }
+    }
+    if (local_count == 0) {
+        printf("  Local FPS : (none)\n");
+    }
+
+    /* ---- Shared FPS in shm ---- */
+    {
+        char pattern[300];
+        snprintf(pattern, sizeof(pattern),
+                 "ls %s/*.fps.shm 2>/dev/null",
+                 data.shmdir);
+
+        FILE *pp = popen(pattern, "r");
+        int shm_count = 0;
+        if (pp != NULL) {
+            char line[512];
+            while (fgets(line, sizeof(line), pp)
+                   != NULL)
+            {
+                /* strip newline */
+                line[strcspn(line, "\n")] = '\0';
+
+                /* basename without .fps.shm */
+                char *base = strrchr(line, '/');
+                base = base ? base + 1 : line;
+                char *dot = strstr(base, ".fps.shm");
+                if (dot) *dot = '\0';
+
+                if (shm_count == 0) {
+                    printf("\n\033[1;33m  Shared FPS"
+                           " (shm):\033[0m\n");
+                }
+                printf("    \033[1;32m%-20s\033[0m  "
+                       "%s\n", base, line);
+                shm_count++;
+            }
+            pclose(pp);
+        }
+        if (shm_count == 0) {
+            printf("  Shared FPS: (none)\n");
+        }
+    }
+
+    /* ---- Parameter table ---- */
+    printf("\n");
+
+    /*
+     * Try to find the last-used FPS:
+     *  1. Last local FPS that was used
+     *  2. Connect to a shared FPS
+     *  3. Create a temporary with defaults
+     */
+    FUNCTION_PARAMETER_STRUCT *show_fps = NULL;
+    int must_disconnect = 0;
+    int must_free = 0;
+
+    /* Check local FPS (use last created) */
+    for (int i = LOCAL_FPS_MAX - 1; i >= 0; i--) {
+        if (local_fps_used[i] &&
+            local_fps_array[i].md != NULL &&
+            local_fps_array[i].NBparamActive > 0)
+        {
+            show_fps = &local_fps_array[i];
+            break;
+        }
+    }
+
+    /* Try shared FPS if no local found */
+    static FUNCTION_PARAMETER_STRUCT tmp_fps;
+    if (show_fps == NULL) {
+        /* Try the default name */
+        char try_name[200];
+        if (data.processname[0] != '\0') {
+            snprintf(try_name, sizeof(try_name),
+                     "%s.%s",
+                     FPS_app_info.fps_name,
+                     data.processname);
+        } else {
+            strncpy(try_name,
+                    FPS_app_info.fps_name,
+                    sizeof(try_name) - 1);
+        }
+        if (function_parameter_struct_connect(
+                try_name, &tmp_fps,
+                FPSCONNECT_SIMPLE) != -1)
+        {
+            show_fps = &tmp_fps;
+            must_disconnect = 1;
+        }
+    }
+
+    /* Create a temporary with defaults */
+    if (show_fps == NULL) {
+        show_fps = local_fps_create(
+            "_defaults",
+            FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if (show_fps != NULL) {
+            FPS_init_from_bindings(
+                show_fps,
+                FPS_app_info.cmdkey,
+                FPS_app_info.description,
+                my_bindings,
+                nb_bindings);
+            must_free = 1;
+            printf("\033[1;33m  Showing default"
+                   " parameter values:\033[0m\n\n");
+        }
+    } else {
+        printf("\033[1;33m  Parameters for "
+               "'%s':\033[0m\n\n",
+               show_fps->md->name);
+    }
+
+    if (show_fps != NULL) {
+        function_parameter_print_info(
+            show_fps, 0, 0);
+    }
+
+    if (must_disconnect) {
+        function_parameter_struct_disconnect(
+            &tmp_fps);
+    }
+    if (must_free) {
+        /* Remove the temporary _defaults slot */
+        for (int i = 0; i < LOCAL_FPS_MAX; i++) {
+            if (local_fps_used[i] &&
+                local_fps_array[i].md != NULL &&
+                strcmp(local_fps_array[i].md->name,
+                       "_defaults") == 0)
+            {
+                free(local_fps_array[i].md);
+                free(local_fps_array[i].parray);
+                memset(&local_fps_array[i], 0,
+                       sizeof(FUNCTION_PARAMETER_STRUCT));
+                local_fps_used[i] = 0;
+                local_fps_count--;
+                break;
+            }
+        }
+    }
+
+    printf("\n");
+}
+
+
+// =====================================================================
+// 2.12  CLIfunction() — milk CLI entry point  → libfps
 // =====================================================================
 
 static errno_t CLIfunction(void)
@@ -751,7 +1008,16 @@ static errno_t CLIfunction(void)
         return RETURN_SUCCESS;
     }
 
-    /* If initialization action was requested via CLI */
+    /* Handle "?" query: list FPS and params */
+    if (data.cmdNBarg >= 2 &&
+        strcmp(data.cmdargtoken[1].val.string,
+               "?") == 0)
+    {
+        print_fps_query_info();
+        return RETURN_SUCCESS;
+    }
+
+    /* If initialization action via CLI */
     if (data.FPS_CMDCODE == FPSCMDCODE_FPSINIT ||
         data.FPS_CMDCODE == FPSCMDCODE_FPSINITCREATE) {
         FPSINIT_exfpscli(
@@ -768,14 +1034,20 @@ static errno_t CLIfunction(void)
     fps.SMfd = -1;
 
     if (data.FPS_name[0] == '_') {
-        if (!local_fps_initialized ||
-            strcmp(local_fps_struct.md->name,
-                   data.FPS_name) != 0) {
+        FUNCTION_PARAMETER_STRUCT *lfps =
+            local_fps_get_or_create(
+                data.FPS_name,
+                FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if (lfps == NULL) {
+            return RETURN_FAILURE;
+        }
+        /* First call: populate from bindings */
+        if (lfps->NBparam == 0) {
             FPSINIT_exfpscli(
                 data.FPS_name,
                 NULL, "Auto-initialized local");
         }
-        fps = local_fps_struct;
+        fps = *lfps;
     } else {
         if (function_parameter_struct_connect(
                 data.FPS_name, &fps,
@@ -797,7 +1069,8 @@ static errno_t CLIfunction(void)
     errno_t retval =
         CLI_checkarg_array(farg, CLIcmddata.nbarg);
 
-    if (retval == RETURN_SUCCESS)
+    if (retval == RETURN_SUCCESS ||
+        retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
     {
         FPS_process_CLI_and_sync(
             &fps, my_bindings, nb_bindings);
@@ -841,9 +1114,9 @@ static errno_t CLIfunction(void)
         }
 
         compute_function();
+        retval = RETURN_SUCCESS;
     }
-    else if (retval == RETURN_CLICHECKARGARRAY_HELP ||
-             retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    else if (retval == RETURN_CLICHECKARGARRAY_HELP)
     {
         retval = RETURN_SUCCESS;
     }
