@@ -1145,7 +1145,7 @@ int main(int argc, char *argv[]) { \
     VARprocessinfo = processinfo_setup((char*)VARfps_name, VARdesc_short, VARdesc_detail, __FUNCTION__, __FILE__, __LINE__); \
     if (!VARprocessinfo) return 1; \
     processinfo_CatchSignals(); \
-    processinfo_waitoninputstream_init(VARprocessinfo, VARinput_image, PROCESSINFO_TRIGGERMODE_SEMAPHORE, -1); \
+    processinfo_waitoninputstream_init(VARprocessinfo, VARinput_image, ((VARinput_image) != NULL) ? PROCESSINFO_TRIGGERMODE_SEMAPHORE : PROCESSINFO_TRIGGERMODE_IMMEDIATE, -1); \
     fps_to_processinfo(&(VARfps), VARprocessinfo); \
     processinfo_loopstart(VARprocessinfo);
 
