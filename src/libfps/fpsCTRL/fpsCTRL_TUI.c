@@ -3,6 +3,7 @@
  * @brief   FPS control TUI
  */
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
@@ -467,6 +468,28 @@ errno_t functionparameter_CTRLscreen(
                 function_parameter_struct_disconnect(&fpsarray[i]);
             }
         }
+
+        // ==== CHECK FOR NEW OR REMOVED FPSs BY COUNT ====
+        static int last_shm_count = -1;
+        int current_shm_count = 0;
+        DIR *d = opendir(shmdname);
+        if (d) {
+            struct dirent *dir;
+            while ((dir = readdir(d)) != NULL) {
+                if (strstr(dir->d_name, ".fps.shm") != NULL) {
+                    current_shm_count++;
+                }
+            }
+            closedir(d);
+        }
+
+        if (last_shm_count == -1) {
+            last_shm_count = current_shm_count;
+        } else if (current_shm_count != last_shm_count) {
+            needs_rescan = 1;
+            last_shm_count = current_shm_count;
+        }
+
         if (needs_rescan) {
             long NBpindex = 0;
             functionparameter_scan_fps(fpsCTRLvar.mode,
