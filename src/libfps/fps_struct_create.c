@@ -44,7 +44,7 @@ errno_t function_parameter_struct_create(
     }
     remove(SM_fname);
 
-    printf("Creating file %s, holding NBparamMAX = %d\n", SM_fname, NBparamMAX);
+    printf("DEBUG: [%s:%d] Creating file %s, holding NBparamMAX = %d\n", __FILE__, __LINE__, SM_fname, NBparamMAX);
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);
