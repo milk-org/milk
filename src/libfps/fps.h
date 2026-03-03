@@ -242,6 +242,7 @@ typedef struct
     } info;
 
     long cnt0;
+    uint64_t value_cnt;
     int cli_index; // CLI argument index (-1 if not CLI arg)
 
 } FUNCTION_PARAMETER;

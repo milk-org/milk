@@ -15,6 +15,7 @@
 
 #include "fps.h"
 #include "fps_internal.h"
+#include "fps_isvalid.h"
 #include "timeutils.h"
 
 #include "fpsCTRL_TUI_process_user_key.h"
@@ -458,6 +459,35 @@ errno_t functionparameter_CTRLscreen(
 
     while(loopOK == 1)
     {
+        // ==== VALIDATE ALL CONNECTED FPSs ====
+        int needs_rescan = 0;
+        for (int i = 0; i < fpsCTRLvar.NBfps; i++) {
+            if (!function_parameter_struct_isvalid(&fpsarray[i])) {
+                needs_rescan = 1;
+                function_parameter_struct_disconnect(&fpsarray[i]);
+            }
+        }
+        if (needs_rescan) {
+            long NBpindex = 0;
+            functionparameter_scan_fps(fpsCTRLvar.mode,
+                                       fpsCTRLvar.fpsnamemask,
+                                       fpsarray,
+                                       keywnode,
+                                       &fpsCTRLvar.NBkwn,
+                                       &fpsCTRLvar.NBfps,
+                                       &NBpindex,
+                                       0 // quiet
+                                      );
+            refresh_screen = 2; // Force refresh
+            
+            // Adjust selected index if it's now out of bounds
+            if (fpsCTRLvar.fpsindexSelected >= fpsCTRLvar.NBfps && fpsCTRLvar.NBfps > 0) {
+                fpsCTRLvar.fpsindexSelected = fpsCTRLvar.NBfps - 1;
+            } else if (fpsCTRLvar.NBfps == 0) {
+                fpsCTRLvar.fpsindexSelected = 0;
+            }
+        }
+        
         int NBtaskLaunched = 0;
 
         //long icnt = 0;

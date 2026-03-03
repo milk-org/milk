@@ -81,6 +81,11 @@ errno_t fpsCTRL_FPSdisplay(
         fpsCTRLvar->fpsindexSelected = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
         fpsCTRLvar->pindexSelected = keywnode[fpsCTRLvar->nodeSelected].pindex;
 
+        if (fpsarray[fpsCTRLvar->fpsindexSelected].md == NULL)
+        {
+            return RETURN_SUCCESS;
+        }
+
         if (fpsCTRLvar->currentlevel == -1)
         {
             // Resolve node selected at level 0
@@ -561,6 +566,9 @@ errno_t fpsCTRL_FPSlog(
     if (fpsCTRLvar->NBfps > 0)
     {
         int fpsidx = fpsCTRLvar->fpsindexSelected;
+        if (fpsarray[fpsidx].md == NULL) {
+            return RETURN_SUCCESS;
+        }
         char datadir[FPS_DIR_STRLENMAX];
         strncpy(datadir, fpsarray[fpsidx].md->datadir, FPS_DIR_STRLENMAX - 1);
 
