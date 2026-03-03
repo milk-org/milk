@@ -2,6 +2,7 @@
 #define IMAGE_BASIC_IMRESIZE_H
 
 #include "fps.h"
+#include "fps_cli_binding.h"
 #include "processinfo.h"
 
 errno_t imresize_addCLIcmd();
@@ -12,10 +13,38 @@ long basic_resizeim(const char *imname_in,
                     long        ysizeout);
 
 #define IMRESIZE_PARAMS(X) \
-    X(    FPTYPE_STREAMNAME, char*,  ".in_name",  "input image",   "im1", "im1", &imresize_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(    FPTYPE_STREAMNAME, char*,  ".out_name", "output image",  "out1", "out1", &imresize_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(  FPTYPE_INT64,      long,   ".xsize",    "new x size",    "128", 128,   &imresize_xsize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(  FPTYPE_INT64,      long,   ".ysize",    "new y size",    "128", 128,   &imresize_ysize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X( \
+        ".in_name", \
+        &imresize_inimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "input image" \
+    ) \
+    X( \
+        ".out_name", \
+        &imresize_outimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "output image" \
+    ) \
+    X( \
+        ".xsize", \
+        &imresize_xsize, \
+        FPTYPE_INT64, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "new x size" \
+    ) \
+    X( \
+        ".ysize", \
+        &imresize_ysize, \
+        FPTYPE_INT64, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "new y size" \
+    )
 
 extern char *imresize_inimname;
 extern char *imresize_outimname;
