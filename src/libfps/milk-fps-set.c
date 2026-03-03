@@ -267,6 +267,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "       Input Value:    '%s'\n", value_str);
     } else {
         fps.parray[pindex].cnt0++;
+        fps.parray[pindex].value_cnt++;
+
         fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
         
         functionparameter_outlog("SETVAL", "%s %s", fps.parray[pindex].keywordfull, value_str);
