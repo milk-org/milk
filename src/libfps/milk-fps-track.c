@@ -211,14 +211,21 @@ int main(int argc, char *argv[])
             first_scan = 0;
         }
 
-        // Clean up inactive trackers
+        // Detect deleted FPS
         for(int j = 0; j < track_list_cnt; j++) {
-            if(!track_list[j].active && track_list[j].params != NULL) {
+            if(!track_list[j].active &&
+               track_list[j].name[0] != '\0')
+            {
                 print_ut_timestamp();
-                printf(" FPS %s removed from tracking\n", track_list[j].name);
-                free(track_list[j].params);
-                track_list[j].params = NULL;
+                printf(" DEL_FPS %s\n",
+                       track_list[j].name);
+                fflush(stdout);
+                if (track_list[j].params != NULL) {
+                    free(track_list[j].params);
+                    track_list[j].params = NULL;
+                }
                 track_list[j].NBparam = 0;
+                track_list[j].name[0] = '\0';
             }
         }
 
