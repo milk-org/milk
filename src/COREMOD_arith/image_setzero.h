@@ -10,33 +10,49 @@
 #include "processinfo.h"
 #include "ImageStreamIO.h"
 
-/* ================================================================== */
-/* GLOBAL PARAMETERS (SHARED)                                         */
-/* ================================================================== */
+/* ============================================ */
+/* GLOBAL PARAMETERS (SHARED)                   */
+/* ============================================ */
 
 extern char *imsetzero_inimname;
 
-/* ================================================================== */
-/* SHARED FUNCTIONS                                                   */
-/* ================================================================== */
+/* ============================================ */
+/* SHARED FUNCTIONS                             */
+/* ============================================ */
 
-void image_setzero_compute(FUNCTION_PARAMETER_STRUCT *fps, PROCESSINFO *processinfo, IMAGE *inimg);
+void image_setzero_compute(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    PROCESSINFO               *processinfo,
+    IMAGE                     *inimg
+);
+
+#ifndef FPS_STANDALONE
 errno_t image_setzero_IMGID(IMGID *inimg);
 errno_t image_setzero(IMGID inimg);
+#endif
 
 errno_t CLIADDCMD_COREMOD_arith__imsetzero();
 
-/* ================================================================== */
-/* PARAMETER DEFINITION (X-MACRO)                                     */
-/* ================================================================== */
+/* ============================================ */
+/* PARAMETER DEFINITION (X-MACRO)               */
+/* ============================================ */
 
+/**
+ * V2 format: X(keyword, ptr, type,
+ *              is_primary, fpflag, descr)
+ */
 #define IMSETZERO_PARAMS(X) \
-    X(FPTYPE_STREAMNAME, char*, ".imname", "input image", "im1", "im1", &imsetzero_inimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X(".imname", &imsetzero_inimname,       \
+      FPTYPE_STREAMNAME, 1,                 \
+      (FPFLAG_DEFAULT_INPUT                 \
+       | FPFLAG_CLI_INPUT),                 \
+      "input image")
 
 #define IMSETZERO_HELPTEXT \
     "imzero: set all image pixels to zero\n" \
     "====================================\n" \
-    "Sets all elements of the specified image stream to zero.\n\n" \
+    "Sets all elements of the specified " \
+    "image stream to zero.\n\n" \
     "Parameters:\n" \
     "  .imname : Input stream name\n"
 

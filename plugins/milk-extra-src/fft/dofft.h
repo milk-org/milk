@@ -3,14 +3,36 @@
 
 #include "CLIcore.h"
 #include "fps.h"
+#include "fps_cli_binding.h"
 #include "processinfo.h"
 
 errno_t dofft_addCLIcmd();
 
 #define DOFFT_PARAMS(X) \
-    X(FPTYPE_STREAMNAME, char*, ".in_name",  "input complex image",  "im1", "im1", &dofft_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_STREAMNAME, char*, ".out_name", "output complex image", "out1","out1",&dofft_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_INT32,    int,   ".dir",      "FFT direction",        "-1",  -1,    &dofft_dir, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X( \
+        ".in_name", \
+        &dofft_inimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "input complex image" \
+    ) \
+    X( \
+        ".out_name", \
+        &dofft_outimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "output complex image" \
+    ) \
+    X( \
+        ".dir", \
+        &dofft_dir, \
+        FPTYPE_INT32, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "FFT direction" \
+    )
 
 extern char *dofft_inimname;
 extern char *dofft_outimname;

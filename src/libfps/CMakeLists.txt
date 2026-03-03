@@ -55,6 +55,7 @@ set(SOURCEFILES
     fps_loadmemstream_lite.c
     fps_local_store.c
     fps_cli_init.c
+    fps_cli_function_registry.c
 )
 
 # Core library (no TUI/ncurses dependency)
@@ -118,7 +119,7 @@ endif()
 
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
-install(FILES fps.h fps_internal.h fps_globals.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
+install(FILES fps.h fps_internal.h fps_globals.h fps_cli_binding.h fps_cli_function.h fps_cli_function_registry.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
 
 if(USE_NCURSES)
 # ==========================================
