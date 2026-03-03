@@ -97,17 +97,17 @@ int main(int argc, char *argv[])
             // Check CONF process
             pid_t confpid = fpsarray[i].md->confpid;
             if (confpid > 0 && kill(confpid, 0) == 0) {
-                snprintf(conf_pid_str, 32, "%sC:%d%s", COLORCOMMAND, (int)confpid, COLORRESET);
+                snprintf(conf_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int)confpid, COLORRESET);
             } else {
-                snprintf(conf_pid_str, 32, "C:%d", (int)confpid);
+                snprintf(conf_pid_str, 32, "%7d", (int)confpid);
             }
 
             // Check RUN process
             pid_t runpid = fpsarray[i].md->runpid;
             if (runpid > 0 && kill(runpid, 0) == 0) {
-                snprintf(run_pid_str, 32, "%sR:%d%s", COLORCOMMAND, (int)runpid, COLORRESET);
+                snprintf(run_pid_str, 32, "%s%7d%s", COLORCOMMAND, (int)runpid, COLORRESET);
             } else {
-                snprintf(run_pid_str, 32, "R:%d", (int)runpid);
+                snprintf(run_pid_str, 32, "%7d", (int)runpid);
             }
 
             // Check tmux session
