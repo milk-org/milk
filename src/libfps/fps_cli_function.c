@@ -1,0 +1,283 @@
+/**
+ * @file    fps_cli_function.c
+ * @brief   Generic CLIfunction and CLIADDCMD for FPS modules
+ *
+ * Extracted from POC sections 2.12. Provides a generic
+ * CLIfunction that handles the full milk CLI lifecycle for
+ * any FPS-based module.
+ */
+
+#include <stdio.h>
+#include <string.h>
+
+#include "CLIcore.h"
+#include "fps.h"
+#include "fps_cli_binding.h"
+#include "fps_cli_function.h"
+#include "fps_cli_init.h"
+#include "fps_cli_query.h"
+#include "fps_cli_sync.h"
+#include "fps_connect.h"
+#include "fps_disconnect.h"
+#include "fps_getFPSargs.h"
+#include "fps_lifecycle.h"
+#include "fps_local_store.h"
+#include "fps_processinfo_entries.h"
+#include "CLIcore/CLIcore_checkargs.h"
+
+
+errno_t fps_generic_CLIfunction(
+    FPS_APP_INFO    *app_info,
+    CLICMDARGDEF    *farg,
+    CLICMDDATA      *cmdata,
+    FPS_CLI_BINDING *bindings,
+    int              nb_b,
+    fps_compute_fn   compute_fn
+)
+{
+    FUNCTION_PARAMETER_STRUCT fps;
+
+    /*
+     * Default FPS is local (underscore prefix).
+     * User can override with :fpsname syntax.
+     */
+    char fpsname_with_session[200];
+    snprintf(fpsname_with_session,
+             sizeof(fpsname_with_session),
+             "_%s",
+             app_info->fps_name);
+
+    function_parameter_getFPSargs_from_CLIfunc(
+        fpsname_with_session);
+
+    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+        return RETURN_SUCCESS;
+    }
+
+    /* Handle "?" query */
+    if (data.cmdNBarg >= 2 &&
+        strcmp(data.cmdargtoken[1].val.string,
+               "?") == 0)
+    {
+        fps_print_query_info(
+            app_info, bindings, nb_b);
+        return RETURN_SUCCESS;
+    }
+
+    /* Initialization action */
+    if (data.FPS_CMDCODE == FPSCMDCODE_FPSINIT ||
+        data.FPS_CMDCODE
+        == FPSCMDCODE_FPSINITCREATE)
+    {
+        fps_generic_init(
+            data.FPS_name, app_info,
+            bindings, nb_b);
+        return RETURN_SUCCESS;
+    }
+
+    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+        return RETURN_SUCCESS;
+    }
+
+    /* Connect to existing FPS or use local */
+    memset(&fps, 0,
+           sizeof(FUNCTION_PARAMETER_STRUCT));
+    fps.SMfd = -1;
+
+    if (data.FPS_name[0] == '_') {
+        FUNCTION_PARAMETER_STRUCT *lfps =
+            fps_local_get_or_create(
+                data.FPS_name,
+                FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        if (lfps == NULL) {
+            return RETURN_FAILURE;
+        }
+        if (lfps->NBparam == 0) {
+            fps_generic_init(
+                data.FPS_name, app_info,
+                bindings, nb_b);
+        }
+        fps = *lfps;
+    }
+    else {
+        if (function_parameter_struct_connect(
+                data.FPS_name, &fps,
+                FPSCONNECT_SIMPLE) == -1)
+        {
+            fps_generic_init(
+                data.FPS_name, app_info,
+                bindings, nb_b);
+            if (function_parameter_struct_connect(
+                    data.FPS_name, &fps,
+                    FPSCONNECT_SIMPLE) == -1)
+            {
+                printf("Failed to connect to "
+                       "FPS %s\n",
+                       data.FPS_name);
+                return RETURN_SUCCESS;
+            }
+        }
+    }
+
+    data.fpsptr = &fps;
+    errno_t retval =
+        CLI_checkarg_array(farg, cmdata->nbarg);
+
+    if (retval == RETURN_SUCCESS ||
+        retval
+        == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)
+    {
+        fps_process_cli_and_sync(
+            &fps, farg, bindings, nb_b);
+
+        if (data.FPS_name[0] == '\0') {
+            strncpy(data.FPS_name,
+                    fpsname_with_session,
+                    STRINGMAXLEN_FPS_NAME - 1);
+            data.FPS_name[
+                STRINGMAXLEN_FPS_NAME - 1] = '\0';
+        }
+
+        cmdata->cmdsettings =
+            &data.cmd[data.cmdindex].cmdsettings;
+
+        if (cmdata->cmdsettings->flags
+            & CLICMDFLAG_PROCINFO)
+        {
+            memset(&fps.cmdset, 0,
+                   sizeof(fps.cmdset));
+            fps.cmdset.procinfo_loopcntMax =
+                cmdata->cmdsettings
+                    ->procinfo_loopcntMax;
+            fps.cmdset.triggermode =
+                cmdata->cmdsettings->triggermode;
+            strncpy(
+                fps.cmdset.triggerstreamname,
+                cmdata->cmdsettings
+                    ->triggerstreamname,
+                STRINGMAXLEN_IMAGE_NAME - 1);
+            fps.cmdset.triggerdelay =
+                cmdata->cmdsettings->triggerdelay;
+            fps.cmdset.triggertimeout =
+                cmdata->cmdsettings
+                    ->triggertimeout;
+            fps.cmdset.semindexrequested =
+                cmdata->cmdsettings
+                    ->semindexrequested;
+            fps.cmdset.RT_priority =
+                cmdata->cmdsettings->RT_priority;
+            fps.cmdset.procinfo_MeasureTiming =
+                cmdata->cmdsettings
+                    ->procinfo_MeasureTiming;
+
+            fps_add_processinfo_entries(&fps);
+        }
+
+        compute_fn();
+        retval = RETURN_SUCCESS;
+    }
+    else if (retval == RETURN_CLICHECKARGARRAY_HELP)
+    {
+        retval = RETURN_SUCCESS;
+    }
+
+    data.fpsptr = NULL;
+    if (data.FPS_name[0] != '_') {
+        function_parameter_struct_disconnect(&fps);
+    }
+    return retval;
+}
+
+
+void fps_fill_farg_examples(
+    CLICMDARGDEF    *farg,
+    FPS_CLI_BINDING *bindings,
+    int              nb_b
+)
+{
+    for (int i = 0; i < nb_b; i++) {
+        switch (bindings[i].type) {
+        case FPTYPE_INT32:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%d",
+                *(int32_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_UINT32:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%u",
+                *(uint32_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_INT64:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%ld",
+                *(int64_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_UINT64:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%lu",
+                *(uint64_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_FLOAT32:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%f",
+                *(float *) bindings[i].ptr);
+            break;
+        case FPTYPE_FLOAT64:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%lf",
+                *(double *) bindings[i].ptr);
+            break;
+        case FPTYPE_ONOFF:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%ld",
+                *(uint64_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_PID:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%d",
+                *(pid_t *) bindings[i].ptr);
+            break;
+        case FPTYPE_TIMESPEC:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%ld.%09ld",
+                ((struct timespec *)
+                    bindings[i].ptr)->tv_sec,
+                ((struct timespec *)
+                    bindings[i].ptr)->tv_nsec);
+            break;
+        case FPTYPE_STRING:
+        case FPTYPE_STREAMNAME:
+        case FPTYPE_FILENAME:
+        case FPTYPE_FITSFILENAME:
+        case FPTYPE_FPSNAME:
+        case FPTYPE_DIRNAME:
+        case FPTYPE_EXECFILENAME:
+        case FPTYPE_PROCESS:
+        case FPTYPE_STRING_NOT_STREAM:
+            strncpy(
+                farg[i].example,
+                (char *) bindings[i].ptr,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE
+                    - 1);
+            break;
+        }
+    }
+}

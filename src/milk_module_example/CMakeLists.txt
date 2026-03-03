@@ -51,14 +51,15 @@ add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 
 # note: set to PUBLIC if other modules link to this one
 target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
+target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS} milkfpsCLI)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
 add_executable(milk-fpsclitest examplefunc_fps_cli_poc.c)
-target_link_libraries(milk-fpsclitest ${LINKLIBS} ${LIBNAME})
+target_link_libraries(milk-fpsclitest ${LINKLIBS} ${LIBNAME} milkfpsCLI)
 target_include_directories(milk-fpsclitest PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(milk-fpsclitest PRIVATE FPS_STANDALONE)
 install(TARGETS milk-fpsclitest DESTINATION bin)
 

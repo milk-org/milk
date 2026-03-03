@@ -478,6 +478,15 @@ uint16_t function_parameter_RUNexit(FUNCTION_PARAMETER_STRUCT *fps);
 
 #include "fps_processinfo_entries.h"
 
+/* FPS-CLI unified framework (V2) */
+#include "fps_cli_binding.h"
+#include "fps_local_store.h"
+#include "fps_cli_init.h"
+#include "fps_cli_sync.h"
+#include "fps_lifecycle.h"
+#include "fps_cli_query.h"
+#include "fps_cli_function.h"
+
 // ===========================
 // CONVENIENT MACROS FOR FPS
 // ===========================
@@ -1071,6 +1080,417 @@ int main(int argc, char *argv[]) { \
         return FPSRUNSTOP_##FUNC_PREFIX(fps_name); \
     } \
     fprintf(stderr, "Invalid command: %s\n", command); \
+    return 1; \
+}
+
+/*
+ * ================================================================
+ * FPS_MAIN_STANDALONE_V2 — uses generic library functions
+ *
+ * Usage (new binding format):
+ *     FPS_MAIN_STANDALONE_V2(
+ *         FPS_app_info,
+ *         MY_PARAMS,
+ *         my_compute_function)
+ *
+ * The PARAMS_MACRO uses the 6-arg binding format:
+ *     X(keyword, ptr, type, is_primary, fpflag, descr)
+ * ================================================================
+ */
+
+/**
+ * @brief Help-print expansion for the 6-arg binding format.
+ */
+#define X_HELP_PRINT_V2(kw, ptr, type, is_primary, \
+                         flag, desc) \
+    { \
+        char cli_idx_str[8]; \
+        char val_str[64] = ""; \
+        const char *disp_kw = \
+            (kw[0] == '.') ? &kw[1] : kw; \
+        if (is_primary) \
+            sprintf(cli_idx_str, "%3d", \
+                    CLIargcnt); \
+        else \
+            strcpy(cli_idx_str, " - "); \
+        if (type == FPTYPE_INT32) \
+            sprintf(val_str, "%d", \
+                    *(int32_t*)ptr); \
+        else if (type == FPTYPE_UINT32) \
+            sprintf(val_str, "%u", \
+                    *(uint32_t*)ptr); \
+        else if (type == FPTYPE_INT64) \
+            sprintf(val_str, "%ld", \
+                    *(int64_t*)ptr); \
+        else if (type == FPTYPE_UINT64) \
+            sprintf(val_str, "%lu", \
+                    *(uint64_t*)ptr); \
+        else if (type == FPTYPE_FLOAT32) \
+            sprintf(val_str, "%f", \
+                    *(float*)ptr); \
+        else if (type == FPTYPE_FLOAT64) \
+            sprintf(val_str, "%f", \
+                    *(double*)ptr); \
+        else if (type == FPTYPE_ONOFF) \
+            sprintf(val_str, "%s", \
+                    (*(int32_t*)ptr) \
+                    ? "ON" : "OFF"); \
+        else if (FPTYPE_IS_STRING(type)) \
+            strncpy(val_str, (char*)ptr, 63); \
+        else if (type == FPTYPE_PID) \
+            sprintf(val_str, "%d", \
+                    (int)*(pid_t*)ptr); \
+        else if (type == FPTYPE_TIMESPEC) \
+            sprintf(val_str, "%ld.%09ld", \
+                    ((struct timespec*)ptr) \
+                        ->tv_sec, \
+                    ((struct timespec*)ptr) \
+                        ->tv_nsec); \
+        if (show_help_color) { \
+            if (is_primary) \
+                printf("  %s %s%-15s%s " \
+                       "%-15s %s\n", \
+                       cli_idx_str, \
+                       COLORPRIMARY, disp_kw, \
+                       COLORRESET, val_str, desc);\
+            else \
+                printf("  %s %s%-15s%s " \
+                       "%-15s %s\n", \
+                       cli_idx_str, \
+                       COLORARGnotCLI, disp_kw, \
+                       COLORRESET, val_str, desc);\
+        } else { \
+            printf("  %s %-15s %-15s %s\n", \
+                   cli_idx_str, disp_kw, \
+                   val_str, desc); \
+        } \
+        if (is_primary) CLIargcnt++; \
+    }
+
+
+#define FPS_MAIN_STANDALONE_V2( \
+    APP_INFO, PARAMS_MACRO, COMPUTE_FN) \
+int main(int argc, char *argv[]) { \
+    fps_cli_set_standalone_args(argc, argv); \
+    char fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
+    strncpy(fps_name, \
+            (APP_INFO).fps_name, \
+            STRINGMAXLEN_FPS_NAME - 1); \
+    char arg_fps_name[STRINGMAXLEN_FPS_NAME] \
+        = ""; \
+    int use_tmux = 0; \
+    int show_help = 0; \
+    int show_help_color = 1; \
+    char *command = NULL; \
+    char *keywords = NULL; \
+    char *description = NULL; \
+    char *colon_pos = NULL; \
+    FPS_CLI_BINDING my_bindings_[] = { \
+        PARAMS_MACRO(FPS_X_BINDING) \
+    }; \
+    int nb_bindings_ = sizeof(my_bindings_) \
+                     / sizeof(FPS_CLI_BINDING); \
+    CLICMDARGDEF farg_[] = { \
+        PARAMS_MACRO(FPS_X_FARG) \
+    }; \
+    (void) farg_; \
+    for (int i = 1; i < argc; i++) { \
+        if (strcmp(argv[i], "-h") == 0 || \
+            strcmp(argv[i], "--help") == 0) { \
+            show_help = 1; \
+        } else if (strcmp(argv[i], "-hc") == 0 ||\
+            strcmp(argv[i], \
+                   "--help-color") == 0) { \
+            show_help = 1; \
+            show_help_color = 1; \
+        } else if (strcmp(argv[i], \
+                   "-hnc") == 0 || \
+            strcmp(argv[i], \
+                   "--help-no-color") == 0) { \
+            show_help = 1; \
+            show_help_color = 0; \
+        } else if (strcmp(argv[i], \
+                   "-tmux") == 0) { \
+            use_tmux = 1; \
+        } else if (strcmp(argv[i], \
+                   "-procinfo") == 0 || \
+            strcmp(argv[i], \
+                   "--procinfo") == 0) { \
+        } else if ((strcmp(argv[i], "-k") == 0 ||\
+            strcmp(argv[i], \
+                   "--keywords") == 0) \
+            && i + 1 < argc) { \
+            keywords = argv[++i]; \
+        } else if ((strcmp(argv[i], "-d") == 0 ||\
+            strcmp(argv[i], \
+                   "--description") == 0) \
+            && i + 1 < argc) { \
+            description = argv[++i]; \
+        } else if ((strcmp(argv[i], "-n") == 0 ||\
+            strcmp(argv[i], \
+                   "--name") == 0) \
+            && i + 1 < argc) { \
+            strncpy(arg_fps_name, argv[++i], \
+                    STRINGMAXLEN_FPS_NAME - 1); \
+        } else if (command == NULL) { \
+            command = argv[i]; \
+            if ((colon_pos = strchr(command, \
+                                    ':')) \
+                != NULL) { \
+                *colon_pos = '\0'; \
+                strncpy(arg_fps_name, command, \
+                    STRINGMAXLEN_FPS_NAME - 1); \
+                command = colon_pos + 1; \
+            } \
+        } \
+    } \
+    if (command == NULL) { \
+        command = "run"; \
+    } else { \
+        if (strcmp(command, "fpsinit") != 0 && \
+            strcmp(command, "fps") != 0 && \
+            strcmp(command, "fpslist") != 0 && \
+            strcmp(command, "confstart") != 0 && \
+            strcmp(command, "confstep") != 0 && \
+            strcmp(command, "confstop") != 0 && \
+            strcmp(command, "runstart") != 0 && \
+            strcmp(command, "runstop") != 0 && \
+            strcmp(command, "exec") != 0 && \
+            strcmp(command, "run") != 0) { \
+            command = "run"; \
+        } \
+    } \
+    if (strlen(arg_fps_name) > 0) { \
+        strncpy(fps_name, arg_fps_name, \
+                STRINGMAXLEN_FPS_NAME - 1); \
+    } \
+    (void)keywords; (void)description; \
+    if (show_help || (argc < 2)) { \
+        if (show_help_color) { \
+            printf("\n" COLORHEADER "Usage:" \
+                   COLORRESET " %s " \
+                   COLOROPTION "[fpsname:]" \
+                   COLORRESET COLORCOMMAND \
+                   "<Command>" COLORRESET " " \
+                   COLOROPTION "[Options]" \
+                   COLORRESET "\n\n", argv[0]); \
+            printf(COLORHEADER "Description:" \
+                   COLORRESET "\n  %s\n\n", \
+                   (APP_INFO).description); \
+        } else { \
+            printf("\nUsage: %s [fpsname:]" \
+                   "<Command> [Options]\n\n", \
+                   argv[0]); \
+            printf("Description:\n  %s\n\n", \
+                   (APP_INFO).description); \
+        } \
+        if (show_help_color) \
+            printf(COLORHEADER "Commands:" \
+                   COLORRESET "\n"); \
+        else printf("Commands:\n"); \
+        printf("  fpsinit    Create the FPS.\n");\
+        printf("  fps        Print FPS " \
+               "content.\n"); \
+        printf("  fpslist    List matching " \
+               "FPS instances.\n"); \
+        printf("  confstart  Configuration " \
+               "loop.\n"); \
+        printf("  confstep   Single config " \
+               "step.\n"); \
+        printf("  confstop   Stop config " \
+               "loop.\n"); \
+        printf("  runstart   Main processing " \
+               "loop.\n"); \
+        printf("  runstop    Stop processing " \
+               "loop.\n"); \
+        printf("  exec       Auto-init + " \
+               "run.\n\n"); \
+        if (show_help_color) \
+            printf(COLORHEADER \
+                   "CLI arguments:" \
+                   COLORRESET "\n"); \
+        else printf("CLI arguments:\n"); \
+        printf("  %-3s %-15s %-15s %s\n", \
+               "Idx", "Keyword", "Default", \
+               "Description"); \
+        printf("  %-3s %-15s %-15s %s\n", \
+               "---", "-------", "-------", \
+               "-----------"); \
+        int CLIargcnt = 0; \
+        (void) CLIargcnt; \
+        PARAMS_MACRO(X_HELP_PRINT_V2) \
+        printf("\n"); \
+        return 0; \
+    } \
+    if (command == NULL) { \
+        fprintf(stderr, "Error: Missing " \
+                "command argument.\n"); \
+        return 1; \
+    } \
+    if (strcmp(command, "fps") == 0) { \
+        FUNCTION_PARAMETER_STRUCT fps; \
+        if (function_parameter_struct_connect( \
+                fps_name, &fps, \
+                FPSCONNECT_SIMPLE) == -1) { \
+            fprintf(stderr, \
+                    "Error: cannot connect to " \
+                    "FPS '%s'.\n", fps_name); \
+            return 1; \
+        } \
+        function_parameter_print_info( \
+            &fps, 0, 0); \
+        function_parameter_struct_disconnect( \
+            &fps); \
+        return 0; \
+    } else if (strcmp(command, \
+                      "fpslist") == 0) { \
+        FUNCTION_PARAMETER_STRUCT *fpsarray = \
+            (FUNCTION_PARAMETER_STRUCT *) \
+            calloc(NB_FPS_MAX, \
+                   sizeof( \
+                   FUNCTION_PARAMETER_STRUCT));\
+        if (fpsarray == NULL) return 1; \
+        for (int i = 0; i < NB_FPS_MAX; i++) \
+            fpsarray[i].SMfd = -1; \
+        KEYWORD_TREE_NODE *keywnode = \
+            (KEYWORD_TREE_NODE *) \
+            calloc(NB_KEYWNODE_MAX, \
+                   sizeof(KEYWORD_TREE_NODE)); \
+        if (keywnode == NULL) { \
+            free(fpsarray); return 1; } \
+        int NBkwn = 0, NBfps = 0; \
+        long NBpindex = 0; \
+        functionparameter_scan_fps(0, "_ALL", \
+            fpsarray, keywnode, \
+            &NBkwn, &NBfps, &NBpindex, 0); \
+        if (NBfps > 0) { \
+            char *eb = strrchr(argv[0], '/'); \
+            if (eb) eb++; else eb = argv[0]; \
+            int found = 0; \
+            for (int i = 0; i < NBfps; i++) { \
+                char *fb = strrchr( \
+                    fpsarray[i].md \
+                        ->execfullpath, '/'); \
+                if (fb) fb++; \
+                else fb = fpsarray[i].md \
+                    ->execfullpath; \
+                if (strcmp(eb, fb) == 0) { \
+                    if (!found) { \
+                        printf("%-30s %-10s " \
+                               "%s\n", \
+                               "FPS Name", \
+                               "Status", \
+                               "Description"); \
+                        printf("----------" \
+                               "----------" \
+                               "----------" \
+                               "----------\n");\
+                        found = 1; \
+                    } \
+                    char ss[32] = "UNKNOWN"; \
+                    if (fpsarray[i].md->status \
+                        & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) \
+                        strcpy(ss, "CONF"); \
+                    else if (fpsarray[i].md \
+                        ->status \
+                        & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) \
+                        strcpy(ss, "RUN"); \
+                    printf("%-30s %-10s %s\n", \
+                           fpsarray[i].md->name,\
+                           ss, \
+                           fpsarray[i].md \
+                               ->description); \
+                } \
+                function_parameter_struct_disconnect( \
+                    &fpsarray[i]); \
+            } \
+            if (!found) \
+                printf("No matching FPS for " \
+                       "'%s'.\n", eb); \
+        } else { \
+            printf("No FPS found.\n"); \
+        } \
+        free(keywnode); \
+        free(fpsarray); \
+        return 0; \
+    } \
+    if (use_tmux) { \
+        char path[1024]; \
+        if (functionparameter_FPS_get_executable_path( \
+                path, sizeof(path)) == NULL) { \
+            if (realpath(argv[0], path) == NULL)\
+                strncpy(path, argv[0], 1023); \
+        } \
+        char name_arg[256] = ""; \
+        if (strcmp(fps_name, \
+                  (APP_INFO).fps_name) != 0) { \
+            snprintf(name_arg, \
+                     sizeof(name_arg), \
+                     " %s:%s", \
+                     fps_name, command); \
+        } else { \
+            snprintf(name_arg, \
+                     sizeof(name_arg), \
+                     " %s", command); \
+        } \
+        functionparameter_FPS_tmux_standalone_setup( \
+            fps_name); \
+        if (functionparameter_FPS_tmux_send_dispatch( \
+                fps_name, command, path, \
+                name_arg) == 0) { \
+            return 0; \
+        } \
+        if (strcmp(command, "fpsinit") == 0) { \
+            fps_generic_init(fps_name, \
+                (FPS_APP_INFO *)&(APP_INFO), \
+                my_bindings_, nb_bindings_); \
+        } \
+        return 0; \
+    } \
+    if (strcmp(command, "fpsinit") == 0) { \
+        return fps_generic_init(fps_name, \
+            (FPS_APP_INFO *)&(APP_INFO), \
+            my_bindings_, nb_bindings_); \
+    } else if (strcmp(command, \
+                      "confstart") == 0) { \
+        return fps_generic_conf( \
+            fps_name, 1); \
+    } else if (strcmp(command, \
+                      "confstep") == 0) { \
+        return fps_generic_conf( \
+            fps_name, 0); \
+    } else if (strcmp(command, \
+                      "confstop") == 0) { \
+        return fps_generic_confstop(fps_name); \
+    } else if (strcmp(command, "exec") == 0) { \
+        FUNCTION_PARAMETER_STRUCT fps; \
+        if (function_parameter_struct_connect( \
+                fps_name, &fps, \
+                FPSCONNECT_SIMPLE) == -1) { \
+            fps_generic_init(fps_name, \
+                (FPS_APP_INFO *)&(APP_INFO), \
+                my_bindings_, nb_bindings_); \
+        } else { \
+            function_parameter_struct_disconnect(\
+                &fps); \
+        } \
+        return fps_generic_run(fps_name, \
+            (FPS_APP_INFO *)&(APP_INFO), \
+            farg_, my_bindings_, nb_bindings_, \
+            COMPUTE_FN); \
+    } else if (strcmp(command, \
+                      "runstart") == 0 || \
+               strcmp(command, "run") == 0) { \
+        return fps_generic_run(fps_name, \
+            (FPS_APP_INFO *)&(APP_INFO), \
+            farg_, my_bindings_, nb_bindings_, \
+            COMPUTE_FN); \
+    } else if (strcmp(command, \
+                      "runstop") == 0) { \
+        return fps_generic_runstop(fps_name); \
+    } \
+    fprintf(stderr, \
+            "Invalid command: %s\n", command); \
     return 1; \
 }
 
