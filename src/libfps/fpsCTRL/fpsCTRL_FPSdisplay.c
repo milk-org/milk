@@ -3,6 +3,7 @@
 #include <math.h>
 #include <ncurses.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -500,9 +501,97 @@ errno_t fpsCTRL_FPSdisplay(
                     } else {
                         functionparameter_GetParamValueString(&fpsarray[fpsindex].parray[pindex], valstring, 200);
                     }
-                    
+
+                    /* Color path-like values green/red */
+                    int path_val_color = 0;
+                    if (isVISIBLE == 1 &&
+                        valstring[0] != '\0')
+                    {
+                        int ptype = fpsarray[fpsindex]
+                            .parray[pindex].type;
+                        struct stat st;
+                        int do_check = 0;
+
+                        if (ptype == FPTYPE_STREAMNAME)
+                        {
+                            char shmpath[512];
+                            snprintf(shmpath,
+                                sizeof(shmpath),
+                                "/milk/shm/%s.im.shm",
+                                valstring);
+                            if (stat(shmpath, &st) == 0)
+                                path_val_color = 2;
+                            else
+                                path_val_color = 4;
+                            do_check = 1;
+                        }
+                        else if (ptype == FPTYPE_DIRNAME)
+                        {
+                            if (stat(valstring,
+                                     &st) == 0 &&
+                                S_ISDIR(st.st_mode))
+                                path_val_color = 2;
+                            else
+                                path_val_color = 4;
+                            do_check = 1;
+                        }
+                        else if (ptype
+                                 == FPTYPE_EXECFILENAME)
+                        {
+                            if (stat(valstring,
+                                     &st) == 0 &&
+                                S_ISREG(st.st_mode) &&
+                                (st.st_mode & S_IXUSR))
+                                path_val_color = 2;
+                            else
+                                path_val_color = 4;
+                            do_check = 1;
+                        }
+                        else if (ptype == FPTYPE_FILENAME
+                            || ptype
+                                == FPTYPE_FITSFILENAME)
+                        {
+                            if (stat(valstring,
+                                     &st) == 0 &&
+                                S_ISREG(st.st_mode))
+                                path_val_color = 2;
+                            else
+                                path_val_color = 4;
+                            do_check = 1;
+                        }
+
+                        if (do_check &&
+                            path_val_color != 0)
+                        {
+                            screenprint_setcolor(
+                                path_val_color);
+                        }
+                    }
+                    /* Highlight ONOFF ON state */
+                    int onoff_on = 0;
+                    if (isVISIBLE == 1 &&
+                        fpsarray[fpsindex]
+                            .parray[pindex].type
+                            == FPTYPE_ONOFF &&
+                        fpsarray[fpsindex]
+                            .parray[pindex]
+                            .val.i32[0])
+                    {
+                        onoff_on = 1;
+                        screenprint_setcolor(
+                            COLOR_BLACK_ON_WHITE);
+                    }
+
                     print_sliding_string(valstring, max_val_width, GUIline);
 
+                    if (onoff_on) {
+                        screenprint_unsetcolor(
+                            COLOR_BLACK_ON_WHITE);
+                    }
+                    if (path_val_color != 0) {
+                        screenprint_unsetcolor(
+                            path_val_color);
+                    }
                     if(paramsync == 0 && isVISIBLE == 1) screenprint_unsetcolor(3);
                     if(fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR && isVISIBLE == 1) screenprint_unsetcolor(4);
 
