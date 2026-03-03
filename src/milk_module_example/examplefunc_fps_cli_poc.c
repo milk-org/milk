@@ -63,6 +63,33 @@ static char   param_processname[FUNCTION_PARAMETER_STRMAXLEN]  = "process_a";
 static char   param_fpsname[FUNCTION_PARAMETER_STRMAXLEN]      = "otherfps";
 static char   param_string_not_stream[FUNCTION_PARAMETER_STRMAXLEN] = "not_a_stream";
 
+static int local_fps_initialized = 0;
+static FUNCTION_PARAMETER_STRUCT local_fps_struct = {NULL, NULL, 0, -1, 0, 0, 0, {0}};
+
+static void FPS_init_local(const char *fps_name, long NBparamMAX)
+{
+    if (local_fps_initialized) {
+        if (local_fps_struct.md != NULL) {
+            free(local_fps_struct.md);
+        }
+        if (local_fps_struct.parray != NULL) {
+            free(local_fps_struct.parray);
+        }
+        memset(&local_fps_struct, 0, sizeof(FUNCTION_PARAMETER_STRUCT));
+    }
+    
+    local_fps_struct.md = malloc(sizeof(FUNCTION_PARAMETER_STRUCT_MD));
+    memset(local_fps_struct.md, 0, sizeof(FUNCTION_PARAMETER_STRUCT_MD));
+    local_fps_struct.parray = malloc(sizeof(FUNCTION_PARAMETER) * NBparamMAX);
+    memset(local_fps_struct.parray, 0, sizeof(FUNCTION_PARAMETER) * NBparamMAX);
+    
+    strncpy(local_fps_struct.md->name, fps_name, STRINGMAXLEN_FPS_NAME - 1);
+    local_fps_struct.md->NBparamMAX = NBparamMAX;
+    local_fps_struct.NBparam = 0;
+    local_fps_struct.SMfd = -1;
+    local_fps_initialized = 1;
+}
+
 /**
  * @brief Unified Parameter Macro (X-Macro Pattern)
  *
@@ -149,10 +176,18 @@ static errno_t example_fps_computation()
 
 
 
-
-    // =============================================================================
+// =============================================================================
 // INFRASTRUCTURE HELPERS
 // =============================================================================
+
+
+
+
+
+
+
+
+
 
 /**
  * @brief Binding structure between FPS keyword and local C variable.
@@ -388,8 +423,15 @@ static errno_t FPS_process_CLI_and_sync(
 int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *description)
 {
     FUNCTION_PARAMETER_STRUCT fps;
-    /* Standard preamble handles SHM segment creation/connection */
-    FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, "Unified FPS-CLI POC");
+    
+
+    if (fps_name[0] == '_') {
+        FPS_init_local(fps_name, FUNCTION_PARAMETER_NBPARAM_DEFAULT);
+        fps = local_fps_struct;
+    } else {
+        /* Standard preamble handles SHM segment creation/connection */
+        FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, "Unified FPS-CLI POC");
+    }
     
     /* Check for -procinfo flag in standalone_argv or CLI flag */
     int enable_procinfo = 0;
@@ -411,15 +453,23 @@ int FPSINIT_exfpscli(const char *fps_name, const char *keywords, const char *des
         fps_add_processinfo_entries(&fps);
     }
     
-    /* Populate the SHM from our bindings */
+    /* Populate the SHM or local struct from our bindings */
     FPS_init_from_bindings(&fps, FPS_app_info.cmdkey, FPS_app_info.description, my_bindings, nb_bindings);
     
-    function_parameter_struct_disconnect(&fps);
+    if (fps_name[0] == '_') {
+        // Keep it initialized in local_fps_struct
+    } else {
+        function_parameter_struct_disconnect(&fps);
+    }
     return 0;
 }
 
 int FPSCONF_exfpscli(const char *fps_name, int loop)
 {
+    if (fps_name[0] == '_') {
+        printf("Local FPS '%s' - monitoring loop skipped.\n", fps_name);
+        return 0;
+    }
     /* FPS_CONF_STD_BODY implements a monitoring loop that watches for 
      * external changes to the FPS (e.g. from milk-fps-set).
      */
@@ -434,11 +484,20 @@ int FPSRUN_exfpscli(const char *fps_name)
     FUNCTION_PARAMETER_STRUCT fps;
     PROCESSINFO *processinfo = NULL;
 
-    /* Standard preamble connects to the FPS and sets up process info */
-    FPS_RUN_STD_PREAMBLE(fps_name, fps, {
-        /* Sync our local pointers from the current FPS SHM values */
+    if (fps_name[0] == '_') {
+        if (!local_fps_initialized || strcmp(local_fps_struct.md->name, fps_name) != 0) {
+            FPSINIT_exfpscli(fps_name, NULL, "Auto-initialized local");
+        }
+        fps = local_fps_struct;
+        /* Sync our local pointers from the current FPS values */
         FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
-    });
+    } else {
+        /* Standard preamble connects to the FPS and sets up process info */
+        FPS_RUN_STD_PREAMBLE(fps_name, fps, {
+            /* Sync our local pointers from the current FPS SHM values */
+            FPS_process_CLI_and_sync(&fps, my_bindings, nb_bindings);
+        });
+    }
     
     if (functionparameter_GetParamIndex(&fps, ".procinfo.enabled") != -1) {
         /* Setup processinfo using the FPS macros */
@@ -450,7 +509,9 @@ int FPSRUN_exfpscli(const char *fps_name)
     } else {
         /* Execute the core logic */
         example_fps_computation();
-        function_parameter_struct_disconnect(&fps);
+        if (fps_name[0] != '_') {
+            function_parameter_struct_disconnect(&fps);
+        }
     }
     
     return 0;
@@ -461,6 +522,10 @@ int FPSRUNSTOP_exfpscli(const char *fps_name)
 {
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Stopping run process for '%s'\n", fps_name);
+    if (fps_name[0] == '_') {
+        printf("Local FPS '%s' - stop signal ignored (lifetime limited to process).\n", fps_name);
+        return 0;
+    }
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
@@ -475,6 +540,10 @@ int FPSCONFSTOP_exfpscli(const char *fps_name)
 {
     FUNCTION_PARAMETER_STRUCT fps;
     printf("Stopping configuration process for '%s'\n", fps_name);
+    if (fps_name[0] == '_') {
+        printf("Local FPS '%s' - stop signal ignored (lifetime limited to process).\n", fps_name);
+        return 0;
+    }
     if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) {
         fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name);
         return 1;
@@ -540,15 +609,23 @@ static errno_t CLIfunction(void)
         return RETURN_SUCCESS;
     }
 
-    /* Try to connect to existing shared memory FPS */
+    /* Try to connect to existing shared memory FPS or use local if requested */
     memset(&fps, 0, sizeof(FUNCTION_PARAMETER_STRUCT));
     fps.SMfd = -1;
-    if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-        /* If it doesn't exist, auto-initialize it and connect */
-        FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized");
+    
+    if (data.FPS_name[0] == '_') {
+        if (!local_fps_initialized || strcmp(local_fps_struct.md->name, data.FPS_name) != 0) {
+            FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized local");
+        }
+        fps = local_fps_struct;
+    } else {
         if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
-             printf("Failed to connect to FPS %s\n", data.FPS_name);
-             return RETURN_SUCCESS;
+            /* If it doesn't exist, auto-initialize it and connect */
+            FPSINIT_exfpscli(data.FPS_name, NULL, "Auto-initialized");
+            if (function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE) == -1) {
+                 printf("Failed to connect to FPS %s\n", data.FPS_name);
+                 return RETURN_SUCCESS;
+            }
         }
     }
 
@@ -604,7 +681,9 @@ static errno_t CLIfunction(void)
     }
 
     data.fpsptr = NULL;
-    function_parameter_struct_disconnect(&fps);
+    if (data.FPS_name[0] != '_') {
+        function_parameter_struct_disconnect(&fps);
+    }
     return retval;
 }
 

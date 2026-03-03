@@ -11,7 +11,7 @@
  * > cmake .. -DEXTRAMODULES="milk_module_example" -DINSTALLMAKEDEFAULT=ON
  *
  *
- * To load, type "mload milkmilkmoduleexample" in CLI\n
+ * To load, type "mload milkmilk_module_example" in CLI\n
  *
  *
  *  Files
