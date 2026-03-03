@@ -313,6 +313,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.i32[2] = valueptr_INT32[2];
                     funcparamarray[pindex].val.i32[3] = valueptr_INT32[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_UINT32:
@@ -322,6 +323,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.ui32[2] = valueptr_UINT32[2];
                     funcparamarray[pindex].val.ui32[3] = valueptr_UINT32[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_INT64:
@@ -331,6 +333,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
                     funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_UINT64:
@@ -340,6 +343,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.ui64[2] = valueptr_UINT64[2];
                     funcparamarray[pindex].val.ui64[3] = valueptr_UINT64[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FLOAT64:
@@ -349,6 +353,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.f64[2] = valueptr_FLOAT64[2];
                     funcparamarray[pindex].val.f64[3] = valueptr_FLOAT64[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FLOAT32:
@@ -358,17 +363,20 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     funcparamarray[pindex].val.f32[2] = valueptr_FLOAT32[2];
                     funcparamarray[pindex].val.f32[3] = valueptr_FLOAT32[3];
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_PID:
                     funcparamarray[pindex].val.pid[0] = *((pid_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_TIMESPEC:
                     valueptr_ts                      = (struct timespec *) valueptr;
                     funcparamarray[pindex].val.ts[0] = *valueptr_ts;
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FILENAME:
@@ -376,6 +384,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FITSFILENAME:
@@ -383,6 +392,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_EXECFILENAME:
@@ -390,6 +400,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_DIRNAME:
@@ -397,6 +408,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_STREAMNAME:
@@ -404,6 +416,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_STRING:
@@ -411,11 +424,13 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_ONOFF:
                     funcparamarray[pindex].val.ui64[0] = *((uint64_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FPSNAME:
@@ -425,6 +440,7 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                             (char *) valueptr,
                             FUNCTION_PARAMETER_STRMAXLEN - 1);
                     funcparamarray[pindex].cnt0++;
+                    funcparamarray[pindex].value_cnt++;
                     break;
             }
 

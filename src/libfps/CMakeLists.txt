@@ -23,6 +23,7 @@ set(SOURCEFILES
     fps_FPCONFloopstep.c
     fps_RUNexit.c
     fps_RUNstart.c
+    fps_isvalid.c
     fps_RUNstop.c
     fps_CONFstart.c
     fps_CONFstop.c

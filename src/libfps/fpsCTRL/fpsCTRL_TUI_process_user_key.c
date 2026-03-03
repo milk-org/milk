@@ -46,6 +46,19 @@ int fpsCTRL_TUI_process_user_key(
 
     if(ch != -1)
     {
+        if (fpsCTRLvar->NBfps > 0) {
+            int selected_fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            if (fps[selected_fpsindex].md == NULL) {
+                // If the selected FPS is invalid (was deleted), ignore commands that operate on it, 
+                // but allow navigation and quit commands.
+                if (ch == ' ' || ch == 'T' || ch == 't' || ch == 'E' || ch == 'R' ||
+                    ch == 'r' || ch == 'C' || ch == 'O' || ch == 'c' || ch == ctrl('e') ||
+                    ch == ctrl('r') || ch == ctrl('o')) {
+                    return loopOK;
+                }
+            }
+        }
+
         if(ch == 545 || ch == 560 || ch == 443 || ch == 564 || ch == 554) { // CTRL+LEFT
              fpsCTRLvar->fpsCTRL_DisplayMode--;
              if (fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 4;

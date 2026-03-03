@@ -459,6 +459,7 @@ int functionparameter_UserInputSetParamValue(
             }
 
             fpsentry->parray[pindex].cnt0++;
+            fpsentry->parray[pindex].value_cnt++;
 
             // notify GUI
             fpsentry->md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;

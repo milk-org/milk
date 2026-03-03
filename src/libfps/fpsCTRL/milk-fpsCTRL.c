@@ -9,6 +9,19 @@
 #include "fpsCTRL_globals.h"
 #include "fps_shmdirname.h"
 
+#include <signal.h>
+#include <ncurses.h>
+
+void fpsCTRL_crash_handler(int sig)
+{
+    // Restore terminal state
+    endwin();
+
+    // Reset signal handler to default and re-raise
+    signal(sig, SIG_DFL);
+    kill(getpid(), sig);
+}
+
 // Standalone main for milk-fpsCTRL
 
 void print_usage(const char *progname) {
@@ -37,6 +50,11 @@ int main(int argc, char *argv[]) {
 
     // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
     ImageStreamIO_set_verbosity(0);
+
+    // Install crash handlers to ensure terminal settings are restored
+    signal(SIGSEGV, fpsCTRL_crash_handler);
+    signal(SIGBUS, fpsCTRL_crash_handler);
+    signal(SIGABRT, fpsCTRL_crash_handler);
 
     // Allocate global fpsarray
     fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
