@@ -288,10 +288,12 @@ int fpsCTRL_TUI_process_user_key(
                     if(fps[fpsindex].parray[pindex].fpflag & FPFLAG_ONOFF)    // ON -> OFF
                     {
                         fps[fpsindex].parray[pindex].fpflag &= ~FPFLAG_ONOFF;
+                        fps[fpsindex].parray[pindex].val.i32[0] = 0;
                     }
                     else     // OFF -> ON
                     {
                         fps[fpsindex].parray[pindex].fpflag |= FPFLAG_ONOFF;
+                        fps[fpsindex].parray[pindex].val.i32[0] = 1;
                     }
 
                     // Save to disk
