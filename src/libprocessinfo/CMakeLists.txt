@@ -77,6 +77,15 @@ set(SOURCES
 add_executable(milk-procinfo-help milk-procinfo-help.c)
 install(TARGETS milk-procinfo-help DESTINATION bin)
 
+add_executable(milk-procinfo-rm milk-procinfo-rm.c)
+target_link_libraries(milk-procinfo-rm PUBLIC 
+    milkprocessinfo 
+    ImageStreamIO
+    pthread
+    m
+)
+install(TARGETS milk-procinfo-rm DESTINATION bin)
+
 
 install(FILES 
     processinfo.h

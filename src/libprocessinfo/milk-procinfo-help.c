@@ -49,5 +49,15 @@ int main()
     printf("  $ " C_CMD "milk-fps-runstart myfps00\n" C_RST);
     printf("\n");
     
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "             Processinfo Utilities                      \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf("  " C_CMD "milk-procCTRL" C_RST "      : Interactive TUI task manager\n");
+    printf("  " C_CMD "milk-procinfo-rm" C_RST "   : Remove processinfo shared memory segment\n");
+    printf("  " C_CMD "milk-procCTRL-scan" C_RST " : Non-interactive scan of active processes\n");
+    printf("\n");
+    printf(C_NOTE "Run any of these programs with -h for more help." C_RST "\n");
+    printf("\n");
     return 0;
 }
