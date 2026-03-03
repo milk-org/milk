@@ -27,9 +27,9 @@ int main()
     printf(C_HDR "Initializing an FPS\n" C_RST);
     printf("To initialize the parameter space for a module, invoke the\n");
     printf("executable with the " C_BOLD "fpsinit" C_RST " subcommand and provide an FPS name:\n");
-    printf("  $ " C_CMD "./milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit\n" C_RST);
+    printf("  $ " C_CMD "milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit\n" C_RST);
     printf("  " C_NOTE "Tip:" C_RST " Use the " C_BOLD "-procinfo" C_RST " flag to add daemon monitoring features:\n");
-    printf("  $ " C_CMD "./milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit -procinfo\n" C_RST);
+    printf("  $ " C_CMD "milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit -procinfo\n" C_RST);
     printf("\n");
 
     printf(C_HDR "Viewing FPS Data\n" C_RST);

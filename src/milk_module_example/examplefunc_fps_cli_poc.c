@@ -87,15 +87,15 @@ static struct {
  * Local variables that the computation logic will actually use.
  * In this architecture, they are "synced" with FPS shared memory.
  */
-static int32_t  param_int32   = 0;
-static uint32_t param_uint32  = 0;
-static int64_t  param_int64   = 0;
-static uint64_t param_uint64  = 0;
-static float    param_float32 = 0.0f;
-static double   param_float64 = 0.0;
-static pid_t    param_pid     = 0;
+static int32_t  param_int32   = 123;
+static uint32_t param_uint32  = 456;
+static int64_t  param_int64   = 789;
+static uint64_t param_uint64  = 101112;
+static float    param_float32 = 3.14f;
+static double   param_float64 = 2.718;
+static pid_t    param_pid     = 1000;
 
-static struct timespec param_timespec = {0, 0};
+static struct timespec param_timespec = {1709424000, 123456789};
 
 static char param_filename[FUNCTION_PARAMETER_STRMAXLEN]
     = "data.txt";
@@ -484,7 +484,11 @@ static errno_t FPS_process_CLI_and_sync(
     for (int i = 0; i < nb_b; i++) {
         long pindex = functionparameter_GetParamIndex(
             fps, bindings[i].fpskeyword);
+        
+        printf("DEBUG: Syncing %s (type %lu) -> pindex %ld\n", 
+               bindings[i].fpskeyword, bindings[i].type, pindex);
         if (pindex != -1) {
+            printf("DEBUG:   Found keywordfull: %s\n", fps->parray[pindex].keywordfull);
             if (bindings[i].type == FPTYPE_FLOAT64) {
                 *((double *) bindings[i].ptr) = fps->parray[pindex].val.f64[0];
             } else if (bindings[i].type == FPTYPE_INT64) {
@@ -916,6 +920,14 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
                 farg[i].example,
                 STRINGMAXLEN_FPSCLIARG_EXAMPLE,
                 "%d", *(pid_t *) my_bindings[i].ptr);
+            break;
+        case FPTYPE_TIMESPEC:
+            snprintf(
+                farg[i].example,
+                STRINGMAXLEN_FPSCLIARG_EXAMPLE,
+                "%ld.%09ld",
+                ((struct timespec *) my_bindings[i].ptr)->tv_sec,
+                ((struct timespec *) my_bindings[i].ptr)->tv_nsec);
             break;
         case FPTYPE_STRING:
         case FPTYPE_STREAMNAME:
