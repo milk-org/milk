@@ -1,4 +1,5 @@
 #include "fps.h"
+#include "fps_cli_binding.h"
 #include "processinfo.h"
 
 errno_t gaussfilter_addCLIcmd();
@@ -18,10 +19,38 @@ imageID gauss_3Dfilter(const char *__restrict ID_name,
 /* ================================================================== */
 
 #define GAUSSFILT_PARAMS(X) \
-    X(    FPTYPE_STREAMNAME, char*,  ".in_name",     "input image",            "im1",  "im1", &gaussfilt_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(    FPTYPE_STREAMNAME, char*,  ".out_name",    "output image",           "out1", "out1", &gaussfilt_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_FLOAT32,    float,  ".sigma",       "gaussian sigma",         "2.0",  2.0,   &gaussfilt_sigma, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(  FPTYPE_INT32,      int,    ".filter_size", "filter box size",        "5",    5,     &gaussfilt_filtersize, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X( \
+        ".in_name", \
+        &gaussfilt_inimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "input image" \
+    ) \
+    X( \
+        ".out_name", \
+        &gaussfilt_outimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "output image" \
+    ) \
+    X( \
+        ".sigma", \
+        &gaussfilt_sigma, \
+        FPTYPE_FLOAT32, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "gaussian sigma" \
+    ) \
+    X( \
+        ".filter_size", \
+        &gaussfilt_filtersize, \
+        FPTYPE_INT32, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "filter box size" \
+    )
 
 extern char  *gaussfilt_inimname;
 extern char  *gaussfilt_outimname;
