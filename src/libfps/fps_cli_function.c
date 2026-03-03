@@ -119,6 +119,36 @@ errno_t fps_generic_CLIfunction(
         }
     }
 
+    /* Print FPS name and type in color */
+    if (data.FPS_name[0] == '_') {
+        printf("\033[36mFPS \033[1m%s\033[22m"
+               " \033[33m[LOCAL]\033[0m\n",
+               data.FPS_name);
+        fps_local_set_creator(
+            data.FPS_name,
+            app_info->fps_name);
+    }
+    else {
+        printf("\033[36mFPS \033[1m%s\033[22m"
+               " \033[32m[SHARED]\033[0m\n",
+               data.FPS_name);
+        fps_shared_record_usage(
+            data.FPS_name,
+            app_info->fps_name);
+    }
+
+    /* Record last-used FPS for ? query */
+    strncpy(fps_last_used_name,
+            data.FPS_name,
+            sizeof(fps_last_used_name) - 1);
+    fps_last_used_name[
+        sizeof(fps_last_used_name) - 1] = '\0';
+    strncpy(fps_last_used_cmdkey,
+            app_info->fps_name,
+            sizeof(fps_last_used_cmdkey) - 1);
+    fps_last_used_cmdkey[
+        sizeof(fps_last_used_cmdkey) - 1] = '\0';
+
     data.fpsptr = &fps;
     errno_t retval =
         CLI_checkarg_array(farg, cmdata->nbarg);
@@ -280,4 +310,20 @@ void fps_fill_farg_examples(
             break;
         }
     }
+}
+
+
+/**
+ * @brief Constructor: register strong function
+ *        pointers into the milkfps registry.
+ *
+ * Runs when libmilkfpsCLI.so is loaded.
+ */
+__attribute__((constructor))
+static void fps_cli_register(void)
+{
+    fps_generic_CLIfunction_ptr =
+        fps_generic_CLIfunction;
+    fps_fill_farg_examples_ptr =
+        fps_fill_farg_examples;
 }

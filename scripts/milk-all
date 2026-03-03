@@ -3,7 +3,7 @@
 MSdescr="milk with all installed modules"
 
 
-modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milkmoduleexample,milkpsf,milkstatistic,milkZernikePolyn"
+modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milk_module_example,milkpsf,milkstatistic,milkZernikePolyn"
 
 # Extended description
 MSextdescr="Loads modules:

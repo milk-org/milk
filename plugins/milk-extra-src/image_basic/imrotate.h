@@ -2,6 +2,7 @@
 #define IMAGE_BASIC_IMROTATE_H
 
 #include "fps.h"
+#include "fps_cli_binding.h"
 #include "processinfo.h"
 
 errno_t imrotate_addCLIcmd();
@@ -22,9 +23,30 @@ imageID basic_rotate2(const char *__restrict ID_name_in,
                       float angle);
 
 #define IMROTATE_PARAMS(X) \
-    X(    FPTYPE_STREAMNAME, char*,  ".in_name",  "input image",   "im1", "im1", &imrotate_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(    FPTYPE_STREAMNAME, char*,  ".out_name", "output image",  "out1", "out1", &imrotate_outimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_FLOAT32,    float,  ".angle",    "rotate angle",  "0.0", 0.0,   &imrotate_angle, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X( \
+        ".in_name", \
+        &imrotate_inimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "input image" \
+    ) \
+    X( \
+        ".out_name", \
+        &imrotate_outimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "output image" \
+    ) \
+    X( \
+        ".angle", \
+        &imrotate_angle, \
+        FPTYPE_FLOAT32, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "rotate angle" \
+    )
 
 extern char  *imrotate_inimname;
 extern char  *imrotate_outimname;

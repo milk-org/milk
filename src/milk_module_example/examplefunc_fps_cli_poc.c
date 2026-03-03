@@ -252,7 +252,7 @@ static errno_t compute_function()
  */
 static errno_t CLIfunction(void)
 {
-    return fps_generic_CLIfunction(
+    return safe_fps_generic_CLIfunction(
         &FPS_app_info,
         farg,
         &CLIcmddata,
@@ -266,7 +266,7 @@ static errno_t CLIfunction(void)
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
-    fps_fill_farg_examples(
+    safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
