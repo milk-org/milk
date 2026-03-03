@@ -690,9 +690,24 @@ functionparameter_PrintParameterInfo(
         printf("  %s", "-undef-");
     }
 
+    if(fpsentry->parray[pindex].type == FPTYPE_INT32)
+    {
+        printf("  %10d", fpsentry->parray[pindex].val.i32[0]);
+    }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_UINT32)
+    {
+        printf("  %10u", fpsentry->parray[pindex].val.ui32[0]);
+    }
+
     if(fpsentry->parray[pindex].type == FPTYPE_INT64)
     {
-        printf("  %10d", (int) fpsentry->parray[pindex].val.i64[0]);
+        printf("  %10ld", (long) fpsentry->parray[pindex].val.i64[0]);
+    }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_UINT64)
+    {
+        printf("  %10lu", (unsigned long) fpsentry->parray[pindex].val.ui64[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FLOAT64)
@@ -707,7 +722,7 @@ functionparameter_PrintParameterInfo(
 
     if(fpsentry->parray[pindex].type == FPTYPE_PID)
     {
-        printf("  %10d", (int) fpsentry->parray[pindex].val.pid[0]);
+        printf("  %10ld", (long) fpsentry->parray[pindex].val.pid[0]);
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_TIMESPEC)
@@ -760,6 +775,16 @@ functionparameter_PrintParameterInfo(
     }
 
     if(fpsentry->parray[pindex].type == FPTYPE_FPSNAME)
+    {
+        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_PROCESS)
+    {
+        printf("  %10s", fpsentry->parray[pindex].val.string[0]);
+    }
+
+    if(fpsentry->parray[pindex].type == FPTYPE_STRING_NOT_STREAM)
     {
         printf("  %10s", fpsentry->parray[pindex].val.string[0]);
     }

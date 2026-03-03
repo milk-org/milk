@@ -27,6 +27,7 @@
 // COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
 #define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
+#define RL_COLORRESET  "\001\033[0m\002"
 
 extern void yy_scan_string(const char *);
 extern int  yylex_destroy(void);
@@ -64,21 +65,21 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
     {
         if(data.processnameflag == 0)
         {
-            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " COLORRESET,
+            snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET,
                      promptstring);
         }
         else
         {
             snprintf(prompt,
                      FPS_DIR_STRLENMAX,
-                     COLORHBOLDCYAN "%s-%s > " COLORRESET,
+                     COLORHBOLDCYAN "%s-%s > " RL_COLORRESET,
                      promptstring,
                      data.processname);
         }
     }
     else
     {
-        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " COLORRESET,
+        snprintf(prompt, FPS_DIR_STRLENMAX, COLORHBOLDCYAN "%s > " RL_COLORRESET,
                  data.processname);
     }
 
