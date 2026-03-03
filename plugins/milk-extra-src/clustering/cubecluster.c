@@ -9,26 +9,11 @@
 
 #include "cubecluster.h"
 
-/* ================================================================== */
-/* PARAMETER DEFINITION (X-MACRO)                                     */
-/* ================================================================== */
-
-#ifndef CLUSTERING_CUBECLUSTER_H
-#define CLUSTERING_CUBECLUSTER_H
-#define CUBECLUSTER_PARAMS(X) \
-    X(FPTYPE_STREAMNAME, char*, ".in_name",      "input image cube",      "imc1", "imc1", &farg_inimname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_STREAMNAME, char*, ".outdname",     "output directory name", "outd", "outd", &farg_outdname,  (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_FLOAT32,    float, ".T",             "threshold",             "1.0",  1.0,   &threshold, FPFLAG_DEFAULT_INPUT)  \
-    X(FPTYPE_UINT32,     uint32_t, ".B",          "branch number",         "10",   10,    &branchB, FPFLAG_DEFAULT_INPUT)  \
-    X(FPTYPE_UINT32,     uint32_t, ".leafposmode","leaf position mode",    "1",    1,     &leafposmode, FPFLAG_DEFAULT_INPUT)  \
-    X(FPTYPE_UINT32,     uint32_t, ".NBCFmax",    "max number of CFs",     "2048", 2048,  &NBCFmax, FPFLAG_DEFAULT_INPUT)  \
-    X(FPTYPE_ONOFF,      int64_t, ".opt.rebuild", "rebuild tree after scan","1",    1,     &optrebuild, FPFLAG_DEFAULT_INPUT)  \
-    X(FPTYPE_ONOFF,      int64_t, ".opt.condense","condense tree after scan","1",   1,     &optcondense, FPFLAG_DEFAULT_INPUT)
-#endif
-
 #include "CLIcore.h"
 #include "clustering_defs.h"
 #include "fps.h"
+#include "fps_cli_binding.h"
+#include "fps_cli_function.h"
 #include "processinfo.h"
 #include "ImageStreamIO.h"
 
@@ -218,51 +203,82 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-static CLICMDARGDEF farg[] = {
-#define X_CLI_DEF(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) { fps_type, key, descr, def_str, cli_flags, (void **) ptr_addr, NULL },
-    CUBECLUSTER_PARAMS(X_CLI_DEF)
-#undef X_CLI_DEF
+/* =========================================
+ * V2 FPS-CLI integration
+ * ========================================= */
+
+static FPS_APP_INFO app_info = {
+    .fps_name    = "cubeclust",
+    .cmdkey      = "cubeclust",
+    .description = "compute cube cluster",
 };
-static CLICMDDATA CLIcmddata = { "cubeclust", "compute cube cluster", CLICMD_FIELDS_DEFAULTS };
-static errno_t help_function() { if (data.fpsptr && data.fpsptr->md) printf("%s\n", data.fpsptr->md->helptext); return RETURN_SUCCESS; }
-static errno_t compute_function() { 
-    IMGID img = imgid_make_from_name(farg_inimname); 
-    if (resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE) != 0) return RETURN_FAILURE;
-    imcube_makecluster_core(img.im, farg_outdname); 
-    return RETURN_SUCCESS; 
-}
-INSERT_STD_FPSCLIfunctions
-errno_t CLIADDCMD_clustering__imcube_mkcluster() { INSERT_STD_CLIREGISTERFUNC return RETURN_SUCCESS; }
-#endif
+
+static FPS_CLI_BINDING bindings[] = {
+    CUBECLUSTER_PARAMS(FPS_X_BINDING)
+};
+static int nb_bindings =
+    sizeof(bindings) / sizeof(bindings[0]);
+
+static CLICMDARGDEF farg[] = {
+    CUBECLUSTER_PARAMS(FPS_X_FARG)
+};
 
 #ifdef FPS_STANDALONE
-int FPSINIT_cubeclust(const char *fps_name, const char *keywords, const char *description) {
-    FUNCTION_PARAMETER_STRUCT fps; FPS_INIT_STD_PREAMBLE(fps, fps_name, keywords, description, CUBECLUSTER_HELPTEXT); FPS_INIT_PROCINFO_DEFAULTS(fps, "im1", 1);
-#define X_FPS_INIT(fps_type, c_type, key, descr, def_str, def_val, ptr_addr, cli_flags) \
-{ \
-    c_type val = def_val; \
-    void *vptr = &val; \
-    if (FPTYPE_IS_STRING(fps_type)) { \
-        vptr = *(void**)&val; \
-    } \
-    function_parameter_add_entry(&fps, key, descr, fps_type, cli_flags, vptr, NULL); \
+static CLICMDDATA CLIcmddata;
+__attribute__((constructor))
+static void init_CLIcmddata(void)
+{
+    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
+    strncpy(CLIcmddata.key, app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            app_info.description,
+            sizeof(CLIcmddata.description) - 1);
 }
-    CUBECLUSTER_PARAMS(X_FPS_INIT)
-#undef X_FPS_INIT
-    fps_add_processinfo_entries(&fps);
-    function_parameter_FPCONFexit(&fps);
-    return 0;
+#else
+static CLICMDDATA CLIcmddata = {
+    "cubeclust",
+    "compute cube cluster",
+    CLICMD_FIELDS_DEFAULTS
+};
+#endif
+
+static errno_t compute_function()
+{
+    IMGID img =
+        imgid_make_from_name(farg_inimname);
+    if (resolveIMGID(&img, ERRMODE_WARN,
+            data.image,
+            data.NB_MAX_IMAGE) != 0)
+    {
+        return RETURN_FAILURE;
+    }
+    imcube_makecluster_core(
+        img.im, farg_outdname);
+    return RETURN_SUCCESS;
 }
-int FPSCONF_cubeclust(const char *fps_name, int loop) { FPS_CONF_STD_BODY(fps_name, loop, { farg_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name"); farg_outdname = functionparameter_GetParamPtr_STRING(&fps, ".outdname"); threshold = functionparameter_GetParamPtr_FLOAT32(&fps, ".T"); branchB = functionparameter_GetParamPtr_UINT32(&fps, ".B"); leafposmode = functionparameter_GetParamPtr_UINT32(&fps, ".leafposmode"); NBCFmax = functionparameter_GetParamPtr_UINT32(&fps, ".NBCFmax"); optrebuild = functionparameter_GetParamPtr_INT64(&fps, ".opt.rebuild"); optcondense = functionparameter_GetParamPtr_INT64(&fps, ".opt.condense"); }, { }); return 0; }
-FPS_MAKE_STANDALONE_CONFSTOP(cubeclust) 
-FPS_MAKE_STANDALONE_RUNSTOP(cubeclust)
-int FPSRUN_cubeclust(const char *fps_name) {
-    FUNCTION_PARAMETER_STRUCT fps; FPS_RUN_STD_PREAMBLE(fps_name, fps, { farg_inimname = functionparameter_GetParamPtr_STRING(&fps, ".in_name"); farg_outdname = functionparameter_GetParamPtr_STRING(&fps, ".outdname"); threshold = functionparameter_GetParamPtr_FLOAT32(&fps, ".T"); branchB = functionparameter_GetParamPtr_UINT32(&fps, ".B"); leafposmode = functionparameter_GetParamPtr_UINT32(&fps, ".leafposmode"); NBCFmax = functionparameter_GetParamPtr_UINT32(&fps, ".NBCFmax"); optrebuild = functionparameter_GetParamPtr_INT64(&fps, ".opt.rebuild"); optcondense = functionparameter_GetParamPtr_INT64(&fps, ".opt.condense"); });
-    IMAGE img; if (ImageStreamIO_read_sharedmem_image_toIMAGE(farg_inimname, &img) != 0) return 1;
-    imcube_makecluster_core(&img, farg_outdname);
-    function_parameter_struct_disconnect(&fps);
-    return 0;
+
+static errno_t CLIfunction()
+{
+    return safe_fps_generic_CLIfunction(
+        &app_info, farg, &CLIcmddata,
+        bindings, nb_bindings,
+        compute_function);
 }
-FPS_MAIN_STANDALONE("cubeclust", cubeclust, CUBECLUSTER_HELPTEXT, CUBECLUSTER_PARAMS)
+
+errno_t
+CLIADDCMD_clustering__imcube_mkcluster()
+{
+    safe_fps_fill_farg_examples(
+        farg, bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    app_info,
+    CUBECLUSTER_PARAMS,
+    compute_function
+)
 #endif

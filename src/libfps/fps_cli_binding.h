@@ -21,7 +21,7 @@
  * Every FPS module defines one of these describing the command
  * name, FPS base name, and human-readable description.
  */
-typedef struct
+typedef struct FPS_APP_INFO_
 {
     const char *fps_name;
     const char *cmdkey;
@@ -42,7 +42,7 @@ typedef struct
  * @param fpflag      Standard FPS flags
  * @param descr       Human-readable description
  */
-typedef struct
+typedef struct FPS_CLI_BINDING_
 {
     const char *fpskeyword;
     void       *ptr;

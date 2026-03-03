@@ -522,6 +522,18 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     data.progStatus = 1;
     printf("\n");
 
+    // Pre-load milkfpsCLI so its constructor registers
+    // fps_generic_CLIfunction_ptr and fps_fill_farg_examples_ptr
+    // before any V2 module commands are used.
+    {
+        char fpscli_libname[STRINGMAXLEN_MODULE_SOFILENAME];
+        snprintf(fpscli_libname,
+                 STRINGMAXLEN_MODULE_SOFILENAME,
+                 "%s/lib/libmilkfpsCLI.so",
+                 data.installdir);
+        load_sharedobj(fpscli_libname);
+    }
+
     // uncomment following two lines to auto-load all modules
     //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
     load_module_shared_local();

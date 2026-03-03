@@ -1,4 +1,5 @@
 #include "fps.h"
+#include "fps_cli_binding.h"
 #include "processinfo.h"
 
 errno_t __attribute__((cold)) cubecollapse_addCLIcmd();
@@ -11,8 +12,22 @@ imageID cube_collapse(const char *__restrict ID_in_name,
 /* ================================================================== */
 
 #define CUBECOLLAPSE_PARAMS(X) \
-    X(FPTYPE_STREAMNAME, char*, ".in_name",  "input cube image",  "im1", "im1", &cubecollapse_inimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT)) \
-    X(FPTYPE_STREAMNAME, char*, ".out_name", "output 2D image",   "out1", "out1", &cubecollapse_outimname, (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT))
+    X( \
+        ".in_name", \
+        &cubecollapse_inimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "input cube image" \
+    ) \
+    X( \
+        ".out_name", \
+        &cubecollapse_outimname, \
+        FPTYPE_STREAMNAME, \
+        1, \
+        FPFLAG_DEFAULT_INPUT, \
+        "output 2D image" \
+    )
 
 extern char *cubecollapse_inimname;
 extern char *cubecollapse_outimname;
