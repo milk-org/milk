@@ -53,6 +53,8 @@ set(SOURCEFILES
     fps_read_fpsCMD_fifo.c
     fps_userinputsetparamvalue.c
     fps_loadmemstream_lite.c
+    fps_local_store.c
+    fps_cli_init.c
 )
 
 # Core library (no TUI/ncurses dependency)
@@ -67,6 +69,28 @@ target_include_directories(${LIBNAME} PUBLIC
 )
 
 target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo)
+
+# ==========================================
+# milkfpsCLI — CLI-dependent FPS framework
+# Links to both milkfps and CLIcore.
+# ==========================================
+
+set(SOURCEFILES_CLI
+    fps_cli_sync.c
+    fps_cli_function.c
+    fps_cli_query.c
+    fps_lifecycle.c
+)
+
+add_library(milkfpsCLI SHARED ${SOURCEFILES_CLI})
+target_include_directories(milkfpsCLI PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME} CLIcore)
+install(TARGETS milkfpsCLI EXPORT milkTargets DESTINATION lib)
 
 
 if(USE_NCURSES)
