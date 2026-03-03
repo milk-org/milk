@@ -80,8 +80,8 @@ int function_parameter_print_info(
     if (kw_width > 60) kw_width = 60;
     if (val_width > 60) val_width = 60;
 
-    printf("%4s %-*s %12s %*s %s\n", "CLI", kw_width, "Keyword", "Type", val_width, "Value", "Description");
-    for (int i=0; i<4 + 1 + kw_width + 1 + 12 + 1 + val_width + 1 + 30; i++) printf("-");
+    printf("%4s %-*s %12s %*s %8s %s\n", "CLI", kw_width, "Keyword", "Type", val_width, "Value", "Count", "Description");
+    for (int i=0; i<4 + 1 + kw_width + 1 + 12 + 1 + val_width + 1 + 8 + 1 + 30; i++) printf("-");
     printf("\n");
 
     for (int pindex = 0; pindex < fps->md->NBparamMAX; pindex++) {
@@ -140,7 +140,7 @@ int function_parameter_print_info(
                 display_keyword += prefix_len + 1;
             }
 
-            printf("%4s %s%-*s%s %12s %*s %s\n",
+            printf("%4s %s%-*s%s %12s %*s %8lu %s\n",
                    cli_idx_str,
                    color_start,
                    kw_width,
@@ -149,6 +149,7 @@ int function_parameter_print_info(
                    type_str,
                    val_width,
                    valstring,
+                   fps->parray[pindex].value_cnt,
                    fps->parray[pindex].description);
 
             if (show_info && fps->parray[pindex].type == FPTYPE_STREAMNAME) {
