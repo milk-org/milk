@@ -154,6 +154,19 @@ target_link_libraries(milk-fps-info PUBLIC
 )
 
 install(TARGETS milk-fps-info DESTINATION bin)
+
+add_executable(milk-fps-rm milk-fps-rm.c)
+target_link_libraries(milk-fps-rm PUBLIC 
+    milkfps
+    milkprocessinfo 
+    ImageStreamIO
+    CLIcore
+    ${NCURSES_LIBRARIES}
+    pthread
+    m
+)
+
+install(TARGETS milk-fps-rm DESTINATION bin)
 endif()
 
 # ==========================================

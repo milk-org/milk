@@ -1,4 +1,4 @@
-set(LIBNAME "milkmoduleexample")
+set(LIBNAME "milk_module_example")
 
 # list source files (.c) other than modulename.c
 set(SOURCEFILES
