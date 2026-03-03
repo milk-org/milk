@@ -986,19 +986,16 @@ static void print_fps_query_info(void)
 static errno_t CLIfunction(void)
 {
     FUNCTION_PARAMETER_STRUCT fps;
-    char fpsname_with_session[200];
 
-    if (data.processname[0] != '\0') {
-        snprintf(fpsname_with_session,
-                 sizeof(fpsname_with_session),
-                 "%s.%s",
-                 FPS_app_info.fps_name,
-                 data.processname);
-    } else {
-        strncpy(fpsname_with_session,
-                FPS_app_info.fps_name,
-                sizeof(fpsname_with_session) - 1);
-    }
+    /*
+     * Default FPS is local (underscore prefix).
+     * User can override with :fpsname syntax.
+     */
+    char fpsname_with_session[200];
+    snprintf(fpsname_with_session,
+             sizeof(fpsname_with_session),
+             "_%s",
+             FPS_app_info.fps_name);
 
     /* Support standard FPS tags and cmdkey:fpsname:action */
     function_parameter_getFPSargs_from_CLIfunc(
