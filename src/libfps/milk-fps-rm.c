@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <signal.h>
 
 #include "fps.h"
 #include "fps_FPSremove.h"
@@ -52,6 +53,30 @@ int main(int argc, char *argv[])
 
     if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
         fprintf(stderr, "Error: cannot connect to FPS '%s'. It may not exist.\n", fpsname);
+        return 1;
+    }
+
+
+    // Safety check: ensure no active processes are using this FPS
+    int running = 0;
+    if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) {
+        if (kill(fps.md->confpid, 0) == 0) {
+            fprintf(stderr, "Error: Configuration process (PID %d) is still running for FPS '%s'.\n", 
+                    (int)fps.md->confpid, fpsname);
+            running = 1;
+        }
+    }
+    if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) {
+        if (kill(fps.md->runpid, 0) == 0) {
+            fprintf(stderr, "Error: Run process (PID %d) is still running for FPS '%s'.\n", 
+                    (int)fps.md->runpid, fpsname);
+            running = 1;
+        }
+    }
+
+    if (running) {
+        fprintf(stderr, "Abort: Please stop these processes before removing the FPS.\n");
+        function_parameter_struct_disconnect(&fps);
         return 1;
     }
 
