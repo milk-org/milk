@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
+#include <signal.h>
 
 #include "fps.h"
 #include "fps_globals.h"
@@ -79,25 +80,51 @@ int main(int argc, char *argv[])
 
     if (NBfps > 0) {
         if (show_exec) {
-            printf("%-20s %-10s %-30s %s\n", "FPS Name", "Status", "Exec Path", "Description");
-            printf("--------------------------------------------------------------------------------------------\n");
+            printf("%-20s %-25s %-30s %s\n", "FPS Name", "Status", "Exec Path", "Description");
+            printf("--------------------------------------------------------------------------------------------------\n");
         } else {
-            printf("%-30s %-10s %s\n", "FPS Name", "Status", "Description");
-            printf("------------------------------------------------------------\n");
+            printf("%-30s %-25s %s\n", "FPS Name", "Status", "Description");
+            printf("-------------------------------------------------------------------------------------\n");
         }
 
         for(int i = 0; i < NBfps; i++)
         {
-            char status_str[32] = "UNKNOWN";
-            if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
-                strcpy(status_str, "CONF");
-            else if(fpsarray[i].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
-                strcpy(status_str, "RUN");
+            char status_str[128] = "";
+            char conf_pid_str[32] = "";
+            char run_pid_str[32] = "";
+            char tmux_str[32] = "";
+
+            // Check CONF process
+            pid_t confpid = fpsarray[i].md->confpid;
+            if (confpid > 0 && kill(confpid, 0) == 0) {
+                snprintf(conf_pid_str, 32, "%sC:%d%s", COLORCOMMAND, (int)confpid, COLORRESET);
+            } else {
+                snprintf(conf_pid_str, 32, "C:%d", (int)confpid);
+            }
+
+            // Check RUN process
+            pid_t runpid = fpsarray[i].md->runpid;
+            if (runpid > 0 && kill(runpid, 0) == 0) {
+                snprintf(run_pid_str, 32, "%sR:%d%s", COLORCOMMAND, (int)runpid, COLORRESET);
+            } else {
+                snprintf(run_pid_str, 32, "R:%d", (int)runpid);
+            }
+
+            // Check tmux session
+            char tmux_cmd[256];
+            snprintf(tmux_cmd, sizeof(tmux_cmd), "tmux has-session -t %s 2> /dev/null", fpsarray[i].md->name);
+            if (system(tmux_cmd) == 0) {
+                snprintf(tmux_str, 32, "[%stmu%s]", COLORCOMMAND, COLORRESET);
+            } else {
+                snprintf(tmux_str, 32, "[---]");
+            }
+
+            snprintf(status_str, 128, "%s %s %s", conf_pid_str, run_pid_str, tmux_str);
             
             if (show_exec) {
-                printf("%-20s %-10s %-30s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->execfullpath, fpsarray[i].md->description);
+                printf("%-20s %-25s %-30s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->execfullpath, fpsarray[i].md->description);
             } else {
-                printf("%-30s %-10s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->description);
+                printf("%-30s %-25s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->description);
             }
             
             // Disconnect to clean up

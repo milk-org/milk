@@ -84,6 +84,22 @@ int main()
     printf("  Querry named FPS            : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":?\n" C_RST);
     printf("  Run cmd, default FPS        : milk > " C_CMD "modex.fpsclitest 3 cam01\n" C_RST);
     printf("  Run cmd, named FPS          : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD " 3 cam01\n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "            FPS Utilities                           \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf("  " C_CMD "milk-fps-list" C_RST "   : List all active FPS\n");
+    printf("  " C_CMD "milk-fps-info" C_RST "   : Display FPS information and parameters\n");
+    printf("  " C_CMD "milk-fps-set" C_RST "    : Set FPS parameter value\n");
+    printf("  " C_CMD "milk-fps-rm" C_RST "     : Remove FPS shared memory segment\n");
+    printf("  " C_CMD "milk-fps-track" C_RST "  : Monitor FPS parameter changes in real-time\n");
+    printf("  " C_CMD "milk-fpsCTRL" C_RST "   : Interactive TUI for FPS management\n");
+    printf("\n");
+    printf("  Execution Control:\n");
+    printf("    " C_CMD "milk-fps-confstart" C_RST "/" C_CMD "stop" C_RST " : Control configuration loop\n");
+    printf("    " C_CMD "milk-fps-runstart" C_RST "/" C_CMD "stop" C_RST "  : Control main execution loop\n");
+    printf("\n");
+    printf(C_NOTE "Run any of these programs with -h for more help." C_RST "\n");
     printf("\n");
     return 0;
 }
