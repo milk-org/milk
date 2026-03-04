@@ -2,67 +2,112 @@
  * @file    stream_ave.c
  * @brief   Average stream of images
  *
- * V2 FPS framework migration.
+ * Uses FPS V2 framework.
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <math.h>
 
 #include "CLIcore.h"
-#include "stream_ave.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
-
-char     *streamave_inimname    = NULL;
-char     *streamave_outimave    = NULL;
-uint32_t *streamave_outimshared = NULL;
-char     *streamave_outimrms    = NULL;
-uint64_t *streamave_NBcoadd     = NULL;
-uint64_t *streamave_cntindex    = NULL;
-uint64_t *streamave_compave     = NULL;
-uint64_t *streamave_comprms     = NULL;
-
-static uint64_t
-    processinfo_change_cnt_local = 0;
 
 
-/* =========================================
- * Compute kernel
- * ========================================= */
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-void stream_ave_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO               *processinfo,
-    IMAGE                     *imgin,
-    IMAGE                     *imgoutave,
-    IMAGE                     *imgoutrms,
-    double                    *imdataarray,
-    double                    *imdataarrayPOW
-)
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streamave",
+    .cmdkey      = "streamave",
+    .description =
+        "average stream of images"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *streamave_inimname    = NULL;
+static char     *streamave_outimave    = NULL;
+static uint32_t *streamave_outimshared = NULL;
+static char     *streamave_outimrms    = NULL;
+static uint64_t *streamave_NBcoadd     = NULL;
+static uint64_t *streamave_cntindex    = NULL;
+static uint64_t *streamave_compave     = NULL;
+static uint64_t *streamave_comprms     = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &streamave_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".outave_name", &streamave_outimave, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output average image") \
+    X(".out_shared", &streamave_outimshared, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output shared flag") \
+    X(".outrms_name", &streamave_outimrms, \
+      FPTYPE_STREAMNAME, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output RMS image") \
+    X(".NBcoadd", &streamave_NBcoadd, \
+      FPTYPE_UINT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of coadded") \
+    X(".cntindex", &streamave_cntindex, \
+      FPTYPE_UINT64, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "counter index") \
+    X(".comp.ave", &streamave_compave, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "compute average") \
+    X(".comp.rms", &streamave_comprms, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "compute rms")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+/**
+ * @brief Accumulate pixel values and compute
+ *        average/RMS when coadd count reached.
+ *
+ * Uses heap-allocated double buffers for
+ * accumulation to avoid overflow.
+ */
+static errno_t fpsexec(
+    IMAGE  *imgin,
+    IMAGE  *imgoutave,
+    IMAGE  *imgoutrms,
+    double *imdataarray,
+    double *imdataarrayPOW)
 {
-    if (fps &&
-        fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
-
     uint64_t xysize =
         imgin->md[0].size[0]
         * imgin->md[0].size[1];
 
     if (*streamave_cntindex == 0) {
-        for (uint64_t i = 0; i < xysize; i++) {
+        for (uint64_t i = 0;
+             i < xysize; i++)
+        {
             double v = 0;
-            switch (imgin->md[0].datatype) {
+            switch (imgin->md[0].datatype)
+            {
             case _DATATYPE_FLOAT:
                 v = imgin->array.F[i];
                 break;
@@ -72,14 +117,17 @@ void stream_ave_compute(
             }
             imdataarray[i] = v;
             if (*streamave_comprms) {
-                imdataarrayPOW[i] = v * v;
+                imdataarrayPOW[i] =
+                    v * v;
             }
         }
-    }
-    else {
-        for (uint64_t i = 0; i < xysize; i++) {
+    } else {
+        for (uint64_t i = 0;
+             i < xysize; i++)
+        {
             double v = 0;
-            switch (imgin->md[0].datatype) {
+            switch (imgin->md[0].datatype)
+            {
             case _DATATYPE_FLOAT:
                 v = imgin->array.F[i];
                 break;
@@ -89,120 +137,157 @@ void stream_ave_compute(
             }
             imdataarray[i] += v;
             if (*streamave_comprms) {
-                imdataarrayPOW[i] += v * v;
+                imdataarrayPOW[i] +=
+                    v * v;
             }
         }
     }
 
     (*streamave_cntindex)++;
 
-    if (*streamave_cntindex >= *streamave_NBcoadd)
+    if (*streamave_cntindex
+        >= *streamave_NBcoadd)
     {
-        if (*streamave_compave && imgoutave) {
-            for (uint64_t i = 0; i < xysize; i++)
+        if (*streamave_compave
+            && imgoutave)
+        {
+            for (uint64_t i = 0;
+                 i < xysize; i++)
             {
                 imgoutave->array.F[i] =
                     imdataarray[i]
                     / (*streamave_cntindex);
             }
             processinfo_update_output_stream(
-                processinfo, imgoutave, NULL);
+                NULL, imgoutave, NULL);
         }
-        if (*streamave_comprms && imgoutrms) {
-            for (uint64_t i = 0; i < xysize; i++)
+        if (*streamave_comprms
+            && imgoutrms)
+        {
+            for (uint64_t i = 0;
+                 i < xysize; i++)
             {
                 imgoutrms->array.F[i] =
                     sqrt(imdataarrayPOW[i])
                     / (*streamave_cntindex);
             }
             processinfo_update_output_stream(
-                processinfo, imgoutrms, NULL);
+                NULL, imgoutrms, NULL);
         }
         *streamave_cntindex = 0;
+    }
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
 }
 
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
-
-static FPS_APP_INFO app_info = {
-    .fps_name    = "streamave",
-    .cmdkey      = "streamave",
-    .description = "average stream of images",
-};
-
-static FPS_CLI_BINDING bindings[] = {
-    STREAMAVE_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
-
-static CLICMDARGDEF farg[] = {
-    STREAMAVE_PARAMS(FPS_X_FARG)
-};
-
-#ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
-#else
-static CLICMDDATA CLIcmddata = {
-    "streamave",
-    "average stream of images",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
     IMGID in =
-        imgid_make_from_name(streamave_inimname);
-    resolveIMGID(&in, ERRMODE_ABORT,
-                 data.image, data.NB_MAX_IMAGE);
+        imgid_make_from_name(
+            streamave_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+
     uint64_t xys =
-        in.md[0].size[0] * in.md[0].size[1];
-    double *d1 = malloc(sizeof(double) * xys);
-    double *d2 = malloc(sizeof(double) * xys);
+        in.md[0].size[0]
+        * in.md[0].size[1];
+    double *d1 =
+        (double *) malloc(
+            sizeof(double) * xys);
+    double *d2 =
+        (double *) malloc(
+            sizeof(double) * xys);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    stream_ave_compute(
-        data.fpsptr, processinfo,
-        in.im, NULL, NULL, d1, d2);
+
+    fpsexec(in.im, NULL, NULL, d1, d2);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     free(d1);
     free(d2);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t CLIADDCMD_streamaverage()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    STREAMAVE_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

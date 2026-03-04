@@ -7,132 +7,138 @@
  * Uses FPS V2 framework.
  */
 
-#include <stdio.h>
-#include <string.h>
-
 #include "CLIcore.h"
-#include "image_set_row.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
 
 
-/* ============================================ */
-/* 1. FPS identity and local variables          */
-/* ============================================ */
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-char     *setrow_inimname = NULL;
-float    *setrow_pixval   = NULL;
-uint32_t *setrow_rowindex = NULL;
-
-static FPS_APP_INFO app_info = {
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "setrow",
     .cmdkey      = "setrow",
     .description = "set image row pixel values"
 };
 
-static uint64_t processinfo_change_cnt_local;
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *setrow_inimname = NULL;
+static float    *setrow_pixval   = NULL;
+static uint32_t *setrow_rowindex = NULL;
 
 
-/* ============================================ */
-/* 2. Core computation                          */
-/* ============================================ */
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ *
+ * Syntax: X(keyword, ptr, type, is_primary, flag, descr)
+ * ============================================================= */
 
-errno_t image_set_row(
-    IMGID    inimg,
-    double   value,
-    uint32_t rowindex
-)
+#define FPS_PARAMS(X) \
+    X(".imname", &setrow_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".pixval", &setrow_pixval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "pixel value") \
+    X(".row", &setrow_rowindex, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "row index")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+/**
+ * @brief Set all pixels in a row to a value.
+ *
+ * Supports FLOAT and DOUBLE datatypes.
+ */
+static errno_t fpsexec(IMAGE *inimg)
 {
-    if (rowindex >= inimg.md->size[1]) {
+    if (!setrow_pixval || !setrow_rowindex) {
         return RETURN_FAILURE;
     }
-    uint32_t xsize = inimg.md->size[0];
-    switch (inimg.md->datatype) {
+    float    val = *setrow_pixval;
+    uint32_t row = *setrow_rowindex;
+    uint32_t xsize = inimg->md[0].size[0];
+
+    if (row >= inimg->md[0].size[1]) {
+        return RETURN_FAILURE;
+    }
+    switch (inimg->md[0].datatype) {
     case _DATATYPE_FLOAT:
         for (uint32_t i = 0; i < xsize; i++) {
-            inimg.im->array.F[
-                rowindex * xsize + i] =
-                (float) value;
+            inimg->array.F[
+                row * xsize + i] =
+                val;
         }
         break;
     case _DATATYPE_DOUBLE:
         for (uint32_t i = 0; i < xsize; i++) {
-            inimg.im->array.D[
-                rowindex * xsize + i] = value;
+            inimg->array.D[
+                row * xsize + i] =
+                (double) val;
         }
         break;
     }
     return RETURN_SUCCESS;
 }
 
-void image_set_row_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO               *processinfo,
-    IMAGE                     *inimg
-)
-{
-    if (fps && fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
-    if (!setrow_pixval || !setrow_rowindex) {
-        return;
-    }
-    IMGID id;
-    id.im = inimg;
-    id.md = &inimg->md[0];
-    image_set_row(id, *setrow_pixval,
-                  *setrow_rowindex);
-}
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-/* ============================================ */
-/* 3. FPS bindings, farg, CLIcmddata            */
-/* ============================================ */
-
-static FPS_CLI_BINDING bindings[] = {
-    SETROW_PARAMS(FPS_X_BINDING)
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    SETROW_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
-    "setrow",
-    "set image row pixel values",
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
+
 static CMDSETTINGS default_cmdsettings = {0};
+
 static __attribute__((constructor))
-void init_cmdsettings_setrow(void)
+void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
     }
 }
-#else
-static CLICMDDATA CLIcmddata = {
-    "setrow",
-    "set image row pixel values",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
 
 
-/* ============================================ */
-/* 4. compute_function wrapper                  */
-/* ============================================ */
+/* ================================================================
+ * 6.  COMPUTE WRAPPER (processinfo loop support)
+ * ============================================================= */
 
 static errno_t compute_function()
 {
@@ -144,8 +150,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_set_row_compute(
-        data.fpsptr, processinfo, in.im);
+    fpsexec(in.im);
     processinfo_update_output_stream(
         processinfo, in.im, NULL);
 
@@ -155,37 +160,36 @@ static errno_t compute_function()
 }
 
 
-/* ============================================ */
-/* 5. CLI integration                           */
-/* ============================================ */
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction()
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_arith__imset_row()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
 
-/* ============================================ */
-/* 6. Standalone executable                     */
-/* ============================================ */
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    SETROW_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

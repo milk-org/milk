@@ -1,58 +1,93 @@
+/**
+ * @file    image_crop2D.c
+ * @brief   Crop a 2D rectangular region from stream
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
-#include "image_crop2D.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
 
-char     *cropinsname = NULL;
-char     *outsname    = NULL;
-uint32_t *cropxstart  = NULL;
-uint32_t *cropxsize   = NULL;
-uint32_t *cropystart  = NULL;
-uint32_t *cropysize   = NULL;
 
-static FPS_APP_INFO app_info = {
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "crop2D",
     .cmdkey      = "crop2D",
     .description = "crop 2D image"
 };
 
-static uint64_t processinfo_change_cnt_local;
 
-void image_crop2D_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO *processinfo,
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *cropinsname = NULL;
+static char     *outsname    = NULL;
+static uint32_t *cropxstart  = NULL;
+static uint32_t *cropxsize   = NULL;
+static uint32_t *cropystart  = NULL;
+static uint32_t *cropysize   = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".insname", &cropinsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Input stream name") \
+    X(".outsname", &outsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Output stream name") \
+    X(".cropxstart", &cropxstart, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop x coord start") \
+    X(".cropxsize", &cropxsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop x coord size") \
+    X(".cropystart", &cropystart, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop y coord start") \
+    X(".cropysize", &cropysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop y coord size")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+static errno_t fpsexec(
     IMAGE *input_image,
-    IMAGE *output_image
-)
+    IMAGE *output_image)
 {
-    if (fps && fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
     if (!cropxstart || !cropxsize
         || !cropystart || !cropysize)
     {
-        return;
+        return RETURN_FAILURE;
     }
     uint32_t xs = *cropxstart;
     uint32_t xw = *cropxsize;
     uint32_t ys = *cropystart;
     uint32_t yw = *cropysize;
-    uint32_t iw =
-        input_image->md[0].size[0];
-    uint32_t ih =
-        input_image->md[0].size[1];
+    uint32_t iw = input_image->md[0].size[0];
+    uint32_t ih = input_image->md[0].size[1];
     size_t ts = ImageStreamIO_typesize(
         input_image->md[0].datatype);
+
     for (uint32_t j = 0; j < yw; j++) {
         uint32_t oj = j + ys;
         if (oj >= ih) {
@@ -67,9 +102,14 @@ void image_crop2D_compute(
             + (oj * iw + xs) * ts,
             xw * ts);
     }
+    return RETURN_SUCCESS;
 }
 
-errno_t image_crop2D_validate()
+/**
+ * @brief Validate crop parameters against
+ *        input stream dimensions.
+ */
+static errno_t crop2D_validate()
 {
     if (!cropinsname || !cropxstart
         || !cropxsize || !cropystart
@@ -87,22 +127,16 @@ errno_t image_crop2D_validate()
             if (*cropxstart >= w) {
                 *cropxstart = 0;
             }
-            if (*cropxstart + *cropxsize
-                > w)
-            {
-                *cropxsize =
-                    w - *cropxstart;
+            if (*cropxstart + *cropxsize > w) {
+                *cropxsize = w - *cropxstart;
             }
         }
         if (*cropystart + *cropysize > h) {
             if (*cropystart >= h) {
                 *cropystart = 0;
             }
-            if (*cropystart + *cropysize
-                > h)
-            {
-                *cropysize =
-                    h - *cropystart;
+            if (*cropystart + *cropysize > h) {
+                *cropysize = h - *cropystart;
             }
         }
         ImageStreamIO_closeIm(&im);
@@ -111,36 +145,52 @@ errno_t image_crop2D_validate()
 }
 
 
-static FPS_CLI_BINDING bindings[] = {
-    CROP2D_PARAMS(FPS_X_BINDING)
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    CROP2D_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
-    "crop2D", "crop 2D image",
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
+
 static CMDSETTINGS default_cmdsettings = {0};
+
 static __attribute__((constructor))
-void init_cmdsettings_crop2D(void)
+void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
     }
 }
-#else
-static CLICMDDATA CLIcmddata = {
-    "crop2D", "crop 2D image",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
@@ -152,40 +202,51 @@ static errno_t compute_function()
     IMGID iout = stream_connect_create_2D(
         outsname, *cropxsize, *cropysize,
         iin.md->datatype);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    image_crop2D_compute(
-        data.fpsptr, processinfo,
-        iin.im, iout.im);
+
+    fpsexec(iin.im, iout.im);
     processinfo_update_output_stream(
         processinfo, iout.im, iin.im);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction()
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t CLIADDCMD_COREMODE_arith__crop2D()
 {
     CLIcmddata.FPS_customCONFcheck =
-        image_crop2D_validate;
+        crop2D_validate;
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    CROP2D_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

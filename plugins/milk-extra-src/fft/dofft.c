@@ -11,16 +11,49 @@
 
 #include "wisdom.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
 #include "processinfo.h"
 #include "ImageStreamIO.h"
 
 #define FFTWOPTMODE FFTW_ESTIMATE
 
-char *dofft_inimname  = NULL;
-char *dofft_outimname = NULL;
-int  *dofft_dir       = NULL;
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "dofft",
+    .cmdkey      = "dofft",
+    .description = "perform 2D complex FFT"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *dofft_inimname  = NULL;
+static char *dofft_outimname = NULL;
+static int  *dofft_dir       = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &dofft_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input complex image") \
+    X(".out_name", &dofft_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output complex image") \
+    X(".dir", &dofft_dir, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "FFT direction")
 
 // ==========================================
 // Forward declaration(s)
@@ -83,64 +116,78 @@ errno_t fft_do2dfft_cli()
 // Register CLI command(s)
 // ==========================================
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "dofft",
-    .cmdkey      = "dofft",
-    .description = "perform 2D complex FFT",
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    DOFFT_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    DOFFT_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "dofft",
-    "perform 2D complex FFT",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
-    do2dfft(dofft_inimname, dofft_outimname);
+    do2dfft(dofft_inimname,
+            dofft_outimname);
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t dofft_addCLIcmd()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
 
     RegisterCLIcommand(
@@ -150,7 +197,8 @@ errno_t dofft_addCLIcmd()
         "perform 1D complex->complex FFT",
         "<input> <output>",
         "do1Dfft in out",
-        "int do1dfft(const char *in_name, const char *out_name)");
+        "int do1dfft(const char *in_name,"
+        " const char *out_name)");
 
     RegisterCLIcommand(
         "do1Drfft",
@@ -159,10 +207,12 @@ errno_t dofft_addCLIcmd()
         "perform 1D real->complex FFT",
         "<input> <output>",
         "do1drfft in out",
-        "int do1drfft(const char *in_name, const char *out_name)");
+        "int do1drfft(const char *in_name,"
+        " const char *out_name)");
 
     return RETURN_SUCCESS;
 }
+#endif
 
 int array_index(long size)
 {
@@ -1526,24 +1576,58 @@ imageID do2drffti(const char *in_name, const char *out_name)
     return (IDout);
 }
 
-void dofft_step(IMAGE *imgin, IMAGE *imgout, int dir)
+
+/* ================================================================
+ * 4b. Standalone-friendly FFT step
+ * ============================================================= */
+
+static void fpsexec(
+    IMAGE *imgin,
+    IMAGE *imgout,
+    int dir)
 {
-    int naxes[2] = { (int)imgin->md[0].size[1], (int)imgin->md[0].size[0] };
-    if ( imgin->md[0].datatype == _DATATYPE_COMPLEX_FLOAT ) {
-        fftwf_plan plan = fftwf_plan_dft_2d(naxes[0], naxes[1], (fftwf_complex*) imgin->array.CF, (fftwf_complex*) imgout->array.CF, dir, FFTW_ESTIMATE);
+    int naxes[2] = {
+        (int) imgin->md[0].size[1],
+        (int) imgin->md[0].size[0]
+    };
+    if (imgin->md[0].datatype
+        == _DATATYPE_COMPLEX_FLOAT)
+    {
+        fftwf_plan plan =
+            fftwf_plan_dft_2d(
+                naxes[0], naxes[1],
+                (fftwf_complex *)
+                    imgin->array.CF,
+                (fftwf_complex *)
+                    imgout->array.CF,
+                dir, FFTW_ESTIMATE);
         fftwf_execute(plan);
         fftwf_destroy_plan(plan);
-    } else if ( imgin->md[0].datatype == _DATATYPE_COMPLEX_DOUBLE ) {
-        fftw_plan plan = fftw_plan_dft_2d(naxes[0], naxes[1], (fftw_complex*) imgin->array.CD, (fftw_complex*) imgout->array.CD, dir, FFTW_ESTIMATE);
+    }
+    else if (imgin->md[0].datatype
+             == _DATATYPE_COMPLEX_DOUBLE)
+    {
+        fftw_plan plan =
+            fftw_plan_dft_2d(
+                naxes[0], naxes[1],
+                (fftw_complex *)
+                    imgin->array.CD,
+                (fftw_complex *)
+                    imgout->array.CD,
+                dir, FFTW_ESTIMATE);
         fftw_execute(plan);
         fftw_destroy_plan(plan);
     }
 }
 
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    DOFFT_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

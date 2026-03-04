@@ -14,8 +14,6 @@
 #include "CLIcore.h"
 #include "savefits.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
 #include "processinfo.h"
 #include "ImageStreamIO.h"
 #include "COREMOD_iofits_common.h"
@@ -26,13 +24,46 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "savefits",
+    .cmdkey      = "saveFITS",
+    .description = "save image as FITS"
+};
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &savefits_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_fname", &savefits_outfname, \
+      FPTYPE_FILENAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output FITS file") \
+    X(".bitpix", &savefits_outbitpix, \
+      FPTYPE_INT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "FITS bitpix") \
+    X(".in_header", &savefits_inheader, \
+      FPTYPE_FILENAME, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "header import file")
+
 char *savefits_inimname  = NULL;
 char *savefits_outfname  = NULL;
 int  *savefits_outbitpix = NULL;
 char *savefits_inheader  = NULL;
 
-static uint64_t
-    processinfo_change_cnt_local = 0;
+
 
 
 /* =========================================
@@ -192,112 +223,126 @@ errno_t save_fits(
 #endif
 
 
-/* =========================================
- * FPS compute kernel
- * ========================================= */
+/* ================================================================
+ * 4.  FPS COMPUTE KERNEL
+ * ============================================================= */
 
-void savefits_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO               *processinfo,
-    IMAGE                     *imgin
-)
+static errno_t fpsexec(IMAGE *imgin)
 {
-    if (fps &&
-        fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
+    if (!savefits_outfname
+        || !savefits_outbitpix)
     {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
-    if (!savefits_outfname ||
-        !savefits_outbitpix)
-    {
-        return;
+        return RETURN_FAILURE;
     }
     IMGID id;
     id.im = imgin;
     id.md = &imgin->md[0];
     saveFITS_opt_trunc_IMGID(
         &id, -1, savefits_outfname,
-        *savefits_outbitpix, savefits_inheader,
+        *savefits_outbitpix,
+        savefits_inheader,
         NULL, 0, "");
+    return RETURN_SUCCESS;
 }
 
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "savefits",
-    .cmdkey      = "saveFITS",
-    .description = "save image as FITS",
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    SAVEFITS_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings)
+    / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    SAVEFITS_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "saveFITS",
-    "save image as FITS",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
     IMGID in =
-        imgid_make_from_name(savefits_inimname);
-    resolveIMGID(&in, ERRMODE_ABORT,
-                 data.image, data.NB_MAX_IMAGE);
+        imgid_make_from_name(
+            savefits_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    savefits_compute(data.fpsptr,
-                     processinfo, in.im);
+
+    fpsexec(in.im);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t CLIADDCMD_COREMOD_iofits__saveFITS()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    SAVEFITS_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif
