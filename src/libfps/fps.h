@@ -799,40 +799,135 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #define GET_1ST_ARG_HELPER(arg1, ...) arg1
 #define GET_1ST_ARG(args) GET_1ST_ARG_HELPER args
 
-#define X_HELP_PRINT(fps_type, c_type, key, descr, def_str, ptr_name, get_func, flags, ...) \
+#define X_HELP_MEASURE(fps_type, c_type, key, \
+    descr, def_str, ptr_name, get_func, \
+    flags, ...) \
+    { \
+        int _kl = (int) strlen(key); \
+        if (_kl > col_kw_w) col_kw_w = _kl; \
+        char _ts[20] = "???"; \
+        if (fps_type == FPTYPE_FLOAT32) \
+            strcpy(_ts, "FLOAT32"); \
+        else if (fps_type == FPTYPE_UINT32) \
+            strcpy(_ts, "UINT32"); \
+        else if (fps_type == FPTYPE_INT32) \
+            strcpy(_ts, "INT32"); \
+        else if (fps_type == FPTYPE_INT64) \
+            strcpy(_ts, "INT64"); \
+        else if (fps_type == FPTYPE_UINT64) \
+            strcpy(_ts, "UINT64"); \
+        else if (fps_type == FPTYPE_FLOAT64) \
+            strcpy(_ts, "FLOAT64"); \
+        else if (fps_type == FPTYPE_ONOFF) \
+            strcpy(_ts, "ONOFF"); \
+        else if (fps_type == FPTYPE_STREAMNAME)\
+            strcpy(_ts, "STREAMNAME"); \
+        else if (fps_type == FPTYPE_FILENAME) \
+            strcpy(_ts, "FILENAME"); \
+        else if (fps_type == FPTYPE_FITSFILENAME)\
+            strcpy(_ts, "FITSFILE"); \
+        else if (fps_type == FPTYPE_EXECFILENAME)\
+            strcpy(_ts, "EXECFILE"); \
+        else if (fps_type == FPTYPE_DIRNAME) \
+            strcpy(_ts, "DIRNAME"); \
+        else if (fps_type == FPTYPE_FPSNAME) \
+            strcpy(_ts, "FPSNAME"); \
+        else if (fps_type == FPTYPE_PROCESS) \
+            strcpy(_ts, "PROCESS"); \
+        else if (fps_type == FPTYPE_STRING_NOT_STREAM)\
+            strcpy(_ts, "STRING"); \
+        else if (fps_type == FPTYPE_STRING) \
+            strcpy(_ts, "STRING"); \
+        else if (fps_type == FPTYPE_PID) \
+            strcpy(_ts, "PID"); \
+        else if (fps_type == FPTYPE_TIMESPEC) \
+            strcpy(_ts, "TIMESPEC"); \
+        int _tl = (int) strlen(_ts); \
+        if (_tl > col_tp_w) col_tp_w = _tl; \
+        int _dl = (int) strlen(def_str); \
+        if (_dl > col_df_w) col_df_w = _dl; \
+    }
+
+#define X_HELP_PRINT(fps_type, c_type, key, \
+    descr, def_str, ptr_name, get_func, \
+    flags, ...) \
     { \
         char valuestring[256]; \
-        int is_hidden = !(flags & FPFLAG_PRIMARY_CLI_INPUT); \
+        int is_hidden = \
+            !(flags & FPFLAG_PRIMARY_CLI_INPUT); \
         char type_str[20] = "???"; \
-        if (fps_type == FPTYPE_FLOAT32) strcpy(type_str, "FLOAT32"); \
-        else if (fps_type == FPTYPE_UINT32) strcpy(type_str, "UINT32"); \
-        else if (fps_type == FPTYPE_INT32) strcpy(type_str, "INT32"); \
-        else if (fps_type == FPTYPE_INT64) strcpy(type_str, "INT64"); \
-        else if (fps_type == FPTYPE_UINT64) strcpy(type_str, "UINT64"); \
-        else if (fps_type == FPTYPE_FLOAT64) strcpy(type_str, "FLOAT64"); \
-        else if (fps_type == FPTYPE_ONOFF) strcpy(type_str, "ONOFF"); \
-        else if (fps_type == FPTYPE_STREAMNAME) strcpy(type_str, "STREAMNAME"); \
-        else if (fps_type == FPTYPE_FILENAME) strcpy(type_str, "FILENAME"); \
-        else if (fps_type == FPTYPE_FITSFILENAME) strcpy(type_str, "FITSFILE"); \
-        else if (fps_type == FPTYPE_EXECFILENAME) strcpy(type_str, "EXECFILE"); \
-        else if (fps_type == FPTYPE_DIRNAME) strcpy(type_str, "DIRNAME"); \
-        else if (fps_type == FPTYPE_FPSNAME) strcpy(type_str, "FPSNAME"); \
-        else if (fps_type == FPTYPE_PROCESS) strcpy(type_str, "PROCESS"); \
-        else if (fps_type == FPTYPE_STRING_NOT_STREAM) strcpy(type_str, "STRING"); \
-        else if (fps_type == FPTYPE_STRING) strcpy(type_str, "STRING"); \
-        else if (fps_type == FPTYPE_PID) strcpy(type_str, "PID"); \
-        else if (fps_type == FPTYPE_TIMESPEC) strcpy(type_str, "TIMESPEC"); \
+        if (fps_type == FPTYPE_FLOAT32) \
+            strcpy(type_str, "FLOAT32"); \
+        else if (fps_type == FPTYPE_UINT32) \
+            strcpy(type_str, "UINT32"); \
+        else if (fps_type == FPTYPE_INT32) \
+            strcpy(type_str, "INT32"); \
+        else if (fps_type == FPTYPE_INT64) \
+            strcpy(type_str, "INT64"); \
+        else if (fps_type == FPTYPE_UINT64) \
+            strcpy(type_str, "UINT64"); \
+        else if (fps_type == FPTYPE_FLOAT64) \
+            strcpy(type_str, "FLOAT64"); \
+        else if (fps_type == FPTYPE_ONOFF) \
+            strcpy(type_str, "ONOFF"); \
+        else if (fps_type == FPTYPE_STREAMNAME)\
+            strcpy(type_str, "STREAMNAME"); \
+        else if (fps_type == FPTYPE_FILENAME) \
+            strcpy(type_str, "FILENAME"); \
+        else if (fps_type == FPTYPE_FITSFILENAME)\
+            strcpy(type_str, "FITSFILE"); \
+        else if (fps_type == FPTYPE_EXECFILENAME)\
+            strcpy(type_str, "EXECFILE"); \
+        else if (fps_type == FPTYPE_DIRNAME) \
+            strcpy(type_str, "DIRNAME"); \
+        else if (fps_type == FPTYPE_FPSNAME) \
+            strcpy(type_str, "FPSNAME"); \
+        else if (fps_type == FPTYPE_PROCESS) \
+            strcpy(type_str, "PROCESS"); \
+        else if (fps_type == FPTYPE_STRING_NOT_STREAM)\
+            strcpy(type_str, "STRING"); \
+        else if (fps_type == FPTYPE_STRING) \
+            strcpy(type_str, "STRING"); \
+        else if (fps_type == FPTYPE_PID) \
+            strcpy(type_str, "PID"); \
+        else if (fps_type == FPTYPE_TIMESPEC) \
+            strcpy(type_str, "TIMESPEC"); \
         \
         if (!is_hidden) { \
             if (show_help_color) \
-                printf("%6d   " COLORARGCLI "%-16s" COLORRESET " %-10s %-15s %s\n", CLIargcnt, key, type_str, def_str, descr); \
+                printf("%8d " COLORARGCLI \
+                       "%-*s" COLORRESET \
+                       " %-*s %-*s %s\n", \
+                       CLIargcnt, \
+                       col_kw_w, key, \
+                       col_tp_w, type_str, \
+                       col_df_w, def_str, \
+                       descr); \
             else \
-                printf("%6d   %-16s %-10s %-15s %s\n", CLIargcnt, key, type_str, def_str, descr); \
+                printf("%8d %-*s %-*s" \
+                       " %-*s %s\n", \
+                       CLIargcnt, \
+                       col_kw_w, key, \
+                       col_tp_w, type_str, \
+                       col_df_w, def_str, \
+                       descr); \
         } else { \
             if (show_help_color) \
-                printf("[hidden] " COLORARGnotCLI "%-16s" COLORRESET " %-10s %-15s %s\n", key, type_str, def_str, descr); \
+                printf("[hidden] " \
+                       COLORARGnotCLI \
+                       "%-*s" COLORRESET \
+                       " %-*s %-*s %s\n", \
+                       col_kw_w, key, \
+                       col_tp_w, type_str, \
+                       col_df_w, def_str, \
+                       descr); \
             else \
-                printf("[hidden] %-16s %-10s %-15s %s\n", key, type_str, def_str, descr); \
+                printf("[hidden] %-*s %-*s" \
+                       " %-*s %s\n", \
+                       col_kw_w, key, \
+                       col_tp_w, type_str, \
+                       col_df_w, def_str, \
+                       descr); \
         } \
         CLIargcnt++; \
     }
@@ -976,15 +1071,27 @@ int main(int argc, char *argv[]) { \
             printf("--------------\n"); \
             printf("%s\n\n", HELPTEXT); \
         } \
+        int col_kw_w = 7; /* strlen("Keyword") */ \
+        int col_tp_w = 4; /* strlen("Type")    */ \
+        int col_df_w = 7; /* strlen("Default") */ \
+        PARAMS_MACRO(X_HELP_MEASURE) \
         if (show_help_color) { \
-            printf(COLORHEADER "CLI call arguments:" COLORRESET "\n"); \
-            printf("  %-4s   %-16s %-10s %-15s %s\n", "Idx", "Keyword", "Type", "Default", "Description"); \
-            printf("  %-4s   %-16s %-10s %-15s %s\n", "---", "-------", "----", "-------", "-----------"); \
+            printf(COLORHEADER \
+                   "CLI call arguments:" \
+                   COLORRESET "\n"); \
         } else { \
             printf("CLI call arguments:\n"); \
-            printf("  %-4s   %-16s %-10s %-15s %s\n", "Idx", "Keyword", "Type", "Default", "Description"); \
-            printf("  %-4s   %-16s %-10s %-15s %s\n", "---", "-------", "----", "-------", "-----------"); \
         } \
+        printf("%8s %-*s %-*s %-*s %s\n", \
+               "Idx", col_kw_w, "Keyword", \
+               col_tp_w, "Type", \
+               col_df_w, "Default", \
+               "Description"); \
+        printf("%8s %-*s %-*s %-*s %s\n", \
+               "---", col_kw_w, "-------", \
+               col_tp_w, "----", \
+               col_df_w, "-------", \
+               "-----------"); \
         int CLIargcnt = 0; \
         (void) CLIargcnt; \
         PARAMS_MACRO(X_HELP_PRINT) \
@@ -1146,8 +1253,111 @@ int main(int argc, char *argv[]) { \
 /**
  * @brief Help-print expansion for the 6-arg binding format.
  */
-#define X_HELP_PRINT_V2(kw, ptr, type, is_primary, \
-                         flag, desc) \
+/* ---- helper: fill type_str for V2 params ---- */
+#define X_HELP_V2_FILL_TYPESTR_(type, ts) \
+    do { \
+        if (type == FPTYPE_INT32) \
+            strcpy(ts, "INT32"); \
+        else if (type == FPTYPE_UINT32) \
+            strcpy(ts, "UINT32"); \
+        else if (type == FPTYPE_INT64) \
+            strcpy(ts, "INT64"); \
+        else if (type == FPTYPE_UINT64) \
+            strcpy(ts, "UINT64"); \
+        else if (type == FPTYPE_FLOAT32) \
+            strcpy(ts, "FLOAT32"); \
+        else if (type == FPTYPE_FLOAT64) \
+            strcpy(ts, "FLOAT64"); \
+        else if (type == FPTYPE_ONOFF) \
+            strcpy(ts, "ONOFF"); \
+        else if (type == FPTYPE_STREAMNAME) \
+            strcpy(ts, "STREAMNAME"); \
+        else if (type == FPTYPE_FILENAME) \
+            strcpy(ts, "FILENAME"); \
+        else if (type == FPTYPE_FITSFILENAME) \
+            strcpy(ts, "FITSFILE"); \
+        else if (type == FPTYPE_EXECFILENAME) \
+            strcpy(ts, "EXECFILE"); \
+        else if (type == FPTYPE_DIRNAME) \
+            strcpy(ts, "DIRNAME"); \
+        else if (type == FPTYPE_FPSNAME) \
+            strcpy(ts, "FPSNAME"); \
+        else if (type == FPTYPE_PROCESS) \
+            strcpy(ts, "PROCESS"); \
+        else if (FPTYPE_IS_STRING(type)) \
+            strcpy(ts, "STRING"); \
+        else if (type == FPTYPE_PID) \
+            strcpy(ts, "PID"); \
+        else if (type == FPTYPE_TIMESPEC) \
+            strcpy(ts, "TIMESPEC"); \
+    } while (0)
+
+/* ---- helper: fill val_str for V2 params ---- */
+#define X_HELP_V2_FILL_VALSTR_(type, ptr, vs) \
+    do { \
+        if (type == FPTYPE_INT32) \
+            sprintf(vs, "%d", *(int32_t*)ptr); \
+        else if (type == FPTYPE_UINT32) \
+            sprintf(vs, "%u", *(uint32_t*)ptr); \
+        else if (type == FPTYPE_INT64) \
+            sprintf(vs, "%ld", *(int64_t*)ptr); \
+        else if (type == FPTYPE_UINT64) \
+            sprintf(vs, "%lu", *(uint64_t*)ptr); \
+        else if (type == FPTYPE_FLOAT32) \
+            sprintf(vs, "%f", *(float*)ptr); \
+        else if (type == FPTYPE_FLOAT64) \
+            sprintf(vs, "%f", *(double*)ptr); \
+        else if (type == FPTYPE_ONOFF) \
+            sprintf(vs, "%s", \
+                (*(int32_t*)ptr) \
+                    ? "ON" : "OFF"); \
+        else if (type == FPTYPE_PID) \
+            sprintf(vs, "%d", \
+                (int)*(pid_t*)ptr); \
+        else if (type == FPTYPE_TIMESPEC) \
+            sprintf(vs, "%ld.%09ld", \
+                ((struct timespec*)ptr)->tv_sec,\
+                ((struct timespec*)ptr) \
+                    ->tv_nsec); \
+        else if (FPTYPE_IS_STRING(type) || \
+                 type == FPTYPE_STREAMNAME || \
+                 type == FPTYPE_FILENAME || \
+                 type == FPTYPE_FITSFILENAME || \
+                 type == FPTYPE_EXECFILENAME || \
+                 type == FPTYPE_DIRNAME || \
+                 type == FPTYPE_FPSNAME || \
+                 type == FPTYPE_PROCESS) \
+            strncpy(vs, (char*)ptr, 63); \
+    } while (0)
+
+/**
+ * @brief Measure column widths for 6-arg binding.
+ */
+#define X_HELP_MEASURE_V2(kw, ptr, type, \
+                          is_primary, flag, desc) \
+    { \
+        const char *_kp = \
+            (kw[0] == '.') ? &kw[1] : kw; \
+        int _kl = (int) strlen(_kp); \
+        if (_kl > col_kw_w) col_kw_w = _kl; \
+        char _ts[20] = "???"; \
+        X_HELP_V2_FILL_TYPESTR_(type, _ts); \
+        int _tl = (int) strlen(_ts); \
+        if (_tl > col_tp_w) col_tp_w = _tl; \
+        char _vs[64] = ""; \
+        X_HELP_V2_FILL_VALSTR_(type, ptr, _vs);\
+        int _vl = (int) strlen(_vs); \
+        if (_vl > col_df_w) col_df_w = _vl; \
+    }
+
+/**
+ * @brief Help-print for the 6-arg binding format.
+ *
+ * Uses col_kw_w, col_tp_w, col_df_w (set by
+ * X_HELP_MEASURE_V2) for dynamic column widths.
+ */
+#define X_HELP_PRINT_V2(kw, ptr, type, \
+                         is_primary, flag, desc)\
     { \
         char cli_idx_str[8]; \
         char val_str[64] = ""; \
@@ -1159,88 +1369,26 @@ int main(int argc, char *argv[]) { \
                     CLIargcnt); \
         else \
             strcpy(cli_idx_str, " - "); \
-        if (type == FPTYPE_INT32) { \
-            strcpy(type_str, "INT32"); \
-            sprintf(val_str, "%d", \
-                    *(int32_t*)ptr); \
-        } else if (type == FPTYPE_UINT32) { \
-            strcpy(type_str, "UINT32"); \
-            sprintf(val_str, "%u", \
-                    *(uint32_t*)ptr); \
-        } else if (type == FPTYPE_INT64) { \
-            strcpy(type_str, "INT64"); \
-            sprintf(val_str, "%ld", \
-                    *(int64_t*)ptr); \
-        } else if (type == FPTYPE_UINT64) { \
-            strcpy(type_str, "UINT64"); \
-            sprintf(val_str, "%lu", \
-                    *(uint64_t*)ptr); \
-        } else if (type == FPTYPE_FLOAT32) { \
-            strcpy(type_str, "FLOAT32"); \
-            sprintf(val_str, "%f", \
-                    *(float*)ptr); \
-        } else if (type == FPTYPE_FLOAT64) { \
-            strcpy(type_str, "FLOAT64"); \
-            sprintf(val_str, "%f", \
-                    *(double*)ptr); \
-        } else if (type == FPTYPE_ONOFF) { \
-            strcpy(type_str, "ONOFF"); \
-            sprintf(val_str, "%s", \
-                    (*(int32_t*)ptr) \
-                    ? "ON" : "OFF"); \
-        } else if (type == FPTYPE_STREAMNAME) { \
-            strcpy(type_str, "STREAMNAME"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_FILENAME) { \
-            strcpy(type_str, "FILENAME"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_FITSFILENAME) { \
-            strcpy(type_str, "FITSFILE"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_EXECFILENAME) { \
-            strcpy(type_str, "EXECFILE"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_DIRNAME) { \
-            strcpy(type_str, "DIRNAME"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_FPSNAME) { \
-            strcpy(type_str, "FPSNAME"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_PROCESS) { \
-            strcpy(type_str, "PROCESS"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (FPTYPE_IS_STRING(type)) { \
-            strcpy(type_str, "STRING"); \
-            strncpy(val_str, (char*)ptr, 63); \
-        } else if (type == FPTYPE_PID) { \
-            strcpy(type_str, "PID"); \
-            sprintf(val_str, "%d", \
-                    (int)*(pid_t*)ptr); \
-        } else if (type == FPTYPE_TIMESPEC) { \
-            strcpy(type_str, "TIMESPEC"); \
-            sprintf(val_str, "%ld.%09ld", \
-                    ((struct timespec*)ptr) \
-                        ->tv_sec, \
-                    ((struct timespec*)ptr) \
-                        ->tv_nsec); \
-        } \
+        X_HELP_V2_FILL_TYPESTR_(type, type_str);\
+        X_HELP_V2_FILL_VALSTR_(type, ptr, \
+                               val_str); \
         if (show_help_color) { \
-            if (is_primary) \
-                printf("  %s %s%-16s%s " \
-                       "%-10s %-15s %s\n", \
-                       cli_idx_str, \
-                       COLORPRIMARY, disp_kw, \
-                       COLORRESET, type_str, val_str, desc);\
-            else \
-                printf("  %s %s%-16s%s " \
-                       "%-10s %-15s %s\n", \
-                       cli_idx_str, \
-                       COLORARGnotCLI, disp_kw, \
-                       COLORRESET, type_str, val_str, desc);\
+            const char *_clr = is_primary \
+                ? COLORPRIMARY : COLORARGnotCLI;\
+            printf("  %s %s%-*s%s" \
+                   " %-*s %-*s %s\n", \
+                   cli_idx_str, \
+                   _clr, col_kw_w, disp_kw, \
+                   COLORRESET, \
+                   col_tp_w, type_str, \
+                   col_df_w, val_str, desc); \
         } else { \
-            printf("  %s %-16s %-10s %-15s %s\n", \
-                   cli_idx_str, disp_kw, \
-                   type_str, val_str, desc); \
+            printf("  %s %-*s %-*s" \
+                   " %-*s %s\n", \
+                   cli_idx_str, \
+                   col_kw_w, disp_kw, \
+                   col_tp_w, type_str, \
+                   col_df_w, val_str, desc); \
         } \
         if (is_primary) CLIargcnt++; \
     }
@@ -1443,16 +1591,26 @@ int main(int argc, char *argv[]) { \
             printf("  exec [args] Auto-init +" \
                    " set args + run.\n\n"); \
         } \
+        int col_kw_w = 7; \
+        int col_tp_w = 4; \
+        int col_df_w = 7; \
+        PARAMS_MACRO(X_HELP_MEASURE_V2) \
         if (show_help_color) \
             printf(COLORHEADER \
                    "CLI arguments:" \
                    COLORRESET "\n"); \
         else printf("CLI arguments:\n"); \
-        printf("  %-3s %-16s %-10s %-15s %s\n", \
-               "Idx", "Keyword", "Type", "Default", \
+        printf("  %-3s %-*s %-*s %-*s %s\n", \
+               "Idx", \
+               col_kw_w, "Keyword", \
+               col_tp_w, "Type", \
+               col_df_w, "Default", \
                "Description"); \
-        printf("  %-3s %-16s %-10s %-15s %s\n", \
-               "---", "-------", "----", "-------", \
+        printf("  %-3s %-*s %-*s %-*s %s\n", \
+               "---", \
+               col_kw_w, "-------", \
+               col_tp_w, "----", \
+               col_df_w, "-------", \
                "-----------"); \
         int CLIargcnt = 0; \
         (void) CLIargcnt; \
