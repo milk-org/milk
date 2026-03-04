@@ -1,67 +1,155 @@
+/**
+ * @file    image_multicrop2D.c
+ * @brief   Multi-window 2D cropping from stream
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
-#include "image_multicrop2D.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
 
-char     *multicrop_insname  = NULL;
-char     *multicrop_outsname = NULL;
-uint32_t *multicrop_outxsize = NULL;
-uint32_t *multicrop_outysize = NULL;
 
-int64_t  *multicrop_wactive[
-    MAXNB_CROPWINDOW];
-int64_t  *multicrop_waddmode[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropxstart[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropxsize[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropystart[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropysize[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wbinfact[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropxpos[
-    MAXNB_CROPWINDOW];
-uint32_t *multicrop_wcropypos[
-    MAXNB_CROPWINDOW];
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "multicrop",
     .cmdkey      = "multicrop2D",
     .description =
         "crop 2D image, multiple crops"
 };
 
-static uint64_t processinfo_change_cnt_local;
 
-void image_multicrop2D_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO *processinfo,
-    IMAGE *imgin, IMAGE *imgout
-)
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+#define MAXNB_CROPWINDOW 8
+
+static char     *multicrop_insname  = NULL;
+static char     *multicrop_outsname = NULL;
+static uint32_t *multicrop_outxsize = NULL;
+static uint32_t *multicrop_outysize = NULL;
+
+static int64_t  *multicrop_wactive[
+    MAXNB_CROPWINDOW];
+static int64_t  *multicrop_waddmode[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxstart[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxsize[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropystart[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropysize[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wbinfact[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropxpos[
+    MAXNB_CROPWINDOW];
+static uint32_t *multicrop_wcropypos[
+    MAXNB_CROPWINDOW];
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define MULTICROP_WPARAMS(X, wn) \
+    X(".w"#wn".active", \
+      &multicrop_wactive[wn], \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop window active") \
+    X(".w"#wn".addmode", \
+      &multicrop_waddmode[wn], \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "1:add, 0:replace") \
+    X(".w"#wn".cropxstart", \
+      &multicrop_wcropxstart[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop x coord start") \
+    X(".w"#wn".cropxsize", \
+      &multicrop_wcropxsize[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop x coord size") \
+    X(".w"#wn".cropystart", \
+      &multicrop_wcropystart[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop y coord start") \
+    X(".w"#wn".cropysize", \
+      &multicrop_wcropysize[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "crop y coord size") \
+    X(".w"#wn".cropxpos", \
+      &multicrop_wcropxpos[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x placement in output") \
+    X(".w"#wn".cropypos", \
+      &multicrop_wcropypos[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y placement in output") \
+    X(".w"#wn".cropbinfact", \
+      &multicrop_wbinfact[wn], \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "binning factor")
+
+#define FPS_PARAMS(X) \
+    X(".insname", &multicrop_insname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream name") \
+    X(".outsname", &multicrop_outsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output stream name") \
+    X(".outxsize", &multicrop_outxsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output x size") \
+    X(".outysize", &multicrop_outysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output y size") \
+    MULTICROP_WPARAMS(X, 0) \
+    MULTICROP_WPARAMS(X, 1) \
+    MULTICROP_WPARAMS(X, 2) \
+    MULTICROP_WPARAMS(X, 3) \
+    MULTICROP_WPARAMS(X, 4) \
+    MULTICROP_WPARAMS(X, 5) \
+    MULTICROP_WPARAMS(X, 6) \
+    MULTICROP_WPARAMS(X, 7)
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+static errno_t fpsexec(
+    IMAGE *imgin,
+    IMAGE *imgout)
 {
-    if (fps && fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
     uint32_t ox = *multicrop_outxsize;
     uint32_t oy = *multicrop_outysize;
     size_t ts = ImageStreamIO_typesize(
         imgin->md[0].datatype);
+
     memset(imgout->array.raw, 0,
            ts * ox * oy);
+
     for (int w = 0;
          w < MAXNB_CROPWINDOW; w++)
     {
@@ -143,9 +231,10 @@ void image_multicrop2D_compute(
             }
         }
     }
+    return RETURN_SUCCESS;
 }
 
-errno_t image_multicrop2D_validate()
+static errno_t multicrop2D_validate()
 {
     if (multicrop_outxsize
         && *multicrop_outxsize < 1)
@@ -161,38 +250,52 @@ errno_t image_multicrop2D_validate()
 }
 
 
-static FPS_CLI_BINDING bindings[] = {
-    MULTICROP2D_PARAMS(FPS_X_BINDING)
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    MULTICROP2D_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
-    "multicrop2D",
-    "crop 2D image, multiple crops",
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
+
 static CMDSETTINGS default_cmdsettings = {0};
+
 static __attribute__((constructor))
-void init_cmdsettings_multicrop(void)
+void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
     }
 }
-#else
-static CLICMDDATA CLIcmddata = {
-    "multicrop2D",
-    "crop 2D image, multiple crops",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
@@ -206,22 +309,29 @@ static errno_t compute_function()
         *multicrop_outxsize,
         *multicrop_outysize,
         in.md->datatype);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    image_multicrop2D_compute(
-        data.fpsptr, processinfo,
-        in.im, out.im);
+
+    fpsexec(in.im, out.im);
     processinfo_update_output_stream(
         processinfo, out.im, in.im);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction()
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
@@ -229,18 +339,22 @@ errno_t
 CLIADDCMD_COREMODE_arith__multicrop2D()
 {
     CLIcmddata.FPS_customCONFcheck =
-        image_multicrop2D_validate;
+        multicrop2D_validate;
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    MULTICROP2D_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

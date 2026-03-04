@@ -2,41 +2,70 @@
  * @file    cubecollapse.c
  * @brief   Collapse a cube along z axis
  *
- * V2 FPS framework migration.
+ * Uses FPS V2 framework.
  */
 
-#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "CLIcore.h"
 #include "cubecollapse.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
 #include "ImageStreamIO.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
 
-char *cubecollapse_inimname = NULL;
-char *cubecollapse_outimname = NULL;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cubecollapse",
+    .cmdkey      = "cubecollapse",
+    .description = "collapse a cube along z"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *cubecollapse_inimname  = NULL;
+static char *cubecollapse_outimname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &cubecollapse_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input cube image") \
+    X(".out_name", &cubecollapse_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output 2D image")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 static void cube_collapse_step(
     IMAGE *imgin,
-    IMAGE *imgout
-)
+    IMAGE *imgout)
 {
     uint32_t xsize = imgin->md[0].size[0];
     uint32_t ysize = imgin->md[0].size[1];
     uint32_t ksize = imgin->md[0].size[2];
-    for (uint32_t i = 0; i < xsize * ysize; i++)
+    for (uint32_t i = 0;
+         i < xsize * ysize; i++)
     {
         float v = 0.0;
-        for (uint32_t k = 0; k < ksize; k++) {
+        for (uint32_t k = 0; k < ksize; k++)
+        {
             v += imgin->array.F[
                 k * xsize * ysize + i];
         }
@@ -45,16 +74,20 @@ static void cube_collapse_step(
 }
 
 
+/* =========================================
+ * Public convenience function
+ * ========================================= */
+
 #ifndef FPS_STANDALONE
 imageID cube_collapse(
-    const char *__restrict ID_in_name,
-    const char *__restrict ID_out_name
-)
+    const char *ID_in_name,
+    const char *ID_out_name)
 {
     IMGID in =
         imgid_make_from_name(ID_in_name);
-    resolveIMGID(&in, ERRMODE_ABORT,
-                 data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(
         ID_out_name,
         in.md->size[0], in.md->size[1]);
@@ -65,59 +98,87 @@ imageID cube_collapse(
 #endif
 
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "cubecollapse",
-    .cmdkey      = "cubecollapse",
-    .description = "collapse a cube along z",
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    CUBECOLLAPSE_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    CUBECOLLAPSE_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "cubecollapse",
-    "collapse a cube along z",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
-    cube_collapse(
-        cubecollapse_inimname,
-        cubecollapse_outimname);
+    IMGID in =
+        imgid_make_from_name(
+            cubecollapse_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+    IMGID out = stream_connect_create_2Df32(
+        cubecollapse_outimname,
+        in.md->size[0], in.md->size[1]);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    cube_collapse_step(in.im, out.im);
+    processinfo_update_output_stream(
+        processinfo, out.im, in.im);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
@@ -125,15 +186,20 @@ errno_t __attribute__((cold))
 cubecollapse_addCLIcmd()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    CUBECOLLAPSE_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

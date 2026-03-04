@@ -1,41 +1,74 @@
 /**
  * @file    gaussfilter.c
- * @brief   Image filtering
+ * @brief   Gaussian 2D image filtering
  *
- * V2 FPS framework migration.
+ * Uses FPS V2 framework.
  */
-
-#include "ImageStreamIO/ImageStruct.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "CLIcore.h"
 #include "gaussfilter.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
 #include "ImageStreamIO.h"
 
-#include "COREMOD_arith/COREMOD_arith.h"
-#include "COREMOD_memory/COREMOD_memory.h"
 
-char  *gaussfilt_inimname   = NULL;
-char  *gaussfilt_outimname  = NULL;
-float *gaussfilt_sigma      = NULL;
-int   *gaussfilt_filtersize = NULL;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "gaussfilt",
+    .cmdkey      = "gaussfilt",
+    .description = "gaussian 2D filtering"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char  *gaussfilt_inimname   = NULL;
+static char  *gaussfilt_outimname  = NULL;
+static float *gaussfilt_sigma      = NULL;
+static int   *gaussfilt_filtersize = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &gaussfilt_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", &gaussfilt_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".sigma", &gaussfilt_sigma, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "gaussian sigma") \
+    X(".filter_size", &gaussfilt_filtersize, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "filter box size")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 static void gauss_filter_step(
     IMAGE *imgin,
     IMAGE *imgout,
     float  sigma,
-    int    filter_size
-)
+    int    filter_size)
 {
     uint32_t nx = imgin->md[0].size[0];
     uint32_t ny = imgin->md[0].size[1];
@@ -52,13 +85,17 @@ static void gauss_filter_step(
     float *array = (float *) malloc(
         (2 * fsize + 1) * sizeof(float));
     float sum = 0.0;
-    for (int i = 0; i < (2 * fsize + 1); i++) {
+    for (int i = 0;
+         i < (2 * fsize + 1); i++)
+    {
         array[i] = exp(
             -((i - fsize) * (i - fsize))
             / sigma / sigma);
         sum += array[i];
     }
-    for (int i = 0; i < (2 * fsize + 1); i++) {
+    for (int i = 0;
+         i < (2 * fsize + 1); i++)
+    {
         array[i] /= sum;
     }
 
@@ -69,7 +106,8 @@ static void gauss_filter_step(
             imgin->array.F + k * nx * ny;
         float *pl_out =
             imgout->array.F + k * nx * ny;
-        memset(tmp, 0, nx * ny * sizeof(float));
+        memset(tmp, 0,
+               nx * ny * sizeof(float));
         for (uint32_t j = 0; j < ny; j++) {
             for (uint32_t i = fsize;
                  i < nx - fsize; i++)
@@ -79,7 +117,8 @@ static void gauss_filter_step(
                 {
                     tmp[j * nx + i] +=
                         array[ii + fsize]
-                        * pl_in[j * nx + i + ii];
+                        * pl_in[
+                            j * nx + i + ii];
                 }
             }
         }
@@ -92,7 +131,9 @@ static void gauss_filter_step(
                      jj <= fsize; jj++)
                 {
                     v += array[jj + fsize]
-                         * tmp[(j + jj) * nx + i];
+                         * tmp[
+                            (j + jj) * nx
+                            + i];
                 }
                 pl_out[j * nx + i] = v;
             }
@@ -103,18 +144,22 @@ static void gauss_filter_step(
 }
 
 
+/* =========================================
+ * Public convenience function
+ * ========================================= */
+
 #ifndef FPS_STANDALONE
 imageID gauss_filter(
     const char *ID_name,
     const char *out_name,
     float       sigma,
-    int         filter_size
-)
+    int         filter_size)
 {
     IMGID in =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&in, ERRMODE_ABORT,
-                 data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(
         out_name,
         in.md->size[0], in.md->size[1]);
@@ -126,76 +171,110 @@ imageID gauss_filter(
 #endif
 
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "gaussfilt",
-    .cmdkey      = "gaussfilt",
-    .description = "gaussian 2D filtering",
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    GAUSSFILT_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    GAUSSFILT_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "gaussfilt",
-    "gaussian 2D filtering",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
-    gauss_filter(
-        gaussfilt_inimname,
+    IMGID in =
+        imgid_make_from_name(
+            gaussfilt_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+    IMGID out = stream_connect_create_2Df32(
         gaussfilt_outimname,
+        in.md->size[0], in.md->size[1]);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    gauss_filter_step(
+        in.im, out.im,
         *gaussfilt_sigma,
         *gaussfilt_filtersize);
+    processinfo_update_output_stream(
+        processinfo, out.im, in.im);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t gaussfilter_addCLIcmd()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    GAUSSFILT_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

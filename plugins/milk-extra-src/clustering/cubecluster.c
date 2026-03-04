@@ -12,8 +12,6 @@
 #include "CLIcore.h"
 #include "clustering_defs.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
 #include "processinfo.h"
 #include "ImageStreamIO.h"
 
@@ -37,14 +35,69 @@
 #include "write_clustCFave.h"
 #include "write_clustleafsummary.h"
 
-char     *farg_inimname  = NULL;
-char     *farg_outdname  = NULL;
-float    *threshold      = NULL;
-uint32_t *branchB        = NULL;
-uint32_t *leafposmode    = NULL;
-uint32_t *NBCFmax        = NULL;
-int64_t  *optrebuild     = NULL;
-int64_t  *optcondense    = NULL;
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cubeclust",
+    .cmdkey      = "cubeclust",
+    .description = "compute cube cluster"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *farg_inimname  = NULL;
+static char     *farg_outdname  = NULL;
+static float    *threshold      = NULL;
+static uint32_t *branchB        = NULL;
+static uint32_t *leafposmode    = NULL;
+static uint32_t *NBCFmax        = NULL;
+static int64_t  *optrebuild     = NULL;
+static int64_t  *optcondense    = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &farg_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube") \
+    X(".outdname", &farg_outdname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output directory name") \
+    X(".T", &threshold, \
+      FPTYPE_FLOAT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "threshold") \
+    X(".B", &branchB, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "branch number") \
+    X(".leafposmode", &leafposmode, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "leaf position mode") \
+    X(".NBCFmax", &NBCFmax, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "max number of CFs") \
+    X(".opt.rebuild", &optrebuild, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "rebuild tree after scan") \
+    X(".opt.condense", &optcondense, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "condense tree after scan")
 
 #define pathprobdecay 0.95
 
@@ -203,45 +256,57 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
     return RETURN_SUCCESS;
 }
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 4.  COMPUTATION LOGIC (above)
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "cubeclust",
-    .cmdkey      = "cubeclust",
-    .description = "compute cube cluster",
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    CUBECLUSTER_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    CUBECLUSTER_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "cubeclust",
-    "compute cube cluster",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
@@ -258,11 +323,17 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
@@ -270,15 +341,20 @@ errno_t
 CLIADDCMD_clustering__imcube_mkcluster()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    CUBECLUSTER_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

@@ -2,44 +2,76 @@
  * @file    imrotate.c
  * @brief   Rotate 2D image
  *
- * V2 FPS framework migration.
+ * Uses FPS V2 framework.
  */
-
-#include "ImageStreamIO/ImageStruct.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "CLIcore.h"
 #include "imrotate.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
 #include "ImageStreamIO.h"
 
-#include "COREMOD_memory/COREMOD_memory.h"
 
-char  *imrotate_inimname  = NULL;
-char  *imrotate_outimname = NULL;
-float *imrotate_angle     = NULL;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "rotateim",
+    .cmdkey      = "rotateim",
+    .description = "rotate 2D image"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char  *imrotate_inimname  = NULL;
+static char  *imrotate_outimname = NULL;
+static float *imrotate_angle     = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &imrotate_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", &imrotate_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".angle", &imrotate_angle, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "rotate angle")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 static void imrotate_step(
     IMAGE *imgin,
     IMAGE *imgout,
-    float  angle
-)
+    float  angle)
 {
     uint32_t nx = imgin->md[0].size[0];
     uint32_t ny = imgin->md[0].size[1];
     float c = cos(angle);
     float s = sin(angle);
     for (uint32_t jj = 0; jj < ny; jj++) {
-        for (uint32_t ii = 0; ii < nx; ii++) {
+        for (uint32_t ii = 0;
+             ii < nx; ii++)
+        {
             long iis = (long)(nx / 2
                 + (ii - (int)nx / 2) * c
                 + (jj - (int)ny / 2) * s);
@@ -50,108 +82,147 @@ static void imrotate_step(
                 && (iis < (long)nx)
                 && (jjs < (long)ny))
             {
-                imgout->array.F[jj * nx + ii] =
-                    imgin->array.F[jjs * nx + iis];
-            }
-            else {
-                imgout->array.F[jj * nx + ii] =
-                    0.0;
+                imgout->array.F[
+                    jj * nx + ii] =
+                    imgin->array.F[
+                        jjs * nx + iis];
+            } else {
+                imgout->array.F[
+                    jj * nx + ii] = 0.0;
             }
         }
     }
 }
 
 
+/* =========================================
+ * Public convenience function
+ * ========================================= */
+
 #ifndef FPS_STANDALONE
 imageID basic_rotate(
-    const char *__restrict ID_name,
-    const char *__restrict IDout_name,
-    float angle
-)
+    const char *ID_name,
+    const char *IDout_name,
+    float       angle)
 {
     IMGID in =
         imgid_make_from_name(ID_name);
-    resolveIMGID(&in, ERRMODE_ABORT,
-                 data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
     IMGID out = stream_connect_create_2Df32(
         IDout_name,
         in.md->size[0], in.md->size[1]);
-    imrotate_step(in.im, out.im, angle);
+    imrotate_step(
+        in.im, out.im, angle);
     ImageStreamIO_UpdateIm(out.im);
     return out.ID;
 }
 #endif
 
 
-/* =========================================
- * V2 FPS-CLI integration
- * ========================================= */
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static FPS_APP_INFO app_info = {
-    .fps_name    = "rotateim",
-    .cmdkey      = "rotateim",
-    .description = "rotate 2D image",
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static FPS_CLI_BINDING bindings[] = {
-    IMROTATE_PARAMS(FPS_X_BINDING)
-};
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    IMROTATE_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
-static CLICMDDATA CLIcmddata;
-__attribute__((constructor))
-static void init_CLIcmddata(void)
-{
-    memset(&CLIcmddata, 0, sizeof(CLIcmddata));
-    strncpy(CLIcmddata.key, app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-}
+CLICMDDATA CLIcmddata = {
 #else
 static CLICMDDATA CLIcmddata = {
-    "rotateim",
-    "rotate 2D image",
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
-#endif
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
-    basic_rotate(
-        imrotate_inimname,
+    IMGID in =
+        imgid_make_from_name(
+            imrotate_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+    IMGID out = stream_connect_create_2Df32(
         imrotate_outimname,
-        *imrotate_angle);
+        in.md->size[0], in.md->size[1]);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    imrotate_step(
+        in.im, out.im, *imrotate_angle);
+    processinfo_update_output_stream(
+        processinfo, out.im, in.im);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     return RETURN_SUCCESS;
 }
 
-static errno_t CLIfunction()
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
 errno_t imrotate_addCLIcmd()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    IMROTATE_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif
