@@ -164,6 +164,9 @@ install(TARGETS milk-fps-list DESTINATION bin)
 # milk-fps-info executable
 # ==========================================
 
+add_executable(milk-fpsexec-help milk-fpsexec-help.c)
+install(TARGETS milk-fpsexec-help DESTINATION bin)
+
 add_executable(milk-fps-help milk-fps-help.c)
 install(TARGETS milk-fps-help DESTINATION bin)
 

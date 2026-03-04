@@ -80,11 +80,24 @@ int main(int argc, char *argv[])
 
     if (NBfps > 0) {
         if (show_exec) {
-            printf("%-20s %-25s %-30s %s\n", "FPS Name", "Status", "Exec Path", "Description");
-            printf("--------------------------------------------------------------------------------------------------\n");
+            printf("\033[1m%-25s %-30s %-20s %s %s   %s\033[0m\n",
+                   "FPS Name", "Executable",
+                   "Cmd Key", "   CONF",
+                   "    RUN", "Description");
+            printf("--------------------------------------"
+                   "--------------------------------------"
+                   "--------------------------------------"
+                   "----\n");
         } else {
-            printf("%-30s %-25s %s\n", "FPS Name", "Status", "Description");
-            printf("-------------------------------------------------------------------------------------\n");
+            printf("\033[1m%-25s %-30s %-20s %s %s"
+                   "   %s\033[0m\n",
+                   "FPS Name", "Executable",
+                   "Cmd Key", "   CONF",
+                   "    RUN", "Description");
+            printf("--------------------------------------"
+                   "--------------------------------------"
+                   "--------------------------------------"
+                   "----\n");
         }
 
         for(int i = 0; i < NBfps; i++)
@@ -93,6 +106,17 @@ int main(int argc, char *argv[])
             char conf_pid_str[32] = "";
             char run_pid_str[32] = "";
             char tmux_str[32] = "";
+
+            // Extract executable basename
+            const char *exec_basename =
+                strrchr(
+                    fpsarray[i].md->execfullpath,
+                    '/');
+            if (exec_basename)
+                exec_basename++;
+            else
+                exec_basename =
+                    fpsarray[i].md->execfullpath;
 
             // Check CONF process
             pid_t confpid = fpsarray[i].md->confpid;
@@ -122,14 +146,31 @@ int main(int argc, char *argv[])
             snprintf(status_str, 128, "%s %s %s", conf_pid_str, run_pid_str, tmux_str);
             
             if (show_exec) {
-                printf("%-20s %-25s %-30s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->execfullpath, fpsarray[i].md->description);
+                printf("\033[36m%-25s\033[0m "
+                       "\033[35m%-30s\033[0m "
+                       "\033[33m%-20s\033[0m "
+                       "%s   %s\n",
+                       fpsarray[i].md->name,
+                       fpsarray[i].md->execfullpath,
+                       fpsarray[i].md->callprogname,
+                       status_str,
+                       fpsarray[i].md->description);
             } else {
-                printf("%-30s %-25s %s\n", fpsarray[i].md->name, status_str, fpsarray[i].md->description);
+                printf("\033[36m%-25s\033[0m "
+                       "\033[35m%-30s\033[0m "
+                       "\033[33m%-20s\033[0m "
+                       "%s   %s\n",
+                       fpsarray[i].md->name,
+                       exec_basename,
+                       fpsarray[i].md->callprogname,
+                       status_str,
+                       fpsarray[i].md->description);
             }
             
             // Disconnect to clean up
             function_parameter_struct_disconnect(&fpsarray[i]);
         }
+        printf("\n");
     } else {
         if (!verbose) {
             printf("No FPS instances found. Use -v for more details.\n");
