@@ -1,40 +1,71 @@
+/**
+ * @file    image_norm.c
+ * @brief   Compute per-slice norm of an image
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
-#include "image_norm.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
 
-char     *norm_inimname  = NULL;
-char     *norm_outimname = NULL;
-uint32_t *norm_sliceaxis = NULL;
 
-static FPS_APP_INFO app_info = {
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "normslice",
     .cmdkey      = "normslice",
     .description = "image norm by slice"
 };
 
-static uint64_t processinfo_change_cnt_local;
 
-errno_t image_slicenorm_IMGID(
-    IMGID *inimg, IMGID *outimg,
-    uint8_t sliceaxis
-)
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *norm_inimname  = NULL;
+static char     *norm_outimname = NULL;
+static uint32_t *norm_sliceaxis = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in0name", &norm_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 0") \
+    X(".outname", &norm_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".axis", &norm_sliceaxis, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "norm axis")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+/**
+ * @brief Compute L2 norm per slice along axis.
+ *
+ * Pure computation — takes resolved IMGIDs.
+ */
+static errno_t image_slicenorm_IMGID(
+    IMGID *inimg,
+    IMGID *outimg,
+    uint8_t sliceaxis)
 {
-#ifndef FPS_STANDALONE
-    resolveIMGID(
-        inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(
-        outimg, ERRMODE_NULL,
-        data.image, data.NB_MAX_IMAGE);
-#endif
     if (outimg->ID == -1) {
         imgid_copy(inimg, outimg);
     }
@@ -46,9 +77,8 @@ errno_t image_slicenorm_IMGID(
         }
     }
     outimg->mdt->datatype = _DATATYPE_FLOAT;
-#ifndef FPS_STANDALONE
-    createimagefromIMGID(outimg);
-#else
+
+    /* Create output stream */
     outimg->im =
         (IMAGE *) malloc(sizeof(IMAGE));
     strncpy(outimg->name,
@@ -60,7 +90,7 @@ errno_t image_slicenorm_IMGID(
         outimg->mdt->datatype,
         -1, 1, 10, 0, 0, 0);
     outimg->md = outimg->im->md;
-#endif
+
     uint32_t sizes[3] = {
         inimg->md->size[0],
         inimg->md->size[1],
@@ -120,91 +150,59 @@ errno_t image_slicenorm_IMGID(
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
-errno_t image_slicenorm(
-    const char *inname,
-    const char *outname,
-    uint8_t sliceaxis
-)
-{
-    IMGID idin =
-        imgid_make_from_name(inname);
-    IMGID idout =
-        imgid_make_from_name(outname);
-    errno_t ret = image_slicenorm_IMGID(
-        &idin, &idout, sliceaxis);
-    imgid_free(&idin);
-    imgid_free(&idout);
-    return ret;
-}
-#endif
 
-void image_norm_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO *processinfo,
-    IMAGE *inimg, IMAGE *outimg
-)
-{
-    if (fps && fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
-    if (!norm_sliceaxis) {
-        return;
-    }
-    IMGID idin = imgid_make();
-    idin.im = inimg;
-    idin.md = &inimg->md[0];
-    imgid_update_creationparams(&idin);
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-    IMGID idout = imgid_make();
-    idout.im = outimg;
-    idout.md = &outimg->md[0];
-    imgid_update_creationparams(&idout);
-
-    image_slicenorm_IMGID(
-        &idin, &idout, *norm_sliceaxis);
-    imgid_free(&idin);
-    imgid_free(&idout);
-}
-
-
-static FPS_CLI_BINDING bindings[] = {
-    NORMSLICE_PARAMS(FPS_X_BINDING)
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    NORMSLICE_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
-    "normslice", "image norm by slice",
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
+
 static CMDSETTINGS default_cmdsettings = {0};
+
 static __attribute__((constructor))
-void init_cmdsettings_normslice(void)
+void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
     }
 }
-#else
-static CLICMDDATA CLIcmddata = {
-    "normslice", "image norm by slice",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
+    if (!norm_sliceaxis) {
+        return RETURN_FAILURE;
+    }
     IMGID idin =
         imgid_make_from_name(norm_inimname);
     resolveIMGID(
@@ -212,24 +210,32 @@ static errno_t compute_function()
         data.image, data.NB_MAX_IMAGE);
     IMGID idout =
         imgid_make_from_name(norm_outimname);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    image_norm_compute(
-        data.fpsptr, processinfo,
-        idin.im, idout.im);
+
+    image_slicenorm_IMGID(
+        &idin, &idout, *norm_sliceaxis);
     processinfo_update_output_stream(
         processinfo, idout.im, idin.im);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     imgid_free(&idin);
     imgid_free(&idout);
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction()
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
@@ -237,16 +243,20 @@ errno_t
 CLIADDCMD_COREMOD_arith__image_normslice()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    NORMSLICE_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif

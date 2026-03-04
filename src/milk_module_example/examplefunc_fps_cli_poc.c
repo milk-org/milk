@@ -1,18 +1,66 @@
 /**
  * @file    examplefunc_fps_cli_poc.c
- * @brief   POC for Unified FPS-CLI Architecture
+ * @brief   Template for FPS V2 Compute Units
  *
- * Demonstrates the "FPS-as-Primary" architecture where
- * parameters are defined ONCE in a unified MY_PARAMS macro
- * and the generic infrastructure lives in libfps/libfpsCLI.
+ * This file is a TEMPLATE for writing compute units
+ * (functions that can run as standalone executables
+ * or as milk CLI commands) using the unified FPS-CLI
+ * V2 architecture.
  *
- * This file contains ONLY module-specific code:
- *   1. FPS identity (FPS_APP_INFO)
- *   2. Local parameter variables
- *   3. Unified parameter table (MY_PARAMS X-macro)
- *   4. Computation logic
- *   5. Module registration (CLIADDCMD)
- *   6. Standalone entry point (FPS_MAIN_STANDALONE_V2)
+ * ARCHITECTURE OVERVIEW
+ * ---------------------
+ * The V2 framework unifies three execution modes into
+ * a single source file:
+ *
+ *  (A) Standalone executable (milk-fpsexec-*)
+ *      Built with -DFPS_STANDALONE.  The
+ *      FPS_MAIN_STANDALONE_V2 macro generates main()
+ *      and handles the FPS lifecycle (create, exec,
+ *      confstart, confstop, runstart, runstop).
+ *
+ *  (B) milk CLI command
+ *      When compiled as part of a shared library
+ *      module (e.g. libmilkCOREMODarith.so), the
+ *      CLIADDCMD function registers the command so
+ *      it can be called from the milk CLI prompt.
+ *
+ *  (C) Direct C function call
+ *      The fpsexec() function can be called directly
+ *      from other C code in the same process.
+ *
+ * Parameters are defined ONCE in an X-macro
+ * (FPS_PARAMS) and the framework automatically:
+ *   - Creates FPS shared-memory entries
+ *   - Generates CLI argument definitions (farg[])
+ *   - Generates FPS-to-local sync bindings
+ *   - Produces help text for standalone executables
+ *
+ * HOW TO CREATE A NEW COMPUTE UNIT
+ * ---------------------------------
+ * 1. Copy this file and rename it.
+ * 2. Update section 1 (FPS_APP_INFO) with the new
+ *    FPS name, CLI key, and description.
+ * 3. Replace the local variables (section 2) with
+ *    your parameters.
+ * 4. Replace FPS_PARAMS (section 3) with entries
+ *    matching your parameters.
+ * 5. Replace fpsexec() (section 4) with your
+ *    computation logic.
+ * 6. Update the CLIADDCMD function name (section 7)
+ *    and register it in your module's init function.
+ * 7. Add the CMake targets for both the shared
+ *    library (.so) and standalone executable.
+ *
+ * FILE STRUCTURE (8 sections)
+ * ---------------------------
+ *   1. FPS_APP_INFO    - identity (names, description)
+ *   2. Local variables - C variables for parameters
+ *   3. FPS_PARAMS      - X-macro parameter table
+ *   4. fpsexec()       - computation logic
+ *   5. Bindings/farg   - generated from FPS_PARAMS
+ *   6. compute_function - processinfo loop wrapper
+ *   7. CLI registration - CLIADDCMD + CLIfunction
+ *   8. Standalone main  - FPS_MAIN_STANDALONE_V2
  */
 
 #include "CLIcore.h"
@@ -21,6 +69,20 @@
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
+ *
+ * FPS_APP_INFO is the single source of truth for the
+ * compute unit's identity. All other references
+ * (CLIcmddata, help text, FPS shm name) are derived
+ * from these fields.
+ *
+ * Fields:
+ *   .fps_name    FPS shared-memory name (no spaces).
+ *                This becomes the name in
+ *                /dev/shm/<fps_name>.fps.shm
+ *   .cmdkey      CLI command keyword.  Users type
+ *                this at the milk prompt.
+ *   .description One-line human-readable summary
+ *                shown in help and fps-info output.
  * ============================================================= */
 
 static FPS_APP_INFO FPS_app_info = {
@@ -32,6 +94,40 @@ static FPS_APP_INFO FPS_app_info = {
 
 /* ================================================================
  * 2.  LOCAL PARAMETER VARIABLES
+ *
+ * These static variables hold the current parameter
+ * values in the running process.  The framework
+ * automatically syncs them with the FPS shared memory
+ * via the bindings defined in section 5.
+ *
+ * IMPORTANT NOTES ON VARIABLE TYPES:
+ *
+ * - Scalar types (int32, float, etc.):
+ *   Declare as the matching C type.  In FPS_PARAMS,
+ *   pass the ADDRESS: &param_variable
+ *
+ * - String types (STREAMNAME, FILENAME, STRING, etc.)
+ *   The sync function (sync_fps_to_local) stores a
+ *   POINTER to the FPS shared-memory string buffer.
+ *   Therefore:
+ *     * If the variable will be read AFTER FPS sync
+ *       (standalone/FPS mode), declare as char* and
+ *       pass &ptr in FPS_PARAMS.
+ *     * If the variable needs a default value for
+ *       non-FPS mode, use a char[] buffer.  In
+ *       FPS_PARAMS, pass the buffer name directly
+ *       (it decays to char*, but the sync overwrites
+ *       the first sizeof(char*) bytes with a pointer).
+ *
+ * - ONOFF type: uses int32_t (0 = OFF, nonzero = ON)
+ *
+ * - TIMESPEC type: uses struct timespec
+ *
+ * - PID type: uses pid_t
+ *
+ * The default values assigned here are used:
+ *   - As initial FPS values when creating a new FPS
+ *   - As CLI defaults when no argument is provided
  * ============================================================= */
 
 static int32_t  param_int32   = 123;
@@ -72,10 +168,57 @@ static char
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  *
- * Syntax: X(keyword, ptr, type, is_primary, flag, descr)
+ * The FPS_PARAMS macro defines ALL parameters in one
+ * place using the X-macro pattern.  It is expanded
+ * multiple times by different "X" functions to
+ * generate:
+ *
+ *   FPS_X_BINDING  -> FPS_CLI_BINDING array
+ *                     (maps FPS keywords to C vars)
+ *   FPS_X_FARG     -> CLICMDARGDEF array
+ *                     (CLI argument definitions)
+ *   X_HELP_PRINT_V2 -> help text for standalone --help
+ *
+ * COLUMN REFERENCE:
+ *   X(keyword, ptr, type, is_primary, flag, descr)
+ *
+ *   keyword     FPS parameter keyword, prefixed with
+ *               ".".  Full key = fps_name + keyword,
+ *               e.g. "exfpscli.p_int32"
+ *
+ *   ptr         Pointer to the local C variable.
+ *               - Scalars: use &variable
+ *               - Strings: use buffer_name (decays
+ *                 to char*) or &char_ptr_variable
+ *
+ *   type        FPS parameter type enum:
+ *               FPTYPE_INT32, FPTYPE_UINT32,
+ *               FPTYPE_INT64, FPTYPE_UINT64,
+ *               FPTYPE_FLOAT32, FPTYPE_FLOAT64,
+ *               FPTYPE_ONOFF, FPTYPE_PID,
+ *               FPTYPE_TIMESPEC, FPTYPE_STREAMNAME,
+ *               FPTYPE_FILENAME, FPTYPE_FITSFILENAME,
+ *               FPTYPE_EXECFILENAME, FPTYPE_DIRNAME,
+ *               FPTYPE_STRING, FPTYPE_PROCESS,
+ *               FPTYPE_FPSNAME,
+ *               FPTYPE_STRING_NOT_STREAM
+ *
+ *   is_primary  1 if this parameter is a primary CLI
+ *               argument (positional), 0 otherwise.
+ *               Primary args are passed positionally
+ *               on the command line.
+ *
+ *   flag        Bitwise OR of FPFLAG_* constants:
+ *               FPFLAG_DEFAULT_INPUT  - standard input
+ *               FPFLAG_DEFAULT_OUTPUT - standard output
+ *               Other flags control visibility,
+ *               writability, and behavior.
+ *
+ *   descr       Human-readable description string
+ *               shown in help output and fps-info.
  * ============================================================= */
 
-#define MY_PARAMS(X) \
+#define FPS_PARAMS(X) \
     X(".p_int32",      &param_int32, \
       FPTYPE_INT32,    1, \
       FPFLAG_DEFAULT_INPUT, "Example INT32") \
@@ -136,15 +279,27 @@ static char
 
 /* ================================================================
  * 4.  COMPUTATION LOGIC
+ *
+ * This is where the actual work happens.  Replace
+ * this function with your algorithm.
+ *
+ * The local static variables (section 2) are
+ * guaranteed to be synced with FPS shared memory
+ * before this function is called.  Simply read them
+ * directly — no FPS API calls needed here.
+ *
+ * Return RETURN_SUCCESS on success, or an errno_t
+ * error code on failure.
  * ============================================================= */
 
 /**
- * @brief The actual "heavy lifting" function.
+ * @brief Core computation function.
  *
- * Uses the local static variables, which are guaranteed
- * to be synced with FPS shared memory by the framework.
+ * Reads parameters from local static variables
+ * (auto-synced from FPS) and performs the compute
+ * unit's work.
  */
-static errno_t example_fps_computation()
+static errno_t fpsexec()
 {
     printf("\n[COMPUTATION] All FPS parameter types:\n");
     printf("  INT32              = %d\n", param_int32);
@@ -182,38 +337,70 @@ static errno_t example_fps_computation()
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
  *
- * Must appear before compute_function() because the
- * INSERT_STD_PROCINFO macros reference CLIcmddata.
+ * These arrays are auto-generated from FPS_PARAMS
+ * using the X-macro expansion.  In most cases you
+ * do NOT need to modify this section — just change
+ * FPS_PARAMS above and everything updates.
+ *
+ * my_bindings[] - Maps each FPS keyword to its local
+ *   C variable pointer, type, and flags.  Used by
+ *   the sync engine (fps_cli_sync.c) to copy values
+ *   between FPS shared memory and local variables.
+ *
+ * farg[] - CLI argument definitions consumed by the
+ *   milk CLI parser.  Determines how command-line
+ *   arguments are parsed and validated.
+ *
+ * CLIcmddata - Command metadata (key, description).
+ *   Populated from FPS_app_info at startup by the
+ *   constructor below.  Used by INSERT_STD macros.
+ *
+ * ORDERING CONSTRAINT: This section MUST appear
+ * before compute_function() because the
+ * INSERT_STD_PROCINFO_COMPUTEFUNC_* macros
+ * reference CLIcmddata.
  * ============================================================= */
 
 static FPS_CLI_BINDING my_bindings[] = {
-    MY_PARAMS(FPS_X_BINDING)
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
 static const int nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    MY_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 CLICMDDATA CLIcmddata = {
-    "fpsclitest",
-    "Test FPS-CLI unification",
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
 
-/*
- * The INSERT_STD_PROCINFO_COMPUTEFUNC_END macro
- * dereferences CLIcmddata.cmdsettings, which is
- * NULL from CLICMD_FIELDS_DEFAULTS.
- * Provide a valid object for standalone mode.
+/**
+ * @brief Auto-initialize CLIcmddata from FPS_app_info.
+ *
+ * GCC constructor: runs before main().  Copies key
+ * and description from FPS_app_info so that the
+ * compute unit's identity is defined in ONE place.
+ *
+ * Also provides a valid cmdsettings object.  The
+ * INSERT_STD_PROCINFO_COMPUTEFUNC_END macro
+ * dereferences CLIcmddata.cmdsettings, which is NULL
+ * from CLICMD_FIELDS_DEFAULTS.
  */
 static CMDSETTINGS default_cmdsettings = {0};
 
 static __attribute__((constructor))
 void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
@@ -223,17 +410,38 @@ void init_cmdsettings(void)
 
 /* ================================================================
  * 6.  COMPUTE WRAPPER (processinfo loop support)
+ *
+ * This thin wrapper calls fpsexec() inside the
+ * standard processinfo loop macros.  The macros
+ * provide:
+ *   - Process registration in shared memory
+ *   - Timing and iteration counting
+ *   - Signal handling (pause, stop, etc.)
+ *   - Loop control for continuous-run mode
+ *
+ * For a one-shot "exec" command, the loop runs
+ * exactly once.  For continuous processing (e.g.
+ * runstart), the loop repeats until stopped.
+ *
+ * If your computation needs to resolve streams,
+ * do so BEFORE INSERT_STD_PROCINFO_COMPUTEFUNC_START
+ * (outside the loop).  Stream updates happen inside.
  * ============================================================= */
 
 /**
- * @brief Wraps example_fps_computation() in the standard
- *        processinfo loop macros.
+ * @brief Processinfo-wrapped computation entry point.
+ *
+ * Called by both the standalone lifecycle and the
+ * milk CLI.  Do NOT call fpsexec() directly from
+ * outside this file — always go through
+ * compute_function() to get proper processinfo
+ * tracking.
  */
 static errno_t compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    example_fps_computation();
+    fpsexec();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -243,12 +451,33 @@ static errno_t compute_function()
 
 /* ================================================================
  * 7.  MILK MODULE REGISTRATION
+ *
+ * This section is compiled only when building as
+ * part of a milk shared library module (i.e. when
+ * FPS_STANDALONE is NOT defined).
+ *
+ * CLIfunction() is the entry point called when the
+ * user types the command at the milk CLI prompt.
+ * It delegates to safe_fps_generic_CLIfunction()
+ * which handles the full FPS lifecycle:
+ *   1. Parse CLI arguments
+ *   2. Create/connect to FPS shared memory
+ *   3. Sync CLI args -> FPS -> local variables
+ *   4. Call compute_function()
+ *
+ * CLIADDCMD_* is called once at module load time
+ * to register the command.  The function naming
+ * convention is:
+ *   CLIADDCMD_<module>__<function>
+ * and must match the registration call in the
+ * module's init function.
  * ============================================================= */
 
 /**
- * @brief Unified milk CLI entry point.
+ * @brief CLI entry point for this compute unit.
  *
- * Delegates entirely to the generic library function.
+ * Delegates to the generic FPS-CLI handler which
+ * manages the full lifecycle.
  */
 static errno_t CLIfunction(void)
 {
@@ -262,7 +491,12 @@ static errno_t CLIfunction(void)
 }
 
 /**
- * @brief Module registration function.
+ * @brief Register this compute unit with the milk CLI.
+ *
+ * Called from the module's init function.
+ * safe_fps_fill_farg_examples() copies default values
+ * from the bindings into farg[] so that --help shows
+ * meaningful example values.
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
@@ -276,15 +510,41 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
 
 
 /* ================================================================
- * 7.  STANDALONE ENTRY POINT
+ * 8.  STANDALONE ENTRY POINT
  *
- * FPS_MAIN_STANDALONE_V2 generates main() using
- * the generic library lifecycle functions.
+ * When compiled with -DFPS_STANDALONE, the
+ * FPS_MAIN_STANDALONE_V2 macro generates a main()
+ * function that provides the full standalone
+ * executable lifecycle:
+ *
+ *   milk-fpsexec-<name> create [args...]
+ *       Create a new FPS and set initial values
+ *
+ *   milk-fpsexec-<name> exec [args...]
+ *       One-shot execution: create FPS, run once
+ *
+ *   milk-fpsexec-<name> confstart
+ *       Start the configuration loop (watches FPS
+ *       for parameter changes)
+ *
+ *   milk-fpsexec-<name> runstart
+ *       Start the run loop (continuous processing)
+ *
+ *   milk-fpsexec-<name> confstop / runstop
+ *       Stop the conf/run loop
+ *
+ *   milk-fpsexec-<name> --help
+ *       Print help text with parameter descriptions
+ *
+ * The three arguments are:
+ *   1. FPS_app_info     - compute unit identity
+ *   2. FPS_PARAMS       - parameter X-macro
+ *   3. compute_function - processinfo-wrapped entry
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
     FPS_app_info,
-    MY_PARAMS,
+    FPS_PARAMS,
     compute_function)
 #endif

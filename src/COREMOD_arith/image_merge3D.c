@@ -1,121 +1,151 @@
+/**
+ * @file    image_merge3D.c
+ * @brief   Merge images along an axis
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "CLIcore.h"
-#include "image_merge3D.h"
 #include "fps.h"
-#include "fps_cli_binding.h"
-#include "fps_cli_function.h"
-#include "processinfo.h"
-#include "ImageStreamIO.h"
 
-char     *immerge_inimname0 = NULL;
-char     *immerge_inimname1 = NULL;
-char     *immerge_outimname = NULL;
-uint32_t *immerge_mergeaxis = NULL;
 
-static FPS_APP_INFO app_info = {
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "immerge",
     .cmdkey      = "immerge",
     .description = "merge images along axis"
 };
 
-static uint64_t processinfo_change_cnt_local;
 
-errno_t image_marge(
-    IMGID inimg0, IMGID inimg1,
-    IMGID *outimg, uint8_t mergeaxis
-)
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *immerge_inimname0 = NULL;
+static char     *immerge_inimname1 = NULL;
+static char     *immerge_outimname = NULL;
+static uint32_t *immerge_mergeaxis = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in0name", &immerge_inimname0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 0") \
+    X(".in1name", &immerge_inimname1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 1") \
+    X(".outname", &immerge_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".axis", &immerge_mergeaxis, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "merge axis")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+/**
+ * @brief Merge two images along the specified axis.
+ *
+ * Creates output stream if needed and copies
+ * data from both inputs into it.
+ */
+static errno_t fpsexec(
+    IMGID *id0,
+    IMGID *id1,
+    IMGID *idout)
 {
-#ifndef FPS_STANDALONE
-    resolveIMGID(
-        &inimg0, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(
-        &inimg1, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(
-        outimg, ERRMODE_NULL,
-        data.image, data.NB_MAX_IMAGE);
-#endif
-    if (outimg->ID == -1) {
-        imgid_copy(&inimg0, outimg);
+    if (!immerge_mergeaxis) {
+        return RETURN_FAILURE;
+    }
+    uint8_t mergeaxis = (uint8_t) *immerge_mergeaxis;
+
+    if (idout->ID == -1) {
+        imgid_copy(id0, idout);
     }
     if (mergeaxis < 3) {
         uint32_t s0 =
-            (inimg0.md->size[mergeaxis] == 0)
-            ? 1 : inimg0.md->size[mergeaxis];
+            (id0->md->size[mergeaxis] == 0)
+            ? 1 : id0->md->size[mergeaxis];
         uint32_t s1 =
-            (inimg1.md->size[mergeaxis] == 0)
-            ? 1 : inimg1.md->size[mergeaxis];
-        outimg->mdt->size[mergeaxis] =
-            s0 + s1;
+            (id1->md->size[mergeaxis] == 0)
+            ? 1 : id1->md->size[mergeaxis];
+        idout->mdt->size[mergeaxis] = s0 + s1;
     } else {
         return RETURN_FAILURE;
     }
-    outimg->mdt->naxis =
-        (outimg->mdt->size[2] > 1) ? 3
-        : ((outimg->mdt->size[1] > 1) ? 2
+    idout->mdt->naxis =
+        (idout->mdt->size[2] > 1) ? 3
+        : ((idout->mdt->size[1] > 1) ? 2
            : 1);
-#ifndef FPS_STANDALONE
-    createimagefromIMGID(outimg);
-#else
-    outimg->im =
+
+    /* Create output stream */
+    idout->im =
         (IMAGE *) malloc(sizeof(IMAGE));
-    strncpy(outimg->name,
+    strncpy(idout->name,
             immerge_outimname, 79);
     ImageStreamIO_createIm_gpu(
-        outimg->im, outimg->name,
-        outimg->mdt->naxis,
-        outimg->mdt->size,
-        outimg->mdt->datatype,
+        idout->im, idout->name,
+        idout->mdt->naxis,
+        idout->mdt->size,
+        idout->mdt->datatype,
         -1, 1, 10, 0, 0, 0);
-    outimg->md = outimg->im->md;
-#endif
+    idout->md = idout->im->md;
+
     size_t ts = ImageStreamIO_typesize(
-        outimg->mdt->datatype);
-    if (mergeaxis
-        == outimg->mdt->naxis - 1)
-    {
+        idout->mdt->datatype);
+
+    if (mergeaxis == idout->mdt->naxis - 1) {
         size_t sz0 =
-            ts * inimg0.md->nelement;
-        memcpy(outimg->im->array.raw,
-               inimg0.im->array.raw, sz0);
+            ts * id0->md->nelement;
+        memcpy(idout->im->array.raw,
+               id0->im->array.raw, sz0);
         memcpy(
             ((char *)
-             outimg->im->array.raw)
-            + sz0,
-            inimg1.im->array.raw,
-            ts * inimg1.md->nelement);
+             idout->im->array.raw) + sz0,
+            id1->im->array.raw,
+            ts * id1->md->nelement);
     } else {
-        uint64_t b0 =
-            inimg0.mdt->size[0];
-        uint64_t b1 =
-            inimg1.mdt->size[0];
+        uint64_t b0 = id0->mdt->size[0];
+        uint64_t b1 = id1->mdt->size[0];
         if (mergeaxis == 1) {
-            b0 *= inimg0.mdt->size[1];
-            b1 *= inimg1.mdt->size[1];
+            b0 *= id0->mdt->size[1];
+            b1 *= id1->mdt->size[1];
         }
         uint64_t po = 0, p0 = 0, p1 = 0;
-        while (po
-               < outimg->md->nelement)
-        {
+        while (po < idout->md->nelement) {
             memcpy(
                 ((char *)
-                 outimg->im->array.raw)
+                 idout->im->array.raw)
                 + po * ts,
                 ((char *)
-                 inimg0.im->array.raw)
+                 id0->im->array.raw)
                 + p0 * ts,
                 ts * b0);
             p0 += b0;
             po += b0;
             memcpy(
                 ((char *)
-                 outimg->im->array.raw)
+                 idout->im->array.raw)
                 + po * ts,
                 ((char *)
-                 inimg1.im->array.raw)
+                 id1->im->array.raw)
                 + p1 * ts,
                 ts * b1);
             p1 += b1;
@@ -125,78 +155,53 @@ errno_t image_marge(
     return RETURN_SUCCESS;
 }
 
-void image_merge_compute(
-    FUNCTION_PARAMETER_STRUCT *fps,
-    PROCESSINFO *processinfo,
-    IMAGE *inimg0, IMAGE *inimg1,
-    IMAGE *outimg
-)
-{
-    if (fps && fps->md->processinfo_change_cnt
-        != processinfo_change_cnt_local)
-    {
-        fps_to_processinfo(fps, processinfo);
-        processinfo_change_cnt_local =
-            fps->md->processinfo_change_cnt;
-    }
-    if (!immerge_mergeaxis) {
-        return;
-    }
-    IMGID id0 = imgid_make();
-    id0.im = inimg0;
-    id0.md = &inimg0->md[0];
-    imgid_update_creationparams(&id0);
 
-    IMGID id1 = imgid_make();
-    id1.im = inimg1;
-    id1.md = &inimg1->md[0];
-    imgid_update_creationparams(&id1);
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-    IMGID idout = imgid_make();
-    idout.im = outimg;
-    idout.md = &outimg->md[0];
-    imgid_update_creationparams(&idout);
-
-    image_marge(
-        id0, id1, &idout,
-        *immerge_mergeaxis);
-
-    imgid_free(&id0);
-    imgid_free(&id1);
-    imgid_free(&idout);
-}
-
-
-static FPS_CLI_BINDING bindings[] = {
-    IMMERGE_PARAMS(FPS_X_BINDING)
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
-static int nb_bindings =
-    sizeof(bindings) / sizeof(bindings[0]);
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    IMMERGE_PARAMS(FPS_X_FARG)
+    FPS_PARAMS(FPS_X_FARG)
 };
 
 #ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
-    "immerge", "merge images along axis",
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
+
 static CMDSETTINGS default_cmdsettings = {0};
+
 static __attribute__((constructor))
-void init_cmdsettings_immerge(void)
+void init_cmdsettings(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
     if (CLIcmddata.cmdsettings == NULL) {
         CLIcmddata.cmdsettings =
             &default_cmdsettings;
     }
 }
-#else
-static CLICMDDATA CLIcmddata = {
-    "immerge", "merge images along axis",
-    CLICMD_FIELDS_DEFAULTS
-};
-#endif
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
@@ -212,25 +217,32 @@ static errno_t compute_function()
         data.image, data.NB_MAX_IMAGE);
     IMGID idout = imgid_make_from_name(
         immerge_outimname);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-    image_merge_compute(
-        data.fpsptr, processinfo,
-        id0.im, id1.im, idout.im);
+
+    fpsexec(&id0, &id1, &idout);
     processinfo_update_output_stream(
         processinfo, idout.im, id0.im);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
     imgid_free(&id0);
     imgid_free(&id1);
     imgid_free(&idout);
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction()
+static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
-        &app_info, farg, &CLIcmddata,
-        bindings, nb_bindings,
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
         compute_function);
 }
 
@@ -238,16 +250,20 @@ errno_t
 CLIADDCMD_COREMOD_arith__image_merge()
 {
     safe_fps_fill_farg_examples(
-        farg, bindings, nb_bindings);
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 #endif
 
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
 #ifdef FPS_STANDALONE
 FPS_MAIN_STANDALONE_V2(
-    app_info,
-    IMMERGE_PARAMS,
-    compute_function
-)
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
 #endif
