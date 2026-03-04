@@ -133,10 +133,8 @@ static void sync_fps_to_local(
             fps->parray[pindex].val.ts[0];
     }
     else if (FPTYPE_IS_STRING(b->type)) {
-        strncpy(
-            (char *) b->ptr,
-            fps->parray[pindex].val.string[0],
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
+        *((char **) b->ptr) =
+            fps->parray[pindex].val.string[0];
     }
 }
 
@@ -163,6 +161,8 @@ errno_t fps_process_cli_and_sync(
                        "run") == 0 ||
                 strcmp(standalone_argv[j],
                        "exec") == 0 ||
+                strcmp(standalone_argv[j],
+                       "set") == 0 ||
                 strcmp(standalone_argv[j],
                        "confstart") == 0 ||
                 strcmp(standalone_argv[j],
@@ -205,7 +205,9 @@ errno_t fps_process_cli_and_sync(
                     functionparameter_GetParamIndex(
                         fps,
                         bindings[i].fpskeyword);
-                if (pindex != -1) {
+                if (pindex != -1 &&
+                    strcmp(standalone_argv[arg_idx],
+                           ".") != 0) {
                     set_fps_value_from_string(
                         fps, pindex,
                         bindings[i].type,

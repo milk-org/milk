@@ -15,13 +15,16 @@
 
 #include "CLIcore.h"
 
-/**
- * @brief Global data structure for standalone FPS executables.
- *
- * Defined here to satisfy runtime symbol lookups from shared libraries
- * that reference 'data' but are linked without libCLIcore.
+/*
+ * Global data structure for standalone FPS executables.
+ * Some executables (milk-fps-info, etc.) do not link
+ * against libCLIcore.so and need this definition.
+ * V2 standalone executables that link libCLIcore.so
+ * will have this symbol overridden by the library's
+ * copy via ELF symbol interposition.
  */
 DATA __attribute__((used)) data;
+
 
 /*
  * Minimal implementations of CLI registration functions to satisfy
@@ -58,7 +61,22 @@ uint32_t RegisterCLIcmd(
     return 0;
 }
 
-imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
+imageID image_ID(
+    const char *name,
+    IMAGE      *imagearray,
+    long        NB_images
+)
 {
+    for (long i = 0; i < NB_images; i++)
+    {
+        if (imagearray[i].used == 1 &&
+            strncmp(imagearray[i].name,
+                    name,
+                    STRINGMAXLEN_IMAGE_NAME)
+                == 0)
+        {
+            return i;
+        }
+    }
     return -1;
 }
