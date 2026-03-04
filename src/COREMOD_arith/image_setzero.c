@@ -83,7 +83,11 @@ static CLICMDARGDEF farg[] = {
     IMSETZERO_PARAMS(FPS_X_FARG)
 };
 
+#ifdef FPS_STANDALONE
 CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
     "",
     "",
     CLICMD_FIELDS_DEFAULTS
