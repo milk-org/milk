@@ -24,6 +24,7 @@ imageID functionparameter_LoadStream(FUNCTION_PARAMETER_STRUCT *fps,
                                       &(fps->parray[pindex].fpflag),
                                       &imLOC);
 
+
     if(fpsconnectmode == FPSCONNECT_CONF)
     {
         if(fps->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED)

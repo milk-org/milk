@@ -1,118 +1,165 @@
 #include <stdio.h>
 
-#define C_TITLE "\033[1;36m"   /* Cyan Bold    -> Main section headers / separators */
-#define C_HDR   "\033[1;34m"   /* Blue Bold    -> Subheaders inside sections */
-#define C_CMD   "\033[1;32m"   /* Green Bold   -> Command names, syntax, execution */
-#define C_NOTE  "\033[1;33m"   /* Yellow Bold  -> Tips, Notes, 'run X for more' */
-#define C_BOLD  "\033[1m"      /* White Bold   -> Emphasize specific words */
-#define C_FPS   "\033[1;35m"   /* Magenta Bold -> FPS names */
-#define C_RST   "\033[0m"      /* Reset */
+#define C_TITLE "\033[1;36m"
+#define C_HDR   "\033[1;34m"
+#define C_CMD   "\033[1;32m"
+#define C_NOTE  "\033[1;33m"
+#define C_BOLD  "\033[1m"
+#define C_FPS   "\033[1;35m"
+#define C_RST   "\033[0m"
 
-/* Red Bold */
-#define C_WARN   "\033[1;31m"
-
-int main()
+/**
+ * milk-fps-help
+ *
+ * Describes FPS (Function Parameter Structures):
+ * what they are, how to inspect, modify, and
+ * manage them. Complements milk-fpsexec-help
+ * which covers fpsexec standalone executables.
+ */
+int main(void)
 {
     printf("\n");
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "            Function Parameter Structure (FPS)          \n" C_RST);
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf("\n");
-    printf("An FPS provides a shared-memory parameter context, allowing\n");
-    printf("users and programs to view, tune, and steer variables externally\n");
-    printf("while a computation runs effortlessly. It unifies parameters,\n");
-    printf("control structures, and telemetry into a single namespace.\n");
-    printf("\n");
-
-    printf(C_HDR "Initializing an FPS\n" C_RST);
-    printf("To initialize the parameter space for a module, invoke the\n");
-    printf("executable with the " C_BOLD "fpsinit" C_RST " subcommand and provide an FPS name:\n");
-    printf("  $ " C_CMD "milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit\n" C_RST);
-    printf("  " C_NOTE "Tip:" C_RST " Use the " C_BOLD "-procinfo" C_RST " flag to add daemon monitoring features:\n");
-    printf("  $ " C_CMD "milk-fpsclitest " C_FPS "myfps00" C_CMD ":fpsinit -procinfo\n" C_RST);
+    printf(C_TITLE
+           "========================================"
+           "========\n" C_RST);
+    printf(C_TITLE
+           "     Function Parameter Structure (FPS) "
+           "        \n" C_RST);
+    printf(C_TITLE
+           "========================================"
+           "========\n" C_RST);
     printf("\n");
 
-    printf(C_HDR "Viewing FPS Data\n" C_RST);
-    printf("You can view the parameters inside an FPS via the terminal:\n");
-    printf("  $ " C_CMD "milk-fps-info " C_FPS "myfps00" C_CMD "\n" C_RST);
-    printf("Or using the interactive configuration interface (TUI):\n");
-    printf("  $ " C_CMD "milk-fpsCTRL\n" C_RST);
-    printf("\n");
+    printf(
+        "An FPS is a shared-memory parameter"
+        " context. It allows\n"
+        "users and programs to view, tune, and"
+        " steer parameters\n"
+        "while a computation runs. It unifies"
+        " configuration,\n"
+        "control structures, and telemetry into"
+        " a single namespace.\n"
+        "\n"
+        "Each FPS appears as a .fps.shm file"
+        " in the FPS shared\n"
+        "memory directory.\n\n");
+
+    printf(C_HDR "Listing FPS Instances\n" C_RST);
+    printf(
+        "  " C_CMD "milk-fps-list" C_RST
+        "        List all active shared-memory"
+        " FPS\n"
+        "  " C_CMD "milk-fps-list -e" C_RST
+        "     Show full executable paths\n"
+        "  " C_CMD "milk-fps-list -v" C_RST
+        "     Verbose (show search directory)\n"
+        "\n");
+
+    printf(C_HDR "Inspecting FPS Content\n" C_RST);
+    printf(
+        "  " C_CMD "milk-fps-info " C_FPS
+        "<fpsname>" C_RST
+        "    Display parameters and values\n"
+        "  " C_CMD "milk-fpsCTRL" C_RST
+        "              Interactive TUI for FPS"
+        " management\n\n");
 
     printf(C_HDR "Modifying Parameters\n" C_RST);
-    printf("Use " C_BOLD "milk-fps-set" C_RST " to change values on-the-fly from bash scripts:\n");
-    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD ".gain 1.5\n" C_RST);
-    printf("  $ " C_CMD "milk-fps-set " C_FPS "myfps00" C_CMD ".verbose 1\n" C_RST);
-    printf("\n");
+    printf(
+        "  " C_CMD "milk-fps-set " C_FPS
+        "<fpsname>" C_CMD ".<param> <value>"
+        C_RST "\n"
+        "  Example:\n"
+        "    $ " C_CMD "milk-fps-set "
+        C_FPS "myfps00" C_CMD ".gain 1.5\n"
+        C_RST
+        "    $ " C_CMD "milk-fps-set "
+        C_FPS "myfps00" C_CMD ".verbose 1\n"
+        C_RST "\n");
+
+    printf(C_HDR "Tracking Parameter Changes\n"
+           C_RST);
+    printf(
+        "  " C_CMD "milk-fps-track " C_FPS
+        "<fpsname>" C_RST
+        "   Monitor live parameter changes\n\n");
 
     printf(C_HDR "Managing Execution\n" C_RST);
-    printf("A module often has background components like a primary `run`\n");
-    printf("loop and a fast configuration supervisor (`conf`).\n");
-    printf("  Start process    : $ " C_CMD "milk-fps-runstart " C_FPS "myfps00" C_CMD "\n" C_RST);
-    printf("  Stop process     : $ " C_CMD "milk-fps-runstop " C_FPS "myfps00" C_CMD "\n" C_RST);
-    printf("\n");
-    printf("  Start config loop: $ " C_CMD "milk-fps-confstart " C_FPS "myfps00" C_CMD "\n" C_RST);
-    printf("  Stop config loop : $ " C_CMD "milk-fps-confstop " C_FPS "myfps00" C_CMD "\n" C_RST);
-    printf("\n");
+    printf(
+        "  Each FPS may have a config loop"
+        " (conf) and a run loop:\n"
+        "    " C_CMD "milk-fps-confstart "
+        C_FPS "<fpsname>" C_RST
+        "   Start config loop\n"
+        "    " C_CMD "milk-fps-confstop  "
+        C_FPS "<fpsname>" C_RST
+        "   Stop config loop\n"
+        "    " C_CMD "milk-fps-confstep  "
+        C_FPS "<fpsname>" C_RST
+        "   Single config step\n"
+        "    " C_CMD "milk-fps-runstart  "
+        C_FPS "<fpsname>" C_RST
+        "   Start run loop\n"
+        "    " C_CMD "milk-fps-runstop   "
+        C_FPS "<fpsname>" C_RST
+        "   Stop run loop\n\n");
 
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "            Standalone Execution           \n" C_RST);
-    printf("\n");
-    printf("When providing positional arguments to the CLI, an FPS is\n");
-    printf("automatically created/updated, executed once, and disconnected:\n");
-    printf("  $ " C_CMD "./milk-fpsclitest 42 cam01\n" C_RST);
-    printf("For more details about standalone execution, run:\n");
-    printf("  $ " C_CMD "./milk-fpsclitest -h\n" C_RST);
-    printf("\n");
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "            Local FPS (non-shared memory)           \n" C_RST);
-    printf("\n");
-    printf("FPS names starting with " C_BOLD "_" C_RST " (underscore) use process-local\n");
-    printf("memory instead of shared memory. No .fps.shm file is created.\n");
-    printf("Up to 64 named local FPS instances can coexist per process.\n");
-    printf("  milk > " C_CMD "modex.fpsclitest:" C_FPS "_local1" C_CMD " 3 cam01\n" C_RST);
-    printf("  milk > " C_CMD "modex.fpsclitest:" C_FPS "_local2" C_CMD " 7 cam02\n" C_RST);
-    printf(C_NOTE "  Tip:" C_RST " Local FPS instances are not visible to milk-fps-list,\n");
-    printf("  milk-fps-info, or milk-fpsCTRL. Use the " C_BOLD "?" C_RST " query (see below).\n");
-    printf("\n");
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "            Command-line interface (CLI) Execution         \n" C_RST);
-    printf("\n");
-    printf("  Function help    : $ " C_CMD "cmd? modex.fpsclitest\n" C_RST); 
-    printf("\n");
-    printf("  The general syntax is:  cmdkey:" C_FPS "fpsname" C_RST ":action\n");
-    printf("  If " C_FPS "fpsname" C_RST " is not provided, it is created with default name: " C_FPS "cmdfpsname.CLIsessionname" C_RST "\n");
-    printf("  Action is optional, and can be:\n");
-    printf("    init : Initialize FPS (create and/or reset to default values)\n");
-    printf("    initp: Initialize FPS with processinfo\n");
-    printf("    ?    : Show FPS content\n");
-    printf(C_WARN "Warning: " C_RST "Commands below creates FPS if it does not exist.\n");
-    printf("  Create FPS (no processinfo) : milk > " C_CMD "modex.fpsclitest::init\n" C_RST);
-    printf("  Create FPS (processinfo)    : milk > " C_CMD "modex.fpsclitest::initp\n" C_RST);
-    printf("  Querry params               : milk > " C_CMD "modex.fpsclitest::?\n" C_RST);
-    printf("  Change param value          : milk > " C_CMD "modex.fpsclitest .gain 1.5\n" C_RST);
-    printf("  Create named FPS            : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":init\n" C_RST);
-    printf("  Querry named FPS            : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD ":?\n" C_RST);
-    printf("  Run cmd, default FPS        : milk > " C_CMD "modex.fpsclitest 3 cam01\n" C_RST);
-    printf("  Run cmd, named FPS          : milk > " C_CMD "modex.fpsclitest:" C_FPS "myfps00" C_CMD " 3 cam01\n" C_RST);
-    printf("  Run cmd, local FPS          : milk > " C_CMD "modex.fpsclitest:" C_FPS "_local" C_CMD " 3 cam01\n" C_RST);
-    printf("  List FPS + params           : milk > " C_CMD "modex.fpsclitest ?\n" C_RST);
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf(C_TITLE "            FPS Utilities                           \n" C_RST);
-    printf(C_TITLE "========================================================\n" C_RST);
-    printf("\n");
-    printf("  " C_CMD "milk-fps-list" C_RST "   : List all active FPS\n");
-    printf("  " C_CMD "milk-fps-info" C_RST "   : Display FPS information and parameters\n");
-    printf("  " C_CMD "milk-fps-set" C_RST "    : Set FPS parameter value\n");
-    printf("  " C_CMD "milk-fps-rm" C_RST "     : Remove FPS (interactive if no argument)\n");
-    printf("  " C_CMD "milk-fps-track" C_RST "  : Monitor FPS parameter changes\n");
-    printf("  " C_CMD "milk-fpsCTRL" C_RST "   : Interactive TUI for FPS management\n");
-    printf("\n");
-    printf("  Execution Control:\n");
-    printf("    " C_CMD "milk-fps-confstart" C_RST "/" C_CMD "stop" C_RST " : Control configuration loop\n");
-    printf("    " C_CMD "milk-fps-runstart" C_RST "/" C_CMD "stop" C_RST "  : Control main execution loop\n");
-    printf("\n");
-    printf(C_NOTE "Run any of these programs with -h for more help." C_RST "\n");
-    printf("\n");
+    printf(C_HDR "Removing FPS\n" C_RST);
+    printf(
+        "  " C_CMD "milk-fps-rm " C_FPS
+        "<fpsname>" C_RST
+        "     Remove FPS shared memory\n"
+        "  " C_CMD "milk-fps-rm" C_RST
+        "              Interactive mode"
+        " (select from list)\n\n");
+
+    printf(C_HDR "Local FPS (Non-Shared)\n"
+           C_RST);
+    printf(
+        "  FPS names starting with "
+        C_BOLD "_" C_RST
+        " (underscore) use process-local\n"
+        "  memory instead of shared memory."
+        " No .fps.shm file is created.\n"
+        "  Up to 64 local FPS instances can"
+        " coexist per process.\n"
+        C_NOTE "  Note:" C_RST
+        " Local FPS are not visible to"
+        " milk-fps-list, milk-fps-info,\n"
+        "  or milk-fpsCTRL. Use the "
+        C_BOLD "?" C_RST
+        " query within the milk CLI.\n\n");
+
+    printf(C_HDR
+           "CLI Interaction (within milk)\n"
+           C_RST);
+    printf(
+        "  The milk CLI syntax for FPS is:"
+        "  cmdkey:" C_FPS "fpsname" C_RST
+        ":action\n"
+        "  If " C_FPS "fpsname" C_RST
+        " is omitted, a default name is"
+        " assigned.\n"
+        "  Actions: " C_BOLD "init" C_RST
+        ", " C_BOLD "initp" C_RST
+        " (with processinfo), "
+        C_BOLD "?" C_RST " (query)\n"
+        "  Example:\n"
+        "    milk > " C_CMD
+        "modex.fpsclitest:" C_FPS "myfps00"
+        C_CMD ":init\n" C_RST
+        "    milk > " C_CMD
+        "modex.fpsclitest:" C_FPS "myfps00"
+        C_CMD ":?\n" C_RST
+        "    milk > " C_CMD
+        "modex.fpsclitest .gain 1.5\n"
+        C_RST "\n");
+
+    printf(C_NOTE
+           "Run " C_CMD "milk-fpsexec-help"
+           C_NOTE " for a user guide to"
+           " standalone FPS executables.\n"
+           C_RST "\n");
+
     return 0;
 }

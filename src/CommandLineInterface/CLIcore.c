@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/prctl.h>
+#include <sys/ioctl.h>
 #include <sched.h>
 #include <signal.h>
 
@@ -106,7 +107,7 @@ void        fnExit1(void);
 void        runCLI_cmd_init();
 static void runCLI_free();
 
-static int sigwinch_received = 0;
+static volatile sig_atomic_t sigwinch_received = 0;
 
 static int command_line_process_options(int argc, char **argv);
 
@@ -458,12 +459,7 @@ errno_t CLI_startup()
    reading a character. */
 static void sighandler(int sig)
 {
-
     (void) sig;
-#ifdef USE_READLINE
-    rl_resize_terminal();
-#endif
-    //printf("RESIZE detected %d %d\n", COLS, LINES);
     sigwinch_received = 1;
 }
 
@@ -742,6 +738,22 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 nsts.tv_sec  = 0;
                 nsts.tv_nsec = 3000000; // 3 ms delay
                 nanosleep(&nsts, NULL);
+            }
+
+            if(sigwinch_received)
+            {
+                sigwinch_received = 0;
+#ifdef USE_READLINE
+                {
+                    struct winsize ws;
+                    if(ioctl(STDOUT_FILENO,
+                             TIOCGWINSZ, &ws) >= 0)
+                    {
+                        rl_set_screen_size(
+                            ws.ws_row, ws.ws_col);
+                    }
+                }
+#endif
             }
 
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
