@@ -67,3 +67,4 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 add_milk_standalone(fft-dofft dofft.c)
+add_milk_standalone(fft-pup2foc pup2foc.c)

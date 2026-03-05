@@ -9,87 +9,89 @@
 #include "permut.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inamp;
-static char *inpha;
-
-static char *outamp;
-static char *outpha;
-
-
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "pup2foc",
+    .cmdkey      = "pup2foc",
+    .description = "pupil to focus by FFT"
+};
 
 
-static CLICMDARGDEF farg[] =
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inamp = NULL;
+static char * inpha = NULL;
+static char * outamp = NULL;
+static char * outpha = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inamp", &inamp, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input WF ampl") \
+    X(".inpha", &inpha, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input WF phase") \
+    X(".outa", &outamp, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output WF ampl") \
+    X(".outp", &outpha, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output WF phase")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inamp",
-        "input WF ampl",
-        "ima",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inamp,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inpha",
-        "input WF phase",
-        "imp",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inpha,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outa",
-        "output WF ampl",
-        "outa",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outamp,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outp",
-        "output WF phase",
-        "outp",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outpha,
-        NULL
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-static errno_t customCONFsetup()
-{
-    return RETURN_SUCCESS;
 }
-
-
-static errno_t customCONFcheck()
-{
-    return RETURN_SUCCESS;
-}
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "pup2foc",
-    "pupil to focus by FFT",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
-
-
-
-
 /* inv = 0 for direct fft and 1 for inverse fft */
 /* direct = focal plane -> pupil plane  equ. fft2d(..,..,..,1) */
 /* inverse = pupil plane -> focal plane equ. fft2d(..,..,..,0) */
@@ -138,7 +140,6 @@ errno_t pup2foc_fft(
     permut(Ctmpname);
 
 
-
     WRITE_IMAGENAME(C1tmpname, "_C1tmp_%d", (int) getpid());
 
     if(inv == 0)
@@ -172,9 +173,6 @@ errno_t pup2foc_fft(
 }
 
 
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -206,19 +204,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_milk_fft__pup2foc()
 {
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

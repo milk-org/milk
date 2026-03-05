@@ -10,76 +10,90 @@
 
 #include "CLIcore.h"
 
-// Local variables pointers
 
-static char *inimc0;
-static long  fpi_inimc0;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inimc1;
-static long  fpi_inimc1;
-
-static char *inimmask;
-static long  fpi_inimmask;
-
-static char *imout;
-static long  fpi_imout;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imcubeXprod",
+    .cmdkey      = "imcubeXprod",
+    .description = "cross product of two image cubes"
+};
 
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".imcube0",
-        "input image cube 0",
-        "imc0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimc0,
-        &fpi_inimc0
-    },
-    {
-        CLIARG_IMG,
-        ".imcube1",
-        "input image cube 1",
-        "imc1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimc1,
-        &fpi_inimc1
-    },
-    {
-        CLIARG_IMG,
-        ".immask",
-        "pixel mask",
-        "immask",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimmask,
-        &fpi_inimmask
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output matrix",
-        "outm",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imout,
-        &fpi_imout
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inimc0 = NULL;
+static char * inimc1 = NULL;
+static char * inimmask = NULL;
+static char * imout = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".imcube0", &inimc0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube 0") \
+    X(".imcube1", &inimc1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube 1") \
+    X(".immask", &inimmask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "pixel mask") \
+    X(".outim", &imout, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output matrix")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "imcubeXprod", "cross product of two image cubes", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
-
-
-
-
 static errno_t imcube_crossproduct(IMGID imgcube0,
                                    IMGID imgcube1,
                                    IMGID imgmask,
@@ -131,8 +145,6 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
 }
 
 
-
-
 /**
  * @brief Cross product of 2 image cubes
  *
@@ -165,17 +177,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linopt_imtools__imcube_crossproduct()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

@@ -26,269 +26,119 @@
 #endif
 
 
-
 #include "CLIcore.h"
 #include "timeutils.h"
 
 #include "MVM_CPU.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// Local variables pointers
-static int32_t *GPUindex;
-long fpi_GPUindex;
-
-
-static uint32_t *mmax;
-long fpi_mmax;
-
-static uint32_t *nmax;
-long fpi_nmax;
-
-
-
-static char *insname;
-long fpi_insname;
-
-static char *inmasksname;
-long fpi_inmasksname;
-
-static char *immodes;
-long fpi_immodes;
-
-static char *outcoeff;
-long fpi_outcoeff;
-
-static int64_t *outinit;
-long fpi_outinit;
-
-static uint32_t *axmode;
-long fpi_axmode;
-
-static int64_t *PROCESS;
-long fpi_PROCESS;
-
-static int64_t *TRACEMODE;
-long fpi_TRACEMODE;
-
-static int64_t *MODENORM;
-long fpi_MODENORM;
-
-static char *intot_stream;
-long fpi_intot_stream;
-
-static char *inrefsname;
-long fpi_inrefsname;
-
-static char *outrefsname;
-long fpi_outrefsname;
-
-static uint64_t *twait;
-long fpi_twait;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_INT32,
-        ".GPUindex",
-        "GPU index, 99 for CPU",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &GPUindex,
-        &fpi_GPUindex
-    },
-    {
-        CLIARG_STREAM,
-        ".insname",
-        "input stream name",
-        "inV",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &insname,
-        &fpi_insname
-    },
-    {
-        CLIARG_STREAM,
-        ".inmasksname",
-        "nput mask stream name",
-        "inV",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmasksname,
-        &fpi_inmasksname
-    },
-    {
-        CLIARG_STREAM,
-        ".immodes",
-        "modes stream name",
-        "mat",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &immodes,
-        &fpi_immodes
-    },
-    {
-        CLIARG_STREAM,
-        ".outcoeff",
-        "output coefficients",
-        "outV",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outcoeff,
-        &fpi_outcoeff
-    },
-    {
-        CLIARG_ONOFF,
-        ".outinit",
-        "output init mode",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &outinit,
-        &fpi_outinit
-    },
-    {
-        CLIARG_UINT32,
-        ".option.axmode",
-        "0 for normal mode extraction, 1 for expansion",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &axmode,
-        &fpi_axmode
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.PROCESS",
-        "processing flag",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &PROCESS,
-        &fpi_PROCESS
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.TRACEMODE",
-        "writing trace",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &TRACEMODE,
-        &fpi_TRACEMODE
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.MODENORM",
-        "input modes normalization",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &MODENORM,
-        &fpi_MODENORM
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_intot",
-        "optional input normalization stream",
-        "null",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &intot_stream,
-        &fpi_intot_stream
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_refin",
-        "optional input reference to be subtracted stream",
-        "null",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inrefsname,
-        &fpi_inrefsname
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_refout",
-        "optional output reference to be subtracted stream",
-        "null",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outrefsname,
-        &fpi_outrefsname
-    },
-    {
-        CLIARG_UINT64,
-        ".option.twait",
-        "insert time wait [us] at each iteration",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &twait,
-        &fpi_twait
-    },
-    {
-        CLIARG_UINT32,
-        ".option.mmax",
-        "partial computation: max m index value",
-        "100000",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &mmax,
-        &fpi_mmax
-    },
-    {
-        CLIARG_UINT32,
-        ".option.nmax",
-        "partial computation: max n index value",
-        "100000",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &nmax,
-        &fpi_nmax
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "MVMmextrmodes",
+    .cmdkey      = "MVMmextrmodes",
+    .description = "extract modes by MVM"
 };
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_insname].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-        data.fpsptr->parray[fpi_immodes].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-    }
 
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
+static int32_t * GPUindex = NULL;
+static uint32_t * mmax = NULL;
+static uint32_t * nmax = NULL;
+static char * insname = NULL;
+static char * inmasksname = NULL;
+static char * immodes = NULL;
+static char * outcoeff = NULL;
+static int64_t * outinit = NULL;
+static uint32_t * axmode = NULL;
+static int64_t * PROCESS = NULL;
+static int64_t * TRACEMODE = NULL;
+static int64_t * MODENORM = NULL;
+static char * intot_stream = NULL;
+static char * inrefsname = NULL;
+static char * outrefsname = NULL;
+static uint64_t * twait = NULL;
 
-    if(data.fpsptr != NULL)
-    {
-    }
 
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "MVMmextrmodes", "extract modes by MVM", CLICMD_FIELDS_DEFAULTS
+#define FPS_PARAMS(X) \
+    X(".GPUindex", &GPUindex, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "GPU index, 99 for CPU") \
+    X(".insname", &insname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream name") \
+    X(".inmasksname", &inmasksname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "nput mask stream name") \
+    X(".immodes", &immodes, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "modes stream name") \
+    X(".outcoeff", &outcoeff, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coefficients") \
+    X(".option.sname_refin", &inrefsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional input reference to be subtracted stream") \
+    X(".option.sname_refout", &outrefsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional output reference to be subtracted stream")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-// detailed help
-static errno_t help_function()
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -306,8 +156,6 @@ static errno_t compute_function()
     float *d_modes = NULL; // linear memory of GPU
     float *d_in = NULL;
     float *d_modeval = NULL;
-
-
 
 
     // each step is 2x longer average than previous step
@@ -378,7 +226,6 @@ static errno_t compute_function()
     }
 
 
-
     /* // This was probaly never implemented at all.
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
@@ -397,7 +244,6 @@ static errno_t compute_function()
         INNORMMODE = 1;
     }
     */
-
 
 
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
@@ -557,7 +403,6 @@ static errno_t compute_function()
     }
 
 
-
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outcoeff, arraytmp[0], arraytmp[1]);
 
@@ -565,15 +410,12 @@ static errno_t compute_function()
     float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
 
-
     MODEVALCOMPUTE = 1;
 
     free(arraytmp);
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
 
 
     if(MODEVALCOMPUTE == 1)
@@ -963,8 +805,6 @@ static errno_t compute_function()
 #endif
 
 
-
-
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
     if(*axmode == 0)
     {
@@ -1030,7 +870,6 @@ static errno_t compute_function()
                     beta = 1.0;
                     memcpy(outarray, imgoutref.im->array.F, sizeof(float)*n);
                 }
-
 
 
                 if(imgin.md->datatype != _DATATYPE_FLOAT)
@@ -1105,7 +944,6 @@ static errno_t compute_function()
                         break;
                     }
                 }
-
 
 
                 if(*axmode == 1)
@@ -1311,15 +1149,12 @@ static errno_t compute_function()
                 }
 
 
-
-
                 clock_gettime(CLOCK_MILK, &t1);
                 struct timespec tdiff;
                 tdiff = timespec_diff(t0, t1);
                 double t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 processinfo_WriteMessage_fmt(processinfo, "GPU%d %dx%d MVM %.3f us", *GPUindex,
                                              n, m, t01d * 1e6);
-
 
 
                 processinfo_update_output_stream(processinfo, imgout.im, NULL);
@@ -1347,7 +1182,6 @@ static errno_t compute_function()
     }
 
 
-
     if(use_mask)
     {
         free(masked_pix);
@@ -1358,21 +1192,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__MVMextractModes()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

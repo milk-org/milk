@@ -9,63 +9,90 @@
 
 #include "image_filter/image_filter.h"
 
-// Local variables pointers
-static char   *flistname;
-static double *satlevel;
-static double *biaslevel;
-static char   *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".flistname",
-        "file list name",
-        "HDRfilelist.txt",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &flistname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".satlevel",
-        "Saturation level",
-        "satval",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &satlevel,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".biaslevel",
-        "Bias level",
-        "biasval",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &biaslevel,
-        NULL
-    },
-    {
-        CLIARG_STR_NOT_IMG,
-        ".outimname",
-        "output image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "combineHDR",
+    .cmdkey      = "combineHDR",
+    .description = "combine HDR image"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char   * flistname = NULL;
+static double * satlevel = NULL;
+static double * biaslevel = NULL;
+static char   * outimname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".flistname", &flistname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "file list name") \
+    X(".satlevel", &satlevel, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Saturation level") \
+    X(".biaslevel", &biaslevel, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Bias level") \
+    X(".outimname", &outimname, \
+      FPTYPE_STRING_NOT_STREAM, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "combineHDR", "combine HDR image", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("combine HDR image\n");
-
-    return RETURN_SUCCESS;
 }
-
 errno_t combine_HDR_image(const char *__restrict flistname,
                           float satvalue,
                           float biasvalue,
@@ -450,12 +477,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__combineHDR()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

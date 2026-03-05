@@ -1,78 +1,98 @@
 #include "CLIcore.h"
 
-// Local variables pointers
-static char *imvecname;
-static char *inpixiname;
-static char *inpixmultname;
-static char *outimname;
-static long *xsizein;
-static long *ysizein;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".inim",
-        "input vector",
-        "imvec",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imvecname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inpixi",
-        "pixel index image",
-        "pixi",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inpixiname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inpixmult",
-        "input pixel mult image",
-        "pixmult",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inpixmultname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output 2D image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".xsize",
-        "X size",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &xsizein,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".ysize",
-        "Y size",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &ysizein,
-        NULL
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "vec2im",
+    .cmdkey      = "vec2im",
+    .description = "remap vector to image"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * imvecname = NULL;
+static char * inpixiname = NULL;
+static char * inpixmultname = NULL;
+static char * outimname = NULL;
+static long * xsizein = NULL;
+static long * ysizein = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &imvecname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input vector") \
+    X(".inpixi", &inpixiname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "pixel index image") \
+    X(".inpixmult", &inpixmultname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input pixel mult image") \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output 2D image") \
+    X(".xsize", &xsizein, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "X size") \
+    X(".ysize", &ysizein, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Y size")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "vec2im", "remap vector to image", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
 
 //
@@ -136,12 +156,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__vec_to_2DImage()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

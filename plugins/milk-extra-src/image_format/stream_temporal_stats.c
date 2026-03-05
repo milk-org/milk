@@ -20,51 +20,84 @@
 #include "timeutils.h"
 
 
-// Local variables pointers
-static char    *in_name;
-static int32_t *ptr_n_frames;
-static double  *ptr_timeout;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "in_name",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &in_name,
-        NULL
-    },
-    {
-        CLIARG_INT32,
-        ".n_frames",
-        "Stats every n frames max",
-        "n_frames",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &ptr_n_frames,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".timeout",
-        "Stats at timeout (sec)",
-        "timeout",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &ptr_timeout,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "stream_av_std",
+    .cmdkey      = "stream_av_std",
+    .description = "RT compute of ave/std of image streams"
 };
 
-static CLICMDDATA CLIcmddata = {"stream_av_std",
-                                "RT compute of ave/std of image streams",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-static errno_t help_function()
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char    * in_name = NULL;
+static int32_t * ptr_n_frames = NULL;
+static double  * ptr_timeout = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &in_name, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".n_frames", &ptr_n_frames, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Stats every n frames max") \
+    X(".timeout", &ptr_timeout, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Stats at timeout (sec)")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    printf("Compute temporal average and st-dev of image stream\n");
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
 /*
 THE IMPORTANT, CUSTOM PART
 */
@@ -434,13 +467,39 @@ static errno_t compute_function()
 /*
 CLI boilerplate
 */
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__temporal_stats()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

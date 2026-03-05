@@ -4,7 +4,6 @@
  */
 
 
-
 #include "CLIcore.h"
 
 #include <math.h>
@@ -14,173 +13,103 @@
 
 // zonal WFS response
 //
-static char *outzcubename;
-static long  fpi_outzcubename;
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static uint32_t *xsize;
-static long  fpi_xsize;
-
-static uint32_t *ysize;
-static long  fpi_ysize;
-
-static float *xcent;
-static long  fpi_xcent;
-
-static float *ycent;
-static long  fpi_ycent;
-
-static float *radius;
-static long  fpi_radius;
-
-static float *radiusmaskfactor;
-static long  fpi_radiusmaskfactor;
-
-
-static float *TTfactor;
-static long fpi_TTfactor;
-
-static uint32_t *NBzermode;
-static long  fpi_NBzermode;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // zonal RM WFS
-        CLIARG_STR,
-        ".outimg",
-        "output image name",
-        "zerc",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outzcubename,
-        &fpi_outzcubename
-    },
-    {
-        CLIARG_UINT32,
-        ".xsize",
-        "X size",
-        "50",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &xsize,
-        &fpi_xsize
-    },
-    {
-        CLIARG_UINT32,
-        ".ysize",
-        "Y size",
-        "50",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &ysize,
-        &fpi_ysize
-    },
-    {
-        CLIARG_FLOAT32,
-        ".xcent",
-        "X center",
-        "24.5",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &xcent,
-        &fpi_xcent
-    },
-    {
-        CLIARG_FLOAT32,
-        ".ycent",
-        "Y center",
-        "24.5",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &ycent,
-        &fpi_ycent
-    },
-    {
-        CLIARG_FLOAT32,
-        ".rad",
-        "radius",
-        "24.5",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &radius,
-        &fpi_radius
-    },
-    {
-        CLIARG_FLOAT32,
-        ".radmaskfact",
-        "masking radius factor",
-        "1.2",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &radiusmaskfactor,
-        &fpi_radiusmaskfactor
-    },
-    {
-        CLIARG_FLOAT32,
-        ".TTfactor",
-        "amplitude factor on TTr",
-        "1.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &TTfactor,
-        &fpi_TTfactor
-    },
-    {
-        CLIARG_UINT32,
-        ".NBzermode",
-        "Number modes",
-        "5",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &NBzermode,
-        &fpi_NBzermode
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkzerc",
+    .cmdkey      = "mkzerc",
+    .description = "make Zernike modes cube"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * outzcubename = NULL;
+static uint32_t * xsize = NULL;
+static uint32_t * ysize = NULL;
+static float * xcent = NULL;
+static float * ycent = NULL;
+static float * radius = NULL;
+static float * radiusmaskfactor = NULL;
+static float * TTfactor = NULL;
+static uint32_t * NBzermode = NULL;
 
 
-// Optional custom configuration setup. comptbuff
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    }
+#define FPS_PARAMS(X) \
+    X(".xsize", &xsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "X size") \
+    X(".ysize", &ysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Y size") \
+    X(".xcent", &xcent, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "X center") \
+    X(".ycent", &ycent, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Y center") \
+    X(".rad", &radius, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius") \
+    X(".NBzermode", &NBzermode, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Number modes")
 
-    return RETURN_SUCCESS;
-}
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkzerc", "make Zernike modes cube", CLICMD_FIELDS_DEFAULTS
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
 
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
 
-// detailed help
-static errno_t help_function()
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-
-
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -272,20 +201,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_ZernikePolyn__mkzercube()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+
