@@ -27,13 +27,34 @@ typedef errno_t (*fps_compute_fn)(void);
  * @param app_info    Application identity
  * @param bindings    Parameter bindings
  * @param nb_b        Number of bindings
+ * @param procinfo    If nonzero, add processinfo
+ *                    entries to FPS
  * @return            0 on success, -1 on failure
  */
 int fps_generic_init(
     const char      *fps_name,
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b
+    int              nb_b,
+    int              procinfo
+);
+
+
+/**
+ * @brief Run FPS conf loop with custom check.
+ *
+ * Like fps_generic_conf, but calls confcheck_fn
+ * on every loop iteration (if non-NULL).
+ *
+ * @param fps_name      FPS name
+ * @param loop          Loop flag (1 = continuous)
+ * @param confcheck_fn  Called each iteration
+ * @return              0 on success
+ */
+int fps_generic_conf_cb(
+    const char *fps_name,
+    int         loop,
+    errno_t   (*confcheck_fn)(void)
 );
 
 

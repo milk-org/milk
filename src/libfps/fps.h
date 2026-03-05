@@ -940,6 +940,7 @@ int main(int argc, char *argv[]) { \
     strncpy(fps_name, DEFAULT_FPS_NAME, STRINGMAXLEN_FPS_NAME - 1); \
     char arg_fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
     int use_tmux = 0; \
+    int use_procinfo = 0; \
     int show_help = 0; \
     int show_help_color = 1; \
     char *command = NULL; \
@@ -958,7 +959,7 @@ int main(int argc, char *argv[]) { \
         } else if (strcmp(argv[i], "-tmux") == 0) { \
             use_tmux = 1; \
         } else if (strcmp(argv[i], "-procinfo") == 0 || strcmp(argv[i], "--procinfo") == 0) { \
-            /* Option handled by FPSINIT implementation */ \
+            use_procinfo = 1; \
         } else if ((strcmp(argv[i], "-k") == 0 || strcmp(argv[i], "--keywords") == 0) && i + 1 < argc) { \
             keywords = argv[++i]; \
         } else if ((strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--description") == 0) && i + 1 < argc) { \
@@ -997,7 +998,7 @@ int main(int argc, char *argv[]) { \
             command = "run"; \
         } \
     } \
-    \
+    (void) use_procinfo; \
     if (strlen(arg_fps_name) > 0) { \
         strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1); \
     } \
@@ -1394,8 +1395,9 @@ int main(int argc, char *argv[]) { \
     }
 
 
-#define FPS_MAIN_STANDALONE_V2( \
-    APP_INFO, PARAMS_MACRO, COMPUTE_FN) \
+#define _FPS_MAIN_STANDALONE_V2_IMPL( \
+    APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
+    CONFCHECK_FN) \
 int main(int argc, char *argv[]) { \
     extern void CLI_data_init(); \
     CLI_data_init(); \
@@ -1411,6 +1413,7 @@ int main(int argc, char *argv[]) { \
     char arg_fps_name[STRINGMAXLEN_FPS_NAME] \
         = ""; \
     int use_tmux = 0; \
+    int use_procinfo = 0; \
     int show_help = 0; \
     int show_help_color = 1; \
     char *command = NULL; \
@@ -1448,6 +1451,7 @@ int main(int argc, char *argv[]) { \
                    "-procinfo") == 0 || \
             strcmp(argv[i], \
                    "--procinfo") == 0) { \
+            use_procinfo = 1; \
         } else if ((strcmp(argv[i], "-k") == 0 ||\
             strcmp(argv[i], \
                    "--keywords") == 0) \
@@ -1755,22 +1759,24 @@ int main(int argc, char *argv[]) { \
         if (strcmp(command, "fpsinit") == 0) { \
             fps_generic_init(fps_name, \
                 (FPS_APP_INFO *)&(APP_INFO), \
-                my_bindings_, nb_bindings_); \
+                my_bindings_, nb_bindings_, \
+                use_procinfo); \
         } \
         return 0; \
     } \
     if (strcmp(command, "fpsinit") == 0) { \
         return fps_generic_init(fps_name, \
             (FPS_APP_INFO *)&(APP_INFO), \
-            my_bindings_, nb_bindings_); \
+            my_bindings_, nb_bindings_, \
+            use_procinfo); \
     } else if (strcmp(command, \
                       "confstart") == 0) { \
-        return fps_generic_conf( \
-            fps_name, 1); \
+        return fps_generic_conf_cb( \
+            fps_name, 1, CONFCHECK_FN); \
     } else if (strcmp(command, \
                       "confstep") == 0) { \
-        return fps_generic_conf( \
-            fps_name, 0); \
+        return fps_generic_conf_cb( \
+            fps_name, 0, CONFCHECK_FN); \
     } else if (strcmp(command, \
                       "confstop") == 0) { \
         return fps_generic_confstop(fps_name); \
@@ -1801,7 +1807,8 @@ int main(int argc, char *argv[]) { \
                 FPSCONNECT_SIMPLE) == -1) { \
             fps_generic_init(fps_name, \
                 (FPS_APP_INFO *)&(APP_INFO), \
-                my_bindings_, nb_bindings_); \
+                my_bindings_, nb_bindings_, \
+                use_procinfo); \
             if (function_parameter_struct_connect( \
                     fps_name, &fps, \
                     FPSCONNECT_SIMPLE) == -1) { \
@@ -1860,6 +1867,35 @@ int main(int argc, char *argv[]) { \
     return 1; \
 }
 
+
+/**
+ * @brief V2 standalone macro with confcheck.
+ *
+ * Usage:
+ *   FPS_MAIN_STANDALONE_V2_CONFCHECK(
+ *       app_info, PARAMS, compute_fn,
+ *       customCONFcheck)
+ */
+#define FPS_MAIN_STANDALONE_V2_CONFCHECK( \
+    APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
+    CONFCHECK_FN) \
+    _FPS_MAIN_STANDALONE_V2_IMPL( \
+        APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
+        CONFCHECK_FN)
+
+
+/**
+ * @brief V2 standalone macro (no confcheck).
+ *
+ * For backward compatibility with existing
+ * callers.  Passes NULL as confcheck.
+ */
+#define FPS_MAIN_STANDALONE_V2( \
+    APP_INFO, PARAMS_MACRO, COMPUTE_FN) \
+    _FPS_MAIN_STANDALONE_V2_IMPL( \
+        APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
+        NULL)
+
 /**
  * @brief Standard initialization preamble for FPSINIT function
  */
@@ -1903,6 +1939,7 @@ int main(int argc, char *argv[]) { \
         while (fps.localstatus & FPS_LOCALSTATUS_CONFLOOP) { \
             if (function_parameter_FPCONFloopstep(&fps)) { \
                 BLOCK_VALIDATE \
+                functionparameter_CheckParametersAll(&fps); \
             } \
             usleep(10000); \
         } \
@@ -1911,6 +1948,8 @@ int main(int argc, char *argv[]) { \
         fps = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT); \
         BLOCK_VAR_MAP \
         function_parameter_FPCONFloopstep(&fps); \
+        BLOCK_VALIDATE \
+        functionparameter_CheckParametersAll(&fps); \
     } \
     function_parameter_FPCONFexit(&fps);
 
