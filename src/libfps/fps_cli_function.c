@@ -71,7 +71,7 @@ errno_t fps_generic_CLIfunction(
     {
         fps_generic_init(
             data.FPS_name, app_info,
-            bindings, nb_b);
+            bindings, nb_b, 0);
         return RETURN_SUCCESS;
     }
 
@@ -95,7 +95,7 @@ errno_t fps_generic_CLIfunction(
         if (lfps->NBparam == 0) {
             fps_generic_init(
                 data.FPS_name, app_info,
-                bindings, nb_b);
+                bindings, nb_b, 0);
         }
         fps = *lfps;
     }
@@ -106,7 +106,7 @@ errno_t fps_generic_CLIfunction(
         {
             fps_generic_init(
                 data.FPS_name, app_info,
-                bindings, nb_b);
+                bindings, nb_b, 0);
             if (function_parameter_struct_connect(
                     data.FPS_name, &fps,
                     FPSCONNECT_SIMPLE) == -1)

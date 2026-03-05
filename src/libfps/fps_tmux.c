@@ -14,33 +14,28 @@
 #include <string.h>
 
 
-/** @brief Kill FPS tmux sesssion
+/** @brief Kill FPS tmux session
  *
+ * Sends SIGINT (C-c) to each window for graceful
+ * process shutdown, then kills the session.
  */
 int functionparameter_FPS_tmux_kill(
     FUNCTION_PARAMETER_STRUCT *fps
 )
 {
-    // terminate tmux sessions
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl C-c 2> /dev/null",
-                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND(
-        "tmux send-keys -t %s:ctrl \"exit\" C-m 2> /dev/null",
+        "tmux send-keys -t %s:ctrl C-c 2>/dev/null",
+        fps->md->name);
+    EXECUTE_SYSTEM_COMMAND(
+        "tmux send-keys -t %s:conf C-c 2>/dev/null",
+        fps->md->name);
+    EXECUTE_SYSTEM_COMMAND(
+        "tmux send-keys -t %s:run C-c 2>/dev/null",
         fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf C-c 2> /dev/null",
-                           fps->md->name);
     EXECUTE_SYSTEM_COMMAND(
-        "tmux send-keys -t %s:conf \"exit\" C-m 2> /dev/null",
+        "tmux kill-session -t %s 2>/dev/null",
         fps->md->name);
-
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c 2> /dev/null",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \"exit\" C-m 2> /dev/null",
-                           fps->md->name);
-
-    EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null",
-                           fps->md->name);
 
     return RETURN_SUCCESS;
 }
@@ -57,8 +52,10 @@ int functionparameter_FPS_tmux_attach(
 
 
 
-/** @brief Initialize FPS tmux sesssion
+/** @brief Initialize FPS tmux session
  *
+ * Creates a tmux session with 3 windows: ctrl, conf, run.
+ * Uses atomic tmux command chaining to avoid race conditions.
  */
 int functionparameter_FPS_tmux_init(
     FUNCTION_PARAMETER_STRUCT *fps
@@ -68,27 +65,16 @@ int functionparameter_FPS_tmux_init(
     int argstring_maxlen   = 1000;
     int mloadstring_maxlen = 2000;
 
-    // delay to allow for tmux commands to be completed
-    float tmuxwait = 0.1;
-
-    // terminate tmux sessions
+    // Kill any existing session
     functionparameter_FPS_tmux_kill(fps);
 
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux kill-session -t %s 2> /dev/null",
-                           fps->md->name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d",
-                           fps->md->name);
-
-
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps->md->name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n conf", fps->md->name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps->md->name);
-    sleep(tmuxwait);
+    // Create session with all 3 windows atomically
+    EXECUTE_SYSTEM_COMMAND(
+        "tmux new-session -s %s -d -n ctrl \\;"
+        " new-window -n conf \\;"
+        " new-window -n run \\;"
+        " select-window -t %s:ctrl",
+        fps->md->name, fps->md->name);
 
 
     // Write functions to tmux windows
@@ -247,26 +233,29 @@ int functionparameter_FPS_tmux_ensure(
 }
 
 /** @brief Setup standalone tmux session
+ *
+ * Creates a tmux session with 3 windows: ctrl, conf, run.
+ * No-op if session already exists.
  */
 int functionparameter_FPS_tmux_standalone_setup(
     const char *fps_name
 )
 {
     char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "tmux has-session -t %s 2>/dev/null", fps_name);
-    if (system(cmd) == 0) {
+    snprintf(cmd, sizeof(cmd),
+             "tmux has-session -t %s 2>/dev/null",
+             fps_name);
+    if (system(cmd) == 0)
+    {
         return RETURN_SUCCESS;
     }
 
-    float tmuxwait = 0.1;
-    EXECUTE_SYSTEM_COMMAND("tmux new-session -s %s -d", fps_name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux rename-window -t %s:0 ctrl", fps_name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n conf", fps_name);
-    sleep(tmuxwait);
-    EXECUTE_SYSTEM_COMMAND("tmux new-window -t %s -n run", fps_name);
-    sleep(tmuxwait);
+    EXECUTE_SYSTEM_COMMAND(
+        "tmux new-session -s %s -d -n ctrl \\;"
+        " new-window -n conf \\;"
+        " new-window -n run \\;"
+        " select-window -t %s:ctrl",
+        fps_name, fps_name);
 
     return RETURN_SUCCESS;
 }

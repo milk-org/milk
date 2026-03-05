@@ -93,6 +93,40 @@ void init_cmdsettings(void)
     }
 }
 // ----------------------------------------------------------------------------
+// Help
+// ----------------------------------------------------------------------------
+
+/**
+ * @brief Print help text for the stream monitor
+ *
+ * @return errno_t RETURN_SUCCESS
+ */
+errno_t stream_monitor_help()
+{
+    printf("\nStream Monitor Help\n");
+    printf("-------------------\n");
+    printf(
+        "Monitors an image stream with multi-level\n"
+        "time binning, circular buffer, and dynamic\n"
+        "histogram.\n\n"
+        "Created streams:\n"
+        "  <stream>.cb<N>       "
+        "Circular buffer (last N frames)\n"
+        "  <stream>.cb<N>time   "
+        "Timestamps for circular buffer\n"
+        "  <stream>.tbin<M>     "
+        "Time-binned average (M frames)\n"
+        "  <stream>.tbin<M>.rms "
+        "Time-binned RMS\n"
+        "  <stream>.mon.shm     "
+        "Monitor shared memory (flux,\n"
+        "                       "
+        " histogram, timing)\n\n"
+    );
+    return RETURN_SUCCESS;
+}
+
+// ----------------------------------------------------------------------------
 // Shared Memory Helper Functions
 // ----------------------------------------------------------------------------
 
