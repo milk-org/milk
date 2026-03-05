@@ -1,49 +1,85 @@
 
 #include "CLIcore.h"
 
-// Local variables pointers
-static char *modesimname;
-static char *invecname;
-static char *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".modes",
-        "modes image cube",
-        "imcmode",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &modesimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".invec",
-        "input vector",
-        "imvec",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &invecname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imlinconstruct",
+    .cmdkey      = "imlinconstruct",
+    .description =
+        "construct image as linear sum of modes"
 };
 
-static CLICMDDATA CLIcmddata = {"imlinconstruct",
-                                "construct image as linear sum of modes",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-// detailed help
-static errno_t help_function()
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *modesimname = NULL;
+static char *invecname   = NULL;
+static char *outimname   = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".modes", &modesimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "modes image cube") \
+    X(".invec", &invecname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input vector") \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
 
 errno_t linopt_imtools_image_construct(const char *IDmodes_name,
@@ -115,26 +151,57 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     return RETURN_SUCCESS;
 }
 
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
-    linopt_imtools_image_construct(modesimname, invecname, outimname, NULL);
-
+    linopt_imtools_image_construct(
+        modesimname, invecname,
+        outimname, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__image_construct()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

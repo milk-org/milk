@@ -5,57 +5,85 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-static char     *farg_inimname;
-static char     *farg_outdname;
-static uint32_t *farg_kNNsize;
 
-// List of arguments to function
-//
-static CLICMDARGDEF farg[] =
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mindiffscan",
+    .cmdkey      = "mindiffscan",
+    .description =
+        "scan image cube for similar pairs"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *farg_inimname = NULL;
+static char     *farg_outdname = NULL;
+static uint32_t *farg_kNNsize  = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &farg_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube") \
+    X(".outdname", &farg_outdname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output directory name") \
+    X(".kNNsize", &farg_kNNsize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of samples in cluster")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image cube",
-        "imc1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &farg_inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outdname",
-        "output directory name",
-        "outd",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &farg_outdname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".kNNsize",
-        "number of samples in cluster",
-        "20",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &farg_kNNsize,
-        NULL
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-// CLI function initialization data
-static CLICMDDATA CLIcmddata =
-{
-    "mindiffscan",                       // keyword to call function in CLI
-    "scan image cube for similar pairs", // description of what the function does
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("find nearest neighbors\n");
-
-    return RETURN_SUCCESS;
 }
 
 static errno_t
@@ -412,32 +440,56 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     return RETURN_SUCCESS;
 }
 
-// Wrapper function, used by all CLI calls
-// Defines how local variables are fed to computation code
-// Always local to this translation unit
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    imcube_mindiffscan(imgid_make_from_name(farg_inimname),
-                       farg_outdname,
-                       *farg_kNNsize);
+    imcube_mindiffscan(
+        imgid_make_from_name(farg_inimname),
+        farg_outdname,
+        *farg_kNNsize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-/** @brief Register CLI command
-*
-* Adds function to list of CLI commands.
-* Called by main module initialization function init_module_CLI().
-*/
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_clustering__imcube_mindiffscan()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

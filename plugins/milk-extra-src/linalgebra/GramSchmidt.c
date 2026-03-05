@@ -8,78 +8,81 @@
 #include "SGEMM.h"
 
 
-static char *inmodes;
-static long  fpi_inmodes;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *outmodes;
-static long  fpi_outmodes;
-
-static char *auxmat;
-static long  fpi_auxmat;;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "GramSchmidt",
+    .cmdkey      = "GramSchmidt",
+    .description = "Gram-Schmidt process"
+};
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-static CLICMDARGDEF farg[] =
+static char * inmodes = NULL;
+static char * outmodes = NULL;
+static char * auxmat = NULL;
+static int32_t * GPUdevice = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inmodes", &inmodes, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input modes") \
+    X(".outmodes", &outmodes, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output modes")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inmodes",
-        "input modes",
-        "inm",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmodes,
-        &fpi_inmodes
-    },
-    {
-        CLIARG_STR,
-        ".outmodes",
-        "output modes",
-        "outm",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outmodes,
-        &fpi_outmodes
-    },
-    {
-        CLIARG_STR,
-        ".auxmat",
-        "optional aux matrix, co-transformed",
-        "auxmat",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &auxmat,
-        &fpi_auxmat
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "GramSchmidt", "Gram-Schmidt process", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("Run Gram-Schmodt process\n");
-
-    return RETURN_SUCCESS;
 }
-
-
-
-
 errno_t GramSchmidt(
     IMGID imginm,
     IMGID *imgoutm,
@@ -189,12 +192,6 @@ errno_t GramSchmidt(
 }
 
 
-
-
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -209,7 +206,6 @@ static errno_t compute_function()
     resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
 
@@ -220,28 +216,43 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__GramSchmidt()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
 
