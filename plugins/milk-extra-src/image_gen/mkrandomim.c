@@ -5,52 +5,80 @@
 #include "COREMOD_memory/image_keyword_addL.h"
 #include "COREMOD_memory/image_keyword_addS.h"
 
-// Local variables pointers
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkrnd",
+    .cmdkey      = "mkrnd",
+    .description = "make random image"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
 static LOCVAR_OUTIMG2D outim;
+static uint32_t       *distrib = NULL;
 
 
-static uint32_t       *distrib;
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".distrib", &distrib, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "distribution (0:uniform 1:gauss 2:trunc)")
 
 
-static CLICMDARGDEF farg[] =
-{
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
     FARG_OUTIM_NAME(outim),
     FARG_OUTIM_SHARED(outim),
     FARG_OUTIM_XSIZE(outim),
     FARG_OUTIM_YSIZE(outim),
-    {
-        CLIARG_UINT32,
-        ".distrib",
-        "distribution \n"
-        " (0: uniform)\n"
-        " (1: gauss)\n"
-        " (2: truncated gauss)\n",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &distrib,
-        NULL
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkrnd", "make random image", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-
-/** @brief Detailed help
- */
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
-
-
-
 
 
 /**
@@ -130,8 +158,6 @@ static errno_t compute_function()
     printf("CBsize = %d\n", img.mdt->CBsize);
 
 
-
-
     // Create image if needed
     imcreateIMGID(&img);
 
@@ -148,9 +174,6 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
 
-
-
-
     make_image_random(&img, *distrib);
 
     DEBUG_TRACEPOINT("update output ID %ld", img.ID);
@@ -163,12 +186,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_gen__mkrandomim()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

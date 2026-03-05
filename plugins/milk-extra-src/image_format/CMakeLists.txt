@@ -72,3 +72,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${LIBNAME}.pc.in
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LIBNAME}.pc
         DESTINATION "${INSTALL_PKGCONFIG_DIR}")
+add_milk_standalone(imgfmt-combineHDR combineHDR.c)
+target_link_libraries(milk-fpsexec-imgfmt-combineHDR PUBLIC milkimagefilter)
+add_milk_standalone(imgfmt-extractRGGB extract_RGGBchan.c)
+add_milk_standalone(imgfmt-extractutr extract_utr.c)
+add_milk_standalone(imgfmt-strmtempstat stream_temporal_stats.c)
+add_milk_standalone(imgfmt-writeBMP writeBMP.c)

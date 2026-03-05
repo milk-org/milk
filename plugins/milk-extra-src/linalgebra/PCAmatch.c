@@ -15,123 +15,100 @@
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *modesA;
-static long  fpi_modesA;
-
-static char *modesB;
-static long  fpi_modesB;
-
-static char *outcoeffA;
-static long  fpi_outcoeffA;
-
-static char *outcoeffB;
-static long  fpi_outcoeffB;
-
-static char *outimA;
-static long  fpi_outimA;
-
-static char *outimB;
-static long  fpi_outimB;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "PCAmatch",
+    .cmdkey      = "PCAmatch",
+    .description = "find matching linear combination across two modal bases"
+};
 
 
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * modesA = NULL;
+static char * modesB = NULL;
+static char * outcoeffA = NULL;
+static char * outcoeffB = NULL;
+static char * outimA = NULL;
+static char * outimB = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".modesA", &modesA, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input modes A") \
+    X(".modesB", &modesB, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input modes B") \
+    X(".outcoeffA", &outcoeffA, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coeffs A") \
+    X(".outcoeffB", &outcoeffB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coeffs B") \
+    X(".outimA", &outimA, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image A") \
+    X(".outimB", &outimB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image B")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
 
-static CLICMDARGDEF farg[] =
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".modesA",
-        "input modes A",
-        "inmA",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &modesA,
-        &fpi_modesA
-    },
-    {
-        CLIARG_IMG,
-        ".modesB",
-        "input modes B",
-        "inmB",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &modesB,
-        &fpi_modesB
-    },
-    {
-        CLIARG_STR,
-        ".outcoeffA",
-        "output coeffs A",
-        "outcA",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outcoeffA,
-        &fpi_outcoeffA
-    },
-    {
-        CLIARG_STR,
-        ".outcoeffB",
-        "output coeffs B",
-        "outcB",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outcoeffB,
-        &fpi_outcoeffB
-    },
-    {
-        CLIARG_STR,
-        ".outimA",
-        "output image A",
-        "outcA",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimA,
-        &fpi_outimA
-    },
-    {
-        CLIARG_STR,
-        ".outimB",
-        "output image B",
-        "outcB",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimB,
-        &fpi_outimB
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "PCAmatch", "find matching linear combination across two modal bases", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-static errno_t help_function()
-{
-
-
-    return RETURN_SUCCESS;
 }
-
-
-
-
 /**
  * @brief Find matching linear combinations across two bases
  *
@@ -183,11 +160,6 @@ errno_t PCAmatch(
     createimagefromIMGID(imgoutcB);
 
 
-
-
-
-
-
     // A->B coeff remapping matrix
     IMGID imgAtoB;
     strcpy(imgAtoB.name, "matAtoB");
@@ -225,8 +197,6 @@ errno_t PCAmatch(
     }
 
 
-
-
     // residual0
     IMGID imgimres0  = imgid_make_from_name("imres0");
     imgimres0.mdt->naxis   = 2;
@@ -243,9 +213,6 @@ errno_t PCAmatch(
         resim0 += vdiff*vdiff;
         imgimres0.im->array.F[ii] =  vdiff;
     }
-
-
-
 
 
     // project to B
@@ -295,7 +262,6 @@ errno_t PCAmatch(
         }
 
 
-
         // project to B
         computeSGEMM(
             imgAtoB,
@@ -331,9 +297,6 @@ errno_t PCAmatch(
     }
 
 
-
-
-
     // compute output images
     computeSGEMM(
         imgmodesA,
@@ -350,7 +313,6 @@ errno_t PCAmatch(
         0, 0,
         GPUdev
     );
-
 
 
     IMGID imgimres  = imgid_make_from_name("imres");
@@ -379,14 +341,9 @@ errno_t PCAmatch(
     imgid_free(&imgimres);
 
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
 
 
 static errno_t compute_function()
@@ -457,15 +414,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-
-INSERT_STD_FPSCLIfunctions
-
-
-errno_t CLIADDCMD_linalgebra__PCAmatch()
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
-    INSERT_STD_CLIREGISTERFUNC
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_linalgebra__PCAmatch()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
 

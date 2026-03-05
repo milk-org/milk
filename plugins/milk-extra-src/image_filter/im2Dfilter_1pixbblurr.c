@@ -8,103 +8,89 @@
 #include "CLIcore.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// Local variables pointers
-
-
-static char *iminname;
-static long fpi_iminname;
-
-static char *imoutname;
-static long fpi_imoutname;
-
-static float *blurramp;
-static long fpi_blurramp;
-
-static uint32_t *NBloop;
-static long fpi_NBloop;
-
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".iminname",
-        "input image name",
-        "inim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &iminname,
-        &fpi_iminname
-    },
-    {
-        CLIARG_STR,
-        ".imoutname",
-        "output image name",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imoutname,
-        &fpi_imoutname
-    },
-    {
-        CLIARG_FLOAT32,
-        ".blurramp",
-        "value of side pixs (total = 1 for 3 pix)",
-        "1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &blurramp,
-        &fpi_blurramp
-    },
-    {
-        CLIARG_UINT32,
-        ".axis",
-        "number of times operation is performed",
-        "1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &NBloop,
-        &fpi_NBloop
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "im2Dfilt1pblurr",
+    .cmdkey      = "im2Dfilt1pblurr",
+    .description = "1 pixel radual blurr, can be iterated"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * iminname = NULL;
+static char * imoutname = NULL;
+static float * blurramp = NULL;
+static uint32_t * NBloop = NULL;
 
 
-static errno_t customCONFsetup()
-{
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".iminname", &iminname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image name") \
+    X(".imoutname", &imoutname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image name") \
+    X(".blurramp", &blurramp, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "value of side pixs (total = 1 for 3 pix)") \
+    X(".axis", &NBloop, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of times operation is performed")
 
 
-static errno_t customCONFcheck()
-{
-    if(data.fpsptr != NULL)
-    {
-    }
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "im2Dfilt1pblurr",
-    "1 pixel radual blurr, can be iterated",
-    CLICMD_FIELDS_DEFAULTS
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
 
-// detailed help
-static errno_t help_function()
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
 static errno_t imfilter_im2D_1pixblurr(
     IMGID imgin,
     IMGID *imgout,
@@ -138,7 +124,6 @@ static errno_t imfilter_im2D_1pixblurr(
     float coeff1 = amp; // side pixels (x4)
     float coeff2 = amp*amp; // corner pixels (x4)
     float coeff0 = 1.0 - 4.0*(coeff1 + coeff2); // central pixel
-
 
 
     // temp arrays
@@ -264,8 +249,6 @@ static errno_t imfilter_im2D_1pixblurr(
 }
 
 
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -296,19 +279,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_image_filter__im2Dfilter_1pixblurr()
 {
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
-
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

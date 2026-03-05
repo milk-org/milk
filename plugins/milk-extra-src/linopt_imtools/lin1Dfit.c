@@ -4,94 +4,96 @@
 #include "image_fitModes.h"
 
 
-
 /*
-static void **vclean;
-static size_t nclean;
-
-void milk_atexit_free_add(void *data)
-{
-    vclean = realloc(vclean, sizeof(void *) * (nclean + 1));
-    vclean[nclean++] = data;
-}
-
-void milk_memclean(void)
-{
-    size_t i;
-
-    for (i = 0; i < nclean; i++) {
-        free(vclean[i]);
-    }
-    free(vclean);
-}
-*/
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-// Local variables pointers
-static char *infname;
-static long *NBptval;
-static long *maxorderval;
-static char *outfname;
-static long *modeval;
-
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".indat",
-        "input file",
-        "data.txt",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &infname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".NBpt",
-        "number of sample points",
-        "1000",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &NBptval,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".maxorder",
-        "maximum polynomial order",
-        "8",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &maxorderval,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outdat",
-        "output file",
-        "fitsol.txt",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outfname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".mode",
-        "fit mode",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &modeval,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "linopt1Dfit",
+    .cmdkey      = "linopt1Dfit",
+    .description = "least-square 1D fit"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "linopt1Dfit", "least-square 1D fit", CLICMD_FIELDS_DEFAULTS
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * infname = NULL;
+static long * NBptval = NULL;
+static long * maxorderval = NULL;
+static char * outfname = NULL;
+static long * modeval = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".indat", &infname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input file") \
+    X(".NBpt", &NBptval, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of sample points") \
+    X(".maxorder", &maxorderval, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "maximum polynomial order") \
+    X(".outdat", &outfname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output file") \
+    X(".mode", &modeval, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "fit mode")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-// detailed help
-static errno_t help_function()
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
 
 // MODE :
@@ -307,9 +309,6 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
 }
 
 
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -329,12 +328,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__lin1Dfits()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

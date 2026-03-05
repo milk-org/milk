@@ -13,102 +13,86 @@
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "SVDmkM",
+    .cmdkey      = "SVDmkM",
+    .description = "reconstruct SVD M"
+};
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-static char *inmatU;
-static long  fpi_inmatU;
-
-// singular values
-static char *invecS;
-static long  fpi_invecS;
-
-static char *inmatV;
-static long  fpi_inmatV;
-
+static char * inmatU = NULL;
+static char * invecS = NULL;
+static char * inmatV = NULL;
+static char * outmatM = NULL;
+static int32_t * GPUdevice = NULL;
 
 
-static char *outmatM;
-static long  fpi_outmatM;
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inU", &inmatU, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix U") \
+    X(".inS", &invecS, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input singular values vec") \
+    X(".inV", &inmatV, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix V")
 
 
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
 
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
 
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
 
-static CLICMDARGDEF farg[] =
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inU",
-        "input matrix U",
-        "inM",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmatU,
-        &fpi_inmatU
-    },
-    {
-        CLIARG_IMG,
-        ".inS",
-        "input singular values vec",
-        "inS",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &invecS,
-        &fpi_invecS
-    },
-    {
-        CLIARG_IMG,
-        ".inV",
-        "input matrix V",
-        "inV",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmatV,
-        &fpi_inmatV
-    },
-    {
-        // output M
-        CLIARG_STR,
-        ".outM",
-        "output M",
-        "outM",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outmatM,
-        &fpi_outmatM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "SVDmkM", "reconstruct SVD M", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-static errno_t help_function()
-{
-    printf("Compute M from SVD's U, S and V\n");
-
-    return RETURN_SUCCESS;
 }
-
-
-
-
 errno_t SVDmkM(
     IMGID    imgU,
     IMGID    imgS,
@@ -168,8 +152,6 @@ errno_t SVDmkM(
 }
 
 
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -182,8 +164,6 @@ static errno_t compute_function()
 
     IMGID imginV = imgid_make_from_name(inmatV);
     resolveIMGID(&imginV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-
-
 
 
     IMGID imgoutM  = imgid_make_from_name(outmatM);
@@ -211,21 +191,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__SVDmkM()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

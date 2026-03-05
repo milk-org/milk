@@ -13,8 +13,6 @@
 #include "SGEMM.h"
 
 
-
-
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -41,105 +39,87 @@
 #endif
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inmatA;
-static long  fpi_inmatA;
-
-static char *inmatB;
-static long  fpi_inmatB;
-
-static uint64_t *transpA;
-static long      fpi_transpA;
-
-static uint64_t *transpB;
-static long      fpi_transpB;
-
-static char *outM;
-static long  fpi_outM;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "sgemm",
+    .cmdkey      = "sgemm",
+    .description = "matrix-matrix multiply"
+};
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-static CLICMDARGDEF farg[] =
+static char * inmatA = NULL;
+static char * inmatB = NULL;
+static uint64_t * transpA = NULL;
+static uint64_t * transpB = NULL;
+static char * outM = NULL;
+static int32_t * GPUdevice = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".matA", &inmatA, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix A") \
+    X(".matB", &inmatB, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix B") \
+    X(".outM", &outM, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output matrix")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".matA",
-        "input matrix A",
-        "matA",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmatA,
-        &fpi_inmatA
-    },
-    {
-        CLIARG_IMG,
-        ".matB",
-        "input matrix B",
-        "matA",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inmatB,
-        &fpi_inmatB
-    },
-    {
-        CLIARG_ONOFF,
-        ".transpA",
-        "transpose A",
-        "OFF",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &transpA,
-        &fpi_transpA
-    },
-    {
-        CLIARG_ONOFF,
-        ".transpB",
-        "transpose B",
-        "OFF",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &transpB,
-        &fpi_transpB
-    },
-    {
-        CLIARG_STR,
-        ".outM",
-        "output matrix",
-        "out",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outM,
-        &fpi_outM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "sgemm", "matrix-matrix multiply", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("CPU or GPU matrix-matrix multiplication\n");
-    printf("Single precision only\n");
-
-    return RETURN_SUCCESS;
 }
-
-
-
-
-
 /**
  * @brief Computes the single-precision general matrix multiplication (SGEMM) of two matrices.
  *
@@ -309,7 +289,6 @@ errno_t computeSGEMM(
            inB_Ndim, inB_Ndim0, inB_Ndim1);
 
 
-
     // Create output
     //
     int outMdim = Mdim;
@@ -337,7 +316,6 @@ errno_t computeSGEMM(
 
     outimg->mdt->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(outimg);
-
 
 
     float *imarrayA;
@@ -505,18 +483,6 @@ errno_t computeSGEMM(
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if((GPUdev >= 0) && (GPUdev <= 99))
     {
 #ifdef HAVE_CUDA
@@ -540,7 +506,6 @@ errno_t computeSGEMM(
                 return EXIT_FAILURE;
             }
         }
-
 
 
         {
@@ -578,10 +543,6 @@ errno_t computeSGEMM(
                 return EXIT_FAILURE;
             }
         }
-
-
-
-
 
 
         float *d_outmat;
@@ -702,10 +663,6 @@ errno_t computeSGEMM(
 }
 
 
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -717,7 +674,6 @@ static errno_t compute_function()
 
     IMGID imginB = imgid_make_from_name(inmatB);
     resolveIMGID(&imginB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-
 
 
     // output
@@ -747,21 +703,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__SGEMM()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

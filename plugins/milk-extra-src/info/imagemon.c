@@ -28,8 +28,6 @@
 #include "TUItools.h"
 
 
-
-
 // screen size
 static uint16_t wrow, wcol;
 
@@ -38,52 +36,81 @@ static uint64_t       cntlast;
 static struct timespec tlast;
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// Local variables pointers
-static char  *instreamname;
-static float *updatefrequency;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgmon",
+    .cmdkey      = "imgmon",
+    .description = "image monitor"
+};
 
-static CLICMDARGDEF farg[] =
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char  * instreamname = NULL;
+static float * updatefrequency = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".insname", &instreamname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".frequ", &updatefrequency, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "frequency [Hz]")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".insname",
-        "input stream",
-        "im1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &instreamname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".frequ",
-        "frequency [Hz]",
-        "3.0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &updatefrequency,
-        NULL
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "imgmon", "image monitor", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
-
-
-
 errno_t info_image_monitor(const char *ID_name, float frequ);
 errno_t printstatus(imageID ID);
-
 
 
 static errno_t compute_function()
@@ -223,23 +250,28 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_info__imagemon()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
-
-
+#endif
 
 
 errno_t printstatus(imageID ID)
@@ -327,7 +359,6 @@ errno_t printstatus(imageID ID)
     }
 
 
-
     if(1)
     {
         // semaphores, read / write
@@ -383,8 +414,6 @@ errno_t printstatus(imageID ID)
                     imtotal);
 
 
-
-
         vcnt = (long *) malloc(sizeof(long) * NBhistopt);
         if(vcnt == NULL)
         {
@@ -395,7 +424,6 @@ errno_t printstatus(imageID ID)
         {
             vcnt[h] = 0;
         }
-
 
 
         if(datatype == _DATATYPE_FLOAT)
@@ -670,7 +698,6 @@ errno_t printstatus(imageID ID)
         }
 
 
-
         RMS   = sqrt(RMS / image->md->nelement);
         RMS01 = 0.9 * RMS01 + 0.1 * RMS; // wut
 
@@ -820,3 +847,16 @@ errno_t printstatus(imageID ID)
 
     return RETURN_SUCCESS;
 }
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+
