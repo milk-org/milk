@@ -106,8 +106,10 @@ int fpsCTRL_TUI_process_user_key(
             clear();
             break;
 
-        case ctrl('e') : // erase FPS
+        case ctrl('e') : // stop conf/run, then erase FPS
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            functionparameter_CONFstop(&fps[fpsindex]);
+            functionparameter_RUNstop(&fps[fpsindex]);
             functionparameter_FPSremove(&fps[fpsindex]);
 
             functionparameter_scan_fps(
@@ -136,8 +138,10 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
 
-        case 'E' : // Erase FPS and close tmux sessions
+        case 'E' : // Stop conf/run, erase FPS, kill tmux
             fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+            functionparameter_CONFstop(&fps[fpsindex]);
+            functionparameter_RUNstop(&fps[fpsindex]);
 
             functionparameter_FPSremove(&fps[fpsindex]);
             functionparameter_scan_fps(

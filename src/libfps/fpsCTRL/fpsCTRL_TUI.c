@@ -160,8 +160,8 @@ inline static void fpsCTRLscreen_print_help()
     TUI_printfw("============ OTHER\n");
     print_help_entry("s", "rescan");
     print_help_entry("T/t", "initialize/kill tmux session");
-    print_help_entry("CTRL+e", "erase FPS");
-    print_help_entry("E", "erase FPS and kill tmux sessions");
+    print_help_entry("CTRL+e", "stop conf/run, erase FPS");
+    print_help_entry("E", "stop conf/run, erase FPS, kill tmux");
     print_help_entry("O / CTRL+o", "start/stop conf process");
     print_help_entry("R / CTRL+r", "start/stop run process");
     print_help_entry("l", "list all entries");
