@@ -32,7 +32,8 @@ int fps_generic_init(
     const char      *fps_name,
     FPS_APP_INFO    *app_info,
     FPS_CLI_BINDING *bindings,
-    int              nb_b
+    int              nb_b,
+    int              procinfo
 )
 {
     if (fps_name[0] == '_') {
@@ -74,8 +75,9 @@ int fps_generic_init(
         fps, fps_name, "", app_info->description,
         app_info->description);
 
-    if (data.cmd[data.cmdindex].cmdsettings.flags
-        & CLICMDFLAG_PROCINFO)
+    if (procinfo ||
+        (data.cmd[data.cmdindex].cmdsettings.flags
+         & CLICMDFLAG_PROCINFO))
     {
         fps.cmdset.flags |= CLICMDFLAG_PROCINFO;
         fps_add_processinfo_entries(&fps);
@@ -93,9 +95,10 @@ int fps_generic_init(
 }
 
 
-int fps_generic_conf(
+int fps_generic_conf_cb(
     const char *fps_name,
-    int         loop
+    int         loop,
+    errno_t   (*confcheck_fn)(void)
 )
 {
     if (fps_name[0] == '_') {
@@ -104,8 +107,27 @@ int fps_generic_conf(
                fps_name);
         return 0;
     }
-    FPS_CONF_STD_BODY(fps_name, loop, {}, {});
+    FPS_CONF_STD_BODY(
+        fps_name, loop,
+        {},
+        {
+            if (confcheck_fn != NULL)
+            {
+                data.fpsptr = &fps;
+                confcheck_fn();
+            }
+        });
     return 0;
+}
+
+
+int fps_generic_conf(
+    const char *fps_name,
+    int         loop
+)
+{
+    return fps_generic_conf_cb(
+        fps_name, loop, NULL);
 }
 
 
@@ -132,7 +154,7 @@ int fps_generic_run(
         if (lfps->NBparam == 0) {
             fps_generic_init(
                 fps_name, app_info,
-                bindings, nb_b);
+                bindings, nb_b, 0);
         }
         fps = *lfps;
         fps_process_cli_and_sync(

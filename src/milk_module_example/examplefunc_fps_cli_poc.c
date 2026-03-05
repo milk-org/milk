@@ -65,6 +65,7 @@
 
 #include "CLIcore.h"
 #include "fps.h"
+#include "fps_GetParamIndex.h"
 
 
 /* ================================================================
@@ -242,7 +243,8 @@ static char
       FPFLAG_DEFAULT_INPUT, "Example ONOFF") \
     X(".p_streamname", param_streamname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, "Example STREAMNAME") \
+      FPFLAG_DEFAULT_INPUT_STREAM, \
+      "Example STREAMNAME (required)") \
     X(".p_fitsfile",   param_fitsfilename, \
       FPTYPE_FITSFILENAME, 0, \
       FPFLAG_DEFAULT_INPUT, "Example FITSFILENAME") \
@@ -329,6 +331,111 @@ static errno_t fpsexec()
     printf("  FPSNAME            = %s\n", param_fpsname);
     printf("  STRING_NOT_STREAM  = %s\n",
            param_string_not_stream);
+
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 4b. CUSTOM CONFIGURATION CHECK
+ *
+ * Optional function called on every iteration of
+ * the FPS configuration monitoring loop.  Use this
+ * to validate parameter values and toggle parameter
+ * visibility/flags based on the current state of
+ * other parameters.
+ *
+ * This function is registered by assigning it to
+ * CLIcmddata.FPS_customCONFcheck in CLIADDCMD
+ * (section 7).  The framework calls it automatically
+ * during confstart / confstep.
+ *
+ * In V2 compute units, parameter indices are NOT
+ * known at compile time (no fpi_* variables).
+ * Use functionparameter_GetParamIndex() to look up
+ * the parray[] index by keyword string.
+ * ============================================================= */
+
+/**
+ * @brief Example custom configuration check.
+ *
+ * Demonstrates two common patterns:
+ *  1. Toggle visibility — show p_float64 only when
+ *     p_onoff is ON.
+ *  2. Range clamp — keep p_float32 within [0, 100].
+ */
+static errno_t customCONFcheck()
+{
+    static long confcheck_cnt = 0;
+    confcheck_cnt++;
+
+    printf("[customCONFcheck] iteration %ld"
+           "  fpsptr=%p\n",
+           confcheck_cnt,
+           (void *) data.fpsptr);
+
+    if (data.fpsptr == NULL)
+    {
+        return RETURN_SUCCESS;
+    }
+
+    FUNCTION_PARAMETER_STRUCT *fps = data.fpsptr;
+
+    /* --- Toggle p_float64 visibility --- */
+    {
+        int idx_onoff =
+            functionparameter_GetParamIndex(
+                fps, ".p_onoff");
+        int idx_f64 =
+            functionparameter_GetParamIndex(
+                fps, ".p_float64");
+
+        if (idx_onoff >= 0 && idx_f64 >= 0)
+        {
+            if (fps->parray[idx_onoff].fpflag
+                & FPFLAG_ONOFF)
+            {
+                /* ON: show p_float64 */
+                fps->parray[idx_f64].fpflag
+                    |= FPFLAG_USED;
+                fps->parray[idx_f64].fpflag
+                    |= FPFLAG_VISIBLE;
+            }
+            else
+            {
+                /* OFF: hide p_float64 */
+                fps->parray[idx_f64].fpflag
+                    &= ~FPFLAG_USED;
+                fps->parray[idx_f64].fpflag
+                    &= ~FPFLAG_VISIBLE;
+            }
+        }
+    }
+
+    /* --- Range-clamp p_float32 to [0, 100] --- */
+    {
+        int idx_f32 =
+            functionparameter_GetParamIndex(
+                fps, ".p_float32");
+
+        if (idx_f32 >= 0)
+        {
+            float val =
+                fps->parray[idx_f32]
+                    .val.f32[0];
+
+            if (val < 0.0f)
+            {
+                fps->parray[idx_f32]
+                    .val.f32[0] = 0.0f;
+            }
+            else if (val > 100.0f)
+            {
+                fps->parray[idx_f32]
+                    .val.f32[0] = 100.0f;
+            }
+        }
+    }
 
     return RETURN_SUCCESS;
 }
@@ -500,6 +607,9 @@ static errno_t CLIfunction(void)
  */
 errno_t CLIADDCMD_milk_module_example__fpscli()
 {
+    CLIcmddata.FPS_customCONFcheck =
+        customCONFcheck;
+
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
 
@@ -543,8 +653,9 @@ errno_t CLIADDCMD_milk_module_example__fpscli()
  * ============================================================= */
 
 #ifdef FPS_STANDALONE
-FPS_MAIN_STANDALONE_V2(
+FPS_MAIN_STANDALONE_V2_CONFCHECK(
     FPS_app_info,
     FPS_PARAMS,
-    compute_function)
+    compute_function,
+    customCONFcheck)
 #endif
