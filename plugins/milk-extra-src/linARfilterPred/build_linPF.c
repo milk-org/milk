@@ -13,7 +13,6 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 
-
 // Use MKL if available
 // Otherwise use openBLAS
 //
@@ -43,176 +42,83 @@
 #endif
 */
 
-static char *inname;
 
-static uint32_t *PForder;
-static long      fpi_PForder;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static float *PFlatency;
-static long   fpi_PFlatency;
-
-static double *SVDeps;
-static long    fpi_SVDeps;
-
-static double *reglambda;
-static long    fpi_reglambda;
-
-static char *outPFname;
-
-static float *loopgain;
-static long   fpi_loopgain;
-
-static uint64_t *out3Dwrite;
-static long      fpi_out3Dwrite;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // input telemetry
-        CLIARG_STREAM,
-        ".inname",
-        "input telemetry",
-        "indata",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inname,
-        NULL
-    },
-    {
-        // temporal order of filter: number of time steps in state
-        CLIARG_UINT32,
-        ".PForder",
-        "predictive filter order",
-        "10",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &PForder,
-        &fpi_PForder
-    },
-    {
-        // latency: how far ahead to predict
-        CLIARG_FLOAT32,
-        ".PFlatency",
-        "time latency [frame]",
-        "2.7",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &PFlatency,
-        &fpi_PFlatency
-    },
-    {
-        // SVD limit
-        CLIARG_FLOAT64,
-        ".SVDeps",
-        "SVD cutoff",
-        "0.001",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &SVDeps,
-        &fpi_SVDeps
-    },
-    {
-        // Regularization
-        CLIARG_FLOAT64,
-        ".reglambda",
-        "regularization coefficient",
-        "0.001",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &reglambda,
-        &fpi_reglambda
-    },
-    {
-        CLIARG_STR,
-        ".outPFname",
-        "output filter",
-        "outPF",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outPFname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".loopgain",
-        "loop gain",
-        "0.2",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &loopgain,
-        &fpi_loopgain
-    },
-    {
-        CLIARG_ONOFF,
-        ".out3Dfilt",
-        "write output 3D filter",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &out3Dwrite,
-        &fpi_out3Dwrite
-    },
-    {
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkPF",
+    .cmdkey      = "mkPF",
+    .description = "make linear predictive filter"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inname = NULL;
+static uint32_t * PForder = NULL;
+static float * PFlatency = NULL;
+static double * SVDeps = NULL;
+static double * reglambda = NULL;
+static char * outPFname = NULL;
+static float * loopgain = NULL;
+static uint64_t * out3Dwrite = NULL;
+static int32_t * GPUdevice = NULL;
 
 
-// Optional custom configuration setup. comptbuff
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_PFlatency].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_SVDeps].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_reglambda].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_loopgain].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_out3Dwrite].fpflag |= FPFLAG_WRITERUN;
-    }
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".outPFname", &outPFname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output filter")
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
 
-    if(data.fpsptr != NULL)
-    {
-    }
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkPF", "make linear predictive filter", CLICMD_FIELDS_DEFAULTS
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
 
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
 
-// detailed help
-static errno_t help_function()
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-
-
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -225,8 +131,6 @@ static errno_t compute_function()
     //
     IMGID imgin = imgid_make_from_name(inname);
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-
-
 
 
     /// ## Selecting input values
@@ -354,7 +258,6 @@ static errno_t compute_function()
     printf("NBpixin = %ld\n", NBpixin);
 
 
-
     /// ## Selecting Output Variables
     /// By default, the output variables are the same as the input variables,
     /// so the prediction is performed on the same variables as the input.\n
@@ -415,8 +318,6 @@ static errno_t compute_function()
     }
 
 
-
-
     /// ## Build Empty Data Matrix
     ///
     /// Note: column / row description follows FITS file viewing conventions.\n
@@ -456,7 +357,6 @@ static errno_t compute_function()
     }
 
 
-
     /// Data matrix conventions :
     /// - each column (ii = cst) is a measurement
     /// - m index is measurement
@@ -471,8 +371,6 @@ static errno_t compute_function()
     printf("xysize = %ld\n", xysize);
     printf("IDin = %ld\n\n", imgin.ID);
     list_image_ID();
-
-
 
 
     // Allocate future measured data matrix
@@ -528,12 +426,8 @@ static errno_t compute_function()
     }
 
 
-
-
     struct timespec t0;
     struct timespec t1;
-
-
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -589,7 +483,6 @@ static errno_t compute_function()
     }
 
 
-
     /// *STEP: Fill up data matrix PFmatD from input telemetry*
     ///
     for(long m = 0; m < NBmvec1; m++)
@@ -606,7 +499,6 @@ static errno_t compute_function()
     }
 
 
-
     /// *STEP: Write regularization coefficients (optional)*
     ///
     if(REG == 1)
@@ -618,8 +510,6 @@ static errno_t compute_function()
                 *reglambda;
         }
     }
-
-
 
 
     /// ### Compute pseudo-inverse of PFmatD
@@ -645,7 +535,6 @@ static errno_t compute_function()
     //save_fits("PFfmdat", "PFfmdat.fits");
 
 
-
     {
 #ifdef HAVE_OPENBLAS
         printf("OpenBLASS  YES\n");
@@ -668,16 +557,11 @@ static errno_t compute_function()
     }
 
 
-
-
-
-
     {
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = imgid_make_from_name("PFmatD");
         resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-
 
 
         printf("Number of samples         : %d\n", imgin.md->size[0]);
@@ -736,14 +620,6 @@ static errno_t compute_function()
     }
 
 
-
-
-
-
-
-
-
-
     imageID IDmatC = image_ID("psinv", data.image, data.NB_MAX_IMAGE);
 
     ///
@@ -754,10 +630,6 @@ static errno_t compute_function()
     {
         PRINT_ERROR("system() returns non-zero value");
     }
-
-
-
-
 
 
     imageID IDoutPF2Dn = image_ID("psinvPFmat", data.image, data.NB_MAX_IMAGE);
@@ -831,7 +703,6 @@ static errno_t compute_function()
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
     data.image[IDoutPF2Draw].md[0].cnt0++;
     data.image[IDoutPF2Draw].md[0].write = 0;
-
 
 
 //printf("IDoutPF2D = %ld\n", IDoutPF2D);
@@ -915,7 +786,6 @@ static errno_t compute_function()
            texec / tloop);
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     free(pixarray_x);
@@ -931,20 +801,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_LinARfilterPred__build_linPF()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

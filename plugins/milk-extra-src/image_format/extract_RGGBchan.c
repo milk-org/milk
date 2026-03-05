@@ -6,92 +6,94 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static char *inim;
-static long  fpi_inim;
-
-static char *outimR;
-static long  fpi_outimR;
-
-static char *outimG1;
-static long  fpi_outimG1;
-
-static char *outimG2;
-static long  fpi_outimG2;
-
-static char *outimB;
-static long  fpi_outimB;
-
-
-
-
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".inim",
-        "input RGGB image",
-        "inim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inim,
-        &fpi_inim
-    },
-    {
-        CLIARG_STR,
-        ".outimR",
-        "output R image",
-        "inim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimR,
-        &fpi_outimR
-    },
-    {
-        CLIARG_STR,
-        ".outimG1",
-        "output G1 image",
-        "outimG1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimG1,
-        &fpi_outimG1
-    },
-    {
-        CLIARG_STR,
-        ".outimG2",
-        "output G2 image",
-        "outimG2",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimG2,
-        &fpi_outimG2
-    },
-    {
-        CLIARG_STR,
-        ".outimB",
-        "output B image",
-        "outimB",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimB,
-        &fpi_outimB
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "extractRGGBchan",
+    .cmdkey      = "extractRGGBchan",
+    .description = "extract RGGB channels from color image"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inim = NULL;
+static char * outimR = NULL;
+static char * outimG1 = NULL;
+static char * outimG2 = NULL;
+static char * outimB = NULL;
 
 
-static CLICMDDATA CLIcmddata = {"extractRGGBchan",
-                                "extract RGGB channels from color image",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &inim, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input RGGB image") \
+    X(".outimR", &outimR, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output R image") \
+    X(".outimG1", &outimG1, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output G1 image") \
+    X(".outimG2", &outimG2, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output G2 image") \
+    X(".outimB", &outimB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output B image")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-// detailed help
-static errno_t help_function()
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
 /*
     IMGID imgoutR,
     IMGID imgoutG1,
@@ -112,7 +114,6 @@ errno_t image_format_extract_RGGBchan(
     resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
 
 
-
     imgid_copy(&imgin, &imgoutR);
     imgoutR.mdt->size[0] = imgin.md->size[0] / 2;
     imgoutR.mdt->size[1] = imgin.md->size[1] / 2;
@@ -129,7 +130,6 @@ errno_t image_format_extract_RGGBchan(
     uint32_t xsize = imgin.md->size[0];
 
     list_image_ID();
-
 
 
     switch(imgin.md->datatype)
@@ -200,8 +200,6 @@ errno_t image_format_extract_RGGBchan(
 }
 
 
-
-
 /**
  * @brief Wrapper function, used by all CLI calls
  *
@@ -210,7 +208,6 @@ errno_t image_format_extract_RGGBchan(
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
-
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -236,17 +233,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_image_format__extractRGGBchan()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

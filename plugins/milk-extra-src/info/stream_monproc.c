@@ -21,74 +21,77 @@
 #include "streamtiming_stats.h"
 #include "stream_monproc.h"
 
-static char *inimname;
 
-/**
- * @brief Time binning flag
- *
- * Each bit 'i' set in tbinflag enables a time bin of 2^i frames.
- * Example: tbinflag = 48 (binary 110000) enables bins of 16 (2^4) and 32 (2^5) frames.
- */
-static uint64_t *tbinflag;
-static long     fpi_tbinflag = -1;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static uint32_t *cbbuffersize;
-static long     fpi_cbbuffersize = -1;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streammon",
+    .cmdkey      = "streammon",
+    .description = "stream monitor with multi-level time binning and circular buffer"
+};
 
-static CLICMDARGDEF farg[] =
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inimname = NULL;
+static uint64_t * tbinflag = NULL;
+static uint32_t * cbbuffersize = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".tbinflag",
-        "time binning flag (bit i sets bin 2^i)",
-        "48",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &tbinflag,
-        &fpi_tbinflag
-    },
-    {
-        CLIARG_UINT32,
-        ".cbsize",
-        "circular buffer size",
-        "64",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &cbbuffersize,
-        &fpi_cbbuffersize
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "streammon",
-    "stream monitor with multi-level time binning and circular buffer",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// Exposed help function
-errno_t stream_monitor_help()
-{
-    printf("Monitor a stream and compute averages and RMS at different time scales.\n");
-    printf("The scales are defined by the tbinflag bitmask.\n");
-    printf("Also maintains a circular buffer of the last .cbsize frames.\n");
-    printf("Supports input datatypes: uint8, int8, uint16, int16, uint32, int32, uint64, int64, float, double.\n");
-    printf("Creates a custom shared memory file <stream>.mon.shm for basic stats (Flux, Time) and Histogram.\n");
-    return RETURN_SUCCESS;
 }
-
-static errno_t help_function()
-{
-    return stream_monitor_help();
-}
-
 // ----------------------------------------------------------------------------
 // Shared Memory Helper Functions
 // ----------------------------------------------------------------------------
@@ -604,11 +607,39 @@ static errno_t compute_function()
     return stream_monitor_run(inimname, *tbinflag, *cbbuffersize, 0, 0);
 }
 
-INSERT_STD_FPSCLIfunctions_DynamicSize
 
-// Register function in CLI
-errno_t CLIADDCMD_info__stream_monproc()
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_info__stream_monproc()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

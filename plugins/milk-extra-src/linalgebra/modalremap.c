@@ -14,104 +14,90 @@
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inM;
-static long  fpi_inM;
-
-static char *inU0;
-static long  fpi_inU0;
-
-static char *inU1;
-static long  fpi_inU1;
-
-static char *outM;
-static long  fpi_outM;
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "Mremap",
+    .cmdkey      = "Mremap",
+    .description = "use modal mapping for linear transformation"
+};
 
 
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inM = NULL;
+static char * inU0 = NULL;
+static char * inU1 = NULL;
+static char * outM = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inM", &inM, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".inU0", &inU0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input space mode") \
+    X(".inU1", &inU1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output space mode") \
+    X(".outM", &outM, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output M")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
 
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
 
-static CLICMDARGDEF farg[] =
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inM",
-        "input image",
-        "inM",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inM,
-        &fpi_inM
-    },
-    {
-        CLIARG_IMG,
-        ".inU0",
-        "input space mode",
-        "inU0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inU0,
-        &fpi_inU0
-    },
-    {
-        CLIARG_IMG,
-        ".inU1",
-        "output space mode",
-        "inU1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inU1,
-        &fpi_inU1
-    },
-    {
-        CLIARG_STR,
-        ".outM",
-        "output M",
-        "outM",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outM,
-        &fpi_outM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "Mremap", "use modal mapping for linear transformation", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-static errno_t help_function()
-{
-    printf("Use modal mapping for transformation\n");
-    printf("Modal mapping is between input basis U0 and output basis U1\n");
-    printf("First, decompose input M0 as coefficients of basis U0\n");
-    printf("These coefficients are then re-expanded according to basis U1\n");
-
-    return RETURN_SUCCESS;
 }
-
-
-
-
 /**
  * @brief Remap input M0 in space U0 to output M1 in space U1
  *
@@ -151,7 +137,6 @@ errno_t ModalRemap(
     fflush(stdout);
     // Project to output space
     computeSGEMM(imgU1, imgC0, imgM1, 0, 0, GPUdev);
-
 
 
     // evaluate fit quality
@@ -260,10 +245,6 @@ errno_t ModalRemap(
 }
 
 
-
-
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -294,20 +275,43 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-
-INSERT_STD_FPSCLIfunctions
-
-
-errno_t CLIADDCMD_linalgebra__ModalRemap()
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
-    INSERT_STD_CLIREGISTERFUNC
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_linalgebra__ModalRemap()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

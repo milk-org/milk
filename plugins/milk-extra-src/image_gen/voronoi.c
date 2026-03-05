@@ -5,76 +5,87 @@
 
 
 // input points positions, ASCII file
-static char *inpos;
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "voronoi",
+    .cmdkey      = "voronoi",
+    .description = "make Voronoi map from points file"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char     *inpos   = NULL;
 static LOCVAR_OUTIMG2D outim;
-
-static uint32_t *xsize;
-static long      fpi_xsize = -1;
-
-static uint32_t *ysize;
-static long      fpi_ysize = -1;
-
-static float   *radius;
-static long      fpi_radius = -1;
-
-static float   *gapsize;
-static long      fpi_gapsize = -1;
+static float    *radius  = NULL;
+static float    *gapsize = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-static CLICMDARGDEF farg[] =
+#define FPS_PARAMS(X) \
+    X(".inpos", &inpos, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "points positions, filename") \
+    X(".radius", &radius, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius") \
+    X(".gapsize", &gapsize, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "gap size")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+    FARG_OUTIM2D(outim)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inpos",
-        "points positions, filename",
-        "pts.dat",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inpos,
-        NULL
-    },
-    FARG_OUTIM2D(outim),
-    {
-        CLIARG_FLOAT32,
-        ".radius",
-        "radius",
-        "0.1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &radius,
-        &fpi_radius
-    },
-    {
-        CLIARG_FLOAT32,
-        ".gapsize",
-        "gap size",
-        "0.1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &gapsize,
-        &fpi_gapsize
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "voronoi",
-    "make Voronoi map from points file",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
-
-
-
-
-
 /**
  * Create Voronoi map
  *
@@ -259,14 +270,8 @@ image_gen_make_voronoi_map(
     free(gapim);
 
 
-
     return (imgout->ID);
 }
-
-
-
-
-
 
 
 static errno_t compute_function()
@@ -292,7 +297,6 @@ static errno_t compute_function()
         );
 
 
-
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
     }
@@ -306,19 +310,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_image_gen__voronoi()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
 
 
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
 
