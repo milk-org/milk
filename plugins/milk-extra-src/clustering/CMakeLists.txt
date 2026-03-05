@@ -73,3 +73,4 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
 add_milk_standalone(clustering-cubeclust cubecluster.c)
+add_milk_standalone(clustering-mindiffscan mindiffscan.c)

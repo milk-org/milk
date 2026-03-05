@@ -30,3 +30,4 @@ target_link_libraries(${LIBNAME} PUBLIC CLIcore milkimagegen)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+add_milk_standalone(zernike-mkzercube mkzercube.c)

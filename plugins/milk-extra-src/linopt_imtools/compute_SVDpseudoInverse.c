@@ -10,81 +10,95 @@
 #include "timeutils.h"
 #include "linalgebra/linalgebra.h"
 
-// Local variables pointers
-static char   *inimname;
-static char   *outimname;
-static double *SVD_epsilon;
-static long   *max_NBmodes;
-static char   *outimVTmatname;
-static long   *useGPU;
 
-static CLICMDARGDEF farg[] =
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "impsinvsvd",
+    .cmdkey      = "impsinvsvd",
+    .description = "compute pseudoinverse"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char   * inimname = NULL;
+static char   * outimname = NULL;
+static double * SVD_epsilon = NULL;
+static long   * max_NBmodes = NULL;
+static char   * outimVTmatname = NULL;
+static long   * useGPU = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".svdeps", &SVD_epsilon, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "SVD cutoff") \
+    X(".maxNBmode", &max_NBmodes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Maximum NB modes") \
+    X(".outimVT", &outimVTmatname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output VT matrix")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_IMG,
-        ".inim",
-        "input image",
-        "im",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".svdeps",
-        "SVD cutoff",
-        "0.001",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &SVD_epsilon,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".maxNBmode",
-        "Maximum NB modes",
-        "10000",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &max_NBmodes,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outimVT",
-        "output VT matrix",
-        "outVTmat",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimVTmatname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".GPU",
-        "use GPU",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &useGPU,
-        NULL
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "impsinvsvd", "compute pseudoinverse", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
 }
 
 //
@@ -548,8 +562,6 @@ linopt_compute_SVDpseudoInverse(
 }
 
 
-
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -590,12 +602,38 @@ static errno_t compute_function()
 }
 
 
-INSERT_STD_FPSCLIfunctions
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-// Register function in CLI
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

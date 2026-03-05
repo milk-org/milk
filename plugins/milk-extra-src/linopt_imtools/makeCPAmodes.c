@@ -7,276 +7,121 @@
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
-// Local variables pointers
-static char   *outimname;
 
-static uint32_t *sizexout;
-static uint32_t *sizeyout;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static uint64_t *centered;
-long fpi_centered;
-
-static float *xcent;
-static float *ycent;
-
-// Radial CPA
-static float *rCPAminval;
-static float *rCPAmaxval;
-
-// sampling xy CPA
-static float *CPAmaxval;
-
-static float *deltaCPAval;
-
-static float *radiusval;
-
-static float *radiusfactorlimval;
-
-static float *fpowerlaw;
-
-static float *fpowerlaw_minf;
-
-static float *fpowerlaw_maxf;
-
-static uint32_t   *writefileval;
-
-static char *maskim;
-
-// extrapolation factor
-// extrapolate out to extrfactor radian
-static float *extrfactor;
-
-// extrapolation offset
-static float *extroffset;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".sizex",
-        "sizex",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &sizexout,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".sizey",
-        "sizey",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &sizeyout,
-        NULL
-    },
-    {
-        CLIARG_ONOFF,
-        ".align.centered",
-        "on if centered",
-        "1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &centered,
-        &fpi_centered
-    },
-    {
-        CLIARG_FLOAT32,
-        ".align.xcenter",
-        "x axis center",
-        "200",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &xcent,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".align.ycenter",
-        "y axis center",
-        "200",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &ycent,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".rCPAmin",
-        "minimum radial cycle per aperture",
-        "-1.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &rCPAminval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".rCPAmax",
-        "maximum radial cycle per aperture",
-        "1008.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &rCPAmaxval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".CPAmax",
-        "maximum cycle per aperture",
-        "8.0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &CPAmaxval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".deltaCPA",
-        "CPA interval",
-        "0.8",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &deltaCPAval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".radius",
-        "disk radius",
-        "160.0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &radiusval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".radfactlim",
-        "radius factor limit",
-        "1.5",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &radiusfactorlimval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw",
-        "frequency power law (amp x f^a)",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &fpowerlaw,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw_minf",
-        "frequency power law min freq",
-        "1.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &fpowerlaw_minf,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw_maxf",
-        "frequency power law max freq",
-        "100.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &fpowerlaw_maxf,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".writefile",
-        "write file flag",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &writefileval,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".maskim",
-        "optional mask for extrapolation",
-        "mask",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &maskim,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".extrfactor",
-        "extrapolation factor [radian]",
-        "1.0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &extrfactor,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".extroffset",
-        "extrapolation offset [pix]",
-        "0.5",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &extroffset,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkFouriermodes",
+    .cmdkey      = "mkFouriermodes",
+    .description = "make basis of Fourier Modes"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char   * outimname = NULL;
+static uint32_t * sizexout = NULL;
+static uint32_t * sizeyout = NULL;
+static uint64_t * centered = NULL;
+static float * xcent = NULL;
+static float * ycent = NULL;
+static float * rCPAminval = NULL;
+static float * rCPAmaxval = NULL;
+static float * CPAmaxval = NULL;
+static float * deltaCPAval = NULL;
+static float * radiusval = NULL;
+static float * radiusfactorlimval = NULL;
+static float * fpowerlaw = NULL;
+static float * fpowerlaw_minf = NULL;
+static float * fpowerlaw_maxf = NULL;
+static uint32_t   * writefileval = NULL;
+static char * maskim = NULL;
+static float * extrfactor = NULL;
+static float * extroffset = NULL;
 
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    }
+#define FPS_PARAMS(X) \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".sizex", &sizexout, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sizex") \
+    X(".sizey", &sizeyout, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sizey") \
+    X(".CPAmax", &CPAmaxval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "maximum cycle per aperture") \
+    X(".deltaCPA", &deltaCPAval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "CPA interval") \
+    X(".radius", &radiusval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "disk radius") \
+    X(".radfactlim", &radiusfactorlimval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius factor limit") \
+    X(".writefile", &writefileval, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "write file flag")
 
-    return RETURN_SUCCESS;
-}
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-    if(data.fpsptr != NULL)
-    {
-
-    }
-
-    return RETURN_SUCCESS;
-}
-
-
-
-
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkFouriermodes", "make basis of Fourier Modes", CLICMD_FIELDS_DEFAULTS
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-// detailed help
-static errno_t help_function()
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
 errno_t linopt_imtools_makeCPAmodes(
     IMGID *imgoutm,
     uint32_t        sizex,
@@ -451,8 +296,6 @@ errno_t linopt_imtools_makeCPAmodes(
     }
 
 
-
-
     printf("CPA: max = %f   delta = %f\n", CPAmax, deltaCPA);
     fflush(stdout);
     NBfrequ = 0;
@@ -489,12 +332,6 @@ errno_t linopt_imtools_makeCPAmodes(
         }
     }
     printf("%ld spatial frequencies\n", NBfrequ);
-
-
-
-
-
-
 
 
     DEBUG_TRACEPOINT("NBfrequ = %ld", NBfrequ);
@@ -576,8 +413,6 @@ errno_t linopt_imtools_makeCPAmodes(
     imgoutm->mdt->size[1] = sizey;
     imgoutm->mdt->size[2] = NBmax;
     createimagefromIMGID(imgoutm);
-
-
 
 
     if(writeMfile == 1)
@@ -774,7 +609,6 @@ errno_t linopt_imtools_makeCPAmodes(
     free(CPArarray);
 
 
-
     DEBUG_TRACEPOINT("delete tmp files");
 
     FUNC_CHECK_RETURN(
@@ -799,8 +633,6 @@ errno_t linopt_imtools_makeCPAmodes(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
 
 
 static errno_t compute_function()
@@ -879,18 +711,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linopt_imtools__makeCPAmodes()
 {
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

@@ -53,3 +53,4 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 add_milk_standalone(imgfilt-gaussfilt gaussfilter.c)
 
+add_milk_standalone(imgfilt-im2Dfilt1pxbb im2Dfilter_1pixbblurr.c)

@@ -14,9 +14,6 @@
 #include "SGEMM.h"
 
 
-
-
-
 // CPU mode: Use MKL if available
 // Otherwise use openBLAS
 //
@@ -33,200 +30,82 @@
 #endif
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static char *inM;
-static long  fpi_inM;
-
-static char *outU;
-static long  fpi_outU;
-
-static char *outS;
-static long  fpi_outS;
-
-static char *outV;
-static long  fpi_outV;
-
-// if V is 3D, set Vdim0 to its size[0]
-// otherwise leave at 0
-static uint32_t *Vdim0;
-static long   fpi_Vdim0;
-
-
-static float *svdlim;
-static long   fpi_svdlim;
-
-static uint32_t *maxNBmode;
-static long   fpi_maxNBmode;
-
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-static uint64_t *compmode;
-static long     fpi_compmode;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // input
-        CLIARG_IMG,
-        ".inM",
-        "input matrix",
-        "inM",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inM,
-        &fpi_inM
-    },
-    {
-        // output U
-        CLIARG_STR,
-        ".outU",
-        "output U",
-        "outU",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outU,
-        &fpi_outU
-    },
-    {
-        CLIARG_STR,
-        ".outS",
-        "output ingular values",
-        "outS",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outS,
-        &fpi_outS
-    },
-    {
-        // output V
-        CLIARG_STR,
-        ".outV",
-        "output V",
-        "outV",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outV,
-        &fpi_outV
-    },
-    {
-        CLIARG_UINT32,
-        ".Vdim0",
-        "first dimension of V if 3D, 0 if 2D",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &Vdim0,
-        &fpi_Vdim0
-    },
-    {
-        // Singular Value Decomposition limit
-        CLIARG_FLOAT32,
-        ".svdlim",
-        "SVD limit",
-        "0.01",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &svdlim,
-        &fpi_svdlim
-    },
-    {
-        CLIARG_UINT32,
-        ".maxNBmode",
-        "Maximum number of modes",
-        "10000",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &maxNBmode,
-        &fpi_maxNBmode
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    },
-    {
-        // optional computations
-        CLIARG_UINT64,
-        ".compmode",
-        "flag: optional computations and checks",
-        "0",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &compmode,
-        &fpi_compmode
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "compSVD",
+    .cmdkey      = "compSVD",
+    .description = "compute SVD"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_inM].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-    }
-
-    return RETURN_SUCCESS;
-}
-
+static char * inM = NULL;
+static char * outU = NULL;
+static char * outS = NULL;
+static char * outV = NULL;
+static uint32_t * Vdim0 = NULL;
+static float * svdlim = NULL;
+static uint32_t * maxNBmode = NULL;
+static int32_t * GPUdevice = NULL;
+static uint64_t * compmode = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
+#define FPS_PARAMS(X) \
+    X(".outS", &outS, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output ingular values")
 
-    if(data.fpsptr != NULL)
-    {
-    }
 
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "compSVD", "compute SVD", CLICMD_FIELDS_DEFAULTS
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-// detailed help
-static errno_t help_function()
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    printf("CPU or GPU. Set .GPIdevice to -1 for CPU\n");
-
-    printf("Optional computations and checks specified by bitmask flag .compmode :\n");
-    printf("bit dec  description\n");
-    printf(" 0    1  Skip big matrix (U or V) computation\n");
-    printf(" 1    2  Compute pseudo-inverse, using svdlim for regularization\n");
-    printf("         Inverse stored as image psinv\n");
-    printf("         Only supported for tall input matrix\n");
-    printf(" 2    4  Check pseudo-inverse: compute input x psinv product\n");
-    printf("         result stored as image psinvcheck\n");
-    printf("         Only supported for tall input matrix\n");
-    printf(" 3    8  Reconstruct original image\n");
-    printf("\n");
-    printf("Example: compmode=6 will compute psinv and check it\n");
-    printf("\n");
-    printf("To run PCA on a sequence of images, input should be 3D cube of images\n");
-    printf("datacube U contains principal components\n");
-    printf("vextor outev are eigenvalues (magnitude) of each component\n");
-    printf("datacube V is decoding matrix\n");
-
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
-
-
-
-
-
-
 /**
  * @brief Compute SVD of indimM x indimN matrix
  *
@@ -264,7 +143,6 @@ errno_t compute_SVD(
     resolveIMGID(imgV, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
 
 
-
     // input dimensions
     // input matrix is inMdim x inNdim, column-major
     //
@@ -299,7 +177,6 @@ errno_t compute_SVD(
 
     // Orient matrix such that it is tall (M > N)
     //
-
 
 
     enum matrix_shape {inMshape_tall, inMshape_wide} mshape;
@@ -364,15 +241,6 @@ errno_t compute_SVD(
     }
 
 
-
-
-
-
-
-
-
-
-
     IMGID imgATA;
     {
         // create ATA
@@ -388,8 +256,6 @@ errno_t compute_SVD(
         strcpy(imgATA.name, "ATA");
         computeSGEMM(imgin, imgin, &imgATA, TranspA, TranspB, GPUdev);
     }
-
-
 
 
     // singular vectors array, small dimension
@@ -438,7 +304,6 @@ errno_t compute_SVD(
             }
         }
         printf("KEEPING %ld MODES\n", NBmode);
-
 
 
         if(mshape == inMshape_tall)
@@ -501,7 +366,6 @@ errno_t compute_SVD(
         }
 
 
-
         // store singular values
         delete_image_ID("SV", DELETE_IMAGE_ERRMODE_IGNORE);
         IMGID imgSV = imgid_make_from_name("SV");
@@ -549,13 +413,6 @@ errno_t compute_SVD(
         // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
     }
     delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
-
-
-
-
-
-
-
 
 
     if(!(compSVDmode & COMPSVD_SKIP_BIGMAT))
@@ -614,7 +471,6 @@ errno_t compute_SVD(
         printf("LIMIT = %g  - Keeping %ld / %u modes\n", SVlimit, SVkeptcnt, Ndim);
 
 
-
         // Compute pseudo-inverse
         //
         if((compSVDmode & COMPSVD_COMP_PSINV))
@@ -650,7 +506,6 @@ errno_t compute_SVD(
                         imgmNsvec->im->array.F[jj * Ndim + ii] * normfact;
                 }
             }
-
 
 
             IMGID imgpsinv;
@@ -761,16 +616,9 @@ errno_t compute_SVD(
     }
 
 
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
-
-
-
-
 
 
 static errno_t compute_function()
@@ -779,7 +627,6 @@ static errno_t compute_function()
 
     IMGID imginM = imgid_make_from_name(inM);
     resolveIMGID(&imginM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-
 
 
     IMGID imgU  = imgid_make_from_name(outU);
@@ -805,21 +652,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__compSVD()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+
