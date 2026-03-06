@@ -205,3 +205,15 @@ add_executable(milk-fpsexec-cnt2push cnt2push_main.c)
 target_include_directories(milk-fpsexec-cnt2push PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
 target_link_libraries(milk-fpsexec-cnt2push ImageStreamIO m)
 install(TARGETS milk-fpsexec-cnt2push DESTINATION bin)
+
+add_executable(milk-stream-list milk-stream-list.c)
+target_include_directories(milk-stream-list PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+target_link_libraries(milk-stream-list ImageStreamIO)
+install(TARGETS milk-stream-list DESTINATION bin)
+
+add_executable(milk-stream-create milk-stream-create.c)
+target_include_directories(milk-stream-create PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+target_link_libraries(milk-stream-create ImageStreamIO)
+install(TARGETS milk-stream-create DESTINATION bin)
