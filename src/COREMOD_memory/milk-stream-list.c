@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <getopt.h>
+#include <regex.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
 
@@ -25,7 +26,7 @@
 #define STRINGMAXLEN_FULLFILENAME 512
 
 void print_help(const char *progname) {
-    printf("Usage: %s [options]\n", progname);
+    printf("Usage: %s [options] [regex pattern]\n", progname);
     printf("List ImageStreamIO streams.\n");
     printf("\n");
     printf("Options:\n");
@@ -55,6 +56,22 @@ int main(int argc, char *argv[]) {
                 print_help(argv[0]);
                 return 1;
         }
+    }
+
+    const char *pattern = NULL;
+    regex_t regex;
+    int use_regex = 0;
+
+    if (optind < argc) {
+        pattern = argv[optind];
+        int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
+        if (ret != 0) {
+            char error_msg[128];
+            regerror(ret, &regex, error_msg, sizeof(error_msg));
+            fprintf(stderr, "Error: Invalid regular expression. %s\n", error_msg);
+            return 1;
+        }
+        use_regex = 1;
     }
 
     const char *shmdir = getenv("MILK_SHM_DIR");
@@ -102,6 +119,10 @@ int main(int argc, char *argv[]) {
                 char sname[256];
                 strncpy(sname, dir->d_name, sizeof(sname));
                 sname[strlen(dir->d_name) - 7] = '\0'; // Remove .im.shm
+
+                if (use_regex && regexec(&regex, sname, 0, NULL, 0) != 0) {
+                    continue; // Skip if it doesn't match the regex
+                }
 
                 // Check if it's a symlink
                 char fullname[STRINGMAXLEN_FULLFILENAME];
@@ -204,6 +225,10 @@ int main(int argc, char *argv[]) {
     {
         fprintf(stderr, "Error opening directory %s\n", shmdir);
         return 1;
+    }
+
+    if (use_regex) {
+        regfree(&regex);
     }
 
     return 0;
