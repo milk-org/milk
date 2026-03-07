@@ -10,7 +10,6 @@
 #include "TUItools.h"
 #include "fpsCTRL_globals.h"
 
-#include "fps_TUI_shim.h"
 #include "fpsCTRL_FPSdisplay.h"
 #include "print_nodeinfo.h"
 #include "level0node_summary.h"
@@ -218,6 +217,7 @@ errno_t fpsCTRL_FPSdisplay(
         if (available_width < 40) available_width = 40;
         
         if (max_kw_width[cl] > available_width / 2) max_kw_width[cl] = available_width / 2;
+        
         // max_val_width is handled by sliding print, but we need enough space for description
 
         TUI_newline();
@@ -337,6 +337,7 @@ errno_t fpsCTRL_FPSdisplay(
 
             int knodeindex =
                 keywnode[fpsCTRLvar->directorynodeSelected].child[child_index[level]];
+            
             if(knodeindex < fpsCTRLvar->NBkwn)
             {
                 int fpsindex = keywnode[knodeindex].fpsindex;
@@ -349,6 +350,7 @@ errno_t fpsCTRL_FPSdisplay(
                     screenprint_unsetreverse();
                 }
 
+
                 if(keywnode[knodeindex].leaf == 0)   // If this is a directory
                 {
                     if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
@@ -358,10 +360,12 @@ errno_t fpsCTRL_FPSdisplay(
                         fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
                     }
 
+
                     if(child_index[level] < keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
                     {
                         screenprint_setcolor(5);
                         int l = keywnode[knodeindex].keywordlevel;
+                        
                         TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], keywnode[knodeindex].keyword[l - 1]);
                         screenprint_unsetcolor(5);
 
@@ -445,11 +449,11 @@ errno_t fpsCTRL_FPSdisplay(
 
                     TUI_printfw(" ");
                     if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
-                        screenprint_setcolor(COLOR_BLACK_ON_WHITE);
+                        screenprint_setreverse();
                     }
                     TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
                     if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
-                        screenprint_unsetcolor(COLOR_BLACK_ON_WHITE);
+                        screenprint_unsetreverse();
                     }
 
                     if (is_resolved_stream) {
@@ -578,15 +582,13 @@ errno_t fpsCTRL_FPSdisplay(
                             .val.i32[0])
                     {
                         onoff_on = 1;
-                        screenprint_setcolor(
-                            COLOR_BLACK_ON_WHITE);
+                        screenprint_setreverse();
                     }
 
                     print_sliding_string(valstring, max_val_width, GUIline);
 
                     if (onoff_on) {
-                        screenprint_unsetcolor(
-                            COLOR_BLACK_ON_WHITE);
+                        screenprint_unsetreverse();
                     }
                     if (path_val_color != 0) {
                         screenprint_unsetcolor(

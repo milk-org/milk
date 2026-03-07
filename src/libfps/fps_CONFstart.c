@@ -23,8 +23,15 @@ errno_t functionparameter_CONFstart(FUNCTION_PARAMETER_STRUCT *fps)
                            fps->md->name,
                            fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" fpsconfstart\" C-m",
-                           fps->md->name);
+    if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" %s %s:confstart\" C-m",
+                               fps->md->name,
+                               fps->md->execfullpath,
+                               fps->md->name);
+    } else {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" fpsconfstart\" C-m",
+                               fps->md->name);
+    }
 
     fps->md->status |= FUNCTION_PARAMETER_STRUCT_STATUS_CMDCONF;
 
