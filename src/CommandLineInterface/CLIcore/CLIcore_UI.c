@@ -964,10 +964,121 @@ static void update_hint_area(void)
             int cmi = find_command_match(fw);
             if(cmi >= 0)
             {
-                printf(
-                    "\033[2m%.*s\033[0m",
-                    cached_term_cols - 1,
-                    data.cmd[cmi].syntax);
+                /* Count argument words after cmd
+                 * to determine current arg */
+                int argidx = 0;
+                {
+                    const char *p =
+                        rl_line_buffer;
+                    /* Skip command word */
+                    while(*p && *p != ' ')
+                    {
+                        p++;
+                    }
+                    /* Count argument words */
+                    int wcount = 0;
+                    int in_word = 0;
+                    while(*p)
+                    {
+                        if(*p != ' ')
+                        {
+                            if(!in_word)
+                            {
+                                wcount++;
+                                in_word = 1;
+                            }
+                        }
+                        else
+                        {
+                            in_word = 0;
+                        }
+                        p++;
+                    }
+                    if(rl_end > 0 &&
+                            rl_line_buffer[
+                                rl_end - 1]
+                            == ' ')
+                    {
+                        /* Trailing space: about
+                         * to type next arg */
+                        argidx = wcount;
+                    }
+                    else
+                    {
+                        /* Mid-word: typing this
+                         * arg (0-indexed) */
+                        argidx = wcount > 0
+                                 ? wcount - 1 : 0;
+                    }
+                }
+
+                /* Print syntax with <> delimited
+                 * tokens, highlighting active */
+                const char *syn =
+                    data.cmd[cmi].syntax;
+                int col = 0;
+                int tidx = 0;
+                const char *p = syn;
+
+                while(*p &&
+                        col < cached_term_cols - 2)
+                {
+                    /* Skip whitespace between
+                     * argument tokens */
+                    if(*p == ' ')
+                    {
+                        printf(" ");
+                        col++;
+                        p++;
+                        continue;
+                    }
+
+                    /* Find extent of this token */
+                    const char *tstart = p;
+                    if(*p == '<')
+                    {
+                        /* Scan to matching '>' */
+                        while(*p && *p != '>')
+                        {
+                            p++;
+                        }
+                        if(*p == '>')
+                        {
+                            p++;
+                        }
+                    }
+                    else
+                    {
+                        /* Non-<> word */
+                        while(*p && *p != ' '
+                                && *p != '<')
+                        {
+                            p++;
+                        }
+                    }
+                    int tlen = (int)(p - tstart);
+                    int avail =
+                        cached_term_cols - 1 - col;
+                    int plen = tlen < avail
+                               ? tlen : avail;
+
+                    if(tidx == argidx)
+                    {
+                        printf("\033[1;97m"
+                               "%.*s"
+                               "\033[0m",
+                               plen, tstart);
+                    }
+                    else
+                    {
+                        printf("\033[2m"
+                               "%.*s"
+                               "\033[0m",
+                               plen, tstart);
+                    }
+                    col += plen;
+                    tidx++;
+                }
             }
         }
     }
