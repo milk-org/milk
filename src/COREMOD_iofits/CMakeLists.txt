@@ -96,3 +96,5 @@ install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
 add_milk_standalone(iofits-saveFITS savefits.c)
+add_milk_standalone(iofits-loadfits loadfits.c)
+add_milk_standalone(iofits-imgs2cube images2cube.c)

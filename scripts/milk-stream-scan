@@ -13,7 +13,7 @@ MSextdescr="Scan for streams
 source milk-script-std-config
 
 
-RequiredCommands=( milk )
+RequiredCommands=( milk-cli )
 RequiredFiles=()
 RequiredDirs=()
 

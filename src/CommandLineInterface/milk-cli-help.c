@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
     data.quiet = 1;
     CLI_startup();
 
-    // Call the centralized framework help function
-    print_milk_framework_help();
+    // Call the centralized CLI help function
+    print_milk_cli_help();
 
 
     return 0;

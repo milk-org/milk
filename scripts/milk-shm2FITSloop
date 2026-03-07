@@ -32,7 +32,7 @@ echo "Press [CTRL+C] to stop.."
 tmux new-session -d -s ${tmuxname}
 
 
-tmux send-keys -t ${tmuxname} "milk -n ${pname}" C-m
+tmux send-keys -t ${tmuxname} "milk-cli -n ${pname}" C-m
 tmux send-keys -t ${tmuxname} "readshmim $1" C-m
 
 IMCNT=0

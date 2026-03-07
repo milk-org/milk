@@ -2,94 +2,39 @@
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "unfold",
+    .cmdkey      = "unfold",
+    .description = "image unfold, merge axis A into axis B"
+};
 
 // input image names
 static char *inimname;
-static char *maskimname;
-
 static char *outimname;
-
 static uint32_t *axisA;
-static long      fpi_axisA = -1;
-
 static uint32_t *axisB;
-static long      fpi_axisB = -1;
-
 static uint32_t *colsize;
-static long      fpi_colsize = -1;
 
-static char *auxin;
 
-static uint64_t *modeRMS;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".inim",
-        "input image",
-        "im0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "imout",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".axisA",
-        "axis to merged",
-        "2",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &axisA,
-        &fpi_axisA
-    },
-    {
-        CLIARG_UINT32,
-        ".axisB",
-        "merge into this axis",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &axisB,
-        &fpi_axisB
-    },
-    {
-        CLIARG_UINT32,
-        ".colsize",
-        "column size",
-        "10",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &colsize,
-        &fpi_colsize
-    }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "unfold",
-    "image unfold, merge axis A into axis B",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("Unfold image: redude number of axis\n");
-    printf("Example, 3D image input [X,Y,Z]\n");
-    printf("merge axis 2 into axis 0 -> size [XZ, Y]\n");
-    printf("if colsize specified, array size is [X*colsize, Y*n]\n");
-    printf("with n sufficiently large to include all pixels\n");
-
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".inim", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image") \
+    X(".axisA", &axisA, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "axis to merged") \
+    X(".axisB", &axisB, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "merge into this axis") \
+    X(".colsize", &colsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "column size")
 
 errno_t image_unfold(
     IMGID inimg,
@@ -229,6 +174,45 @@ errno_t image_unfold(
     return RETURN_SUCCESS;
 }
 
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -262,16 +246,31 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_arith__image_unfold()
 {
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

@@ -32,7 +32,7 @@ $(tput bold)EXAMPLES:$(tput sgr0)
 
 
 
-RequiredCommands=( milk )
+RequiredCommands=( milk-cli )
 #RequiredFiles=()
 #RequiredDirs=()
 
@@ -256,7 +256,7 @@ fi
 
 if [ "$LOADfile" = "1" ]; then
 
-MILK_QUIET=1 milk -n $pname << EOF
+MILK_QUIET=1 milk-cli -n $pname << EOF
 loadfits "${FITSfname}" im
 readshmim "${STREAMname}"
 imcpshm im "${STREAMname}"
@@ -272,7 +272,7 @@ EOF
 
 	if [ "$UPDATEMODE" = "1" ]; then
 		# write SM stat AFTER it has been updated
-MILK_QUIET=1 milk -n $pname << EOF
+MILK_QUIET=1 milk-cli -n $pname << EOF
 readshmimsize ${STREAMname} "${logSMstatdir}/${STREAMname0}.imsize"
 exitCLI
 EOF

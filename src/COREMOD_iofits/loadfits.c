@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 #include "loadfits.h"
 
 #include "COREMOD_iofits_common.h"
@@ -20,62 +21,72 @@
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
+// ==========================================
+// FPS V2
+// ==========================================
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "loadfits",
+    .cmdkey      = "loadfits",
+    .description = "load FITS format file"
+};
+
 // CLI function arguments and parameters
 static char *infilename;
 static char *outimname;
-static long *FITSIOerrmode;
+static int64_t *FITSIOerrmode;
 
-// CLI function arguments and parameters
-static CLICMDARGDEF farg[] =
+#define FPS_PARAMS(X) \
+    X(".infname", &infilename, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "input file") \
+    X(".outimname", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image name") \
+    X(".errmode", &FITSIOerrmode, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "FITSIO errors mode (0:ignore) (1:warning) (2:error) (3:exit)")
+
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    {
-        CLIARG_STR,
-        ".infname",
-        "input file",
-        "imfname",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &infilename,
-        NULL
-    },
-    {
-        CLIARG_STR_NOT_IMG,
-        ".outimname",
-        "output image name",
-        "outimname",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".errmode",
-        "FITSIO errors mode \n(0:ignore) (1:warning) (2:error) (3:exit)",
-        "1",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &FITSIOerrmode,
-        NULL
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
-};
-
-// CLI function initialization data
-static CLICMDDATA CLIcmddata =
-{
-    "loadfits", "load FITS format file", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-
-    printf(
-        "Load FITS file from filesystem\n"
-        "Uses fitsio library, supports extended fitsio file syntax\n"
-        "File name should be in double quotes unless free of special chars\n"
-        "Examples:\n"
-        "   loadfits \"im1.fits\" im\n");
-
-    return RETURN_SUCCESS;
 }
+
 
 /// errmode values :
 /// LOADFITS_ERRMODE_IGNORE  (0) print warning, do not show error messages, continue
@@ -562,11 +573,6 @@ errno_t load_fits_IMGID(
             if(strlen(tailstr) == 0)
             {
                 kwtypeOK = 1;
-                /*printf("%3d FITS KEYW [L] %-8s= %20ld / %s\n",
-                       kwnum,
-                       keyname,
-                       kwlongval,
-                       kwcomment);*/
                 image_keyword_addL(*imgout, keyname, kwlongval, kwcomment);
             }
 
@@ -577,22 +583,12 @@ errno_t load_fits_IMGID(
                 if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
-                    /*printf("%3d FITS KEYW [D] %-8s= %20g / %s\n",
-                           kwnum,
-                           keyname,
-                           kwdoubleval,
-                           kwcomment);*/
                     image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
                 }
 
                 if(kwtypeOK == 0)
                 {
                     // default to string
-                    /*printf("%3d FITS KEYW [S] %-8s= %-20s / %s\n",
-                           kwnum,
-                           keyname,
-                           kwvaluestr,
-                           kwcomment);*/
                     // remove leading and trailing '
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
@@ -652,16 +648,33 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_iofits__loadfits()
 {
-    //INSERT_STD_FPSCLIREGISTERFUNC
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
 
     int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);
     CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

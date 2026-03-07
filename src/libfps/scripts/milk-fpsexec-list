@@ -8,6 +8,8 @@
 
 SKIP_LIST="milk-fpsexec-help milk-fpsexec-list"
 
+SEARCH_TERM="${1:-}"
+
 col_name=45
 
 printf "\033[1;34m%-${col_name}s %s\033[0m\n" \
@@ -30,10 +32,15 @@ for cmd in $(compgen -c milk-fpsexec- | sort -u); do
     desc=$("$cmd" -h1 2>/dev/null)
     rc=$?
     if [ $rc -eq 0 ] && [ -n "$desc" ]; then
-        printf "%-${col_name}s %s\n" \
-            "$cmd" "$desc"
+        line=$(printf "%-${col_name}s %s" "$cmd" "$desc")
     else
-        printf "%-${col_name}s %s\n" \
-            "$cmd" "(no description)"
+        line=$(printf "%-${col_name}s %s" "$cmd" "(no description)")
     fi
+
+    if [ -n "$SEARCH_TERM" ]; then
+        if ! echo "$line" | grep -qi "$SEARCH_TERM"; then
+            continue
+        fi
+    fi
+    echo "$line"
 done

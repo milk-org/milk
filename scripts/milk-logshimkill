@@ -27,7 +27,7 @@ milk-streamFITSlog $1 kill
 
 exit
 
-milk -n $pname << EOF
+milk-cli -n $pname << EOF
 shmimslogexitset $1 1
 exit
 EOF
