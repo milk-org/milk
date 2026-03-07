@@ -6,18 +6,20 @@
 #include <signal.h>
 #include <glob.h>
 #include <termios.h>
+#include <regex.h>
 
 #include "fps.h"
 #include "fps_FPSremove.h"
 
 void print_help(const char *progname) {
-    printf("Usage: %s [options] [fpsname]\n",
+    printf("Usage: %s [options] [fpsname|regex]\n",
            progname);
     printf("Remove a Function Parameter Structure"
            " (FPS).\n\n");
     printf("If no FPS name is given, lists existing"
            " FPS instances\nand prompts for"
-           " selection.\n\n");
+           " selection. A regex can be provided to"
+           " filter the list.\n\n");
     printf("Options:\n");
     printf("  -v, --verbose   Verbose mode\n");
     printf("  -h, --help      Show this help\n");
@@ -53,10 +55,23 @@ int main(int argc, char *argv[])
     }
 
     char fpsname_buf[256];
-    const char *fpsname;
+    const char *fpsname = NULL;
 
-    if (optind >= argc) {
-        /* No name given — interactive selection */
+    const char *pattern = NULL;
+    regex_t regex;
+    int use_regex = 0;
+
+    if (optind < argc) {
+        pattern = argv[optind];
+        int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
+        if (ret == 0) {
+            use_regex = 1;
+        } else if (verbose) {
+            printf("Supplied argument could not be compiled as regex. Assuming exact literal.\n");
+        }
+    }
+
+    if (1) { /* Always scan directory unless we specifically only want to target exactly one existing pattern but let's scan anyway */
         char shmdir[200];
         function_parameter_struct_shmdirname(
             shmdir);
@@ -74,13 +89,11 @@ int main(int argc, char *argv[])
             }
             return 0;
         }
-
-        /* Build name list from filenames */
         int count = (int)gl.gl_pathc;
+        int matched_count = 0;
         char **names = calloc(count,
                               sizeof(char *));
 
-        printf("\n  FPS instances:\n\n");
         for (int i = 0; i < count; i++) {
             char *base =
                 strrchr(gl.gl_pathv[i], '/');
@@ -89,13 +102,51 @@ int main(int argc, char *argv[])
             char *dot = strstr(base, ".fps.shm");
             int len = dot ? (int)(dot - base)
                           : (int)strlen(base);
-            names[i] = strndup(base, len);
-            printf("  %3d  %s\n", i + 1, names[i]);
+            
+            char tmp_name[256];
+            snprintf(tmp_name, sizeof(tmp_name), "%.*s", len, base);
+
+            if (use_regex) {
+                if (regexec(&regex, tmp_name, 0, NULL, 0) != 0) {
+                    continue; // Skip if regex doesn't match
+                }
+            } else if (pattern != NULL) {
+                // Not a valid regex, check exact match if possible
+                if (strcmp(tmp_name, pattern) != 0) {
+                    continue;
+                }
+            }
+            
+            names[matched_count] = strdup(tmp_name);
+            matched_count++;
         }
         globfree(&gl);
 
-        printf("\n  Enter number to remove"
-               " (0 to cancel): ");
+        if (matched_count == 0) {
+            if (pattern) {
+                fprintf(stderr, "Error: cannot connect to FPS '%s'. It may not exist.\n", pattern);
+            } else {
+                printf("No FPS instances found.\n");
+            }
+            free(names);
+            if(use_regex) regfree(&regex);
+            return 1;
+        }
+
+        if (pattern != NULL && matched_count == 1) {
+            // Exactly one match and an argument was passed, remove it without interactive prompt
+            strncpy(fpsname_buf, names[0], sizeof(fpsname_buf) - 1);
+            fpsname_buf[sizeof(fpsname_buf) - 1] = '\0';
+            fpsname = fpsname_buf;
+        } else {
+            // Interactive Selection
+            printf("\n  FPS instances:\n\n");
+            for (int i = 0; i < matched_count; i++) {
+                printf("  %3d  %s\n", i + 1, names[i]);
+            }
+
+            printf("\n  Enter number to remove"
+                   " (0 to cancel): ");
         fflush(stdout);
 
         /* Ensure terminal is in canonical mode with CR->NL
@@ -124,10 +175,11 @@ int main(int argc, char *argv[])
 
         if (!fgets_ok) {
             printf("Cancelled.\n");
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < matched_count; i++) {
                 free(names[i]);
             }
             free(names);
+            if(use_regex) regfree(&regex);
             return 0;
         }
 
@@ -142,12 +194,13 @@ int main(int argc, char *argv[])
         }
 
         int sel = atoi(linebuf);
-        if (sel < 1 || sel > count) {
+        if (sel < 1 || sel > matched_count) {
             printf("Cancelled.\n");
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < matched_count; i++) {
                 free(names[i]);
             }
             free(names);
+            if(use_regex) regfree(&regex);
             return 0;
         }
 
@@ -156,13 +209,15 @@ int main(int argc, char *argv[])
         fpsname_buf[sizeof(fpsname_buf) - 1] = '\0';
         fpsname = fpsname_buf;
 
-        for (int i = 0; i < count; i++) {
+        }
+
+        for (int i = 0; i < matched_count; i++) {
             free(names[i]);
         }
         free(names);
-    } else {
-        fpsname = argv[optind];
-    }
+    } 
+
+    if (use_regex) regfree(&regex);
 
     FUNCTION_PARAMETER_STRUCT fps;
     fps.SMfd = -1;
