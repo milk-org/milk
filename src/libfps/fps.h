@@ -942,6 +942,7 @@ int main(int argc, char *argv[]) { \
     int use_tmux = 0; \
     int use_procinfo = 0; \
     int show_help = 0; \
+    int show_h1 = 0; \
     int show_help_color = 1; \
     char *command = NULL; \
     char *keywords = NULL; \
@@ -950,6 +951,8 @@ int main(int argc, char *argv[]) { \
     for (int i = 1; i < argc; i++) { \
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) { \
             show_help = 1; \
+        } else if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0) { \
+            show_h1 = 1; \
         } else if (strcmp(argv[i], "-hc") == 0 || strcmp(argv[i], "--help-color") == 0) { \
             show_help = 1; \
             show_help_color = 1; \
@@ -1001,6 +1004,11 @@ int main(int argc, char *argv[]) { \
     (void) use_procinfo; \
     if (strlen(arg_fps_name) > 0) { \
         strncpy(fps_name, arg_fps_name, STRINGMAXLEN_FPS_NAME - 1); \
+    } \
+    if (show_h1) { \
+        printf("%s\n", \
+               "Standalone FPS application."); \
+        return 0; \
     } \
     if (show_help || (argc < 2)) { \
         if (show_help_color) { \
@@ -1415,6 +1423,7 @@ int main(int argc, char *argv[]) { \
     int use_tmux = 0; \
     int use_procinfo = 0; \
     int show_help = 0; \
+    int show_h1 = 0; \
     int show_help_color = 1; \
     char *command = NULL; \
     char *keywords = NULL; \
@@ -1433,6 +1442,11 @@ int main(int argc, char *argv[]) { \
         if (strcmp(argv[i], "-h") == 0 || \
             strcmp(argv[i], "--help") == 0) { \
             show_help = 1; \
+        } else if ( \
+            strcmp(argv[i], "-h1") == 0 || \
+            strcmp(argv[i], \
+                   "--help-oneline") == 0) { \
+            show_h1 = 1; \
         } else if (strcmp(argv[i], "-hc") == 0 ||\
             strcmp(argv[i], \
                    "--help-color") == 0) { \
@@ -1502,6 +1516,11 @@ int main(int argc, char *argv[]) { \
                 STRINGMAXLEN_FPS_NAME - 1); \
     } \
     (void)keywords; (void)description; \
+    if (show_h1) { \
+        printf("%s\n", \
+               (APP_INFO).description); \
+        return 0; \
+    } \
     if (show_help || (argc < 2)) { \
         if (show_help_color) { \
             printf("\n" COLORHEADER "Usage:" \
