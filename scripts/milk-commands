@@ -6,7 +6,7 @@
 
 MSdescr="list milk- scripts"
 
-MSextdescr="List milk scripts
+MSextdescr="List milk-cli scripts
 
 Scan system for milk- commands
 "

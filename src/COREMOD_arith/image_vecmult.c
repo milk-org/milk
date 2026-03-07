@@ -6,96 +6,94 @@
  */
 
 #include "CLIcore.h"
+#include "fps.h"
 
-static char *iminname;
-static long fpi_iminname;
-
-static char *vecname;
-static long fpi_vecname;
-
-static char *imoutname;
-static long fpi_imoutname;
-
-static uint32_t *multaxis;
-static long fpi_multaxis;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".iminname",
-        "input image name",
-        "inim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &iminname,
-        &fpi_iminname
-    },
-    {
-        CLIARG_IMG,
-        ".vecname",
-        "input vector name",
-        "vec",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &vecname,
-        &fpi_vecname
-    },
-    {
-        CLIARG_STR,
-        ".imoutname",
-        "output image name",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imoutname,
-        &fpi_imoutname
-    },
-    {
-        CLIARG_UINT32,
-        ".axis",
-        "multiplication axis",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &multaxis,
-        &fpi_multaxis
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imvecmult",
+    .cmdkey      = "imvecmult",
+    .description = "multiply image by vector"
 };
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
+static char *iminname;
+static char *vecname;
+static char *imoutname;
+static uint32_t *multaxis;
+
+
+#define FPS_PARAMS(X) \
+    X(".iminname", &iminname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image name") \
+    X(".vecname", &vecname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input vector name") \
+    X(".imoutname", &imoutname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image name") \
+    X(".axis", &multaxis, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "multiplication axis")
+
+
 static errno_t customCONFsetup()
 {
     if(data.fpsptr != NULL)
     {
-        data.fpsptr->parray[fpi_iminname].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
+        long fpi = functionparameter_GetParamIndex(data.fpsptr, ".iminname");
+        if(fpi >= 0)
+        {
+            data.fpsptr->parray[fpi].fpflag |=
+                FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
+        }
     }
 
     return RETURN_SUCCESS;
 }
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
 static errno_t customCONFcheck()
 {
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
     return RETURN_SUCCESS;
 }
 
-static CLICMDDATA CLIcmddata =
-{
-    "imvecmult", "multiply image by vector", CLICMD_FIELDS_DEFAULTS
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-// detailed help
-static errno_t help_function()
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
+
 
 errno_t image_vect_multiply(
     IMGID    imgin,
@@ -203,15 +201,35 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__image_vecmult()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2_CONFCHECK(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function,
+    customCONFcheck)
+#endif

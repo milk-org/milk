@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        strncpy(AppName, "milk", STRINGMAXLEN_APPNAME - 1);
+        strncpy(AppName, "milk-cli", STRINGMAXLEN_APPNAME - 1);
     }
 
     if(getenv("MILK_QUIET"))
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     if(data.quiet == 0)
     {
         printf(STYLE_BOLD);
-        printf("\n        milk  v %s\n", versionstring);
+        printf("\n        milk-cli  v %s\n", versionstring);
 #ifndef NDEBUG
         printf(
             "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "

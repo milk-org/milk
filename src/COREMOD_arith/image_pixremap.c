@@ -1,56 +1,74 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
+#include "fps.h"
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "pixremap",
+    .cmdkey      = "pixremap",
+    .description = "pixel remapping of image"
+};
 
 // input image
-//
 static char *insname;
 
 // mapping array
-// same size as output, values are pix index pointing to input
-// datatype = int32
-// negative value are not mapped
-//
 static char *mapsname;
 
-// output (remapped) image
-//
-static LOCVAR_OUTIMG2D outim;
+// output image
+static char *outimname;
+static int32_t *outshared;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".insname",
-        "input image name",
-        "inim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &insname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".map",
-        "mapping image name",
-        "mapim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &mapsname,
-        NULL
-    },
-    FARG_OUTIM_NAME(outim),
-    FARG_OUTIM_SHARED(outim)
+#define FPS_PARAMS(X) \
+    X(".insname", &insname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image name") \
+    X(".map", &mapsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "mapping image name") \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image name") \
+    X(".out_shared", &outshared, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, "output shared (1) or not (0)")
+
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "pixremap", "pixel remapping of image", CLICMD_FIELDS_DEFAULTS
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
 };
 
-// detailed help
-static errno_t help_function()
-{
-    printf("Remap input image to ouput image by pixel lookup\n");
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
 
-    return RETURN_SUCCESS;
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
 
 static errno_t compute_function()
@@ -75,12 +93,12 @@ static errno_t compute_function()
     // link/create output image/stream
     // output size is same as input size (default)
 
-    IMGID imgout = imgid_make_from_name(outim.name);
-    imgout.mdt->shared = *outim.shared;
-    if(*outim.shared == 1)
+    IMGID imgout = imgid_make_from_name(outimname);
+    imgout.mdt->shared = *outshared;
+    if(*outshared == 1)
     {
         imgid_free(&imgout);
-        imgout = stream_connect_create_2D(outim.name, xsize, ysize, imgin.md->datatype);
+        imgout = stream_connect_create_2D(outimname, xsize, ysize, imgin.md->datatype);
     }
     else
     {
@@ -215,14 +233,33 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMODE_arith__pixremap()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
+#endif
+
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

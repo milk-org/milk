@@ -1,51 +1,58 @@
+/**
+ * @file    image_mk_complex_from_amph.c
+ * @brief   amplitude, phase -> complex
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 
-// Local variables pointers
-static char *inampimname;
-static char *inphaimname;
-static char *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".imamp_name",
-        "amplitude image",
-        "imamp",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inampimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".impha_name",
-        "phase image",
-        "impha",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inphaimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output complex image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "ap2c",
+    .cmdkey      = "ap2c",
+    .description = "amplitude, phase -> complex"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "ap2c", "amplitude, phase -> complex", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *inampimname = NULL;
+static char *inphaimname = NULL;
+static char *outimname   = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".imamp_name", &inampimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "amplitude image") \
+    X(".impha_name", &inphaimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "phase image") \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output complex image")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 errno_t mk_complex_from_amph_IMGID(
     IMGID *imginamp,
@@ -55,8 +62,12 @@ errno_t mk_complex_from_amph_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imginamp, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(imginpha, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        imginamp, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        imginpha, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
 
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;
@@ -64,76 +75,82 @@ errno_t mk_complex_from_amph_IMGID(
     uint8_t naxisamp = imginamp->md->naxis;
     uint8_t naxispha = imginpha->md->naxis;
     uint64_t xysize = imginamp->md->size[0];
-    imgoutC->mdt->size[0] = imginamp->md->size[0];
+    imgoutC->mdt->size[0] =
+        imginamp->md->size[0];
     imgoutC->mdt->size[1] = 1;
 
     uint8_t naxis = naxisamp;
     if(naxisamp > 1)
     {
         xysize *= imginamp->md->size[1];
-        imgoutC->mdt->size[1] = imginamp->md->size[1];
+        imgoutC->mdt->size[1] =
+            imginamp->md->size[1];
     }
     if(naxispha > naxisamp)
     {
         naxis = naxispha;
     }
 
-    uint32_t zsize = 1;
+    uint32_t zsize    = 1;
     uint32_t zsizeamp = 1;
     uint32_t zsizepha = 1;
-    if(naxisamp > 2)
-    {
+    if(naxisamp > 2) {
         zsizeamp = imginamp->md->size[2];
     }
-    if(naxispha > 2)
-    {
+    if(naxispha > 2) {
         zsizepha = imginpha->md->size[2];
     }
     zsize = zsizeamp;
-    if(zsizepha > zsizeamp)
-    {
+    if(zsizepha > zsizeamp) {
         zsize = zsizepha;
     }
 
     imgoutC->mdt->naxis = naxis;
     imgoutC->mdt->size[2] = zsize;
 
-    //printf("xysize = %lu\n", xysize);
-
-    if((datatype_am == _DATATYPE_FLOAT) && (datatype_ph == _DATATYPE_FLOAT))
+    if((datatype_am == _DATATYPE_FLOAT)
+        && (datatype_ph == _DATATYPE_FLOAT))
     {
-        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_FLOAT;
+        imgoutC->mdt->datatype =
+            _DATATYPE_COMPLEX_FLOAT;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
 #ifdef _OPENMP
-        #pragma omp parallel if (xysize > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel \
+            if (xysize > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for
 #endif
-            for(uint32_t kk=0; kk<zsize; kk++)
+            for(uint32_t kk = 0;
+                 kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp-1)
-                {
-                    kkamp = zsizeamp-1;
-                }
+                if(kkamp > zsizeamp - 1)
+                    kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha-1)
-                {
-                    kkpha = zsizepha-1;
-                }
+                if(kkpha > zsizepha - 1)
+                    kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0;
+                     ii < xysize; ii++)
                 {
-                    imgoutC->im->array.CF[kk*xysize + ii].re =
-                        imginamp->im->array.F[kkamp*xysize + ii] *
-                        ((float) cos(imginpha->im->array.F[kkpha*xysize + ii]));
+                    imgoutC->im->array
+                        .CF[kk*xysize + ii].re =
+                        imginamp->im->array
+                            .F[kkamp*xysize + ii]
+                        * ((float) cos(
+                            imginpha->im->array
+                            .F[kkpha*xysize + ii]));
 
-                    imgoutC->im->array.CF[kk*xysize +ii].im =
-                        imginamp->im->array.F[kkamp*xysize + ii] *
-                        ((float) sin(imginpha->im->array.F[kkpha*xysize + ii]));
+                    imgoutC->im->array
+                        .CF[kk*xysize + ii].im =
+                        imginamp->im->array
+                            .F[kkamp*xysize + ii]
+                        * ((float) sin(
+                            imginpha->im->array
+                            .F[kkpha*xysize + ii]));
                 }
             }
 #ifdef _OPENMP
@@ -142,41 +159,49 @@ errno_t mk_complex_from_amph_IMGID(
         imgoutC->md->cnt0++;
         imgoutC->md->write = 0;
     }
-    else if((datatype_am == _DATATYPE_FLOAT) &&
-            (datatype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_FLOAT)
+            && (datatype_ph == _DATATYPE_DOUBLE))
     {
-        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype =
+            _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
 #ifdef _OPENMP
-        #pragma omp parallel if (xysize > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel \
+            if (xysize > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for
 #endif
-            for(uint32_t kk=0; kk<zsize; kk++)
+            for(uint32_t kk = 0;
+                 kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp-1)
-                {
-                    kkamp = zsizeamp-1;
-                }
+                if(kkamp > zsizeamp - 1)
+                    kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha-1)
-                {
-                    kkpha = zsizepha-1;
-                }
+                if(kkpha > zsizepha - 1)
+                    kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0;
+                     ii < xysize; ii++)
                 {
-                    imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp->im->array.F[kkamp*xysize + ii] *
-                        cos(imginpha->im->array.D[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].re =
+                        imginamp->im->array
+                            .F[kkamp*xysize + ii]
+                        * cos(
+                            imginpha->im->array
+                            .D[kkpha*xysize + ii]);
 
-                    imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp->im->array.F[kkamp*xysize + ii] *
-                        sin(imginpha->im->array.D[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].im =
+                        imginamp->im->array
+                            .F[kkamp*xysize + ii]
+                        * sin(
+                            imginpha->im->array
+                            .D[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -185,41 +210,49 @@ errno_t mk_complex_from_amph_IMGID(
         imgoutC->md->cnt0++;
         imgoutC->md->write = 0;
     }
-    else if((datatype_am == _DATATYPE_DOUBLE) &&
-            (datatype_ph == _DATATYPE_FLOAT))
+    else if((datatype_am == _DATATYPE_DOUBLE)
+            && (datatype_ph == _DATATYPE_FLOAT))
     {
-        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype =
+            _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
 #ifdef _OPENMP
-        #pragma omp parallel if (xysize > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel \
+            if (xysize > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for
 #endif
-            for(uint32_t kk=0; kk<zsize; kk++)
+            for(uint32_t kk = 0;
+                 kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp-1)
-                {
-                    kkamp = zsizeamp-1;
-                }
+                if(kkamp > zsizeamp - 1)
+                    kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha-1)
-                {
-                    kkpha = zsizepha-1;
-                }
+                if(kkpha > zsizepha - 1)
+                    kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0;
+                     ii < xysize; ii++)
                 {
-                    imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp->im->array.D[kkamp*xysize + ii] *
-                        cos(imginpha->im->array.F[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].re =
+                        imginamp->im->array
+                            .D[kkamp*xysize + ii]
+                        * cos(
+                            imginpha->im->array
+                            .F[kkpha*xysize + ii]);
 
-                    imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp->im->array.D[kkamp*xysize + ii] *
-                        sin(imginpha->im->array.F[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].im =
+                        imginamp->im->array
+                            .D[kkamp*xysize + ii]
+                        * sin(
+                            imginpha->im->array
+                            .F[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -228,41 +261,49 @@ errno_t mk_complex_from_amph_IMGID(
         imgoutC->md->cnt0++;
         imgoutC->md->write = 0;
     }
-    else if((datatype_am == _DATATYPE_DOUBLE) &&
-            (datatype_ph == _DATATYPE_DOUBLE))
+    else if((datatype_am == _DATATYPE_DOUBLE)
+            && (datatype_ph == _DATATYPE_DOUBLE))
     {
-        imgoutC->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
+        imgoutC->mdt->datatype =
+            _DATATYPE_COMPLEX_DOUBLE;
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
 #ifdef _OPENMP
-        #pragma omp parallel if (xysize > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel \
+            if (xysize > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for
 #endif
-            for(uint32_t kk=0; kk<zsize; kk++)
+            for(uint32_t kk = 0;
+                 kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp-1)
-                {
-                    kkamp = zsizeamp-1;
-                }
+                if(kkamp > zsizeamp - 1)
+                    kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha-1)
-                {
-                    kkpha = zsizepha-1;
-                }
+                if(kkpha > zsizepha - 1)
+                    kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0; ii < xysize; ii++)
+                for(uint64_t ii = 0;
+                     ii < xysize; ii++)
                 {
-                    imgoutC->im->array.CD[kk*xysize + ii].re =
-                        imginamp->im->array.D[kkamp*xysize + ii] *
-                        cos(imginpha->im->array.D[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].re =
+                        imginamp->im->array
+                            .D[kkamp*xysize + ii]
+                        * cos(
+                            imginpha->im->array
+                            .D[kkpha*xysize + ii]);
 
-                    imgoutC->im->array.CD[kk*xysize + ii].im =
-                        imginamp->im->array.D[kkamp*xysize + ii] *
-                        sin(imginpha->im->array.D[kkpha*xysize + ii]);
+                    imgoutC->im->array
+                        .CD[kk*xysize + ii].im =
+                        imginamp->im->array
+                            .D[kkamp*xysize + ii]
+                        * sin(
+                            imginpha->im->array
+                            .D[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -285,36 +326,89 @@ errno_t mk_complex_from_amph(
     const char *am_name,
     const char *ph_name,
     const char *out_name,
-    int         sharedmem
-)
+    int         sharedmem)
 {
-    IMGID imgamp = imgid_make_from_name(am_name);
-    IMGID imgpha = imgid_make_from_name(ph_name);
-    IMGID imgoutC  = imgid_make_from_name(out_name);
+    IMGID imgamp =
+        imgid_make_from_name(am_name);
+    IMGID imgpha =
+        imgid_make_from_name(ph_name);
+    IMGID imgoutC =
+        imgid_make_from_name(out_name);
     imgoutC.mdt->shared = sharedmem;
 
-    errno_t ret = mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
+    errno_t ret = mk_complex_from_amph_IMGID(
+        &imgamp, &imgpha, &imgoutC);
     imgid_free(&imgamp);
     imgid_free(&imgpha);
     imgid_free(&imgoutC);
     return ret;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgamp = imgid_make_from_name(inampimname);
-    IMGID imgpha = imgid_make_from_name(inphaimname);
-    IMGID imgoutC  = imgid_make_from_name(outimname);
+    IMGID imgamp =
+        imgid_make_from_name(inampimname);
+    IMGID imgpha =
+        imgid_make_from_name(inphaimname);
+    IMGID imgoutC =
+        imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-
-        mk_complex_from_amph_IMGID(&imgamp, &imgpha, &imgoutC);
-
+        mk_complex_from_amph_IMGID(
+            &imgamp, &imgpha, &imgoutC);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -326,12 +420,38 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_COREMOD__mk_complex_from_amph()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

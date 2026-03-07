@@ -2,93 +2,44 @@
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "slicenorm",
+    .cmdkey      = "normalizeslice",
+    .description = "image normalize over mask by slice"
+};
 
 // input image names
 static char *inimname;
 static char *maskimname;
-
 static char *outimname;
-
 static uint32_t *sliceaxis;
-static long      fpi_sliceaxis = -1;
-
 static char *auxin;
 
-static uint64_t *modeRMS;
+// changed from uint64_t* to int32_t* for V2
+static int32_t *modeRMS;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in0name",
-        "input image 0",
-        "im0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".maskim",
-        "input image mask",
-        "imm",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &maskimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outname",
-        "output image",
-        "im0n",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".axis",
-        "norm axis",
-        "0",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &sliceaxis,
-        &fpi_sliceaxis
-    },
-    {
-        CLIARG_IMG,
-        ".auxin",
-        "auxillary input image, in-place update",
-        "auxin",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &auxin,
-        NULL
-    },
-    {
-        CLIARG_ONOFF,
-        ".RMS",
-        "output RMS=1 over mask",
-        "OFF",
-        FPFLAG_DEFAULT_INPUT,
-        (void **) &modeRMS,
-        NULL
-    }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "normalizeslice",
-    "image normalize over mask by slice",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("Image norm for each slice of array\n");
-
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".in0name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image 0") \
+    X(".maskim", &maskimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image mask") \
+    X(".outname", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image") \
+    X(".axis", &sliceaxis, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "norm axis") \
+    X(".auxin", &auxin, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "auxillary input image, in-place update") \
+    X(".RMS", &modeRMS, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, "output RMS=1 over mask")
 
 errno_t image_slicenormalize(
     IMGID inimg,
@@ -373,6 +324,46 @@ errno_t image_slicenormalize(
     return RETURN_SUCCESS;
 }
 
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -415,16 +406,31 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_COREMOD_arith__image_slicenormalize()
 {
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
 
     INSERT_STD_CLIREGISTERFUNC
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
