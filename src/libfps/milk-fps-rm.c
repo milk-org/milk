@@ -12,17 +12,16 @@
 #include "fps_FPSremove.h"
 
 void print_help(const char *progname) {
-    printf("Usage: %s [options] [fpsname|regex]\n",
-           progname);
-    printf("Remove a Function Parameter Structure"
-           " (FPS).\n\n");
-    printf("If no FPS name is given, lists existing"
-           " FPS instances\nand prompts for"
-           " selection. A regex can be provided to"
-           " filter the list.\n\n");
+    printf("Usage: %s [options] [fpsname | regex pattern]\n", progname);
+    printf("Remove a Function Parameter Structure (FPS).\n");
+    printf("\n");
+    printf("If no FPS name is given, lists existing FPS instances\n");
+    printf("and prompts for selection. A regex can be provided to\n");
+    printf("filter the list.\n");
+    printf("\n");
     printf("Options:\n");
     printf("  -v, --verbose   Verbose mode\n");
-    printf("  -h, --help      Show this help\n");
+    printf("  -h, --help      Show this help message\n");
 }
 
 int main(int argc, char *argv[])
