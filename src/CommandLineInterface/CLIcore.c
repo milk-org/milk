@@ -414,7 +414,10 @@ errno_t CLI_startup()
     data.fifoON            = 0;
     data.processinfo       = 1; // process info for intensive processes
     data.processinfoActive = 0; // toggles to 1 when process is logged
-    data.autocomplete      = 0; // autocomplete preview disabled by default
+    data.autocomplete      = 1; // autocomplete preview ON by default
+    data.autocomplete_history = 1; // history suggestions ON
+    data.autocomplete_arghint = 1; // argument hint line ON
+    data.autocomplete_fuzzy   = 1; // fuzzy matching ON
 
     // signal handling
 
@@ -714,6 +717,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 /* Handle window size changes when readline is not active and reading
                      characters. */
                 signal(SIGWINCH, sighandler);
+                CLI_setup_hint_area();
                 rl_callback_handler_install(
                     prompt,
                     (rl_vcpfunc_t *) &rl_cb_linehandler);
@@ -863,6 +867,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     /* Handle window size changes when readline is not active and reading
                          characters. */
                     signal(SIGWINCH, sighandler);
+                    CLI_setup_hint_area();
                     rl_callback_handler_install(
                         prompt,
                         (rl_vcpfunc_t *) &rl_cb_linehandler);
@@ -896,6 +901,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     }
 
 #ifdef USE_READLINE
+    CLI_cleanup_scroll_region();
     rl_callback_handler_remove();
 #endif
 
@@ -1192,6 +1198,10 @@ static int command_line_process_options(int argc, char **argv)
         {"errorexit", no_argument, 0, 'e'},
         {"idle", no_argument, 0, 'Z'},
         {"autocomplete", no_argument, 0, 'A'},
+        {"no-autocomplete", no_argument, 0, 0x100},
+        {"no-history-suggest", no_argument, 0, 0x101},
+        {"no-arg-hints", no_argument, 0, 0x102},
+        {"no-fuzzy", no_argument, 0, 0x103},
         {"fifoflag", no_argument, 0, 'f'},
         {"debug", required_argument, 0, 'd'},
         {"mmon", required_argument, 0, 'm'},
@@ -1284,6 +1294,22 @@ static int command_line_process_options(int argc, char **argv)
                 printf("Autocomplete preview ON\n");
             }
             data.autocomplete = 1;
+            break;
+
+        case 0x100:
+            data.autocomplete = 0;
+            break;
+
+        case 0x101:
+            data.autocomplete_history = 0;
+            break;
+
+        case 0x102:
+            data.autocomplete_arghint = 0;
+            break;
+
+        case 0x103:
+            data.autocomplete_fuzzy = 0;
             break;
 
 
