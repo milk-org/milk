@@ -86,6 +86,15 @@ target_link_libraries(milk-procinfo-rm PUBLIC
 )
 install(TARGETS milk-procinfo-rm DESTINATION bin)
 
+add_executable(milk-procinfo-list procCTRL/milk-procinfo-list.c)
+target_link_libraries(milk-procinfo-list PUBLIC 
+    milkprocessinfo 
+    ImageStreamIO
+    pthread
+    m
+)
+install(TARGETS milk-procinfo-list DESTINATION bin)
+
 
 install(FILES 
     processinfo.h
