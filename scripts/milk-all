@@ -2,25 +2,30 @@
 
 MSdescr="milk with all installed modules"
 
-
 modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageformat,milkimagegen,milkimgreduce,milkinfo,milkkdtree,milklinARfilterPred,milklinoptimtools,milk_module_example,milkpsf,milkstatistic,milkZernikePolyn"
 
-# Extended description
-MSextdescr="Loads modules:
-$modulelist
-"
+# Handle script-level help only; pass everything else
+# through to milk.
+case "${1-}" in
+    -h|--help)
+        echo "milk-all : ${MSdescr}"
+        echo ""
+        echo "Loads modules:"
+        echo "  ${modulelist}"
+        echo ""
+        echo "USAGE:"
+        echo "  milk-all [MILK OPTIONS ...]"
+        echo ""
+        echo "All arguments are forwarded to milk."
+        exit 0
+        ;;
+    -hs)
+        printf "%s\n" "${MSdescr}"
+        exit 0
+        ;;
+esac
 
-source milk-script-std-config
-
-
-
-RequiredCommands=( milk )
-RequiredFiles=()
-RequiredDirs=()
-
-source milk-argparse
-
-# Check if we are running from source directory and MILK_INSTALLDIR is not set
+# Check if we are running from source directory
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 ROOT_DIR=$(dirname "$SCRIPT_DIR")
 MILK_EXEC="milk"
@@ -34,4 +39,6 @@ if [ -d "$ROOT_DIR/_build/lib" ]; then
     fi
 fi
 
-MILKCLI_APPNAME="milk-all" MILKCLI_ADD_LIBS="${MILKCLI_ADD_LIBS-};${modulelist}" $MILK_EXEC "$@"
+MILKCLI_APPNAME="milk-all" \
+    MILKCLI_ADD_LIBS="${MILKCLI_ADD_LIBS-};${modulelist}" \
+    $MILK_EXEC "$@"
