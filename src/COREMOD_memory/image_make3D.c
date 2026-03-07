@@ -1,103 +1,174 @@
-#include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
+#include "fps.h"
+
 #include "image_make3D.h"
 
-// Local variables pointers
-static char     *outimname;
-static uint32_t *imxsize;
-static uint32_t *imysize;
-static uint32_t *imzsize;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".xsize",
-        "x size",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imxsize,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".ysize",
-        "y size",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imysize,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".zsize",
-        "z size",
-        "512",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imzsize,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mk3Dim",
+    .cmdkey      = "mk3Dim",
+    .description = "make 3D image"
 };
 
-static CLICMDDATA CLIcmddata = {"mk3Dim",
-                                "make 3D image",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-// detailed help
-static errno_t help_function()
-{
-    printf("attributes :\n"
-           " s> shared\n"
-           "k20> : 20 keywords");
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+static char     *outimname = NULL;
+static uint32_t *imxsize   = NULL;
+static uint32_t *imysize   = NULL;
+static uint32_t *imzsize   = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".xsize", &imxsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x size") \
+    X(".ysize", &imysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y size") \
+    X(".zsize", &imzsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "z size")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 imageID make_3Dimage_IMGID(IMGID *img)
 {
-    // Create image if needed
     imcreateIMGID(img);
-
     return (img->ID);
 }
 
-imageID make_3Dimage(const char *name, uint32_t xsize, uint32_t ysize, uint32_t zsize)
+imageID make_3Dimage(
+    const char *name,
+    uint32_t xsize,
+    uint32_t ysize,
+    uint32_t zsize)
 {
-    IMGID img = imgid_make_from_name_3D(name, xsize, ysize, zsize);
+    IMGID img = imgid_make_from_name_3D(
+        name, xsize, ysize, zsize);
     return make_3Dimage_IMGID(&img);
 }
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
 
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID img = imgid_make_from_name_3D(outimname, *imxsize, *imysize, *imzsize);
+    IMGID img = imgid_make_from_name_3D(
+        outimname,
+        *imxsize, *imysize, *imzsize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     make_3Dimage_IMGID(&img);
 
-    processinfo_update_output_stream(processinfo, img.im, NULL);
+    processinfo_update_output_stream(
+        processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_COREMOD_memory__mk3Dim()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

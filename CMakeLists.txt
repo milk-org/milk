@@ -288,7 +288,7 @@ add_subdirectory(src/libprocessinfo)
 
 # main
 
-add_executable(milk src/CLImain.c)
+add_executable(milk-cli src/CLImain.c)
 
 
 # note: set -SOURCEDIR=\" ${CMAKE_INSTALL_PREFIX}\" for autoload
@@ -305,12 +305,12 @@ add_definitions(
 
 
 
-target_link_libraries(milk PUBLIC ${libname})
+target_link_libraries(milk-cli PUBLIC ${libname})
 
 if(USE_CUDA)
   # Link CUDA globally to the executable rather than per module.
   find_package(CUDAToolkit 9.0 REQUIRED)
-  target_link_libraries(milk PUBLIC CUDA::toolkit
+  target_link_libraries(milk-cli PUBLIC CUDA::toolkit
                              PUBLIC CUDA::cusolver
                              PUBLIC CUDA::cudart
                              PUBLIC CUDA::cublas)
@@ -322,7 +322,7 @@ endif(USE_CUDA)
 
 
 message("====================================================")
-get_target_property(milkcompopts milk COMPILE_OPTIONS)
+get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
 
 message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
 message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
@@ -349,7 +349,7 @@ set(PROGRAM_PERMISSIONS_DEFAULT
     WORLD_READ WORLD_EXECUTE)
 
 
-install(TARGETS milk
+install(TARGETS milk-cli
       DESTINATION bin
       PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
 
@@ -447,9 +447,10 @@ endif()
 
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
-                        scripts/milk-all
+                        scripts/milk-cli-all
                         scripts/milk-argparse
                         scripts/milk-check
+                        scripts/milk-completion.sh
       scripts/milk-commands
                         scripts/milk-cubeslice2shm
                         scripts/milk-exec
@@ -472,10 +473,10 @@ install(PROGRAMS
                         scripts/milk-script-std-config
                         scripts/milk-streamlink
       scripts/milk-stream-scan
-                        scripts/milk-shm2FITS
+
                         scripts/milk-shm2FITSloop
                         scripts/milk-shmim-rm
-                        scripts/milk-shmim-zero
+
                         scripts/tmuxkillall
                         scripts/tmuxsessionname
                         scripts/waitforfile

@@ -1,51 +1,58 @@
+/**
+ * @file    image_mk_complex_from_reim.c
+ * @brief   real, imaginary -> complex
+ *
+ * Uses FPS V2 framework.
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 
-// Local variables pointers
-static char *inreimname;
-static char *inimimname;
-static char *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".imre_name",
-        "real image",
-        "imre",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inreimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".imim_name",
-        "imaginary image",
-        "imim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output complex image",
-        "outim",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "ri2c",
+    .cmdkey      = "ri2c",
+    .description = "real, imaginary -> complex"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "ri2c", "real, imaginary -> complex", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *inreimname  = NULL;
+static char *inimimname  = NULL;
+static char *outimname   = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".imre_name", &inreimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "real image") \
+    X(".imim_name", &inimimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "imaginary image") \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output complex image")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 errno_t mk_complex_from_reim_IMGID(
     IMGID *imgre,
@@ -55,72 +62,91 @@ errno_t mk_complex_from_reim_IMGID(
 {
     DEBUG_TRACE_FSTART();
 
-    uint8_t   datatype_re;
-    uint8_t   datatype_im;
-    uint8_t   datatype_out;
+    uint8_t datatype_re;
+    uint8_t datatype_im;
+    uint8_t datatype_out;
 
-    resolveIMGID(imgre, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(imgim, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        imgre, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(
+        imgim, ERRMODE_ABORT,
+        data.image, data.NB_MAX_IMAGE);
 
     datatype_re = imgre->md[0].datatype;
     datatype_im = imgim->md[0].datatype;
 
     imgout->mdt->naxis = imgre->md[0].naxis;
-    for(int8_t i = 0; i < imgout->mdt->naxis; i++)
+    for(int8_t i = 0;
+         i < imgout->mdt->naxis; i++)
     {
-        imgout->mdt->size[i] = imgre->md[0].size[i];
+        imgout->mdt->size[i] =
+            imgre->md[0].size[i];
     }
     uint64_t nelement = imgre->md[0].nelement;
 
-    if((datatype_re == _DATATYPE_FLOAT) && (datatype_im == _DATATYPE_FLOAT))
+    if((datatype_re == _DATATYPE_FLOAT)
+        && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_FLOAT;
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0;
+             ii < nelement; ii++)
         {
-            imgout->im->array.CF[ii].re = imgre->im->array.F[ii];
-            imgout->im->array.CF[ii].im = imgim->im->array.F[ii];
+            imgout->im->array.CF[ii].re =
+                imgre->im->array.F[ii];
+            imgout->im->array.CF[ii].im =
+                imgim->im->array.F[ii];
         }
     }
-    else if((datatype_re == _DATATYPE_FLOAT) &&
-            (datatype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_FLOAT)
+            && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0;
+             ii < nelement; ii++)
         {
-            imgout->im->array.CD[ii].re = imgre->im->array.F[ii];
-            imgout->im->array.CD[ii].im = imgim->im->array.D[ii];
+            imgout->im->array.CD[ii].re =
+                imgre->im->array.F[ii];
+            imgout->im->array.CD[ii].im =
+                imgim->im->array.D[ii];
         }
     }
-    else if((datatype_re == _DATATYPE_DOUBLE) &&
-            (datatype_im == _DATATYPE_FLOAT))
+    else if((datatype_re == _DATATYPE_DOUBLE)
+            && (datatype_im == _DATATYPE_FLOAT))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0;
+             ii < nelement; ii++)
         {
-            imgout->im->array.CD[ii].re = imgre->im->array.D[ii];
-            imgout->im->array.CD[ii].im = imgim->im->array.F[ii];
+            imgout->im->array.CD[ii].re =
+                imgre->im->array.D[ii];
+            imgout->im->array.CD[ii].im =
+                imgim->im->array.F[ii];
         }
     }
-    else if((datatype_re == _DATATYPE_DOUBLE) &&
-            (datatype_im == _DATATYPE_DOUBLE))
+    else if((datatype_re == _DATATYPE_DOUBLE)
+            && (datatype_im == _DATATYPE_DOUBLE))
     {
         datatype_out = _DATATYPE_COMPLEX_DOUBLE;
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0; ii < nelement; ii++)
+        for(uint64_t ii = 0;
+             ii < nelement; ii++)
         {
-            imgout->im->array.CD[ii].re = imgre->im->array.D[ii];
-            imgout->im->array.CD[ii].im = imgim->im->array.D[ii];
+            imgout->im->array.CD[ii].re =
+                imgre->im->array.D[ii];
+            imgout->im->array.CD[ii].im =
+                imgim->im->array.D[ii];
         }
     }
     else
@@ -128,40 +154,96 @@ errno_t mk_complex_from_reim_IMGID(
         PRINT_ERROR("Wrong image type(s)\n");
         abort();
     }
-    // Note: openMP doesn't help here
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-errno_t mk_complex_from_reim(const char *re_name,
-                             const char *im_name,
-                             const char *out_name,
-                             int         sharedmem)
+errno_t mk_complex_from_reim(
+    const char *re_name,
+    const char *im_name,
+    const char *out_name,
+    int         sharedmem)
 {
-    IMGID imgre = imgid_make_from_name(re_name);
-    IMGID imgim = imgid_make_from_name(im_name);
-    IMGID imgout = imgid_make_from_name(out_name);
+    IMGID imgre =
+        imgid_make_from_name(re_name);
+    IMGID imgim =
+        imgid_make_from_name(im_name);
+    IMGID imgout =
+        imgid_make_from_name(out_name);
     imgout.mdt->shared = sharedmem;
 
-    errno_t ret = mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
+    errno_t ret = mk_complex_from_reim_IMGID(
+        &imgre, &imgim, &imgout);
     imgid_free(&imgre);
     imgid_free(&imgim);
     imgid_free(&imgout);
     return ret;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgre = imgid_make_from_name(inreimname);
-    IMGID imgim = imgid_make_from_name(inimimname);
-    IMGID imgout = imgid_make_from_name(outimname);
+    IMGID imgre =
+        imgid_make_from_name(inreimname);
+    IMGID imgim =
+        imgid_make_from_name(inimimname);
+    IMGID imgout =
+        imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    mk_complex_from_reim_IMGID(&imgre, &imgim, &imgout);
+    mk_complex_from_reim_IMGID(
+        &imgre, &imgim, &imgout);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -173,12 +255,38 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_COREMOD__mk_complex_from_reim()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

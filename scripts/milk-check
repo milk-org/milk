@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Checking milk installation and configuration ..."
+echo "Checking milk-cli installation and configuration ..."
 
 # Color shortcuts
 colR=`tput setaf 1`
@@ -49,16 +49,16 @@ else
 fi
 
 # Checking commands
-if command -v milk &> /dev/null
+if command -v milk-cli &> /dev/null
 then
-    echo "${pOK} command milk found"
+    echo "${pOK} command milk-cli found"
 else
-	echo "${pERR} command milk not found"
+	echo "${pERR} command milk-cli not found"
 fi
 
-if command -v milk-all &> /dev/null
+if command -v milk-cli-all &> /dev/null
 then
-    echo "${pOK} command milk-all found"
+    echo "${pOK} command milk-cli-all found"
 else
-	echo "${pERR} command milk-all not found"
+	echo "${pERR} command milk-cli-all not found"
 fi
