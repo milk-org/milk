@@ -75,22 +75,46 @@ errno_t functionparameter_FPSremove(FUNCTION_PARAMETER_STRUCT *fps)
     fclose(fp);
     */
 
-    // terminate tmux sessions
-    // 2x exit required: first one to exit bash, second one to exit tmux (there's a bash-in-bash running.)
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" exit\" C-m",
-                           fps->md->name);
+    /* Terminate tmux session only if it exists.
+     * Suppress has-session output; skip silently if absent.
+     * 2x exit required: first exits bash-in-bash,
+     * second exits tmux.
+     */
+    {
+        char chkcmd[256];
+        snprintf(chkcmd, sizeof(chkcmd),
+                 "tmux has-session -t %s 2>/dev/null",
+                 fps->md->name);
+        if (system(chkcmd) == 0)
+        {
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:ctrl"
+                " \" exit\" C-m",
+                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:ctrl"
+                " \" exit\" C-m",
+                fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:conf \" exit\" C-m",
-                           fps->md->name);
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:conf"
+                " \" exit\" C-m",
+                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:conf"
+                " \" exit\" C-m",
+                fps->md->name);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" exit\" C-m",
-                           fps->md->name);
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run \" exit\" C-m",
-                           fps->md->name);
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:run"
+                " \" exit\" C-m",
+                fps->md->name);
+            EXECUTE_SYSTEM_COMMAND(
+                "tmux send-keys -t %s:run"
+                " \" exit\" C-m",
+                fps->md->name);
+        }
+    }
 
     return RETURN_SUCCESS;
 }

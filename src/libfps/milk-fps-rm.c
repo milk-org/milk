@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <glob.h>
+#include <termios.h>
 
 #include "fps.h"
 #include "fps_FPSremove.h"
@@ -97,16 +98,47 @@ int main(int argc, char *argv[])
                " (0 to cancel): ");
         fflush(stdout);
 
+        /* Ensure terminal is in canonical mode with CR->NL
+         * translation so ENTER works correctly in all
+         * contexts (tmux, pty, etc.).
+         */
+        struct termios old_term;
+        int is_tty = isatty(STDIN_FILENO);
+        if (is_tty) {
+            tcgetattr(STDIN_FILENO, &old_term);
+            struct termios t = old_term;
+            t.c_lflag |= (ICANON | ECHO);
+            t.c_iflag |= ICRNL;
+            tcsetattr(STDIN_FILENO, TCSANOW, &t);
+        }
+
         char linebuf[64];
-        if (fgets(linebuf, sizeof(linebuf),
-                  stdin) == NULL)
-        {
+        int fgets_ok =
+            (fgets(linebuf, sizeof(linebuf),
+                   stdin) != NULL);
+
+        if (is_tty) {
+            tcsetattr(STDIN_FILENO, TCSANOW,
+                      &old_term);
+        }
+
+        if (!fgets_ok) {
             printf("Cancelled.\n");
             for (int i = 0; i < count; i++) {
                 free(names[i]);
             }
             free(names);
             return 0;
+        }
+
+        /* Strip trailing \r and \n */
+        {
+            char *p = linebuf + strlen(linebuf);
+            while (p > linebuf &&
+                   (*(p-1) == '\n' || *(p-1) == '\r'))
+            {
+                *(--p) = '\0';
+            }
         }
 
         int sel = atoi(linebuf);
