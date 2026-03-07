@@ -1,4 +1,4 @@
-milk << EOF
+milk-cli << EOF
 mload milkimageformat
 imgformat.cr2tofits "$1" "$2"
 exit

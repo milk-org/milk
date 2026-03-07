@@ -8,53 +8,66 @@
  */
 
 #include "CLIcore.h"
+#include "fps.h"
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imsum2",
+    .cmdkey      = "imsum2",
+    .description = "compute total of image example2, FPS-compatible"
+};
 
 // Local variables pointers
 
 static char *inimname;
-
 static double *scoeff;
 
+#define FPS_PARAMS(X) \
+    X(".in_name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".scaling", &scoeff, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "scaling coefficient")
 
-// List of arguments to function
-static CLICMDARGDEF farg[] =
-{
-    //    FARG_INPUTIM(inim),
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".scaling",
-        "scaling coefficient",
-        "1.0",
-        FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
-        (void **) &scoeff,
-        NULL
-    }
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "imsum2",
-    "compute total of image example2, FPS-compatible",
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
 
+static CMDSETTINGS default_cmdsettings = {0};
 
-
-static errno_t help_function()
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    printf("\n");
-
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
+
 
 
 
@@ -96,8 +109,6 @@ static errno_t example_compute_2Dimage_total(
 }
 
 
-
-
 /**
  * @brief Wrapper function, used by all CLI calls
  *
@@ -123,14 +134,22 @@ static errno_t compute_function()
 }
 
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-// Enables FPS support
-INSERT_STD_FPSCLIfunctions
-
-
+// Register function in CLI
 errno_t
 CLIADDCMD_milk_module_example__simplefunc_FPS()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
     INSERT_STD_CLIREGISTERFUNC
 
     // Optional custom settings for this function can be included
@@ -138,3 +157,11 @@ CLIADDCMD_milk_module_example__simplefunc_FPS()
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

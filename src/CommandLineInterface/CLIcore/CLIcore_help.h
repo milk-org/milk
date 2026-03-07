@@ -36,7 +36,10 @@ errno_t help_module();
 errno_t printInfo();
 
 /** @brief Print milk framework overview help */
-void print_milk_main_help(void);
+void print_milk_framework_help(void);
+
+/** @brief Print milk CLI-specific help */
+void print_milk_cli_help(void);
 
 
 

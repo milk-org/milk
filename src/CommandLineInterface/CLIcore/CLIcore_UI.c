@@ -57,6 +57,23 @@ void rl_cb_linehandler(char *linein)
 #endif
 
 
+static const char *CLI_history_file(void)
+{
+    static char path[1024] = {0};
+    if(path[0] == '\0')
+    {
+        const char *home = getenv("HOME");
+        if(home)
+        {
+            snprintf(path, sizeof(path), "%s/.milk_history", home);
+        }
+        else
+        {
+            snprintf(path, sizeof(path), ".milk_history");
+        }
+    }
+    return path;
+}
 
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
@@ -114,6 +131,30 @@ static char *dupstr(char *s)
 }
 
 #ifdef USE_READLINE
+static int levenshtein_distance(const char *s1, const char *s2)
+{
+    unsigned int len1 = strlen(s1);
+    unsigned int len2 = strlen(s2);
+    unsigned int *d = (unsigned int *)xmalloc((len1 + 1) * (len2 + 1) * sizeof(unsigned int));
+
+    for(unsigned int i = 0; i <= len1; i++) d[i * (len2 + 1)] = i;
+    for(unsigned int j = 0; j <= len2; j++) d[j] = j;
+
+    for(unsigned int i = 1; i <= len1; i++) {
+        for(unsigned int j = 1; j <= len2; j++) {
+            unsigned int cost = (s1[i - 1] == s2[j - 1]) ? 0 : 1;
+            unsigned int min1 = d[(i - 1) * (len2 + 1) + j] + 1;
+            unsigned int min2 = d[i * (len2 + 1) + j - 1] + 1;
+            unsigned int min3 = d[(i - 1) * (len2 + 1) + j - 1] + cost;
+            unsigned int m = (min1 < min2) ? min1 : min2;
+            d[i * (len2 + 1) + j] = (m < min3) ? m : min3;
+        }
+    }
+    int dist = d[len1 * (len2 + 1) + len2];
+    free(d);
+    return dist;
+}
+
 /**
  * @brief State for fuzzy fallback pass in generator
  *
@@ -368,6 +409,11 @@ errno_t CLI_execute_line()
 
 #ifdef USE_READLINE
     add_history(data.CLIcmdline);
+    if(data.autocomplete_history)
+    {
+        append_history(1, CLI_history_file());
+        history_truncate_file(CLI_history_file(), 10000);
+    }
 #endif
 
     //
@@ -672,8 +718,35 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-        printf(COLORRED
-               "Command not found, or command with no effect\n" COLORRESET);
+#ifdef USE_READLINE
+        if(data.cmdNBarg > 0 && strlen(data.cmdargtoken[0].val.string) > 0)
+        {
+            const char *input_cmd = data.cmdargtoken[0].val.string;
+            int best_dist = 9999;
+            const char *best_match = NULL;
+
+            for(unsigned int i = 0; i < data.NBcmd; i++) {
+                int d = levenshtein_distance((const char*)input_cmd, (const char*)data.cmd[i].key);
+                if(d < best_dist) {
+                    best_dist = d;
+                    best_match = data.cmd[i].key;
+                }
+            }
+
+            if(best_dist <= 3 && best_match != NULL) {
+                printf(COLORRED "Command '%s' not found. " COLORRESET
+                       "Did you mean " COLORHBOLDCYAN "'%s'" COLORRESET "?\n",
+                       input_cmd, best_match);
+            } else {
+                printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
+            }
+        }
+        else
+#endif
+        {
+            printf(COLORRED
+                   "Command not found, or command with no effect\n" COLORRESET);
+        }
     }
 
     free(thetime);
@@ -1281,6 +1354,11 @@ static void CLI_redisplay(void)
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
+
+    if(data.autocomplete_history)
+    {
+        read_history(CLI_history_file());
+    }
 
     /* Bind Right Arrow to accept suggestion
      * when at end-of-line */
