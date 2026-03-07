@@ -133,8 +133,13 @@ static void sync_fps_to_local(
             fps->parray[pindex].val.ts[0];
     }
     else if (FPTYPE_IS_STRING(b->type)) {
-        *((char **) b->ptr) =
-            fps->parray[pindex].val.string[0];
+        strncpy(
+            (char *) b->ptr,
+            fps->parray[pindex].val.string[0],
+            FUNCTION_PARAMETER_STRMAXLEN - 1);
+        ((char *) b->ptr)[
+            FUNCTION_PARAMETER_STRMAXLEN - 1]
+            = '\0';
     }
 }
 

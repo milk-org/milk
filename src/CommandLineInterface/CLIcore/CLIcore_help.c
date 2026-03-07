@@ -542,39 +542,56 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             switch(fpscliarg[arg].type)
             {
             case CLIARG_FLOAT32:
-                strcpy(typestring, "float32");
+                strcpy(typestring, "FLOAT32");
                 break;
 
             case CLIARG_FLOAT64:
-                strcpy(typestring, "float64");
+                strcpy(typestring, "FLOAT64");
                 break;
 
             case CLIARG_INT32:
-                strcpy(typestring, "int32");
+                strcpy(typestring, "INT32");
                 break;
 
             case CLIARG_UINT32:
-                strcpy(typestring, "uint32");
+                strcpy(typestring, "UINT32");
                 break;
 
             case CLIARG_INT64:
-                strcpy(typestring, "int64");
+                strcpy(typestring, "INT64");
                 break;
 
             case CLIARG_UINT64:
-                strcpy(typestring, "uint64");
+                strcpy(typestring, "UINT64");
                 break;
 
             case CLIARG_STR_NOT_IMG:
-                strcpy(typestring, "string");
+                strcpy(typestring, "STRING");
                 break;
 
             case CLIARG_IMG:
-                strcpy(typestring, "string");
+                strcpy(typestring, "STREAMNAME");
                 break;
 
             case CLIARG_STR:
-                strcpy(typestring, "string");
+                strcpy(typestring, "STRING");
+                break;
+
+            case CLIARG_ONOFF:
+                strcpy(typestring, "ONOFF");
+                break;
+
+            case CLIARG_FILENAME:
+                strcpy(typestring, "FILENAME");
+                break;
+
+            case CLIARG_FITSFILENAME:
+                strcpy(typestring,
+                       "FITSFILENAME");
+                break;
+
+            case CLIARG_FPSNAME:
+                strcpy(typestring, "FPSNAME");
                 break;
             }
 
@@ -583,19 +600,17 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             {
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX,
-                         "<%s [%s] : %s>",
+                         "<%s [%s]>",
                          fpscliarg[arg].descr,
-                         typestring,
-                         fpscliarg[arg].fpstag);
+                         typestring);
             }
             else
             {
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX - 1,
-                         " <%s [%s] : %s>",
+                         " <%s [%s]>",
                          fpscliarg[arg].descr,
-                         typestring,
-                         fpscliarg[arg].fpstag);
+                         typestring);
             }
 
             // max number of chars we can write
