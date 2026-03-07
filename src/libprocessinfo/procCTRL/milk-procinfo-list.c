@@ -81,18 +81,25 @@ int main(int argc, char *argv[])
                 if (use_regex && regexec(&regex, pinfolist->pnamearray[i], 0, NULL, 0) != 0) {
                     continue; // Skip if it doesn't match the regex
                 }
-                
                 char status_str[32];
+                char pid_color[16] = "";
+                char pid_reset[16] = "";
                 switch(pinfolist->active[i]) {
-                    case 1: snprintf(status_str, 32, C_NAME "ACTIVE" C_RST); break;
+                    case 1: 
+                        snprintf(status_str, 32, C_NAME "RUNNING" C_RST); 
+                        strcpy(pid_color, C_NAME);
+                        strcpy(pid_reset, C_RST);
+                        break;
                     case 2: snprintf(status_str, 32, C_TYPE "STOPPED" C_RST); break;
                     case 3: snprintf(status_str, 32, C_ERR "CRASHED" C_RST); break;
                     default: snprintf(status_str, 32, C_HDR "UNKNOWN" C_RST); break;
                 }
                 
-                printf(C_NAME "%-30s" C_RST " %-10ld %s\n", 
+                printf(C_NAME "%-30s" C_RST " %s%-10ld%s %s\n", 
                     pinfolist->pnamearray[i], 
+                    pid_color,
                     (long)pinfolist->PIDarray[i], 
+                    pid_reset,
                     status_str);
             }
         }
