@@ -4,13 +4,14 @@
 #include <string.h>
 #include <getopt.h>
 #include <signal.h>
+#include <regex.h>
 
 #include "fps.h"
 #include "fps_globals.h"
 #include "fps_scan.h"
 
 void print_help(const char *progname) {
-    printf("Usage: %s [options]\n", progname);
+    printf("Usage: %s [options] [regex pattern]\n", progname);
     printf("List active FPS instances.\n");
     printf("\n");
     printf("Options:\n");
@@ -47,6 +48,22 @@ int main(int argc, char *argv[])
                 print_help(argv[0]);
                 return 1;
         }
+    }
+
+    const char *pattern = NULL;
+    regex_t regex;
+    int use_regex = 0;
+
+    if (optind < argc) {
+        pattern = argv[optind];
+        int ret = regcomp(&regex, pattern, REG_EXTENDED | REG_NOSUB);
+        if (ret != 0) {
+            char error_msg[128];
+            regerror(ret, &regex, error_msg, sizeof(error_msg));
+            fprintf(stderr, "Error: Invalid regular expression. %s\n", error_msg);
+            return 1;
+        }
+        use_regex = 1;
     }
 
     // Initialize fpsarray
@@ -102,6 +119,12 @@ int main(int argc, char *argv[])
 
         for(int i = 0; i < NBfps; i++)
         {
+            if (use_regex && regexec(&regex, fpsarray[i].md->name, 0, NULL, 0) != 0) {
+                // Disconnect skipped elements
+                function_parameter_struct_disconnect(&fpsarray[i]);
+                continue;
+            }
+
             char status_str[128] = "";
             char conf_pid_str[32] = "";
             char run_pid_str[32] = "";
@@ -179,6 +202,10 @@ int main(int argc, char *argv[])
 
     free(keywnode);
     free(fpsarray);
+
+    if (use_regex) {
+        regfree(&regex);
+    }
 
     return 0;
 }
