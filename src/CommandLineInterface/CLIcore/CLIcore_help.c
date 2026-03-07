@@ -1222,7 +1222,11 @@ void print_milk_main_help(void)
     printf(C_CMD "  -o, --overwrite " C_RST "overwrite existing FITS files " C_NOTE "(USE WITH CAUTION)\n" C_RST);
     printf(C_CMD "  -e, --errorexit " C_RST "exit on error\n");
     printf(C_CMD "  -Z, --idle      " C_RST "only run process when X is idle\n");
-    printf(C_CMD "  -A, --autocomplete " C_RST "enable autocomplete preview\n");
+    printf(C_CMD "  -A, --autocomplete " C_RST "enable autocomplete preview " C_NOTE "(ON by default)\n" C_RST);
+    printf(C_CMD "  --no-autocomplete  " C_RST "disable inline autocomplete preview\n");
+    printf(C_CMD "  --no-history-suggest " C_RST "disable history-based suggestions\n");
+    printf(C_CMD "  --no-arg-hints     " C_RST "disable argument hint line\n");
+    printf(C_CMD "  --no-fuzzy         " C_RST "disable fuzzy/substring matching\n");
     printf(C_CMD "  -f, --fifoflag  " C_RST "enable default fifo input\n");
     printf(C_CMD "  -F <fifoname>   " C_RST "specify custom fifo name\n");
     printf(C_CMD "  -s <file>       " C_RST "execute startup script\n");

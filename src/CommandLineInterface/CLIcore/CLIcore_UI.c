@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <sys/ioctl.h>
 
 #ifdef USE_READLINE
 #include <readline/history.h>
@@ -113,6 +114,14 @@ static char *dupstr(char *s)
 }
 
 #ifdef USE_READLINE
+/**
+ * @brief State for fuzzy fallback pass in generator
+ *
+ * After a normal prefix-match pass, if nothing matched
+ * and fuzzy is enabled, we restart with substring match.
+ */
+static int generator_fuzzy_pass = 0;
+
 static char *CLI_generator(const char *text, int state)
 {
     static unsigned int list_index;
@@ -120,45 +129,33 @@ static char *CLI_generator(const char *text, int state)
     static unsigned int len;
     char               *name;
 
-    //printf("[generator %d %d %d]\n", state, data.CLImatchMode, list_index);
-
     if(!state)
     {
         list_index  = 0;
         list_index1 = 0;
         len         = strlen(text);
+        generator_fuzzy_pass = 0;
     }
+
+retry_fuzzy:
 
     if(data.CLImatchMode == CLICOMPLETIONMODE_COMMANDS)
     {
-        // search through list of commands
         while(list_index < data.NBcmd)
         {
             name = data.cmd[list_index].key;
             list_index++;
-            if(strncmp(name, text, len) == 0)
-            {
-                return (dupstr(name));
-            }
-        }
-    }
-
-    if(data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
-    {
-        // search through list of images
-        while(list_index1 < data.NB_MAX_IMAGE)
-        {
-            int iok;
-            iok = data.image[list_index1].used;
-            if(iok == 1)
-            {
-                name = data.image[list_index1].name;
-                //	  printf("  name %d = %s %s\n", list_index1, data.image[list_index1].name, name);
-            }
-            list_index1++;
-            if(iok == 1)
+            if(generator_fuzzy_pass == 0)
             {
                 if(strncmp(name, text, len) == 0)
+                {
+                    return (dupstr(name));
+                }
+            }
+            else
+            {
+                /* Fuzzy: substring match */
+                if(strstr(name, text) != NULL)
                 {
                     return (dupstr(name));
                 }
@@ -166,18 +163,62 @@ static char *CLI_generator(const char *text, int state)
         }
     }
 
+    if(data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
+    {
+        while(list_index1 < data.NB_MAX_IMAGE)
+        {
+            int iok;
+            iok = data.image[list_index1].used;
+            if(iok == 1)
+            {
+                name = data.image[list_index1].name;
+            }
+            list_index1++;
+            if(iok == 1)
+            {
+                if(generator_fuzzy_pass == 0)
+                {
+                    if(strncmp(name, text, len) == 0)
+                    {
+                        return (dupstr(name));
+                    }
+                }
+                else
+                {
+                    if(strstr(name, text) != NULL)
+                    {
+                        return (dupstr(name));
+                    }
+                }
+            }
+        }
+    }
+
     if(data.CLImatchMode == CLICOMPLETIONMODE_CMDARGS)
     {
-        // search through command arguments and parameters
-        while((int) list_index < data.cmd[data.cmdindex].nbarg)
+        while((int) list_index <
+                data.cmd[data.cmdindex].nbarg)
         {
-            name = data.cmd[data.cmdindex].argdata[list_index].fpstag;
+            name = data.cmd[data.cmdindex]
+                       .argdata[list_index]
+                       .fpstag;
             list_index++;
             if(strncmp(name, text, len) == 0)
             {
                 return (dupstr(name));
             }
         }
+    }
+
+    /* Fuzzy fallback: if prefix pass found nothing,
+     * restart with substring matching */
+    if(generator_fuzzy_pass == 0 &&
+            data.autocomplete_fuzzy)
+    {
+        generator_fuzzy_pass = 1;
+        list_index  = 0;
+        list_index1 = 0;
+        goto retry_fuzzy;
     }
 
     return ((char *) NULL);
@@ -642,13 +683,310 @@ errno_t CLI_execute_line()
 }
 
 #ifdef USE_READLINE
+
+/** @brief Stores the current inline suggestion suffix
+ *
+ * Set by CLI_redisplay when a suggestion is shown.
+ * Consumed by accept_suggestion when Right Arrow is pressed.
+ */
+static char *pending_suggestion = NULL;
+
+/**
+ * @brief Accept the inline suggestion on Right Arrow
+ *
+ * If cursor is at end-of-line and a pending suggestion
+ * exists, insert it. Otherwise, fall through to normal
+ * cursor-right movement.
+ */
+static int accept_suggestion(
+    int count,
+    int key
+)
+{
+    (void) count;
+    (void) key;
+
+    if(pending_suggestion && rl_point == rl_end)
+    {
+        rl_insert_text(pending_suggestion);
+        free(pending_suggestion);
+        pending_suggestion = NULL;
+        rl_redisplay();
+        return 0;
+    }
+
+    /* Not at EOL or no suggestion — normal right */
+    return rl_forward_char(1, key);
+}
+
+/**
+ * @brief Store the suggestion suffix for Right Arrow
+ */
+static void set_pending_suggestion(const char *suffix)
+{
+    free(pending_suggestion);
+    pending_suggestion = NULL;
+    if(suffix && strlen(suffix) > 0)
+    {
+        pending_suggestion = dupstr((char *) suffix);
+    }
+}
+
+/**
+ * @brief Find the command index matching `firstword`
+ *
+ * Returns -1 if no match.
+ */
+static int find_command_match(const char *firstword)
+{
+    for(uint32_t cmdi = 0; cmdi < data.NBcmd; cmdi++)
+    {
+        if(strcmp(firstword, data.cmd[cmdi].key) == 0)
+        {
+            data.cmdindex = cmdi;
+            return (int) cmdi;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Compute visible length of readline prompt
+ *
+ * Strips \001..\002 escape wrappers that readline
+ * uses to mark non-printing characters.
+ */
+static int visible_prompt_len(void)
+{
+    const char *p = rl_display_prompt
+                        ? rl_display_prompt
+                        : "";
+    int   len = 0;
+    int   invisible = 0;
+
+    for(; *p; p++)
+    {
+        if(*p == '\001')
+        {
+            invisible = 1;
+        }
+        else if(*p == '\002')
+        {
+            invisible = 0;
+        }
+        else if(!invisible)
+        {
+            len++;
+        }
+    }
+    return len;
+}
+
+/**
+ * @brief Get number of ghost chars we can print
+ *
+ * Returns max chars that can be printed after the
+ * cursor without wrapping to the next terminal line.
+ */
+static int get_ghost_budget(void)
+{
+    struct winsize ws;
+    int cols = 80; /* fallback */
+
+    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0
+            && ws.ws_col > 0)
+    {
+        cols = ws.ws_col;
+    }
+
+    int cursor_col =
+        (visible_prompt_len() + rl_point) % cols;
+
+    int budget = cols - cursor_col - 1;
+    if(budget < 0)
+    {
+        budget = 0;
+    }
+    return budget;
+}
+
+/**
+ * @brief Print ghost text with truncation
+ *
+ * Prints up to budget visible chars from text
+ * in the given ANSI style, then resets style.
+ * Returns number of visible chars printed.
+ */
+static int print_ghost(
+    const char *style,
+    const char *text,
+    int budget
+)
+{
+    int tlen = (int) strlen(text);
+    int plen = tlen < budget ? tlen : budget;
+
+    if(plen <= 0)
+    {
+        return 0;
+    }
+
+    printf("%s%.*s\033[0m", style, plen, text);
+    return plen;
+}
+
+/**
+ * @brief State for the reserved hint area
+ */
+static int hint_area_active = 0;
+static int cached_term_rows = 0;
+static int cached_term_cols = 0;
+
+/**
+ * @brief Set up scroll region reserving bottom line
+ *
+ * Confines normal terminal output to lines 1..(rows-1)
+ * so the bottom line stays fixed for hints.
+ */
+void CLI_setup_hint_area(void)
+{
+    struct winsize ws;
+    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) < 0
+            || ws.ws_row <= 3)
+    {
+        hint_area_active = 0;
+        return;
+    }
+
+    cached_term_rows = ws.ws_row;
+    cached_term_cols = ws.ws_col;
+
+    /* Set scroll region to rows 1..(rows-1)
+     * NOTE: DECSTBM moves cursor to home */
+    printf("\033[1;%dr", cached_term_rows - 1);
+
+    /* Clear the hint line (outside scroll region) */
+    printf("\033[%d;1H\033[2K",
+           cached_term_rows);
+
+    /* Position cursor at last line of scroll
+     * region. readline will print prompt here. */
+    printf("\033[%d;1H",
+           cached_term_rows - 1);
+    fflush(stdout);
+
+    hint_area_active = 1;
+}
+
+/**
+ * @brief Reset scroll region to full terminal
+ *
+ * Call this before exiting readline mode or
+ * when the CLI session ends.
+ */
+void CLI_cleanup_scroll_region(void)
+{
+    if(!hint_area_active)
+    {
+        return;
+    }
+
+    /* Save cursor before scroll region reset */
+    printf("\0337");
+
+    /* Clear hint line */
+    printf("\033[%d;1H\033[2K",
+           cached_term_rows);
+
+    /* Reset scroll region to full terminal
+     * (also moves cursor to home) */
+    printf("\033[r");
+
+    /* Restore cursor */
+    printf("\0338");
+    fflush(stdout);
+
+    hint_area_active = 0;
+}
+
+/**
+ * @brief Update the hint area with function prototype
+ *
+ * Paints the reserved bottom line with the command
+ * syntax when a known command is being typed.
+ */
+static void update_hint_area(void)
+{
+    if(!hint_area_active || !data.autocomplete_arghint)
+    {
+        return;
+    }
+
+    /* Single DEC save cursor for the whole
+     * operation (resize + hint painting) */
+    printf("\0337");
+
+    /* Check for terminal resize */
+    {
+        struct winsize ws;
+        if(ioctl(STDOUT_FILENO, TIOCGWINSZ,
+                 &ws) >= 0 &&
+                ws.ws_row > 3 &&
+                (ws.ws_row != cached_term_rows ||
+                 ws.ws_col != cached_term_cols))
+        {
+            cached_term_rows = ws.ws_row;
+            cached_term_cols = ws.ws_col;
+            /* Re-set scroll region (cursor jumps
+             * to home, but we saved it above) */
+            printf("\033[1;%dr",
+                   cached_term_rows - 1);
+            /* Clear new hint line */
+            printf("\033[%d;1H\033[2K",
+                   cached_term_rows);
+        }
+    }
+
+    /* Move to hint line, clear it */
+    printf("\033[%d;1H\033[2K",
+           cached_term_rows);
+
+    /* Check if first word is a known command */
+    if(rl_line_buffer[0] != '\0')
+    {
+        char  buf[200];
+        snprintf(buf, sizeof(buf), "%s",
+                 rl_line_buffer);
+        char *fw = strtok(buf, " ");
+
+        if(fw != NULL)
+        {
+            int cmi = find_command_match(fw);
+            if(cmi >= 0)
+            {
+                printf(
+                    "\033[2m%.*s\033[0m",
+                    cached_term_cols - 1,
+                    data.cmd[cmi].syntax);
+            }
+        }
+    }
+
+    /* DEC restore cursor */
+    printf("\0338");
+    fflush(stdout);
+}
+
 static void CLI_redisplay(void)
 {
-    // Default redisplay
+    /* Default redisplay */
     rl_redisplay_function = NULL;
     rl_redisplay();
     fflush(stdout);
     rl_redisplay_function = CLI_redisplay;
+
+    /* Clear any stale suggestion */
+    set_pending_suggestion(NULL);
 
     if(data.autocomplete == 0)
     {
@@ -660,12 +998,64 @@ static void CLI_redisplay(void)
         return;
     }
 
+
+
     if(rl_point != rl_end)
     {
-        return;    // Only at end of line
+        /* Update hint even when not at EOL */
+        update_hint_area();
+        return;
     }
 
-    // Find current word start
+    int budget = get_ghost_budget();
+    if(budget <= 0)
+    {
+        update_hint_area();
+        return;
+    }
+
+    int total_ghost = 0;
+
+    /* ===== History-based suggestion ===== */
+    if(data.autocomplete_history)
+    {
+        HIST_ENTRY **hist = history_list();
+        if(hist)
+        {
+            int hlen = history_length;
+            for(int i = hlen - 1; i >= 0; i--)
+            {
+                if(strncmp(hist[i]->line,
+                           rl_line_buffer,
+                           rl_end) == 0 &&
+                        (int) strlen(
+                            hist[i]->line) >
+                        rl_end)
+                {
+                    const char *suffix =
+                        hist[i]->line + rl_end;
+                    int n = print_ghost(
+                                "\033[38;5;245m",
+                                suffix,
+                                budget);
+                    if(n > 0)
+                    {
+                        printf("\033[K");
+                        printf("\033[%dD", n);
+                        fflush(stdout);
+                        set_pending_suggestion(
+                            suffix);
+                    }
+                    update_hint_area();
+                    return;
+                }
+            }
+        }
+    }
+
+    /* ===== Generator-based suggestion ===== */
+
+    /* Find current word start */
     int start = 0;
     for(int i = rl_point - 1; i >= 0; i--)
     {
@@ -678,71 +1068,93 @@ static void CLI_redisplay(void)
 
     char *text = rl_line_buffer + start;
 
-    // Determine matching mode (logic duplicated from CLI_completion)
-    if((start == 0) || (strncmp(rl_line_buffer, "cmd?", strlen("cmd?")) == 0))
+    /* Determine matching mode */
+    if((start == 0) ||
+            (strncmp(rl_line_buffer, "cmd?",
+                     strlen("cmd?")) == 0))
     {
-        data.CLImatchMode = CLICOMPLETIONMODE_COMMANDS;
+        data.CLImatchMode =
+            CLICOMPLETIONMODE_COMMANDS;
     }
     else
     {
         char  str[200];
-        char *firstword;
-        // Safe copy
         snprintf(str, 200, "%s", rl_line_buffer);
-        firstword = strtok(str, " ");
-        
-        int      cmdimatch = -1;
-        uint32_t cmdi      = 0;
-        
-        // Only check first word if it exists
-        if(firstword != NULL) {
-            while((cmdimatch == -1) && (cmdi < data.NBcmd))
-            {
-                if(strcmp(firstword, data.cmd[cmdi].key) == 0)
-                {
-                    cmdimatch = cmdi;
-                    data.cmdindex = cmdi;
-                }
-                cmdi++;
-            }
+        char *firstword = strtok(str, " ");
+
+        int cmdimatch = -1;
+        if(firstword != NULL)
+        {
+            cmdimatch =
+                find_command_match(firstword);
         }
 
         if((cmdimatch != -1) && (text[0] == '.'))
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
+            data.CLImatchMode =
+                CLICOMPLETIONMODE_CMDARGS;
         }
         else
         {
-            data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
+            data.CLImatchMode =
+                CLICOMPLETIONMODE_IMAGES;
         }
     }
 
-    // Get best match
+    /* Get best match */
     char *match = CLI_generator(text, 0);
-    
+
     if(match)
     {
-        // Check if match starts with text
         if(strncmp(match, text, strlen(text)) == 0)
         {
             char *suffix = match + strlen(text);
-            if(strlen(suffix) > 0)
+            int n = print_ghost(
+                        "\033[38;5;245m",
+                        suffix,
+                        budget);
+            if(n > 0)
             {
-                // Print suffix (lighter grey), clear rest of line, move cursor back
-                printf("\033[38;5;245m%s\033[0m\033[K", suffix);
-                printf("\033[%ldD", strlen(suffix));
-                fflush(stdout);
+                total_ghost += n;
+                set_pending_suggestion(suffix);
             }
+        }
+        else if(data.autocomplete_fuzzy)
+        {
+            char fzbuf[256];
+            snprintf(fzbuf, sizeof(fzbuf),
+                     " [%s]", match);
+            int n = print_ghost(
+                        "\033[38;5;245m",
+                        fzbuf,
+                        budget);
+            total_ghost += n;
         }
         free(match);
     }
+
+    /* Erase rest of line + move cursor back */
+    if(total_ghost > 0)
+    {
+        printf("\033[K");
+        printf("\033[%dD", total_ghost);
+        fflush(stdout);
+    }
+
+    update_hint_area();
 }
 
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
+
+    /* Bind Right Arrow to accept suggestion
+     * when at end-of-line */
+    rl_bind_keyseq("\\e[C", accept_suggestion);
 }
 #else
 void CLI_configure_readline() {}
+void CLI_setup_hint_area(void) {}
+void CLI_cleanup_scroll_region(void) {}
 #endif
 
