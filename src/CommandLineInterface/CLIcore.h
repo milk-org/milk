@@ -495,6 +495,12 @@ typedef struct
     int parseerror;
     // 1 if autocomplete preview is enabled
     int autocomplete;
+    // 1 if history-based suggestions are enabled
+    int autocomplete_history;
+    // 1 if argument hint line is enabled
+    int autocomplete_arghint;
+    // 1 if fuzzy/substring matching is enabled
+    int autocomplete_fuzzy;
     // number of arguments in last command line
     long        cmdNBarg;
     CMDARGTOKEN cmdargtoken[NB_ARG_MAX];

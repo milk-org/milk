@@ -2,8 +2,6 @@
 #include "CLIcore.h"
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
-#include "COREMOD_memory/image_keyword_addL.h"
-#include "COREMOD_memory/image_keyword_addS.h"
 
 
 /* ================================================================
@@ -21,8 +19,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static LOCVAR_OUTIMG2D outim;
-static uint32_t       *distrib = NULL;
+static char     outim_name[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+static uint32_t outim_xsize  = 256;
+static uint32_t outim_ysize  = 256;
+static uint32_t outim_shared = 0;
+static uint32_t distrib_val  = 0;
 
 
 /* ================================================================
@@ -30,7 +32,23 @@ static uint32_t       *distrib = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".distrib", &distrib, \
+    X(".outim.name", outim_name, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".outim.xsize", &outim_xsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x size") \
+    X(".outim.ysize", &outim_ysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y size") \
+    X(".outim.shared", &outim_shared, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "shared flag") \
+    X(".distrib", &distrib_val, \
       FPTYPE_UINT32, 0, \
       FPFLAG_DEFAULT_INPUT, \
       "distribution (0:uniform 1:gauss 2:trunc)")
@@ -48,10 +66,6 @@ static const int nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
-    FARG_OUTIM_NAME(outim),
-    FARG_OUTIM_SHARED(outim),
-    FARG_OUTIM_XSIZE(outim),
-    FARG_OUTIM_YSIZE(outim),
     FPS_PARAMS(FPS_X_FARG)
 };
 
@@ -84,7 +98,6 @@ void init_cmdsettings(void)
 /**
  * @brief Make random image
  *
- *
  * @param[out] img
  *      Output image
  *
@@ -107,34 +120,40 @@ static imageID make_image_random(
     // Create image if needed
     imcreateIMGID(img);
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if(pdf == 0)
+    // openMP is slow when calling gsl random
+    // number generator : do not use openMP here
+    if (pdf == 0)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
             img->im->array.F[ii] = (float) ran1();
         }
     }
-    if(pdf == 1)
+    if (pdf == 1)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
             img->im->array.F[ii] = (float) gauss();
         }
     }
-    if(pdf == 2)
+    if (pdf == 2)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
-            img->im->array.F[ii] = (float) gauss_trc();
+            img->im->array.F[ii] =
+                (float) gauss_trc();
         }
     }
-    if(pdf == 3)  // test pattern
+    if (pdf == 3)  // test pattern
     {
         static uint64_t ii   = 0;
-        img->im->array.F[ii] = 1.0 - img->im->array.F[ii];
+        img->im->array.F[ii] =
+            1.0 - img->im->array.F[ii];
         ii++;
-        if(ii == img->md->nelement)
+        if (ii == img->md->nelement)
         {
             ii = 0;
         }
@@ -148,36 +167,23 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
-    IMGID img  = imgid_make_from_name_2D(outim.name, *outim.xsize, *outim.ysize);
-    img.mdt->shared = *outim.shared;
-    //img.NBkw   = *outim.NBkw;
-    //img.CBsize = *outim.CBsize;
-
-    printf("NBkw   = %d\n", img.mdt->NBkw);
-    printf("CBsize = %d\n", img.mdt->CBsize);
-
+    DEBUG_TRACEPOINT("make IMGID for %s",
+                     outim_name);
+    IMGID img = imgid_make_from_name_2D(
+        outim_name, outim_xsize, outim_ysize);
+    img.mdt->shared = outim_shared;
 
     // Create image if needed
     imcreateIMGID(&img);
 
-
-    list_image_ID();
-
-/*
-    image_keyword_addS(img, "MILKFUNC", "mkrandomim", "MILK function");
-    image_keyword_addL(img,
-                       "RNDPDF",
-                       (long)(*distrib),
-                       "random value distribution");
-*/
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
+    make_image_random(&img, distrib_val);
 
-    make_image_random(&img, *distrib);
-
-    DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    processinfo_update_output_stream(processinfo, img.im, NULL);
+    DEBUG_TRACEPOINT("update output ID %ld",
+                     img.ID);
+    processinfo_update_output_stream(
+        processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     imgid_free(&img);
