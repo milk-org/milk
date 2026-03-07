@@ -25,5 +25,7 @@ errno_t CLI_execute_line();
 errno_t write_tracedebugfile();
 
 void CLI_configure_readline();
+void CLI_setup_hint_area(void);
+void CLI_cleanup_scroll_region(void);
 
 #endif
