@@ -19,8 +19,15 @@ errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps)
                            fps->md->name,
                            fps->md->workdir);
 
-    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
-                           fps->md->name);
+    if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m",
+                               fps->md->name,
+                               fps->md->execfullpath,
+                               fps->md->name);
+    } else {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
+                               fps->md->name);
+    }
 
     // Send C-c in case runstop command is not implemented
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c &> /dev/null",
