@@ -583,7 +583,7 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             {
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX,
-                         "<%s [%s] ->(%s)>",
+                         "<%s [%s] : %s>",
                          fpscliarg[arg].descr,
                          typestring,
                          fpscliarg[arg].fpstag);
@@ -592,7 +592,7 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             {
                 snprintf(tmpstr1,
                          STRINGMAXLEN_CMD_SYNTAX - 1,
-                         " <%s [%s] ->(%s)>",
+                         " <%s [%s] : %s>",
                          fpscliarg[arg].descr,
                          typestring,
                          fpscliarg[arg].fpstag);
