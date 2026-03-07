@@ -955,9 +955,11 @@ static void update_hint_area(void)
     if(rl_line_buffer[0] != '\0')
     {
         char  buf[200];
+        char *saveptr_hint = NULL;
         snprintf(buf, sizeof(buf), "%s",
                  rl_line_buffer);
-        char *fw = strtok(buf, " ");
+        char *fw = strtok_r(
+                       buf, " ", &saveptr_hint);
 
         if(fw != NULL)
         {
@@ -1062,7 +1064,8 @@ static void update_hint_area(void)
                     int plen = tlen < avail
                                ? tlen : avail;
 
-                    if(tidx == argidx)
+                    if(*tstart == '<' &&
+                            tidx == argidx)
                     {
                         printf("\033[1;97m"
                                "%.*s"
@@ -1077,7 +1080,10 @@ static void update_hint_area(void)
                                plen, tstart);
                     }
                     col += plen;
-                    tidx++;
+                    if(*tstart == '<')
+                    {
+                        tidx++;
+                    }
                 }
             }
         }
@@ -1106,6 +1112,7 @@ static void CLI_redisplay(void)
 
     if(rl_line_buffer[0] == '\0')
     {
+        update_hint_area();
         return;
     }
 
@@ -1190,14 +1197,30 @@ static void CLI_redisplay(void)
     else
     {
         char  str[200];
+        char *saveptr_comp = NULL;
         snprintf(str, 200, "%s", rl_line_buffer);
-        char *firstword = strtok(str, " ");
+        char *firstword = strtok_r(
+                str, " ", &saveptr_comp);
 
         int cmdimatch = -1;
         if(firstword != NULL)
         {
             cmdimatch =
                 find_command_match(firstword);
+        }
+
+        /* If command has no <> argument tokens,
+         * don't suggest arguments */
+        if(cmdimatch >= 0)
+        {
+            const char *syn =
+                data.cmd[cmdimatch].syntax;
+            if(syn == NULL ||
+                    strchr(syn, '<') == NULL)
+            {
+                update_hint_area();
+                return;
+            }
         }
 
         if((cmdimatch != -1) && (text[0] == '.'))

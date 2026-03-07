@@ -1820,52 +1820,26 @@ int main(int argc, char *argv[]) { \
                " updated.\n", fps_name); \
         return 0; \
     } else if (strcmp(command, "exec") == 0) { \
-        FUNCTION_PARAMETER_STRUCT fps; \
-        if (function_parameter_struct_connect( \
-                fps_name, &fps, \
-                FPSCONNECT_SIMPLE) == -1) { \
-            fps_generic_init(fps_name, \
-                (FPS_APP_INFO *)&(APP_INFO), \
-                my_bindings_, nb_bindings_, \
-                use_procinfo); \
-            if (function_parameter_struct_connect( \
-                    fps_name, &fps, \
-                    FPSCONNECT_SIMPLE) == -1) { \
-                fprintf(stderr, \
-                    "Error: FPS '%s' init " \
-                    "failed.\n", fps_name); \
-                return 1; \
-            } \
-        } \
+        /* Auto-init if FPS doesn't exist yet, \
+         * then run. fps_name goes to shared mem \
+         * when name lacks _ prefix. */ \
         { \
-            int cmd_pos_ = -1; \
-            for (int j_ = 1; j_ < argc; j_++) { \
-                if (strcmp(argv[j_], "exec") == 0) \
-                { cmd_pos_ = j_; break; } \
-            } \
-            if (cmd_pos_ != -1) { \
-                int ci_ = 0; \
-                for (int i_ = 0; \
-                     i_ < nb_bindings_; i_++) { \
-                    if (!my_bindings_[i_] \
-                            .is_primary) \
-                        continue; \
-                    int ai_ = cmd_pos_+1+ci_; \
-                    ci_++; \
-                    if (ai_ >= argc) break; \
-                    if (strcmp(argv[ai_], ".") \
-                        != 0) { \
-                         functionparameter_SetParamValue_STRING(\
-                            &fps, \
-                            my_bindings_[i_] \
-                                .fpskeyword, \
-                            argv[ai_]); \
-                    } \
+            FUNCTION_PARAMETER_STRUCT fps_chk_; \
+            if (fps_name[0] != '_') { \
+                if (function_parameter_struct_connect( \
+                        fps_name, &fps_chk_, \
+                        FPSCONNECT_SIMPLE) == -1) \
+                { \
+                    fps_generic_init(fps_name, \
+                        (FPS_APP_INFO *)&(APP_INFO), \
+                        my_bindings_, nb_bindings_, \
+                        use_procinfo); \
+                } else { \
+                    function_parameter_struct_disconnect( \
+                        &fps_chk_); \
                 } \
             } \
         } \
-        function_parameter_struct_disconnect( \
-            &fps); \
         return fps_generic_run(fps_name, \
             (FPS_APP_INFO *)&(APP_INFO), \
             farg_, my_bindings_, nb_bindings_, \
