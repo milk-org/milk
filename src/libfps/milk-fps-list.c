@@ -108,10 +108,11 @@ int main(int argc, char *argv[])
     // mode 0: scan all
     functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, verbose);
 
-    printf(C_TITLE "%-25s %-30s %-20s %s %s   %s" C_RST "\n",
+    printf(C_TITLE "%-25s %-30s %-20s %s %s %s   %s" C_RST "\n",
            "FPS Name", "Executable",
            "Cmd Key", "   CONF",
-           "    RUN", "Description");
+           "    RUN", "P", "Description");
+
     printf(C_DIM);
     for (int i=0; i<116; i++) putchar('-');
     printf(C_RST "\n");
@@ -129,8 +130,10 @@ int main(int argc, char *argv[])
             char conf_pid_str[32] = "";
             char run_pid_str[32] = "";
             char tmux_str[32] = "";
+            char proc_str[32] = "";
 
             // Extract executable basename
+
             const char *exec_basename =
                 strrchr(
                     fpsarray[i].md->execfullpath,
@@ -166,7 +169,15 @@ int main(int argc, char *argv[])
                 snprintf(tmux_str, 32, "[---]");
             }
 
-            snprintf(status_str, 128, "%s %s %s", conf_pid_str, run_pid_str, tmux_str);
+            // Check processinfo
+            if (fpsarray[i].parray != NULL && functionparameter_GetParamIndex(&fpsarray[i], ".procinfo.enabled") != -1) {
+                snprintf(proc_str, 32, "%sP%s", C_NAME, C_RST);
+            } else {
+                snprintf(proc_str, 32, "%s-%s", C_DIM, C_RST);
+            }
+
+            snprintf(status_str, 128, "%s %s %s  %s ", conf_pid_str, run_pid_str, tmux_str, proc_str);
+
             
             if (show_exec) {
                 printf(C_NAME "%-25s" C_RST " "
