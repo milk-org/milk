@@ -10,6 +10,19 @@
 #include "fps_globals.h"
 #include "fps_scan.h"
 
+/* ANSI color codes */
+#define C_TITLE "\033[1;36m"  /* Cyan Bold   */
+#define C_HDR   "\033[1;34m"  /* Blue Bold   */
+#define C_NAME  "\033[1;32m"  /* Green Bold  */
+#define C_TYPE  "\033[1;33m"  /* Yellow Bold */
+#define C_SIZE  "\033[1m"     /* White Bold  */
+#define C_CNT   "\033[1;35m"  /* Magenta Bold */
+#define C_SEM   "\033[36m"    /* Cyan        */
+#define C_LINK  "\033[36m"    /* Cyan        */
+#define C_ERR   "\033[1;31m"  /* Red Bold    */
+#define C_DIM   "\033[2m"     /* Dim         */
+#define C_RST   "\033[0m"     /* Reset       */
+
 void print_help(const char *progname) {
     printf("Usage: %s [options] [regex pattern]\n", progname);
     printf("List active FPS instances.\n");
@@ -95,28 +108,15 @@ int main(int argc, char *argv[])
     // mode 0: scan all
     functionparameter_scan_fps(0, "_ALL", fpsarray, keywnode, &NBkwn, &NBfps, &NBpindex, verbose);
 
-    if (NBfps > 0) {
-        if (show_exec) {
-            printf("\033[1m%-25s %-30s %-20s %s %s   %s\033[0m\n",
-                   "FPS Name", "Executable",
-                   "Cmd Key", "   CONF",
-                   "    RUN", "Description");
-            printf("--------------------------------------"
-                   "--------------------------------------"
-                   "--------------------------------------"
-                   "----\n");
-        } else {
-            printf("\033[1m%-25s %-30s %-20s %s %s"
-                   "   %s\033[0m\n",
-                   "FPS Name", "Executable",
-                   "Cmd Key", "   CONF",
-                   "    RUN", "Description");
-            printf("--------------------------------------"
-                   "--------------------------------------"
-                   "--------------------------------------"
-                   "----\n");
-        }
+    printf(C_TITLE "%-25s %-30s %-20s %s %s   %s" C_RST "\n",
+           "FPS Name", "Executable",
+           "Cmd Key", "   CONF",
+           "    RUN", "Description");
+    printf(C_DIM);
+    for (int i=0; i<116; i++) putchar('-');
+    printf(C_RST "\n");
 
+    if (NBfps > 0) {
         for(int i = 0; i < NBfps; i++)
         {
             if (use_regex && regexec(&regex, fpsarray[i].md->name, 0, NULL, 0) != 0) {
@@ -169,9 +169,9 @@ int main(int argc, char *argv[])
             snprintf(status_str, 128, "%s %s %s", conf_pid_str, run_pid_str, tmux_str);
             
             if (show_exec) {
-                printf("\033[36m%-25s\033[0m "
-                       "\033[35m%-30s\033[0m "
-                       "\033[33m%-20s\033[0m "
+                printf(C_NAME "%-25s" C_RST " "
+                       C_TYPE "%-30s" C_RST " "
+                       C_HDR "%-20s" C_RST " "
                        "%s   %s\n",
                        fpsarray[i].md->name,
                        fpsarray[i].md->execfullpath,
@@ -179,9 +179,9 @@ int main(int argc, char *argv[])
                        status_str,
                        fpsarray[i].md->description);
             } else {
-                printf("\033[36m%-25s\033[0m "
-                       "\033[35m%-30s\033[0m "
-                       "\033[33m%-20s\033[0m "
+                printf(C_NAME "%-25s" C_RST " "
+                       C_TYPE "%-30s" C_RST " "
+                       C_HDR "%-20s" C_RST " "
                        "%s   %s\n",
                        fpsarray[i].md->name,
                        exec_basename,
@@ -194,10 +194,6 @@ int main(int argc, char *argv[])
             function_parameter_struct_disconnect(&fpsarray[i]);
         }
         printf("\n");
-    } else {
-        if (!verbose) {
-            printf("No FPS instances found. Use -v for more details.\n");
-        }
     }
 
     free(keywnode);

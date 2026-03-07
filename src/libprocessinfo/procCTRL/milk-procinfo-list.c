@@ -8,6 +8,19 @@
 #include "processinfo.h"
 #include "processinfo_shm_list_create.h"
 
+/* ANSI color codes */
+#define C_TITLE "\033[1;36m"  /* Cyan Bold   */
+#define C_HDR   "\033[1;34m"  /* Blue Bold   */
+#define C_NAME  "\033[1;32m"  /* Green Bold  */
+#define C_TYPE  "\033[1;33m"  /* Yellow Bold */
+#define C_SIZE  "\033[1m"     /* White Bold  */
+#define C_CNT   "\033[1;35m"  /* Magenta Bold */
+#define C_SEM   "\033[36m"    /* Cyan        */
+#define C_LINK  "\033[36m"    /* Cyan        */
+#define C_ERR   "\033[1;31m"  /* Red Bold    */
+#define C_DIM   "\033[2m"     /* Dim         */
+#define C_RST   "\033[0m"     /* Reset       */
+
 void print_help(const char *progname) {
     printf("Usage: %s [options] [regex pattern]\n", progname);
     printf("List active processinfo instances.\n");
@@ -57,8 +70,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    printf("%-30s %-10s %-10s\n", "Process Name", "PID", "Status");
-    printf("------------------------------------------------------------\n");
+    printf(C_TITLE "%-30s %-10s %-10s" C_RST "\n", "Process Name", "PID", "Status");
+    printf(C_DIM);
+    for (int i=0; i<60; i++) putchar('-');
+    printf(C_RST "\n");
 
     if (pinfolist != NULL) {
         for (long i = 0; i < PROCESSINFOLISTSIZE; i++) {
@@ -69,13 +84,13 @@ int main(int argc, char *argv[])
                 
                 char status_str[32];
                 switch(pinfolist->active[i]) {
-                    case 1: strcpy(status_str, "ACTIVE"); break;
-                    case 2: strcpy(status_str, "STOPPED"); break;
-                    case 3: strcpy(status_str, "CRASHED"); break;
-                    default: strcpy(status_str, "UNKNOWN"); break;
+                    case 1: snprintf(status_str, 32, C_NAME "ACTIVE" C_RST); break;
+                    case 2: snprintf(status_str, 32, C_TYPE "STOPPED" C_RST); break;
+                    case 3: snprintf(status_str, 32, C_ERR "CRASHED" C_RST); break;
+                    default: snprintf(status_str, 32, C_HDR "UNKNOWN" C_RST); break;
                 }
                 
-                printf("%-30s %-10ld %s\n", 
+                printf(C_NAME "%-30s" C_RST " %-10ld %s\n", 
                     pinfolist->pnamearray[i], 
                     (long)pinfolist->PIDarray[i], 
                     status_str);
