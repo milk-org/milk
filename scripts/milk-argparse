@@ -23,7 +23,7 @@ source milk-script-std-config
 # list prerequisites (optional)
 #
 : '
-RequiredCommands=( milk ls cd )
+RequiredCommands=( milk-cli ls cd )
 RequiredFiles=()
 RequiredDirs=()
 RequiredPipes=()

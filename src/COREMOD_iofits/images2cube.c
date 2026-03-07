@@ -3,7 +3,7 @@
  */
 
 #include "CLIcore.h"
-
+#include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // ==========================================
@@ -15,74 +15,109 @@ errno_t images_to_cube(const char *restrict img_name,
                        const char *restrict cube_name);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// FPS V2
 // ==========================================
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgs2cube",
+    .cmdkey      = "imgs2cube",
+    .description = "combine individual images into cube"
+};
 
 static char    *imgname;
 static int64_t *nbframes;
 static char    *cubename;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_STR,
-        ".imgname",
-        "input image name format",
-        "im_",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &imgname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".nbframes",
-        "number of frames",
-        "100",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &nbframes,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".cubename",
-        "output cube name",
-        "imc",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &cubename,
-        NULL
-    }
+#define FPS_PARAMS(X) \
+    X(".imgname", &imgname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image name format") \
+    X(".nbframes", &nbframes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "number of frames") \
+    X(".cubename", &cubename, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output cube name")
+
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "imgs2cube",
-    "combine individual images into cube",
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
 
-static errno_t help_function()
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    printf("Combine individual images into cube.\n");
-    printf("Image name is prefix followed by 5 digits (e.g. im_00000, im_00001 ...)\n");
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
+
 
 static errno_t compute_function()
 {
     return images_to_cube(imgname, *nbframes, cubename);
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// ==========================================
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 // Register CLI command(s)
-// ==========================================
-
 errno_t images2cube_addCLIcmd()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
     INSERT_STD_CLIREGISTERFUNC
+
     return RETURN_SUCCESS;
 }
+#endif
+
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+
+
+// ==========================================
+// Compute code
+// ==========================================
 
 errno_t images_to_cube(const char *restrict img_name,
                        long nbframes,

@@ -22,7 +22,7 @@ echo "$pname"
 
 exit
 
-milk -n $pname << EOF
+milk-cli -n $pname << EOF
 shmimslogstat $1
 exit
 EOF

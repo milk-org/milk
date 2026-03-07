@@ -1,120 +1,131 @@
 /**
- * @file    read_shmim.c
- * @brief   read shared memory stream
+ * @file    read_shmim_size.c
+ * @brief   read shared memory image size
+ *
+ * Uses FPS V2 framework.
  */
 
-#include <fcntl.h>    // open
-#include <sys/mman.h> // mmap
+#include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
-#include <unistd.h> // close
+#include <unistd.h>
 
 #include "CLIcore.h"
+#include "fps.h"
+
 #include "image_ID.h"
 #include "list_image.h"
 
-// Local variables pointers
-static char *insname;
-static char *outfname;
 
-// List of arguments to function
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".in_sname",
-        "input stream",
-        "ims1",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &insname,
-        NULL
-    },
-    {
-        CLIARG_STR_NOT_IMG,
-        ".outfname",
-        "output file name",
-        "outsize.dat",
-        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),
-        (void **) &outfname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "readshmimsize",
+    .cmdkey      = "readshmimsize",
+    .description = "read shared memory image size"
 };
 
-// flag CLICMDFLAG_FPS enabled FPS capability
-static CLICMDDATA CLIcmddata =
-{
-    "readshmimsize", "read shared memory image size", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char *insname = NULL;
+static char *outfname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_sname", &insname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".outfname", &outfname, \
+      FPTYPE_STRING_NOT_STREAM, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output file name")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 /**
- *  ## Purpose
+ * @brief Read shared memory image size
  *
- *  Read shared memory image size
- *
- *
- * ## Arguments
- *
- * @param[in]
- * name		char*
- * -		stream name
- *
- * @param[in]
- * fname	char*
- * 			file name to write image name
- *
+ * @param name   stream name
+ * @param fname  file name to write image size
  */
-imageID read_sharedmem_image_size(const char *name, const char *fname)
+imageID read_sharedmem_image_size(
+    const char *name,
+    const char *fname)
 {
     int             SM_fd;
     struct stat     file_stat;
-    char            SM_fname[STRINGMAXLEN_FULLFILENAME];
+    char            SM_fname[
+        STRINGMAXLEN_FULLFILENAME];
     IMAGE_METADATA *map;
     int             i;
     FILE           *fp;
     imageID         ID = -1;
 
-    if((ID = image_ID(name, data.image, data.NB_MAX_IMAGE)) == -1)
+    if((ID = image_ID(
+            name, data.image,
+            data.NB_MAX_IMAGE)) == -1)
     {
-        WRITE_FULLFILENAME(SM_fname, "%s/%s.im.shm", data.shmdir, name);
+        WRITE_FULLFILENAME(
+            SM_fname, "%s/%s.im.shm",
+            data.shmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd == -1)
         {
-            printf("Cannot import file - continuing\n");
+            printf(
+                "Cannot import file"
+                " - continuing\n");
         }
         else
         {
             fstat(SM_fd, &file_stat);
-            //        printf("File %s size: %zd\n", SM_fname, file_stat.st_size);
 
-            map = (IMAGE_METADATA *) mmap(0,
-                                          sizeof(IMAGE_METADATA),
-                                          PROT_READ | PROT_WRITE,
-                                          MAP_SHARED,
-                                          SM_fd,
-                                          0);
+            map = (IMAGE_METADATA *) mmap(
+                0,
+                sizeof(IMAGE_METADATA),
+                PROT_READ | PROT_WRITE,
+                MAP_SHARED,
+                SM_fd,
+                0);
             if(map == MAP_FAILED)
             {
                 close(SM_fd);
-                perror("Error mmapping the file");
+                perror(
+                    "Error mmapping the file");
                 exit(0);
             }
 
             fp = fopen(fname, "w");
             for(i = 0; i < map[0].naxis; i++)
             {
-                fprintf(fp, "%ld ", (long) map[0].size[i]);
+                fprintf(fp, "%ld ",
+                        (long) map[0].size[i]);
             }
             fprintf(fp, "\n");
             fclose(fp);
 
-            if(munmap(map, sizeof(IMAGE_METADATA)) == -1)
+            if(munmap(map,
+                      sizeof(IMAGE_METADATA))
+                == -1)
             {
-                printf("unmapping %s\n", SM_fname);
-                perror("Error un-mmapping the file");
+                printf("unmapping %s\n",
+                       SM_fname);
+                perror(
+                    "Error un-mmapping"
+                    " the file");
             }
             close(SM_fd);
         }
@@ -122,9 +133,14 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     else
     {
         fp = fopen(fname, "w");
-        for(i = 0; i < data.image[ID].md[0].naxis; i++)
+        for(i = 0;
+             i < data.image[ID].md[0].naxis;
+             i++)
         {
-            fprintf(fp, "%ld ", (long) data.image[ID].md[0].size[i]);
+            fprintf(
+                fp, "%ld ",
+                (long) data.image[ID]
+                    .md[0].size[i]);
         }
         fprintf(fp, "\n");
         fclose(fp);
@@ -133,7 +149,54 @@ imageID read_sharedmem_image_size(const char *name, const char *fname)
     return ID;
 }
 
-// adding INSERT_STD_PROCINFO statements enables processinfo support
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
@@ -142,18 +205,42 @@ static errno_t compute_function()
     read_sharedmem_image_size(insname, outfname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_COREMOD_memory__read_sharedmem_image_size()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

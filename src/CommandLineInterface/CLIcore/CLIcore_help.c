@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <sys/ioctl.h>
 #include "CLIcore.h"
 #include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
 
@@ -425,19 +426,48 @@ errno_t printInfo()
 
 errno_t list_commands()
 {
-    int  cmdinfoslen = 38;
+    int cols = 120; // default
+#ifdef TIOCGWINSZ
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
+        if (ws.ws_col > 0) {
+            cols = ws.ws_col;
+        }
+    }
+#endif
+
+    int  cmdinfoslen = 50;
+    
+    // adjust cmdinfoslen if terminal is very small
+    int base_length = 4 + 3 + 24 + 2 + 16 + 2; // 51
+    if (cols - base_length - 2 < cmdinfoslen) {
+        cmdinfoslen = cols - base_length - 2;
+        if (cmdinfoslen < 5) cmdinfoslen = 5;
+    }
+
     char cmdinfoshort[cmdinfoslen];
 
-    printf("----------- LIST OF COMMANDS ---------\n");
+    printf("================================================ LIST OF COMMANDS ================================================\n");
     for(unsigned int i = 0; i < data.NBcmd; i++)
     {
         strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
-        printf("%4u >   %-16s %-20s %-40s %-30s\n",
+        cmdinfoshort[cmdinfoslen - 1] = '\0';
+        
+        int example_max_len = cols - (base_length + cmdinfoslen - 1 + 2);
+        char example_short[256];
+        if (example_max_len < 0) example_max_len = 0;
+        if (example_max_len > 255) example_max_len = 255;
+        
+        strncpy(example_short, data.cmd[i].example, example_max_len);
+        example_short[example_max_len] = '\0';
+
+        printf("%4u > " COLORCMD " %-24s " COLORRESET " %-16s " COLORINFO " %-*s " COLORRESET " %s\n",
                i,
                data.cmd[i].key,
                data.cmd[i].module,
+               cmdinfoslen - 1,
                cmdinfoshort,
-               data.cmd[i].example);
+               example_short);
     }
 
     return RETURN_SUCCESS;
@@ -448,8 +478,26 @@ errno_t list_commands()
 
 errno_t list_commands_module(const char *__restrict modulename)
 {
+    int cols = 120; // default
+#ifdef TIOCGWINSZ
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
+        if (ws.ws_col > 0) {
+            cols = ws.ws_col;
+        }
+    }
+#endif
+
     int  mOK         = 0;
     int  cmdinfoslen = 38;
+    
+    // adjust cmdinfoslen if terminal is very small
+    int base_length = 3 + 24 + 2; // 29
+    if (cols - base_length < cmdinfoslen) {
+        cmdinfoslen = cols - base_length;
+        if (cmdinfoslen < 5) cmdinfoslen = 5;
+    }
+
     char cmdinfoshort[cmdinfoslen];
 
     int moduleindex = -1;
@@ -496,11 +544,13 @@ errno_t list_commands_module(const char *__restrict modulename)
                 }
 
                 strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
+                cmdinfoshort[cmdinfoslen - 1] = '\0';
+                
                 printf(COLORCMD "   %-24s" COLORRESET COLORINFO
-                       "  %-40s\n" COLORRESET,
+                       "  %-*s\n" COLORRESET,
                        data.cmd[i].key,
+                       cmdinfoslen - 1,
                        cmdinfoshort);
-                //                printf("   %-16s %-20s %-40s %-30s\n", data.cmd[i].key, cmpstring, cmdinfoshort, data.cmd[i].example);
                 mOK = 1;
             }
         }
@@ -1186,7 +1236,7 @@ errno_t command_info_search(const char *restrict searchstring)
 }
 
 
-void print_milk_main_help(void)
+void print_milk_framework_help(void)
 {
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
@@ -1220,10 +1270,16 @@ void print_milk_main_help(void)
     printf(C_TITLE "--------------------------------------------------------\n" C_RST);
     printf(C_HDR "General Usage\n" C_RST);
     printf("To enter the interactive milk shell, simply type:\n");
-    printf("  $ " C_CMD "milk\n" C_RST);
+    printf("  $ " C_CMD "milk-cli\n" C_RST);
     printf("\n");
     printf("From within the milk shell, you can list\n");
     printf("available commands to see all capabilities:\n");
+    printf("For CLI specific help, run " C_CMD "milk-cli-help\n" C_RST);
+    printf("\n");
+}
+
+void print_milk_cli_help(void)
+{
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
     printf(C_TITLE "                COMMAND LINE OPTIONS                    \n" C_RST);
@@ -1257,9 +1313,13 @@ void print_milk_main_help(void)
     printf("  Spaces separate arguments. Use " C_BOLD "#" C_RST " for comments.\n");
     printf("  Example: " C_CMD "command arg1 arg2 # comment\n" C_RST);
     printf("\n");
-    printf(C_HDR "Tab Completion:\n" C_RST);
+    printf(C_HDR "Tab Completion & UX Features:\n" C_RST);
     printf("  1st arg: Match commands, then images, then files.\n");
     printf("  Subsequent: Match images, then files.\n");
+    printf("  " C_NOTE "History:" C_RST " Commands are saved persistently across sessions (Up/Down).\n");
+    printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest the closest match.\n");
+    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "milk-fpsexec-list <keyword>" C_RST " filters matches.\n");
+    printf("  " C_NOTE "Bash completion:" C_RST " Source scripts/milk-completion.sh for standard tab completion.\n");
 
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
@@ -1282,7 +1342,7 @@ void print_milk_main_help(void)
 
 errno_t help()
 {
-    print_milk_main_help();
+    print_milk_cli_help();
 
     return RETURN_SUCCESS;
 }
