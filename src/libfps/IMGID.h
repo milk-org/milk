@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "fps_streamname_parse.h"
 
 
 
@@ -79,6 +80,12 @@ typedef struct
     //
     IMAGE_METADATA *mdt;
 
+    // Stream name modifier (from @X: prefix)
+    // Parsed by imgid_make_from_name()
+    char stream_loc;        // 'L','S','F', or '\0'
+    char stream_must_exist; // 1 if @E
+    char stream_must_new;   // 1 if @N
+
 } IMGID;
 
 
@@ -106,9 +113,14 @@ static inline IMGID imgid_make()
 
     img.ID        = -1;
     img.createcnt = 0;
-    strncpy(img.mdt->name, "", STRINGMAXLEN_IMAGE_NAME - 1);
+    strncpy(img.mdt->name, "",
+            STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
+
+    img.stream_loc        = '\0';
+    img.stream_must_exist = 0;
+    img.stream_must_new   = 0;
 
     return img;
 }
@@ -145,16 +157,37 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     img.mdt->naxis    = 2;
     img.mdt->size[0]  = 1;
     img.mdt->size[1]  = 1;
-    img.mdt->shared   = 0;
+    img.mdt->shared   = 1; // shared by default
     img.mdt->NBkw     = IMGID_NB_KEYWO_MAX;
     img.mdt->CBsize   = 0;
+
+    /* Parse @X: modifier prefix first */
+    const char *effective_name = name;
+    {
+        FPS_STREAMNAME_PARSED sp =
+            fps_streamname_parse(name);
+        if (!sp.error)
+        {
+            img.stream_loc = sp.loc;
+            img.stream_must_exist =
+                sp.must_exist;
+            img.stream_must_new =
+                sp.must_new;
+            effective_name = sp.name;
+
+            if (sp.loc == 'L')
+            {
+                img.mdt->shared = 0;
+            }
+        }
+    }
 
     char *pch;
     char *pch1;
     int   nbword = 0;
 
     char  namestring[200];
-    strncpy(namestring, name, 199);
+    strncpy(namestring, effective_name, 199);
 
     pch1 = namestring;
     if(strlen(namestring) != 0)
