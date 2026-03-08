@@ -142,6 +142,7 @@ int fps_generic_run(
 {
     FUNCTION_PARAMETER_STRUCT fps;
     PROCESSINFO *processinfo = NULL;
+    long loopcnt = 0;
 
     if (fps_name[0] == '_') {
         FUNCTION_PARAMETER_STRUCT *lfps =
@@ -161,10 +162,27 @@ int fps_generic_run(
             &fps, farg, bindings, nb_b);
     }
     else {
-        FPS_RUN_STD_PREAMBLE(fps_name, fps, {
-            fps_process_cli_and_sync(
-                &fps, farg, bindings, nb_b);
-        });
+        /* Phase 1: connect SIMPLE to apply CLI
+         * args before streams are loaded. */
+        if (function_parameter_struct_connect(
+                fps_name, &fps,
+                FPSCONNECT_SIMPLE) == -1)
+        {
+            fprintf(stderr,
+                    "Error: FPS '%s' not found."
+                    " Run 'fpsinit' first.\n",
+                    fps_name);
+            return 1;
+        }
+        fps_process_cli_and_sync(
+            &fps, farg, bindings, nb_b);
+        function_parameter_struct_disconnect(
+            &fps);
+
+        /* Phase 2: reconnect as RUN — streams
+         * now load with CLI-updated values. */
+        FPS_RUN_STD_PREAMBLE(
+            fps_name, fps, {});
     }
 
     if (functionparameter_GetParamIndex(
@@ -180,14 +198,22 @@ int fps_generic_run(
             processinfo, fps, NULL, NULL, {
             compute_fn();
         });
+
+        loopcnt = processinfo->loopcnt;
     }
     else {
         compute_fn();
+        loopcnt = 1;
         if (fps_name[0] != '_') {
             function_parameter_struct_disconnect(
                 &fps);
         }
     }
+
+    printf("ran as PID %ld for %ld step%s\n",
+           (long) getpid(),
+           loopcnt,
+           (loopcnt == 1) ? "" : "s");
 
     return 0;
 }

@@ -4,6 +4,7 @@
  */
 #include "CLIcore.h"
 #include "create_image.h"
+#include "delete_image.h"
 #include "image_ID.h"
 #include "list_image.h"
 #include "stream_sem.h"
@@ -37,29 +38,83 @@ errno_t create_image_ID_IMGID(
     }
     else
     {
-        // Cannot create image : name already in use
-        img->ID = image_ID(img->name, data.image, data.NB_MAX_IMAGE);
-        if(data.image[img->ID].md->datatype != img->mdt->datatype)
+        // Image name already in use — check compatibility
+        img->ID = image_ID(img->name,
+                           data.image,
+                           data.NB_MAX_IMAGE);
+
+        int mismatch = 0;
+
+        if (data.image[img->ID].md->datatype
+            != img->mdt->datatype)
         {
-            FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong type",
-                                img->name);
+            printf("\033[33mWARNING:\033[0m"
+                   " image \"%s\" type mismatch"
+                   " -> re-creating\n",
+                   img->name);
+            mismatch = 1;
         }
-        if(data.image[img->ID].md->naxis != img->mdt->naxis)
+
+        if (!mismatch &&
+            data.image[img->ID].md->naxis
+            != img->mdt->naxis)
         {
-            FUNC_RETURN_FAILURE("Pre-existing image \"%s\" has wrong naxis",
-                                img->name);
+            printf("\033[33mWARNING:\033[0m"
+                   " image \"%s\" naxis mismatch"
+                   " (%ld vs %ld)"
+                   " -> re-creating\n",
+                   img->name,
+                   (long) data.image[img->ID]
+                       .md->naxis,
+                   (long) img->mdt->naxis);
+            mismatch = 1;
         }
-        for(int i = 0; i < img->mdt->naxis; i++)
-            if(data.image[img->ID].md->size[i] != img->mdt->size[i])
+
+        if (!mismatch)
+        {
+            for (int i = 0;
+                 i < img->mdt->naxis; i++)
             {
-                FUNC_RETURN_FAILURE(
-                    "Pre-existing image \"%s\" has wrong size: axis %d "
-                    ":  %ld  %ld",
-                    img->name,
-                    i,
-                    (long) data.image[img->ID].md->size[i],
-                    (long) img->mdt->size[i]);
+                if (data.image[img->ID].md
+                        ->size[i]
+                    != img->mdt->size[i])
+                {
+                    printf(
+                        "\033[33mWARNING:"
+                        "\033[0m"
+                        " image \"%s\" size"
+                        " mismatch axis %d"
+                        " (%ld vs %ld)"
+                        " -> re-creating\n",
+                        img->name, i,
+                        (long) data.image[
+                            img->ID]
+                            .md->size[i],
+                        (long) img->mdt
+                            ->size[i]);
+                    mismatch = 1;
+                    break;
+                }
             }
+        }
+
+        if (mismatch)
+        {
+            delete_image_ID(
+                img->name,
+                DELETE_IMAGE_ERRMODE_WARNING);
+            img->ID = next_avail_image_ID(
+                img->ID);
+            ImageStreamIO_createIm(
+                &data.image[img->ID],
+                img->name,
+                img->mdt->naxis,
+                img->mdt->size,
+                img->mdt->datatype,
+                img->mdt->shared,
+                img->mdt->NBkw,
+                img->mdt->CBsize);
+        }
     }
     if(data.MEM_MONITOR == 1)
     {

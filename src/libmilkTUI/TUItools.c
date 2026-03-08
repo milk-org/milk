@@ -51,6 +51,9 @@ static struct winsize     w;
 static short unsigned int wrow, wcol;
 static int                wresizecnt = 0;
 
+// Current column position for line truncation
+static int curcol = 0;
+
 /*
  * Defines printfw output
  *
@@ -94,23 +97,58 @@ int TUI_get_screenprintmode()
  */
 void TUI_printfw(const char *fmt, ...)
 {
+    // Skip if already past terminal width
+    if(wcol > 1 && curcol >= (wcol - 1))
+    {
+        return;
+    }
+
     va_list args;
+    char buf[1024];
 
     va_start(args, fmt);
+    int len = vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    if(len < 0)
+    {
+        return;
+    }
+    if(len >= (int) sizeof(buf))
+    {
+        len = (int) sizeof(buf) - 1;
+    }
+
+    // Truncate to fit within terminal width.
+    // Use wcol-1 to avoid writing the last column,
+    // which causes ncurses to wrap the cursor.
+    int avail = len;
+    if(wcol > 1)
+    {
+        int remaining = (wcol - 1) - curcol;
+        if(remaining <= 0)
+        {
+            return;
+        }
+        if(avail > remaining)
+        {
+            avail = remaining;
+        }
+    }
 
     if(screenprintmode == SCREENPRINT_STDIO)
     {
-        vfprintf(stdout, fmt, args);
+        fwrite(buf, 1, avail, stdout);
     }
 
 #ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
-        vw_printw(stdscr, fmt, args);
+        addnstr(buf, avail);
     }
 #endif
 
-    va_end(args);
+    curcol += avail;
 }
 
 
@@ -123,9 +161,11 @@ void TUI_newline()
 #ifdef USE_NCURSES
     if(screenprintmode == SCREENPRINT_NCURSES)
     {
+        clrtoeol();
         printw("\n");
     }
 #endif
+    curcol = 0;
 }
 
 
@@ -454,6 +494,8 @@ errno_t TUI_inittermios(short unsigned int *wrowptr,
 
 void TUI_clearscreen(short unsigned int *wrowptr, short unsigned int *wcolptr)
 {
+    curcol = 0;
+
     if(screenprintmode == SCREENPRINT_STDIO)  // stdio mode
     {
         printf("\e[1;1H\e[2J");

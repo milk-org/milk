@@ -81,6 +81,7 @@ void *streamCTRL_scan(
         }
 
 
+
         // look for streams on filesystem
         // NBsindex is total nymber of streams found
         //
@@ -130,6 +131,11 @@ void *streamCTRL_scan(
         // Load into memory
         for(long sindex = 0; sindex < NBsindex; sindex++)
         {
+            if(streaminfo[sindex].erased == 1)
+            {
+                continue;
+            }
+
             imageID ID;
 
             //streaminfo[sindex].ISIOretval = IMAGESTREAMIO_FILEOPEN;
@@ -232,8 +238,27 @@ void *streamCTRL_scan(
                 imageID ID = streaminfo[sindex].ID;
                 if(ID != -1)
                 {
-                    ImageStreamIO_closeIm(&images[ID]);
+                    if(streaminfo[sindex].ISIOretval
+                            == IMAGESTREAMIO_SUCCESS)
+                    {
+                        ImageStreamIO_destroyIm(
+                            &images[ID]);
+                    }
+                    else
+                    {
+                        char fname[512];
+                        ImageStreamIO_filename(
+                            fname, sizeof(fname),
+                            streaminfo[sindex].sname);
+                        remove(fname);
+                        ImageStreamIO_closeIm(
+                            &images[ID]);
+                    }
                 }
+                // Reset so flag does not persist
+                // to a different stream after
+                // find_streams reshuffles indices
+                streaminfo[sindex].erased = 0;
             }
         }
 
