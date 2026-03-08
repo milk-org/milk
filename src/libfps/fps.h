@@ -1186,6 +1186,27 @@ int main(int argc, char *argv[]) { \
              snprintf(name_arg, sizeof(name_arg), " %s", command); \
         } \
         functionparameter_FPS_tmux_standalone_setup(fps_name); \
+        if (strcmp(command, "exec") == 0) { \
+            FUNCTION_PARAMETER_STRUCT fps; \
+            if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+                printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " "\033[33m" "NEW" COLORRESET "\n", fps_name); \
+                FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
+            } else { \
+                printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n", fps_name); \
+                function_parameter_struct_disconnect(&fps); \
+            } \
+            char run_arg[512] = ""; \
+            if (strcmp(fps_name, DEFAULT_FPS_NAME) != 0) { \
+                snprintf(run_arg, sizeof(run_arg), " %s:runstart", fps_name); \
+            } else { \
+                snprintf(run_arg, sizeof(run_arg), " runstart"); \
+            } \
+            if (use_procinfo) { \
+                strncat(run_arg, " -procinfo", sizeof(run_arg) - strlen(run_arg) - 1); \
+            } \
+            functionparameter_FPS_tmux_send_dispatch(fps_name, "runstart", path, run_arg); \
+            return 0; \
+        } \
         if (functionparameter_FPS_tmux_send_dispatch(fps_name, command, path, name_arg) == 0) { \
             return 0; \
         } \
@@ -1782,6 +1803,63 @@ int main(int argc, char *argv[]) { \
         } \
         functionparameter_FPS_tmux_standalone_setup( \
             fps_name); \
+        if (strcmp(command, "exec") == 0) { \
+            { \
+                FUNCTION_PARAMETER_STRUCT fc_; \
+                if (fps_name[0] != '_') { \
+                    if (function_parameter_struct_connect( \
+                            fps_name, &fc_, \
+                            FPSCONNECT_SIMPLE) \
+                        == -1) \
+                    { \
+                        printf("FPS " COLORCOMMAND \
+                               "%s" COLORRESET \
+                               " exec -> " \
+                               "\033[33m" "NEW" \
+                               COLORRESET "\n", \
+                               fps_name); \
+                        fps_generic_init(fps_name,\
+                            (FPS_APP_INFO *) \
+                            &(APP_INFO), \
+                            my_bindings_, \
+                            nb_bindings_, \
+                            use_procinfo); \
+                    } else { \
+                        printf("FPS " COLORCOMMAND \
+                               "%s" COLORRESET \
+                               " exec -> " \
+                               COLORCOMMAND \
+                               "REUSE" \
+                               COLORRESET "\n", \
+                               fps_name); \
+                        function_parameter_struct_disconnect( \
+                            &fc_); \
+                    } \
+                } \
+            } \
+            char run_arg[512] = ""; \
+            if (strcmp(fps_name, \
+                      (APP_INFO).fps_name) != 0)\
+            { \
+                snprintf(run_arg, \
+                         sizeof(run_arg), \
+                         " %s:runstart", \
+                         fps_name); \
+            } else { \
+                snprintf(run_arg, \
+                         sizeof(run_arg), \
+                         " runstart"); \
+            } \
+            if (use_procinfo) { \
+                strncat(run_arg, " -procinfo", \
+                        sizeof(run_arg) \
+                        - strlen(run_arg) - 1); \
+            } \
+            functionparameter_FPS_tmux_send_dispatch( \
+                fps_name, "runstart", path, \
+                run_arg); \
+            return 0; \
+        } \
         if (functionparameter_FPS_tmux_send_dispatch( \
                 fps_name, command, path, \
                 name_arg) == 0) { \

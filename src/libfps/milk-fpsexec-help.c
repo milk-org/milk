@@ -131,10 +131,19 @@ int main(void)
     printf(C_HDR "Quick Execution (No Workflow)\n"
            C_RST);
     printf(
-        "  Provide positional arguments to auto-"
-        "create the FPS, run, and exit:\n"
+        "  Use the " C_CMD "exec" C_RST
+        " command with positional arguments"
+        " to auto-create\n"
+        "  the FPS, run, and exit:\n"
         "    $ " C_CMD
-        "milk-fpsexec-clitest 42 cam01\n"
+        "milk-fpsexec-clitest exec 42 cam01\n"
+        C_RST
+        "  To use a local-only (non-shared)"
+        " FPS, prefix the name with "
+        C_BOLD "_" C_RST ":\n"
+        "    $ " C_CMD
+        "milk-fpsexec-clitest " C_FPS
+        "_myfps00" C_CMD ":exec 42 cam01\n"
         C_RST "\n");
 
     /* ---- tmux ---- */
