@@ -123,12 +123,13 @@ imageID functionparameter_LoadStream(
     if (ID >= 0)
     {
         printf(" -> \033[32mFOUND\033[0m"
-               " (ID %ld)",
+               " (ID %ld)\n",
                (long) ID);
     }
     else
     {
-        printf(" -> \033[33mNOT FOUND\033[0m");
+        printf(" -> \033[33mNOT FOUND\033[0m"
+               "\n");
     }
 
     /* Restore original flags */
@@ -138,7 +139,6 @@ imageID functionparameter_LoadStream(
     if (sp.loc == 'L' && ID >= 0 &&
         imLOC == STREAM_LOAD_SOURCE_SHAREMEM)
     {
-        printf("\n");
         printf("\033[1;31mFAILURE\033[0m:"
                " @L modifier — "
                "stream \"%s\" is in shared"
@@ -149,7 +149,6 @@ imageID functionparameter_LoadStream(
     if (sp.loc == 'S' && ID >= 0 &&
         imLOC == STREAM_LOAD_SOURCE_LOCALMEM)
     {
-        printf("\n");
         printf("\033[1;31mFAILURE\033[0m:"
                " @S modifier — "
                "stream \"%s\" is in local"
@@ -161,7 +160,6 @@ imageID functionparameter_LoadStream(
     /* must-exist check */
     if (sp.must_exist && ID == -1)
     {
-        printf("\n");
         printf("\033[1;31mFAILURE\033[0m:"
                " @E modifier — "
                "stream \"%s\""
