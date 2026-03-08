@@ -8,6 +8,7 @@
 #include "fps.h"
 #include "fps_internal.h"
 #include "TUItools.h"
+#include "fps_streamname_parse.h"
 #include "fpsCTRL_globals.h"
 
 #include "fpsCTRL_FPSdisplay.h"
@@ -231,7 +232,8 @@ errno_t fpsCTRL_FPSdisplay(
             if (fpsarray[fpsidx].parray[pidx].type == FPTYPE_STREAMNAME)
             {
                 IMAGE tmpimg;
-                if (ImageStreamIO_openIm(&tmpimg, fpsarray[fpsidx].parray[pidx].val.string[0]) == IMAGESTREAMIO_SUCCESS)
+                FPS_STREAMNAME_PARSED sp_sum = fps_streamname_parse(fpsarray[fpsidx].parray[pidx].val.string[0]);
+                if (ImageStreamIO_openIm(&tmpimg, sp_sum.name) == IMAGESTREAMIO_SUCCESS)
                 {
                     char stream_info[256];
                     char size_str[64];
@@ -518,11 +520,14 @@ errno_t fpsCTRL_FPSdisplay(
 
                         if (ptype == FPTYPE_STREAMNAME)
                         {
+                            FPS_STREAMNAME_PARSED sp_v =
+                                fps_streamname_parse(
+                                    valstring);
                             char shmpath[512];
                             snprintf(shmpath,
                                 sizeof(shmpath),
                                 "/milk/shm/%s.im.shm",
-                                valstring);
+                                sp_v.name);
                             if (stat(shmpath, &st) == 0)
                                 path_val_color = 2;
                             else

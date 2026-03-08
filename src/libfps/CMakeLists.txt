@@ -53,6 +53,7 @@ set(SOURCEFILES
     fps_read_fpsCMD_fifo.c
     fps_userinputsetparamvalue.c
     fps_loadmemstream_lite.c
+    fps_streamname_parse.c
     fps_local_store.c
     fps_cli_init.c
     fps_cli_function_registry.c
