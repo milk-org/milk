@@ -13,6 +13,7 @@
 #include "fps_connect.h"
 #include "fps_disconnect.h"
 #include "fps_outlog.h"
+#include "fps_streamname_parse.h"
 
 // Prototypes for functions provided by fps_loadmemstream_lite.c or other libfps files
 imageID COREMOD_IOFITS_LoadMemStream(const char *sname, uint64_t *streamflag, uint32_t *imLOC);
@@ -377,32 +378,69 @@ int functionparameter_CheckParameter(
     if((fpsentry->parray[pindex].type & FPTYPE_STREAMNAME))
     {
         uint32_t imLOC;
+
+        /* Strip @X: modifier prefix */
+        FPS_STREAMNAME_PARSED sp =
+            fps_streamname_parse(
+                fpsentry->parray[pindex]
+                    .val.string[0]);
+
         long     ID =
-            COREMOD_IOFITS_LoadMemStream(fpsentry->parray[pindex].val.string[0],
-                                         &(fpsentry->parray[pindex].fpflag),
-                                         &imLOC);
-        fpsentry->parray[pindex].info.stream.streamID = ID;
+            COREMOD_IOFITS_LoadMemStream(
+                sp.name,
+                &(fpsentry->parray[pindex].fpflag),
+                &imLOC);
+        fpsentry->parray[pindex]
+            .info.stream.streamID = ID;
 
         if(ID > -1)
         {
-            fpsentry->parray[pindex].info.stream.stream_sourceLocation = imLOC;
+            fpsentry->parray[pindex]
+                .info.stream
+                .stream_sourceLocation = imLOC;
             
-            // Use ImageStreamIO to get metadata without depending on CLIcore data.image
+            // Use ImageStreamIO to get metadata
             IMAGE tmpimg;
-            if (ImageStreamIO_openIm(&tmpimg, fpsentry->parray[pindex].val.string[0]) == IMAGESTREAMIO_SUCCESS)
+            if (ImageStreamIO_openIm(
+                    &tmpimg, sp.name)
+                == IMAGESTREAMIO_SUCCESS)
             {
-                fpsentry->parray[pindex].info.stream.stream_atype = tmpimg.md->datatype;
-                fpsentry->parray[pindex].info.stream.stream_naxis[0] = tmpimg.md->naxis;
-                fpsentry->parray[pindex].info.stream.stream_xsize[0] = tmpimg.md->size[0];
-                if(tmpimg.md->naxis > 1) {
-                    fpsentry->parray[pindex].info.stream.stream_ysize[0] = tmpimg.md->size[1];
-                } else {
-                    fpsentry->parray[pindex].info.stream.stream_ysize[0] = 1;
+                fpsentry->parray[pindex]
+                    .info.stream.stream_atype =
+                    tmpimg.md->datatype;
+                fpsentry->parray[pindex]
+                    .info.stream
+                    .stream_naxis[0] =
+                    tmpimg.md->naxis;
+                fpsentry->parray[pindex]
+                    .info.stream
+                    .stream_xsize[0] =
+                    tmpimg.md->size[0];
+                if(tmpimg.md->naxis > 1)
+                {
+                    fpsentry->parray[pindex]
+                        .info.stream
+                        .stream_ysize[0] =
+                        tmpimg.md->size[1];
                 }
-                if(tmpimg.md->naxis > 2) {
-                    fpsentry->parray[pindex].info.stream.stream_zsize[0] = tmpimg.md->size[2];
-                } else {
-                    fpsentry->parray[pindex].info.stream.stream_zsize[0] = 1;
+                else
+                {
+                    fpsentry->parray[pindex]
+                        .info.stream
+                        .stream_ysize[0] = 1;
+                }
+                if(tmpimg.md->naxis > 2)
+                {
+                    fpsentry->parray[pindex]
+                        .info.stream
+                        .stream_zsize[0] =
+                        tmpimg.md->size[2];
+                }
+                else
+                {
+                    fpsentry->parray[pindex]
+                        .info.stream
+                        .stream_zsize[0] = 1;
                 }
                 ImageStreamIO_closeIm(&tmpimg);
             }

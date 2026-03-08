@@ -261,12 +261,13 @@ static inline imageID imcreatelikewiseIMGID(
 
         if(reused)
         {
-            printf(", "
-                   "\033[32mRe-using\033[0m\n");
+            /* Image already exists with matching
+             * parameters — nothing to do.
+             */
         }
         else if(target_img != source_img)
         {
-            printf(", "
+            printf("  "
                    "\033[33mCreating\033[0m"
                    " from %s,"
                    " shared=%d, kw=%d\n",
@@ -276,7 +277,7 @@ static inline imageID imcreatelikewiseIMGID(
         }
         else
         {
-            printf(", "
+            printf("  "
                    "\033[33mCreating\033[0m"
                    " shared=%d, kw=%d\n",
                    source_img->mdt->shared,
@@ -298,8 +299,7 @@ static inline imageID imcreatelikewiseIMGID(
     }
     else
     {
-        printf(", "
-               "\033[32mRe-using\033[0m\n");
+        /* Image already resolved — nothing to do */
     }
     return target_img->ID;
 }
