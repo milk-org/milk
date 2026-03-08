@@ -280,6 +280,40 @@ errno_t fps_to_processinfo(
         }
     }
 
+    DEBUG_TRACEPOINT(
+        "set triggerdelay if applicable");
+    {
+        long pindex =
+            functionparameter_GetParamIndex(
+                fps,
+                ".procinfo.triggerdelay");
+        if(pindex > -1)
+        {
+            struct timespec *tsptr =
+                functionparameter_GetParamPtr_TIMESPEC(
+                    fps,
+                    ".procinfo.triggerdelay");
+            procinfo->triggerdelay = *tsptr;
+        }
+    }
+
+    DEBUG_TRACEPOINT(
+        "set triggertimeout if applicable");
+    {
+        long pindex =
+            functionparameter_GetParamIndex(
+                fps,
+                ".procinfo.triggertimeout");
+        if(pindex > -1)
+        {
+            struct timespec *tsptr =
+                functionparameter_GetParamPtr_TIMESPEC(
+                    fps,
+                    ".procinfo.triggertimeout");
+            procinfo->triggertimeout = *tsptr;
+        }
+    }
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

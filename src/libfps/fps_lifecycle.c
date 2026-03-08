@@ -185,6 +185,8 @@ int fps_generic_run(
             fps_name, fps, {});
     }
 
+    fflush(stdout);
+
     if (functionparameter_GetParamIndex(
             &fps, ".procinfo.enabled") != -1)
     {

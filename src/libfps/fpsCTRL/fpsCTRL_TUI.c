@@ -55,7 +55,8 @@ static short unsigned int wrow, wcol;
 inline static void
 fpsCTRLscreen_print_DisplayMode_status(
     int fpsCTRL_DisplayMode,
-    int NBfps
+    int NBfps,
+    int displayVerbose
 )
 {
     DEBUG_TRACE_FSTART();
@@ -80,7 +81,7 @@ fpsCTRLscreen_print_DisplayMode_status(
     }
     TUI_printfw("%s", monstring); // Simplified header
     screenprint_unsetbold();
-    TUI_printfw("\n");
+    TUI_newline();
 
 
 
@@ -132,7 +133,19 @@ fpsCTRLscreen_print_DisplayMode_status(
     {
         TUI_printfw("[F3] Sequencer");
     }
-    TUI_printfw("\n");
+    TUI_printfw("   ");
+
+    if(displayVerbose)
+    {
+        screenprint_setreverse();
+        TUI_printfw("[v/V] Verbose");
+        screenprint_unsetreverse();
+    }
+    else
+    {
+        TUI_printfw("[v/V] Verbose");
+    }
+    TUI_newline();
     DEBUG_TRACE_FEXIT();
 }
 
@@ -617,7 +630,8 @@ errno_t functionparameter_CTRLscreen(
 
             fpsCTRLscreen_print_DisplayMode_status(
                 fpsCTRLvar.fpsCTRL_DisplayMode,
-                fpsCTRLvar.NBfps);
+                fpsCTRLvar.NBfps,
+                fpsCTRLvar.fpsCTRL_DisplayVerbose);
 
             DEBUG_TRACEPOINT(" ");
 

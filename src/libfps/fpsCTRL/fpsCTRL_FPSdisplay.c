@@ -223,8 +223,8 @@ errno_t fpsCTRL_FPSdisplay(
 
         TUI_newline();
 
-        // 1-line summary for selected stream if resolved
-        int stream_summary_printed = 0;
+        // 1-line summary for selected parameter
+        int summary_printed = 0;
         if (keywnode[fpsCTRLvar->nodeSelected].leaf)
         {
             int fpsidx = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
@@ -252,16 +252,96 @@ errno_t fpsCTRL_FPSdisplay(
                              size_str,
                              tmpimg.md->cnt0);
                     
-                    screenprint_setcolor(2);
+                    int sumcolor = 2;
+                    if (sp_sum.must_new)
+                    {
+                        sumcolor = 4;
+                    }
+                    else if (sp_sum.loc == 'L')
+                    {
+                        sumcolor = 3;
+                    }
+                    screenprint_setcolor(sumcolor);
                     TUI_printfw("%s", stream_info);
-                    screenprint_unsetcolor(2);
+                    screenprint_unsetcolor(sumcolor);
                     TUI_newline();
-                    stream_summary_printed = 1;
+                    summary_printed = 1;
                     ImageStreamIO_closeIm(&tmpimg);
                 }
             }
+
+            /* Trigger mode description */
+            if (!summary_printed)
+            {
+                const char *kfull =
+                    fpsarray[fpsidx]
+                        .parray[pidx].keywordfull;
+                const char *needle = "triggermode";
+                int nlen = strlen(needle);
+                int klen = strlen(kfull);
+
+                if (klen >= nlen
+                    && strcmp(kfull + klen - nlen,
+                             needle) == 0)
+                {
+                    long tval =
+                        fpsarray[fpsidx]
+                            .parray[pidx]
+                            .val.i64[0];
+                    const char *tdesc;
+                    switch (tval)
+                    {
+                    case 0:
+                        tdesc = "IMMEDIATE"
+                            " -- run without"
+                            " waiting";
+                        break;
+                    case 1:
+                        tdesc = "CNT0"
+                            " -- wait for cnt0"
+                            " increment";
+                        break;
+                    case 2:
+                        tdesc = "CNT1"
+                            " -- wait for cnt1"
+                            " increment";
+                        break;
+                    case 3:
+                        tdesc = "SEMAPHORE"
+                            " -- wait for"
+                            " semaphore post";
+                        break;
+                    case 4:
+                        tdesc = "DELAY"
+                            " -- wait for"
+                            " fixed time delay";
+                        break;
+                    case 5:
+                        tdesc = "SEMAPHORE+"
+                            "TIMEOUT"
+                            " -- semaphore with"
+                            " timeout propagation";
+                        break;
+                    case 6:
+                        tdesc = "CNT2"
+                            " -- demand-driven"
+                            " (cnt0 < cnt2)";
+                        break;
+                    default:
+                        tdesc = "UNKNOWN";
+                        break;
+                    }
+                    screenprint_setcolor(2);
+                    TUI_printfw(
+                        "TRIGGER %ld: %s",
+                        tval, tdesc);
+                    screenprint_unsetcolor(2);
+                    TUI_newline();
+                    summary_printed = 1;
+                }
+            }
         }
-        if (!stream_summary_printed)
+        if (!summary_printed)
         {
             TUI_newline();
         }
@@ -528,10 +608,36 @@ errno_t fpsCTRL_FPSdisplay(
                                 sizeof(shmpath),
                                 "/milk/shm/%s.im.shm",
                                 sp_v.name);
-                            if (stat(shmpath, &st) == 0)
-                                path_val_color = 2;
-                            else
+                            int exists =
+                                (stat(shmpath,
+                                      &st) == 0);
+                            if (sp_v.loc == 'L')
+                            {
+                                path_val_color = 3;
+                            }
+                            else if (sp_v.must_new
+                                && exists)
+                            {
                                 path_val_color = 4;
+                            }
+                            else if (
+                                sp_v.must_exist
+                                && !exists)
+                            {
+                                path_val_color = 4;
+                            }
+                            else if (exists)
+                            {
+                                path_val_color = 2;
+                            }
+                            else if (sp_v.must_new)
+                            {
+                                path_val_color = 2;
+                            }
+                            else
+                            {
+                                path_val_color = 3;
+                            }
                             do_check = 1;
                         }
                         else if (ptype == FPTYPE_DIRNAME)
@@ -648,7 +754,25 @@ errno_t fpsCTRL_FPSdisplay(
             screenprint_unsetbold();
         }
     }
-    else TUI_printfw("NO FPS LOADED\n");
+    else
+    {
+        TUI_newline();
+        TUI_newline();
+        screenprint_setbold();
+        TUI_printfw(
+            "  NO FPS LOADED");
+        screenprint_unsetbold();
+        TUI_newline();
+        TUI_newline();
+        TUI_printfw(
+            "  Waiting for FPS shared"
+            " memory files ...");
+        TUI_newline();
+        TUI_printfw(
+            "  Press [s] to rescan,"
+            " [x] to exit");
+        TUI_newline();
+    }
 
     return RETURN_SUCCESS;
 }
