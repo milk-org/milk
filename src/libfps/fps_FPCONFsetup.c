@@ -3,6 +3,7 @@
  * @brief   FPS config setup
  */
 
+#include <stdlib.h>
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
@@ -43,7 +44,10 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
     {
-        printf("=== FPSINITCREATE NBparamMAX = %ld\n", NBparamMAX);
+        if (getenv("FPS_DEBUG"))
+            printf("=== FPSINITCREATE "
+                   "NBparamMAX = %ld\n",
+                   NBparamMAX);
         function_parameter_struct_create(NBparamMAX, fpsname);
         function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
     }
@@ -60,14 +64,22 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
         if(function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG) ==
                 -1)
         {
-            printf("DEBUG: [%s:%d] === FPS DOES NOT EXISTS -> CALLING CREATE\n", __FILE__, __LINE__);
+            if (getenv("FPS_DEBUG"))
+                printf("DEBUG: [%s:%d] "
+                       "FPS DOES NOT EXIST "
+                       "-> CREATE\n",
+                       __FILE__, __LINE__);
             int ret = function_parameter_struct_create(NBparamMAX, fpsname);
-            printf("DEBUG: [%s:%d] === CREATE RETURNED %d\n", __FILE__, __LINE__, ret);
+            if (getenv("FPS_DEBUG"))
+                printf("DEBUG: [%s:%d] "
+                       "CREATE RETURNED %d\n",
+                       __FILE__, __LINE__, ret);
             function_parameter_struct_connect(fpsname, &fps, FPSCONNECTFLAG);
         }
         else
         {
-            printf("=== FPS EXISTS\n");
+            if (getenv("FPS_DEBUG"))
+                printf("DEBUG: FPS EXISTS\n");
         }
     }
 

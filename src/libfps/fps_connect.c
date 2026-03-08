@@ -108,11 +108,6 @@ long function_parameter_struct_connect(
 
     if(fps->SMfd > 2)
     {
-        printf("[%s %s %d] File descriptor already allocated (%d) -> closing\n",
-               __FILE__,
-               __func__,
-               __LINE__,
-               fps->SMfd);
         close(fps->SMfd);
         fps->SMfd = 0;
     }
@@ -127,7 +122,6 @@ long function_parameter_struct_connect(
     SM_fd = open(SM_fname, O_RDWR);
     if(SM_fd == -1)
     {
-        printf("cannot connect to %s\n", SM_fname);
         return (-1);
     }
     else

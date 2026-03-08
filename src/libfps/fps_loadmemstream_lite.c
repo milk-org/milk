@@ -7,12 +7,21 @@
  * references to accessor globals defined in
  * fps_standalone_data.c (linked into standalone
  * executables only).
+ *
+ * Supports @X: prefix modifiers on stream names:
+ *   L  Only search local imarray (no SHM)
+ *   S  Force shared memory (default behavior)
+ *   E  Must exist (return -1 → caller error)
+ *   N  Must not exist (return -1 → caller error)
  */
 
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
+
 #include "fps.h"
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "fps_streamname_parse.h"
 
 /*
  * Module-local image array storage.
@@ -32,8 +41,40 @@ void milkfps_set_image_array(
 }
 
 /**
- * @brief Load a shared-memory stream, registering
- *        in the image array if available.
+ * @brief Search local imarray for a name.
+ *
+ * @param sname  Bare stream name
+ * @return imageID or -1 if not found
+ */
+static imageID find_in_local(const char *sname)
+{
+    IMAGE *imarray = milkfps_imarray;
+    long   nb_max  = milkfps_nb_max;
+
+    if (imarray == NULL || nb_max <= 0)
+    {
+        return -1;
+    }
+
+    for (long i = 0; i < nb_max; i++)
+    {
+        if (imarray[i].used == 1 &&
+            strncmp(imarray[i].name, sname,
+                    STRINGMAXLEN_IMAGE_NAME)
+                == 0)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Load a shared-memory stream, with @X:
+ *        prefix support.
+ *
+ * Parses the sname for an optional modifier prefix
+ * and adjusts load behavior accordingly.
  */
 imageID COREMOD_IOFITS_LoadMemStream(
     const char *sname,
@@ -53,36 +94,111 @@ imageID COREMOD_IOFITS_LoadMemStream(
         return -1;
     }
 
+    /* Parse prefix */
+    FPS_STREAMNAME_PARSED sp =
+        fps_streamname_parse(sname);
+
+    if (sp.error)
+    {
+        printf("ERROR: invalid stream modifier "
+               "in \"%s\"\n", sname);
+        return -1;
+    }
+
+    const char *name = sp.name;
+
     IMAGE *imarray = milkfps_imarray;
     long   nb_max  = milkfps_nb_max;
+
+    /* @N: must-not-exist check */
+    if (sp.must_new)
+    {
+        imageID existing = find_in_local(name);
+        if (existing >= 0)
+        {
+            printf("@N modifier: \"%s\" already "
+                   "exists locally (ID %ld)\n",
+                   name, (long) existing);
+            return -1;
+        }
+
+        if (imarray != NULL)
+        {
+            IMAGE tmpimg;
+            if (ImageStreamIO_openIm(
+                    &tmpimg, name)
+                == IMAGESTREAMIO_SUCCESS)
+            {
+                ImageStreamIO_closeIm(&tmpimg);
+                printf("@N modifier: \"%s\" "
+                       "exists in SHM\n", name);
+                return -1;
+            }
+        }
+    }
+
+    /* @L: local-only — skip SHM */
+    if (sp.loc == 'L')
+    {
+        imageID id = find_in_local(name);
+        if (id >= 0)
+        {
+            *imLOC =
+                STREAM_LOAD_SOURCE_LOCALMEM;
+        }
+        else if (sp.must_exist)
+        {
+            printf("@LE modifier: \"%s\" not "
+                   "found in local memory\n",
+                   name);
+        }
+        return id;
+    }
+
+    /* Default / @S: shared memory path */
 
     if (imarray == NULL || nb_max <= 0)
     {
         /*
          * No image array (pure library context).
-         * Just check existence.
+         * Just check SHM existence.
          */
         IMAGE tmpimg;
-        if (ImageStreamIO_openIm(&tmpimg, sname)
+        if (ImageStreamIO_openIm(&tmpimg, name)
             == IMAGESTREAMIO_SUCCESS)
         {
             *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             ImageStreamIO_closeIm(&tmpimg);
+
+            if (sp.must_exist == 0)
+            {
+                return 0;
+            }
             return 0;
+        }
+        if (sp.must_exist)
+        {
+            printf("@E modifier: \"%s\" not "
+                   "found in SHM\n", name);
         }
         return -1;
     }
 
-    /* Check if already loaded */
-    for (long i = 0; i < nb_max; i++)
+    /* Check if already loaded locally */
+    if (sp.loc != 'S')
     {
-        if (imarray[i].used == 1 &&
-            strncmp(imarray[i].name, sname,
-                    STRINGMAXLEN_IMAGE_NAME)
-                == 0)
+        /* Default: check local first */
+        for (long i = 0; i < nb_max; i++)
         {
-            *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
-            return i;
+            if (imarray[i].used == 1 &&
+                strncmp(imarray[i].name, name,
+                        STRINGMAXLEN_IMAGE_NAME)
+                    == 0)
+            {
+                *imLOC =
+                    STREAM_LOAD_SOURCE_SHAREMEM;
+                return i;
+            }
         }
     }
 
@@ -101,16 +217,41 @@ imageID COREMOD_IOFITS_LoadMemStream(
         return -1;
     }
 
+    /* Check SHM file exists before trying to open
+     * (avoids spurious WARNING from ImageStreamIO
+     *  for output streams not yet created) */
+    {
+        char shmpath[512];
+        snprintf(shmpath, sizeof(shmpath),
+                 "/milk/shm/%s.im.shm", name);
+        if (access(shmpath, F_OK) != 0)
+        {
+            /* SHM file does not exist */
+            if (sp.must_exist)
+            {
+                printf("@E modifier: \"%s\" "
+                       "not found\n", name);
+            }
+            return -1;
+        }
+    }
+
     /* Open stream into the slot */
     if (ImageStreamIO_openIm(
-            &imarray[slot], sname)
+            &imarray[slot], name)
             == IMAGESTREAMIO_SUCCESS)
     {
         imarray[slot].used = 1;
-        strncpy(imarray[slot].name, sname,
+        strncpy(imarray[slot].name, name,
                 STRINGMAXLEN_IMAGE_NAME - 1);
         *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
         return slot;
+    }
+
+    if (sp.must_exist)
+    {
+        printf("@E modifier: \"%s\" not found\n",
+               name);
     }
 
     return -1;

@@ -44,7 +44,11 @@ errno_t function_parameter_struct_create(
     }
     remove(SM_fname);
 
-    printf("DEBUG: [%s:%d] Creating file %s, holding NBparamMAX = %d\n", __FILE__, __LINE__, SM_fname, NBparamMAX);
+    if (getenv("FPS_DEBUG"))
+        printf("DEBUG: [%s:%d] Creating file %s, "
+               "NBparamMAX = %d\n",
+               __FILE__, __LINE__,
+               SM_fname, NBparamMAX);
     fflush(stdout);
 
     sharedsize = sizeof(FUNCTION_PARAMETER_STRUCT_MD);

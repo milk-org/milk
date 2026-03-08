@@ -204,6 +204,17 @@ static char
  *               FPTYPE_FPSNAME,
  *               FPTYPE_STRING_NOT_STREAM
  *
+ *               For FPTYPE_STREAMNAME, the value
+ *               string may carry an @X: prefix to
+ *               control load/create behavior:
+ *                 @L:name  Local memory only
+ *                 @S:name  Force shared memory
+ *                 @F:name  Load from FITS conf
+ *                 @E:name  Must exist (error if not)
+ *                 @N:name  Must not exist (error if)
+ *               Modifiers are stackable: @LE:name
+ *               See: milk-stream-help for details.
+ *
  *   is_primary  1 if this parameter is a primary CLI
  *               argument (positional), 0 otherwise.
  *               Primary args are passed positionally

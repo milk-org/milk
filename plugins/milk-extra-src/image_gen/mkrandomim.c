@@ -23,7 +23,6 @@ static char     outim_name[FUNCTION_PARAMETER_STRMAXLEN]
     = "outim";
 static uint32_t outim_xsize  = 256;
 static uint32_t outim_ysize  = 256;
-static uint32_t outim_shared = 0;
 static uint32_t distrib_val  = 0;
 
 
@@ -44,10 +43,6 @@ static uint32_t distrib_val  = 0;
       FPTYPE_UINT32, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "y size") \
-    X(".outim.shared", &outim_shared, \
-      FPTYPE_UINT32, 0, \
-      FPFLAG_DEFAULT_INPUT, \
-      "shared flag") \
     X(".distrib", &distrib_val, \
       FPTYPE_UINT32, 0, \
       FPFLAG_DEFAULT_INPUT, \
@@ -169,12 +164,9 @@ static errno_t compute_function()
 
     DEBUG_TRACEPOINT("make IMGID for %s",
                      outim_name);
+
     IMGID img = imgid_make_from_name_2D(
         outim_name, outim_xsize, outim_ysize);
-    img.mdt->shared = outim_shared;
-
-    // Create image if needed
-    imcreateIMGID(&img);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

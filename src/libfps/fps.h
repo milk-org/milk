@@ -793,6 +793,8 @@ int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 #endif
 #ifndef COLORNORMAL
 #define COLORNORMAL    "\033[0;37m" // normal text
+
+#define COLORERROR     "\033[31m"   // error: red
 #endif
 
 // Helper for X_HELP_PRINT to extract the first argument from variadic args
@@ -1115,7 +1117,8 @@ int main(int argc, char *argv[]) { \
         fprintf(stderr, "Error: Missing command argument.\n"); \
         return 1; \
     } \
-    printf("FPS [" COLORCOMMAND "%s" COLORRESET "] cmd: %s\n", fps_name, command); \
+    if (strcmp(command, "exec") != 0) \
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " %s\n", fps_name, command); \
     if (strcmp(command, "fps") == 0) { \
         FUNCTION_PARAMETER_STRUCT fps; \
         if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
@@ -1225,13 +1228,15 @@ int main(int argc, char *argv[]) { \
             } \
         } \
         function_parameter_struct_disconnect(&fps); \
-        printf("FPS [" COLORCOMMAND "%s" COLORRESET "] parameters updated.\n", fps_name); \
+        printf("FPS " COLORCOMMAND "%s" COLORRESET " set done\n", fps_name); \
         return 0; \
     } else if (strcmp(command, "exec") == 0) { \
         FUNCTION_PARAMETER_STRUCT fps; \
         if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
+            printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " "\033[33m" "NEW" COLORRESET "\n", fps_name); \
             FPSINIT_##FUNC_PREFIX(fps_name, keywords, description); \
         } else { \
+            printf("FPS " COLORCOMMAND "%s" COLORRESET " exec -> " COLORCOMMAND "REUSE" COLORRESET "\n", fps_name); \
             function_parameter_struct_disconnect(&fps); \
         } \
         return FPSRUN_##FUNC_PREFIX(fps_name); \
@@ -1508,7 +1513,13 @@ int main(int argc, char *argv[]) { \
             strcmp(command, "exec") != 0 && \
             strcmp(command, "set") != 0 && \
             strcmp(command, "run") != 0) { \
-            command = "run"; \
+            fprintf(stderr, \
+                    COLORERROR "Error:" \
+                    COLORRESET " '%s' is not a" \
+                    " valid command. Run with" \
+                    " -h for help.\n", \
+                    command); \
+            return 1; \
         } \
     } \
     if (strlen(arg_fps_name) > 0) { \
@@ -1659,9 +1670,10 @@ int main(int argc, char *argv[]) { \
                 "command argument.\n"); \
         return 1; \
     } \
-    printf("FPS [" COLORCOMMAND "%s" \
-           COLORRESET "] cmd: %s\n", \
-           fps_name, command); \
+    if (strcmp(command, "exec") != 0) \
+        printf("FPS " COLORCOMMAND "%s" \
+               COLORRESET " %s\n", \
+               fps_name, command); \
     if (strcmp(command, "fps") == 0) { \
         FUNCTION_PARAMETER_STRUCT fps; \
         if (function_parameter_struct_connect( \
@@ -1815,9 +1827,9 @@ int main(int argc, char *argv[]) { \
             my_bindings_, nb_bindings_); \
         function_parameter_struct_disconnect( \
             &fps); \
-        printf("FPS [" COLORCOMMAND "%s" \
-               COLORRESET "] parameters" \
-               " updated.\n", fps_name); \
+        printf("FPS " COLORCOMMAND "%s" \
+               COLORRESET " set done\n", \
+               fps_name); \
         return 0; \
     } else if (strcmp(command, "exec") == 0) { \
         /* Auto-init if FPS doesn't exist yet, \
@@ -1830,11 +1842,23 @@ int main(int argc, char *argv[]) { \
                         fps_name, &fps_chk_, \
                         FPSCONNECT_SIMPLE) == -1) \
                 { \
+                    printf("FPS " COLORCOMMAND \
+                           "%s" COLORRESET \
+                           " exec -> " \
+                           "\033[33m" "NEW" \
+                           COLORRESET "\n", \
+                           fps_name); \
                     fps_generic_init(fps_name, \
                         (FPS_APP_INFO *)&(APP_INFO), \
                         my_bindings_, nb_bindings_, \
                         use_procinfo); \
                 } else { \
+                    printf("FPS " COLORCOMMAND \
+                           "%s" COLORRESET \
+                           " exec -> " \
+                           COLORCOMMAND "REUSE" \
+                           COLORRESET "\n", \
+                           fps_name); \
                     function_parameter_struct_disconnect( \
                         &fps_chk_); \
                 } \
@@ -1893,7 +1917,6 @@ int main(int argc, char *argv[]) { \
  * @brief Standard initialization preamble for FPSINIT function
  */
 #define FPS_INIT_STD_PREAMBLE(VARfps, VARfps_name, VARkeywords, VARdescription, VARhelptext) \
-    printf("Initializing FPS '%s'...\n", VARfps_name); \
     (VARfps) = function_parameter_FPCONFsetup(VARfps_name, FPSCMDCODE_FPSINIT); \
     strncpy((VARfps).md->sourcefname, __FILE__, FPS_SRCDIR_STRLENMAX - 1); \
     (VARfps).md->sourceline = __LINE__; \

@@ -8,6 +8,8 @@
 #include <termios.h>
 #include <regex.h>
 
+#include "CLIcore/multiselect_parse.h"
+
 #include "fps.h"
 #include "fps_FPSremove.h"
 
@@ -16,12 +18,89 @@ void print_help(const char *progname) {
     printf("Remove a Function Parameter Structure (FPS).\n");
     printf("\n");
     printf("If no FPS name is given, lists existing FPS instances\n");
-    printf("and prompts for selection. A regex can be provided to\n");
-    printf("filter the list.\n");
+    printf("and prompts for selection. Multiple items can be\n");
+    printf("selected using numbers, ranges, or 'all' (e.g. 1 3 5-7).\n");
+    printf("A regex can be provided to filter the list.\n");
     printf("\n");
     printf("Options:\n");
     printf("  -v, --verbose   Verbose mode\n");
     printf("  -h, --help      Show this help message\n");
+}
+
+/**
+ * remove_fps() - Remove a single FPS by name
+ * @name:    FPS name
+ * @verbose: extra output if true
+ *
+ * Connects, checks for running processes,
+ * removes, disconnects.  Returns 0 on success.
+ */
+static int remove_fps(
+    const char *name,
+    int         verbose)
+{
+    FUNCTION_PARAMETER_STRUCT fps;
+
+    fps.SMfd = -1;
+
+    if (function_parameter_struct_connect(
+            name, &fps, 0) == -1)
+    {
+        fprintf(stderr,
+                "Error: cannot connect to"
+                " FPS '%s'.\n", name);
+        return 1;
+    }
+
+    int running = 0;
+
+    if (fps.md->status
+        & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
+    {
+        if (kill(fps.md->confpid, 0) == 0) {
+            fprintf(stderr,
+                    "Error: conf process"
+                    " (PID %d) running"
+                    " for '%s'.\n",
+                    (int) fps.md->confpid,
+                    name);
+            running = 1;
+        }
+    }
+    if (fps.md->status
+        & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
+    {
+        if (kill(fps.md->runpid, 0) == 0) {
+            fprintf(stderr,
+                    "Error: run process"
+                    " (PID %d) running"
+                    " for '%s'.\n",
+                    (int) fps.md->runpid,
+                    name);
+            running = 1;
+        }
+    }
+
+    if (running) {
+        fprintf(stderr,
+                "Abort: stop processes"
+                " before removing '%s'.\n",
+                name);
+        function_parameter_struct_disconnect(
+            &fps);
+        return 1;
+    }
+
+    if (verbose) {
+        printf("Removing FPS '%s'...\n",
+               name);
+    }
+
+    functionparameter_FPSremove(&fps);
+    function_parameter_struct_disconnect(&fps);
+    printf("FPS '%s' removed.\n", name);
+
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -52,9 +131,6 @@ int main(int argc, char *argv[])
                 return 1;
         }
     }
-
-    char fpsname_buf[256];
-    const char *fpsname = NULL;
 
     const char *pattern = NULL;
     regex_t regex;
@@ -133,132 +209,139 @@ int main(int argc, char *argv[])
         }
 
         if (pattern != NULL && matched_count == 1) {
-            // Exactly one match and an argument was passed, remove it without interactive prompt
-            strncpy(fpsname_buf, names[0], sizeof(fpsname_buf) - 1);
-            fpsname_buf[sizeof(fpsname_buf) - 1] = '\0';
-            fpsname = fpsname_buf;
-        } else {
-            // Interactive Selection
-            printf("\n  FPS instances:\n\n");
-            for (int i = 0; i < matched_count; i++) {
-                printf("  %3d  %s\n", i + 1, names[i]);
+            /* Exactly one match for a CLI arg:
+             * remove without interactive prompt */
+            int rc = remove_fps(
+                names[0], verbose);
+            for (int i = 0;
+                 i < matched_count; i++)
+            {
+                free(names[i]);
             }
-
-            printf("\n  Enter number to remove"
-                   " (0 to cancel): ");
-        fflush(stdout);
-
-        /* Ensure terminal is in canonical mode with CR->NL
-         * translation so ENTER works correctly in all
-         * contexts (tmux, pty, etc.).
-         */
-        struct termios old_term;
-        int is_tty = isatty(STDIN_FILENO);
-        if (is_tty) {
-            tcgetattr(STDIN_FILENO, &old_term);
-            struct termios t = old_term;
-            t.c_lflag |= (ICANON | ECHO);
-            t.c_iflag |= ICRNL;
-            tcsetattr(STDIN_FILENO, TCSANOW, &t);
+            free(names);
+            if (use_regex) {
+                regfree(&regex);
+            }
+            return rc;
         }
 
-        char linebuf[64];
+        /* Interactive multi-select */
+        printf("\n  FPS instances:\n\n");
+        for (int i = 0;
+             i < matched_count; i++)
+        {
+            printf("  %3d  %s\n",
+                   i + 1, names[i]);
+        }
+
+        printf("\n  Enter number(s) to remove"
+               " (e.g. 1 3 5-7, 'all',"
+               " 0 to cancel): ");
+        fflush(stdout);
+
+        struct termios old_term;
+        int is_tty = isatty(STDIN_FILENO);
+
+        if (is_tty) {
+            tcgetattr(STDIN_FILENO,
+                      &old_term);
+            struct termios t = old_term;
+
+            t.c_lflag |= (ICANON | ECHO);
+            t.c_iflag |= ICRNL;
+            tcsetattr(STDIN_FILENO,
+                      TCSANOW, &t);
+        }
+
+        char linebuf[512];
         int fgets_ok =
             (fgets(linebuf, sizeof(linebuf),
                    stdin) != NULL);
 
         if (is_tty) {
-            tcsetattr(STDIN_FILENO, TCSANOW,
-                      &old_term);
+            tcsetattr(STDIN_FILENO,
+                      TCSANOW, &old_term);
         }
 
         if (!fgets_ok) {
             printf("Cancelled.\n");
-            for (int i = 0; i < matched_count; i++) {
+            for (int i = 0;
+                 i < matched_count; i++)
+            {
                 free(names[i]);
             }
             free(names);
-            if(use_regex) regfree(&regex);
+            if (use_regex) {
+                regfree(&regex);
+            }
             return 0;
         }
 
-        /* Strip trailing \r and \n */
+        /* Strip trailing \r \n */
         {
-            char *p = linebuf + strlen(linebuf);
-            while (p > linebuf &&
-                   (*(p-1) == '\n' || *(p-1) == '\r'))
+            char *p =
+                linebuf + strlen(linebuf);
+
+            while (p > linebuf
+                   && (*(p - 1) == '\n'
+                       || *(p - 1) == '\r'))
             {
                 *(--p) = '\0';
             }
         }
 
-        int sel = atoi(linebuf);
-        if (sel < 1 || sel > matched_count) {
+        int *selected =
+            calloc(matched_count, sizeof(int));
+        int nsel = parse_multiselect(
+            linebuf, selected, matched_count);
+
+        if (nsel <= 0) {
             printf("Cancelled.\n");
-            for (int i = 0; i < matched_count; i++) {
+            free(selected);
+            for (int i = 0;
+                 i < matched_count; i++)
+            {
                 free(names[i]);
             }
             free(names);
-            if(use_regex) regfree(&regex);
+            if (use_regex) {
+                regfree(&regex);
+            }
             return 0;
         }
 
-        strncpy(fpsname_buf, names[sel - 1],
-                sizeof(fpsname_buf) - 1);
-        fpsname_buf[sizeof(fpsname_buf) - 1] = '\0';
-        fpsname = fpsname_buf;
+        int errors = 0;
 
+        for (int i = 0;
+             i < matched_count; i++)
+        {
+            if (selected[i]) {
+                errors += remove_fps(
+                    names[i], verbose);
+            }
         }
 
-        for (int i = 0; i < matched_count; i++) {
+        free(selected);
+        for (int i = 0;
+             i < matched_count; i++)
+        {
             free(names[i]);
         }
         free(names);
-    } 
 
-    if (use_regex) regfree(&regex);
-
-    FUNCTION_PARAMETER_STRUCT fps;
-    fps.SMfd = -1;
-
-    if (function_parameter_struct_connect(fpsname, &fps, 0) == -1) {
-        fprintf(stderr, "Error: cannot connect to FPS '%s'. It may not exist.\n", fpsname);
-        return 1;
-    }
-
-
-    // Safety check: ensure no active processes are using this FPS
-    int running = 0;
-    if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CONF) {
-        if (kill(fps.md->confpid, 0) == 0) {
-            fprintf(stderr, "Error: Configuration process (PID %d) is still running for FPS '%s'.\n", 
-                    (int)fps.md->confpid, fpsname);
-            running = 1;
+        if (use_regex) {
+            regfree(&regex);
         }
-    }
-    if (fps.md->status & FUNCTION_PARAMETER_STRUCT_STATUS_RUN) {
-        if (kill(fps.md->runpid, 0) == 0) {
-            fprintf(stderr, "Error: Run process (PID %d) is still running for FPS '%s'.\n", 
-                    (int)fps.md->runpid, fpsname);
-            running = 1;
+
+        if (errors > 0) {
+            fprintf(stderr,
+                    "%d FPS(es) failed"
+                    " to remove.\n",
+                    errors);
+            return 1;
         }
+        return 0;
     }
-
-    if (running) {
-        fprintf(stderr, "Abort: Please stop these processes before removing the FPS.\n");
-        function_parameter_struct_disconnect(&fps);
-        return 1;
-    }
-
-    if (verbose) {
-        printf("Removing FPS '%s'...\n", fpsname);
-    }
-
-    functionparameter_FPSremove(&fps);
-
-    function_parameter_struct_disconnect(&fps);
-
-    printf("FPS '%s' removed.\n", fpsname);
 
     return 0;
 }
