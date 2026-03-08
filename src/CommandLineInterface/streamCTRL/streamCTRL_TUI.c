@@ -201,24 +201,13 @@ static errno_t streamCTRL_keyinput_process(
     case ctrl('e'): // erase stream
         if(sTUIparam.dindexSelected >= 0)
         {
-            sindex = sTUIparam.ssindex[sTUIparam.dindexSelected];
-            DEBUG_TRACEPOINT("removing stream sindex = %ld", sindex);
-
-            if(streamCTRLdata->sinfo[sindex].ISIOretval == IMAGESTREAMIO_SUCCESS)
-            {
-                ImageStreamIO_destroyIm(
-                    &streamCTRLdata->images[streamCTRLdata->sinfo[sindex].ID]);
-            }
-            else
-            {
-                char fname[512];
-                ImageStreamIO_filename(fname, sizeof(fname),
-                                       streamCTRLdata->sinfo[sindex].sname);
-                remove(fname);
-            }
+            sindex =
+                sTUIparam.ssindex[
+                    sTUIparam.dindexSelected];
+            // Flag for removal by scan thread
+            // Actual destroy happens in scan
+            // thread to avoid race condition
             streamCTRLdata->sinfo[sindex].erased = 1;
-
-            DEBUG_TRACEPOINT("%d", sTUIparam.dindexSelected);
         }
         break;
 
@@ -530,6 +519,10 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT("loop start");
 
         int NBsinfodisp = wrow - 7;
+        if(NBsinfodisp < 1)
+        {
+            NBsinfodisp = 1;
+        }
 
         if(streaminfoproc.loopcnt == 1)
         {
@@ -945,17 +938,51 @@ errno_t streamCTRL_CTRLscreen()
             DEBUG_TRACEPOINT(" ");
 
             // compute doffsetindex
-
-            while(sTUIparam.dindexSelected - doffsetindex >
-                    NBsinfodisp - 5) // scroll down
+            // Clamp scroll margins for small terminals
             {
-                doffsetindex++;
+                int margin_dn = 5;
+                int margin_up = 10;
+
+                if(margin_dn >= NBsinfodisp)
+                {
+                    margin_dn = NBsinfodisp - 1;
+                }
+                if(margin_dn < 0)
+                {
+                    margin_dn = 0;
+                }
+                if(margin_up >= NBsinfodisp)
+                {
+                    margin_up = NBsinfodisp - 1;
+                }
+                if(margin_up < 0)
+                {
+                    margin_up = 0;
+                }
+
+                while(sTUIparam.dindexSelected - doffsetindex >
+                        NBsinfodisp - 1 - margin_dn)
+                {
+                    doffsetindex++;
+                }
+
+                while(sTUIparam.dindexSelected <
+                        doffsetindex + margin_up)
+                {
+                    doffsetindex--;
+                }
             }
 
-            while(sTUIparam.dindexSelected - doffsetindex <
-                    NBsinfodisp - 10) // scroll up
+            // Ensure selected item is always visible
+            if(sTUIparam.dindexSelected < doffsetindex)
             {
-                doffsetindex--;
+                doffsetindex = sTUIparam.dindexSelected;
+            }
+            if(sTUIparam.dindexSelected >=
+                    doffsetindex + NBsinfodisp)
+            {
+                doffsetindex =
+                    sTUIparam.dindexSelected - NBsinfodisp + 1;
             }
 
             if(doffsetindex < 0)
@@ -1005,8 +1032,8 @@ errno_t streamCTRL_CTRLscreen()
 
                 DEBUG_TRACEPOINT(" ");
 
-                if((dindex > doffsetindex - 1) &&
-                        (dindex < NBsinfodisp - 1 + doffsetindex))
+                if((dindex >= doffsetindex) &&
+                        (dindex < NBsinfodisp + doffsetindex))
                 {
                     DisplayFlag = 1;
                 }

@@ -217,20 +217,22 @@ static inline imageID imcreatelikewiseIMGID(
 {
     if(target_img->ID == -1)
     {
-        if(target_img != source_img)
+        /* Save createcnt of existing image (if
+         * any) so we can detect re-create vs
+         * re-use after the create_image_ID call.
+         */
+        imageID old_id = image_ID(
+            target_img->name,
+            data.image,
+            data.NB_MAX_IMAGE);
+        uint64_t old_createcnt = 0;
+        int existed = 0;
+
+        if(old_id != -1)
         {
-            printf("Creating image %s from %s, shared = %d, kw = %d\n",
-                   target_img->name,
-                   source_img->name,
-                   source_img->mdt->shared,
-                   source_img->mdt->NBkw);
-        }
-        else
-        {
-            printf("Creating image %s, shared = %d, kw = %d\n",
-                   source_img->name,
-                   source_img->mdt->shared,
-                   source_img->mdt->NBkw);
+            existed = 1;
+            old_createcnt =
+                data.image[old_id].createcnt;
         }
 
         DEBUG_TRACEPOINT("Creating 2D image");
@@ -243,20 +245,61 @@ static inline imageID imcreatelikewiseIMGID(
                         source_img->mdt->CBsize,
                         &target_img->ID);
         DEBUG_TRACEPOINT(" ");
-        target_img->im        = &data.image[target_img->ID];
-        target_img->md        = &data.image[target_img->ID].md[0];
-        target_img->createcnt = data.image[target_img->ID].createcnt;
+        target_img->im        =
+            &data.image[target_img->ID];
+        target_img->md        =
+            &data.image[target_img->ID].md[0];
+        target_img->createcnt =
+            data.image[target_img->ID].createcnt;
 
+        /* Determine if image was re-used or
+         * (re-)created by comparing createcnt.
+         */
+        int reused = (existed
+            && target_img->createcnt
+               == old_createcnt);
 
-        target_img->mdt->size[0] = source_img->mdt->size[0];
+        if(reused)
+        {
+            printf(", "
+                   "\033[32mRe-using\033[0m\n");
+        }
+        else if(target_img != source_img)
+        {
+            printf(", "
+                   "\033[33mCreating\033[0m"
+                   " from %s,"
+                   " shared=%d, kw=%d\n",
+                   source_img->name,
+                   source_img->mdt->shared,
+                   source_img->mdt->NBkw);
+        }
+        else
+        {
+            printf(", "
+                   "\033[33mCreating\033[0m"
+                   " shared=%d, kw=%d\n",
+                   source_img->mdt->shared,
+                   source_img->mdt->NBkw);
+        }
+
+        target_img->mdt->size[0] =
+            source_img->mdt->size[0];
         if(source_img->mdt->naxis > 1)
         {
-            target_img->mdt->size[1] = source_img->mdt->size[1];
+            target_img->mdt->size[1] =
+                source_img->mdt->size[1];
         }
         if(source_img->mdt->naxis > 2)
         {
-            target_img->mdt->size[2] = source_img->mdt->size[2];
+            target_img->mdt->size[2] =
+                source_img->mdt->size[2];
         }
+    }
+    else
+    {
+        printf(", "
+               "\033[32mRe-using\033[0m\n");
     }
     return target_img->ID;
 }
