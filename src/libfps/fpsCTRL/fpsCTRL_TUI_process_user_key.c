@@ -67,6 +67,11 @@ int fpsCTRL_TUI_process_user_key(
              fpsCTRLvar->fpsCTRL_DisplayMode++;
              if (fpsCTRLvar->fpsCTRL_DisplayMode > 4) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
         }
+        else if (ch == 'v' || ch == 'V')
+        {
+            fpsCTRLvar->fpsCTRL_DisplayVerbose =
+                !fpsCTRLvar->fpsCTRL_DisplayVerbose;
+        }
 
         switch(ch)
         {
@@ -431,12 +436,6 @@ int fpsCTRL_TUI_process_user_key(
             }
             break;
         
-        case 'v':
-            fpsCTRLvar->fpsCTRL_DisplayVerbose = 0;
-            break;
-        case 'V':
-            fpsCTRLvar->fpsCTRL_DisplayVerbose = 1;
-            break;
         }
     }
 

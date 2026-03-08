@@ -148,7 +148,18 @@ void TUI_printfw(const char *fmt, ...)
     }
 #endif
 
-    curcol += avail;
+    // Update curcol, resetting on newlines
+    for(int i = 0; i < avail; i++)
+    {
+        if(buf[i] == '\n')
+        {
+            curcol = 0;
+        }
+        else
+        {
+            curcol++;
+        }
+    }
 }
 
 
