@@ -1,0 +1,10 @@
+# Doxyfile 1.9.1
+
+PROJECT_NAME           = "milk"
+OUTPUT_DIRECTORY       = docs/doxygen
+INPUT                  = src plugins
+RECURSIVE              = YES
+EXTRACT_ALL            = YES
+GENERATE_LATEX         = NO
+USE_MDFILE_AS_MAINPAGE = README.md
+OPTIMIZE_OUTPUT_FOR_C  = YES
