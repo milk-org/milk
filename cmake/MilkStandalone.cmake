@@ -21,7 +21,7 @@
 
 # Shared source file for FPS standalone data storage
 set(FPS_STANDALONE_DATA_SRC
-    "${PROJECT_SOURCE_DIR}/src/libfps/fps_standalone_data.c")
+    "${PROJECT_SOURCE_DIR}/src/engine/libfps/fps_standalone_data.c")
 
 # Common link set for all standalone executables
 set(_MILK_STANDALONE_LIBS

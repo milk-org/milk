@@ -475,7 +475,7 @@ typedef const char *CONST_WORD;
 typedef const char *__restrict CONST_WORD;
 #endif
 
-#include "CommandLineInterface/IMGID.h"
+#include "CLIcore/IMGID.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #define CLICMD_FIELDS_FPSPROC          \

@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     int opt;
 
     // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
-    ImageStreamIO_set_verbosity(0);
+    // ImageStreamIO_set_verbosity(0);
 
     static struct option long_options[] = {
         {"help",       no_argument,       0, 'h'},

@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     char fifoname[512] = "";
 
     // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
-    ImageStreamIO_set_verbosity(0);
+    // ImageStreamIO_set_verbosity(0);
 
     // Install crash handlers to ensure terminal settings are restored
     signal(SIGSEGV, fpsCTRL_crash_handler);
