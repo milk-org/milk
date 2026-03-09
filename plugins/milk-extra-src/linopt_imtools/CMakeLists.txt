@@ -40,6 +40,9 @@ set(LINKLIBS
 	CLIcore
 )
 
+if(GSL_FOUND)
+    list(APPEND LINKLIBS ${GSL_LIBRARIES})
+endif()
 
 
 # DEFAULT SETTINGS
@@ -57,7 +60,7 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-											$<INSTALL_INTERFACE:include>)
+												$<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
 
@@ -65,9 +68,14 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 add_milk_standalone(linopt-SVDdecomp compute_SVDdecomp.c)
+target_link_libraries(milk-fpsexec-linopt-SVDdecomp PUBLIC ${OPENBLAS_LIBRARIES} lapacke)
+
 add_milk_standalone(linopt-SVDpInverse compute_SVDpseudoInverse.c)
+target_link_libraries(milk-fpsexec-linopt-SVDpInverse PUBLIC ${OPENBLAS_LIBRARIES} lapacke)
+
 add_milk_standalone(linopt-imgconstruct image_construct.c)
 add_milk_standalone(linopt-imgFitModes image_fitModes.c)
+target_link_libraries(milk-fpsexec-linopt-imgFitModes PUBLIC ${OPENBLAS_LIBRARIES})
 add_milk_standalone(linopt-img2vec image_to_vec.c)
 add_milk_standalone(linopt-imcXprod imcube_crossproduct.c)
 add_milk_standalone(linopt-lin1Dfit lin1Dfit.c)
@@ -76,3 +84,4 @@ add_milk_standalone(linopt-mkCPAmodes makeCPAmodes.c)
 add_milk_standalone(linopt-mkCosRadModes makeCosRadModes.c)
 add_milk_standalone(linopt-mask2pixtab mask_to_pixtable.c)
 add_milk_standalone(linopt-vec2Dimg vec_to_2Dimage.c)
+

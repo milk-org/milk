@@ -146,7 +146,7 @@ install(FILES fps.h fps_internal.h fps_globals.h fps_cli_binding.h fps_cli_funct
 
 if(USE_NCURSES AND USE_CLI)
 # ==========================================
-# milk-fpsCTRL executable
+# milk-fpsCTRL executable (requires TUI)
 # ==========================================
 
 add_executable(milk-fpsCTRL fpsCTRL/milk-fpsCTRL.c)
@@ -165,44 +165,13 @@ target_link_libraries(milk-fpsCTRL PUBLIC
 )
 
 install(TARGETS milk-fpsCTRL DESTINATION bin)
+endif()
 
 # ==========================================
-# milk-fps-list executable
+# Standalone FPS tools (no CLIcore needed)
 # ==========================================
 
-add_executable(milk-fps-list milk-fps-list.c)
-target_link_libraries(milk-fps-list PUBLIC 
-    milkfps
-    milkprocessinfo 
-    ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
-    pthread
-    m
-)
-
-install(TARGETS milk-fps-list DESTINATION bin)
-
-# ==========================================
-# milk-fps-search executable
-# ==========================================
-
-add_executable(milk-fps-search milk-fps-search.c)
-target_link_libraries(milk-fps-search PUBLIC 
-    milkfps
-    milkprocessinfo 
-    ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
-    pthread
-    m
-)
-
-install(TARGETS milk-fps-search DESTINATION bin)
-
-# ==========================================
-# milk-fps-info executable
-# ==========================================
+# --- Help / listing ---
 
 add_executable(milk-fpsexec-help milk-fpsexec-help.c)
 install(TARGETS milk-fpsexec-help DESTINATION bin)
@@ -212,37 +181,57 @@ install(PROGRAMS scripts/milk-fpsexec-list DESTINATION bin)
 add_executable(milk-fps-help milk-fps-help.c)
 install(TARGETS milk-fps-help DESTINATION bin)
 
+# --- FPS query tools ---
+
+add_executable(milk-fps-list milk-fps-list.c)
+target_link_libraries(milk-fps-list PUBLIC 
+    milkfps
+    milkfpsStandalone
+    milkdata
+    milkprocessinfo 
+    ImageStreamIO
+    pthread
+    m
+)
+install(TARGETS milk-fps-list DESTINATION bin)
+
+add_executable(milk-fps-search milk-fps-search.c)
+target_link_libraries(milk-fps-search PUBLIC 
+    milkfps
+    milkfpsStandalone
+    milkdata
+    milkprocessinfo 
+    ImageStreamIO
+    pthread
+    m
+)
+install(TARGETS milk-fps-search DESTINATION bin)
 
 add_executable(milk-fps-info milk-fps-info.c)
 target_link_libraries(milk-fps-info PUBLIC 
     milkfps
+    milkfpsStandalone
+    milkdata
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
     pthread
     m
 )
-
 install(TARGETS milk-fps-info DESTINATION bin)
 
 add_executable(milk-fps-rm milk-fps-rm.c)
 target_link_libraries(milk-fps-rm PUBLIC 
     milkfps
+    milkfpsStandalone
+    milkdata
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
     pthread
     m
 )
-
 install(TARGETS milk-fps-rm DESTINATION bin)
-endif()
 
-# ==========================================
-# generic milk-fps- commands
-# ==========================================
+# --- FPS control commands ---
 
 set(FPS_GENERIC_CMDS
     milk-fps-confstart
@@ -256,45 +245,41 @@ foreach(cmd ${FPS_GENERIC_CMDS})
     add_executable(${cmd} milk-fps-cmd.c)
     target_link_libraries(${cmd} PUBLIC 
         milkfps
+        milkfpsStandalone
+        milkdata
         milkprocessinfo 
         ImageStreamIO
-        CLIcore
-        ${NCURSES_LIBRARIES}
         pthread
         m
     )
     install(TARGETS ${cmd} DESTINATION bin)
 endforeach()
 
-# ==========================================
-# milk-fps-set executable
-# ==========================================
+# --- milk-fps-set ---
 
 add_executable(milk-fps-set milk-fps-set.c)
 target_link_libraries(milk-fps-set PUBLIC 
     milkfps
+    milkfpsStandalone
+    milkdata
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
-    
     pthread
     m
 )
-
 install(TARGETS milk-fps-set DESTINATION bin)
-# ==========================================
-# milk-fps-track executable
-# ==========================================
+
+# --- milk-fps-track ---
 
 add_executable(milk-fps-track milk-fps-track.c)
 target_link_libraries(milk-fps-track PUBLIC 
     milkfps
+    milkfpsStandalone
+    milkdata
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
     pthread
     m
 )
-
 install(TARGETS milk-fps-track DESTINATION bin)
+
