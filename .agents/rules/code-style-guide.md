@@ -9,3 +9,5 @@ trigger: always_on
 - Use the Linux kernel's C coding style if it doesn't conflict with the above rules
 - Document the purpose and overall approach of a function above the function code in the .c file, and the mode detailed methodoly within the function
 - Document briefly the function purpose in the .h file
+- Enable and enforce compiler warnings (`-Wall`, `-Wextra`) during development to catch missing declarations early. Treat them as errors (`-Werror`) in CI/CD.
+- Make sure every `.c` file strictly includes the exact headers it relies on, rather than implicitly relying on another header to include them (e.g. relying on `CLIcore.h` to provide `math.h` or `stdlib.h`).
