@@ -1,4 +1,4 @@
-# Command Line Interface Syntax {#page_command_line_interface}
+# Command Line Interface Syntax
 
 Files CLIcore.c and CLIcore.h contain the source code for the command line interpreter (CLI)
 
