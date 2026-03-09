@@ -20,6 +20,24 @@ An FPS instance creates a shared memory directory structure typically residing u
 4. **Tmux Dispatch and Isolation:**
    When an FPS process is launched standalone (usually using `milk-fpsexec-<name>`, `cacao-fps-deploy`, or with the `-tmux` flag), the command is wrapped and dispatched entirely into its own `tmux` session. This provides complete fault isolation. If one component segmentation faults, it does not bring down the entire pipeline, and its terminal output can be easily examined for debugging.
 
+```mermaid
+sequenceDiagram
+    participant User as CLI User (or Deploy Script)
+    participant Tmux as Tmux Session
+    participant FPSData as /dev/shm/fps.* (Shared Config)
+    participant FPS as Standalone fpsexec process
+    
+    User->>Tmux: _run_<module> -tmux
+    Tmux->>FPS: Execute Module Runloop
+    FPS->>FPSData: Sync State (run/stop/conf)
+    
+    loop Real-time configuration
+        User->>FPSData: Change Parameter via fpsCTRL 
+        FPSData-->>FPS: Synchronous Read
+        FPS->>FPS: Adapt Compute Behavior
+    end
+```
+
 ## Usage Utilities
 
 To use FPS-enabled functions from the command line efficiently, the typical workflow is:
