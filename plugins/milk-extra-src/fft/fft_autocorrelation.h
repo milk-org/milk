@@ -1,4 +1,9 @@
 /**
+ * @file fft_autocorrelation.h
+ * @brief Fft autocorrelation module
+ */
+
+/**
  * @file    fft_autocorrelation.h
  *
  */

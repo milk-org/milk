@@ -1,5 +1,10 @@
 /**
  * @file timeutils.h
+ * @brief #include <errno.h> // errno_t
+ */
+
+/**
+ * @file timeutils.h
  */
 
 #ifndef _CLICORE_TIMEUTILS_H

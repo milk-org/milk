@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_utilfuncs.h
+ * @brief Streamctrl utilfuncs module
+ */
+
 #ifndef _STREAMCTRL_UTILS_H
 #define _STREAMCTRL_UTILS_H
 

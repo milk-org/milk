@@ -1,3 +1,8 @@
+/**
+ * @file image_filter.h
+ * @brief Image filter module
+ */
+
 #if !defined(FILTER_H)
 #define FILTER_H
 

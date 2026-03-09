@@ -1,3 +1,8 @@
+/**
+ * @file image_keyword_addL.h
+ * @brief Image keyword addl module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_KEYWORD_ADDL_H
 #define COREMOD_MEMORY_IMAGE_KEYWORD_ADDL_H
 

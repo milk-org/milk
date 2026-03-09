@@ -1,3 +1,8 @@
+/**
+ * @file procCTRL_TUI.c
+ * @brief Procctrl tui module
+ */
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif

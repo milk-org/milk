@@ -1,4 +1,9 @@
 /**
+ * @file image_copy.c
+ * @brief Image copy module
+ */
+
+/**
  * @file    image_copy.c
  */
 

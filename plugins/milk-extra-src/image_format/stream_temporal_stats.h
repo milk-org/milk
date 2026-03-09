@@ -1,3 +1,8 @@
+/**
+ * @file stream_temporal_stats.h
+ * @brief Stream temporal stats module
+ */
+
 #ifndef STREAM_TEMPORAL_STATS_H
 #define STREAM_TEMPORAL_STATS_H
 

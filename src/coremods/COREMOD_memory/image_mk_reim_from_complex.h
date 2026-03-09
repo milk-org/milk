@@ -1,3 +1,8 @@
+/**
+ * @file image_mk_reim_from_complex.h
+ * @brief Image mk reim from complex module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_MK_REIM_FROM_COMPLEX_H
 #define COREMOD_MEMORY_IMAGE_MK_REIM_FROM_COMPLEX_H
 

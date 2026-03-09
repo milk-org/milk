@@ -1,4 +1,9 @@
 /**
+ * @file stream_diff.c
+ * @brief Stream diff module
+ */
+
+/**
  * @file    stream_diff.c
  */
 

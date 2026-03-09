@@ -1,3 +1,8 @@
+/**
+ * @file image_copy_shm.h
+ * @brief Image copy shm module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_COPY_SHM_H
 #define COREMOD_MEMORY_IMAGE_COPY_SHM_H
 

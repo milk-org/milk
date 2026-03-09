@@ -1,4 +1,9 @@
 /**
+ * @file is_fits_file.c
+ * @brief Is fits file module
+ */
+
+/**
  * @file    is_fits_file.c
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file streamfeed.c
+ * @brief Streamfeed module
+ */
+
 /** @file streamfeed.c
  */
 

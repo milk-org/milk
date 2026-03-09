@@ -1,3 +1,8 @@
+/**
+ * @file Qexpand.h
+ * @brief Qexpand module
+ */
+
 #ifndef LINALGEBRA_QEXPAND_H
 #define LINALGEBRA_QEXPAND_H
 

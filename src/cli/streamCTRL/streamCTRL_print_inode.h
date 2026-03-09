@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_print_inode.h
+ * @brief Streamctrl print inode module
+ */
+
 #ifndef _STREAMCTRL_PRINT_INODE_H
 #define _STREAMCTRL_PRINT_INODE_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_print_inode.c
+ * @brief Streamctrl print inode module
+ */
+
 #include <stdint.h>
 #include <sys/types.h>
 

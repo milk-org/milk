@@ -1,5 +1,10 @@
 /**
  * @file imdisplay3d.h
+ * @brief Imdisplay3d module
+ */
+
+/**
+ * @file imdisplay3d.h
  */
 
 errno_t imdisplay3d_addCLIcmd();

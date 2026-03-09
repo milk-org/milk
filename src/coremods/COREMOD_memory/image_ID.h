@@ -1,4 +1,9 @@
 /**
+ * @file image_ID.h
+ * @brief Image id module
+ */
+
+/**
  * @file    image_ID.h
  */
 

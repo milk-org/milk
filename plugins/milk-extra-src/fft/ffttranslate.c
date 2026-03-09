@@ -1,3 +1,8 @@
+/**
+ * @file ffttranslate.c
+ * @brief Ffttranslate module
+ */
+
 /** @file ffttranslate.c
  */
 

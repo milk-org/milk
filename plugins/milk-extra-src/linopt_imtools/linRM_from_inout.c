@@ -1,3 +1,8 @@
+/**
+ * @file linRM_from_inout.c
+ * @brief Linrm from inout module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

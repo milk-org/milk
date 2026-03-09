@@ -1,3 +1,8 @@
+/**
+ * @file image_pixremap.h
+ * @brief Image pixremap module
+ */
+
 #ifndef COREMOD_ARITH_PIXREMAP_H
 #define COREMOD_ARITH_PIXREMAP_H
 

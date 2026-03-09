@@ -1,3 +1,8 @@
+/**
+ * @file measure_transl.c
+ * @brief Measure transl module
+ */
+
 /** @file measure_transl.c
  */
 

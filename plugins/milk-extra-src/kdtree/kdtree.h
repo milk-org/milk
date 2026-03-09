@@ -1,3 +1,8 @@
+/**
+ * @file kdtree.h
+ * @brief Kdtree module
+ */
+
 /*
 This file is part of ``kdtree'', a library for working with kd-trees.
 Copyright (C) 2007-2009 John Tsiombikas <nuclear@siggraph.org>

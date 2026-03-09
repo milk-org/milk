@@ -1,3 +1,8 @@
+/**
+ * @file image_stats.h
+ * @brief Image stats module
+ */
+
 /** @file image_stats.h
  */
 

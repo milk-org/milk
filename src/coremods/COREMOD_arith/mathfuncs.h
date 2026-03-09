@@ -1,4 +1,9 @@
 /**
+ * @file mathfuncs.h
+ * @brief Mathfuncs module
+ */
+
+/**
  * @file    mathfuncs.h
  *
  */

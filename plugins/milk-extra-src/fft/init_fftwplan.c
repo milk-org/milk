@@ -1,5 +1,10 @@
 /**
  * @file init_fftwplan.c
+ * @brief Init fftwplan module
+ */
+
+/**
+ * @file init_fftwplan.c
  */
 
 #include <fftw3.h>

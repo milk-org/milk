@@ -1,3 +1,8 @@
+/**
+ * @file CR2toFITS.h
+ * @brief Cr2tofits module
+ */
+
 /** @file CR2toFITS.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file loadCR2toFITSRGB.c
+ * @brief Loadcr2tofitsrgb module
+ */
+
 /** @file loadCR2toFITSRGB.c
  */
 

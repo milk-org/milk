@@ -1,4 +1,9 @@
 /**
+ * @file stream_halfimdiff.h
+ * @brief Stream halfimdiff module
+ */
+
+/**
  * @file stream_hlfimdiff.h
  */
 

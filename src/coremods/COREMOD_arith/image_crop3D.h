@@ -1,4 +1,9 @@
 /**
+ * @file image_crop3D.h
+ * @brief Image crop3d module
+ */
+
+/**
  * @file    image_crop.h
  *
  */

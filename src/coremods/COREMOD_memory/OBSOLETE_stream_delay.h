@@ -1,3 +1,8 @@
+/**
+ * @file OBSOLETE_stream_delay.h
+ * @brief Obsolete stream delay module
+ */
+
 /** @file stream_delay,h
  */
 

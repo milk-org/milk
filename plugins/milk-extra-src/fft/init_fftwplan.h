@@ -1,5 +1,10 @@
 /**
  * @file init_fftwplan.h
+ * @brief Init fftwplan module
+ */
+
+/**
+ * @file init_fftwplan.h
  */
 
 errno_t init_fftwplan_addCLIcmd();

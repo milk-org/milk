@@ -1,3 +1,8 @@
+/**
+ * @file kbdhit.c
+ * @brief Kbdhit module
+ */
+
 /** @file kbdhit.c
  */
 

@@ -1,5 +1,10 @@
 /**
  * @file quicksort.h
+ * @brief Quicksort module
+ */
+
+/**
+ * @file quicksort.h
  */
 
 int bubble_sort(

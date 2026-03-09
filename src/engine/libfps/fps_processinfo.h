@@ -1,3 +1,8 @@
+/**
+ * @file fps_processinfo.h
+ * @brief Fps processinfo module
+ */
+
 #ifndef FPS_PROCESSINFO_H
 #define FPS_PROCESSINFO_H
 

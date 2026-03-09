@@ -1,3 +1,8 @@
+/**
+ * @file image_slicenormalize.c
+ * @brief Image slicenormalize module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 

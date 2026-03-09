@@ -1,4 +1,9 @@
 /**
+ * @file loadmemstream.h
+ * @brief Loadmemstream module
+ */
+
+/**
  * @file    loadmemstream.h
  */
 

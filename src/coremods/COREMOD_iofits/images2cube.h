@@ -1,4 +1,9 @@
 /**
+ * @file images2cube.h
+ * @brief Images2cube module
+ */
+
+/**
  * @file    images2cube.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file shmimlog_types.h
+ * @brief Shmimlog types module
+ */
+
 /** @file logshmim_types.h
  *
  * data logging of shared memory image stream

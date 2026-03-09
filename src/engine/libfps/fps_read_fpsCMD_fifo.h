@@ -1,4 +1,9 @@
 /**
+ * @file fps_read_fpsCMD_fifo.h
+ * @brief Fps read fpscmd fifo module
+ */
+
+/**
  * @file    fps_read_fpsCMD_fifo.h
  */
 
