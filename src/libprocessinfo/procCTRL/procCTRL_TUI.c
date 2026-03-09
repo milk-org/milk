@@ -415,6 +415,7 @@ errno_t processinfo_CTRLscreen()
     float frequ = 32.0;
     int pindexSelected = -1;
     int pindexActiveSelected = 0;
+    long doffsetindex = 0;
     int freeze = 0;
     int loopOK = 1;
     int Xexit = 0;
@@ -605,6 +606,9 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc->pinfoarray[pindexSelected]->loopcnt = 0;
                 }
             }
+            else if (ch == KEY_RESIZE) {
+                clear();
+            }
         }
 
         if (freeze == 0) {
@@ -761,9 +765,68 @@ errno_t processinfo_CTRLscreen()
             }
             else {
                 int dispindexMax = wrow - 6;
-                if (dispindexMax > NBactive) dispindexMax = NBactive;
 
-                for(int dispindex = 0; dispindex < dispindexMax; dispindex++) {
+                int margin_dn = 2;
+                int margin_up = 2;
+
+                if (margin_dn >= dispindexMax) {
+                    margin_dn = dispindexMax - 1;
+                }
+                if (margin_dn < 0) {
+                    margin_dn = 0;
+                }
+                if (margin_up >= dispindexMax) {
+                    margin_up = dispindexMax - 1;
+                }
+                if (margin_up < 0) {
+                    margin_up = 0;
+                }
+
+                while (pindexActiveSelected - doffsetindex > dispindexMax - 1 - margin_dn) {
+                    doffsetindex++;
+                }
+
+                while (pindexActiveSelected < doffsetindex + margin_up) {
+                    doffsetindex--;
+                }
+
+                if (pindexActiveSelected < doffsetindex) {
+                    doffsetindex = pindexActiveSelected;
+                }
+                if (pindexActiveSelected >= doffsetindex + dispindexMax) {
+                    doffsetindex = pindexActiveSelected - dispindexMax + 1;
+                }
+
+                if (doffsetindex < 0) {
+                    doffsetindex = 0;
+                }
+
+                int lastindex = doffsetindex + dispindexMax;
+                if (lastindex > NBactive) {
+                    lastindex = NBactive;
+                }
+
+                for(int dispindex = doffsetindex; dispindex < lastindex; dispindex++) {
+                    if (dispindex == doffsetindex && doffsetindex > 0) {
+                        attron(A_BOLD);
+                        screenprint_setcolor(3);
+                        TUI_printfw("      ^^^^ %d more entries above ^^^^", (int)(doffsetindex + 1));
+                        screenprint_unsetcolor(3);
+                        attroff(A_BOLD);
+                        TUI_newline();
+                        continue;
+                    }
+
+                    if (dispindex == lastindex - 1 && lastindex < NBactive) {
+                        attron(A_BOLD);
+                        screenprint_setcolor(3);
+                        TUI_printfw("      vvvv %d more entries below vvvv", (int)(NBactive - lastindex + 1));
+                        screenprint_unsetcolor(3);
+                        attroff(A_BOLD);
+                        TUI_newline();
+                        continue;
+                    }
+
                 if (scan_shm == NULL) break;
                 int pindex;
                 if (procinfoproc->sort_col[m] > 0) pindex = procinfoproc->local_sorted_pindex[dispindex];
