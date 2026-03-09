@@ -320,7 +320,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits ${CFITSIO_LIBRARIES} ${GSL_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -330,7 +330,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits milkfft milkimagegen milkimagefilter milkimagebasic ${CFITSIO_LIBRARIES} ${GSL_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits milkfft milkimagegen milkimagefilter milkimagebasic ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
