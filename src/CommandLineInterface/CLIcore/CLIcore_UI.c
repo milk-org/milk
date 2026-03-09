@@ -934,18 +934,26 @@ void CLI_setup_hint_area(void)
     cached_term_rows = ws.ws_row;
     cached_term_cols = ws.ws_col;
 
+    /* Ensure there's a free line below the cursor.
+     * If the cursor is at the bottom of the screen, \n scrolls
+     * the screen up by 1. \033[1A moves it back to its relative
+     * position. This ensures the cursor is never at 'rows'
+     * (the reserved hint line) before we save its position. */
+    printf("\n\033[1A");
+
+    /* Save the current cursor position */
+    printf("\0337");
+
     /* Set scroll region to rows 1..(rows-1)
-     * NOTE: DECSTBM moves cursor to home */
+     * NOTE: DECSTBM moves cursor to home (1, 1) */
     printf("\033[1;%dr", cached_term_rows - 1);
 
     /* Clear the hint line (outside scroll region) */
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    printf("\033[%d;1H\033[2K", cached_term_rows);
 
-    /* Position cursor at last line of scroll
-     * region. readline will print prompt here. */
-    printf("\033[%d;1H",
-           cached_term_rows - 1);
+    /* Restore cursor to where it was (properly placed below the
+     * startup banner, instead of jumping to the bottom!) */
+    printf("\0338");
     fflush(stdout);
 
     hint_area_active = 1;
