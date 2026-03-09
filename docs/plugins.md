@@ -16,6 +16,10 @@ Typically, plugins are placed inside an intermediate group folder such as:
 > [!NOTE] 
 > Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
 
+### Standalone Executables Relation to Core
+
+When a plugin registers a standalone executable (e.g., `milk-fpsexec-myplugin`), it behaves as a native Linux process that interacts with the core engine (streams and FPS) solely via shared memory. The plugin's calculation logic should NOT depend directly on internal GUI/CLI headers from `CLIcore`. By explicitly creating plugins and linking to `_compute` libraries, you ensure strict modularity where crashing plugins do not disrupt the orchestrating daemon.
+
 ## 2. Setting up CMakeLists.txt
 
 When `milk` detects a `CMakeLists.txt` in your plugin's directory, it will automatically process it via `add_subdirectory()`. The file is expected to define your module's shared library and register its standalone executables.
