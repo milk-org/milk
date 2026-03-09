@@ -87,4 +87,5 @@ target_link_libraries(stream-monproc-disp ${LIBNAME} CLIcore ImageStreamIO ncurs
 install(TARGETS stream-monproc-disp DESTINATION bin)
 endif()
 add_milk_standalone(info-imagemon imagemon.c)
+target_link_libraries(milk-fpsexec-info-imagemon PUBLIC ${LIBNAME})
 add_milk_standalone(info-strmonproc stream_monproc.c)

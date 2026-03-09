@@ -88,4 +88,6 @@ target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets DESTINATION lib)
 
 add_milk_standalone(fft-dofft dofft.c)
+target_link_libraries(milk-fpsexec-fft-dofft PUBLIC ${LIBNAME})
 add_milk_standalone(fft-pup2foc pup2foc.c)
+target_link_libraries(milk-fpsexec-fft-pup2foc PUBLIC ${LIBNAME})
