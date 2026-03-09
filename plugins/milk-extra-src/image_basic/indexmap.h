@@ -1,3 +1,8 @@
+/**
+ * @file indexmap.h
+ * @brief Indexmap module
+ */
+
 /** @file indexmap.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file ctree_init.h
+ * @brief Ctree init module
+ */
+
 #ifndef CLUSTERING__CTREE_INIT_H
 #define CLUSTERING__CTREE_INIT_H
 

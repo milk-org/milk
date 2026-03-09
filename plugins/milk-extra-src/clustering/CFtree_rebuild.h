@@ -1,3 +1,8 @@
+/**
+ * @file CFtree_rebuild.h
+ * @brief Cftree rebuild module
+ */
+
 #ifndef CLUSTERING__CFTREE_REBUILD_H
 #define CLUSTERING__CFTREE_REBUILD_H
 

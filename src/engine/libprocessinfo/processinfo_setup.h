@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_setup.h
+ * @brief Processinfo setup module
+ */
+
 #ifndef _PROCESSINFO_SETUP_H
 #define _PROCESSINFO_SETUP_H
 

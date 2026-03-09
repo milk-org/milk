@@ -1,3 +1,8 @@
+/**
+ * @file streamtiming_stats.h
+ * @brief Streamtiming stats module
+ */
+
 /** @file streamtiming_stats.h
  */
 

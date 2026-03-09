@@ -1,3 +1,8 @@
+/**
+ * @file droptree.c
+ * @brief Droptree module
+ */
+
 #include "CLIcore.h"
 #include "clustering_defs.h"
 

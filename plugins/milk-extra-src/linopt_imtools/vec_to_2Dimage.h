@@ -1,3 +1,8 @@
+/**
+ * @file vec_to_2Dimage.h
+ * @brief Vec to 2dimage module
+ */
+
 #ifndef LINOPT_IMTOOLS__VEC_TO_2DIMAGE_H
 #define LINOPT_IMTOOLS__VEC_TO_2DIMAGE_H
 

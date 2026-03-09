@@ -1,4 +1,9 @@
 /**
+ * @file compute_image_memory.c
+ * @brief Compute image memory module
+ */
+
+/**
  * @file    compute_image_memory.c
  */
 

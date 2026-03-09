@@ -1,3 +1,8 @@
+/**
+ * @file writeBMP.h
+ * @brief Writebmp module
+ */
+
 #ifndef IMAGE_FORMAT_MKBMPIMAGE_H
 #define IMAGE_FORMAT_MKBMPIMAGE_H
 

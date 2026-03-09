@@ -1,3 +1,8 @@
+/**
+ * @file lin1Dfit.h
+ * @brief Lin1dfit module
+ */
+
 #ifndef LINOPT_IMTOOLS__LIN1DFIT_H
 #define LINOPT_IMTOOLS__LIN1DFIT_H
 

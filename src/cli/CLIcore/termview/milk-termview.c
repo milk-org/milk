@@ -1,3 +1,8 @@
+/**
+ * @file milk-termview.c
+ * @brief Initialize data
+ */
+
 #include "milk_config.h"
 #include <getopt.h>
 #include "CLIcore.h"

@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_procdirname.c
+ * @brief Processinfo procdirname module
+ */
+
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>

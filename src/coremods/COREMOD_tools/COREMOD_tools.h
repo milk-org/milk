@@ -1,3 +1,8 @@
+/**
+ * @file COREMOD_tools.h
+ * @brief Coremod tools module
+ */
+
 #ifndef _TOOLS_H
 #define _TOOLS_H
 

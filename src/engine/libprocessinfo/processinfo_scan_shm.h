@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_scan_shm.h
+ * @brief Shared memory structure for scanner daemon
+ */
+
 #ifndef _PROCESSINFO_SCAN_SHM_H
 #define _PROCESSINFO_SCAN_SHM_H
 

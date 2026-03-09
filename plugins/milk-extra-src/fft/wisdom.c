@@ -1,5 +1,10 @@
 /**
  * @file wisdom.c
+ * @brief Wisdom module
+ */
+
+/**
+ * @file wisdom.c
  */
 
 #ifdef MILK_NO_CLI

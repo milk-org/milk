@@ -14,7 +14,7 @@ Standalone applications using `libfps` typically support the following commands:
 | `fps_FPSremove.c` | remove FPS |
 | `fps_GetFileName.c` | get FPS filename for entry |
 | `fps_GetParamIndex.c` | Get index of parameter |
-| `fps_GetTypeString.c` | No description available. |
+| `fps_GetTypeString.c` | Fps gettypestring module |
 | `fps_ID.c` | find fps ID(s) from name |
 | `fps_PrintParameterInfo.c` | print FPS parameter status/values |
 | `fps_RUNexit.c` | Exit FPS run process |
@@ -31,7 +31,7 @@ Standalone applications using `libfps` typically support the following commands:
 | `fps_disconnect.c` | Disconnect from FPS |
 | `fps_execFPScmd.c` | Execute FPS command |
 | `fps_getFPSargs.c` | read FPS args from CLI |
-| `fps_globals.c` | No description available. |
+| `fps_globals.c` | Fps globals module |
 | `fps_isvalid.c` | Check if FPS is valid |
 | `fps_load.c` | Load FPS |
 | `fps_loadmemstream_lite.c` | Lite version of load memory stream for libfps. |
@@ -46,7 +46,7 @@ Standalone applications using `libfps` typically support the following commands:
 | `fps_processcmdline.c` | FPS process command line |
 | `fps_processinfo.c` | ProcessInfo integration helpers for FPS |
 | `fps_processinfo_entries.c` | Add parameters to FPS for real-time process settings |
-| `fps_read_fpsCMD_fifo.c` | No description available. |
+| `fps_read_fpsCMD_fifo.c` | fill up task list from fifo submissions |
 | `fps_save2disk.c` | Save FPS content to disk |
 | `fps_scan.c` | scan and load FPSs |
 | `fps_shmdirname.c` | create FPS shared memory directory name |

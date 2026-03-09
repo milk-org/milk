@@ -1,3 +1,8 @@
+/**
+ * @file image_fitModes.h
+ * @brief Image fitmodes module
+ */
+
 #ifndef LINOPT_IMTOOLS__IMAGE_FITMODES_H
 #define LINOPT_IMTOOLS__IMAGE_FITMODES_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file condense.h
+ * @brief Condense module
+ */
+
 #ifndef CLUSTERING__CONDENSE_H
 #define CLUSTERING__CONDENSE_H
 

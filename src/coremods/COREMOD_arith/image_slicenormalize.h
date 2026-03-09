@@ -1,3 +1,8 @@
+/**
+ * @file image_slicenormalize.h
+ * @brief Image slicenormalize module
+ */
+
 #ifndef COREMOD_ARITH_IMAGE_SLICENORMALIZE_H
 #define COREMOD_ARITH_IMAGE_SLICENORMALIZE_H
 

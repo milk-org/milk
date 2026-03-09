@@ -1,3 +1,8 @@
+/**
+ * @file milk-fps-help.c
+ * @brief Milk fps help module
+ */
+
 #include <stdio.h>
 
 #define C_TITLE "\033[1;36m"

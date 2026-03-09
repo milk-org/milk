@@ -1,3 +1,8 @@
+/**
+ * @file image_keyword_list.h
+ * @brief Image keyword list module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_KEYWORD_LIST_H
 #define COREMOD_MEMORY_IMAGE_KEYWORD_LIST_H
 

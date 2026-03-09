@@ -1,3 +1,8 @@
+/**
+ * @file CLIcore_memory.c
+ * @brief Clicore memory module
+ */
+
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"

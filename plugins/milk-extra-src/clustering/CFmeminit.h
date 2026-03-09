@@ -1,3 +1,8 @@
+/**
+ * @file CFmeminit.h
+ * @brief Cfmeminit module
+ */
+
 #ifndef CLUSTERING__CFMEMINIT_H
 #define CLUSTERING__CFMEMINIT_H
 

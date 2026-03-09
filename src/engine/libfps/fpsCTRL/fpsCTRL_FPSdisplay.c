@@ -1,3 +1,8 @@
+/**
+ * @file fpsCTRL_FPSdisplay.c
+ * @brief Fpsctrl fpsdisplay module
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

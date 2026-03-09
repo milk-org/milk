@@ -1,3 +1,8 @@
+/**
+ * @file clearall.c
+ * @brief Clearall module
+ */
+
 /** @file clearall.c
  */
 

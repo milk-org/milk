@@ -1,3 +1,8 @@
+/**
+ * @file image_construct.h
+ * @brief Image construct module
+ */
+
 #ifndef LINOPT_IMTOOLS__IMAGE_CONSTRUCT_H
 #define LINOPT_IMTOOLS__IMAGE_CONSTRUCT_H
 

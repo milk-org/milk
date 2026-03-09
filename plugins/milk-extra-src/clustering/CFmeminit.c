@@ -1,3 +1,8 @@
+/**
+ * @file CFmeminit.c
+ * @brief Cfmeminit module
+ */
+
 #include "CLIcore.h"
 #include "clustering_defs.h"
 

@@ -1,3 +1,8 @@
+/**
+ * @file extract_RGGBchan.h
+ * @brief errno_t extract_RGGBchan_addCLIcmd();
+ */
+
 /** @file extract_RGGBchan.h
  */
 

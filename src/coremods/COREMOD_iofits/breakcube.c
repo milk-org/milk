@@ -1,4 +1,9 @@
 /**
+ * @file breakcube.c
+ * @brief Breakcube module
+ */
+
+/**
  * @file    breakcube.c
  */
 

@@ -1,4 +1,9 @@
 /**
+ * @file stream_copy.h
+ * @brief Stream copy module
+ */
+
+/**
  * @file    stream_copy.h
  */
 

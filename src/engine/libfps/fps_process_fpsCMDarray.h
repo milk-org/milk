@@ -1,5 +1,10 @@
 /**
  * @file fps_process_fpsCMDarray.h
+ * @brief Fps process fpscmdarray module
+ */
+
+/**
+ * @file fps_process_fpsCMDarray.h
  */
 
 #ifndef FPS_PROCESS_FPSCMDARRAY_H

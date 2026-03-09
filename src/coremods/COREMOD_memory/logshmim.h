@@ -1,4 +1,9 @@
 /**
+ * @file logshmim.h
+ * @brief Logshmim module
+ */
+
+/**
  * @file    logshmim.h
  */
 

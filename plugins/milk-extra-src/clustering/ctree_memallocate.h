@@ -1,3 +1,8 @@
+/**
+ * @file ctree_memallocate.h
+ * @brief Ctree memallocate module
+ */
+
 #ifndef CLUSTERING__CTREE_MEMALLOCATE_H
 #define CLUSTERING__CTREE_MEMALLOCATE_H
 

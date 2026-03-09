@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_find_streams.h
+ * @brief Streamctrl find streams module
+ */
+
 #ifndef _STREAMCTRL_FINDSTREAMS_H
 #define _STREAMCTRL_FINDSTREAMS_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file calc.h
+ * @brief Data type for links in the chain of symbols.
+ */
+
 
 
 /* Data type for links in the chain of symbols.      */

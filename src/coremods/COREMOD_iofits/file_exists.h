@@ -1,4 +1,9 @@
 /**
+ * @file file_exists.h
+ * @brief File exists module
+ */
+
+/**
  * @file    file_exists.h
  */
 

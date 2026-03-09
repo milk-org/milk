@@ -1,5 +1,10 @@
 /**
  * @file statusstat.c
+ * @brief Statusstat module
+ */
+
+/**
+ * @file statusstat.c
  */
 
 #include <sched.h>

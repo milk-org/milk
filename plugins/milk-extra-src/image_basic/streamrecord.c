@@ -1,3 +1,8 @@
+/**
+ * @file streamrecord.c
+ * @brief Streamrecord module
+ */
+
 /** @file streamrecord.c
  */
 

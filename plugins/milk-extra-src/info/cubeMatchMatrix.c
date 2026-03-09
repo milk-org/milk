@@ -1,3 +1,8 @@
+/**
+ * @file cubeMatchMatrix.c
+ * @brief Cubematchmatrix module
+ */
+
 /** @file cubeMatchMatrix.c
  */
 

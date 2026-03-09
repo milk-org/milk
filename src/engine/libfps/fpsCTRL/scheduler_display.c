@@ -1,3 +1,8 @@
+/**
+ * @file scheduler_display.c
+ * @brief Scheduler display module
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

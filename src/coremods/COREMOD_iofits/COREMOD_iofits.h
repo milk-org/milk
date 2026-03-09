@@ -1,3 +1,8 @@
+/**
+ * @file COREMOD_iofits.h
+ * @brief Coremod iofits module
+ */
+
 #ifndef _IOFITS_H
 #define _IOFITS_H
 

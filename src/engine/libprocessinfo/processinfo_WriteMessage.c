@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_WriteMessage.c
+ * @brief Processinfo writemessage module
+ */
+
 #include <stdarg.h>
 #include <time.h>
 #include <string.h>

@@ -1,3 +1,8 @@
+/**
+ * @file node_attachnode.h
+ * @brief Node attachnode module
+ */
+
 #ifndef CLUSTERING__NODE_ATTACHNODE_H
 #define CLUSTERING__NODE_ATTACHNODE_H
 

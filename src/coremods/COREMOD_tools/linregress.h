@@ -1,3 +1,8 @@
+/**
+ * @file linregress.h
+ * @brief Linregress module
+ */
+
 /** @file linregress.h
  */
 

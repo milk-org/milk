@@ -1,3 +1,8 @@
+/**
+ * @file image_to_vec.c
+ * @brief Image to vec module
+ */
+
 #include "CLIcore.h"
 
 

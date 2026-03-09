@@ -1,3 +1,8 @@
+/**
+ * @file fps_internal.h
+ * @brief Fps internal module
+ */
+
 #ifndef FPS_INTERNAL_H
 #define FPS_INTERNAL_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file linalgebra_types.h
+ * @brief Linalgebra types module
+ */
+
 #ifndef _LINALGEBRA_TYPES_H
 #define _LINALGEBRA_TYPES_H
 

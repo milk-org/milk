@@ -1,3 +1,8 @@
+/**
+ * @file compute_SVDpseudoInverse.h
+ * @brief Compute svdpseudoinverse module
+ */
+
 #ifndef LINOPT_IMTOOLS__COMPUTE_SVDPSEUDOINVERSE_H
 #define LINOPT_IMTOOLS__COMPUTE_SVDPSEUDOINVERSE_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file image_keyword_addS.h
+ * @brief Image keyword adds module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_KEYWORD_ADDS_H
 #define COREMOD_MEMORY_IMAGE_KEYWORD_ADDS_H
 

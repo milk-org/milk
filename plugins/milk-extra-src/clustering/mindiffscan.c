@@ -1,3 +1,8 @@
+/**
+ * @file mindiffscan.c
+ * @brief Mindiffscan module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

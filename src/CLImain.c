@@ -1,3 +1,8 @@
+/**
+ * @file CLImain.c
+ * @brief Climain module
+ */
+
 #include "milk_config.h"
 
 #include <assert.h>

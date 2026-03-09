@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_shm_close.c
+ * @brief Processinfo shm close module
+ */
+
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdio.h>

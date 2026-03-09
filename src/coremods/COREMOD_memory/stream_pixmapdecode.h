@@ -1,3 +1,8 @@
+/**
+ * @file stream_pixmapdecode.h
+ * @brief Stream pixmapdecode module
+ */
+
 /** @file stream_pixmapdecode.h
  */
 

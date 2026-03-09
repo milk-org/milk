@@ -1,3 +1,8 @@
+/**
+ * @file write_clustCFdat.h
+ * @brief Write clustcfdat module
+ */
+
 #ifndef CLUSTERING_WRITECFDAT
 #define CLUSTERING_WRITECFDAT
 
