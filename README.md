@@ -38,7 +38,9 @@ Module includes key frameworks :
 
 - **image streams** : low-latency shared memory streams
 - **processinfo** : process management and control
-- **function parameter structure (FPS)** : reading/writing function parameters. See [FPS Standalone and CMD Modes](doc/FPS_Standalone_CMD_Modes.md) for implementation details.
+- **function parameter structure (FPS)** : reading/writing function parameters. See [FPS Standalone and CMD Modes](docs/FPS_Standalone_CMD_Modes.md) for implementation details.
+
+For a full list of all available documentation in this repository, see the [Markdown Documentation Index](docs/Markdown_Index.md).
 
 ## Download
 
