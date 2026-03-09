@@ -1,3 +1,8 @@
+/**
+ * @file medianfilter.c
+ * @brief Medianfilter module
+ */
+
 /** @file medianfilter.c
  */
 

@@ -1,5 +1,10 @@
 /**
  * @file fileutils.c
+ * @brief Fileutils module
+ */
+
+/**
+ * @file fileutils.c
  */
 
 #include <stdio.h>

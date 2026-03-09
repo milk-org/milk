@@ -1,4 +1,9 @@
 /**
+ * @file read_keyword.c
+ * @brief Read keyword module
+ */
+
+/**
  * @file    read_keyword.c
  */
 

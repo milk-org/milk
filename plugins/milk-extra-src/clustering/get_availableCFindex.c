@@ -1,3 +1,8 @@
+/**
+ * @file get_availableCFindex.c
+ * @brief Get availablecfindex module
+ */
+
 #include "CLIcore.h"
 #include "clustering_defs.h"
 

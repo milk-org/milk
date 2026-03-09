@@ -1,3 +1,8 @@
+/**
+ * @file GPU_SVD_computeControlMatrix.c
+ * @brief Gpu svd computecontrolmatrix module
+ */
+
 /** @file GPU_SVD_computeControlMatrix.c
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file imtoASCII.h
+ * @brief Imtoascii module
+ */
+
 /** @file imtoASCII.h
  */
 

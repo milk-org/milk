@@ -1,5 +1,10 @@
 /**
  * @file stringutils.c
+ * @brief Stringutils module
+ */
+
+/**
+ * @file stringutils.c
  */
 
 #include <string.h>

@@ -1,3 +1,8 @@
+/**
+ * @file read_shmim_size.h
+ * @brief Read shmim size module
+ */
+
 #ifndef COREMOD_MEMORY_READ_SHMIM_SIZE_H
 #define COREMOD_MEMORY_READ_SHMIM_SIZE_H
 

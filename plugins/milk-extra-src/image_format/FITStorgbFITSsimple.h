@@ -1,3 +1,8 @@
+/**
+ * @file FITStorgbFITSsimple.h
+ * @brief Fitstorgbfitssimple module
+ */
+
 /** @file FITStorgbFITSsimple.h
  */
 

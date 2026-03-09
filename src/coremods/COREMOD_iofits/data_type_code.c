@@ -1,4 +1,9 @@
 /**
+ * @file data_type_code.c
+ * @brief Data type code module
+ */
+
+/**
  * @file    data_type_code.c
  */
 

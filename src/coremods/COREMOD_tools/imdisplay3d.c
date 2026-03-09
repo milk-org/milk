@@ -1,5 +1,10 @@
 /**
  * @file imdisplay3d.c
+ * @brief Imdisplay3d module
+ */
+
+/**
+ * @file imdisplay3d.c
  */
 
 #ifdef MILK_NO_CLI

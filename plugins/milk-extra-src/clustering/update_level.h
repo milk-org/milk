@@ -1,3 +1,8 @@
+/**
+ * @file update_level.h
+ * @brief Update level module
+ */
+
 #ifndef CLUSTERING__UPDATE_LEVEL_H
 #define CLUSTERING__UPDATE_LEVEL_H
 

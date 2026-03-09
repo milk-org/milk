@@ -1,3 +1,8 @@
+/**
+ * @file stream_pixmapdecode.c
+ * @brief Stream pixmapdecode module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 /** @file stream_pixmapdecode.c
  */

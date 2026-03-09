@@ -1,3 +1,8 @@
+/**
+ * @file fit2Dcossin.c
+ * @brief Fit2dcossin module
+ */
+
 /** @file fit2Dcossin.c
  */
 

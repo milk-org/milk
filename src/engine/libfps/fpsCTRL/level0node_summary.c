@@ -1,3 +1,8 @@
+/**
+ * @file level0node_summary.c
+ * @brief Level0node summary module
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

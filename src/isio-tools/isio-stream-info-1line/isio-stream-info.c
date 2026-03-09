@@ -1,3 +1,8 @@
+/**
+ * @file isio-stream-info.c
+ * @brief Isio stream info module
+ */
+
 /*
  * Open stream(s), print basic info within single line
  *

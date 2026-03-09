@@ -1,4 +1,9 @@
 /**
+ * @file read_shmimall.h
+ * @brief Read shmimall module
+ */
+
+/**
  * @file    read_shmimall.h
  */
 

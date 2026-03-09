@@ -1,3 +1,8 @@
+/**
+ * @file fps_standalone_data.c
+ * @brief Fps standalone data module
+ */
+
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>

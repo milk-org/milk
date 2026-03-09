@@ -1,3 +1,8 @@
+/**
+ * @file milk-fps-info.c
+ * @brief Milk fps info module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

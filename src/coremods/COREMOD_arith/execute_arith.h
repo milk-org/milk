@@ -1,4 +1,9 @@
 /**
+ * @file execute_arith.h
+ * @brief Execute arith module
+ */
+
+/**
  * @file    execute_arith.c
  *
  */

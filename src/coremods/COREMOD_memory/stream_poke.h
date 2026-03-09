@@ -1,4 +1,9 @@
 /**
+ * @file stream_poke.h
+ * @brief Stream poke module
+ */
+
+/**
  * @file    stream_poke.h
  */
 

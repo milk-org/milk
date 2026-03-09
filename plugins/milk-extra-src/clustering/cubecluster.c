@@ -1,3 +1,8 @@
+/**
+ * @file cubecluster.c
+ * @brief Cubecluster module
+ */
+
 #define _GNU_SOURCE
 #include <math.h>
 #include <sys/stat.h>

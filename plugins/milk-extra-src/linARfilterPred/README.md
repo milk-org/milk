@@ -6,15 +6,15 @@ Linear AutoRegressive prediction filter
 
 | File | Description |
 |------|-------------|
-| `applyPF.c` | No description available. |
-| `build_linPF.c` | No description available. |
+| `applyPF.c` | Applypf module |
+| `build_linPF.c` | Build linpf module |
 
 ## Standalone Executables
 
 | Executable | Source File | Description |
 |------------|-------------|-------------|
-| `milk-fpsexec-linpred-applyPF` | `applyPF.c` | No description available. |
-| `milk-fpsexec-linpred-buildlinPF` | `build_linPF.c` | No description available. |
+| `milk-fpsexec-linpred-applyPF` | `applyPF.c` | Applypf module |
+| `milk-fpsexec-linpred-buildlinPF` | `build_linPF.c` | Build linpf module |
 
 ## Dependencies
 - Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`

@@ -1,3 +1,8 @@
+/**
+ * @file milk-streamCTRL.c
+ * @brief Milk streamctrl module
+ */
+
 #include "milk_config.h"
 #include "CLIcore.h"
 #include "CLIcore_datainit.h"

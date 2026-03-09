@@ -1,3 +1,8 @@
+/**
+ * @file procCTRL_TUI.h
+ * @brief Procctrl tui module
+ */
+
 #ifndef _PROCCTRL_TUI_H
 #define _PROCCTRL_TUI_H
 

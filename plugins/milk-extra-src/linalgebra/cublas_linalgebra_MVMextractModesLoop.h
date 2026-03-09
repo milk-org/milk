@@ -1,3 +1,8 @@
+/**
+ * @file cublas_linalgebra_MVMextractModesLoop.h
+ * @brief Cublas linalgebra mvmextractmodesloop module
+ */
+
 /** @file linalgebra_MVMextractModesLoop.h
  */
 

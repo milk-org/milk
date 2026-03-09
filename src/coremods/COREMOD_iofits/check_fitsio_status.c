@@ -1,4 +1,9 @@
 /**
+ * @file check_fitsio_status.c
+ * @brief set print to 0 if error message should not be printed to stderr
+ */
+
+/**
  * @file    ckeck_fitsio_status.c
  */
 

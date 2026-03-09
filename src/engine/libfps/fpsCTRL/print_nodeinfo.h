@@ -1,3 +1,8 @@
+/**
+ * @file print_nodeinfo.h
+ * @brief Print nodeinfo module
+ */
+
 #ifndef FPS_CTRLSCREEN_PRINT_NODEINFO_H
 #define FPS_CTRLSCREEN_PRINT_NODEINFO_H
 

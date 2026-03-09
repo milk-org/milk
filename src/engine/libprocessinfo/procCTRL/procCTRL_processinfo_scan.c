@@ -1,3 +1,8 @@
+/**
+ * @file procCTRL_processinfo_scan.c
+ * @brief Procctrl processinfo scan module
+ */
+
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <unistd.h>

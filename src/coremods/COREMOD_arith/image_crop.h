@@ -1,4 +1,9 @@
 /**
+ * @file image_crop.h
+ * @brief Image crop module
+ */
+
+/**
  * @file    image_crop.h
  *
  */

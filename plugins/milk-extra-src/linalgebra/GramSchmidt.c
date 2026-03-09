@@ -1,3 +1,8 @@
+/**
+ * @file GramSchmidt.c
+ * @brief Gramschmidt module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

@@ -1,5 +1,10 @@
 /**
  * @file zernike_value.h
+ * @brief Zernike value module
+ */
+
+/**
+ * @file zernike_value.h
  */
 
 

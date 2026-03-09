@@ -6,13 +6,13 @@ Misc tools
 
 | File | Description |
 |------|-------------|
-| `fileutils.c` | No description available. |
-| `imdisplay3d.c` | No description available. |
-| `linregress.c` | No description available. |
-| `logfunc.c` | No description available. |
-| `mvprocCPUset.c` | No description available. |
-| `statusstat.c` | No description available. |
-| `stringutils.c` | No description available. |
+| `fileutils.c` | Fileutils module |
+| `imdisplay3d.c` | Imdisplay3d module |
+| `linregress.c` | Linregress module |
+| `logfunc.c` | Logfunc module |
+| `mvprocCPUset.c` | Mvproccpuset module |
+| `statusstat.c` | Statusstat module |
+| `stringutils.c` | Stringutils module |
 
 ## Dependencies
 - Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`

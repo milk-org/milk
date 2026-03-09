@@ -1,4 +1,9 @@
 /**
+ * @file image_dxdy.h
+ * @brief Image dxdy module
+ */
+
+/**
  * @file    image_dxdy.c
  */
 

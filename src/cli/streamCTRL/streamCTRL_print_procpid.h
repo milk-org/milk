@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_print_procpid.h
+ * @brief Streamctrl print procpid module
+ */
+
 #ifndef _STREAMCTRL_PRINT_PROCPID_H
 #define _STREAMCTRL_PRINT_PROCPID_H
 

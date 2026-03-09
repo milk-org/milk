@@ -1,3 +1,8 @@
+/**
+ * @file read_binary32f.c
+ * @brief ==========================================
+ */
+
 /** @file read_binary32f.c
  */
 

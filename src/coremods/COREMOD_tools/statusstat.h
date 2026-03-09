@@ -1,5 +1,10 @@
 /**
  * @file statusstat.h
+ * @brief Statusstat module
+ */
+
+/**
+ * @file statusstat.h
  */
 
 errno_t statusstat_addCLIcmd();

@@ -1,3 +1,8 @@
+/**
+ * @file vec_to_2Dimage.c
+ * @brief Vec to 2dimage module
+ */
+
 #include "CLIcore.h"
 
 

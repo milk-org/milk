@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_print_trace.h
+ * @brief Streamctrl print trace module
+ */
+
 #ifndef _STREAMCTRL_PRINT_TRACE_H
 #define _STREAMCTRL_PRINT_TRACE_H
 

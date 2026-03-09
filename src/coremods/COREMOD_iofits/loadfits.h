@@ -1,4 +1,9 @@
 /**
+ * @file loadfits.h
+ * @brief Loadfits module
+ */
+
+/**
  * @file    loadfits.h
  */
 

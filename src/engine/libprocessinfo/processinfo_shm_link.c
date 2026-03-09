@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_shm_link.c
+ * @brief Processinfo shm link module
+ */
+
 #include <sys/file.h>
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>

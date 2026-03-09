@@ -1,4 +1,9 @@
 /**
+ * @file improfile.c
+ * @brief Improfile module
+ */
+
+/**
  * @file    improfile.c
  */
 

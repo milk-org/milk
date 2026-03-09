@@ -1,3 +1,8 @@
+/**
+ * @file makeCPAmodes.c
+ * @brief log all debug trace points to file
+ */
+
 #include <math.h>
 
 // log all debug trace points to file

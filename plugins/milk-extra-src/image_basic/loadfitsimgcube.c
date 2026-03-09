@@ -1,3 +1,8 @@
+/**
+ * @file loadfitsimgcube.c
+ * @brief Loadfitsimgcube module
+ */
+
 /** @file loadfitsimgcube.c
  */
 

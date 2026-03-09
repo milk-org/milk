@@ -1,3 +1,8 @@
+/**
+ * @file image_unfold.c
+ * @brief Image unfold module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 

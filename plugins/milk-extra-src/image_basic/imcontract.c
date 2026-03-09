@@ -1,3 +1,8 @@
+/**
+ * @file imcontract.c
+ * @brief Imcontract module
+ */
+
 /** @file imcontract.c
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file combineHDR.c
+ * @brief Combinehdr module
+ */
+
 /** @file combineHDR.c
  */
 

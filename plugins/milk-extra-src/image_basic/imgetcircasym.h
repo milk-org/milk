@@ -1,3 +1,8 @@
+/**
+ * @file imgetcircasym.h
+ * @brief Imgetcircasym module
+ */
+
 /** @file imgetcircasym.h
  */
 

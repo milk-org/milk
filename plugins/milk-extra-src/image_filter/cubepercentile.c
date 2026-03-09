@@ -1,3 +1,8 @@
+/**
+ * @file cubepercentile.c
+ * @brief Cubepercentile module
+ */
+
 /** @file cubepercentile.c
  */
 

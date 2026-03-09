@@ -1,3 +1,8 @@
+/**
+ * @file milk-cli-help-synchro.c
+ * @brief Terminal color macros for help display
+ */
+
 #include "CLIcore.h"
 
 // Terminal color macros for help display

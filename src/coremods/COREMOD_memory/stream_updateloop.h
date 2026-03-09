@@ -1,3 +1,8 @@
+/**
+ * @file stream_updateloop.h
+ * @brief Stream updateloop module
+ */
+
 /** @file stream_updateloop.h
  */
 

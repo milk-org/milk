@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_signals.h
+ * @brief Processinfo signals module
+ */
+
 #ifndef _PROCESSINFO_SIGNALS_H
 #define _PROCESSINFO_SIGNALS_H
 

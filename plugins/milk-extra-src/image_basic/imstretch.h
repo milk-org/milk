@@ -1,3 +1,8 @@
+/**
+ * @file imstretch.h
+ * @brief Imstretch module
+ */
+
 /** @file imstretch.h
  */
 

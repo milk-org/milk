@@ -1,5 +1,10 @@
 /**
  * @file stream_paste.h
+ * @brief Stream paste module
+ */
+
+/**
+ * @file stream_paste.h
  */
 
 errno_t stream_paste_addCLIcmd();

@@ -1,3 +1,8 @@
+/**
+ * @file printGPUMATMULTCONF.c
+ * @brief Printgpumatmultconf module
+ */
+
 /** @file printGPUMATMULTCONF.c
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file mask_to_pixtable.h
+ * @brief Mask to pixtable module
+ */
+
 #ifndef LINOPT_IMTOOLS__MASK_TO_PIXTABLE_H
 #define LINOPT_IMTOOLS__MASK_TO_PIXTABLE_H
 

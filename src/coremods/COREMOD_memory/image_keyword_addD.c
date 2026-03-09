@@ -1,3 +1,8 @@
+/**
+ * @file image_keyword_addD.c
+ * @brief Image keyword addd module
+ */
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else

@@ -1,4 +1,9 @@
 /**
+ * @file fps_read_fpsCMD_fifo.c
+ * @brief fill up task list from fifo submissions
+ */
+
+/**
  * @file    fps_read_fpsCMD_fifo.c
  */
 
