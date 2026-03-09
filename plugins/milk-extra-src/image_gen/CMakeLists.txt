@@ -70,5 +70,5 @@ target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets DESTINATION lib)
 
 add_milk_standalone(imggen-mkrandom mkrandomim.c)
-target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC ${LIBNAME} milkstatistic)
+target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC ${LIBNAME} milkstatistic_compute)
 add_milk_standalone(imggen-voronoi voronoi.c)
