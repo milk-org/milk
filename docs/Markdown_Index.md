@@ -5,29 +5,39 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## Root
 
-- [FPSparams.md](../FPSparams.md)
 - [Project: milk](../GEMINI.md) (GEMINI.md)
-- [Accessing Images and streams](../ImageAccess.md) (ImageAccess.md)
 - [Milk](../README.md) (README.md)
 
 ## docs
 
-- [CLI Overview {#page_CLI_Overview}](CLI_Overview.md) (CLI_Overview.md)
-- [Command Line Interface Syntax {#page_command_line_interface}](CLIcore.md) (CLIcore.md)
 - [FPS Standalone and CMD Modes](FPS_Standalone_CMD_Modes.md) (FPS_Standalone_CMD_Modes.md)
-- [Template Souce Code {#page_TemplateSourceCode}](TemplateSourceCode.md) (TemplateSourceCode.md)
-- [Coding Standards # {#page_coding_standards}](coding_standards.md) (coding_standards.md)
 - [Milk + Cacao Dependency Graph](dependency_graph.md) (dependency_graph.md)
 - [Function Processing System (FPS)](fps.md) (fps.md)
-- [Readline Input Keys {#page_readlinekeys}](helpreadline.md) (helpreadline.md)
-- [What is milk ?](index.md) (index.md)
-- [Adding a Plugin to Milk](plugins.md) (plugins.md)
+- [Milk Documentation](index.md) (index.md)
 - [Process Info (`procinfo`)](procinfo.md) (procinfo.md)
 - [Programmer's Guide to `milk`](programmers_guide.md) (programmers_guide.md)
 - [Shared Memory Streams (`ImageStreamIO`)](streams.md) (streams.md)
 
+## docs/cli
+
+- [CLI Overview {#page_CLI_Overview}](cli/CLI_Overview.md) (CLI_Overview.md)
+- [Command Line Interface Syntax {#page_command_line_interface}](cli/CLIcore.md) (CLIcore.md)
+- [Command Line Interface {#page_userinput}](cli/UserInput.md) (UserInput.md)
+- [Readline Input Keys {#page_readlinekeys}](cli/helpreadline.md) (helpreadline.md)
+
+## docs/developer
+
+- [Documenting Code {#page_DocumentingCode}](developer/DocumentingCode.md) (DocumentingCode.md)
+- [Loading, Creating Additional Modules {#page_LoadingModules}](developer/LoadingModules.md) (LoadingModules.md)
+- [Module Files {#page_ModuleFiles}](developer/ModuleFiles.md) (ModuleFiles.md)
+- [Template Souce Code {#page_TemplateSourceCode}](developer/TemplateSourceCode.md) (TemplateSourceCode.md)
+- [Working with git {#page_WorkingWithGit}](developer/WorkingWithGit.md) (WorkingWithGit.md)
+- [Coding Standards # {#page_coding_standards}](developer/coding_standards.md) (coding_standards.md)
+- [Adding a Plugin to Milk](developer/plugins.md) (plugins.md)
+
 ## docs/install
 
+- [Installation {#page_installation}](install/compile.md) (compile.md)
 - [p1.md](install/p1.md)
 - [p2.md](install/p2.md)
 
@@ -119,22 +129,6 @@ It provides a complete index of all Markdown documentation available in the repo
 
 - [CommandLineInterface Change Log {#page_CommandLineInterface_ChangeLog}](../src/cli/CLIcore/CHANGELOG.md) (CHANGELOG.md)
 - [Module CommandLineInterface  {#page_module_CommandLineInterface}](../src/cli/CLIcore/README.md) (README.md)
-
-## src/cli/CLIcore/doc
-
-- [CLI Overview {#page_CLI_Overview}](../src/cli/CLIcore/doc/CLI_Overview.md) (CLI_Overview.md)
-- [Command Line Interface Syntax {#page_command_line_interface}](../src/cli/CLIcore/doc/CLIcore.md) (CLIcore.md)
-- [Documenting Code {#page_DocumentingCode}](../src/cli/CLIcore/doc/DocumentingCode.md) (DocumentingCode.md)
-- [Installation {#page_installation}](../src/cli/CLIcore/doc/DownloadCompile.md) (DownloadCompile.md)
-- [Function Parameter Structure (FPS) {#page_FunctionParameterStructure}](../src/cli/CLIcore/doc/FunctionParameterStructure.md) (FunctionParameterStructure.md)
-- [Loading, Creating Additional Modules {#page_LoadingModules}](../src/cli/CLIcore/doc/LoadingModules.md) (LoadingModules.md)
-- [Module Files {#page_ModuleFiles}](../src/cli/CLIcore/doc/ModuleFiles.md) (ModuleFiles.md)
-- [Process Info Structure (processinfo) {#page_ProcessInfoStructure}](../src/cli/CLIcore/doc/ProcessInfoStructure.md) (ProcessInfoStructure.md)
-- [Template Souce Code {#page_TemplateSourceCode}](../src/cli/CLIcore/doc/TemplateSourceCode.md) (TemplateSourceCode.md)
-- [Command Line Interface {#page_userinput}](../src/cli/CLIcore/doc/UserInput.md) (UserInput.md)
-- [Working with git {#page_WorkingWithGit}](../src/cli/CLIcore/doc/WorkingWithGit.md) (WorkingWithGit.md)
-- [Coding Standards # {#page_coding_standards}](../src/cli/CLIcore/doc/coding_standards.md) (coding_standards.md)
-- [Readline Input Keys {#page_readlinekeys}](../src/cli/CLIcore/doc/helpreadline.md) (helpreadline.md)
 
 ## src/cli/libmilkTUI
 
