@@ -31,7 +31,7 @@
 #define RETURN_FAILURE     1 // generic error code
 #define RETURN_MISSINGFILE 2
 
-#include "ImageStreamIO.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #include <errno.h>
 #include <time.h>
 

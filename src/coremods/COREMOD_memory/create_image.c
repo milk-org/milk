@@ -13,6 +13,7 @@
 #include "image_ID.h"
 #include "list_image.h"
 #include "stream_sem.h"
+#include <fps.h>
 
 /* creates an image ID */
 

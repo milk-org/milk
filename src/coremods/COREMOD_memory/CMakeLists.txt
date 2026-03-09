@@ -191,6 +191,8 @@ if(${CFITSIO_FOUND})
 endif()
 
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+                                              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+                                              $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
 											  $<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
 
@@ -238,7 +240,7 @@ install(TARGETS milk-stream-create DESTINATION bin)
 add_executable(milk-stream-rm milk-stream-rm.c)
 target_include_directories(milk-stream-rm PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
-target_link_libraries(milk-stream-rm ImageStreamIO)
+target_link_libraries(milk-stream-rm ImageStreamIO CLIcore)
 install(TARGETS milk-stream-rm DESTINATION bin)
 
 add_executable(milk-streamCTRL-cli milk-streamCTRL-cli.c)

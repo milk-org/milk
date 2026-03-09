@@ -7,6 +7,7 @@
 #include "cmdsettings.h"
 #include "timeutils.h"
 #include "processinfo_signals.h"
+#include "processtools.h"
 
 typedef long imageID;
 typedef long variableID;
@@ -334,7 +335,7 @@ typedef struct
 
 #define FPS_LOCALSTATUS_CONFLOOP 0x0001
 
-typedef struct
+typedef struct FUNCTION_PARAMETER_STRUCT
 {
     FUNCTION_PARAMETER_STRUCT_MD *md;
     FUNCTION_PARAMETER           *parray;

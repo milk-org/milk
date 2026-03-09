@@ -16,7 +16,7 @@
 #include "wisdom.h"
 #include "fps.h"
 #include "processinfo.h"
-#include "ImageStreamIO.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 #define FFTWOPTMODE FFTW_ESTIMATE
 
