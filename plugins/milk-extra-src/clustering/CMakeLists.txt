@@ -73,4 +73,5 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
 add_milk_standalone(clustering-cubeclust cubecluster.c)
+target_link_libraries(milk-fpsexec-clustering-cubeclust PUBLIC ${LIBNAME})
 add_milk_standalone(clustering-mindiffscan mindiffscan.c)

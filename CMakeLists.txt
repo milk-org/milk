@@ -319,8 +319,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
     add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}" "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-    # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -329,9 +328,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}" "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
-    # Note: ${LIBNAME} must be defined in the calling scope
-    # Base link: same as add_milk_standalone (no plugin libs)
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
