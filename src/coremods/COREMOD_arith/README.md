@@ -1,5 +1,61 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/3ce1d87bf59e4be58f3093aac9196e97)](https://www.codacy.com/gh/milk-org/COREMOD_arith?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/COREMOD_arith&amp;utm_campaign=Badge_Grade)
-
-# Module COREMOD_arith {#page_module_COREMOD_arith}
+# Module: COREMOD_arith
 
 Arith functions on images
+
+## Source Files
+
+| File | Description |
+|------|-------------|
+| `execute_arith.c` | image arithmetic parser |
+| `image_arith__Cim_Cim__Cim.c` | arith functions |
+| `image_arith__im__im.c` | arith functions |
+| `image_arith__im_f__im.c` | arith functions |
+| `image_arith__im_f_f__im.c` | arith functions |
+| `image_arith__im_im__im.c` | arith functions |
+| `image_crop.c` | crop functions |
+| `image_crop2D.c` | Crop a 2D rectangular region from stream |
+| `image_cropmask.c` | No description available. |
+| `image_dxdy.c` | spatial derivatives |
+| `image_merge3D.c` | Merge images along an axis |
+| `image_multicrop2D.c` | Multi-window 2D cropping from stream |
+| `image_norm.c` | Compute per-slice norm of an image |
+| `image_pixremap.c` | No description available. |
+| `image_pixunmap.c` | No description available. |
+| `image_set_1Dpixrange.c` | Set pixels in a 1D index range |
+| `image_set_2Dpix.c` | Set a single pixel value in a 2D image |
+| `image_set_3Daxes.c` | Set 3D image axes size |
+| `image_set_col.c` | Set image column pixels to a value |
+| `image_set_row.c` | Set image row pixels to a value |
+| `image_setzero.c` | Set all image pixels to zero |
+| `image_slicenormalize.c` | No description available. |
+| `image_stats.c` | simple stats functions |
+| `image_total.c` | sum image pixels |
+| `image_unfold.c` | No description available. |
+| `image_vecmult.c` | multiply image by vector |
+| `imfunctions.c` | apply math functions to images |
+| `mathfuncs.c` | simple math functions |
+
+## Standalone Executables
+
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-arith-crop2D` | `image_crop2D.c` | Crop a 2D rectangular region from stream |
+| `milk-fpsexec-arith-multicrop2D` | `image_multicrop2D.c` | Multi-window 2D cropping from stream |
+| `milk-fpsexec-arith-immerge` | `image_merge3D.c` | Merge images along an axis |
+| `milk-fpsexec-arith-setrow` | `image_set_row.c` | Set image row pixels to a value |
+| `milk-fpsexec-arith-setcol` | `image_set_col.c` | Set image column pixels to a value |
+| `milk-fpsexec-arith-setpix` | `image_set_2Dpix.c` | Set a single pixel value in a 2D image |
+| `milk-fpsexec-arith-imsetzero` | `image_setzero.c` | Set all image pixels to zero |
+| `milk-fpsexec-arith-setpix1Drange` | `image_set_1Dpixrange.c` | Set pixels in a 1D index range |
+| `milk-fpsexec-arith-set3Daxes` | `image_set_3Daxes.c` | Set 3D image axes size |
+| `milk-fpsexec-arith-normslice` | `image_norm.c` | Compute per-slice norm of an image |
+| `milk-fpsexec-arith-cropmask` | `image_cropmask.c` | No description available. |
+| `milk-fpsexec-arith-unfold` | `image_unfold.c` | No description available. |
+| `milk-fpsexec-arith-pixremap` | `image_pixremap.c` | No description available. |
+| `milk-fpsexec-arith-slicenormalize` | `image_slicenormalize.c` | No description available. |
+| `milk-fpsexec-arith-pixunmap` | `image_pixunmap.c` | No description available. |
+| `milk-fpsexec-arith-vecmult` | `image_vecmult.c` | multiply image by vector |
+| `milk-fpsexec-arith-imtrunc` | `image_arith__im_f_f__im.c` | arith functions |
+
+## Dependencies
+- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
