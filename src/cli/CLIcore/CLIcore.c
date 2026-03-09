@@ -528,6 +528,17 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         load_sharedobj(fpscli_libname);
     }
 
+    // Explicitly reference core module constructors to ensure linker doesn't drop them
+    // (these are single-run safe due to their internal INITSTATUS mechanism)
+    extern void libinit_COREMOD_memory(void);
+    extern void libinit_COREMOD_iofits(void);
+    extern void libinit_COREMOD_arith(void);
+    extern void libinit_COREMOD_tools(void);
+    libinit_COREMOD_memory();
+    libinit_COREMOD_iofits();
+    libinit_COREMOD_arith();
+    libinit_COREMOD_tools();
+
     // uncomment following two lines to auto-load all modules
     //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
     load_module_shared_local();

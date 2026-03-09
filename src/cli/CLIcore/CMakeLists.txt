@@ -175,7 +175,7 @@ include(CTest)
 
 set (failRegex "ERROR" "FAIL")
 
-add_test (NAME milklistim COMMAND milk-exec "listim")
+add_test (NAME milklistim COMMAND milk-exec "mem.listim")
 set_property (TEST milklistim PROPERTY LABELS "CLI")
 set_tests_properties(milklistim PROPERTIES TIMEOUT 1)
 set_property (TEST milklistim PROPERTY PASS_REGULAR_EXPRESSION "0 image")
