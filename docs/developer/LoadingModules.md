@@ -1,7 +1,7 @@
 # Loading, Creating Additional Modules 
 
 > [!NOTE]
-> This file: ./src/CommandLineInterface/doc/LoadingModules.md
+> This file: `docs/developer/LoadingModules.md`
 
 
 
@@ -191,7 +191,7 @@ will compile modules `WFpropagate` and `OpticsMaterials` in addition to default 
 
 
 > [!WARNING]
-> Adding entries with the EXTRAMODULES option will compile the corresponding shared objects, but will not have them loaded upon execution of the main executable. See section page_LoadingModules_compiling_autoloading.
+> Adding entries with the EXTRAMODULES option will compile the corresponding shared objects, but will not have them loaded upon execution of the main executable by default. See section below on Automatic loading.
 
 
 
@@ -199,14 +199,14 @@ will compile modules `WFpropagate` and `OpticsMaterials` in addition to default 
 
 Several options are available to have the additional module(s) automatically loaded every time:
 
-- Copy or link the shared object to the `./lib/` directory (see page_LoadingModules_linking_libdir).
+- Copy or link the shared object to the `./lib/` directory.
 
 For example:
 
-	ln -s /usr/local/lib/libWFpropagate.so ~./lib/libWFpropagate.so
+	ln -s /usr/local/lib/libWFpropagate.so ~/src/milk/lib/libWFpropagate.so
 
 
-- Create a system-wide environment variable CLI_ADD_LIBS in `~/.bashrc` (see page_LoadingModules_linking_envvar)
+- Create a system-wide environment variable CLI_ADD_LIBS in `~/.bashrc`.
 
 > [!NOTE]
 > Several versions of the executable can also be defined, each with its own set of automatically loaded modules. For example, the following line can be saved as an executable script:
