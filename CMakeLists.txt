@@ -312,6 +312,8 @@ message("USE_MAGMA                = ${USE_MAGMA}")
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
 
+include(CTest)
+
 set(FPS_STANDALONE_DATA_SRC "${PROJECT_SOURCE_DIR}/src/libfps/fps_standalone_data.c")
 
 function(add_milk_standalone FUNC_NAME SRC_FILE)
@@ -332,13 +334,39 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
-# Variant that additionally links plugin shared libraries.
-# Use ONLY for cacao standalones that call functions from
-# milkfft, milkimagegen, milkimagefilter, or milkimagebasic.
+# Variant that additionally links plugin _compute libraries.
+#
+# Usage:
+#   add_cacao_standalone_plugins(name src.c)
+#     → links ALL 4 plugin _compute libs (backward compatible)
+#
+#   add_cacao_standalone_plugins(name src.c fft imagegen)
+#     → links ONLY the listed plugin _compute libs
+#
+# Valid plugin names: fft, imagegen, imagefilter, imagebasic
 function(add_cacao_standalone_plugins FUNC_NAME SRC_FILE)
     add_cacao_standalone(${FUNC_NAME} ${SRC_FILE})
     set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
-    target_link_libraries(${EXE_NAME} PUBLIC milkfft_compute milkimagegen_compute milkimagefilter_compute milkimagebasic_compute)
+
+    set(_all_plugins fft imagegen imagefilter imagebasic)
+    set(_requested ${ARGN})
+    if(NOT _requested)
+        set(_requested ${_all_plugins})
+    endif()
+
+    foreach(_p IN LISTS _requested)
+        if(_p STREQUAL "fft")
+            target_link_libraries(${EXE_NAME} PUBLIC milkfft_compute)
+        elseif(_p STREQUAL "imagegen")
+            target_link_libraries(${EXE_NAME} PUBLIC milkimagegen_compute)
+        elseif(_p STREQUAL "imagefilter")
+            target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter_compute)
+        elseif(_p STREQUAL "imagebasic")
+            target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic_compute)
+        else()
+            message(WARNING "Unknown plugin '${_p}' in add_cacao_standalone_plugins()")
+        endif()
+    endforeach()
 endfunction()
 
 
@@ -580,8 +608,9 @@ install(FILES doc/help.txt DESTINATION doc)
 
 
 
-# ====================================
-# TESTING
-# ====================================
+# Guard: verify no standalone links CLIcore unexpectedly
+add_test(NAME standalone-dep-check
+         COMMAND ${PROJECT_SOURCE_DIR}/scripts/milk-check-standalone-deps
+                 ${CMAKE_CURRENT_BINARY_DIR})
 
-include(CTest)
+install(PROGRAMS scripts/milk-check-standalone-deps DESTINATION bin)
