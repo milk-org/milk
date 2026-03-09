@@ -11,7 +11,7 @@
 #include "processinfo.h"
 #include "processinfo_procdirname.h"
 #include "processinfo_shm_list_create.h"
-#include "CLIcore/milkDebugTools.h"
+#include "milkDebugTools.h"
 
 void print_help(const char *progname) {
     printf("Usage: %s [options] <regex pattern>\n", progname);

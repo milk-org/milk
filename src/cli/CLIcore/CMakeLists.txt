@@ -113,11 +113,11 @@ if(${HWLOC_FOUND})
 endif()
 target_include_directories(CLIcore
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/streamCTRL>
+                                  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+                                  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../streamCTRL>
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
-                                  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
-
                                   ${HWLOC_INCLUDE_DIR} $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
 target_compile_options(CLIcore PUBLIC)
 
@@ -141,7 +141,7 @@ install(FILES CLIcore.h
               calc.h
               calc_bison.h
               cmdsettings.h
-              milkDebugTools.h
+              ../../engine/libmilkdata/milkDebugTools.h
               standalone_dependencies.h
               ../../engine/libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
@@ -157,12 +157,7 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
 
-install(FILES ../../engine/libprocessinfo/procCTRL/procCTRL_GetCPUloads.h
-              ../../engine/libprocessinfo/procCTRL/procCTRL_GetNumberCPUs.h
-              ../../engine/libprocessinfo/procCTRL/procCTRL_PIDcollectSystemInfo.h
-              ../../engine/libprocessinfo/procCTRL/procCTRL_TUI.h
-              ../../engine/libprocessinfo/procCTRL/procCTRL_processinfo_scan.h
-              DESTINATION include/${SRCNAME}/procCTRL)
+
 
 add_executable(milk-streamCTRL ../streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)

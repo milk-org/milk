@@ -3,6 +3,8 @@
  *
  */
 
+#include <IMGID.h>
+
 int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out);
 int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 

@@ -11,7 +11,7 @@
 
 #include "fps.h"
 #include "processinfo.h"
-#include "ImageStreamIO.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 /* =========================================
  * PUBLIC PARAMETER GLOBALS

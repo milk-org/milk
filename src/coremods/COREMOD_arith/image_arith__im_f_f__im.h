@@ -2,6 +2,8 @@
  * @file    image_arith__im_f_f__im.h
  */
 
+#include <IMGID.h>
+
 errno_t image_arith__im_f_f__im_addCLIcmd();
 
 int arith_image_trunc_byID(long ID, double f1, double f2, long IDout);
