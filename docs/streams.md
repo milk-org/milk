@@ -6,6 +6,26 @@
 
 Unlike file-system-based intermediate data passing, `ImageStreamIO` provides direct memory pointers to running compute units. Processes can read from or write to the same stream with microsecond latencies.
 
+```mermaid
+sequenceDiagram
+    participant Writer as Compute Unit A (Writer)
+    participant SHM as /dev/shm (ImageStreamIO)
+    participant Reader as Compute Unit B (Reader)
+
+    Note over Writer, Reader: Zero-copy shared memory architecture
+    Writer->>SHM: imgid_mkimage("stream1")
+    Reader->>SHM: imgid_connect("stream1")
+    Reader->>Reader: Wait for Semaphore
+    
+    loop Frame processing
+        Writer->>Writer: Compute new frame
+        Writer->>SHM: Write direct memory pointer
+        Writer->>SHM: Post Semaphore
+        SHM-->>Reader: Wakeup Signal
+        Reader->>SHM: Read direct memory pointer
+    end
+```
+
 ## Metadata and Semaphores
 
 Every stream contains more than just pixel values. It includes a comprehensive metadata header:
