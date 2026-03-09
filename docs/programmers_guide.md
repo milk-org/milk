@@ -52,8 +52,11 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
    add_milk_standalone(myfunction myfunction.c)
    # For cacao plugins:
    add_cacao_standalone(myfunc myfunction.c)
-   # If the standalone uses fft/imagegen/imagebasic/imagefilter:
-   add_cacao_standalone_plugins(myfunc myfunction.c)
+   # If the standalone uses plugin compute functions:
+   add_cacao_standalone_plugins(myfunc myfunction.c)          # all 4 plugins
+   add_cacao_standalone_plugins(myfunc myfunction.c fft)       # only fft
+   add_cacao_standalone_plugins(myfunc myfunction.c fft imagegen) # fft + imagegen
+   # Valid plugin names: fft, imagegen, imagefilter, imagebasic
    ```
 
 ### The 8-Section Layout
@@ -103,13 +106,20 @@ Compute unit source files use conditional includes to support both CLI and stand
 
 ### Library Link Patterns
 
-Standalone executables link **`_compute` variants** of COREMOD libraries (no CLI code):
+Standalone executables link **`_compute` variants** of COREMOD libraries (no CLI code).
+By default, they do **not** link their module's shared library (`${LIBNAME}`), avoiding
+a transitive dependency on CLIcore. If a standalone needs module-lib symbols, add
+`target_link_libraries(... PUBLIC ${LIBNAME})` explicitly.
 
 | CMake function | Links | Use for |
 |----------------|-------|---------|
-| `add_milk_standalone()` | _compute libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-* executables |
+| `add_milk_standalone()` | COREMOD _compute libs, milkfps, milkdata, ImageStreamIO | milk-fpsexec-* executables |
 | `add_cacao_standalone()` | Same as above | cacao-fpsexec-* (no plugin deps) |
-| `add_cacao_standalone_plugins()` | Above + milkfft_compute, milkimagegen_compute, milkimagefilter_compute, milkimagebasic_compute | cacao-fpsexec-* that use plugin functions |
+| `add_cacao_standalone_plugins()` | Above + selected plugin _compute libs | cacao-fpsexec-* that use plugin functions |
+
+> [!TIP]
+> Use `_compute` variants of libraries (e.g. `milkstatistic_compute`) when linking
+> standalone executables. The `_compute` variants never pull in CLIcore.
 
 ### Compile-Time Guards
 
@@ -118,6 +128,13 @@ Standalone executables link **`_compute` variants** of COREMOD libraries (no CLI
 | `MILK_NO_CLI` | CMake (`-DMILK_NO_CLI`) | Excludes CLI registration code, uses `CLIcore_standalone.h` |
 | `FPS_STANDALONE` | CMake (`-DFPS_STANDALONE`) | Includes `main()` via `FPS_MAIN_STANDALONE_V2` |
 | `USE_CLI` | CMake option | Controls whether CLI targets are built |
+
+### Verifying Dependencies
+
+Run `milk-check-standalone-deps` to verify no standalone accidentally links CLIcore.
+It is also integrated as a CTest (`standalone-dep-check`) and runs automatically with
+`ctest` in the build directory. 14 standalones are whitelisted as known exceptions
+(they require module-lib symbols for OpenBLAS, FFT, etc.).
 
 ---
 

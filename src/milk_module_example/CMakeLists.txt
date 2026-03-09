@@ -65,3 +65,12 @@ install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 add_milk_standalone(clitest examplefunc_fps_cli_poc.c)
 add_milk_standalone(imsum2 examplefunc2_FPS.c)
 add_milk_standalone(streamprocess examplefunc4_streamprocess.c)
+
+# Smoke tests: verify template standalones link and run
+add_test(NAME template-clitest-h1
+         COMMAND milk-fpsexec-clitest -h1)
+add_test(NAME template-imsum2-h1
+         COMMAND milk-fpsexec-imsum2 -h1)
+add_test(NAME template-streamprocess-h1
+         COMMAND milk-fpsexec-streamprocess -h1)
+
