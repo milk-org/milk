@@ -54,24 +54,24 @@ imageID image_basic_SwapAxis2D_byID(imageID IDin,
 {
     imageID IDout = -1;
 
-    if(data.image[IDin].md[0].naxis != 2)
+    if(dcimg[IDin].md[0].naxis != 2)
     {
         printf("ERROR: image needs to have 2 axis\n");
     }
     else
     {
         create_2Dimage_ID(IDout_name,
-                          data.image[IDin].md[0].size[1],
-                          data.image[IDin].md[0].size[0],
+                          dcimg[IDin].md[0].size[1],
+                          dcimg[IDin].md[0].size[0],
                           &IDout);
 
-        for(uint32_t ii = 0; ii < data.image[IDin].md[0].size[0]; ii++)
-            for(uint32_t jj = 0; jj < data.image[IDin].md[0].size[1]; jj++)
+        for(uint32_t ii = 0; ii < dcimg[IDin].md[0].size[0]; ii++)
+            for(uint32_t jj = 0; jj < dcimg[IDin].md[0].size[1]; jj++)
             {
-                data.image[IDout]
-                .array.F[ii * data.image[IDin].md[0].size[1] + jj] =
-                    data.image[IDin]
-                    .array.F[jj * data.image[IDin].md[0].size[0] + ii];
+                dcimg[IDout]
+                .array.F[ii * dcimg[IDin].md[0].size[1] + jj] =
+                    dcimg[IDin]
+                    .array.F[jj * dcimg[IDin].md[0].size[0] + ii];
             }
     }
 
@@ -84,7 +84,7 @@ imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
     imageID IDin;
     imageID IDout = -1;
 
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
     image_basic_SwapAxis2D_byID(IDin, IDout_name);
 
     return IDout;

@@ -98,8 +98,8 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     char  fnamecp[STRINGMAXLEN_FULLFILENAME];
     long  ID;
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
             imcnt++;
         }
@@ -108,9 +108,9 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     IDarraycp = (long *) malloc(sizeof(long) * imcnt);
 
     imcnt = 0;
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(i = 0; i < dcnimg; i++)
     {
-        if(data.image[i].used == 1)
+        if(dcimg[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
@@ -123,9 +123,9 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
-        //printf("image %s\n", data.image[ID].name);
-        IDarraycp[i] = copy_image_ID(data.image[ID].name, imnamecp, 0);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
+        //printf("image %s\n", dcimg[ID].name);
+        IDarraycp[i] = copy_image_ID(dcimg[ID].name, imnamecp, 0);
     }
 
     list_image_ID();
@@ -133,11 +133,11 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        WRITE_IMAGENAME(imnamecp, "%s_cp", data.image[ID].name);
+        WRITE_IMAGENAME(imnamecp, "%s_cp", dcimg[ID].name);
         WRITE_FULLFILENAME(fnamecp,
                            "./%s/%s.fits",
                            dirname,
-                           data.image[ID].name);
+                           dcimg[ID].name);
         save_fits(imnamecp, fnamecp);
     }
 
@@ -170,8 +170,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     char     *ptr1;
     uint32_t *imsizearray;
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
             imcnt++;
         }
@@ -180,8 +180,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     IDarrayout = (imageID *) malloc(sizeof(imageID) * imcnt);
 
     imcnt = 0;
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
             IDarray[imcnt] = i;
             imcnt++;
@@ -190,7 +190,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
 
     EXECUTE_SYSTEM_COMMAND("mkdir -p %s", dirname);
 
-    IDtrig = image_ID(IDtrig_name, data.image, data.NB_MAX_IMAGE);
+    IDtrig = image_ID(IDtrig_name, dcimg, dcnimg);
 
     printf("Creating arrays\n");
     fflush(stdout);
@@ -198,18 +198,18 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     // create 3D arrays
     for(i = 0; i < imcnt; i++)
     {
-        sprintf(imnameout, "%s_out", data.image[IDarray[i]].name);
-        imsizearray[i] = sizeof(float) * data.image[IDarray[i]].md[0].size[0] *
-                         data.image[IDarray[i]].md[0].size[1];
+        sprintf(imnameout, "%s_out", dcimg[IDarray[i]].name);
+        imsizearray[i] = sizeof(float) * dcimg[IDarray[i]].md[0].size[0] *
+                         dcimg[IDarray[i]].md[0].size[1];
         printf("Creating image %s  size %d x %d x %ld\n",
                imnameout,
-               data.image[IDarray[i]].md[0].size[0],
-               data.image[IDarray[i]].md[0].size[1],
+               dcimg[IDarray[i]].md[0].size[0],
+               dcimg[IDarray[i]].md[0].size[1],
                NBframes);
         fflush(stdout);
         create_3Dimage_ID(imnameout,
-                          data.image[IDarray[i]].md[0].size[0],
-                          data.image[IDarray[i]].md[0].size[1],
+                          dcimg[IDarray[i]].md[0].size[0],
+                          dcimg[IDarray[i]].md[0].size[1],
                           NBframes,
                           &(IDarrayout[i]));
     }
@@ -219,20 +219,20 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     fflush(stdout);
 
     // drive semaphore to zero
-    while(ImageStreamIO_semtrywait(data.image+IDtrig, semtrig) == 0)
+    while(ImageStreamIO_semtrywait(dcimg+IDtrig, semtrig) == 0)
     {
     }
 
     frame = 0;
     while(frame < NBframes)
     {
-        ImageStreamIO_semwait(data.image+IDtrig, semtrig);
+        ImageStreamIO_semwait(dcimg+IDtrig, semtrig);
         for(i = 0; i < imcnt; i++)
         {
             ID   = IDarray[i];
-            ptr0 = (char *) data.image[IDarrayout[i]].array.F;
+            ptr0 = (char *) dcimg[IDarrayout[i]].array.F;
             ptr1 = ptr0 + imsizearray[i] * frame;
-            memcpy(ptr1, data.image[ID].array.F, imsizearray[i]);
+            memcpy(ptr1, dcimg[ID].array.F, imsizearray[i]);
         }
         frame++;
     }
@@ -245,8 +245,8 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        sprintf(imnameout, "%s_out", data.image[ID].name);
-        sprintf(fnameout, "./%s/%s_out.fits", dirname, data.image[ID].name);
+        sprintf(imnameout, "%s_out", dcimg[ID].name);
+        sprintf(fnameout, "./%s/%s_out.fits", dirname, dcimg[ID].name);
         save_fits(imnameout, fnameout);
     }
 

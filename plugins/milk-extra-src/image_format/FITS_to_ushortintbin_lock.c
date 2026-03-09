@@ -60,9 +60,9 @@ imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
     int                 fd;
     unsigned short int *valarray;
 
-    ID    = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[ID].md[0].size[0];
-    ysize = data.image[ID].md[0].size[1];
+    ID    = image_ID(IDname, dcimg, dcnimg);
+    xsize = dcimg[ID].md[0].size[0];
+    ysize = dcimg[ID].md[0].size[1];
 
     valarray = (unsigned short int *) malloc(sizeof(unsigned short int) *
                xsize * ysize);
@@ -72,20 +72,20 @@ imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
         abort();
     }
 
-    if(data.image[ID].md[0].datatype == _DATATYPE_FLOAT)
+    if(dcimg[ID].md[0].datatype == _DATATYPE_FLOAT)
     {
         printf("float -> unsigned short int array\n");
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            valarray[ii] = (unsigned short int) data.image[ID].array.F[ii];
+            valarray[ii] = (unsigned short int) dcimg[ID].array.F[ii];
         }
     }
-    if(data.image[ID].md[0].datatype == _DATATYPE_DOUBLE)
+    if(dcimg[ID].md[0].datatype == _DATATYPE_DOUBLE)
     {
         printf("double -> unsigned short int array\n");
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            valarray[ii] = (unsigned short int) data.image[ID].array.D[ii];
+            valarray[ii] = (unsigned short int) dcimg[ID].array.D[ii];
         }
     }
 

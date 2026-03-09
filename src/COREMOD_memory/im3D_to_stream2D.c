@@ -70,7 +70,7 @@ static errno_t extract_slice_to_2D(
 
     resolveIMGID(
         inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     if(inimg->md->naxis != 3)
     {
@@ -162,7 +162,7 @@ static errno_t compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     IMGID outimg;
     outimg = imgid_make_from_name_2D(

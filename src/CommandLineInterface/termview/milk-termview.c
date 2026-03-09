@@ -9,9 +9,9 @@ int main(int argc, char *argv[])
 {
     // Initialize data
     if(getenv("MILK_QUIET")) {
-        data.quiet = 1;
+        dcquiet = 1;
     } else {
-        data.quiet = 0;
+        dcquiet = 0;
     }
 
     strncpy(data.processname, "termview", STRINGMAXLEN_PROCESSNAME - 1);

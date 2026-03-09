@@ -670,10 +670,10 @@ static errno_t compute_function()
     // input
 
     IMGID imginA = imgid_make_from_name(inmatA);
-    resolveIMGID(&imginA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginA, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imginB = imgid_make_from_name(inmatB);
-    resolveIMGID(&imginB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginB, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     // output

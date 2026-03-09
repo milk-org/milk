@@ -65,23 +65,23 @@ static errno_t customCONFsetup()
 // Optional custom configuration checks
 static errno_t customCONFcheck()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        long fpi_ex0mode = functionparameter_GetParamIndex(data.fpsptr, ".option.ex0mode");
-        long fpi_ex1mode = functionparameter_GetParamIndex(data.fpsptr, ".option.ex1mode");
+        long fpi_ex0mode = functionparameter_GetParamIndex(dcfpsptr, ".option.ex0mode");
+        long fpi_ex1mode = functionparameter_GetParamIndex(dcfpsptr, ".option.ex1mode");
 
         if (fpi_ex0mode >= 0 && fpi_ex1mode >= 0)
         {
-            if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // if ex0mode is in ON state
+            if(dcfpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // if ex0mode is in ON state
             {
                 // Then activate ex1mode argument
-                data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
-                data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
+                dcfpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
+                dcfpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
             }
             else // OFF state
             {
-                data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
-                data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
+                dcfpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
+                dcfpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
             }
         }
 
@@ -157,7 +157,7 @@ static errno_t streamprocess(
 
     // resolve image
     // This function call has low overhead, as it will acknowledge existing image
-    resolveIMGID(inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize  = inimg->mdt->size[0];
     uint32_t ysize  = inimg->mdt->size[1];
@@ -191,7 +191,7 @@ static errno_t compute_function()
     IMGID inimg = imgid_make_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
     // Once the image is resolved, this function will execute very quickly, only checking if resolved
-    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Create output image/stream.
     // Here we only fill in the name.

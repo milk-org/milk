@@ -147,9 +147,9 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     list_image_ID();
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, dcimg, dcnimg);
 
-    datatype = data.image[ID_Rmatrix].md[0].datatype;
+    datatype = dcimg[ID_Rmatrix].md[0].datatype;
     if(datatype != _DATATYPE_FLOAT)
     {
         printf("wrong type\n");
@@ -159,18 +159,18 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     uint32_t m;
     uint32_t n;
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if(dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
-        m = data.image[ID_Rmatrix].md[0].size[0] *
-            data.image[ID_Rmatrix].md[0].size[1];
-        n = data.image[ID_Rmatrix].md[0].size[2];
+        m = dcimg[ID_Rmatrix].md[0].size[0] *
+            dcimg[ID_Rmatrix].md[0].size[1];
+        n = dcimg[ID_Rmatrix].md[0].size[2];
         printf("3D image -> %d %d\n", m, n);
         fflush(stdout);
     }
     else
     {
-        m = data.image[ID_Rmatrix].md[0].size[0];
-        n = data.image[ID_Rmatrix].md[0].size[1];
+        m = dcimg[ID_Rmatrix].md[0].size[0];
+        n = dcimg[ID_Rmatrix].md[0].size[1];
         printf("2D image -> %d %d\n", m, n);
         fflush(stdout);
     }
@@ -193,7 +193,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     h_A = (float *) malloc(sizeof(float) * m * n);
 
     cudaStat = cudaMemcpy(d_A,
-                          data.image[ID_Rmatrix].array.F,
+                          dcimg[ID_Rmatrix].array.F,
                           sizeof(float) * m * n,
                           cudaMemcpyHostToDevice);
     if(cudaStat != cudaSuccess)
@@ -294,7 +294,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(ID_VTmatrix_name, n, n, &ID_VTmatrix));
 
-    cudaStat = cudaMemcpy(data.image[ID_VTmatrix].array.F,
+    cudaStat = cudaMemcpy(dcimg[ID_VTmatrix].array.F,
                           d_VT,
                           sizeof(float) * n * n,
                           cudaMemcpyDeviceToHost);
@@ -334,7 +334,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("matU", m, m, &ID));
 
-    cudaMemcpy(data.image[ID].array.F,
+    cudaMemcpy(dcimg[ID].array.F,
                d_U,
                sizeof(float) * m * m,
                cudaMemcpyDeviceToHost);
@@ -352,14 +352,14 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     for(uint32_t ii = 0; ii < m; ii++)
         for(uint32_t jj = 0; jj < n; jj++)
         {
-            h_U1[jj * m + ii] = data.image[ID].array.F[jj * m + ii];
+            h_U1[jj * m + ii] = dcimg[ID].array.F[jj * m + ii];
         }
     cudaMemcpy(d_U1, h_U1, sizeof(float) * m * n, cudaMemcpyHostToDevice);
     free(h_U1);
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("matU1", m, n, &ID));
 
-    cudaMemcpy(data.image[ID].array.F,
+    cudaMemcpy(dcimg[ID].array.F,
                d_U1,
                sizeof(float) * m * n,
                cudaMemcpyDeviceToHost);
@@ -382,14 +382,14 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
         for(uint32_t jj = 0; jj < n; jj++)
         {
-            data.image[ID_VTmatrix].array.F[jj * n + ii] *= val;
+            dcimg[ID_VTmatrix].array.F[jj * n + ii] *= val;
         }
     }
     printf("%ld eigenvalues kept\n", cnt0);
 
     // copy VT back to GPU
     cudaStat = cudaMemcpy(d_VT,
-                          data.image[ID_VTmatrix].array.F,
+                          dcimg[ID_VTmatrix].array.F,
                           sizeof(float) * n * n,
                           cudaMemcpyHostToDevice);
     if(cudaStat != cudaSuccess)
@@ -435,10 +435,10 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if(dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
-        arraysizetmp[0] = data.image[ID_Rmatrix].md[0].size[0];
-        arraysizetmp[1] = data.image[ID_Rmatrix].md[0].size[1];
+        arraysizetmp[0] = dcimg[ID_Rmatrix].md[0].size[0];
+        arraysizetmp[1] = dcimg[ID_Rmatrix].md[0].size[1];
         arraysizetmp[2] = n;
     }
     else
@@ -448,7 +448,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     }
 
     FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                      data.image[ID_Rmatrix].md[0].naxis,
+                                      dcimg[ID_Rmatrix].md[0].naxis,
                                       arraysizetmp,
                                       _DATATYPE_FLOAT,
                                       0,
@@ -456,7 +456,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
                                       0,
                                       &ID_Cmatrix));
 
-    //   cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_M, sizeof(float)*m*n, cudaMemcpyDeviceToHost);
+    //   cudaStat = cudaMemcpy(dcimg[ID_Cmatrix].array.F, d_M, sizeof(float)*m*n, cudaMemcpyDeviceToHost);
 
     h_M = (float *) malloc(sizeof(float) * m * n);
     cudaStat =
@@ -464,10 +464,10 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
     for(uint32_t ii = 0; ii < m; ii++)
         for(uint32_t jj = 0; jj < n; jj++)
         {
-            data.image[ID_Cmatrix].array.F[jj * m + ii] = h_M[ii * n + jj];
+            dcimg[ID_Cmatrix].array.F[jj * m + ii] = h_M[ii * n + jj];
         }
 
-    //cudaStat = cudaMemcpy(data.image[ID_Cmatrix].array.F, d_VT, sizeof(float)*n*n, cudaMemcpyDeviceToHost);
+    //cudaStat = cudaMemcpy(dcimg[ID_Cmatrix].array.F, d_VT, sizeof(float)*n*n, cudaMemcpyDeviceToHost);
     if(cudaStat != cudaSuccess)
     {
         printf("cudaMemcpy returned error code %d, line(%d)\n",

@@ -41,12 +41,12 @@ static uint32_t *cropysize;
 
 static errno_t customCONFsetup()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        long fpi = functionparameter_GetParamIndex(data.fpsptr, ".insname");
+        long fpi = functionparameter_GetParamIndex(dcfpsptr, ".insname");
         if(fpi >= 0)
         {
-            data.fpsptr->parray[fpi].fpflag |=
+            dcfpsptr->parray[fpi].fpflag |=
                 FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
         }
     }
@@ -102,7 +102,7 @@ static errno_t compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = imgid_make_from_name(cminsname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     //long m = imgin.md->size[0] * imgin.md->size[1];
 

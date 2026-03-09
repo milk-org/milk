@@ -13,16 +13,16 @@ variableID create_variable_ID(const char *name, double value)
     variableID ID;
     long       i1, i2;
 
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     ID = -1;
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
-    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+    i1 = image_ID(name, dcimg, dcnimg);
+    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     i2 = variable_ID(name);
-    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     if(i1 != -1)
     {
@@ -43,12 +43,12 @@ variableID create_variable_ID(const char *name, double value)
             ID = next_avail_variable_ID();
         }
 
-        data.variable[ID].used = 1;
-        data.variable[ID].type = 0; /** floating point double */
-        strcpy(data.variable[ID].name, name);
-        data.variable[ID].value.f = value;
+        dcvar[ID].used = 1;
+        dcvar[ID].type = 0; /** floating point double */
+        strcpy(dcvar[ID].name, name);
+        dcvar[ID].value.f = value;
     }
-    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, data.NB_MAX_IMAGE, data.NB_MAX_VARIABLE);
+    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
     return ID;
 }
 
@@ -59,7 +59,7 @@ variableID create_variable_long_ID(const char *name, long value)
     long       i1, i2;
 
     ID = -1;
-    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
+    i1 = image_ID(name, dcimg, dcnimg);
     i2 = variable_ID(name);
 
     if(i1 != -1)
@@ -81,10 +81,10 @@ variableID create_variable_long_ID(const char *name, long value)
             ID = next_avail_variable_ID();
         }
 
-        data.variable[ID].used = 1;
-        data.variable[ID].type = 1; /** long */
-        strcpy(data.variable[ID].name, name);
-        data.variable[ID].value.l = value;
+        dcvar[ID].used = 1;
+        dcvar[ID].type = 1; /** long */
+        strcpy(dcvar[ID].name, name);
+        dcvar[ID].value.l = value;
     }
 
     return ID;
@@ -97,7 +97,7 @@ variableID create_variable_string_ID(const char *name, const char *value)
     long       i1, i2;
 
     ID = -1;
-    i1 = image_ID(name, data.image, data.NB_MAX_IMAGE);
+    i1 = image_ID(name, dcimg, dcnimg);
     i2 = variable_ID(name);
 
     if(i1 != -1)
@@ -119,10 +119,10 @@ variableID create_variable_string_ID(const char *name, const char *value)
             ID = next_avail_variable_ID();
         }
 
-        data.variable[ID].used = 1;
-        data.variable[ID].type = 2; /** string */
-        strcpy(data.variable[ID].name, name);
-        strcpy(data.variable[ID].value.s, value);
+        dcvar[ID].used = 1;
+        dcvar[ID].type = 2; /** string */
+        strcpy(dcvar[ID].name, name);
+        strcpy(dcvar[ID].value.s, value);
     }
 
     return ID;

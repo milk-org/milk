@@ -12,8 +12,8 @@ errno_t delete_variable_ID(const char *varname)
     ID = variable_ID(varname);
     if(ID != -1)
     {
-        data.variable[ID].used = 0;
-        /*      free(data.variable[ID].name);*/
+        dcvar[ID].used = 0;
+        /*      free(dcvar[ID].name);*/
     }
     else
         fprintf(stderr,

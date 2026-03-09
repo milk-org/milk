@@ -131,7 +131,7 @@ imageID read_ASCIIimage(
         while((fscanf(fp, "%ld %ld %f\n", &iipix, &jjpix, &value)) == 3)
             if((iipix > -1) && (iipix < xsize) && (jjpix > -1) && (jjpix < ysize))
             {
-                data.image[ID].array.F[jjpix * xsize + iipix] = value;
+                dcimg[ID].array.F[jjpix * xsize + iipix] = value;
             }
         fclose(fp);
     }
@@ -171,7 +171,7 @@ imageID read_ASCIIimage1(
             {
                 if(fscanf(fp, "%lf", &value) == 1)
                 {
-                    data.image[ID].array.F[jj * xsize + ii] = value;
+                    dcimg[ID].array.F[jj * xsize + ii] = value;
                 }
                 else
                 {
@@ -271,9 +271,9 @@ errno_t read_BMPimage(
             RedValue = *pChar;
 
             // ---------WRITE TO FILES ---------
-            data.image[IDR].array.F[r * originalImage.cols + c] = 1.0 * RedValue;
-            data.image[IDG].array.F[r * originalImage.cols + c] = 1.0 * GreenValue;
-            data.image[IDB].array.F[r * originalImage.cols + c] = 1.0 * BlueValue;
+            dcimg[IDR].array.F[r * originalImage.cols + c] = 1.0 * RedValue;
+            dcimg[IDG].array.F[r * originalImage.cols + c] = 1.0 * GreenValue;
+            dcimg[IDB].array.F[r * originalImage.cols + c] = 1.0 * BlueValue;
         }
     }
 
@@ -381,12 +381,12 @@ imageID image_format_reconstruct_from_RGGBchan(
     imageID ID00, ID01, ID10, ID11;
 
 
-    IDr = image_ID(IDr_name, data.image, data.NB_MAX_IMAGE);
-    IDg1 = image_ID(IDg1_name, data.image, data.NB_MAX_IMAGE);
-    IDg2 = image_ID(IDg2_name, data.image, data.NB_MAX_IMAGE);
-    IDb = image_ID(IDb_name, data.image, data.NB_MAX_IMAGE);
-    xsize1 = data.image[IDr].md[0].size[0];
-    ysize1 = data.image[IDr].md[0].size[1];
+    IDr = image_ID(IDr_name, dcimg, dcnimg);
+    IDg1 = image_ID(IDg1_name, dcimg, dcnimg);
+    IDg2 = image_ID(IDg2_name, dcimg, dcnimg);
+    IDb = image_ID(IDb_name, dcimg, dcnimg);
+    xsize1 = dcimg[IDr].md[0].size[0];
+    ysize1 = dcimg[IDr].md[0].size[1];
 
     xsize2 = 2 * xsize1;
     ysize2 = 2 * ysize1;
@@ -427,14 +427,14 @@ imageID image_format_reconstruct_from_RGGBchan(
     for(ii1 = 0; ii1 < xsize1; ii1++)
         for(jj1 = 0; jj1 < ysize1; jj1++)
         {
-            data.image[ID].array.F[(2 * jj1 + 1)*xsize2 + 2 * ii1] =
-                data.image[ID01].array.F[jj1 * xsize1 + ii1];
-            data.image[ID].array.F[2 * jj1 * xsize2 + 2 * ii1] =
-                data.image[ID00].array.F[jj1 * xsize1 + ii1];
-            data.image[ID].array.F[(2 * jj1 + 1)*xsize2 + (2 * ii1 + 1)] =
-                data.image[ID11].array.F[jj1 * xsize1 + ii1];
-            data.image[ID].array.F[2 * jj1 * xsize2 + (2 * ii1 + 1)] =
-                data.image[ID10].array.F[jj1 * xsize1 + ii1];
+            dcimg[ID].array.F[(2 * jj1 + 1)*xsize2 + 2 * ii1] =
+                dcimg[ID01].array.F[jj1 * xsize1 + ii1];
+            dcimg[ID].array.F[2 * jj1 * xsize2 + 2 * ii1] =
+                dcimg[ID00].array.F[jj1 * xsize1 + ii1];
+            dcimg[ID].array.F[(2 * jj1 + 1)*xsize2 + (2 * ii1 + 1)] =
+                dcimg[ID11].array.F[jj1 * xsize1 + ii1];
+            dcimg[ID].array.F[2 * jj1 * xsize2 + (2 * ii1 + 1)] =
+                dcimg[ID10].array.F[jj1 * xsize1 + ii1];
         }
 
     return(ID);
@@ -469,16 +469,16 @@ imageID IMAGE_FORMAT_requantize(
     long ii;
     long xsize, ysize;
 
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[IDin].md[0].size[0];
-    ysize = data.image[IDin].md[0].size[1];
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
+    xsize = dcimg[IDin].md[0].size[0];
+    ysize = dcimg[IDin].md[0].size[1];
 
     IDout = create_2Dimage_ID(IDout_name, xsize, ysize);
     for(ii = 0; ii < xsize * ysize; ii++)
     {
         double value;
 
-        value = data.image[IDin].array.F[ii];
+        value = dcimg[IDin].array.F[ii];
         value = value - bias;
         if(value < 0.0)
         {
@@ -489,7 +489,7 @@ imageID IMAGE_FORMAT_requantize(
             value = 2.0 / alpha * sqrt(gain) * (sqrt(gain * RON * RON + value) - sqrt(
                                                     gain) * RON);
         }
-        data.image[IDout].array.F[ii] = value + 0.5;
+        dcimg[IDout].array.F[ii] = value + 0.5;
     }
 
     return(IDout);
@@ -514,16 +514,16 @@ imageID IMAGE_FORMAT_dequantize(
     long ii;
     long xsize, ysize;
 
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[IDin].md[0].size[0];
-    ysize = data.image[IDin].md[0].size[1];
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
+    xsize = dcimg[IDin].md[0].size[0];
+    ysize = dcimg[IDin].md[0].size[1];
 
     IDout = create_2Dimage_ID(IDout_name, xsize, ysize);
     for(ii = 0; ii < xsize * ysize; ii++)
     {
         double value;
 
-        value = data.image[IDin].array.F[ii];
+        value = dcimg[IDin].array.F[ii];
         if(value < 0.0)
         {
             value = value * alpha * RON + bias;
@@ -534,7 +534,7 @@ imageID IMAGE_FORMAT_dequantize(
             value = value * value;
             value = value - gain * RON * RON + bias;
         }
-        data.image[IDout].array.F[ii] = value;
+        dcimg[IDout].array.F[ii] = value;
     }
 
     return(IDout);
@@ -598,7 +598,7 @@ imageID IMAGE_FORMAT_read_binary16(
                 v1 = (long)(((unsigned const char *)buffer)[i]) + (long)(256 * ((
                             unsigned const char *)buffer)[i + 1]);
             }
-            data.image[ID].array.F[jj * xsize + ii] = (float) v1;
+            dcimg[ID].array.F[jj * xsize + ii] = (float) v1;
             i += 2;
         }
 

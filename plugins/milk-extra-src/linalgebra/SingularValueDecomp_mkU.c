@@ -105,9 +105,9 @@ errno_t compute_SVDU(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&imgV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&imgS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgM, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgV, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgS, ERRMODE_ABORT, dcimg, dcnimg);
 
     computeSGEMM(
         imgM,
@@ -174,13 +174,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM = imgid_make_from_name(inmatM);
-    resolveIMGID(&imginM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imginV = imgid_make_from_name(inmatV);
-    resolveIMGID(&imginV, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginV, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imginS = imgid_make_from_name(invecS);
-    resolveIMGID(&imginS, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginS, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     IMGID imgoutU  = imgid_make_from_name(outmatU);

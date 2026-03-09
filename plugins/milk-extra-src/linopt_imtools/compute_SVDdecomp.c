@@ -120,10 +120,10 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     printf("[SVD start]");
     fflush(stdout);
 
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
 
-    n = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1];
-    m = data.image[IDin].md[0].size[2];
+    n = dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
+    m = dcimg[IDin].md[0].size[2];
 
     matrix_DtraD_eval = gsl_vector_alloc(m);
     matrix_D          = gsl_matrix_alloc(n, m);
@@ -139,7 +139,7 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
             gsl_matrix_set(matrix_D,
                            ii,
                            k,
-                           data.image[IDin].array.F[k * n + ii]);
+                           dcimg[IDin].array.F[k * n + ii]);
         }
     }
     /* compute DtraD */
@@ -169,13 +169,13 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
 
     for(long k = 0; k < m; k++)
     {
-        data.image[IDcoeff].array.F[k] = gsl_vector_get(matrix_DtraD_eval, k);
+        dcimg[IDcoeff].array.F[k] = gsl_vector_get(matrix_DtraD_eval, k);
     }
 
     /** Write rotation matrix to go from DM modes to eigenmodes */
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
-    ID_VTmatrix     = image_ID("SVD_VTm", data.image, data.NB_MAX_IMAGE);
+    ID_VTmatrix     = image_ID("SVD_VTm", dcimg, dcnimg);
     if(ID_VTmatrix != -1)
     {
         delete_image_ID("SVD_VTm", DELETE_IMAGE_ERRMODE_WARNING);
@@ -191,29 +191,29 @@ errno_t linopt_compute_SVDdecomp(const char *IDin_name,
     for(long ii = 0; ii < m; ii++)   // modes
         for(long k = 0; k < m; k++)  // modes
         {
-            data.image[ID_VTmatrix].array.F[k * m + ii] =
+            dcimg[ID_VTmatrix].array.F[k * m + ii] =
                 (float) gsl_matrix_get(matrix_DtraD_evec, k, ii);
         }
 
     /// Compute SVD decomp
 
     FUNC_CHECK_RETURN(create_3Dimage_ID(IDout_name,
-                                        data.image[IDin].md[0].size[0],
-                                        data.image[IDin].md[0].size[1],
-                                        data.image[IDin].md[0].size[2],
+                                        dcimg[IDin].md[0].size[0],
+                                        dcimg[IDin].md[0].size[1],
+                                        dcimg[IDin].md[0].size[2],
                                         &IDout));
 
     for(long kk = 0; kk < m; kk++)  /// eigen mode index
     {
-        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m, data.image[IDcoeff].array.F[kk]);
+        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m, dcimg[IDcoeff].array.F[kk]);
         //       fflush(stdout);
         for(long kk1 = 0; kk1 < m; kk1++)
         {
             for(long ii = 0; ii < n; ii++)
             {
-                data.image[IDout].array.F[kk * n + ii] +=
-                    data.image[ID_VTmatrix].array.F[kk1 * m + kk] *
-                    data.image[IDin].array.F[kk1 * n + ii];
+                dcimg[IDout].array.F[kk * n + ii] +=
+                    dcimg[ID_VTmatrix].array.F[kk1 * m + kk] *
+                    dcimg[IDin].array.F[kk1 * n + ii];
             }
         }
     }

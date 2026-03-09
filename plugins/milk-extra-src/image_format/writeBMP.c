@@ -199,11 +199,11 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
 
     printf("Function %s\n", __FUNCTION__);
 
-    IDR    = image_ID(IDnameR, data.image, data.NB_MAX_IMAGE);
-    IDG    = image_ID(IDnameG, data.image, data.NB_MAX_IMAGE);
-    IDB    = image_ID(IDnameB, data.image, data.NB_MAX_IMAGE);
-    width  = (uint32_t) data.image[IDR].md[0].size[0];
-    height = (uint32_t) data.image[IDR].md[0].size[1];
+    IDR    = image_ID(IDnameR, dcimg, dcnimg);
+    IDG    = image_ID(IDnameG, dcimg, dcnimg);
+    IDB    = image_ID(IDnameB, dcimg, dcnimg);
+    width  = (uint32_t) dcimg[IDR].md[0].size[0];
+    height = (uint32_t) dcimg[IDR].md[0].size[1];
 
     array =
         (unsigned char *) malloc(sizeof(unsigned char) * width * height * 3);
@@ -217,15 +217,15 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
         for(jj = 0; jj < height; jj++)
         {
             array[(jj * width + ii) * 3] =
-                (unsigned char)(data.image[IDB]
+                (unsigned char)(dcimg[IDB]
                                 .array.F[(height - jj - 1) * width + ii]);
 
             array[(jj * width + ii) * 3 + 1] =
-                (unsigned char)(data.image[IDG]
+                (unsigned char)(dcimg[IDG]
                                 .array.F[(height - jj - 1) * width + ii]);
 
             array[(jj * width + ii) * 3 + 2] =
-                (unsigned char)(data.image[IDR]
+                (unsigned char)(dcimg[IDR]
                                 .array.F[(height - jj - 1) * width + ii]);
         }
     generateBitmapImage(array, height, width, outname);

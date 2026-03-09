@@ -60,13 +60,13 @@ errno_t list_variable_ID()
 {
     variableID i;
 
-    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if(data.variable[i].used == 1)
+    for(i = 0; i < dcnvar; i++)
+        if(dcvar[i].used == 1)
         {
             printf("%4ld %16s %25.18g\n",
                    i,
-                   data.variable[i].name,
-                   data.variable[i].value.f);
+                   dcvar[i].name,
+                   dcvar[i].value.f);
         }
 
     return RETURN_SUCCESS;
@@ -78,13 +78,13 @@ errno_t list_variable_ID_file(const char *fname)
     FILE   *fp;
 
     fp = fopen(fname, "w");
-    for(i = 0; i < data.NB_MAX_VARIABLE; i++)
-        if(data.variable[i].used == 1)
+    for(i = 0; i < dcnvar; i++)
+        if(dcvar[i].used == 1)
         {
             fprintf(fp,
                     "%s=%.18g\n",
-                    data.variable[i].name,
-                    data.variable[i].value.f);
+                    dcvar[i].name,
+                    dcvar[i].value.f);
         }
 
     fclose(fp);

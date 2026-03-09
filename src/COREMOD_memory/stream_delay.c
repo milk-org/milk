@@ -95,35 +95,35 @@ static uint64_t *statuskkout    = NULL;
 
 static errno_t customCONFcheck()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
         long fpi_avemode =
             functionparameter_GetParamIndex(
-                data.fpsptr,
+                dcfpsptr,
                 ".option.timeavemode");
         long fpi_dtns =
             functionparameter_GetParamIndex(
-                data.fpsptr,
+                dcfpsptr,
                 ".option.timeavedtns");
 
         if(fpi_avemode >= 0 && fpi_dtns >= 0)
         {
-            if(data.fpsptr->parray[fpi_avemode]
+            if(dcfpsptr->parray[fpi_avemode]
                 .val.i32[0] == 0)
             {
-                data.fpsptr
+                dcfpsptr
                     ->parray[fpi_dtns]
                     .fpflag &= ~FPFLAG_USED;
-                data.fpsptr
+                dcfpsptr
                     ->parray[fpi_dtns]
                     .fpflag &= ~FPFLAG_VISIBLE;
             }
             else
             {
-                data.fpsptr
+                dcfpsptr
                     ->parray[fpi_dtns]
                     .fpflag |= FPFLAG_USED;
-                data.fpsptr
+                dcfpsptr
                     ->parray[fpi_dtns]
                     .fpflag |= FPFLAG_VISIBLE;
             }
@@ -292,7 +292,7 @@ static errno_t compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     IMGID outimg =
         imgid_make_from_name(outimname);

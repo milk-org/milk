@@ -109,15 +109,15 @@ imageID basic_add(const char *__restrict ID_name1,
     uint8_t datatype1, datatype2, datatype;
     int     datatypeOK;
 
-    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
-    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
-    naxes1[0] = data.image[ID1].md[0].size[0];
-    naxes1[1] = data.image[ID1].md[0].size[1];
-    naxes2[0] = data.image[ID2].md[0].size[0];
-    naxes2[1] = data.image[ID2].md[0].size[1];
+    ID1       = image_ID(ID_name1, dcimg, dcnimg);
+    ID2       = image_ID(ID_name2, dcimg, dcnimg);
+    naxes1[0] = dcimg[ID1].md[0].size[0];
+    naxes1[1] = dcimg[ID1].md[0].size[1];
+    naxes2[0] = dcimg[ID2].md[0].size[0];
+    naxes2[1] = dcimg[ID2].md[0].size[1];
 
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    datatype1 = dcimg[ID1].md[0].datatype;
+    datatype2 = dcimg[ID2].md[0].datatype;
 
     datatypeOK = 0;
 
@@ -138,7 +138,7 @@ imageID basic_add(const char *__restrict ID_name1,
         exit(EXIT_FAILURE);
     }
 
-    /*  if(data.quiet==0)*/
+    /*  if(dcquiet==0)*/
     /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x %ld )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
     xmin = 0;
     if(off1 < 0)
@@ -164,20 +164,20 @@ imageID basic_add(const char *__restrict ID_name1,
     if(datatype == _DATATYPE_FLOAT)
     {
         create_2Dimage_ID(ID_name_out, (xmax - xmin), (ymax - ymin), &ID_out);
-        naxes[0] = data.image[ID_out].md[0].size[0];
-        naxes[1] = data.image[ID_out].md[0].size[1];
+        naxes[0] = dcimg[ID_out].md[0].size[0];
+        naxes[1] = dcimg[ID_out].md[0].size[1];
 
         for(jj = 0; jj < naxes[1]; jj++)
             for(ii = 0; ii < naxes[0]; ii++)
             {
                 {
-                    data.image[ID_out].array.F[jj * naxes[0] + ii] = 0;
+                    dcimg[ID_out].array.F[jj * naxes[0] + ii] = 0;
                     /* if pixel is in ID1 */
                     if(((ii + xmin) >= 0) && ((ii + xmin) < naxes1[0]))
                         if(((jj + ymin) >= 0) && ((jj + ymin) < naxes1[1]))
                         {
-                            data.image[ID_out].array.F[jj * naxes[0] + ii] +=
-                                data.image[ID1]
+                            dcimg[ID_out].array.F[jj * naxes[0] + ii] +=
+                                dcimg[ID1]
                                 .array
                                 .F[(jj + ymin) * naxes1[0] + (ii + xmin)];
                         }
@@ -187,8 +187,8 @@ imageID basic_add(const char *__restrict ID_name1,
                         if(((jj + ymin - off2) >= 0) &&
                                 ((jj + ymin - off2) < naxes2[1]))
                         {
-                            data.image[ID_out].array.F[jj * naxes[0] + ii] +=
-                                data.image[ID2]
+                            dcimg[ID_out].array.F[jj * naxes[0] + ii] +=
+                                dcimg[ID2]
                                 .array.F[(jj + ymin - off2) * naxes2[0] +
                                                             (ii + xmin - off1)];
                         }
@@ -202,20 +202,20 @@ imageID basic_add(const char *__restrict ID_name1,
                                  (xmax - xmin),
                                  (ymax - ymin),
                                  &ID_out);
-        naxes[0] = data.image[ID_out].md[0].size[0];
-        naxes[1] = data.image[ID_out].md[0].size[1];
+        naxes[0] = dcimg[ID_out].md[0].size[0];
+        naxes[1] = dcimg[ID_out].md[0].size[1];
 
         for(jj = 0; jj < naxes[1]; jj++)
             for(ii = 0; ii < naxes[0]; ii++)
             {
                 {
-                    data.image[ID_out].array.D[jj * naxes[0] + ii] = 0;
+                    dcimg[ID_out].array.D[jj * naxes[0] + ii] = 0;
                     /* if pixel is in ID1 */
                     if(((ii + xmin) >= 0) && ((ii + xmin) < naxes1[0]))
                         if(((jj + ymin) >= 0) && ((jj + ymin) < naxes1[1]))
                         {
-                            data.image[ID_out].array.D[jj * naxes[0] + ii] +=
-                                data.image[ID1]
+                            dcimg[ID_out].array.D[jj * naxes[0] + ii] +=
+                                dcimg[ID1]
                                 .array
                                 .D[(jj + ymin) * naxes1[0] + (ii + xmin)];
                         }
@@ -225,8 +225,8 @@ imageID basic_add(const char *__restrict ID_name1,
                         if(((jj + ymin - off2) >= 0) &&
                                 ((jj + ymin - off2) < naxes2[1]))
                         {
-                            data.image[ID_out].array.D[jj * naxes[0] + ii] +=
-                                data.image[ID2]
+                            dcimg[ID_out].array.D[jj * naxes[0] + ii] +=
+                                dcimg[ID2]
                                 .array.D[(jj + ymin - off2) * naxes2[0] +
                                                             (ii + xmin - off1)];
                         }
@@ -252,18 +252,18 @@ imageID basic_add3D(const char *__restrict ID_name1,
     uint8_t datatype1, datatype2, datatype;
     int     datatypeOK;
 
-    ID1       = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
-    ID2       = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
-    naxes1[0] = data.image[ID1].md[0].size[0];
-    naxes1[1] = data.image[ID1].md[0].size[1];
-    naxes1[2] = data.image[ID1].md[0].size[2];
+    ID1       = image_ID(ID_name1, dcimg, dcnimg);
+    ID2       = image_ID(ID_name2, dcimg, dcnimg);
+    naxes1[0] = dcimg[ID1].md[0].size[0];
+    naxes1[1] = dcimg[ID1].md[0].size[1];
+    naxes1[2] = dcimg[ID1].md[0].size[2];
 
-    naxes2[0] = data.image[ID2].md[0].size[0];
-    naxes2[1] = data.image[ID2].md[0].size[1];
-    naxes2[2] = data.image[ID2].md[0].size[2];
+    naxes2[0] = dcimg[ID2].md[0].size[0];
+    naxes2[1] = dcimg[ID2].md[0].size[1];
+    naxes2[2] = dcimg[ID2].md[0].size[2];
 
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    datatype1 = dcimg[ID1].md[0].datatype;
+    datatype2 = dcimg[ID2].md[0].datatype;
 
     datatypeOK = 0;
 
@@ -284,7 +284,7 @@ imageID basic_add3D(const char *__restrict ID_name1,
         exit(0);
     }
 
-    /*  if(data.quiet==0)*/
+    /*  if(dcquiet==0)*/
     /* printf("add called with %s ( %ld x %ld ) %s ( %ld x %ld ) and offset ( %ld x %ld )\n",ID_name1,naxes1[0],naxes1[1],ID_name2,naxes2[0],naxes2[1],off1,off2);*/
     xmin = 0;
     if(off1 < 0)
@@ -329,16 +329,16 @@ imageID basic_add3D(const char *__restrict ID_name1,
                           (ymax - ymin),
                           (zmax - zmin),
                           &ID_out);
-        naxes[0] = data.image[ID_out].md[0].size[0];
-        naxes[1] = data.image[ID_out].md[0].size[1];
-        naxes[2] = data.image[ID_out].md[0].size[2];
+        naxes[0] = dcimg[ID_out].md[0].size[0];
+        naxes[1] = dcimg[ID_out].md[0].size[1];
+        naxes[2] = dcimg[ID_out].md[0].size[2];
 
         for(uint32_t kk = 0; kk < naxes[2]; kk++)
             for(uint32_t jj = 0; jj < naxes[1]; jj++)
                 for(uint32_t ii = 0; ii < naxes[0]; ii++)
                 {
                     {
-                        data.image[ID_out].array.F[kk * naxes[1] * naxes[0] +
+                        dcimg[ID_out].array.F[kk * naxes[1] * naxes[0] +
                                                    jj * naxes[0] + ii] = 0;
                         /* if pixel is in ID1 */
 
@@ -347,10 +347,10 @@ imageID basic_add3D(const char *__restrict ID_name1,
                                 if(((kk + zmin) >= 0) &&
                                         ((kk + zmin) < naxes1[2]))
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.F[kk * naxes[1] * naxes[0] +
                                                 jj * naxes[0] + ii] +=
-                                                 data.image[ID1]
+                                                 dcimg[ID1]
                                                  .array.F[(kk + zmin) * naxes1[1] *
                                                                       naxes1[0] +
                                                                       (jj + ymin) * naxes1[0] +
@@ -364,10 +364,10 @@ imageID basic_add3D(const char *__restrict ID_name1,
                                 if(((kk + zmin - off3) >= 0) &&
                                         ((kk + zmin - off3) < naxes2[2]))
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.F[kk * naxes[1] * naxes[0] +
                                                 jj * naxes[0] + ii] +=
-                                                 data.image[ID2]
+                                                 dcimg[ID2]
                                                  .array
                                                  .F[(kk + zmin - off3) * naxes2[1] *
                                                                        naxes2[0] +
@@ -385,16 +385,16 @@ imageID basic_add3D(const char *__restrict ID_name1,
                                  (ymax - ymin),
                                  (zmax - zmin),
                                  &ID_out);
-        naxes[0] = data.image[ID_out].md[0].size[0];
-        naxes[1] = data.image[ID_out].md[0].size[1];
-        naxes[2] = data.image[ID_out].md[0].size[2];
+        naxes[0] = dcimg[ID_out].md[0].size[0];
+        naxes[1] = dcimg[ID_out].md[0].size[1];
+        naxes[2] = dcimg[ID_out].md[0].size[2];
 
         for(uint32_t kk = 0; kk < naxes[2]; kk++)
             for(uint32_t jj = 0; jj < naxes[1]; jj++)
                 for(uint32_t ii = 0; ii < naxes[0]; ii++)
                 {
                     {
-                        data.image[ID_out].array.D[kk * naxes[1] * naxes[0] +
+                        dcimg[ID_out].array.D[kk * naxes[1] * naxes[0] +
                                                    jj * naxes[0] + ii] = 0;
                         /* if pixel is in ID1 */
                         if(((ii + xmin) >= 0) && ((ii + xmin) < naxes1[0]))
@@ -402,10 +402,10 @@ imageID basic_add3D(const char *__restrict ID_name1,
                                 if(((kk + zmin) >= 0) &&
                                         ((kk + zmin) < naxes1[2]))
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.D[kk * naxes[1] * naxes[0] +
                                                 jj * naxes[0] + ii] +=
-                                                 data.image[ID1]
+                                                 dcimg[ID1]
                                                  .array.D[(kk + zmin) * naxes1[1] *
                                                                       naxes1[0] +
                                                                       (jj + ymin) * naxes1[0] +
@@ -419,10 +419,10 @@ imageID basic_add3D(const char *__restrict ID_name1,
                                 if(((kk + zmin - off3) >= 0) &&
                                         ((kk + zmin - off3) < naxes2[2]))
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.D[kk * naxes[1] * naxes[0] +
                                                 jj * naxes[0] + ii] +=
-                                                 data.image[ID2]
+                                                 dcimg[ID2]
                                                  .array
                                                  .D[(kk + zmin - off3) * naxes2[1] *
                                                                        naxes2[0] +

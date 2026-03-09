@@ -303,7 +303,7 @@ static errno_t compute_function()
         multicrop_insname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2D(
         multicrop_outsname,
         *multicrop_outxsize,

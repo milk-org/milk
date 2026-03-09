@@ -104,7 +104,7 @@ static errno_t compute_function()
     IMGID img = imgid_make_from_name(inimname);
     resolveIMGID(
         &img, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     processinfo_update_output_stream(

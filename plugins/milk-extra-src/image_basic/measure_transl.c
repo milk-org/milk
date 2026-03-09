@@ -53,13 +53,13 @@ double basic_measure_transl(const char *__restrict ID_name1,
     step1 = SCALE;
     step2 = SCALE;
 
-    ID1    = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
-    size1x = data.image[ID1].md[0].size[0];
-    size1y = data.image[ID1].md[0].size[1];
+    ID1    = image_ID(ID_name1, dcimg, dcnimg);
+    size1x = dcimg[ID1].md[0].size[0];
+    size1y = dcimg[ID1].md[0].size[1];
 
-    ID2    = image_ID(ID_name2, data.image, data.NB_MAX_IMAGE);
-    size2x = data.image[ID2].md[0].size[0];
-    size2y = data.image[ID2].md[0].size[1];
+    ID2    = image_ID(ID_name2, dcimg, dcnimg);
+    size2x = dcimg[ID2].md[0].size[0];
+    size2y = dcimg[ID2].md[0].size[1];
 
     sx_out = 2 * tmax;
     sy_out = 2 * tmax;
@@ -68,8 +68,8 @@ double basic_measure_transl(const char *__restrict ID_name1,
     for(iio = 0; iio < sx_out; iio++)
         for(jjo = 0; jjo < sy_out; jjo++)
         {
-            data.image[IDout].array.F[jjo * sx_out + iio] = 0.0;
-            data.image[IDcnt].array.F[jjo * sx_out + iio] = 0.0;
+            dcimg[IDout].array.F[jjo * sx_out + iio] = 0.0;
+            dcimg[IDcnt].array.F[jjo * sx_out + iio] = 0.0;
         }
 
     dxmin      = 0;
@@ -92,19 +92,19 @@ double basic_measure_transl(const char *__restrict ID_name1,
     vlim = (double) img_percentile("_im1mask", 0.8);
     printf("vlim = %g\n", vlim);
     save_fl_fits("_im1mask", "_im1mask.0.fits");
-    ID1mask   = image_ID("_im1mask", data.image, data.NB_MAX_IMAGE);
-    xsizemask = data.image[ID1mask].md[0].size[0];
-    ysizemask = data.image[ID1mask].md[0].size[1];
+    ID1mask   = image_ID("_im1mask", dcimg, dcnimg);
+    xsizemask = dcimg[ID1mask].md[0].size[0];
+    ysizemask = dcimg[ID1mask].md[0].size[1];
 
     for(ii = 0; ii < xsizemask * ysizemask; ii++)
     {
-        if(data.image[ID1mask].array.F[ii] > vlim)
+        if(dcimg[ID1mask].array.F[ii] > vlim)
         {
-            data.image[ID1mask].array.F[ii] = 1.0;
+            dcimg[ID1mask].array.F[ii] = 1.0;
         }
         else
         {
-            data.image[ID1mask].array.F[ii] = 0.0;
+            dcimg[ID1mask].array.F[ii] = 0.0;
         }
     }
 
@@ -149,9 +149,9 @@ double basic_measure_transl(const char *__restrict ID_name1,
             {
                 ii1m = (long)(ii1 / contractfactor);
                 jj1m = (long)(jj1 / contractfactor);
-                if(data.image[ID1mask].array.F[jj1m * xsizemask + ii1m] > Mlim)
+                if(dcimg[ID1mask].array.F[jj1m * xsizemask + ii1m] > Mlim)
                 {
-                    v1 = data.image[ID1].array.F[jj1 * size1x + ii1];
+                    v1 = dcimg[ID1].array.F[jj1 * size1x + ii1];
 
                     ii2min = ii1 + dxmin - dsize;
                     ii2max = ii1 + dxmin + dsize;
@@ -205,16 +205,16 @@ double basic_measure_transl(const char *__restrict ID_name1,
                                 if((iio > -1) && (iio < sx_out) &&
                                         (jjo > -1) && (jjo < sy_out))
                                 {
-                                    v2 = data.image[ID2]
+                                    v2 = dcimg[ID2]
                                          .array.F[jj2 * size2x + ii2];
                                     tmp = (v1 - v2);
-                                    data.image[IDout]
+                                    dcimg[IDout]
                                     .array.F[jjo * sx_out + iio] +=
                                         tmp * tmp;
-                                    data.image[IDcnt]
+                                    dcimg[IDcnt]
                                     .array.F[jjo * sx_out + iio] += 1.0;
                                     //   if((iio == 87)&&(jjo == 100))
-                                    //printf("%g (%ld %ld %g) (%ld %ld %g)\n",data.image[IDcnt].array.F[jjo*sx_out+iio], ii1, jj1, v1, ii2, jj2, v2);
+                                    //printf("%g (%ld %ld %g) (%ld %ld %g)\n",dcimg[IDcnt].array.F[jjo*sx_out+iio], ii1, jj1, v1, ii2, jj2, v2);
                                 }
                             }
                         }
@@ -225,14 +225,14 @@ double basic_measure_transl(const char *__restrict ID_name1,
         for(iio = 0; iio < sx_out; iio++)
             for(jjo = 0; jjo < sy_out; jjo++)
             {
-                if(data.image[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
+                if(dcimg[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
                 {
-                    val = data.image[IDout].array.F[jjo * sx_out + iio] /
-                          data.image[IDcnt].array.F[jjo * sx_out + iio];
+                    val = dcimg[IDout].array.F[jjo * sx_out + iio] /
+                          dcimg[IDcnt].array.F[jjo * sx_out + iio];
                     if(val < vmin)
                     {
                         vmin    = val;
-                        vmincnt = data.image[IDcnt].array.F[jjo * sx_out + iio];
+                        vmincnt = dcimg[IDcnt].array.F[jjo * sx_out + iio];
                         vdx     = 1.0 * iio - tmax;
                         vdy     = 1.0 * jjo - tmax;
                     }
@@ -262,10 +262,10 @@ double basic_measure_transl(const char *__restrict ID_name1,
     for(iio = 0; iio < sx_out; iio++)
         for(jjo = 0; jjo < sy_out; jjo++)
         {
-            if(data.image[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
+            if(dcimg[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
             {
-                data.image[IDout].array.F[jjo * sx_out + iio] /=
-                    data.image[IDcnt].array.F[jjo * sx_out + iio];
+                dcimg[IDout].array.F[jjo * sx_out + iio] /=
+                    dcimg[IDcnt].array.F[jjo * sx_out + iio];
             }
         }
 
@@ -298,9 +298,9 @@ double basic_measure_transl(const char *__restrict ID_name1,
     for(iio = iiomin; iio < iiomax; iio++)
         for(jjo = jjomin; jjo < jjomax; jjo++)
         {
-            if(data.image[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
+            if(dcimg[IDcnt].array.F[jjo * sx_out + iio] > 0.1)
             {
-                val = data.image[ID].array.F[jjo * sx_out + iio];
+                val = dcimg[ID].array.F[jjo * sx_out + iio];
                 if(val < vmin)
                 {
                     vmin = val;

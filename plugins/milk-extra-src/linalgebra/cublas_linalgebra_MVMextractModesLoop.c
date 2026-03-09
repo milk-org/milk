@@ -88,12 +88,12 @@ static errno_t LINALGEBRA_MVMextractModesLoop_cli()
 {
 
     // try FPS implementation
-    // set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value
+    // set data.fpsname, providing default value as first arg, and set dcfpscode value
     // default FPS name will be used if CLI process has NOT been named
     // see code in function_parameter.c for detailed rules
     function_parameter_getFPSargs_from_CLIfunc("cudaMVM");
 
-    if(data.FPS_CMDCODE != 0)  // use FPS implementation
+    if(dcfpscode != 0)  // use FPS implementation
     {
         // set pointers to CONF and RUN functions
         extern errno_t (*FPS_CONFfunc)();
@@ -105,10 +105,10 @@ static errno_t LINALGEBRA_MVMextractModesLoop_cli()
         extern FUNCTION_PARAMETER_STRUCT *fpsarray;
         FPS_CONFfunc = LINALGEBRA_MVMextractModesLoop_FPCONF;
         FPS_RUNfunc  = LINALGEBRA_MVMextractModesLoop_RUN;
-        FPS_CMDCODE  = data.FPS_CMDCODE;
-        fpsarray     = data.fpsarray;
-        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);
-        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);
+        FPS_CMDCODE  = dcfpscode;
+        fpsarray     = dcfpsarr;
+        strncpy(FPS_name, dcfpsname, STRINGMAXLEN_FPS_NAME - 1);
+        strncpy(FPS_callprogname, dcpkgname, FPS_CALLPROGNAME_STRMAXLEN - 1);
         strncpy(FPS_callfuncname, "cudaMVM", FPS_CALLFUNCNAME_STRMAXLEN - 1);
         function_parameter_execFPScmd();
         return RETURN_SUCCESS;
@@ -184,7 +184,7 @@ errno_t linalgebra_MVMextractModesLoop_addCLIcmd()
 errno_t LINALGEBRA_MVMextractModesLoop_FPCONF()
 {
 
-    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE); // sets up fps
+    FPS_SETUP_INIT(dcfpsname, dcfpscode); // sets up fps
 
     //FPS2PROCINFOMAP fps2procinfo;
     fps_add_processinfo_entries(&fps);
@@ -471,7 +471,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     int devicecntMax = 100;
 
 
-    FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
+    FPS_CONNECT(dcfpsname, FPSCONNECT_RUN);
 
     // ===============================
     // GET FUNCTION PARAMETER VALUES
@@ -638,7 +638,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     // CONNECT TO INPUT STREAM
     long IDin;
-    IDin = image_ID(in_stream, data.image, data.NB_MAX_IMAGE);
+    IDin = image_ID(in_stream, dcimg, dcnimg);
 
     // ERROR HANDLING
     if(IDin == -1)
@@ -663,19 +663,19 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         return 1;
     }
 
-    m = data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1];
+    m = dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
 
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     long IDintot;
-    IDintot        = image_ID(intot_stream, data.image, data.NB_MAX_IMAGE);
+    IDintot        = image_ID(intot_stream, dcimg, dcnimg);
     int INNORMMODE = 0; // 1 if input normalized
 
     if(IDintot == -1)
     {
         INNORMMODE = 0;
         create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-        data.image[IDintot].array.F[0] = 1.0;
+        dcimg[IDintot].array.F[0] = 1.0;
     }
     else
     {
@@ -684,19 +684,19 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     // CONNECT TO WFS REFERENCE STREAM
     long IDref;
-    IDref = image_ID(IDrefin_name, data.image, data.NB_MAX_IMAGE);
+    IDref = image_ID(IDrefin_name, dcimg, dcnimg);
     if(IDref == -1)
     {
         create_2Dimage_ID("_tmprefin",
-                          data.image[IDin].md[0].size[0],
-                          data.image[IDin].md[0].size[1],
+                          dcimg[IDin].md[0].size[0],
+                          dcimg[IDin].md[0].size[1],
                           &IDref);
 
-        for(ii = 0; ii < data.image[IDin].md[0].size[0] *
-                data.image[IDin].md[0].size[1];
+        for(ii = 0; ii < dcimg[IDin].md[0].size[0] *
+                dcimg[IDin].md[0].size[1];
                 ii++)
         {
-            data.image[IDref].array.F[ii] = 0.0;
+            dcimg[IDref].array.F[ii] = 0.0;
         }
     }
 
@@ -706,8 +706,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         // Extract modes.
         // This is the default geometry, no need to remap
         //
-        IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
-        n       = data.image[IDmodes].md[0].size[2];
+        IDmodes = image_ID(IDmodes_name, dcimg, dcnimg);
+        n       = dcimg[IDmodes].md[0].size[2];
         NBmodes = n;
     }
     else
@@ -716,40 +716,40 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         // Expand from DM to WFS
         // Remap to new matrix tmpmodes
         //
-        ID = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
+        ID = image_ID(IDmodes_name, dcimg, dcnimg);
         printf("Modes: ID = %ld   %s\n", ID, IDmodes_name);
         fflush(stdout);
 
-        NBmodes = data.image[ID].md[0].size[0] * data.image[ID].md[0].size[1];
+        NBmodes = dcimg[ID].md[0].size[0] * dcimg[ID].md[0].size[1];
         n       = NBmodes;
         printf("NBmodes = %ld\n", NBmodes);
         fflush(stdout);
 
         printf("creating _tmpmodes  %ld %ld %ld\n",
-               (long) data.image[IDin].md[0].size[0],
-               (long) data.image[IDin].md[0].size[1],
+               (long) dcimg[IDin].md[0].size[0],
+               (long) dcimg[IDin].md[0].size[1],
                NBmodes);
         fflush(stdout);
 
         create_3Dimage_ID("_tmpmodes",
-                          data.image[IDin].md[0].size[0],
-                          data.image[IDin].md[0].size[1],
+                          dcimg[IDin].md[0].size[0],
+                          dcimg[IDin].md[0].size[1],
                           NBmodes,
                           &IDmodes);
 
-        for(ii = 0; ii < data.image[IDin].md[0].size[0]; ii++)
-            for(jj = 0; jj < data.image[IDin].md[0].size[1]; jj++)
+        for(ii = 0; ii < dcimg[IDin].md[0].size[0]; ii++)
+            for(jj = 0; jj < dcimg[IDin].md[0].size[1]; jj++)
             {
                 for(kk = 0; kk < NBmodes; kk++)
                 {
-                    data.image[IDmodes]
-                    .array.F[kk * data.image[IDin].md[0].size[0] *
-                                data.image[IDin].md[0].size[1] +
-                                jj * data.image[IDin].md[0].size[0] + ii] =
-                                 data.image[ID]
+                    dcimg[IDmodes]
+                    .array.F[kk * dcimg[IDin].md[0].size[0] *
+                                dcimg[IDin].md[0].size[1] +
+                                jj * dcimg[IDin].md[0].size[0] + ii] =
+                                 dcimg[ID]
                                  .array
                                  .F[NBmodes *
-                                            (jj * data.image[IDin].md[0].size[0] + ii) +
+                                            (jj * dcimg[IDin].md[0].size[0] + ii) +
                                             kk];
                 }
             }
@@ -766,8 +766,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             normcoeff[k] = 0.0;
             for(ii = 0; ii < m; ii++)
             {
-                normcoeff[k] += data.image[IDmodes].array.F[k * m + ii] *
-                                data.image[IDmodes].array.F[k * m + ii];
+                normcoeff[k] += dcimg[IDmodes].array.F[k * m + ii] *
+                                dcimg[IDmodes].array.F[k * m + ii];
             }
         }
     }
@@ -782,7 +782,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
     arraytmp = (uint32_t *) malloc(sizeof(uint32_t) * 2);
 
-    IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
+    IDrefout = image_ID(IDrefout_name, dcimg, dcnimg);
     if(IDrefout == -1)
     {
         arraytmp[0] = NBmodes;
@@ -790,13 +790,13 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
     }
     else
     {
-        arraytmp[0] = data.image[IDrefout].md[0].size[0];
-        arraytmp[1] = data.image[IDrefout].md[0].size[1];
+        arraytmp[0] = dcimg[IDrefout].md[0].size[0];
+        arraytmp[1] = dcimg[IDrefout].md[0].size[1];
     }
 
     // CONNNECT TO OUTPUT STREAM
 
-    ID_modeval = image_ID(IDmodes_val_name, data.image, data.NB_MAX_IMAGE);
+    ID_modeval = image_ID(IDmodes_val_name, dcimg, dcnimg);
     if(ID_modeval == -1)
     {
         // CREATE IT
@@ -828,7 +828,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
 
         // drive semaphore to zero
-        while(ImageStreamIO_semtrywait(data.image + ID_modeval, insem) == 0)
+        while(ImageStreamIO_semtrywait(dcimg + ID_modeval, insem) == 0)
         {
             printf("WARNING %s %d  : sem_trywait on ID_modeval\n",
                    __FILE__,
@@ -917,7 +917,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             exit(EXIT_FAILURE);
         }
         cudaStat = cudaMemcpy(d_modes,
-                              data.image[IDmodes].array.F,
+                              dcimg[IDmodes].array.F,
                               sizeof(float) * m * NBmodes,
                               cudaMemcpyHostToDevice);
         if(cudaStat != cudaSuccess)
@@ -974,7 +974,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = TRACEsize;
         sizearraytmp[1] = NBmodes;
-        IDtrace         = image_ID(traceim_name, data.image, data.NB_MAX_IMAGE);
+        IDtrace         = image_ID(traceim_name, dcimg, dcnimg);
         imOK            = 1;
         if(IDtrace == -1)
         {
@@ -982,8 +982,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
         else
         {
-            if((data.image[IDtrace].md[0].size[0] != TRACEsize) ||
-                    (data.image[IDtrace].md[0].size[1] != NBmodes))
+            if((dcimg[IDtrace].md[0].size[0] != TRACEsize) ||
+                    (dcimg[IDtrace].md[0].size[1] != NBmodes))
             {
                 imOK = 0;
                 delete_image_ID(traceim_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -1026,7 +1026,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name, data.image, data.NB_MAX_IMAGE);
+        IDprocave       = image_ID(process_ave_name, dcimg, dcnimg);
         imOK            = 1;
         if(IDprocave == -1)
         {
@@ -1034,8 +1034,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
         else
         {
-            if((data.image[IDprocave].md[0].size[0] != NBmodes) ||
-                    (data.image[IDprocave].md[0].size[1] != NBaveSTEP))
+            if((dcimg[IDprocave].md[0].size[0] != NBmodes) ||
+                    (dcimg[IDprocave].md[0].size[1] != NBaveSTEP))
             {
                 imOK = 0;
                 delete_image_ID(process_ave_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -1075,7 +1075,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms       = image_ID(process_rms_name, data.image, data.NB_MAX_IMAGE);
+        IDprocrms       = image_ID(process_rms_name, dcimg, dcnimg);
         imOK            = 1;
         if(IDprocrms == -1)
         {
@@ -1083,8 +1083,8 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         }
         else
         {
-            if((data.image[IDprocrms].md[0].size[0] != NBmodes) ||
-                    (data.image[IDprocrms].md[0].size[1] != NBaveSTEP))
+            if((dcimg[IDprocrms].md[0].size[0] != NBmodes) ||
+                    (dcimg[IDprocrms].md[0].size[1] != NBaveSTEP))
             {
                 imOK = 0;
                 delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -1117,7 +1117,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         printf("This function is NOT computing mode values\n");
         printf("Pre-existing stream %s was detected\n", IDmodes_val_name);
         printf("\n");
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             strcpy(processinfo->statusmsg, "Passing stream, no computation");
             //sprintf(processinfo->description, "passthrough, no comp");
@@ -1143,7 +1143,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 abort(); // can't handle this error any other way
             }
         }
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             strcpy(processinfo->statusmsg, msgstring);
         }
@@ -1231,10 +1231,10 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
             // Are we computing a new reference ?
             // if yes, set initref to 0 (reference is NOT initialized)
             //
-            if(refindex != data.image[IDref].md[0].cnt0)
+            if(refindex != dcimg[IDref].md[0].cnt0)
             {
                 initref  = 0;
-                refindex = data.image[IDref].md[0].cnt0;
+                refindex = dcimg[IDref].md[0].cnt0;
             }
 
             if(initref == 1)
@@ -1272,14 +1272,14 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 if(initref == 0)
                 {
                     cudaStat = cudaMemcpy(d_in,
-                                          data.image[IDref].array.F,
+                                          dcimg[IDref].array.F,
                                           sizeof(float) * m,
                                           cudaMemcpyHostToDevice);
                 }
                 else
                 {
                     cudaStat = cudaMemcpy(d_in,
-                                          data.image[IDin].array.F,
+                                          dcimg[IDin].array.F,
                                           sizeof(float) * m,
                                           cudaMemcpyHostToDevice);
                 }
@@ -1360,7 +1360,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                 }
 
                 // copy result
-                data.image[ID_modeval].md[0].write = 1;
+                dcimg[ID_modeval].md[0].write = 1;
 
                 //t03OK = 1;
                 clock_gettime(CLOCK_MILK, &t03);
@@ -1374,12 +1374,12 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                                           sizeof(float) * NBmodes,
                                           cudaMemcpyDeviceToHost);
 
-                    IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
+                    IDrefout = image_ID(IDrefout_name, dcimg, dcnimg);
                     if(IDrefout != -1)
                         for(k = 0; k < NBmodes; k++)
                         {
                             modevalarrayref[k] -=
-                                data.image[IDrefout].array.F[k];
+                                dcimg[IDrefout].array.F[k];
                         }
 
                     if((INNORMMODE == 0) && (MODENORM == 0))
@@ -1403,9 +1403,9 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                     {
                         for(k = 0; k < NBmodes; k++)
                         {
-                            data.image[ID_modeval].array.F[k] =
+                            dcimg[ID_modeval].array.F[k] =
                                 (modevalarray[k] /
-                                 data.image[IDintot].array.F[0] -
+                                 dcimg[IDintot].array.F[0] -
                                  modevalarrayref[k]) /
                                 normcoeff[k];
                         }
@@ -1413,10 +1413,10 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
                     else
                         for(k = 0; k < NBmodes; k++)
                         {
-                            data.image[ID_modeval].array.F[k] = modevalarray[k];
+                            dcimg[ID_modeval].array.F[k] = modevalarray[k];
                         }
 
-                    processinfo_update_output_stream(processinfo, &data.image[ID_modeval], NULL);
+                    processinfo_update_output_stream(processinfo, &dcimg[ID_modeval], NULL);
                 }
             }
         }
@@ -1424,7 +1424,7 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         {
             // WAIT FOR NEW MODEVAL
             int rval;
-            rval = ImageStreamIO_semwait(data.image + ID_modeval, insem);
+            rval = ImageStreamIO_semwait(dcimg + ID_modeval, insem);
             if(rval == -1)  // interrupt
             {
                 loopOK = 0;
@@ -1438,27 +1438,27 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
 
         if(TRACEMODE == 1)
         {
-            data.image[ID_modeval].md[0].write = 1;
+            dcimg[ID_modeval].md[0].write = 1;
 
             for(k = 0; k < NBmodes; k++)
             {
-                data.image[IDtrace].array.F[k * TRACEsize + TRACEindex] =
-                    data.image[ID_modeval].array.F[k];
+                dcimg[IDtrace].array.F[k * TRACEsize + TRACEindex] =
+                    dcimg[ID_modeval].array.F[k];
             }
-            data.image[IDtrace].md[0].cnt1 = TRACEindex;
+            dcimg[IDtrace].md[0].cnt1 = TRACEindex;
 
-            semval = ImageStreamIO_semvalue(data.image + IDtrace, 0);
+            semval = ImageStreamIO_semvalue(dcimg + IDtrace, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDtrace, 0);
+                ImageStreamIO_sempost(dcimg + IDtrace, 0);
             }
-            semval = ImageStreamIO_semvalue(data.image + IDtrace, 1);
+            semval = ImageStreamIO_semvalue(dcimg + IDtrace, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDtrace, 1);
+                ImageStreamIO_sempost(dcimg + IDtrace, 1);
             }
-            data.image[IDtrace].md[0].cnt0++;
-            data.image[IDtrace].md[0].write = 0;
+            dcimg[IDtrace].md[0].cnt0++;
+            dcimg[IDtrace].md[0].write = 0;
 
             TRACEindex++;
             if(TRACEindex >= TRACEsize)
@@ -1474,38 +1474,38 @@ errno_t __attribute__((hot)) LINALGEBRA_MVMextractModesLoop_RUN()
         if(PROCESS == 1)
         {
             stepcoeff                         = stepcoeff0;
-            data.image[IDprocave].md[0].write = 1;
+            dcimg[IDprocave].md[0].write = 1;
             for(step = 0; step < NBaveSTEP; step++)
             {
                 for(k = 0; k < NBmodes; k++)
                 {
-                    data.image[IDprocave].array.F[NBmodes * step + k] =
+                    dcimg[IDprocave].array.F[NBmodes * step + k] =
                         (1.0 - stepcoeff) *
-                        data.image[IDprocave].array.F[NBmodes * step + k] +
-                        stepcoeff * data.image[ID_modeval].array.F[k];
+                        dcimg[IDprocave].array.F[NBmodes * step + k] +
+                        stepcoeff * dcimg[ID_modeval].array.F[k];
                 }
                 stepcoeff *= stepcoeff0;
             }
-            processinfo_update_output_stream(processinfo, &data.image[IDprocave], NULL);
+            processinfo_update_output_stream(processinfo, &dcimg[IDprocave], NULL);
 
             stepcoeff                         = stepcoeff0;
-            data.image[IDprocrms].md[0].write = 1;
+            dcimg[IDprocrms].md[0].write = 1;
             for(step = 0; step < NBaveSTEP; step++)
             {
                 for(k = 0; k < NBmodes; k++)
                 {
-                    tmpv = data.image[ID_modeval].array.F[k] -
-                           data.image[IDprocave].array.F[NBmodes * step + k];
+                    tmpv = dcimg[ID_modeval].array.F[k] -
+                           dcimg[IDprocave].array.F[NBmodes * step + k];
                     tmpv = tmpv * tmpv;
-                    data.image[IDprocrms].array.F[NBmodes * step + k] =
+                    dcimg[IDprocrms].array.F[NBmodes * step + k] =
                         (1.0 - stepcoeff) *
-                        data.image[IDprocrms].array.F[NBmodes * step + k] +
+                        dcimg[IDprocrms].array.F[NBmodes * step + k] +
                         stepcoeff * tmpv;
                 }
                 stepcoeff *= stepcoeff0;
             }
 
-            processinfo_update_output_stream(processinfo, &data.image[IDprocrms], NULL);
+            processinfo_update_output_stream(processinfo, &dcimg[IDprocrms], NULL);
         }
 
         //t06OK = 1;
@@ -1620,7 +1620,7 @@ int __attribute__((hot)) LINALGEBRA_MVMextractModesLoop(
 
     {
         // write FPS name
-        int slen = snprintf(data.FPS_name,
+        int slen = snprintf(dcfpsname,
                             STRINGMAXLEN_FPS_NAME,
                             "cudaMVMextmodes-%06ld",
                             pindex);
@@ -1636,14 +1636,14 @@ int __attribute__((hot)) LINALGEBRA_MVMextractModesLoop(
         }
     }
 
-    data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+    dcfpscode = FPSCMDCODE_FPSINIT;
     LINALGEBRA_MVMextractModesLoop_FPCONF();
 
     // ==================================
     // SET PARAMETER VALUES
     // ==================================
     //int SMfd = -1;
-    function_parameter_struct_connect(data.FPS_name, &fps, FPSCONNECT_SIMPLE);
+    function_parameter_struct_connect(dcfpsname, &fps, FPSCONNECT_SIMPLE);
 
     functionparameter_SetParamValue_STRING(&fps, ".sname_in", in_stream);
     functionparameter_SetParamValue_STRING(&fps, ".sname_modes", IDmodes_name);

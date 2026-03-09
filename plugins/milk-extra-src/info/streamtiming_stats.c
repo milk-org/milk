@@ -34,7 +34,7 @@ errno_t info_image_streamtiming_stats_disp(
 errno_t info_image_streamtiming_stats(
     imageID ID, int sem, long NBsamplesmax, float samplestimeout, int buffinit)
 {
-    IMAGE *image = &data.image[ID];
+    IMAGE *image = &dcimg[ID];
 
     static int     initflag = 0;
     static double *tdiffvarray;

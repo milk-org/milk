@@ -88,11 +88,11 @@ long image_write_keyword_L(const char *IDname,
     imageID ID;
     long    kw, NBkw, kw0;
 
-    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    NBkw = data.image[ID].md[0].NBkw;
+    ID   = image_ID(IDname, dcimg, dcnimg);
+    NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
@@ -105,10 +105,10 @@ long image_write_keyword_L(const char *IDname,
     }
     else
     {
-        strcpy(data.image[ID].kw[kw].name, kname);
-        data.image[ID].kw[kw].type       = 'L';
-        data.image[ID].kw[kw].value.numl = value;
-        strcpy(data.image[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].name, kname);
+        dcimg[ID].kw[kw].type       = 'L';
+        dcimg[ID].kw[kw].value.numl = value;
+        strcpy(dcimg[ID].kw[kw].comment, comment);
     }
 
     return kw0;
@@ -124,11 +124,11 @@ long image_write_keyword_D(const char *IDname,
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    NBkw = data.image[ID].md[0].NBkw;
+    ID   = image_ID(IDname, dcimg, dcnimg);
+    NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
@@ -141,10 +141,10 @@ long image_write_keyword_D(const char *IDname,
     }
     else
     {
-        strcpy(data.image[ID].kw[kw].name, kname);
-        data.image[ID].kw[kw].type       = 'D';
-        data.image[ID].kw[kw].value.numf = value;
-        strcpy(data.image[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].name, kname);
+        dcimg[ID].kw[kw].type       = 'D';
+        dcimg[ID].kw[kw].value.numf = value;
+        strcpy(dcimg[ID].kw[kw].comment, comment);
     }
 
     return kw0;
@@ -160,11 +160,11 @@ long image_write_keyword_S(const char *IDname,
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    NBkw = data.image[ID].md[0].NBkw;
+    ID   = image_ID(IDname, dcimg, dcnimg);
+    NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((data.image[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
     {
         kw++;
     }
@@ -177,10 +177,10 @@ long image_write_keyword_S(const char *IDname,
     }
     else
     {
-        strcpy(data.image[ID].kw[kw].name, kname);
-        data.image[ID].kw[kw].type = 'D';
-        strcpy(data.image[ID].kw[kw].value.valstr, value);
-        strcpy(data.image[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].name, kname);
+        dcimg[ID].kw[kw].type = 'D';
+        strcpy(dcimg[ID].kw[kw].value.valstr, value);
+        strcpy(dcimg[ID].kw[kw].comment, comment);
     }
 
     return kw0;
@@ -193,41 +193,41 @@ imageID image_list_keywords(
     imageID ID;
     long    kw;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
 
     int kwcnt = 0;
-    for(kw = 0; kw < data.image[ID].md->NBkw; kw++)
+    for(kw = 0; kw < dcimg[ID].md->NBkw; kw++)
     {
 
-        switch (data.image[ID].kw[kw].type)
+        switch (dcimg[ID].kw[kw].type)
         {
         case 'L' :
             printf("%18s  %20ld %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.numl,
-                   data.image[ID].kw[kw].comment);
+                   dcimg[ID].kw[kw].name,
+                   dcimg[ID].kw[kw].value.numl,
+                   dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'D' :
             printf("%18s  %20lf %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.numf,
-                   data.image[ID].kw[kw].comment);
+                   dcimg[ID].kw[kw].name,
+                   dcimg[ID].kw[kw].value.numf,
+                   dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'S' :
             printf("%18s  %20s %s\n",
-                   data.image[ID].kw[kw].name,
-                   data.image[ID].kw[kw].value.valstr,
-                   data.image[ID].kw[kw].comment);
+                   dcimg[ID].kw[kw].name,
+                   dcimg[ID].kw[kw].value.valstr,
+                   dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
         }
     }
 
-    printf("%d / %d keywords set\n", kwcnt,  data.image[ID].md->NBkw);
+    printf("%d / %d keywords set\n", kwcnt,  dcimg[ID].md->NBkw);
 
     return ID;
 }
@@ -238,15 +238,15 @@ long image_read_keyword_D(const char *IDname, const char *kname, double *val)
     long       kw;
     long       kw0;
 
-    ID  = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID  = image_ID(IDname, dcimg, dcnimg);
     kw0 = -1;
-    for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    for(kw = 0; kw < dcimg[ID].md[0].NBkw; kw++)
     {
-        if((data.image[ID].kw[kw].type == 'D') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
+        if((dcimg[ID].kw[kw].type == 'D') &&
+                (strncmp(kname, dcimg[ID].kw[kw].name, strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val = data.image[ID].kw[kw].value.numf;
+            *val = dcimg[ID].kw[kw].value.numf;
         }
     }
 
@@ -259,15 +259,15 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
     long       kw;
     long       kw0;
 
-    ID  = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID  = image_ID(IDname, dcimg, dcnimg);
     kw0 = -1;
-    for(kw = 0; kw < data.image[ID].md[0].NBkw; kw++)
+    for(kw = 0; kw < dcimg[ID].md[0].NBkw; kw++)
     {
-        if((data.image[ID].kw[kw].type == 'L') &&
-                (strncmp(kname, data.image[ID].kw[kw].name, strlen(kname)) == 0))
+        if((dcimg[ID].kw[kw].type == 'L') &&
+                (strncmp(kname, dcimg[ID].kw[kw].name, strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val = data.image[ID].kw[kw].value.numl;
+            *val = dcimg[ID].kw[kw].value.numl;
         }
     }
 

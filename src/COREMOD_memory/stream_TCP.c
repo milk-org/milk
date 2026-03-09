@@ -150,8 +150,8 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
     int     rv;
     long    loopcnt = 0;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    IMAGE *img_p = &data.image[ID];
+    ID = image_ID(IDname, dcimg, dcnimg);
+    IMAGE *img_p = &dcimg[ID];
 
     char pinfomsg[200];
 
@@ -317,8 +317,8 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     int loopOK = 1;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    img_p = &data.image[ID];
+    ID = image_ID(IDname, dcimg, dcnimg);
+    img_p = &dcimg[ID];
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
     {
@@ -581,10 +581,10 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }
@@ -650,7 +650,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     struct sched_param schedpar;
 
     PROCESSINFO *processinfo;
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         // CREATE PROCESSINFO ENTRY
         // see processtools.c in module CommandLineInterface for details
@@ -672,27 +672,27 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // CATCH SIGNALS
 
     if(
-        sigaction(SIGTERM, &data.sigact, NULL) == -1 ||
-        sigaction(SIGINT, &data.sigact, NULL) == -1 ||
-        sigaction(SIGABRT, &data.sigact, NULL) == -1 ||
-        sigaction(SIGBUS, &data.sigact, NULL) == -1 ||
-        sigaction(SIGSEGV, &data.sigact, NULL) == -1 ||
-        sigaction(SIGHUP, &data.sigact, NULL) == -1 ||
-        sigaction(SIGPIPE, &data.sigact, NULL) == -1
+        sigaction(SIGTERM, &dcsigact, NULL) == -1 ||
+        sigaction(SIGINT, &dcsigact, NULL) == -1 ||
+        sigaction(SIGABRT, &dcsigact, NULL) == -1 ||
+        sigaction(SIGBUS, &dcsigact, NULL) == -1 ||
+        sigaction(SIGSEGV, &dcsigact, NULL) == -1 ||
+        sigaction(SIGHUP, &dcsigact, NULL) == -1 ||
+        sigaction(SIGPIPE, &dcsigact, NULL) == -1
     )
     {
         printf("\nCan't catch a requested signal (TERM, INT, ABRT, BUS, SEGV, HUP, PIPE)\n");
     }
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    if(seteuid(dcruid) != 0)    //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
@@ -701,7 +701,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
     {
         printf("ERROR creating socket\n");
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, "ERROR creating socket");
@@ -723,7 +723,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     if(result < 0)
     {
         printf("ERROR setsockopt\n");
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, "ERROR socketopt");
@@ -745,7 +745,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
         printf("%s\n", msgstring);
 
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, msgstring);
@@ -760,7 +760,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(msgstring, 200, "ERROR listen socket");
         printf("%s\n", msgstring);
 
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, msgstring);
@@ -784,7 +784,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(msgstring, 200, "ERROR accept socket");
         printf("%s\n", msgstring);
 
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, msgstring);
@@ -805,7 +805,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         snprintf(msgstring, 200, "ERROR receiving image metadata");
         printf("%s\n", msgstring);
 
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = 4;
             processinfo_WriteMessage(processinfo, msgstring);
@@ -814,7 +814,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         exit(0);
     }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         char msgstring[200];
         snprintf(msgstring, 200, "Receiving stream %s", imgmd->name);
@@ -824,17 +824,17 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd->name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(imgmd->name, dcimg, dcnimg);
     printf("ID: %ld\n", ID);
 
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd->name, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(imgmd->name, dcimg, dcnimg);
         printf("ID: %ld\n", ID);
     }
 
-    // img_p = &data.image[ID]; // Of course that doesn't fucking work if ID is -1.
+    // img_p = &dcimg[ID]; // Of course that doesn't fucking work if ID is -1.
 
     list_image_ID();
 
@@ -844,7 +844,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
     else
     {
-        img_p = &data.image[ID];
+        img_p = &dcimg[ID];
         OKim = 1;
         if(imgmd->naxis != img_p->md->naxis)
         {
@@ -893,7 +893,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                imgmd->shared);
         printf("Size = %d,%d\n", imgmd->size[0], imgmd->size[1]);
         // OKim is now OK. Re-point img_p
-        img_p = &data.image[ID];
+        img_p = &dcimg[ID];
     }
     else
     {
@@ -924,7 +924,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     ptr0 = (char *) img_p->array.raw;
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         char msgstring[200];
         snprintf(msgstring,
@@ -966,7 +966,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     frame_md_p = (TCP_BUFFER_METADATA *)(buff + framesize);
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         processinfo->loopstat =
             1; //notify processinfo that we are entering loop
@@ -1008,7 +1008,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
     while(loopOK == 1)
     {
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             while(processinfo->CTRLval == 1)  // pause
             {
@@ -1032,7 +1032,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             socketOpen = 0;
         }
 
-        if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))
+        if((dcprocinfo == 1) && (processinfo->MeasureTiming == 1))
         {
             processinfo_exec_start(processinfo);
         }
@@ -1109,7 +1109,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
 
             // Carry cnt0 to streamproctrace
             img_p->streamproctrace[0].cnt0 = img_p->md->cnt0;
-            processinfo_update_output_stream(processinfo, &data.image[ID], NULL);
+            processinfo_update_output_stream(processinfo, &dcimg[ID], NULL);
         }
 
         if(socketOpen == 0)
@@ -1117,43 +1117,43 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             loopOK = 0;
         }
 
-        if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))
+        if((dcprocinfo == 1) && (processinfo->MeasureTiming == 1))
         {
             processinfo_exec_end(processinfo);
         }
 
         // process signals
-        if(data.signal_TERM || data.signal_INT || data.signal_ABRT || data.signal_BUS ||
-                data.signal_SEGV || data.signal_HUP || data.signal_PIPE)
+        if(dcsigTERM || dcsigINT || dcsigABRT || dcsigBUS ||
+                dcsigSEGV || dcsigHUP || dcsigPIPE)
         {
             loopOK = 0;
-            if(data.processinfo == 1)
+            if(dcprocinfo == 1)
             {
-                if(data.signal_TERM)
+                if(dcsigTERM)
                 {
                     processinfo_SIGexit(processinfo, SIGTERM);
                 }
-                else if(data.signal_INT)
+                else if(dcsigINT)
                 {
                     processinfo_SIGexit(processinfo, SIGINT);
                 }
-                else if(data.signal_ABRT)
+                else if(dcsigABRT)
                 {
                     processinfo_SIGexit(processinfo, SIGABRT);
                 }
-                else if(data.signal_BUS)
+                else if(dcsigBUS)
                 {
                     processinfo_SIGexit(processinfo, SIGBUS);
                 }
-                else if(data.signal_SEGV)
+                else if(dcsigSEGV)
                 {
                     processinfo_SIGexit(processinfo, SIGSEGV);
                 }
-                else if(data.signal_HUP)
+                else if(dcsigHUP)
                 {
                     processinfo_SIGexit(processinfo, SIGHUP);
                 }
-                else if(data.signal_PIPE)
+                else if(dcsigPIPE)
                 {
                     processinfo_SIGexit(processinfo, SIGPIPE);
                 }
@@ -1161,13 +1161,13 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         }
 
         loopcnt++;
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopcnt = loopcnt;
         }
     }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         processinfo_cleanExit(processinfo);
     }

@@ -117,20 +117,20 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
-    IDmatA    = image_ID(IDmatA_name, data.image, data.NB_MAX_IMAGE);
-    IDmatAinv = image_ID(IDmatAinv_name, data.image, data.NB_MAX_IMAGE);
+    IDmatA    = image_ID(IDmatA_name, dcimg, dcnimg);
+    IDmatAinv = image_ID(IDmatAinv_name, dcimg, dcnimg);
 
-    if(data.image[IDmatA].md[0].naxis == 3)
+    if(dcimg[IDmatA].md[0].naxis == 3)
     {
         /// each column (N=cst) of A is a z=cst slice of image Rmatrix
-        M = data.image[IDmatA].md[0].size[0] * data.image[IDmatA].md[0].size[1];
-        N = data.image[IDmatA].md[0].size[2];
+        M = dcimg[IDmatA].md[0].size[0] * dcimg[IDmatA].md[0].size[1];
+        N = dcimg[IDmatA].md[0].size[2];
     }
     else
     {
         /// each column (N=cst) of A is a line (y=cst) of Rmatrix (90 deg rotation)
-        M = data.image[IDmatA].md[0].size[0];
-        N = data.image[IDmatA].md[0].size[1];
+        M = dcimg[IDmatA].md[0].size[0];
+        N = dcimg[IDmatA].md[0].size[1];
     }
 
     /// Initialize MAGAM if needed
@@ -155,14 +155,14 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     /// load matA in h_A -> d_A
     for(ii = 0; ii < M * N; ii++)
     {
-        magmaf_h_A[ii] = data.image[IDmatA].array.F[ii];
+        magmaf_h_A[ii] = dcimg[IDmatA].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_A, M, magmaf_d_A, M, magmaqueue);
 
     /// load matAinv in h_Ainv -> d_Ainv
     for(ii = 0; ii < M * N; ii++)
     {
-        magmaf_h_Ainv[ii] = data.image[IDmatAinv].array.F[ii];
+        magmaf_h_Ainv[ii] = dcimg[IDmatAinv].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_Ainv, M, magmaf_d_Ainv, M, magmaqueue);
 
@@ -196,7 +196,7 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     for(ii = 0; ii < N * N; ii++)
     {
-        data.image[IDmatOut].array.F[ii] = magmaf_h_AinvA[ii];
+        dcimg[IDmatOut].array.F[ii] = magmaf_h_AinvA[ii];
     }
 
     TESTING_FREE_CPU(magmaf_h_AinvA);

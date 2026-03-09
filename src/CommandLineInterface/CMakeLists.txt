@@ -7,11 +7,7 @@ option(python_module "Compile Python Wrappers" OFF)
 project(CLIcore C)
 
 find_package(PkgConfig REQUIRED)
-if(USE_GSL)
-    find_package(GSL QUIET REQUIRED)
-endif()
-pkg_check_modules(FFTW REQUIRED fftw3)
-pkg_check_modules(FFTWF REQUIRED fftw3f)
+
 if(USE_NCURSES)
     pkg_check_modules(NCURSES REQUIRED ncurses)
 endif()
@@ -84,13 +80,7 @@ if(${CFITSIO_FOUND})
   target_include_directories(CLIcore PUBLIC ${CFITSIO_INCLUDE_DIRS})
 endif()
 
-target_include_directories(CLIcore
-                PUBLIC ${GSL_INCLUDE_DIRS}
-                      ${FFTW_INCLUDE_DIRS}
-                      ${FFTWF_INCLUDE_DIRS})
 
-target_compile_options(CLIcore
-                        PUBLIC ${FFTW_CFLAGS_OTHER} ${FFTWF_CFLAGS_OTHER})
 if (OPENMP_C_FOUND)
   message("Found OpenMP")
   target_link_libraries(CLIcore PUBLIC OpenMP::OpenMP_C)
@@ -110,15 +100,13 @@ target_link_libraries(CLIcore
                               ${CFITSIO_LIBRARIES}
                               dl
                               rt
-                              ${GSL_LIBRARIES}
-                              ${FFTW_LIBRARIES}
-                              ${FFTWF_LIBRARIES}
+
                               ${CMAKE_THREAD_LIBS_INIT}
                               $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>
                               $<$<BOOL:${USE_NCURSES}>:milkTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkprocessinfoTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
-                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps)
+                              milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkdata)
 
 if(${HWLOC_FOUND})
   target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
@@ -129,7 +117,7 @@ target_include_directories(CLIcore
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
-                                  ${FFTW_INCLUDE_DIRS} ${FFTWF_INCLUDE_DIRS}
+
                                   ${HWLOC_INCLUDE_DIR} $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
 target_compile_options(CLIcore PUBLIC)
 

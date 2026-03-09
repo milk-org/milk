@@ -63,18 +63,18 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
     uint8_t val_datatype;
     long    ii, i;
 
-    IDindex  = image_ID(ID_index_name, data.image, data.NB_MAX_IMAGE);
-    IDvalues = image_ID(ID_values_name, data.image, data.NB_MAX_IMAGE);
+    IDindex  = image_ID(ID_index_name, dcimg, dcnimg);
+    IDvalues = image_ID(ID_values_name, dcimg, dcnimg);
 
-    xsize    = data.image[IDindex].md[0].size[0];
-    ysize    = data.image[IDindex].md[0].size[1];
+    xsize    = dcimg[IDindex].md[0].size[0];
+    ysize    = dcimg[IDindex].md[0].size[1];
     xysize   = xsize * ysize;
-    datatype = data.image[IDindex].md[0].datatype;
+    datatype = dcimg[IDindex].md[0].datatype;
 
-    val_xsize    = data.image[IDvalues].md[0].size[0];
-    val_ysize    = data.image[IDvalues].md[0].size[1];
+    val_xsize    = dcimg[IDvalues].md[0].size[0];
+    val_ysize    = dcimg[IDvalues].md[0].size[1];
     val_xysize   = val_xsize * val_ysize;
-    val_datatype = data.image[IDindex].md[0].datatype;
+    val_datatype = dcimg[IDindex].md[0].datatype;
 
     create_2Dimage_ID(IDout_name, xsize, ysize, &IDout);
 
@@ -82,10 +82,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
     {
         for(ii = 0; ii < xysize; ii++)
         {
-            i = (long)(data.image[IDindex].array.F[ii] + 0.1);
+            i = (long)(dcimg[IDindex].array.F[ii] + 0.1);
             if((i > -1) && (i < val_xysize))
             {
-                data.image[IDout].array.F[ii] = data.image[IDvalues].array.F[i];
+                dcimg[IDout].array.F[ii] = dcimg[IDvalues].array.F[i];
             }
         }
     }
@@ -100,7 +100,7 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
 
         for(i = 0; i < val_xysize; i++)
         {
-            arrayf[i] = (float) data.image[IDvalues].array.D[i];
+            arrayf[i] = (float) dcimg[IDvalues].array.D[i];
         }
 
         switch(datatype)
@@ -109,10 +109,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_DOUBLE:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long)(data.image[IDindex].array.D[ii] + 0.1);
+                    i = (long)(dcimg[IDindex].array.D[ii] + 0.1);
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -120,10 +120,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_UINT8:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.UI8[ii];
+                    i = (long) dcimg[IDindex].array.UI8[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -131,10 +131,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_INT8:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.SI8[ii];
+                    i = (long) dcimg[IDindex].array.SI8[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -142,10 +142,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_UINT16:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.UI16[ii];
+                    i = (long) dcimg[IDindex].array.UI16[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -153,10 +153,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_INT16:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.SI16[ii];
+                    i = (long) dcimg[IDindex].array.SI16[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -164,10 +164,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_UINT32:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.UI32[ii];
+                    i = (long) dcimg[IDindex].array.UI32[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -175,10 +175,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_INT32:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.SI32[ii];
+                    i = (long) dcimg[IDindex].array.SI32[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -186,10 +186,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_UINT64:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.UI64[ii];
+                    i = (long) dcimg[IDindex].array.UI64[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;
@@ -197,10 +197,10 @@ imageID image_basic_indexmap(const char *__restrict ID_index_name,
             case _DATATYPE_INT64:
                 for(ii = 0; ii < xysize; ii++)
                 {
-                    i = (long) data.image[IDindex].array.SI64[ii];
+                    i = (long) dcimg[IDindex].array.SI64[ii];
                     if((i > -1) && (i < val_xysize))
                     {
-                        data.image[IDout].array.F[ii] = arrayf[i];
+                        dcimg[IDout].array.F[ii] = arrayf[i];
                     }
                 }
                 break;

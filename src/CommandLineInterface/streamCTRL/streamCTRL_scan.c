@@ -23,7 +23,7 @@
 
 
 // default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
-#define SHAREDSHMDIR  data.shmdir
+#define SHAREDSHMDIR  dcshmdir
 
 
 

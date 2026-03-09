@@ -84,14 +84,14 @@ long load_fitsimages_cube(const char *__restrict strfilter,
         if(cnt == 0)
         {
             load_fits(fname, "imtmplfc", 1, &ID);
-            xsize = data.image[ID].md[0].size[0];
-            ysize = data.image[ID].md[0].size[1];
+            xsize = dcimg[ID].md[0].size[0];
+            ysize = dcimg[ID].md[0].size[1];
             delete_image_ID("imtmplfc", DELETE_IMAGE_ERRMODE_WARNING);
         }
 
         load_fits(fname, "imtmplfc", 1, &ID);
-        if((data.image[ID].md[0].size[0] != xsize) ||
-                (data.image[ID].md[0].size[1] != ysize))
+        if((dcimg[ID].md[0].size[0] != xsize) ||
+                (dcimg[ID].md[0].size[1] != ysize))
         {
             fprintf(stderr,
                     "ERROR in load_fitsimages_cube: not all images have the "
@@ -124,11 +124,11 @@ long load_fitsimages_cube(const char *__restrict strfilter,
         fname1[strlen(fname) - 5] = '\0';
         load_fits(fname, fname1, 1, NULL);
         printf("Image %s loaded -> %s\n", fname, fname1);
-        ID = image_ID(fname1, data.image, data.NB_MAX_IMAGE);
+        ID = image_ID(fname1, dcimg, dcnimg);
         for(uint64_t ii = 0; ii < xsize * ysize; ii++)
         {
-            data.image[IDout].array.F[xsize * ysize * cnt + ii] =
-                data.image[ID].array.F[ii];
+            dcimg[IDout].array.F[xsize * ysize * cnt + ii] =
+                dcimg[ID].array.F[ii];
         }
         delete_image_ID(fname1, DELETE_IMAGE_ERRMODE_WARNING);
         cnt++;
