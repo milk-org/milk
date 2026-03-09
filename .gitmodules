@@ -1,5 +1,5 @@
 [submodule "src/ImageStreamIO"]
-	path = src/ImageStreamIO
+	path = src/engine/ImageStreamIO
 	url = https://github.com/milk-org/ImageStreamIO.git
 	branch = dev
 [submodule "plugins/milk-extra-src/AtmosphereModel"]

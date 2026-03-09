@@ -1,8 +1,8 @@
 #include "milk_config.h"
 #include <getopt.h>
 #include "CLIcore.h"
-#include <CommandLineInterface/CLIcore/CLIcore_datainit.h>
-#include <CommandLineInterface/CLIcore/CLIcore_setSHMdir.h>
+#include <CLIcore/CLIcore_datainit.h>
+#include <CLIcore/CLIcore_setSHMdir.h>
 #include "termview.h"
 
 int main(int argc, char *argv[])
