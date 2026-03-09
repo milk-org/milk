@@ -2,7 +2,11 @@
  * @file imdisplay3d.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -18,6 +22,7 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 // Command line interface wrapper function(s)
 // ==========================================
 
+#ifndef MILK_NO_CLI
 errno_t COREMOD_TOOLS_imgdisplay3D_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
@@ -50,6 +55,7 @@ errno_t imdisplay3d_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 // displays 2D image in 3D using gnuplot
 //

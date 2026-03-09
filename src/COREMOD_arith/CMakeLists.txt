@@ -130,6 +130,23 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
+# Compute-only library for standalone builds (no CLI code)
+set(LIBNAME_COMPUTE "${LIBNAME}_compute")
+add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
+target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
+if(${CFITSIO_FOUND})
+  target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
+  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+endif()
+target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>)
+target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
+    m ${CFITSIO_LIBRARIES} milkfps milkCOREMODiofits_compute)
+install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
+    DESTINATION lib)
+
 add_milk_standalone(arith-crop2D image_crop2D.c)
 add_milk_standalone(arith-multicrop2D image_multicrop2D.c)
 add_milk_standalone(arith-immerge image_merge3D.c)

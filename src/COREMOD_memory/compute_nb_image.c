@@ -2,7 +2,11 @@
  * @file    compute_nb_image.c
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 
 long compute_nb_image()
 {

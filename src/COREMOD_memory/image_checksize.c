@@ -3,7 +3,11 @@
  * @brief   check image size
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 #include "image_ID.h"
 
 //  check only is size > 0

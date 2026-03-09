@@ -5,7 +5,11 @@
  *
  */
 
-#include "CLIcore.h" // complex types
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif // complex types
 #include <math.h>
 
 double Pacos(double a)

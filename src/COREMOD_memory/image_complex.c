@@ -5,7 +5,12 @@
 
 #include <math.h>
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#endif
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"

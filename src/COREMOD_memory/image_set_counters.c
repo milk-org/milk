@@ -3,7 +3,11 @@
  * @brief   SET IMAGE FLAGS / COUNTERS
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "image_ID.h"
 
 // ==========================================
@@ -17,6 +21,7 @@ errno_t COREMOD_MEMORY_image_set_cnt0(const char *IDname, int cnt0);
 errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -97,7 +102,7 @@ errno_t image_set_counters_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 errno_t COREMOD_MEMORY_image_set_status(const char *IDname, int status)
 {
     imageID ID;
@@ -127,3 +132,4 @@ errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1)
 
     return RETURN_SUCCESS;
 }
+

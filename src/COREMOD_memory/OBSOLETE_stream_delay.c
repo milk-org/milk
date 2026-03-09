@@ -4,7 +4,11 @@
 
 #include <math.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -27,6 +31,7 @@ errno_t COREMOD_MEMORY_streamDelay(const char *IDin_name,
                                    long        dtus);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -97,7 +102,7 @@ errno_t stream_delay_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 /**
  * @brief Manages configuration parameters for streamDelay
  *
@@ -575,3 +580,4 @@ errno_t COREMOD_MEMORY_streamDelay(const char *IDin_name,
 
     return RETURN_SUCCESS;
 }
+

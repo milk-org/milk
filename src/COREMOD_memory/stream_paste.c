@@ -3,7 +3,11 @@
  * @brief Paste two equal size 2D streams into an output 2D stream
 */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"
@@ -20,6 +24,7 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                                    int         master);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper functions
 // ==========================================
 
@@ -65,7 +70,7 @@ errno_t stream_paste_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 //
 // compute difference between two 2D streams
 // triggers alternatively on stream0 and stream1
@@ -306,3 +311,4 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
 
     return IDout;
 }
+

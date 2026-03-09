@@ -4,7 +4,11 @@
 
 #include <fftw3.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "wisdom.h"
 

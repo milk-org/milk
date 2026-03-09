@@ -10,6 +10,9 @@
 #define MODULE_SHORTNAME_DEFAULT "tools"
 #define MODULE_DESCRIPTION       "misc tools"
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -31,3 +34,4 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */

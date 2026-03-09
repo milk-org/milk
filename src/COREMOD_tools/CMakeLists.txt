@@ -79,3 +79,14 @@ target_link_libraries(${LIBNAME} PUBLIC m milkfps)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+
+# Compute-only library for standalone builds (no CLI code)
+set(LIBNAME_COMPUTE "${LIBNAME}_compute")
+add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
+target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
+target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>)
+target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
+install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
+    DESTINATION lib)

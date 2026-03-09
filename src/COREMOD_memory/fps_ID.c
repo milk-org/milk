@@ -3,7 +3,12 @@
  * @brief   find fps ID(s) from name
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include <fps.h>
+#endif
 
 /* ID number corresponding to a name */
 long fps_ID(const char *name)
