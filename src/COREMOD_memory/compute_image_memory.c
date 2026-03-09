@@ -9,15 +9,15 @@ uint64_t compute_image_memory()
 {
     uint64_t totalmem = 0;
 
-    for(imageID i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(imageID i = 0; i < dcnimg; i++)
     {
-        //printf("%5ld / %5ld  %d\n", i, data.NB_MAX_IMAGE, data.image[i].used);
+        //printf("%5ld / %5ld  %d\n", i, dcnimg, dcimg[i].used);
         //	fflush(stdout);
 
-        if(data.image[i].used == 1)
+        if(dcimg[i].used == 1)
         {
-            totalmem += data.image[i].md[0].nelement *
-                        ImageStreamIO_typesize(data.image[i].md[0].datatype);
+            totalmem += dcimg[i].md[0].nelement *
+                        ImageStreamIO_typesize(dcimg[i].md[0].datatype);
         }
     }
 

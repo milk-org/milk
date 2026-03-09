@@ -383,14 +383,14 @@ static errno_t customCONFcheck()
     printf("[customCONFcheck] iteration %ld"
            "  fpsptr=%p\n",
            confcheck_cnt,
-           (void *) data.fpsptr);
+           (void *) dcfpsptr);
 
-    if (data.fpsptr == NULL)
+    if (dcfpsptr == NULL)
     {
         return RETURN_SUCCESS;
     }
 
-    FUNCTION_PARAMETER_STRUCT *fps = data.fpsptr;
+    FUNCTION_PARAMETER_STRUCT *fps = dcfpsptr;
 
     /* --- Toggle p_float64 visibility --- */
     {

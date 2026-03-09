@@ -87,7 +87,7 @@ imageID cube_collapse(
         imgid_make_from_name(ID_in_name);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         ID_out_name,
         in.md->size[0], in.md->size[1]);
@@ -152,7 +152,7 @@ static errno_t compute_function()
             cubecollapse_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         cubecollapse_outimname,
         in.md->size[0], in.md->size[1]);

@@ -99,8 +99,8 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         printf("percentile is %f\n", perc);
     }
 
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     nb_step  = naxes[0] / 2;
 
     dist = (float *) malloc(sizeof(float) * nb_step);
@@ -152,9 +152,9 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
             if(i < nb_step)
             {
                 dist[i] += distance;
-                mean[i] += data.image[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += data.image[ID].array.F[jj * naxes[0] + ii] *
-                          data.image[ID].array.F[jj * naxes[0] + ii];
+                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
+                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
+                          dcimg[ID].array.F[jj * naxes[0] + ii];
                 counts[i] += 1;
             }
         }
@@ -169,7 +169,7 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
 
     printf("%u %u\n", naxes[0], naxes[1]);
     create_2Dimage_ID(ID_out_name, naxes[0], naxes[1], NULL);
-    IDout = image_ID(ID_out_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(ID_out_name, dcimg, dcnimg);
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
@@ -181,8 +181,8 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
 
             if((i + 1) < nb_step)
             {
-                data.image[IDout].array.F[jj * naxes[0] + ii] =
-                    data.image[ID].array.F[jj * naxes[0] + ii] -
+                dcimg[IDout].array.F[jj * naxes[0] + ii] =
+                    dcimg[ID].array.F[jj * naxes[0] + ii] -
                     ((1.0 - x) * mean[i] + x * mean[i + 1]);
             }
         }
@@ -207,7 +207,7 @@ imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
     printf("get non-circular symmetric component from image %s\n", ID_name);
     fflush(stdout);
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
     IDout = IMAGE_BASIC_get_circasym_component_byID(ID,
             ID_out_name,

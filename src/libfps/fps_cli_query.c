@@ -85,7 +85,7 @@ void fps_print_query_info(
         char pattern[300];
         snprintf(pattern, sizeof(pattern),
                  "ls %s/*.fps.shm 2>/dev/null",
-                 data.shmdir);
+                 dcshmdir);
 
         FILE *pp = popen(pattern, "r");
         int shm_count = 0;

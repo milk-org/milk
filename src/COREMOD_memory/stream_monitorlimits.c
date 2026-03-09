@@ -81,7 +81,7 @@ static errno_t monitor_logic(IMGID *imgptr)
 
     resolveIMGID(
         imgptr, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     uint32_t xsize  = imgptr->md->size[0];
     uint32_t ysize  = imgptr->md->size[1];
@@ -198,11 +198,11 @@ static errno_t compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         processinfo_waitoninputstream_init(
             processinfo, inimg.im,

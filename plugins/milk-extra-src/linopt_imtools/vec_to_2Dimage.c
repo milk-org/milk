@@ -114,17 +114,17 @@ errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
     imageID IDpixindex, IDpixmult;
     long    NBpix;
 
-    IDvec      = image_ID(IDvec_name, data.image, data.NB_MAX_IMAGE);
-    IDpixindex = image_ID(IDpixindex_name, data.image, data.NB_MAX_IMAGE);
-    IDpixmult  = image_ID(IDpixmult_name, data.image, data.NB_MAX_IMAGE);
-    NBpix      = data.image[IDpixindex].md[0].nelement;
+    IDvec      = image_ID(IDvec_name, dcimg, dcnimg);
+    IDpixindex = image_ID(IDpixindex_name, dcimg, dcnimg);
+    IDpixmult  = image_ID(IDpixmult_name, dcimg, dcnimg);
+    NBpix      = dcimg[IDpixindex].md[0].nelement;
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(ID_name, xsize, ysize, &ID));
 
     for(k = 0; k < NBpix; k++)
     {
-        data.image[ID].array.F[data.image[IDpixindex].array.SI64[k]] =
-            data.image[IDvec].array.F[k] / data.image[IDpixmult].array.F[k];
+        dcimg[ID].array.F[dcimg[IDpixindex].array.SI64[k]] =
+            dcimg[IDvec].array.F[k] / dcimg[IDpixmult].array.F[k];
     }
 
     if(outID != NULL)

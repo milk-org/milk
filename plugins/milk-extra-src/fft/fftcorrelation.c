@@ -79,8 +79,8 @@ imageID fft_correlation(const char *ID_name1,
     char fft1name[STRINGMAXLEN_IMGNAME];
     char fft1pname[STRINGMAXLEN_IMGNAME];
 
-    ID1      = image_ID(ID_name1, data.image, data.NB_MAX_IMAGE);
-    nelement = data.image[ID1].md[0].nelement;
+    ID1      = image_ID(ID_name1, dcimg, dcnimg);
+    nelement = dcimg[ID1].md[0].nelement;
 
     WRITE_IMAGENAME(ft1name, "_ft1_%d", (int) getpid());
     do2drfft(ID_name1, ft1name);
@@ -130,7 +130,7 @@ imageID fft_correlation(const char *ID_name1,
     delete_image_ID(fft1name, DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID(fft1pname, DELETE_IMAGE_ERRMODE_WARNING);
 
-    IDout = image_ID(ID_nameout, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(ID_nameout, dcimg, dcnimg);
 
     return IDout;
 }

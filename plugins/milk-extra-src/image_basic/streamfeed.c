@@ -71,21 +71,21 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     long               ii;
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    if(seteuid(dcruid) != 0)    //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
 
-    ID     = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    xsize  = data.image[ID].md[0].size[0];
-    ysize  = data.image[ID].md[0].size[1];
+    ID     = image_ID(IDname, dcimg, dcnimg);
+    xsize  = dcimg[ID].md[0].size[0];
+    ysize  = dcimg[ID].md[0].size[1];
     xysize = xsize * ysize;
 
     tdelay = (long)(1000000.0 / frequ);
@@ -93,48 +93,48 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     printf("frequ = %f Hz\n", frequ);
     printf("tdelay = %ld us\n", tdelay);
 
-    IDs = image_ID(streamname, data.image, data.NB_MAX_IMAGE);
-    if((xsize != data.image[IDs].md[0].size[0]) ||
-            (ysize != data.image[IDs].md[0].size[1]))
+    IDs = image_ID(streamname, dcimg, dcnimg);
+    if((xsize != dcimg[IDs].md[0].size[0]) ||
+            (ysize != dcimg[IDs].md[0].size[1]))
     {
         printf("ERROR: images have different x and y sizes");
         exit(0);
     }
-    zsize = data.image[ID].md[0].size[2];
+    zsize = dcimg[ID].md[0].size[2];
 
-    ptr1 = (char *) data.image[IDs].array.F; // destination
+    ptr1 = (char *) dcimg[IDs].array.F; // destination
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -144,13 +144,13 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     loopOK = 1;
     while(loopOK == 1)
     {
-        ptr0 = (char *) data.image[ID].array.F;
+        ptr0 = (char *) dcimg[ID].array.F;
         ptr0 += sizeof(float) * xysize * k;
-        data.image[IDs].md[0].write = 1;
+        dcimg[IDs].md[0].write = 1;
         memcpy((void *) ptr1, (void *) ptr0, sizeof(float) * xysize);
 
-        data.image[IDs].md[0].write = 0;
-        data.image[IDs].md[0].cnt0++;
+        dcimg[IDs].md[0].write = 0;
+        dcimg[IDs].md[0].cnt0++;
         COREMOD_MEMORY_image_set_sempost_byID(IDs, -1);
 
         usleep(tdelay);
@@ -160,30 +160,30 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
             k = 0;
         }
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }
     }
 
-    data.image[IDs].md[0].write = 1;
+    dcimg[IDs].md[0].write = 1;
     for(ii = 0; ii < xysize; ii++)
     {
-        data.image[IDs].array.F[ii] = 0.0;
+        dcimg[IDs].array.F[ii] = 0.0;
     }
-    if(data.image[IDs].md[0].sem > 0)
+    if(dcimg[IDs].md[0].sem > 0)
     {
-        semval = ImageStreamIO_semvalue(data.image+IDs, 0);
+        semval = ImageStreamIO_semvalue(dcimg+IDs, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            ImageStreamIO_sempost(data.image+IDs, 0);
+            ImageStreamIO_sempost(dcimg+IDs, 0);
         }
     }
-    data.image[IDs].md[0].write = 0;
-    data.image[IDs].md[0].cnt0++;
+    dcimg[IDs].md[0].write = 0;
+    dcimg[IDs].md[0].cnt0++;
 
     return (0);
 }

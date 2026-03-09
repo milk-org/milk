@@ -138,7 +138,7 @@ long basic_resizeim(
         imgid_make_from_name(imname_in);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         imname_out, xsizeout, ysizeout);
     imresize_step(in.im, out.im);
@@ -202,7 +202,7 @@ static errno_t compute_function()
             imresize_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         imresize_outimname,
         *imresize_xsize, *imresize_ysize);

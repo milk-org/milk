@@ -36,21 +36,21 @@ errno_t write_process_log()
     if(fplog != NULL)
     {
         char timestring[TIMESTRINGLEN];
-        mkUTtimestring_nanosec(timestring, data.testpoint.time);
+        mkUTtimestring_nanosec(timestring, dctestpoint.time);
 
         fprintf(fplog, "%18ld  %s ", logcnt, timestring);
 
         {
             // extract last word
             char str[STRINGMAXLEN_FULLFILENAME];
-            strcpy(str, data.testpoint.file);
+            strcpy(str, dctestpoint.file);
             char *lastword = strrchr(str, '/') + 1;
             fprintf(fplog, " %s", lastword);
         }
 
-        fprintf(fplog, " %4d", data.testpoint.line);
-        fprintf(fplog, " %s", data.testpoint.func);
-        fprintf(fplog, "  %s\n", data.testpoint.msg);
+        fprintf(fplog, " %4d", dctestpoint.line);
+        fprintf(fplog, " %s", dctestpoint.func);
+        fprintf(fplog, "  %s\n", dctestpoint.msg);
 
         logcnt++;
 
@@ -90,37 +90,37 @@ static void fprintf_stdout(FILE *f, char const *fmt, ...)
 errno_t set_signal_catch()
 {
     // catch signals for clean exit
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGTERM\n");
     }
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGINT\n");
     }
 
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGABRT\n");
     }
 
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGBUS\n");
     }
 
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGSEGV\n");
     }
 
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGHUP\n");
     }
 
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGPIPE\n");
     }
@@ -151,10 +151,10 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
     printf("EXIT CONDITION < %s >: See report in file %s\n",
            errortypestring,
            fname);
-    printf("    File    : %s\n", data.testpoint.file);
-    printf("    Function: %s\n", data.testpoint.func);
-    printf("    Line    : %d\n", data.testpoint.line);
-    printf("    Message : %s\n", data.testpoint.msg);
+    printf("    File    : %s\n", dctestpoint.file);
+    printf("    Function: %s\n", dctestpoint.func);
+    printf("    Line    : %d\n", dctestpoint.line);
+    printf("    Message : %s\n", dctestpoint.msg);
     fflush(stdout);
 
     struct tm *uttime;
@@ -181,7 +181,7 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
                        tnow.tv_nsec);
 
         fprintf_stdout(fpexit, "Last encountered test point\n");
-        tvsec1 = data.testpoint.time.tv_sec;
+        tvsec1 = dctestpoint.time.tv_sec;
         uttime = gmtime(&tvsec1);
         fprintf_stdout(fpexit,
                        "    Time    : %04d%02d%02dT%02d%02d%02d.%09ld\n",
@@ -191,16 +191,16 @@ errno_t write_process_exit_report(const char *__restrict errortypestring)
                        uttime->tm_hour,
                        uttime->tm_min,
                        uttime->tm_sec,
-                       data.testpoint.time.tv_nsec);
+                       dctestpoint.time.tv_nsec);
 
         double timediff = 1.0 * (tvsec0 - tvsec1) +
-                          1.0e-9 * (tnow.tv_nsec - data.testpoint.time.tv_nsec);
+                          1.0e-9 * (tnow.tv_nsec - dctestpoint.time.tv_nsec);
         fprintf_stdout(fpexit, "              %.9f sec ago\n", timediff);
 
-        fprintf_stdout(fpexit, "    File    : %s\n", data.testpoint.file);
-        fprintf_stdout(fpexit, "    Function: %s\n", data.testpoint.func);
-        fprintf_stdout(fpexit, "    Line    : %d\n", data.testpoint.line);
-        fprintf_stdout(fpexit, "    Message : %s\n", data.testpoint.msg);
+        fprintf_stdout(fpexit, "    File    : %s\n", dctestpoint.file);
+        fprintf_stdout(fpexit, "    Function: %s\n", dctestpoint.func);
+        fprintf_stdout(fpexit, "    Line    : %d\n", dctestpoint.line);
+        fprintf_stdout(fpexit, "    Message : %s\n", dctestpoint.msg);
         fprintf_stdout(fpexit, "\n");
 
         // write function trace
@@ -247,32 +247,32 @@ void sig_handler(int signo)
 
         case SIGINT:
             printf("PID %d sig_handler received SIGINT\n", CLIPID);
-            data.signal_INT = 1;
+            dcsigINT = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
         case SIGTERM:
             printf("PID %d sig_handler received SIGTERM\n", CLIPID);
-            data.signal_TERM = 1;
+            dcsigTERM = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
         case SIGUSR1:
             printf("PID %d sig_handler received SIGUSR1\n", CLIPID);
-            data.signal_USR1 = 1;
+            dcsigUSR1 = 1;
             break;
 
         case SIGUSR2:
             printf("PID %d sig_handler received SIGUSR2\n", CLIPID);
-            data.signal_USR2 = 1;
+            dcsigUSR2 = 1;
             break;
 
         case SIGBUS: // exit program after SIGSEGV
             printf("PID %d sig_handler received SIGBUS \n", CLIPID);
             write_process_exit_report("SIGBUS");
-            data.signal_BUS = 1;
+            dcsigBUS = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
@@ -280,7 +280,7 @@ void sig_handler(int signo)
         case SIGABRT:
             printf("PID %d sig_handler received SIGABRT\n", CLIPID);
             write_process_exit_report("SIGABRT");
-            data.signal_ABRT = 1;
+            dcsigABRT = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
@@ -288,7 +288,7 @@ void sig_handler(int signo)
         case SIGSEGV: // exit program after SIGSEGV
             printf("PID %d sig_handler received SIGSEGV\n", CLIPID);
             write_process_exit_report("SIGSEGV");
-            data.signal_SEGV = 1;
+            dcsigSEGV = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
@@ -296,14 +296,14 @@ void sig_handler(int signo)
         case SIGHUP:
             printf("PID %d sig_handler received SIGHUP\n", CLIPID);
             write_process_exit_report("SIGHUP");
-            data.signal_HUP = 1;
+            dcsigHUP = 1;
             set_terminal_echo_on();
             exit(EXIT_FAILURE);
             break;
 
         case SIGPIPE:
             printf("PID %d sig_handler received SIGPIPE\n", CLIPID);
-            data.signal_PIPE = 1;
+            dcsigPIPE = 1;
             break;
     }
 }

@@ -17,12 +17,12 @@ long fps_ID(const char *name)
     while(loopOK == 1)
     {
 
-        if(data.fpsarray[i].SMfd >= 0)
+        if(dcfpsarr[i].SMfd >= 0)
         {
             // fps in use
 
-            if((strncmp(name, data.fpsarray[i].md->name, strlen(name)) == 0) &&
-                    (data.fpsarray[i].md->name[strlen(name)] == '\0'))
+            if((strncmp(name, dcfpsarr[i].md->name, strlen(name)) == 0) &&
+                    (dcfpsarr[i].md->name[strlen(name)] == '\0'))
             {
                 loopOK = 0;
                 tmpID  = i;
@@ -31,7 +31,7 @@ long fps_ID(const char *name)
 
         i++;
 
-        if(i == data.NB_MAX_FPS)
+        if(i == dcnfps)
         {
             loopOK = 0;
             tmpID  = -1;
@@ -51,9 +51,9 @@ long next_avail_fps_ID()
     #pragma omp critical
     {
 #endif
-        for(i = 0; i < data.NB_MAX_FPS; i++)
+        for(i = 0; i < dcnfps; i++)
         {
-            if(data.fpsarray[i].SMfd < 0)
+            if(dcfpsarr[i].SMfd < 0)
             {
                 // fps is unused, lets grab it
                 ID = i;
@@ -68,7 +68,7 @@ long next_avail_fps_ID()
     {
         printf("ERROR: ran out of FPS IDs - cannot allocate new ID\n");
         printf("NB_MAX_FPS should be increased above current value (%ld)\n",
-               data.NB_MAX_FPS);
+               dcnfps);
         exit(0);
     }
 

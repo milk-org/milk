@@ -198,7 +198,7 @@ static errno_t compute_function()
         imgid_make_from_name(cropinsname);
     resolveIMGID(
         &iin, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID iout = stream_connect_create_2D(
         outsname, *cropxsize, *cropysize,
         iin.md->datatype);

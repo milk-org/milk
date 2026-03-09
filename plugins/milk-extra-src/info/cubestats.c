@@ -81,34 +81,34 @@ imageID info_cubestats(const char *ID_name,
     double valn1, valn2, v1, v2, valxp, vcorr;
     long   k1, k2, kc;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    if(data.image[ID].md[0].naxis != 3)
+    ID = image_ID(ID_name, dcimg, dcnimg);
+    if(dcimg[ID].md[0].naxis != 3)
     {
         printf("ERROR: info_cubestats requires 3D image\n");
         exit(0);
     }
 
-    IDm = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
+    IDm = image_ID(IDmask_name, dcimg, dcnimg);
 
-    xysize = data.image[ID].md[0].size[0] * data.image[ID].md[0].size[1];
+    xysize = dcimg[ID].md[0].size[0] * dcimg[ID].md[0].size[1];
 
     mtot = 0.0;
     for(unsigned long ii = 0; ii < xysize; ii++)
     {
-        mtot += data.image[IDm].array.F[ii];
+        mtot += dcimg[IDm].array.F[ii];
     }
 
     fp = fopen(outfname, "w");
-    for(unsigned long kk = 0; kk < data.image[ID].md[0].size[2]; kk++)
+    for(unsigned long kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
     {
         init = 0;
         tot  = 0.0;
         tot2 = 0.0;
         for(unsigned long ii = 0; ii < xysize; ii++)
         {
-            if(data.image[IDm].array.F[ii] > 0.5)
+            if(dcimg[IDm].array.F[ii] > 0.5)
             {
-                val = data.image[ID].array.F[kk * xysize + ii];
+                val = dcimg[ID].array.F[kk * xysize + ii];
                 if(init == 0)
                 {
                     init = 1;
@@ -146,7 +146,7 @@ imageID info_cubestats(const char *ID_name,
         {
             vcorr = 0.0;
             for(unsigned long kk = 0;
-                    kk < (unsigned long)(data.image[ID].md[0].size[2] - kc);
+                    kk < (unsigned long)(dcimg[ID].md[0].size[2] - kc);
                     kk++)
             {
                 k1    = kk;
@@ -156,10 +156,10 @@ imageID info_cubestats(const char *ID_name,
                 valxp = 0.0;
                 for(unsigned long ii = 0; ii < xysize; ii++)
                 {
-                    if(data.image[IDm].array.F[ii] > 0.5)
+                    if(dcimg[IDm].array.F[ii] > 0.5)
                     {
-                        v1 = data.image[ID].array.F[k1 * xysize + ii];
-                        v2 = data.image[ID].array.F[k2 * xysize + ii];
+                        v1 = dcimg[ID].array.F[k1 * xysize + ii];
+                        v2 = dcimg[ID].array.F[k2 * xysize + ii];
                         valn1 += v1 * v1;
                         valn2 += v2 * v2;
                         valxp += v1 * v2;
@@ -167,7 +167,7 @@ imageID info_cubestats(const char *ID_name,
                 }
                 vcorr += valxp / sqrt(valn1 * valn2);
             }
-            vcorr /= data.image[ID].md[0].size[2] - kc;
+            vcorr /= dcimg[ID].md[0].size[2] - kc;
             fprintf(fp, "%3ld   %g\n", kc, vcorr);
         }
         fclose(fp);

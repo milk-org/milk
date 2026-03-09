@@ -92,9 +92,9 @@ basic_contract(const char *ID_name, const char *ID_name_out, int n1, int n2)
     uint32_t naxes[2], naxes_out[2];
     int      i, j;
 
-    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     naxes_out[0] = naxes[0] / n1;
     naxes_out[1] = naxes[1] / n2;
@@ -107,8 +107,8 @@ basic_contract(const char *ID_name, const char *ID_name_out, int n1, int n2)
             for(i = 0; i < n1; i++)
                 for(j = 0; j < n2; j++)
                 {
-                    data.image[ID_out].array.F[jj * naxes_out[0] + ii] +=
-                        data.image[ID]
+                    dcimg[ID_out].array.F[jj * naxes_out[0] + ii] +=
+                        dcimg[ID]
                         .array.F[(jj * n2 + j) * naxes[0] + ii * n1 + i];
                 }
 
@@ -126,11 +126,11 @@ imageID basic_contract3D(
     uint32_t *naxes_out;
     uint8_t   datatype;
 
-    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    datatype = data.image[ID].md[0].datatype;
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
-    naxes[2] = data.image[ID].md[0].size[2];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    datatype = dcimg[ID].md[0].datatype;
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
+    naxes[2] = dcimg[ID].md[0].size[2];
 
     naxes_out = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxes_out == NULL)
@@ -158,7 +158,7 @@ imageID basic_contract3D(
         create_image_ID(ID_name_out, 3, naxes_out, datatype, 0, 0, 0, NULL);
     }
 
-    ID_out = image_ID(ID_name_out, data.image, data.NB_MAX_IMAGE);
+    ID_out = image_ID(ID_name_out, dcimg, dcnimg);
 
     switch(datatype)
     {
@@ -170,10 +170,10 @@ imageID basic_contract3D(
                             for(int j = 0; j < n2; j++)
                                 for(int k = 0; k < n3; k++)
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.F[kk * naxes_out[0] * naxes_out[1] +
                                                 jj * naxes_out[0] + ii] +=
-                                                 data.image[ID]
+                                                 dcimg[ID]
                                                  .array
                                                  .F[(kk * n3 + k) * naxes[0] * naxes[1] +
                                                                   (jj * n2 + j) * naxes[0] + ii * n1 +
@@ -188,10 +188,10 @@ imageID basic_contract3D(
                             for(int j = 0; j < n2; j++)
                                 for(int k = 0; k < n3; k++)
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array.D[kk * naxes_out[0] * naxes_out[1] +
                                                 jj * naxes_out[0] + ii] +=
-                                                 data.image[ID]
+                                                 dcimg[ID]
                                                  .array
                                                  .D[(kk * n3 + k) * naxes[0] * naxes[1] +
                                                                   (jj * n2 + j) * naxes[0] + ii * n1 +
@@ -206,22 +206,22 @@ imageID basic_contract3D(
                             for(int j = 0; j < n2; j++)
                                 for(int k = 0; k < n3; k++)
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array
                                     .CF[kk * naxes_out[0] * naxes_out[1] +
                                            jj * naxes_out[0] + ii]
-                                    .re += data.image[ID]
+                                    .re += dcimg[ID]
                                            .array
                                            .CF[(kk * n3 + k) * naxes[0] *
                                                              naxes[1] +
                                                              (jj * n2 + j) * naxes[0] +
                                                              ii * n1 + i]
                                            .re;
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array
                                     .CF[kk * naxes_out[0] * naxes_out[1] +
                                            jj * naxes_out[0] + ii]
-                                    .im += data.image[ID]
+                                    .im += dcimg[ID]
                                            .array
                                            .CF[(kk * n3 + k) * naxes[0] *
                                                              naxes[1] +
@@ -238,22 +238,22 @@ imageID basic_contract3D(
                             for(int j = 0; j < n2; j++)
                                 for(int k = 0; k < n3; k++)
                                 {
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array
                                     .CD[kk * naxes_out[0] * naxes_out[1] +
                                            jj * naxes_out[0] + ii]
-                                    .re += data.image[ID]
+                                    .re += dcimg[ID]
                                            .array
                                            .CD[(kk * n3 + k) * naxes[0] *
                                                              naxes[1] +
                                                              (jj * n2 + j) * naxes[0] +
                                                              ii * n1 + i]
                                            .re;
-                                    data.image[ID_out]
+                                    dcimg[ID_out]
                                     .array
                                     .CD[kk * naxes_out[0] * naxes_out[1] +
                                            jj * naxes_out[0] + ii]
-                                    .im += data.image[ID]
+                                    .im += dcimg[ID]
                                            .array
                                            .CD[(kk * n3 + k) * naxes[0] *
                                                              naxes[1] +

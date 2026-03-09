@@ -101,9 +101,9 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgcube0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&imgcube1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&imgmask, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgcube0, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgcube1, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgmask, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize  = imgcube0.md->size[0];
     uint32_t ysize  = imgcube0.md->size[1];

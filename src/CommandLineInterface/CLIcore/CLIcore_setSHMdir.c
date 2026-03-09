@@ -31,7 +31,7 @@ errno_t setSHMdir()
         {
             shmdirOK = 1;
             closedir(tmpdir);
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("        MILK_SHM_DIR: %s\n", shmdirname);
             }
@@ -48,7 +48,7 @@ errno_t setSHMdir()
     }
     else
     {
-        if(data.quiet == 0)
+        if(dcquiet == 0)
         {
             printf("%c[%d;%dm", (char) 27, 1, 31); // set color red
             printf(
@@ -83,14 +83,14 @@ errno_t setSHMdir()
             snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "%s", SHAREDMEMDIR);
             shmdirOK = 1;
             closedir(tmpdir);
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("        MILK_SHM_DIR: %s (default)\n", shmdirname);
             }
         }
         else
         {
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("        Directory %s : %s\n",
                        SHAREDMEMDIR,
@@ -114,7 +114,7 @@ errno_t setSHMdir()
         {
             snprintf(shmdirname, STRINGMAXLEN_DIRNAME, "/tmp");
             shmdirOK = 1;
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("        MILK_SHM_DIR: %s (fallback)\n", shmdirname);
 
@@ -133,7 +133,7 @@ errno_t setSHMdir()
         }
     }
 
-    snprintf(data.shmdir, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
+    snprintf(dcshmdir, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
 
     // change / to . and write to shmsemdirname
     unsigned int stri;
@@ -143,7 +143,7 @@ errno_t setSHMdir()
             shmdirname[stri] = '.';
         }
 
-    snprintf(data.shmsemdirname, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
+    snprintf(dcshmsemdir, STRINGMAXLEN_DIRNAME, "%s", shmdirname);
 
     return RETURN_SUCCESS;
 }

@@ -24,10 +24,10 @@ errno_t create_image_ID_IMGID(
                      img->mdt->shared,
                      img->mdt->NBkw,
                      img->mdt->CBsize);
-    if(image_ID(img->name, data.image, data.NB_MAX_IMAGE) == -1)
+    if(image_ID(img->name, dcimg, dcnimg) == -1)
     {
         img->ID = next_avail_image_ID(img->ID);
-        ImageStreamIO_createIm(&data.image[img->ID],
+        ImageStreamIO_createIm(&dcimg[img->ID],
                                img->name,
                                img->mdt->naxis,
                                img->mdt->size,
@@ -40,12 +40,12 @@ errno_t create_image_ID_IMGID(
     {
         // Image name already in use — check compatibility
         img->ID = image_ID(img->name,
-                           data.image,
-                           data.NB_MAX_IMAGE);
+                           dcimg,
+                           dcnimg);
 
         int mismatch = 0;
 
-        if (data.image[img->ID].md->datatype
+        if (dcimg[img->ID].md->datatype
             != img->mdt->datatype)
         {
             printf("\033[33mWARNING:\033[0m"
@@ -56,7 +56,7 @@ errno_t create_image_ID_IMGID(
         }
 
         if (!mismatch &&
-            data.image[img->ID].md->naxis
+            dcimg[img->ID].md->naxis
             != img->mdt->naxis)
         {
             printf("\033[33mWARNING:\033[0m"
@@ -64,7 +64,7 @@ errno_t create_image_ID_IMGID(
                    " (%ld vs %ld)"
                    " -> re-creating\n",
                    img->name,
-                   (long) data.image[img->ID]
+                   (long) dcimg[img->ID]
                        .md->naxis,
                    (long) img->mdt->naxis);
             mismatch = 1;
@@ -75,7 +75,7 @@ errno_t create_image_ID_IMGID(
             for (int i = 0;
                  i < img->mdt->naxis; i++)
             {
-                if (data.image[img->ID].md
+                if (dcimg[img->ID].md
                         ->size[i]
                     != img->mdt->size[i])
                 {
@@ -87,7 +87,7 @@ errno_t create_image_ID_IMGID(
                         " (%ld vs %ld)"
                         " -> re-creating\n",
                         img->name, i,
-                        (long) data.image[
+                        (long) dcimg[
                             img->ID]
                             .md->size[i],
                         (long) img->mdt
@@ -106,7 +106,7 @@ errno_t create_image_ID_IMGID(
             img->ID = next_avail_image_ID(
                 img->ID);
             ImageStreamIO_createIm(
-                &data.image[img->ID],
+                &dcimg[img->ID],
                 img->name,
                 img->mdt->naxis,
                 img->mdt->size,
@@ -116,7 +116,7 @@ errno_t create_image_ID_IMGID(
                 img->mdt->CBsize);
         }
     }
-    if(data.MEM_MONITOR == 1)
+    if(dcmemmon == 1)
     {
         list_image_ID_ncurses();
     }
@@ -161,14 +161,14 @@ errno_t create_1Dimage_ID_IMGID(
 )
 {
     img->mdt->naxis  = 1;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_FLOAT;
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_DOUBLE;
     }
@@ -199,14 +199,14 @@ errno_t create_1DCimage_ID_IMGID(
 )
 {
     img->mdt->naxis  = 1;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_FLOAT;
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
     }
@@ -237,14 +237,14 @@ errno_t create_2Dimage_ID_IMGID(
 )
 {
     img->mdt->naxis = 2;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_FLOAT;
     }
-    else if(data.precision == 1)
+    else if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_DOUBLE;
     }
@@ -281,7 +281,7 @@ errno_t create_2Dimage_ID_double_IMGID(
 {
     img->mdt->naxis    = 2;
     img->mdt->datatype = _DATATYPE_DOUBLE;
-    img->mdt->shared   = data.SHARED_DFT;
+    img->mdt->shared   = dcshareddft;
     img->mdt->NBkw     = NB_KEYWNODE_MAX;
     img->mdt->CBsize   = 0;
     return create_image_ID_IMGID(img);
@@ -312,14 +312,14 @@ errno_t create_2DCimage_ID_IMGID(
 )
 {
     img->mdt->naxis  = 2;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_FLOAT;
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
     }
@@ -353,7 +353,7 @@ errno_t create_2DCimage_ID_double_IMGID(
 {
     img->mdt->naxis    = 2;
     img->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
-    img->mdt->shared   = data.SHARED_DFT;
+    img->mdt->shared   = dcshareddft;
     img->mdt->NBkw     = NB_KEYWNODE_MAX;
     img->mdt->CBsize   = 0;
     return create_image_ID_IMGID(img);
@@ -386,7 +386,7 @@ errno_t create_3Dimage_ID_float_IMGID(
 {
     img->mdt->naxis    = 3;
     img->mdt->datatype = _DATATYPE_FLOAT;
-    img->mdt->shared   = data.SHARED_DFT;
+    img->mdt->shared   = dcshareddft;
     img->mdt->NBkw     = NB_KEYWNODE_MAX;
     img->mdt->CBsize   = 0;
     return create_image_ID_IMGID(img);
@@ -421,7 +421,7 @@ errno_t create_3Dimage_ID_double_IMGID(
 {
     img->mdt->naxis    = 3;
     img->mdt->datatype = _DATATYPE_DOUBLE;
-    img->mdt->shared   = data.SHARED_DFT;
+    img->mdt->shared   = dcshareddft;
     img->mdt->NBkw     = NB_KEYWNODE_MAX;
     img->mdt->CBsize   = 0;
     return create_image_ID_IMGID(img);
@@ -455,14 +455,14 @@ errno_t create_3Dimage_ID_IMGID(
 )
 {
     img->mdt->naxis  = 3;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_FLOAT;
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_DOUBLE;
     }
@@ -497,14 +497,14 @@ errno_t create_3DCimage_ID_IMGID(
 )
 {
     img->mdt->naxis  = 3;
-    img->mdt->shared = data.SHARED_DFT;
+    img->mdt->shared = dcshareddft;
     img->mdt->NBkw   = NB_KEYWNODE_MAX;
     img->mdt->CBsize = 0;
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_FLOAT;
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         img->mdt->datatype = _DATATYPE_COMPLEX_DOUBLE;
     }

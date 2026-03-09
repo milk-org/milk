@@ -209,12 +209,12 @@ static errno_t compute_function()
         immerge_inimname0);
     resolveIMGID(
         &id0, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID id1 = imgid_make_from_name(
         immerge_inimname1);
     resolveIMGID(
         &id1, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID idout = imgid_make_from_name(
         immerge_outimname);
 

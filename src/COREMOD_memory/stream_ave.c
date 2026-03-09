@@ -234,7 +234,7 @@ static errno_t compute_function()
             streamave_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     uint64_t xys =
         in.md[0].size[0]

@@ -23,10 +23,10 @@ arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
     imageID ID1;
     imageID ID2;
 
-    ID1    = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
-    ID2    = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
-    atype1 = data.image[ID1].md[0].datatype;
-    atype2 = data.image[ID2].md[0].datatype;
+    ID1    = image_ID(ID1_name, dcimg, dcnimg);
+    ID2    = image_ID(ID2_name, dcimg, dcnimg);
+    atype1 = dcimg[ID1].md[0].datatype;
+    atype2 = dcimg[ID2].md[0].datatype;
 
     if((atype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (atype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -59,10 +59,10 @@ arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
-    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    ID1       = image_ID(ID1_name, dcimg, dcnimg);
+    ID2       = image_ID(ID2_name, dcimg, dcnimg);
+    datatype1 = dcimg[ID1].md[0].datatype;
+    datatype2 = dcimg[ID2].md[0].datatype;
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -96,10 +96,10 @@ errno_t arith_image_Cmult(const char *ID1_name,
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
-    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    ID1       = image_ID(ID1_name, dcimg, dcnimg);
+    ID2       = image_ID(ID2_name, dcimg, dcnimg);
+    datatype1 = dcimg[ID1].md[0].datatype;
+    datatype2 = dcimg[ID2].md[0].datatype;
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -133,10 +133,10 @@ int arith_image_Cdiv(const char *ID1_name,
     imageID ID1;
     imageID ID2;
 
-    ID1       = image_ID(ID1_name, data.image, data.NB_MAX_IMAGE);
-    ID2       = image_ID(ID2_name, data.image, data.NB_MAX_IMAGE);
-    datatype1 = data.image[ID1].md[0].datatype;
-    datatype2 = data.image[ID2].md[0].datatype;
+    ID1       = image_ID(ID1_name, dcimg, dcnimg);
+    ID2       = image_ID(ID2_name, dcimg, dcnimg);
+    datatype1 = dcimg[ID1].md[0].datatype;
+    datatype2 = dcimg[ID2].md[0].datatype;
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))

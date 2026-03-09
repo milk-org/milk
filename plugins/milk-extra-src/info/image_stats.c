@@ -101,34 +101,34 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         fp = fopen("imstat.info.txt", "w");
     }
 
-    ID = image_ID_noaccessupdate(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID_noaccessupdate(ID_name, dcimg, dcnimg);
     if(ID != -1)
     {
-        nelements = data.image[ID].md[0].nelement;
+        nelements = dcimg[ID].md[0].nelement;
 
-        datatype = data.image[ID].md[0].datatype;
+        datatype = dcimg[ID].md[0].datatype;
         tmp_long =
-            data.image[ID].md[0].nelement * ImageStreamIO_typesize(datatype);
+            dcimg[ID].md[0].nelement * ImageStreamIO_typesize(datatype);
         printf("\n");
         printf("Image size (->imsize0...):     [");
-        printf("% ld", (long) data.image[ID].md[0].size[0]);
+        printf("% ld", (long) dcimg[ID].md[0].size[0]);
 
         unsigned long j = 0;
         sprintf(vname, "imsize%ld", j);
 
-        create_variable_ID(vname, 1.0 * data.image[ID].md[0].size[j]);
-        for(j = 1; j < data.image[ID].md[0].naxis; j++)
+        create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
+        for(j = 1; j < dcimg[ID].md[0].naxis; j++)
         {
-            printf(" %ld", (long) data.image[ID].md[0].size[j]);
+            printf(" %ld", (long) dcimg[ID].md[0].size[j]);
             sprintf(vname, "imsize%ld", j);
-            create_variable_ID(vname, 1.0 * data.image[ID].md[0].size[j]);
+            create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
         }
         printf(" ]\n");
 
         printf("write = %d   cnt0 = %ld   cnt1 = %ld\n",
-               data.image[ID].md[0].write,
-               data.image[ID].md[0].cnt0,
-               data.image[ID].md[0].cnt1);
+               dcimg[ID].md[0].write,
+               dcimg[ID].md[0].cnt0,
+               dcimg[ID].md[0].cnt1);
 
         switch(datatype)
         {
@@ -187,26 +187,26 @@ errno_t info_image_stats(const char *ID_name, const char *options)
 
         printf("type:            %s\n", type);
         printf("Memory size:     %ld Kb\n", (long) tmp_long / 1024);
-        //      printf("Created:         %f\n", data.image[ID].creation_time);
-        //      printf("Last access:     %f\n", data.image[ID].last_access);
+        //      printf("Created:         %f\n", dcimg[ID].creation_time);
+        //      printf("Last access:     %f\n", dcimg[ID].last_access);
 
         if(datatype == _DATATYPE_FLOAT)
         {
-            min = data.image[ID].array.F[0];
-            max = data.image[ID].array.F[0];
+            min = dcimg[ID].array.F[0];
+            max = dcimg[ID].array.F[0];
 
             iimin = 0;
             iimax = 0;
             for(unsigned long ii = 0; ii < nelements; ii++)
             {
-                if(min > data.image[ID].array.F[ii])
+                if(min > dcimg[ID].array.F[ii])
                 {
-                    min   = data.image[ID].array.F[ii];
+                    min   = dcimg[ID].array.F[ii];
                     iimin = ii;
                 }
-                if(max < data.image[ID].array.F[ii])
+                if(max < dcimg[ID].array.F[ii])
                 {
-                    max   = data.image[ID].array.F[ii];
+                    max   = dcimg[ID].array.F[ii];
                     iimax = ii;
                 }
             }
@@ -217,17 +217,17 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             rms = 0.0;
             for(unsigned long ii = 0; ii < nelements; ii++)
             {
-                if(isnan(data.image[ID].array.F[ii]) != 0)
+                if(isnan(dcimg[ID].array.F[ii]) != 0)
                 {
                     printf(
                         "element %ld is NAN -> replacing by "
                         "0\n",
                         ii);
-                    data.image[ID].array.F[ii] = 0.0;
+                    dcimg[ID].array.F[ii] = 0.0;
                 }
-                tot += data.image[ID].array.F[ii];
-                rms += data.image[ID].array.F[ii] * data.image[ID].array.F[ii];
-                array[ii] = data.image[ID].array.F[ii];
+                tot += dcimg[ID].array.F[ii];
+                rms += dcimg[ID].array.F[ii] * dcimg[ID].array.F[ii];
+                array[ii] = dcimg[ID].array.F[ii];
             }
             rms = sqrt(rms);
 
@@ -291,23 +291,23 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             }
             create_variable_ID("vmean", tot / nelements);
 
-            if(data.image[ID].md[0].naxis == 2)
+            if(dcimg[ID].md[0].naxis == 2)
             {
                 xtot = 0.0;
                 ytot = 0.0;
-                for(unsigned long ii = 0; ii < data.image[ID].md[0].size[0];
+                for(unsigned long ii = 0; ii < dcimg[ID].md[0].size[0];
                         ii++)
                     for(unsigned long jj = 0;
-                            jj < data.image[ID].md[0].size[1];
+                            jj < dcimg[ID].md[0].size[1];
                             jj++)
                     {
-                        xtot += data.image[ID]
+                        xtot += dcimg[ID]
                                 .array
-                                .F[jj * data.image[ID].md[0].size[0] + ii] *
+                                .F[jj * dcimg[ID].md[0].size[0] + ii] *
                                 ii;
-                        ytot += data.image[ID]
+                        ytot += dcimg[ID]
                                 .array
-                                .F[jj * data.image[ID].md[0].size[0] + ii] *
+                                .F[jj * dcimg[ID].md[0].size[0] + ii] *
                                 jj;
                     }
                 vbx = xtot / tot;

@@ -346,24 +346,24 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = imgid_make_from_name(in_imname);
-    resolveIMGID(&in_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_imname);
     // for FPS mode:
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        strcpy(data.fpsptr->cmdset.triggerstreamname, in_imname);
+        strcpy(dcfpsptr->cmdset.triggerstreamname, in_imname);
     }
 
     // Resolve or create outputs, per need
     IMGID out_img = imgid_make_from_name(out_imname);
-    if(resolveIMGID(&out_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
+    if(resolveIMGID(&out_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING("WARNING - output image not found and being created");
         in_img.mdt->datatype = _DATATYPE_FLOAT; // To be passed to out_img
         imcreatelikewiseIMGID(&out_img, &in_img);
-        resolveIMGID(&out_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&out_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     /*

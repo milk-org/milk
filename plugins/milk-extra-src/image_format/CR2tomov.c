@@ -217,7 +217,7 @@ errno_t CR2tomov()
     ID = variable_ID("SKIP");
     if(ID != 1)
     {
-        SKIP = (long)(data.variable[ID].value.f + 0.1);
+        SKIP = (long)(dcvar[ID].value.f + 0.1);
     }
     printf("SKIP = %ld\n", SKIP);
 
@@ -272,11 +272,11 @@ errno_t CR2tomov()
                         delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
                         chname_image_ID("imbc","imb");
                         }*/
-                    ID    = image_ID("imr", data.image, data.NB_MAX_IMAGE);
-                    xsize = data.image[ID].md[0].size[0];
-                    ysize = data.image[ID].md[0].size[1];
+                    ID    = image_ID("imr", dcimg, dcnimg);
+                    xsize = dcimg[ID].md[0].size[0];
+                    ysize = dcimg[ID].md[0].size[1];
 
-                    IDrtot = image_ID("imrtot", data.image, data.NB_MAX_IMAGE);
+                    IDrtot = image_ID("imrtot", dcimg, dcnimg);
                     if(IDrtot == -1)
                     {
                         create_2Dimage_ID("imrtot", xsize, ysize, &IDrtot);
@@ -284,22 +284,22 @@ errno_t CR2tomov()
                         create_2Dimage_ID("imbtot", xsize, ysize, &IDbtot);
                     }
 
-                    IDr = image_ID("imr", data.image, data.NB_MAX_IMAGE);
-                    IDg = image_ID("img", data.image, data.NB_MAX_IMAGE);
-                    IDb = image_ID("imb", data.image, data.NB_MAX_IMAGE);
+                    IDr = image_ID("imr", dcimg, dcnimg);
+                    IDg = image_ID("img", dcimg, dcnimg);
+                    IDb = image_ID("imb", dcimg, dcnimg);
 
                     for(ii = 0; ii < xsize * ysize; ii++)
                     {
-                        data.image[IDr].array.F[ii] /= binfact * binfact;
-                        data.image[IDg].array.F[ii] /= binfact * binfact;
-                        data.image[IDb].array.F[ii] /= binfact * binfact;
+                        dcimg[IDr].array.F[ii] /= binfact * binfact;
+                        dcimg[IDg].array.F[ii] /= binfact * binfact;
+                        dcimg[IDb].array.F[ii] /= binfact * binfact;
 
-                        data.image[IDrtot].array.F[ii] +=
-                            data.image[IDr].array.F[ii];
-                        data.image[IDgtot].array.F[ii] +=
-                            data.image[IDg].array.F[ii];
-                        data.image[IDbtot].array.F[ii] +=
-                            data.image[IDb].array.F[ii];
+                        dcimg[IDrtot].array.F[ii] +=
+                            dcimg[IDr].array.F[ii];
+                        dcimg[IDgtot].array.F[ii] +=
+                            dcimg[IDg].array.F[ii];
+                        dcimg[IDbtot].array.F[ii] +=
+                            dcimg[IDb].array.F[ii];
                     }
                     save_fl_fits("imrtot", "imrtot.fits");
                     save_fl_fits("imgtot", "imgtot.fits");
@@ -330,83 +330,83 @@ errno_t CR2tomov()
 
                 info_image_stats("imr", "");
                 ID     = variable_ID("vp01");
-                vp01r  = data.variable[ID].value.f;
+                vp01r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp05");
-                vp05r  = data.variable[ID].value.f;
+                vp05r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp10");
-                vp10r  = data.variable[ID].value.f;
+                vp10r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp20");
-                vp20r  = data.variable[ID].value.f;
+                vp20r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp50");
-                vp50r  = data.variable[ID].value.f;
+                vp50r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp80");
-                vp80r  = data.variable[ID].value.f;
+                vp80r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp90");
-                vp90r  = data.variable[ID].value.f;
+                vp90r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp95");
-                vp95r  = data.variable[ID].value.f;
+                vp95r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp99");
-                vp99r  = data.variable[ID].value.f;
+                vp99r  = dcvar[ID].value.f;
                 ID     = variable_ID("vp995");
-                vp995r = data.variable[ID].value.f;
+                vp995r = dcvar[ID].value.f;
                 ID     = variable_ID("vp998");
-                vp998r = data.variable[ID].value.f;
+                vp998r = dcvar[ID].value.f;
                 ID     = variable_ID("vp999");
-                vp999r = data.variable[ID].value.f;
+                vp999r = dcvar[ID].value.f;
                 delete_image_ID("imr", DELETE_IMAGE_ERRMODE_WARNING);
 
                 info_image_stats("img", "");
                 ID     = variable_ID("vp01");
-                vp01g  = data.variable[ID].value.f;
+                vp01g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp05");
-                vp05g  = data.variable[ID].value.f;
+                vp05g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp10");
-                vp10g  = data.variable[ID].value.f;
+                vp10g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp20");
-                vp20g  = data.variable[ID].value.f;
+                vp20g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp50");
-                vp50g  = data.variable[ID].value.f;
+                vp50g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp80");
-                vp80g  = data.variable[ID].value.f;
+                vp80g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp90");
-                vp90g  = data.variable[ID].value.f;
+                vp90g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp95");
-                vp95g  = data.variable[ID].value.f;
+                vp95g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp99");
-                vp99g  = data.variable[ID].value.f;
+                vp99g  = dcvar[ID].value.f;
                 ID     = variable_ID("vp995");
-                vp995g = data.variable[ID].value.f;
+                vp995g = dcvar[ID].value.f;
                 ID     = variable_ID("vp998");
-                vp998g = data.variable[ID].value.f;
+                vp998g = dcvar[ID].value.f;
                 ID     = variable_ID("vp999");
-                vp999g = data.variable[ID].value.f;
+                vp999g = dcvar[ID].value.f;
                 delete_image_ID("img", DELETE_IMAGE_ERRMODE_WARNING);
 
                 info_image_stats("imb", "");
                 ID     = variable_ID("vp01");
-                vp01b  = data.variable[ID].value.f;
+                vp01b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp05");
-                vp05b  = data.variable[ID].value.f;
+                vp05b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp10");
-                vp10b  = data.variable[ID].value.f;
+                vp10b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp20");
-                vp20b  = data.variable[ID].value.f;
+                vp20b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp50");
-                vp50b  = data.variable[ID].value.f;
+                vp50b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp80");
-                vp80b  = data.variable[ID].value.f;
+                vp80b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp90");
-                vp90b  = data.variable[ID].value.f;
+                vp90b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp95");
-                vp95b  = data.variable[ID].value.f;
+                vp95b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp99");
-                vp99b  = data.variable[ID].value.f;
+                vp99b  = dcvar[ID].value.f;
                 ID     = variable_ID("vp995");
-                vp995b = data.variable[ID].value.f;
+                vp995b = dcvar[ID].value.f;
                 ID     = variable_ID("vp998");
-                vp998b = data.variable[ID].value.f;
+                vp998b = dcvar[ID].value.f;
                 ID     = variable_ID("vp999");
-                vp999b = data.variable[ID].value.f;
+                vp999b = dcvar[ID].value.f;
                 delete_image_ID("imb", DELETE_IMAGE_ERRMODE_WARNING);
 
                 fp1 = fopen(fnamestat, "w");
@@ -680,7 +680,7 @@ errno_t CR2tomov()
         ID = variable_ID("SKIP_FITStoJPEG");
         if(ID != 1)
         {
-            SKIP_FITStoJPEG = (long)(data.variable[ID].value.f + 0.1);
+            SKIP_FITStoJPEG = (long)(dcvar[ID].value.f + 0.1);
         }
         printf("SKIP FITS to JPEG = %ld\n", SKIP_FITStoJPEG);
 
@@ -741,8 +741,8 @@ errno_t CR2tomov()
                             load_fits(fnameb, "imb", 1, &IDb);
                         }
 
-                        xsize = data.image[IDr].md[0].size[0];
-                        ysize = data.image[IDr].md[0].size[1];
+                        xsize = dcimg[IDr].md[0].size[0];
+                        ysize = dcimg[IDr].md[0].size[1];
 
                         if(MAXLEVEL_AUTO == 1)
                         {
@@ -754,9 +754,9 @@ errno_t CR2tomov()
                             double r0, g0, b0;
                             double tmpr, tmpg, tmpb, tmpr1, tmpg1, tmpb1;
 
-                            r0 = data.image[IDr].array.F[ii];
-                            g0 = data.image[IDg].array.F[ii];
-                            b0 = data.image[IDb].array.F[ii];
+                            r0 = dcimg[IDr].array.F[ii];
+                            g0 = dcimg[IDg].array.F[ii];
+                            b0 = dcimg[IDb].array.F[ii];
 
                             r0 = (r0 - MINLEVEL) / (MAXLEVEL - MINLEVEL);
                             g0 = (g0 - MINLEVEL) / (MAXLEVEL - MINLEVEL);
@@ -778,18 +778,18 @@ errno_t CR2tomov()
                                     tmpg * ((1.0 - COLORSAT) * LUMG) +
                                     tmpb * ((1.0 - COLORSAT) * LUMB + COLORSAT);
 
-                            data.image[IDr].array.F[ii] = tmpr1;
-                            data.image[IDg].array.F[ii] = tmpg1;
-                            data.image[IDb].array.F[ii] = tmpb1;
+                            dcimg[IDr].array.F[ii] = tmpr1;
+                            dcimg[IDg].array.F[ii] = tmpg1;
+                            dcimg[IDb].array.F[ii] = tmpb1;
                         }
 
                         for(ii = 0; ii < xsize * ysize; ii++)
                         {
                             double vr, vg, vb;
 
-                            vr = data.image[IDr].array.F[ii];
-                            vg = data.image[IDg].array.F[ii];
-                            vb = data.image[IDb].array.F[ii];
+                            vr = dcimg[IDr].array.F[ii];
+                            vg = dcimg[IDg].array.F[ii];
+                            vb = dcimg[IDb].array.F[ii];
 
                             if(vr < 0.0)
                             {
@@ -821,20 +821,20 @@ errno_t CR2tomov()
 
                           for(ii=0;ii<xsize*ysize;ii++)
                             {
-                              if(data.image[IDr].array.F[ii]>NLCONV_LIMIT)
-                        	data.image[IDr].array.F[ii] = NLCONV_LIMIT;
-                              if(data.image[IDg].array.F[ii]>NLCONV_LIMIT)
-                        	data.image[IDg].array.F[ii] = NLCONV_LIMIT;
-                              if(data.image[IDb].array.F[ii]>NLCONV_LIMIT)
-                        	data.image[IDb].array.F[ii] = NLCONV_LIMIT;
+                              if(dcimg[IDr].array.F[ii]>NLCONV_LIMIT)
+                        	dcimg[IDr].array.F[ii] = NLCONV_LIMIT;
+                              if(dcimg[IDg].array.F[ii]>NLCONV_LIMIT)
+                        	dcimg[IDg].array.F[ii] = NLCONV_LIMIT;
+                              if(dcimg[IDb].array.F[ii]>NLCONV_LIMIT)
+                        	dcimg[IDb].array.F[ii] = NLCONV_LIMIT;
 
 
-                              if(data.image[IDr].array.F[ii]>NLCONV_OFFSET)
-                        	data.image[IDrp].array.F[ii] = pow((data.image[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
-                              if(data.image[IDg].array.F[ii]>NLCONV_OFFSET)
-                        	data.image[IDgp].array.F[ii] = pow((data.image[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
-                              if(data.image[IDb].array.F[ii]>NLCONV_OFFSET)
-                        	data.image[IDbp].array.F[ii] = pow((data.image[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                              if(dcimg[IDr].array.F[ii]>NLCONV_OFFSET)
+                        	dcimg[IDrp].array.F[ii] = pow((dcimg[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                              if(dcimg[IDg].array.F[ii]>NLCONV_OFFSET)
+                        	dcimg[IDgp].array.F[ii] = pow((dcimg[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                              if(dcimg[IDb].array.F[ii]>NLCONV_OFFSET)
+                        	dcimg[IDbp].array.F[ii] = pow((dcimg[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
                             }
                           make_gauss("kerg",xsize,ysize,NLCONV_SIGMA,1.0);
                           tot = arith_image_total("kerg");
@@ -847,14 +847,14 @@ errno_t CR2tomov()
                           delete_image_ID("imrp");
                           delete_image_ID("imgp");
                           delete_image_ID("imbp");
-                          IDr1 = image_ID("imr_c", data.image, data.NB_MAX_IMAGE);
-                          IDg1 = image_ID("img_c", data.image, data.NB_MAX_IMAGE);
-                          IDb1 = image_ID("imb_c", data.image, data.NB_MAX_IMAGE);
+                          IDr1 = image_ID("imr_c", dcimg, dcnimg);
+                          IDg1 = image_ID("img_c", dcimg, dcnimg);
+                          IDb1 = image_ID("imb_c", dcimg, dcnimg);
                           for(ii=0;ii<xsize*ysize;ii++)
                             {
-                              data.image[IDr].array.F[ii] += data.image[IDr1].array.F[ii];
-                              data.image[IDg].array.F[ii] += data.image[IDg1].array.F[ii];
-                              data.image[IDb].array.F[ii] += data.image[IDb1].array.F[ii];
+                              dcimg[IDr].array.F[ii] += dcimg[IDr1].array.F[ii];
+                              dcimg[IDg].array.F[ii] += dcimg[IDg1].array.F[ii];
+                              dcimg[IDb].array.F[ii] += dcimg[IDb1].array.F[ii];
                             }
                           delete_image_ID("imr_c");
                           delete_image_ID("img_c");
@@ -865,9 +865,9 @@ errno_t CR2tomov()
                         {
                             double vr, vg, vb;
 
-                            vr = data.image[IDr].array.F[ii];
-                            vg = data.image[IDg].array.F[ii];
-                            vb = data.image[IDb].array.F[ii];
+                            vr = dcimg[IDr].array.F[ii];
+                            vg = dcimg[IDg].array.F[ii];
+                            vb = dcimg[IDb].array.F[ii];
 
                             if(vr < 0.0)
                             {
@@ -901,9 +901,9 @@ errno_t CR2tomov()
                             vg = 255.0 * pow(vg, ALPHA);
                             vb = 255.0 * pow(vb, ALPHA);
 
-                            data.image[IDr].array.F[ii] = vr;
-                            data.image[IDg].array.F[ii] = vg;
-                            data.image[IDb].array.F[ii] = vb;
+                            dcimg[IDr].array.F[ii] = vr;
+                            dcimg[IDg].array.F[ii] = vg;
+                            dcimg[IDb].array.F[ii] = vb;
                         }
 
                         image_writeBMP("imr", "img", "imb", "imrgb.bmp");

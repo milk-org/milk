@@ -80,7 +80,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
 
     long cnttot;
 
-    IDstat = image_ID(IDstat_name, data.image, data.NB_MAX_IMAGE);
+    IDstat = image_ID(IDstat_name, dcimg, dcnimg);
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(sizearray == NULL)
@@ -96,7 +96,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
 
     for(st = 0; st < indexmax; st++)
     {
-        data.image[IDout].array.SI64[st] = 0;
+        dcimg[IDout].array.SI64[st] = 0;
     }
 
     schedpar.sched_priority = RT_priority;
@@ -111,10 +111,10 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
         double tdiffv;
 
         usleep((long)(usec0 + usec1 * (1.0 * k / NBkiter)));
-        st = data.image[IDstat].array.UI16[0];
+        st = dcimg[IDstat].array.UI16[0];
         if(st < indexmax)
         {
-            data.image[IDout].array.SI64[st]++;
+            dcimg[IDout].array.SI64[st]++;
         }
 
         clock_gettime(CLOCK_MILK, &t2);
@@ -130,15 +130,15 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
             cnttot = 0;
             for(st = 0; st < indexmax; st++)
             {
-                cnttot += data.image[IDout].array.SI64[st];
+                cnttot += dcimg[IDout].array.SI64[st];
             }
 
             for(st = 0; st < indexmax; st++)
             {
                 printf("STATUS  %5d    %20ld   %6.3f  \n",
                        st,
-                       data.image[IDout].array.SI64[st],
-                       100.0 * data.image[IDout].array.SI64[st] / cnttot);
+                       dcimg[IDout].array.SI64[st],
+                       100.0 * dcimg[IDout].array.SI64[st] / cnttot);
             }
         }
     }
@@ -146,7 +146,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     printf("\n");
     for(st = 0; st < indexmax; st++)
     {
-        printf("STATUS  %5d    %10ld\n", st, data.image[IDout].array.SI64[st]);
+        printf("STATUS  %5d    %10ld\n", st, dcimg[IDout].array.SI64[st]);
     }
 
     printf("\n");

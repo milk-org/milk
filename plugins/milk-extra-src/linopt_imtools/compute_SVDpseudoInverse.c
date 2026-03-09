@@ -171,25 +171,25 @@ linopt_compute_SVDpseudoInverse(
         FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name, data.image, data.NB_MAX_IMAGE);
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, dcimg, dcnimg);
     if(ID_Rmatrix == -1)
     {
         printf("ERROR: matrix %s not found in memory\n", ID_Rmatrix_name);
         exit(0);
     }
-    datatype = data.image[ID_Rmatrix].md[0].datatype;
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    datatype = dcimg[ID_Rmatrix].md[0].datatype;
+    if(dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
-        n = data.image[ID_Rmatrix].md[0].size[0] *
-            data.image[ID_Rmatrix].md[0].size[1];
-        m = data.image[ID_Rmatrix].md[0].size[2];
+        n = dcimg[ID_Rmatrix].md[0].size[0] *
+            dcimg[ID_Rmatrix].md[0].size[1];
+        m = dcimg[ID_Rmatrix].md[0].size[2];
         printf("3D image -> %ld %ld\n", n, m);
         fflush(stdout);
     }
     else
     {
-        n = data.image[ID_Rmatrix].md[0].size[0];
-        m = data.image[ID_Rmatrix].md[0].size[1];
+        n = dcimg[ID_Rmatrix].md[0].size[0];
+        m = dcimg[ID_Rmatrix].md[0].size[1];
         printf("2D image -> %ld %ld\n", n, m);
         fflush(stdout);
     }
@@ -218,7 +218,7 @@ linopt_compute_SVDpseudoInverse(
                 gsl_matrix_set(matrix_D,
                                ii,
                                k,
-                               data.image[ID_Rmatrix].array.F[k * n + ii]);
+                               dcimg[ID_Rmatrix].array.F[k * n + ii]);
             }
     }
     else
@@ -229,7 +229,7 @@ linopt_compute_SVDpseudoInverse(
                 gsl_matrix_set(matrix_D,
                                ii,
                                k,
-                               data.image[ID_Rmatrix].array.D[k * n + ii]);
+                               dcimg[ID_Rmatrix].array.D[k * n + ii]);
             }
     }
 
@@ -255,7 +255,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < m; ii++)
             for(int jj = 0; jj < m; jj++)
             {
-                data.image[ID_AtA].array.F[jj * m + ii] =
+                dcimg[ID_AtA].array.F[jj * m + ii] =
                     (float) gsl_matrix_get(matrix_DtraD, ii, jj);
             }
         save_fits("AtA", "test_AtA.fits");
@@ -354,7 +354,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < m; ii++)   // modes
             for(int k = 0; k < m; k++)  // modes
             {
-                data.image[ID_VTmatrix].array.F[k * m + ii] =
+                dcimg[ID_VTmatrix].array.F[k * m + ii] =
                     (float) gsl_matrix_get(matrix_DtraD_evec, k, ii);
             }
     }
@@ -363,7 +363,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < m; ii++)   // modes
             for(int k = 0; k < m; k++)  // modes
             {
-                data.image[ID_VTmatrix].array.D[k * m + ii] =
+                dcimg[ID_VTmatrix].array.D[k * m + ii] =
                     gsl_matrix_get(matrix_DtraD_evec, k, ii);
             }
     }
@@ -436,7 +436,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < m; ii++)
             for(int jj = 0; jj < m; jj++)
             {
-                data.image[ID].array.F[jj * m + ii] =
+                dcimg[ID].array.F[jj * m + ii] =
                     gsl_matrix_get(matrix_DtraDinv, ii, jj);
             }
         save_fits("M2", "test_M2.fits");
@@ -450,10 +450,10 @@ linopt_compute_SVDpseudoInverse(
                    0.0,
                    matrix_Ds);
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if(dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
-        arraysizetmp[0] = data.image[ID_Rmatrix].md[0].size[0];
-        arraysizetmp[1] = data.image[ID_Rmatrix].md[0].size[1];
+        arraysizetmp[0] = dcimg[ID_Rmatrix].md[0].size[0];
+        arraysizetmp[1] = dcimg[ID_Rmatrix].md[0].size[1];
         arraysizetmp[2] = m;
     }
     else
@@ -463,7 +463,7 @@ linopt_compute_SVDpseudoInverse(
     }
 
     FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                      data.image[ID_Rmatrix].md[0].naxis,
+                                      dcimg[ID_Rmatrix].md[0].naxis,
                                       arraysizetmp,
                                       datatype,
                                       0,
@@ -482,7 +482,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < n; ii++)   // sensors
             for(int k = 0; k < m; k++)  // actuator modes
             {
-                data.image[ID_Cmatrix].array.F[k * n + ii] =
+                dcimg[ID_Cmatrix].array.F[k * n + ii] =
                     (float) gsl_matrix_get(matrix_Ds, k, ii);
             }
     }
@@ -491,7 +491,7 @@ linopt_compute_SVDpseudoInverse(
         for(int ii = 0; ii < n; ii++)   // sensors
             for(int k = 0; k < m; k++)  // actuator modes
             {
-                data.image[ID_Cmatrix].array.D[k * n + ii] =
+                dcimg[ID_Cmatrix].array.D[k * n + ii] =
                     gsl_matrix_get(matrix_Ds, k, ii);
             }
     }

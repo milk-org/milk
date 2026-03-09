@@ -109,7 +109,7 @@ imageID basic_rotate(
         imgid_make_from_name(ID_name);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         IDout_name,
         in.md->size[0], in.md->size[1]);
@@ -175,7 +175,7 @@ static errno_t compute_function()
             imrotate_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         imrotate_outimname,
         in.md->size[0], in.md->size[1]);

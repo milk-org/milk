@@ -147,7 +147,7 @@ errno_t function_parameter_struct_create(
 
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
     strncpy(fps.md->callprogname,
-            data.package_name,
+            dcpkgname,
             FPS_CALLPROGNAME_STRMAXLEN - 1);
     strncpy(fps.md->callfuncname,
             data.cmdargtoken[0].val.string,

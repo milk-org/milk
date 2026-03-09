@@ -25,12 +25,21 @@
  */
 DATA __attribute__((used)) data;
 
+/* CLIPID is normally provided by CLIcore.c;\n * standalone builds need their own storage.\n * When MILK_NO_CLI is defined, CLIcore_standalone.h\n * provides this as a static variable.\n */
+#ifndef MILK_NO_CLI
+pid_t CLIPID;
+#endif
+
 
 /*
  * Minimal implementations of CLI registration functions to satisfy
  * runtime symbol lookups in modules that call them during initialization.
+ *
+ * When MILK_NO_CLI is defined, CLIcore_standalone.h already
+ * provides these as static inline stubs, so we skip them here.
  */
 
+#ifndef MILK_NO_CLI
 errno_t RegisterModule(
     const char *restrict FileName,
     const char *restrict PackageName,
@@ -80,3 +89,4 @@ imageID image_ID(
     }
     return -1;
 }
+#endif /* !MILK_NO_CLI */

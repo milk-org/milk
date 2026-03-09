@@ -146,15 +146,15 @@ errno_t list_image_ID_ncurses()
         "[percent]    LAST ACCESS\n");
     printw("\n");
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(i = 0; i < dcnimg; i++)
     {
-        if(data.image[i].used == 1)
+        if(dcimg[i].used == 1)
         {
-            datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
+            datatype = dcimg[i].md[0].datatype;
+            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
                        ImageStreamIO_typesize(datatype);
 
-            if(data.image[i].md[0].shared == 1)
+            if(dcimg[i].md[0].shared == 1)
             {
                 printw("%4ldS", i);
             }
@@ -163,7 +163,7 @@ errno_t list_image_ID_ncurses()
                 printw("%4ld ", i);
             }
 
-            if(data.image[i].md[0].shared == 1)
+            if(dcimg[i].md[0].shared == 1)
             {
                 attron(A_BOLD | COLOR_PAIR(9));
             }
@@ -171,10 +171,10 @@ errno_t list_image_ID_ncurses()
             {
                 attron(A_BOLD | COLOR_PAIR(6));
             }
-            snprintf(str, strmaxlen, "%10s ", data.image[i].name);
+            snprintf(str, strmaxlen, "%10s ", dcimg[i].name);
             printw("%s", str);
 
-            if(data.image[i].md[0].shared == 1)
+            if(dcimg[i].md[0].shared == 1)
             {
                 attroff(A_BOLD | COLOR_PAIR(9));
             }
@@ -183,15 +183,15 @@ errno_t list_image_ID_ncurses()
                 attroff(A_BOLD | COLOR_PAIR(6));
             }
 
-            snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
+            snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 snprintf(str1,
                          str1maxlen,
                          "%s x %6ld",
                          str,
-                         (long) data.image[i].md[0].size[j]);
+                         (long) dcimg[i].md[0].size[j]);
             }
             snprintf(str2, str2maxlen, "%s]", str1);
 
@@ -218,8 +218,8 @@ errno_t list_image_ID_ncurses()
 
             timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
-                (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
-                 0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
+                (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
+                 0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
 
             if(timediff < 0.01)
             {
@@ -304,7 +304,7 @@ void close_list_image_ID_ncurses(void)
     endwin();
     fclose(listim_scr_fpo);
     fclose(listim_scr_fpi);
-    data.MEM_MONITOR = 0;
+    dcmemmon = 0;
 }
 #else
 errno_t init_list_image_ID_ncurses(const char *termttyname) { (void)termttyname; return 0; }
@@ -341,14 +341,14 @@ errno_t list_image_ID_ofp(FILE *fo)
             "[percent]    LAST ACCESS\n");
     fprintf(fo, "\n");
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
-            datatype = data.image[i].md[0].datatype;
-            tmp_long = ((long long)(data.image[i].md[0].nelement)) *
+            datatype = dcimg[i].md[0].datatype;
+            tmp_long = ((long long)(dcimg[i].md[0].nelement)) *
                        ImageStreamIO_typesize(datatype);
 
-            if(data.image[i].md[0].shared == 1)
+            if(dcimg[i].md[0].shared == 1)
             {
                 fprintf(fo,
                         "%4ld %c[%d;%dm%14s%c[%d;m ",
@@ -356,7 +356,7 @@ errno_t list_image_ID_ofp(FILE *fo)
                         (char) 27,
                         1,
                         34,
-                        data.image[i].name,
+                        dcimg[i].name,
                         (char) 27,
                         0);
             }
@@ -368,21 +368,21 @@ errno_t list_image_ID_ofp(FILE *fo)
                         (char) 27,
                         1,
                         33,
-                        data.image[i].name,
+                        dcimg[i].name,
                         (char) 27,
                         0);
             }
             //fprintf(fo, "%s", str);
 
-            snprintf(str, strmaxlen, "[ %6ld", (long) data.image[i].md[0].size[0]);
+            snprintf(str, strmaxlen, "[ %6ld", (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < dcimg[i].md[0].naxis; j++)
             {
                 snprintf(str1,
                          str1maxlen,
                          "%s x %6ld",
                          str,
-                         (long) data.image[i].md[0].size[j]);
+                         (long) dcimg[i].md[0].size[j]);
                 strcpy(str, str1);
             }
             snprintf(str1, str1maxlen, "%s]", str);
@@ -408,8 +408,8 @@ errno_t list_image_ID_ofp(FILE *fo)
 
             timediff =
                 (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
-                (1.0 * data.image[i].md[0].lastaccesstime.tv_sec +
-                 0.000000001 * data.image[i].md[0].lastaccesstime.tv_nsec);
+                (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
+                 0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
 
             fprintf(fo, "%15.9f\n", timediff);
         }
@@ -466,23 +466,23 @@ errno_t list_image_ID_ofp_simple(FILE *fo)
     //long long   tmp_long;
     uint8_t datatype;
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
-            datatype = data.image[i].md[0].datatype;
-            //tmp_long = ((long long) (data.image[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+            datatype = dcimg[i].md[0].datatype;
+            //tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
 
             fprintf(fo,
                     "%20s %d %ld %d %4ld",
-                    data.image[i].name,
+                    dcimg[i].name,
                     datatype,
-                    (long) data.image[i].md[0].naxis,
-                    data.image[i].md[0].shared,
-                    (long) data.image[i].md[0].size[0]);
+                    (long) dcimg[i].md[0].naxis,
+                    dcimg[i].md[0].shared,
+                    (long) dcimg[i].md[0].size[0]);
 
-            for(j = 1; j < data.image[i].md[0].naxis; j++)
+            for(j = 1; j < dcimg[i].md[0].naxis; j++)
             {
-                fprintf(fo, " %4ld", (long) data.image[i].md[0].size[j]);
+                fprintf(fo, " %4ld", (long) dcimg[i].md[0].size[j]);
             }
             fprintf(fo, "\n");
 
@@ -523,15 +523,15 @@ errno_t list_image_ID_file(const char *fname)
         abort();
     }
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
-        if(data.image[i].used == 1)
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
         {
-            datatype = data.image[i].md[0].datatype;
-            fprintf(fp, "%ld %s", i, data.image[i].name);
-            fprintf(fp, " %ld", (long) data.image[i].md[0].naxis);
-            for(j = 0; j < data.image[i].md[0].naxis; j++)
+            datatype = dcimg[i].md[0].datatype;
+            fprintf(fp, "%ld %s", i, dcimg[i].name);
+            fprintf(fp, " %ld", (long) dcimg[i].md[0].naxis);
+            for(j = 0; j < dcimg[i].md[0].naxis; j++)
             {
-                fprintf(fp, " %ld", (long) data.image[i].md[0].size[j]);
+                fprintf(fp, " %ld", (long) dcimg[i].md[0].size[j]);
             }
 
             n = snprintf(type, STYPESIZE, "%s", ImageStreamIO_typename_7(datatype));
@@ -552,12 +552,12 @@ errno_t list_image_ID_file(const char *fname)
 
 errno_t memory_monitor(const char *termttyname)
 {
-    if(data.Debug > 0)
+    if(dcdebug > 0)
     {
         printf("starting memory_monitor on \"%s\"\n", termttyname);
     }
 
-    data.MEM_MONITOR = 1;
+    dcmemmon = 1;
     init_list_image_ID_ncurses(termttyname);
     list_image_ID_ncurses();
 #ifdef USE_NCURSES

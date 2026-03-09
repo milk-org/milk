@@ -146,7 +146,7 @@ static errno_t compute_function()
         imgid_make_from_name(setrow_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

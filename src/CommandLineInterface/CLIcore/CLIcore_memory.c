@@ -17,56 +17,56 @@ errno_t memory_re_alloc()
 
     int current_NBimage = compute_nb_image();
 
-    //printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, data.NB_MAX_IMAGE);
+    //printf("DYNAMIC ALLOC. Current = %d, buffer = %d, max = %ld\n", current_NBimage, NB_IMAGES_BUFFER, dcnimg);
     //fflush(stdout);
 
-    if((current_NBimage + NB_IMAGES_BUFFER) > data.NB_MAX_IMAGE)
+    if((current_NBimage + NB_IMAGES_BUFFER) > dcnimg)
     {
         long   tmplong;
         IMAGE *ptrtmp;
 
-        //   if(data.Debug>0)
+        //   if(dcdebug>0)
         //    {
         printf("%p IMAGE STRUCT SIZE = %ld\n",
-               data.image,
+               dcimg,
                (long) sizeof(IMAGE));
         printf("REALLOCATING IMAGE DATA BUFFER: %ld -> %ld\n",
-               data.NB_MAX_IMAGE,
-               data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC);
+               dcnimg,
+               dcnimg + NB_IMAGES_BUFFER_REALLOC);
         fflush(stdout);
         //    }
-        tmplong           = data.NB_MAX_IMAGE;
-        data.NB_MAX_IMAGE = data.NB_MAX_IMAGE + NB_IMAGES_BUFFER_REALLOC;
+        tmplong           = dcnimg;
+        dcnimg = dcnimg + NB_IMAGES_BUFFER_REALLOC;
         ptrtmp =
-            (IMAGE *) realloc(data.image, sizeof(IMAGE) * data.NB_MAX_IMAGE);
-        if(data.Debug > 0)
+            (IMAGE *) realloc(dcimg, sizeof(IMAGE) * dcnimg);
+        if(dcdebug > 0)
         {
             printf("NEW POINTER = %p\n", ptrtmp);
             fflush(stdout);
         }
-        data.image = ptrtmp;
-        if(data.image == NULL)
+        dcimg = ptrtmp;
+        if(dcimg == NULL)
         {
             PRINT_ERROR(
-                "Reallocation of data.image has failed - exiting "
+                "Reallocation of dcimg has failed - exiting "
                 "program");
             return -1; //  exit(0);
         }
-        if(data.Debug > 0)
+        if(dcdebug > 0)
         {
             printf("REALLOCATION DONE\n");
             fflush(stdout);
         }
 
         imageID i;
-        for(i = tmplong; i < data.NB_MAX_IMAGE; i++)
+        for(i = tmplong; i < dcnimg; i++)
         {
-            data.image[i].used      = 0;
-            data.image[i].createcnt = 0;
-            data.image[i].shmfd     = -1;
-            data.image[i].memsize   = 0;
-            data.image[i].semptr    = NULL;
-            data.image[i].semlog    = NULL;
+            dcimg[i].used      = 0;
+            dcimg[i].createcnt = 0;
+            dcimg[i].shmfd     = -1;
+            dcimg[i].memsize   = 0;
+            dcimg[i].semptr    = NULL;
+            dcimg[i].semlog    = NULL;
         }
     }
 #endif
@@ -78,34 +78,34 @@ errno_t memory_re_alloc()
 #ifdef DATA_STATIC_ALLOC
     // variable static allocation mode
 #else
-    if((compute_nb_variable() + NB_VARIABLES_BUFFER) > data.NB_MAX_VARIABLE)
+    if((compute_nb_variable() + NB_VARIABLES_BUFFER) > dcnvar)
     {
         long tmplong;
 
-        if(data.Debug > 0)
+        if(dcdebug > 0)
         {
             printf("REALLOCATING VARIABLE DATA BUFFER\n");
             fflush(stdout);
         }
-        tmplong = data.NB_MAX_VARIABLE;
-        data.NB_MAX_VARIABLE =
-            data.NB_MAX_VARIABLE + NB_VARIABLES_BUFFER_REALLOC;
-        data.variable =
-            (VARIABLE *) realloc(data.variable,
-                                 sizeof(VARIABLE) * data.NB_MAX_VARIABLE);
-        if(data.variable == NULL)
+        tmplong = dcnvar;
+        dcnvar =
+            dcnvar + NB_VARIABLES_BUFFER_REALLOC;
+        dcvar =
+            (VARIABLE *) realloc(dcvar,
+                                 sizeof(VARIABLE) * dcnvar);
+        if(dcvar == NULL)
         {
             PRINT_ERROR(
-                "Reallocation of data.variable has failed - exiting "
+                "Reallocation of dcvar has failed - exiting "
                 "program");
             return -1; // exit(0);
         }
 
         int i;
-        for(i = tmplong; i < data.NB_MAX_VARIABLE; i++)
+        for(i = tmplong; i < dcnvar; i++)
         {
-            data.variable[i].used = 0;
-            data.variable[i].type = -1;
+            dcvar[i].used = 0;
+            dcvar[i].type = -1;
         }
     }
 #endif

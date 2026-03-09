@@ -16,10 +16,10 @@ imageID filter_CubePercentile(const char *__restrict IDcin_name,
     long    ii, kk;
     float  *array;
 
-    IDcin = image_ID(IDcin_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[IDcin].md[0].size[0];
-    ysize = data.image[IDcin].md[0].size[1];
-    zsize = data.image[IDcin].md[0].size[2];
+    IDcin = image_ID(IDcin_name, dcimg, dcnimg);
+    xsize = dcimg[IDcin].md[0].size[0];
+    ysize = dcimg[IDcin].md[0].size[1];
+    zsize = dcimg[IDcin].md[0].size[2];
 
     array = (float *) malloc(sizeof(float) * xsize * ysize);
     if(array == NULL)
@@ -33,11 +33,11 @@ imageID filter_CubePercentile(const char *__restrict IDcin_name,
     {
         for(kk = 0; kk < zsize; kk++)
         {
-            array[kk] = data.image[IDcin].array.F[kk * xsize * ysize + ii];
+            array[kk] = dcimg[IDcin].array.F[kk * xsize * ysize + ii];
         }
 
         quick_sort_float(array, zsize);
-        data.image[IDout].array.F[ii] = array[(long)(perc * zsize)];
+        dcimg[IDout].array.F[ii] = array[(long)(perc * zsize)];
     }
 
     free(array);
@@ -58,10 +58,10 @@ imageID filter_CubePercentileLimit(const char *__restrict IDcin_name,
     long    cnt;
     float   v1;
 
-    IDcin = image_ID(IDcin_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[IDcin].md[0].size[0];
-    ysize = data.image[IDcin].md[0].size[1];
-    zsize = data.image[IDcin].md[0].size[2];
+    IDcin = image_ID(IDcin_name, dcimg, dcnimg);
+    xsize = dcimg[IDcin].md[0].size[0];
+    ysize = dcimg[IDcin].md[0].size[1];
+    zsize = dcimg[IDcin].md[0].size[2];
 
     array = (float *) malloc(sizeof(float) * xsize * ysize);
     if(array == NULL)
@@ -76,7 +76,7 @@ imageID filter_CubePercentileLimit(const char *__restrict IDcin_name,
         cnt = 0;
         for(kk = 0; kk < zsize; kk++)
         {
-            v1 = data.image[IDcin].array.F[kk * xsize * ysize + ii];
+            v1 = dcimg[IDcin].array.F[kk * xsize * ysize + ii];
             if(v1 < limit)
             {
                 array[cnt] = v1;
@@ -86,11 +86,11 @@ imageID filter_CubePercentileLimit(const char *__restrict IDcin_name,
             if(cnt > 0)
             {
                 quick_sort_float(array, zsize);
-                data.image[IDout].array.F[ii] = array[(long)(perc * cnt)];
+                dcimg[IDout].array.F[ii] = array[(long)(perc * cnt)];
             }
             else
             {
-                data.image[IDout].array.F[ii] = limit;
+                dcimg[IDout].array.F[ii] = limit;
             }
         }
     }

@@ -130,7 +130,7 @@ static errno_t compute_function()
     // connect to input telemetry
     //
     IMGID imgin = imgid_make_from_name(inname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     /// ## Selecting input values
@@ -230,7 +230,7 @@ static errno_t compute_function()
     /// Otherwise, all variables are active\n
     /// The number of active input variables is stored in NBpixin.
 
-    imageID IDinmask = image_ID("inmask", data.image, data.NB_MAX_IMAGE);
+    imageID IDinmask = image_ID("inmask", dcimg, dcnimg);
     long    NBpixin  = 0;
     if(IDinmask == -1)
     {
@@ -247,7 +247,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDinmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
@@ -291,7 +291,7 @@ static errno_t compute_function()
         abort();
     }
 
-    imageID IDoutmask = image_ID("outmask", data.image, data.NB_MAX_IMAGE);
+    imageID IDoutmask = image_ID("outmask", dcimg, dcnimg);
     long    NBpixout  = 0;
     if(IDoutmask == -1)
     {
@@ -308,7 +308,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDoutmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;
@@ -445,8 +445,8 @@ static errno_t compute_function()
     ///
     /// Necessary as input may be continuously changing between consecutive loop iterations.
     ///
-    IDincp = image_ID("PFin_copy", data.image, data.NB_MAX_IMAGE);
-    memcpy(data.image[IDincp].array.F,
+    IDincp = image_ID("PFin_copy", dcimg, dcnimg);
+    memcpy(dcimg[IDincp].array.F,
            imgin.im->array.F,
            sizeof(float) * inNBelem);
 
@@ -469,7 +469,7 @@ static errno_t compute_function()
             for(uint32_t m = 0; m < nbspl; m++)
             {
                 ave_inarray[pix] +=
-                    data.image[IDincp].array.F[m * xysize + pixarray_xy[pix]];
+                    dcimg[IDincp].array.F[m * xysize + pixarray_xy[pix]];
             }
             ave_inarray[pix] /= nbspl;
         }
@@ -491,8 +491,8 @@ static errno_t compute_function()
         for(long pix = 0; pix < NBpixin; pix++)
             for(long dt = 0; dt < *PForder; dt++)
             {
-                data.image[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
-                    data.image[IDincp]
+                dcimg[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
+                    dcimg[IDincp]
                     .array.F[(k0 - dt) * xysize + pixarray_xy[pix]] -
                     ave_inarray[pix];
             }
@@ -506,7 +506,7 @@ static errno_t compute_function()
         for(long m = 0; m < mvecsize; m++)
         {
             //m1 = NBmvec + m;
-            data.image[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
+            dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
                 *reglambda;
         }
     }
@@ -525,11 +525,11 @@ static errno_t compute_function()
             long k0 = m + *PForder - 1;
             k0 += (long) * PFlatency;
 
-            data.image[IDfm].array.F[PFpix * NBmvec + m] =
+            dcimg[IDfm].array.F[PFpix * NBmvec + m] =
                 (1.0 - alpha) *
-                data.image[IDincp]
+                dcimg[IDincp]
                 .array.F[(k0) * xysize + outpixarray_xy[PFpix]] +
-                alpha * data.image[IDincp]
+                alpha * dcimg[IDincp]
                 .array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
         }
     //save_fits("PFfmdat", "PFfmdat.fits");
@@ -561,7 +561,7 @@ static errno_t compute_function()
         // input PFmatD is stored as 2D array
         //
         IMGID imgin = imgid_make_from_name("PFmatD");
-        resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
 
         printf("Number of samples         : %d\n", imgin.md->size[0]);
@@ -620,7 +620,7 @@ static errno_t compute_function()
     }
 
 
-    imageID IDmatC = image_ID("psinv", data.image, data.NB_MAX_IMAGE);
+    imageID IDmatC = image_ID("psinv", dcimg, dcnimg);
 
     ///
     /// ### Assemble Predictive Filter
@@ -632,7 +632,7 @@ static errno_t compute_function()
     }
 
 
-    imageID IDoutPF2Dn = image_ID("psinvPFmat", data.image, data.NB_MAX_IMAGE);
+    imageID IDoutPF2Dn = image_ID("psinvPFmat", dcimg, dcnimg);
     if(IDoutPF2Dn == -1)
     {
         printf("------------------- CPU computing PF matrix\n");
@@ -647,14 +647,14 @@ static errno_t compute_function()
 
         // transpost of matC for speed
         float *matCtrans = (float *) malloc(sizeof(float) *
-                                            data.image[IDmatC].md->nelement);
+                                            dcimg[IDmatC].md->nelement);
 
-        for(long ii = 0; ii < data.image[IDmatC].md->size[0]; ii++)
+        for(long ii = 0; ii < dcimg[IDmatC].md->size[0]; ii++)
         {
-            for(long jj = 0; jj < data.image[IDmatC].md->size[1]; jj++)
+            for(long jj = 0; jj < dcimg[IDmatC].md->size[1]; jj++)
             {
-                matCtrans[ii * data.image[IDmatC].md->size[1] + jj] =
-                    data.image[IDmatC].array.F[jj * data.image[IDmatC].md->size[0] + ii];
+                matCtrans[ii * dcimg[IDmatC].md->size[1] + jj] =
+                    dcimg[IDmatC].array.F[jj * dcimg[IDmatC].md->size[0] + ii];
             }
         }
 
@@ -675,12 +675,12 @@ static errno_t compute_function()
                         long ind2t =  ind1 * NBmvec + m;
 
                         val += matCtrans[ind2t] *
-                               data.image[IDfm].array.F[PFpix * NBmvec + m];
+                               dcimg[IDfm].array.F[PFpix * NBmvec + m];
                     }
 
                     // output index
                     long oindex = PFpix * (PForderval * NBpixin) + ind1;
-                    data.image[IDoutPF2Dn].array.F[oindex] += val;
+                    dcimg[IDoutPF2Dn].array.F[oindex] += val;
 
                 }
             }
@@ -696,18 +696,18 @@ static errno_t compute_function()
     printf("DONE\n");
 
 //printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
-    data.image[IDoutPF2Draw].md[0].write = 1;
-    memcpy(data.image[IDoutPF2Draw].array.F,
-           data.image[IDoutPF2Dn].array.F,
+    dcimg[IDoutPF2Draw].md[0].write = 1;
+    memcpy(dcimg[IDoutPF2Draw].array.F,
+           dcimg[IDoutPF2Dn].array.F,
            sizeof(float) * NBpixout * NBpixin * *PForder);
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
-    data.image[IDoutPF2Draw].md[0].cnt0++;
-    data.image[IDoutPF2Draw].md[0].write = 0;
+    dcimg[IDoutPF2Draw].md[0].cnt0++;
+    dcimg[IDoutPF2Draw].md[0].write = 0;
 
 
 //printf("IDoutPF2D = %ld\n", IDoutPF2D);
 // Mix current PF with last one
-    data.image[IDoutPF2D].md[0].write = 1;
+    dcimg[IDoutPF2D].md[0].write = 1;
 
 
 // on first iteration, set loopgain to 1 to initalize content
@@ -726,13 +726,13 @@ static errno_t compute_function()
         for(long pix = 0; pix < NBpixin; pix++)
             for(long dt = 0; dt < *PForder; dt++)
             {
-                float val0 = data.image[IDoutPF2D]
+                float val0 = dcimg[IDoutPF2D]
                              .array.F[PFpix * (*PForder * NBpixin) +
                                             dt * NBpixin + pix]; // Previous
-                float val = data.image[IDoutPF2Dn]
+                float val = dcimg[IDoutPF2Dn]
                             .array.F[PFpix * (*PForder * NBpixin) +
                                            dt * NBpixin + pix]; // New
-                data.image[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) +
+                dcimg[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) +
                                               dt * NBpixin + pix] =
                                                   (1.0 - *loopgain) * val0 + *loopgain * val;
             }
@@ -743,8 +743,8 @@ static errno_t compute_function()
 
 
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
-    data.image[IDoutPF2D].md[0].cnt0++;
-    data.image[IDoutPF2D].md[0].write = 0;
+    dcimg[IDoutPF2D].md[0].cnt0++;
+    dcimg[IDoutPF2D].md[0].write = 0;
 
     if(*out3Dwrite == 1)
     {
@@ -757,10 +757,10 @@ static errno_t compute_function()
             for(long PFpix = 0; PFpix < NBpixout; PFpix++)
                 for(long dt = 0; dt < *PForder; dt++)
                 {
-                    float val = data.image[IDoutPF2D]
+                    float val = dcimg[IDoutPF2D]
                                 .array.F[PFpix * (*PForder * NBpixin) +
                                                dt * NBpixin + pix];
-                    data.image[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
+                    dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
                                                   NBpixin * PFpix + pix] = val;
                 }
         save_fits("outPF3D", "_outPF3D.fits");

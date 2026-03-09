@@ -165,7 +165,7 @@ static errno_t compute_function()
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = imgid_make_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     long m = imgin.md->size[0] * imgin.md->size[1];
 
@@ -176,7 +176,7 @@ static errno_t compute_function()
     float *masked_pix = NULL;  //Array to hold the pixel values
 
     IMGID imgmask = imgid_make_from_name(inmasksname);
-    if(resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE) != -1)
+    if(resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
         if(imgmask.md->size[0] == imgin.md->size[0]
@@ -230,14 +230,14 @@ static errno_t compute_function()
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     imageID IDintot;
-    IDintot = image_ID(intot_stream, data.image, data.NB_MAX_IMAGE);
+    IDintot = image_ID(intot_stream, dcimg, dcnimg);
     int INNORMMODE = 0; // 1 if input normalized
 
     if(IDintot == -1)
     {
         INNORMMODE = 0;
         create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-        data.image[IDintot].array.F[0] = 1.0;
+        dcimg[IDintot].array.F[0] = 1.0;
     }
     else
     {
@@ -249,7 +249,7 @@ static errno_t compute_function()
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref = -1;
     IMGID imginref = imgid_make_from_name(inrefsname);
-    resolveIMGID(&imginref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginref, ERRMODE_WARN, dcimg, dcnimg);
     if(imginref.ID == -1)
     {
         create_2Dimage_ID("_tmprefin",
@@ -258,7 +258,7 @@ static errno_t compute_function()
                           &IDinref);
         for(uint64_t ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
         {
-            data.image[IDinref].array.F[ii] = 0.0;
+            dcimg[IDinref].array.F[ii] = 0.0;
         }
     }
     else
@@ -269,12 +269,12 @@ static errno_t compute_function()
 
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
     IMGID imgoutref = imgid_make_from_name(outrefsname);
-    resolveIMGID(&imgoutref, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgoutref, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // CONNECT TO MODES STREAM
     IMGID imgmodes = imgid_make_from_name(immodes);
-    resolveIMGID(&imgmodes, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgmodes, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Could this be imgid_compare?
     if(imgmodes.md->datatype != _DATATYPE_FLOAT)
@@ -337,7 +337,7 @@ static errno_t compute_function()
             {
                 for(long kk = 0; kk < NBmodes; kk++)
                 {
-                    data.image[IDmodes]
+                    dcimg[IDmodes]
                     .array.F[kk * imgin.md->size[0] * imgin.md->size[1] +
                                 jj * imgin.md->size[0] + ii] =
                                  imgmodes.im->array
@@ -381,7 +381,7 @@ static errno_t compute_function()
 
     uint32_t *arraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
 
-    // IDrefout = image_ID(IDrefout_name, data.image, data.NB_MAX_IMAGE);
+    // IDrefout = image_ID(IDrefout_name, dcimg, dcnimg);
     imageID IDrefout = -1; // TODO handle this
     if(IDrefout == -1)
     {
@@ -398,8 +398,8 @@ static errno_t compute_function()
     }
     else
     {
-        arraytmp[0] = data.image[IDrefout].md->size[0];
-        arraytmp[1] = data.image[IDrefout].md->size[1];
+        arraytmp[0] = dcimg[IDrefout].md->size[0];
+        arraytmp[1] = dcimg[IDrefout].md->size[1];
     }
 
 
@@ -502,17 +502,17 @@ static errno_t compute_function()
                 //reformat the matrix using the mask
                 matsz = mask_npix * NBmodes;
                 modesmat = (float *) malloc(sizeof(float) * mask_npix *
-                                            data.image[IDmodes].md->size[2]);
+                                            dcimg[IDmodes].md->size[2]);
 
-                uint32_t nrows = data.image[IDmodes].md->size[2];
-                uint32_t ncols = data.image[IDmodes].md->size[0] *
-                                 data.image[IDmodes].md->size[1];
+                uint32_t nrows = dcimg[IDmodes].md->size[2];
+                uint32_t ncols = dcimg[IDmodes].md->size[0] *
+                                 dcimg[IDmodes].md->size[1];
 
                 for(uint32_t rr = 0; rr < nrows; ++rr)
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        modesmat[rr * mask_npix + cc] = data.image[IDmodes].array.F[rr * ncols +
+                        modesmat[rr * mask_npix + cc] = dcimg[IDmodes].array.F[rr * ncols +
                                                         mask_idx[cc]];
                     }
                 }
@@ -520,7 +520,7 @@ static errno_t compute_function()
             else
             {
                 matsz = m * NBmodes;
-                modesmat = data.image[IDmodes].array.F;
+                modesmat = dcimg[IDmodes].array.F;
             }
 
             // load modes to GPU
@@ -606,7 +606,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = TRACEsize;
         sizearraytmp[1] = NBmodes;
-        IDtrace = image_ID(traceim_name, data.image, data.NB_MAX_IMAGE);
+        IDtrace = image_ID(traceim_name, dcimg, dcnimg);
         int imOK = 1;
         if(IDtrace == -1)
         {
@@ -614,8 +614,8 @@ static errno_t compute_function()
         }
         else
         {
-            if((data.image[IDtrace].md[0].size[0] != TRACEsize) ||
-                    (data.image[IDtrace].md[0].size[1] != NBmodes))
+            if((dcimg[IDtrace].md[0].size[0] != TRACEsize) ||
+                    (dcimg[IDtrace].md[0].size[1] != NBmodes))
             {
                 imOK = 0;
                 delete_image_ID(traceim_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -663,7 +663,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name, data.image, data.NB_MAX_IMAGE);
+        IDprocave       = image_ID(process_ave_name, dcimg, dcnimg);
         int imOK = 1;
         if(IDprocave == -1)
         {
@@ -671,8 +671,8 @@ static errno_t compute_function()
         }
         else
         {
-            if((data.image[IDprocave].md[0].size[0] != NBmodes) ||
-                    (data.image[IDprocave].md[0].size[1] != NBaveSTEP))
+            if((dcimg[IDprocave].md[0].size[0] != NBmodes) ||
+                    (dcimg[IDprocave].md[0].size[1] != NBaveSTEP))
             {
                 imOK = 0;
                 delete_image_ID(process_ave_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -712,7 +712,7 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms = image_ID(process_rms_name, data.image, data.NB_MAX_IMAGE);
+        IDprocrms = image_ID(process_rms_name, dcimg, dcnimg);
         imOK = 1;
         if(IDprocrms == -1)
         {
@@ -720,8 +720,8 @@ static errno_t compute_function()
         }
         else
         {
-            if((data.image[IDprocrms].md->size[0] != NBmodes) ||
-                    (data.image[IDprocrms].md->size[1] != NBaveSTEP))
+            if((dcimg[IDprocrms].md->size[0] != NBmodes) ||
+                    (dcimg[IDprocrms].md->size[1] != NBaveSTEP))
             {
                 imOK = 0;
                 delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
@@ -846,10 +846,10 @@ static errno_t compute_function()
         // Are we computing a new reference ?
         // if yes, set initref to 0 (reference is NOT initialized)
         //
-        if(refindex != data.image[IDinref].md->cnt0)
+        if(refindex != dcimg[IDinref].md->cnt0)
         {
             initref = 0;
-            refindex = data.image[IDinref].md->cnt0;
+            refindex = dcimg[IDinref].md->cnt0;
         }
 
 
@@ -1002,7 +1002,7 @@ static errno_t compute_function()
 #endif
 
             // update output
-            data.image[imgout.ID].md->write = 1;
+            dcimg[imgout.ID].md->write = 1;
             for(int jj = 0; jj < n; jj++)
             {
                 imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
@@ -1025,12 +1025,12 @@ static errno_t compute_function()
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        masked_pix[cc] = data.image[IDinref].array.F[mask_idx[cc]];
+                        masked_pix[cc] = dcimg[IDinref].array.F[mask_idx[cc]];
                     }
                 }
                 else
                 {
-                    masked_pix = data.image[IDinref].array.F;
+                    masked_pix = dcimg[IDinref].array.F;
                 }
                 cudaStat = cudaMemcpy(d_in,
                                       masked_pix,
@@ -1124,11 +1124,11 @@ static errno_t compute_function()
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
 
-                IDrefout = image_ID(outrefsname, data.image, data.NB_MAX_IMAGE);
+                IDrefout = image_ID(outrefsname, dcimg, dcnimg);
                 if(IDrefout != -1)
                     for(long k = 0; k < NBmodes; k++)
                     {
-                        modevalarrayref[k] -= data.image[IDrefout].array.F[k];
+                        modevalarrayref[k] -= dcimg[IDrefout].array.F[k];
                     }
 
             }
@@ -1145,7 +1145,7 @@ static errno_t compute_function()
                     imgout.im->array.F[k] =
                         (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
                     // Renorm was never implemented
-                    // (modevalarray[k] / data.image[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
+                    // (modevalarray[k] / dcimg[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
                 }
 
 

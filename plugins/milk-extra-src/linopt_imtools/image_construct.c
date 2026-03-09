@@ -94,12 +94,12 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
     imageID IDcoeff;
     uint8_t datatype;
 
-    IDmodes  = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
-    datatype = data.image[IDmodes].md[0].datatype;
+    IDmodes  = image_ID(IDmodes_name, dcimg, dcnimg);
+    datatype = dcimg[IDmodes].md[0].datatype;
 
-    uint32_t xsize = data.image[IDmodes].md[0].size[0];
-    uint32_t ysize = data.image[IDmodes].md[0].size[1];
-    uint32_t zsize = data.image[IDmodes].md[0].size[2];
+    uint32_t xsize = dcimg[IDmodes].md[0].size[0];
+    uint32_t ysize = dcimg[IDmodes].md[0].size[1];
+    uint32_t zsize = dcimg[IDmodes].md[0].size[2];
 
     uint64_t sizexy = xsize;
     sizexy *= ysize;
@@ -113,32 +113,32 @@ errno_t linopt_imtools_image_construct(const char *IDmodes_name,
         FUNC_CHECK_RETURN(create_2Dimage_ID_double(ID_name, xsize, ysize, &ID));
     }
 
-    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
+    IDcoeff = image_ID(IDcoeff_name, dcimg, dcnimg);
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        memset(data.image[ID].array.F,
+        memset(dcimg[ID].array.F,
                0,
-               sizeof(float) * data.image[ID].md[0].nelement);
+               sizeof(float) * dcimg[ID].md[0].nelement);
         for(uint32_t kk = 0; kk < zsize; kk++)
             for(uint64_t ii = 0; ii < sizexy; ii++)
             {
-                data.image[ID].array.F[ii] +=
-                    data.image[IDcoeff].array.F[kk] *
-                    data.image[IDmodes].array.F[kk * sizexy + ii];
+                dcimg[ID].array.F[ii] +=
+                    dcimg[IDcoeff].array.F[kk] *
+                    dcimg[IDmodes].array.F[kk * sizexy + ii];
             }
     }
     else
     {
-        memset(data.image[ID].array.D,
+        memset(dcimg[ID].array.D,
                0,
-               sizeof(double) * data.image[ID].md[0].nelement);
+               sizeof(double) * dcimg[ID].md[0].nelement);
         for(uint32_t kk = 0; kk < zsize; kk++)
             for(uint64_t ii = 0; ii < sizexy; ii++)
             {
-                data.image[ID].array.D[ii] +=
-                    data.image[IDcoeff].array.D[kk] *
-                    data.image[IDmodes].array.D[kk * sizexy + ii];
+                dcimg[ID].array.D[ii] +=
+                    dcimg[IDcoeff].array.D[kk] *
+                    dcimg[IDmodes].array.D[kk * sizexy + ii];
             }
     }
 

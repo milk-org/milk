@@ -141,36 +141,36 @@ errno_t linopt_compute_linRM_from_inout(
     //ngpu = 0;
     setenv("CUDA_VISIBLE_DEVICES", "3,4", 1);
 
-    IDin  = image_ID(IDinput_name, data.image, data.NB_MAX_IMAGE);
-    IDout = image_ID(IDoutput_name, data.image, data.NB_MAX_IMAGE);
-    IDRM  = image_ID(IDRM_name, data.image, data.NB_MAX_IMAGE);
+    IDin  = image_ID(IDinput_name, dcimg, dcnimg);
+    IDout = image_ID(IDoutput_name, dcimg, dcnimg);
+    IDRM  = image_ID(IDRM_name, dcimg, dcnimg);
 
-    insize   = data.image[IDin].md[0].size[2];
-    xsizeout = data.image[IDRM].md[0].size[0];
-    ysizeout = data.image[IDRM].md[0].size[1];
-    xsizein  = data.image[IDin].md[0].size[0];
-    ysizein  = data.image[IDin].md[0].size[1];
+    insize   = dcimg[IDin].md[0].size[2];
+    xsizeout = dcimg[IDRM].md[0].size[0];
+    ysizeout = dcimg[IDRM].md[0].size[1];
+    xsizein  = dcimg[IDin].md[0].size[0];
+    ysizein  = dcimg[IDin].md[0].size[1];
 
     if(autoMask_MODE == 0)
     {
-        IDinmask = image_ID(IDinmask_name, data.image, data.NB_MAX_IMAGE);
+        IDinmask = image_ID(IDinmask_name, dcimg, dcnimg);
     }
     else
     {
         create_2Dimage_ID("_RMmask", xsizein, ysizein, &IDinmask);
         for(spl = 0; spl < insize; spl++)
             for(ii = 0; ii < xsizein * ysizein; ii++)
-                if(data.image[IDin].array.F[spl * xsizein * ysizein + ii] >
+                if(dcimg[IDin].array.F[spl * xsizein * ysizein + ii] >
                         0.5)
                 {
-                    data.image[IDinmask].array.F[ii] = 1.0;
+                    dcimg[IDinmask].array.F[ii] = 1.0;
                 }
     }
 
     // create pokeM
     NBact = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(data.image[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5)
         {
             NBact++;
         }
@@ -185,7 +185,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     act = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(data.image[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5)
         {
             inpixarray[act] = ii;
             act++;
@@ -211,8 +211,8 @@ errno_t linopt_compute_linRM_from_inout(
     for(spl = 0; spl < insize; spl++)
         for(act = 0; act < NBact; act++)
         {
-            data.image[IDpokeM].array.F[NBact * spl + act] =
-                data.image[IDin]
+            dcimg[IDpokeM].array.F[NBact * spl + act] =
+                dcimg[IDin]
                 .array.F[spl * xsizein * ysizein + inpixarray[act]];
         }
     save_fits("pokeM", "_test_pokeM.fits");
@@ -240,7 +240,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     list_image_ID();
     save_fits("pokeMinv", "pokeMinv.fits");
-    IDpinv = image_ID("pokeMinv", data.image, data.NB_MAX_IMAGE);
+    IDpinv = image_ID("pokeMinv", dcimg, dcnimg);
 
     // multiply measurements by pokeMinv
     create_3Dimage_ID("_respmat",
@@ -254,10 +254,10 @@ errno_t linopt_compute_linRM_from_inout(
         for(kk = 0; kk < insize; kk++)
             for(ii = 0; ii < xsizeout * ysizeout; ii++)
             {
-                data.image[ID_rm]
+                dcimg[ID_rm]
                 .array.F[inpixarray[act] * xsizeout * ysizeout + ii] +=
-                    data.image[IDout].array.F[kk * xsizeout * ysizeout + ii] *
-                    data.image[IDpinv].array.F[kk * NBact + act];
+                    dcimg[IDout].array.F[kk * xsizeout * ysizeout + ii] *
+                    dcimg[IDpinv].array.F[kk * NBact + act];
             }
     }
     save_fits("_respmat", "_test_RM.fits");
@@ -265,7 +265,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     // COMPUTE SOLUTION QUALITY
 
-    IDRM = image_ID("_respmat", data.image, data.NB_MAX_IMAGE);
+    IDRM = image_ID("_respmat", dcimg, dcnimg);
 
     create_2Dimage_ID("_tmplicli", xsizeout, ysizeout, &IDtmp);
     create_3Dimage_ID("testout", xsizeout, ysizeout, insize, &IDout1);
@@ -285,7 +285,7 @@ errno_t linopt_compute_linRM_from_inout(
         for(ii_out = 0; ii_out < xsizeout; ii_out++)
             for(jj_out = 0; jj_out < ysizeout; jj_out++)
             {
-                data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0;
+                dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0;
             }
 
         for(ii_in = 0; ii_in < xsizein; ii_in++)
@@ -296,10 +296,10 @@ errno_t linopt_compute_linRM_from_inout(
                 for(ii_out = 0; ii_out < xsizeout; ii_out++)
                     for(jj_out = 0; jj_out < ysizeout; jj_out++)
                     {
-                        data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] +=
-                            data.image[IDin].array.F[kk * xsizein * ysizein +
+                        dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] +=
+                            dcimg[IDin].array.F[kk * xsizein * ysizein +
                                                      jj_in * xsizein + ii_in] *
-                            data.image[IDRM]
+                            dcimg[IDRM]
                             .array.F[(jj_in * xsizein + ii_in) * xsizeout *
                                                                ysizeout +
                                                                jj_out * xsizeout + ii_out];
@@ -308,13 +308,13 @@ errno_t linopt_compute_linRM_from_inout(
         for(ii_out = 0; ii_out < xsizeout; ii_out++)
             for(jj_out = 0; jj_out < ysizeout; jj_out++)
             {
-                tmpv1 = data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] -
-                        data.image[IDout].array.F[kk * xsizeout * ysizeout +
+                tmpv1 = dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] -
+                        dcimg[IDout].array.F[kk * xsizeout * ysizeout +
                                                   jj_out * xsizeout + ii_out];
                 fitval += tmpv1 * tmpv1;
-                data.image[IDout1].array.F[kk * xsizeout * ysizeout +
+                dcimg[IDout1].array.F[kk * xsizeout * ysizeout +
                                            jj_out * xsizeout + ii_out] =
-                                               tmpv1; //data.image[IDtmp].array.F[jj_out*xsizeout+ii_out];
+                                               tmpv1; //dcimg[IDtmp].array.F[jj_out*xsizeout+ii_out];
             }
     }
     printf("\n");

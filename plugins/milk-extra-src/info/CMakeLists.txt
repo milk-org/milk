@@ -73,14 +73,18 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
-# Standalone runner for stream_monproc
+# Standalone runner for stream_monproc (needs CLI)
+if(USE_CLI)
 add_executable(stream-monproc-runner stream-monproc-runner.c)
 target_link_libraries(stream-monproc-runner ${LIBNAME} CLIcore ImageStreamIO)
 install(TARGETS stream-monproc-runner DESTINATION bin)
+endif()
 
-# Standalone display for stream_monproc
+# Standalone display for stream_monproc (needs CLI+ncurses)
+if(USE_CLI)
 add_executable(stream-monproc-disp stream-monproc-disp.c)
 target_link_libraries(stream-monproc-disp ${LIBNAME} CLIcore ImageStreamIO ncurses)
 install(TARGETS stream-monproc-disp DESTINATION bin)
+endif()
 add_milk_standalone(info-imagemon imagemon.c)
 add_milk_standalone(info-strmonproc stream_monproc.c)

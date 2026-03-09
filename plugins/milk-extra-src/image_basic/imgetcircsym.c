@@ -76,9 +76,9 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
     imageID  IDout;
     float    ifloat, x;
 
-    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     nb_step  = naxes[0] / 2;
 
     dist = (float *) malloc(sizeof(float) * nb_step);
@@ -130,9 +130,9 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
             if(i < nb_step)
             {
                 dist[i] += distance;
-                mean[i] += data.image[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += data.image[ID].array.F[jj * naxes[0] + ii] *
-                          data.image[ID].array.F[jj * naxes[0] + ii];
+                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
+                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
+                          dcimg[ID].array.F[jj * naxes[0] + ii];
                 counts[i] += 1;
             }
         }
@@ -158,7 +158,7 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
 
             if((i + 1) < nb_step)
             {
-                data.image[IDout].array.F[jj * naxes[0] + ii] =
+                dcimg[IDout].array.F[jj * naxes[0] + ii] =
                     ((1.0 - x) * mean[i] + x * mean[i + 1]);
             }
         }

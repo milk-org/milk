@@ -113,14 +113,14 @@ static errno_t compute_function()
             imgid_make_from_name(input_name);
         resolveIMGID(
             &img_in_arr[ii], ERRMODE_ABORT,
-            data.image, data.NB_MAX_IMAGE);
+            dcimg, dcnimg);
     }
 
     IMGID img_out =
         imgid_make_from_name(stream_basename);
     resolveIMGID(
         &img_out, ERRMODE_WARN,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     int32_t *offset_bytes = (int32_t *)
         malloc(n_input * sizeof(int32_t));

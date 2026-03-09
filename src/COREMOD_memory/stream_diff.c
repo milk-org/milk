@@ -84,12 +84,12 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     unsigned long long cnt;
     imageID            IDmask; // optional
 
-    ID0    = image_ID(IDstream0_name, data.image, data.NB_MAX_IMAGE);
-    ID1    = image_ID(IDstream1_name, data.image, data.NB_MAX_IMAGE);
-    IDmask = image_ID(IDstreammask_name, data.image, data.NB_MAX_IMAGE);
+    ID0    = image_ID(IDstream0_name, dcimg, dcnimg);
+    ID1    = image_ID(IDstream1_name, dcimg, dcnimg);
+    IDmask = image_ID(IDstreammask_name, dcimg, dcnimg);
 
-    xsize  = data.image[ID0].md[0].size[0];
-    ysize  = data.image[ID0].md[0].size[1];
+    xsize  = dcimg[ID0].md[0].size[0];
+    ysize  = dcimg[ID0].md[0].size[1];
     xysize = xsize * ysize;
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
@@ -101,7 +101,7 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     arraysize[0] = xsize;
     arraysize[1] = ysize;
 
-    IDout = image_ID(IDstreamout_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDstreamout_name, dcimg, dcnimg);
     if(IDout == -1)
     {
         create_image_ID(IDstreamout_name,
@@ -119,42 +119,42 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     while(1)
     {
         // has new frame arrived ?
-        if(data.image[ID0].md[0].sem == 0)
+        if(dcimg[ID0].md[0].sem == 0)
         {
             while(cnt ==
-                    data.image[ID0].md[0].cnt0) // test if new frame exists
+                    dcimg[ID0].md[0].cnt0) // test if new frame exists
             {
                 usleep(5);
             }
-            cnt = data.image[ID0].md[0].cnt0;
+            cnt = dcimg[ID0].md[0].cnt0;
         }
         else
         {
-            ImageStreamIO_semwait(data.image+ID0, semtrig);
+            ImageStreamIO_semwait(dcimg+ID0, semtrig);
         }
 
-        data.image[IDout].md[0].write = 1;
+        dcimg[IDout].md[0].write = 1;
         if(IDmask == -1)
         {
             for(uint64_t ii = 0; ii < xysize; ii++)
             {
-                data.image[IDout].array.F[ii] =
-                    data.image[ID0].array.F[ii] - data.image[ID1].array.F[ii];
+                dcimg[IDout].array.F[ii] =
+                    dcimg[ID0].array.F[ii] - dcimg[ID1].array.F[ii];
             }
         }
         else
         {
             for(uint64_t ii = 0; ii < xysize; ii++)
             {
-                data.image[IDout].array.F[ii] = (data.image[ID0].array.F[ii] -
-                                                 data.image[ID1].array.F[ii]) *
-                                                data.image[IDmask].array.F[ii];
+                dcimg[IDout].array.F[ii] = (dcimg[ID0].array.F[ii] -
+                                                 dcimg[ID1].array.F[ii]) *
+                                                dcimg[IDmask].array.F[ii];
             }
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
         ;
-        data.image[IDout].md[0].cnt0++;
-        data.image[IDout].md[0].write = 0;
+        dcimg[IDout].md[0].cnt0++;
+        dcimg[IDout].md[0].write = 0;
     }
 
     return IDout;
