@@ -93,7 +93,7 @@ errno_t saveFITS_opt_trunc_IMGID(
     WRITE_FILENAME(fnametmpext, "%s%s",
                    fnametmp, FITSIOext);
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
     resolveIMGID(imgin, ERRMODE_WARN,
                  dcimg, dcnimg);
 #endif
@@ -317,7 +317,7 @@ static errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(

@@ -42,6 +42,9 @@
 #define OMP_NELEMENT_LIMIT 1000000
 #endif
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -130,3 +133,4 @@ errno_t init_COREMOD_arith()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */

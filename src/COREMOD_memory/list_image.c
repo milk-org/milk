@@ -14,7 +14,11 @@
 #define COLOR_PAIR(c) 0
 #endif
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "compute_image_memory.h"
 #include "compute_nb_image.h"
 #include "image_ID.h"
@@ -56,6 +60,7 @@ errno_t list_variable_ID();
 errno_t list_variable_ID_file(const char *fname);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -89,7 +94,7 @@ errno_t list_image_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 #ifdef USE_NCURSES
 errno_t init_list_image_ID_ncurses(const char *termttyname)
 {

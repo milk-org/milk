@@ -5,7 +5,11 @@
  *
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -36,6 +40,7 @@ imageID arith_image_extract3D(const char *in_name,
                               long        zstart);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -117,7 +122,7 @@ errno_t image_crop_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
                          long       *start,
@@ -778,3 +783,4 @@ imageID arith_image_extract3D(const char *in_name,
 
     return IDout;
 }
+

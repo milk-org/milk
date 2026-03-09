@@ -3,7 +3,12 @@
  * @brief   find image ID(s) from name
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#endif
 
 /* ID number corresponding to a name */
 imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
