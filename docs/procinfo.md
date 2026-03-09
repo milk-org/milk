@@ -21,3 +21,74 @@ Along with boolean states, `procinfo` actively measures loop execution frequenci
 
 ## Standalone Executable Integration (`fpsexec`)
 When utilizing the standard V2 templates for standalone modules (`FPS_MAIN_STANDALONE_V2`), `procinfo` is automatically enabled and registered for you. Your executable simply needs to correctly execute its while loop, and the framework under-the-hood pulses the heartbeat for you.
+
+## C Code Template
+For custom usage without the standard V2 template, here is how you initialize and use `PROCESSINFO`:
+
+```c
+#include "CLIcore.h"
+
+int functiontemplate_usingprocessinfo() {
+
+    PROCESSINFO *processinfo;
+    char pinfoname[200];   // short name for the processinfo instance, no spaces, no dot
+    sprintf(pinfoname, "aol%ld-acqRM", loop);
+
+    char pinfodescr[200];
+    sprintf(pinfodescr, "NBcycle=%ld", NBcycle);
+
+    char pinfomsg[200];
+    sprintf(pinfomsg, "starting setup");
+
+    processinfo = processinfo_setup(
+        pinfoname,	         // short name for the processinfo instance
+        pinfodescr,    // description
+        pinfomsg,  // message on startup
+        __FUNCTION__, __FILE__, __LINE__
+        );
+
+	// OPTIONAL SETTINGS
+    processinfo->MeasureTiming = 1; // Measure timing
+    processinfo->RT_priority = 20;  // RT_priority, 0-99. Larger number = higher priority. If <0, ignore
+    processinfo->loopcntMax = 100;  // -1 if infinite loop
+
+    // =============================================
+    // OPTIONAL: TESTING CONDITION FOR LOOP ENTRY
+    // =============================================
+    int loopOK = 1;
+    if(0 /* error condition */) {
+        processinfo_error(processinfo, "ERROR: no WFS reference");
+        return RETURN_FAILURE;
+    }
+
+    // ==================================
+    // STARTING LOOP
+    // ==================================
+    processinfo_loopstart(processinfo); // Notify processinfo that we are entering loop
+
+    while(loopOK==1) {
+	    loopOK = processinfo_loopstep(processinfo);
+
+        // Semaphore wait goes here
+
+        processinfo_exec_start(processinfo);
+        if(processinfo_compute_status(processinfo)==1) {
+            // computation ....
+        }
+
+        // Post semaphore(s) and counter(s)
+        // process signals, increment loop counter
+        processinfo_exec_end(processinfo);
+
+        // OPTIONAL: MESSAGE WHILE LOOP RUNNING
+        processinfo_WriteMessage(processinfo, "loop running fine");
+    }
+
+    // ==================================
+    // ENDING LOOP
+    // ==================================
+    processinfo_cleanExit(processinfo);
+
+    return RETURN_SUCCESS;
+}
+```

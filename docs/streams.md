@@ -26,3 +26,73 @@ When interacting with streams on the CLI or within `milk` algorithms, standard m
 
 ## Introspection
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame arrival rates, recent values, and the current state of semaphores without disrupting operations.
+
+## C API (`IMGID`)
+
+`milk` uses the `IMGID` structure to hold references to images and streams. This structure is one level above `ImageStreamIO`, and is local to the `milk` process. It is the preferred way to pass images and streams as function arguments.
+
+### Creating an `IMGID`
+
+Creating a blank `IMGID` (this does not allocate memory yet):
+```c
+static inline IMGID imgid_make()
+```
+
+Creating an `IMGID` with a name:
+```c
+static inline IMGID imgid_make_from_name(CONST_WORD name)
+```
+*(Special characters like `s>tf32>im1` can also be used to automatically set type and location properties).*
+
+### Connecting to a stream
+
+If you expect the stream to already exist, you can connect to it:
+```c
+IMGID img1 = imgid_make();
+// imgid_connect returns quickly. Check if img1.ID != -1
+imgid_connect("streamname1", &img1, 0);
+if(img1.ID == -1) {
+	// handle failure securely
+}
+```
+
+### Creating an image in shared memory
+
+To create a new stream:
+```c
+IMGID img = imgid_make_from_name("im1");
+img.naxis = 2;
+img.size[0] = 128;
+img.size[1] = 128;
+img.shared = 1; // 1 for shared memory stream, 0 for local memory
+
+// Allocate memory and initialize stream headers
+imgid_mkimage(&img);
+
+// When done parsing or exiting
+imgid_free(&img);
+```
+
+### Creating or connecting with format checks
+
+Often, you want to ensure the stream has specific dimensions and types before using it, or create it if it doesn't match:
+
+```c
+IMGID img1 = imgid_make();
+img1.naxis = 2;
+img1.size[0] = 128;
+img1.size[1] = 128;
+
+// IMGID_CONNECT_CHECK_CREATE will create it if the format is wrong or it doesn't exist
+// IMGID_CONNECT_CHECK_FAIL will fail the connection if the format is wrong
+imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_CREATE);
+```
+
+For convenience, specialized typed functions are available:
+```c
+// Force connection/creation of a 2D float32 array
+imgid_connect_create_2Df32("streamname1", &img1, xsize, ysize);
+```
+
+> [!TIP]
+> Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through `img.im->array.F` or similar data type unions based on `img.im->md[0].datatype`.
