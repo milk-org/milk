@@ -1,112 +1,394 @@
-# Dependency Architecture — After Refactoring
+# Milk + Cacao Dependency Graph
 
-## Standalone Executable Dependency Graph
+> Generated from current CMakeLists.txt — 2026-03-09
 
-```mermaid
-graph TD
-    subgraph "Standalone Executables"
-        MILK_EXE["milk-fpsexec-*"]
-        CACAO_EXE["cacao-fpsexec-*<br/>(base)"]
-        CACAO_PLUG["cacao-fpsexec-*<br/>(with plugins)"]
-    end
+---
 
-    subgraph "Core Compute Libraries"
-        MILKFPS["milkfps"]
-        MILKFPS_SA["milkfpsStandalone"]
-        MILKDATA["milkdata"]
-        PROCINFO["milkprocessinfo"]
-        ISIO["ImageStreamIO"]
-    end
-
-    subgraph "COREMOD _compute Variants"
-        MEM_C["milkCOREMODmemory_compute"]
-        TOOLS_C["milkCOREMODtools_compute"]
-        ARITH_C["milkCOREMODarith_compute"]
-        IOFITS_C["milkCOREMODiofits_compute"]
-    end
-
-    subgraph "Plugin _compute Variants"
-        FFT_C["milkfft_compute"]
-        IMGGEN_C["milkimagegen_compute"]
-        IMGBASIC_C["milkimagebasic_compute"]
-        IMGFILT_C["milkimagefilter_compute"]
-    end
-
-    subgraph "System Libraries"
-        CFITSIO["cfitsio"]
-        FFTW["fftw3 / fftw3f"]
-    end
-
-    MILK_EXE --> MILKFPS & MILKFPS_SA & MILKDATA & PROCINFO & ISIO
-    MILK_EXE --> MEM_C & TOOLS_C & ARITH_C & IOFITS_C
-
-    CACAO_EXE --> MILKFPS & MILKFPS_SA & MILKDATA & PROCINFO & ISIO
-    CACAO_EXE --> MEM_C & TOOLS_C & ARITH_C & IOFITS_C
-
-    CACAO_PLUG --> FFT_C & IMGGEN_C & IMGBASIC_C & IMGFILT_C
-    CACAO_PLUG --> MILKFPS & MILKFPS_SA & MILKDATA & PROCINFO & ISIO
-    CACAO_PLUG --> MEM_C & TOOLS_C & ARITH_C & IOFITS_C
-
-    MEM_C & TOOLS_C & ARITH_C & IOFITS_C --> CFITSIO
-    FFT_C --> FFTW
-    FFT_C & IMGGEN_C & IMGBASIC_C & IMGFILT_C --> MEM_C & IOFITS_C
-
-    style MILK_EXE fill:#4CAF50,color:white
-    style CACAO_EXE fill:#4CAF50,color:white
-    style CACAO_PLUG fill:#8BC34A,color:white
-    style FFT_C fill:#FF9800,color:white
-    style IMGGEN_C fill:#FF9800,color:white
-    style IMGBASIC_C fill:#FF9800,color:white
-    style IMGFILT_C fill:#FF9800,color:white
-    style MEM_C fill:#2196F3,color:white
-    style TOOLS_C fill:#2196F3,color:white
-    style ARITH_C fill:#2196F3,color:white
-    style IOFITS_C fill:#2196F3,color:white
-```
-
-## Full CLI Build Dependencies (for reference)
+## Core Stack
 
 ```mermaid
 graph TD
-    subgraph "CLI Build"
-        CLI["milk-cli"]
-        CLICORE["CLIcore"]
-    end
+    CFITSIO["cfitsio"]:::ext
+    NCURSES["ncurses"]:::ext
+    READLINE["readline"]:::ext
 
-    subgraph "Full Plugin Libraries"
-        FFT["milkfft"]
-        IMGGEN["milkimagegen"]
-        IMGBASIC["milkimagebasic"]
-        IMGFILT["milkimagefilter"]
-    end
+    ISIO["ImageStreamIO"]:::core
+    PROCINFO["milkprocessinfo"]:::core
+    FPS["milkfps"]:::core
+    MILKDATA["milkdata"]:::core
+    MILKTUI["milkTUI"]:::core
 
-    subgraph "Full COREMOD Libraries"
-        MEM["milkCOREMODmemory"]
-        TOOLS["milkCOREMODtools"]
-        ARITH["milkCOREMODarith"]
-        IOFITS["milkCOREMODiofits"]
-    end
+    PITUI["milkprocessinfoTUI"]:::fw
+    FPSTUI["milkfpsTUI"]:::fw
+    FPSCLI["milkfpsCLI"]:::fw
+    FPSSTANDALONE["milkfpsStandalone"]:::fw
 
-    CLI --> CLICORE
-    CLICORE --> MEM & TOOLS & ARITH & IOFITS
-    FFT & IMGGEN & IMGBASIC & IMGFILT --> CLICORE
+    ARITH["COREMODarith"]:::coremod
+    IOFITS["COREMODiofits"]:::coremod
+    MEMORY["COREMODmemory"]:::coremod
+    TOOLS["COREMODtools"]:::coremod
 
-    style CLI fill:#9C27B0,color:white
-    style CLICORE fill:#F44336,color:white
-    style FFT fill:#FF5722,color:white
-    style IMGGEN fill:#FF5722,color:white
-    style IMGBASIC fill:#FF5722,color:white
-    style IMGFILT fill:#FF5722,color:white
+    CLICORE["CLIcore"]:::fw
+
+    FPSCTRL["milk-fpsCTRL"]:::exe
+    PROCCTRL["milk-procCTRL"]:::exe
+    STREAMCTRL["milk-streamCTRL"]:::exe
+    MILKEXE["milk-fpsexec-*"]:::exe
+    CACAOEXE["cacao-fpsexec-*"]:::exe
+    FPSTOOLS["milk-fps-set/list/…"]:::exe
+
+    ISIO -.->|headers only| CFITSIO
+    PROCINFO --> ISIO
+    FPS --> ISIO
+    FPS --> PROCINFO
+    MILKDATA --> FPS
+    MILKDATA --> PROCINFO
+    MILKTUI --> ISIO
+    MILKTUI --> NCURSES
+
+    IOFITS --> FPS
+    IOFITS --> CFITSIO
+    ARITH --> FPS
+    ARITH --> IOFITS
+    ARITH --> CFITSIO
+    MEMORY --> FPS
+    MEMORY --> CFITSIO
+    TOOLS --> FPS
+
+    PITUI --> PROCINFO
+    PITUI --> MILKTUI
+    FPSTUI --> FPS
+    FPSTUI --> MILKTUI
+    FPSCLI --> FPS
+    FPSCLI --> CLICORE
+    FPSSTANDALONE --> FPS
+    FPSSTANDALONE --> MILKDATA
+
+    CLICORE --> ARITH
+    CLICORE --> IOFITS
+    CLICORE --> MEMORY
+    CLICORE --> TOOLS
+    CLICORE --> FPS
+    CLICORE --> MILKDATA
+    CLICORE --> PROCINFO
+    CLICORE --> MILKTUI
+    CLICORE --> FPSTUI
+    CLICORE --> PITUI
+    CLICORE --> READLINE
+    CLICORE --> NCURSES
+    CLICORE --> CFITSIO
+
+    FPSCTRL --> FPSTUI
+    FPSCTRL --> CLICORE
+    PROCCTRL --> PITUI
+    STREAMCTRL --> CLICORE
+    STREAMCTRL --> ISIO
+    MILKEXE --> FPSSTANDALONE
+    CACAOEXE --> FPSSTANDALONE
+    FPSTOOLS --> FPSSTANDALONE
+
+    classDef ext fill:#566573,stroke:#333,color:#fff
+    classDef core fill:#1a5276,stroke:#123,color:#fff
+    classDef fw fill:#2e86c1,stroke:#1a5,color:#fff
+    classDef coremod fill:#1e8449,stroke:#145,color:#fff
+    classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
+
+## Plugins & Cacao
+
+```mermaid
+graph TD
+    CLICORE["CLIcore"]:::fw
+    OPENBLAS["OpenBLAS"]:::ext
+    FFTW["FFTW"]:::ext
+    GSL["GSL"]:::ext
+
+    FFT["milkfft"]:::plugin
+    LINALG["milklinalgebra"]:::plugin
+    LINOPT["milklinoptimtools"]:::plugin
+    STAT["milkstatistic"]:::plugin
+    IMGGEN["milkimagegen"]:::plugin
+    IMGBASIC["milkimagebasic"]:::plugin
+    IMGFILT["milkimagefilter"]:::plugin
+    IMGFMT["milkimageformat"]:::plugin
+    INFO["milkinfo"]:::plugin
+    ZERNIKE["milkZernikePolyn"]:::plugin
+    LINARPRED["milklinARfilterPred"]:::plugin
+    KDTREE["milkkdtree"]:::plugin
+    IMREDUCE["milkimgreduce"]:::plugin
+    PSF["milkpsf"]:::plugin
+    CLUSTER["milkclustering"]:::plugin
+
+    AOLOOP["cacaoAOloopControl"]:::cacao
+    AODM["cacaoAOloopControlDM"]:::cacao
+    AOIO["cacaoAOloopControlIOtools"]:::cacao
+    AOACQ["cacaoAcquireCalib"]:::cacao
+    AOPC["cacaoPredictiveControl"]:::cacao
+    AOCT["cacaoCompTools"]:::cacao
+    AOPT["cacaoPerfTest"]:::cacao
+    COMPCALIB["cacaoComputeCalib"]:::cacao
+    PYRWFS["cacaoPyramidWFS"]:::cacao
+
+    FFT --> CLICORE
+    FFT --> FFTW
+    LINALG --> CLICORE
+    LINALG --> OPENBLAS
+    LINOPT --> CLICORE
+    LINOPT --> GSL
+    STAT --> CLICORE
+    IMGGEN --> CLICORE
+    IMGGEN --> STAT
+    IMGBASIC --> CLICORE
+    IMGFILT --> CLICORE
+    IMGFMT --> CLICORE
+    IMGFMT -.-> IMGFILT
+    INFO --> CLICORE
+    ZERNIKE --> CLICORE
+    ZERNIKE --> IMGGEN
+    LINARPRED --> CLICORE
+    LINARPRED --> OPENBLAS
+    KDTREE --> CLICORE
+    IMREDUCE --> CLICORE
+    PSF --> CLICORE
+    CLUSTER --> CLICORE
+
+    AOLOOP --> CLICORE
+    AOLOOP --> LINOPT
+    AODM --> CLICORE
+    AODM --> FFT
+    AODM --> IMGGEN
+    AODM --> IMGFILT
+    AODM --> AOLOOP
+    AOIO --> CLICORE
+    AOIO --> INFO
+    AOIO --> AOLOOP
+    AOACQ --> CLICORE
+    AOACQ --> INFO
+    AOACQ --> AOLOOP
+    AOPC --> CLICORE
+    AOPC --> LINOPT
+    AOPC --> AOLOOP
+    AOCT --> CLICORE
+    AOCT --> AOLOOP
+    AOPT --> CLICORE
+    AOPT --> STAT
+    AOPT --> AOLOOP
+    COMPCALIB --> CLICORE
+    COMPCALIB --> INFO
+    COMPCALIB --> AOLOOP
+    COMPCALIB --> OPENBLAS
+    PYRWFS --> CLICORE
+    PYRWFS --> INFO
+    PYRWFS --> AOLOOP
+
+    classDef ext fill:#566573,stroke:#333,color:#fff
+    classDef fw fill:#2e86c1,stroke:#1a5,color:#fff
+    classDef plugin fill:#7d3c98,stroke:#5a2,color:#fff
+    classDef cacao fill:#d35400,stroke:#a00,color:#fff
+```
+
+## Standalone Build (USE_CLI=OFF)
+
+```mermaid
+graph TD
+    CFITSIO["cfitsio"]:::ext
+    ISIO["ImageStreamIO"]:::core
+    PROCINFO["milkprocessinfo"]:::core
+    FPS["milkfps"]:::core
+    MILKDATA["milkdata"]:::core
+    FPSSA["milkfpsStandalone"]:::core
+
+    ARITH_C["COREMODarith_compute"]:::compute
+    IOFITS_C["COREMODiofits_compute"]:::compute
+    MEMORY_C["COREMODmemory_compute"]:::compute
+    TOOLS_C["COREMODtools_compute"]:::compute
+
+    FFT_C["milkfft_compute"]:::plugcomp
+    IMGGEN_C["milkimagegen_compute"]:::plugcomp
+    IMGBASIC_C["milkimagebasic_compute"]:::plugcomp
+    IMGFILT_C["milkimagefilter_compute"]:::plugcomp
+
+    MILKEXE["milk-fpsexec-*"]:::exe
+    CACAOEXE["cacao-fpsexec-*"]:::exe
+    CACAOEXE_P["cacao-fpsexec-*\n(plugins)"]:::exe
+    FPSTOOLS["milk-fps-set/list/…"]:::exe
+
+    ISIO -.->|headers only| CFITSIO
+    PROCINFO --> ISIO
+    FPS --> PROCINFO
+    MILKDATA --> FPS
+    FPSSA --> FPS
+    FPSSA --> MILKDATA
+
+    IOFITS_C --> CFITSIO
+    IOFITS_C --> FPS
+    ARITH_C --> FPS
+    ARITH_C --> IOFITS_C
+    MEMORY_C --> FPS
+    TOOLS_C --> FPS
+
+    FFT_C --> MEMORY_C
+    FFT_C --> IOFITS_C
+    IMGGEN_C --> MEMORY_C
+    IMGGEN_C --> IOFITS_C
+    IMGBASIC_C --> MEMORY_C
+    IMGBASIC_C --> IOFITS_C
+    IMGFILT_C --> MEMORY_C
+    IMGFILT_C --> IOFITS_C
+
+    MILKEXE --> FPSSA
+    MILKEXE --> ARITH_C
+    MILKEXE --> MEMORY_C
+    MILKEXE --> TOOLS_C
+    MILKEXE --> IOFITS_C
+    CACAOEXE --> FPSSA
+    CACAOEXE --> ARITH_C
+    CACAOEXE --> MEMORY_C
+    CACAOEXE --> TOOLS_C
+    CACAOEXE --> IOFITS_C
+    CACAOEXE_P --> FPSSA
+    CACAOEXE_P --> FFT_C
+    CACAOEXE_P --> IMGGEN_C
+    CACAOEXE_P --> IMGBASIC_C
+    CACAOEXE_P --> IMGFILT_C
+    FPSTOOLS --> FPSSA
+
+    classDef ext fill:#566573,stroke:#333,color:#fff
+    classDef core fill:#1a5276,stroke:#123,color:#fff
+    classDef compute fill:#1e8449,stroke:#145,color:#fff
+    classDef plugcomp fill:#7d3c98,stroke:#5a2,color:#fff
+    classDef exe fill:#b7950b,stroke:#a80,color:#000
+```
+
+### Legend
+
+| Color | Layer |
+|---|---|
+| ⚫ Grey | External libraries |
+| 🔵 Dark blue | Core (ISIO → procinfo → FPS → milkdata) |
+| 🔵 Light blue | Framework (CLIcore, fpsCLI/TUI, fpsStandalone) |
+| 🟢 Green | COREMODs / _compute variants |
+| 🟣 Purple | milk-extra plugins / _compute variants |
+| 🟠 Orange | Cacao modules |
+| 🟡 Yellow | Executables |
+
+---
+
+## Exhaustive Dependency Table
+
+### Core Libraries
+
+| Target | Links to | Optional |
+|---|---|---|
+| ImageStreamIO | *(none at link time)* | cfitsio (headers), CUDA |
+| milkprocessinfo | ImageStreamIO | |
+| milkprocessinfoTUI | milkprocessinfo, milkTUI, ncurses | |
+| milkfps | ImageStreamIO, milkprocessinfo | |
+| milkdata | ImageStreamIO, milkfps, milkprocessinfo | |
+| milkTUI | ImageStreamIO, ncurses | |
+| milkfpsStandalone | milkfps, milkdata | |
+| milkfpsCLI | milkfps, CLIcore | |
+| milkfpsTUI | milkfps, milkTUI, ncurses | |
+| CLIcore | milkCOREMODarith, milkCOREMODiofits, milkCOREMODmemory, milkCOREMODtools, milkfps, milkdata, milkprocessinfo, milkTUI, milkfpsTUI, milkprocessinfoTUI, cfitsio, readline, ncurses | OpenMP, hwloc |
+
+### COREMOD Libraries
+
+| Target | Links to |
+|---|---|
+| milkCOREMODiofits | milkfps, cfitsio |
+| milkCOREMODarith | milkfps, milkCOREMODiofits, cfitsio |
+| milkCOREMODmemory | milkfps, cfitsio |
+| milkCOREMODtools | milkfps |
+
+### COREMOD _compute Variants (MILK_NO_CLI)
+
+| Target | Links to |
+|---|---|
+| milkCOREMODiofits_compute | milkfps, cfitsio |
+| milkCOREMODarith_compute | milkfps, milkCOREMODiofits_compute, cfitsio |
+| milkCOREMODmemory_compute | milkfps, cfitsio |
+| milkCOREMODtools_compute | milkfps |
+
+### milk-extra Plugins (full / CLI)
+
+| Target | Links to | Optional |
+|---|---|---|
+| milkfft | CLIcore, fftw3, fftw3f | |
+| milklinalgebra | CLIcore, OpenBLAS | CUDA, MAGMA, MKL, lapacke |
+| milklinoptimtools | CLIcore | GSL |
+| milkimagegen | CLIcore, milkstatistic | |
+| milkstatistic | CLIcore | |
+| milkimagebasic | CLIcore | |
+| milkimagefilter | CLIcore | |
+| milkimageformat | CLIcore | |
+| milkinfo | CLIcore | |
+| milkZernikePolyn | CLIcore, milkimagegen | |
+| milklinARfilterPred | CLIcore | OpenBLAS, MKL |
+| milkkdtree | CLIcore | |
+| milkimgreduce | CLIcore | |
+| milkpsf | CLIcore | |
+| milkclustering | CLIcore | |
+
+### milk-extra Plugin _compute Variants (MILK_NO_CLI)
+
+| Target | Links to |
+|---|---|
+| milkfft_compute | fftw3, fftw3f, milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
+| milkimagebasic_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
+| milkimagefilter_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
+| milkimagegen_compute | *(not yet split — via `add_milk_standalone` macro)* |
+
+### Cacao Modules
+
+| Target | Links to | Optional |
+|---|---|---|
+| cacaoAOloopControl | CLIcore, milklinoptimtools | |
+| cacaoAOloopControlDM | CLIcore, milkfft, milkimagegen, milkimagefilter, cacaoAOloopControl | |
+| cacaoAOloopControlIOtools | CLIcore, milkinfo, cacaoAOloopControl | |
+| cacaoAOloopControlacquireCalib | CLIcore, milkinfo, cacaoAOloopControl | |
+| cacaoAOloopControlPredCtrl | CLIcore, milklinoptimtools, cacaoAOloopControl | |
+| cacaoAOloopControlCompTools | CLIcore, cacaoAOloopControl | |
+| cacaoAOloopControlPerfTest | CLIcore, milkstatistic, cacaoAOloopControl | |
+| cacaocomputeCalib | CLIcore, milkinfo, cacaoAOloopControl | CUDA, MAGMA, OpenBLAS, MKL, lapacke |
+| cacaopyramidWFStools | CLIcore, milkinfo, cacaoAOloopControl | lapacke |
+
+### Executables
+
+| Target | Links to |
+|---|---|
+| milk-cli | CLIcore + all module libs |
+| milk-fpsCTRL | milkfpsTUI, milkfps, milkprocessinfo, ImageStreamIO, CLIcore, ncurses |
+| milk-procCTRL | milkprocessinfoTUI |
+| milk-streamCTRL | CLIcore, ImageStreamIO |
+| milk-fps-list/search/info/rm | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
+| milk-fps-set/track | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
+| milk-fps-conf*/run* | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
+| milk-fps-valkey | milkfps, milkprocessinfo, ImageStreamIO, valkey |
+| stream-monproc-runner | milkinfo, CLIcore, ImageStreamIO |
+| stream-monproc-disp | milkinfo, CLIcore, ImageStreamIO, ncurses |
+
+### Standalone Executables via CMake Functions
+
+| Function | Base link set |
+|---|---|
+| `add_milk_standalone()` | `${LIBNAME}`, milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, milkCOREMODmemory_compute, milkCOREMODtools_compute, milkCOREMODarith_compute, milkCOREMODiofits_compute, cfitsio |
+| `add_cacao_standalone()` | same as above |
+| `add_cacao_standalone_plugins()` | above + milkfft_compute, milkimagegen_compute, milkimagefilter_compute, milkimagebasic_compute |
 
 > [!NOTE]
-> The standalone graph (top) shows NO path to CLIcore — all `_compute` variants exclude CLI code via `MILK_NO_CLI`.
-> The CLI graph (bottom) shows the full dependency chain used when modules run inside `milk-cli`.
+> `_compute` library variants are compiled with `MILK_NO_CLI` — they contain pure
+> computation code with CLI registration stubs. Standalone executables never link CLIcore.
 
-## CMake Function Summary
+---
 
-| Function | Links | CLIcore? |
-|----------|-------|----------|
-| `add_milk_standalone()` | COREMOD `_compute` libs | ❌ No |
-| `add_cacao_standalone()` | Same as above | ❌ No |
-| `add_cacao_standalone_plugins()` | Above + plugin `_compute` libs | ❌ No |
+## Core Library Chain (Bottom-Up)
+
+```
+cfitsio (headers only)
+  ╌╌ ImageStreamIO
+       └─ milkprocessinfo
+            └─ milkfps
+                 └─ milkdata
+                      ├─ milkfpsStandalone  (standalone path)
+                      └─ CLIcore            (full CLI path)
+```
