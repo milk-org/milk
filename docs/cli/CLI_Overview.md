@@ -1,4 +1,4 @@
-# CLI Overview {#page_CLI_Overview}
+# CLI Overview
 
 The entire C code is compiled into a single executable :
 
