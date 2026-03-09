@@ -312,64 +312,25 @@ message("USE_MAGMA                = ${USE_MAGMA}")
 message("EXTRAMODULES             = ${EXTRAMODULES}")
 
 
+# =======================================
+# TESTING
+# =======================================
+
 include(CTest)
 
-set(FPS_STANDALONE_DATA_SRC "${PROJECT_SOURCE_DIR}/src/libfps/fps_standalone_data.c")
+# =======================================
+# STANDALONE EXECUTABLE HELPERS
+# =======================================
+# Functions: add_milk_standalone, add_cacao_standalone,
+#            add_cacao_standalone_plugins
+# See cmake/MilkStandalone.cmake for docs.
 
-function(add_milk_standalone FUNC_NAME SRC_FILE)
-    set(EXE_NAME "milk-fpsexec-${FUNC_NAME}")
-    add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}" "${FPS_STANDALONE_DATA_SRC}")
-    target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
-    target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${EXE_NAME} PUBLIC milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
-    install(TARGETS ${EXE_NAME} DESTINATION bin)
-endfunction()
-
-function(add_cacao_standalone FUNC_NAME SRC_FILE)
-    set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
-    add_executable(${EXE_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}" "${FPS_STANDALONE_DATA_SRC}")
-    target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
-    target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
-    target_link_libraries(${EXE_NAME} PUBLIC milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory_compute milkCOREMODtools_compute milkCOREMODarith_compute milkCOREMODiofits_compute ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
-    install(TARGETS ${EXE_NAME} DESTINATION bin)
-endfunction()
-
-# Variant that additionally links plugin _compute libraries.
-#
-# Usage:
-#   add_cacao_standalone_plugins(name src.c)
-#     → links ALL 4 plugin _compute libs (backward compatible)
-#
-#   add_cacao_standalone_plugins(name src.c fft imagegen)
-#     → links ONLY the listed plugin _compute libs
-#
-# Valid plugin names: fft, imagegen, imagefilter, imagebasic
-function(add_cacao_standalone_plugins FUNC_NAME SRC_FILE)
-    add_cacao_standalone(${FUNC_NAME} ${SRC_FILE})
-    set(EXE_NAME "cacao-fpsexec-${FUNC_NAME}")
-
-    set(_all_plugins fft imagegen imagefilter imagebasic)
-    set(_requested ${ARGN})
-    if(NOT _requested)
-        set(_requested ${_all_plugins})
-    endif()
-
-    foreach(_p IN LISTS _requested)
-        if(_p STREQUAL "fft")
-            target_link_libraries(${EXE_NAME} PUBLIC milkfft_compute)
-        elseif(_p STREQUAL "imagegen")
-            target_link_libraries(${EXE_NAME} PUBLIC milkimagegen_compute)
-        elseif(_p STREQUAL "imagefilter")
-            target_link_libraries(${EXE_NAME} PUBLIC milkimagefilter_compute)
-        elseif(_p STREQUAL "imagebasic")
-            target_link_libraries(${EXE_NAME} PUBLIC milkimagebasic_compute)
-        else()
-            message(WARNING "Unknown plugin '${_p}' in add_cacao_standalone_plugins()")
-        endif()
-    endforeach()
-endfunction()
+include(${PROJECT_SOURCE_DIR}/cmake/MilkStandalone.cmake)
 
 
+# =======================================
+# INSTALL PATHS
+# =======================================
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -378,8 +339,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include_directories(src/libprocessinfo)
 
 
-# ADD SOURCE DIRECTORIES
-# recursively add libraries to be compiled
+# =======================================
+# SOURCE DIRECTORIES
+# =======================================
+# Core modules (libsrcdir) and plugins (libextradir)
+# are discovered and added as subdirectories.
 execute_process(COMMAND bash -c "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
                 OUTPUT_VARIABLE libextradir)
 string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
