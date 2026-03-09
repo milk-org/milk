@@ -109,7 +109,7 @@ image_gen_make_voronoi_map(
 )
 {
     // resolve imgpos
-    resolveIMGID(imgpos, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgpos, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Create output image if needed
     imcreateIMGID(imgout);
@@ -279,7 +279,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgpos = imgid_make_from_name(inpos);
-    resolveIMGID(&imgpos, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgpos, ERRMODE_ABORT, dcimg, dcnimg);
 
     // link/create output image/stream
     FARG_OUTIM2DCREATE(outim, imgout, _DATATYPE_INT32);

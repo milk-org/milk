@@ -73,6 +73,28 @@ target_include_directories(${LIBNAME} PUBLIC
 target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo)
 
 # ==========================================
+# milkfpsStandalone — standalone FPS framework
+# No CLI/readline dependency.
+# ==========================================
+
+set(SOURCEFILES_STANDALONE
+    fps_cli_sync.c
+    fps_cli_init.c
+    fps_lifecycle.c
+)
+
+add_library(milkfpsStandalone SHARED ${SOURCEFILES_STANDALONE})
+target_compile_definitions(milkfpsStandalone PRIVATE FPS_STANDALONE)
+target_include_directories(milkfpsStandalone PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(milkfpsStandalone PUBLIC ${LIBNAME} milkdata)
+install(TARGETS milkfpsStandalone EXPORT milkTargets DESTINATION lib)
+
+# ==========================================
 # milkfpsCLI — CLI-dependent FPS framework
 # Links to both milkfps and CLIcore.
 # ==========================================
@@ -95,7 +117,7 @@ target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME} CLIcore)
 install(TARGETS milkfpsCLI EXPORT milkTargets DESTINATION lib)
 
 
-if(USE_NCURSES)
+if(USE_NCURSES AND USE_CLI)
     set(SOURCEFILES_TUI
         # fpsCTRL sources
         fpsCTRL/fpsCTRL_FPSdisplay.c
@@ -122,7 +144,7 @@ endif()
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES fps.h fps_internal.h fps_globals.h fps_cli_binding.h fps_cli_function.h fps_cli_function_registry.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
 
-if(USE_NCURSES)
+if(USE_NCURSES AND USE_CLI)
 # ==========================================
 # milk-fpsCTRL executable
 # ==========================================

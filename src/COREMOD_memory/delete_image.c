@@ -245,142 +245,142 @@ errno_t delete_image(
     }
     else
     {
-        data.image[ID].used = 0;
+        dcimg[ID].used = 0;
         img->ID = -1;
 
-        if(data.image[ID].md[0].shared == 1)
+        if(dcimg[ID].md[0].shared == 1)
         {
-            free(data.image[ID].semptr);
-            data.image[ID].semptr = NULL;
+            free(dcimg[ID].semptr);
+            dcimg[ID].semptr = NULL;
 
-            if(data.image[ID].semlog != NULL)
+            if(dcimg[ID].semlog != NULL)
             {
-                data.image[ID].semlog = NULL;
+                dcimg[ID].semlog = NULL;
             }
 
-            if(munmap(data.image[ID].md,
-                      data.image[ID].memsize) == -1)
+            if(munmap(dcimg[ID].md,
+                      dcimg[ID].memsize) == -1)
             {
                 printf(
                     "unmapping ID %ld : %p  %ld\n",
                     ID,
-                    data.image[ID].md,
-                    data.image[ID].memsize);
+                    dcimg[ID].md,
+                    dcimg[ID].memsize);
                 perror("Error un-mmapping the file");
             }
 
-            close(data.image[ID].shmfd);
-            data.image[ID].shmfd = -1;
+            close(dcimg[ID].shmfd);
+            dcimg[ID].shmfd = -1;
 
-            data.image[ID].md = NULL;
-            data.image[ID].kw = NULL;
+            dcimg[ID].md = NULL;
+            dcimg[ID].kw = NULL;
 
-            data.image[ID].memsize = 0;
+            dcimg[ID].memsize = 0;
 
-            if(data.rmSHMfile == 1)
+            if(dcrmshm == 1)
             {
                 EXECUTE_SYSTEM_COMMAND(
                     "rm /dev/shm/sem.%s.%s_sem*",
-                    data.shmsemdirname,
+                    dcshmsemdir,
                     img->name);
                 WRITE_FULLFILENAME(
                     fname,
                     "/dev/shm/sem.%s.%s_semlog",
-                    data.shmsemdirname,
+                    dcshmsemdir,
                     img->name);
                 remove(fname);
 
                 EXECUTE_SYSTEM_COMMAND(
                     "rm %s/%s.im.shm",
-                    data.shmdir, img->name);
+                    dcshmdir, img->name);
             }
         }
         else
         {
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_UINT8)
             {
-                if(data.image[ID].array.UI8 == NULL)
+                if(dcimg[ID].array.UI8 == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.UI8);
-                data.image[ID].array.UI8 = NULL;
+                free(dcimg[ID].array.UI8);
+                dcimg[ID].array.UI8 = NULL;
             }
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_INT32)
             {
-                if(data.image[ID].array.SI32 == NULL)
+                if(dcimg[ID].array.SI32 == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.SI32);
-                data.image[ID].array.SI32 = NULL;
+                free(dcimg[ID].array.SI32);
+                dcimg[ID].array.SI32 = NULL;
             }
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_FLOAT)
             {
-                if(data.image[ID].array.F == NULL)
+                if(dcimg[ID].array.F == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.F);
-                data.image[ID].array.F = NULL;
+                free(dcimg[ID].array.F);
+                dcimg[ID].array.F = NULL;
             }
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_DOUBLE)
             {
-                if(data.image[ID].array.D == NULL)
+                if(dcimg[ID].array.D == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.D);
-                data.image[ID].array.D = NULL;
+                free(dcimg[ID].array.D);
+                dcimg[ID].array.D = NULL;
             }
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_COMPLEX_FLOAT)
             {
-                if(data.image[ID].array.CF == NULL)
+                if(dcimg[ID].array.CF == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.CF);
-                data.image[ID].array.CF = NULL;
+                free(dcimg[ID].array.CF);
+                dcimg[ID].array.CF = NULL;
             }
-            if(data.image[ID].md[0].datatype
+            if(dcimg[ID].md[0].datatype
                 == _DATATYPE_COMPLEX_DOUBLE)
             {
-                if(data.image[ID].array.CD == NULL)
+                if(dcimg[ID].array.CD == NULL)
                 {
                     FUNC_RETURN_FAILURE(
                         "data array pointer is null");
                 }
-                free(data.image[ID].array.CD);
-                data.image[ID].array.CD = NULL;
+                free(dcimg[ID].array.CD);
+                dcimg[ID].array.CD = NULL;
             }
 
-            if(data.image[ID].md == NULL)
+            if(dcimg[ID].md == NULL)
             {
                 FUNC_RETURN_FAILURE(
                     "data array pointer is null");
             }
-            free(data.image[ID].md);
-            data.image[ID].md = NULL;
+            free(dcimg[ID].md);
+            dcimg[ID].md = NULL;
 
-            if(data.image[ID].kw != NULL)
+            if(dcimg[ID].kw != NULL)
             {
-                free(data.image[ID].kw);
-                data.image[ID].kw = NULL;
+                free(dcimg[ID].kw);
+                dcimg[ID].kw = NULL;
             }
         }
     }
 
-    if(data.MEM_MONITOR == 1)
+    if(dcmemmon == 1)
     {
         list_image_ID_ncurses();
     }
@@ -408,7 +408,7 @@ errno_t delete_image_ID(
     IMGID   img = imgid_make_from_name(imname);
     imageID ID  = resolveIMGID(
         &img, errmode,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     if(ID != -1)
     {
@@ -426,18 +426,18 @@ errno_t delete_image_ID_prefix(
 {
     imageID i;
 
-    for(i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(i = 0; i < dcnimg; i++)
     {
-        if(data.image[i].used == 1)
+        if(dcimg[i].used == 1)
         {
             if((strncmp(prefix,
-                        data.image[i].name,
+                        dcimg[i].name,
                         strlen(prefix))) == 0)
             {
                 printf("deleting image %s\n",
-                       data.image[i].name);
+                       dcimg[i].name);
                 delete_image_ID(
-                    data.image[i].name,
+                    dcimg[i].name,
                     DELETE_IMAGE_ERRMODE_IGNORE);
             }
         }

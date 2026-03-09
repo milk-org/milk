@@ -127,7 +127,7 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     read_sharedmem_image(
-        insname, data.image, data.NB_MAX_IMAGE);
+        insname, dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

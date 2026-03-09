@@ -8,9 +8,9 @@ long compute_nb_image()
 {
     long image_count = 0;
 
-    for(imageID i = 0; i < data.NB_MAX_IMAGE; i++)
+    for(imageID i = 0; i < dcnimg; i++)
     {
-        if(data.image[i].used == 1)
+        if(dcimg[i].used == 1)
         {
             image_count++;
         }

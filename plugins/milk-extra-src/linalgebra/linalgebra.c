@@ -70,7 +70,7 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 #ifdef HAVE_CUDA
     if(!getenv("MILK_QUIET"))
     {
-        printf("[CUDA %d]", data.quiet);
+        printf("[CUDA %d]", dcquiet);
     }
 
 #endif

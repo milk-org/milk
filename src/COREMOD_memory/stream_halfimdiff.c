@@ -76,10 +76,10 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
     uint8_t            datatype;
     uint8_t            datatypeout;
 
-    ID0 = image_ID(IDstream_name, data.image, data.NB_MAX_IMAGE);
+    ID0 = image_ID(IDstream_name, dcimg, dcnimg);
 
-    xsizein = data.image[ID0].md[0].size[0];
-    ysizein = data.image[ID0].md[0].size[1];
+    xsizein = dcimg[ID0].md[0].size[0];
+    ysizein = dcimg[ID0].md[0].size[1];
     //    xysizein = xsizein*ysizein;
 
     xsize  = xsizein;
@@ -95,7 +95,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
     arraysize[0] = xsize;
     arraysize[1] = ysize;
 
-    datatype    = data.image[ID0].md[0].datatype;
+    datatype    = dcimg[ID0].md[0].datatype;
     datatypeout = _DATATYPE_FLOAT;
     switch(datatype)
     {
@@ -137,7 +137,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
             break;
     }
 
-    IDout = image_ID(IDstreamout_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDstreamout_name, dcimg, dcnimg);
     if(IDout == -1)
     {
         create_image_ID(IDstreamout_name,
@@ -155,21 +155,21 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
     while(1)
     {
         // has new frame arrived ?
-        if(data.image[ID0].md[0].sem == 0)
+        if(dcimg[ID0].md[0].sem == 0)
         {
             while(cnt ==
-                    data.image[ID0].md[0].cnt0) // test if new frame exists
+                    dcimg[ID0].md[0].cnt0) // test if new frame exists
             {
                 usleep(5);
             }
-            cnt = data.image[ID0].md[0].cnt0;
+            cnt = dcimg[ID0].md[0].cnt0;
         }
         else
         {
-            ImageStreamIO_semwait(data.image+ID0, semtrig);
+            ImageStreamIO_semwait(dcimg+ID0, semtrig);
         }
 
-        data.image[IDout].md[0].write = 1;
+        dcimg[IDout].md[0].write = 1;
 
         switch(datatype)
         {
@@ -177,97 +177,97 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
             case _DATATYPE_UINT8:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI16[ii] =
-                        data.image[ID0].array.UI8[ii] -
-                        data.image[ID0].array.UI8[xysize + ii];
+                    dcimg[IDout].array.SI16[ii] =
+                        dcimg[ID0].array.UI8[ii] -
+                        dcimg[ID0].array.UI8[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_UINT16:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI32[ii] =
-                        data.image[ID0].array.UI16[ii] -
-                        data.image[ID0].array.UI16[xysize + ii];
+                    dcimg[IDout].array.SI32[ii] =
+                        dcimg[ID0].array.UI16[ii] -
+                        dcimg[ID0].array.UI16[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_UINT32:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI64[ii] =
-                        data.image[ID0].array.UI32[ii] -
-                        data.image[ID0].array.UI32[xysize + ii];
+                    dcimg[IDout].array.SI64[ii] =
+                        dcimg[ID0].array.UI32[ii] -
+                        dcimg[ID0].array.UI32[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_UINT64:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI64[ii] =
-                        data.image[ID0].array.UI64[ii] -
-                        data.image[ID0].array.UI64[xysize + ii];
+                    dcimg[IDout].array.SI64[ii] =
+                        dcimg[ID0].array.UI64[ii] -
+                        dcimg[ID0].array.UI64[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_INT8:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI16[ii] =
-                        data.image[ID0].array.SI8[ii] -
-                        data.image[ID0].array.SI8[xysize + ii];
+                    dcimg[IDout].array.SI16[ii] =
+                        dcimg[ID0].array.SI8[ii] -
+                        dcimg[ID0].array.SI8[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_INT16:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI32[ii] =
-                        data.image[ID0].array.SI16[ii] -
-                        data.image[ID0].array.SI16[xysize + ii];
+                    dcimg[IDout].array.SI32[ii] =
+                        dcimg[ID0].array.SI16[ii] -
+                        dcimg[ID0].array.SI16[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_INT32:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI64[ii] =
-                        data.image[ID0].array.SI32[ii] -
-                        data.image[ID0].array.SI32[xysize + ii];
+                    dcimg[IDout].array.SI64[ii] =
+                        dcimg[ID0].array.SI32[ii] -
+                        dcimg[ID0].array.SI32[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_INT64:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.SI64[ii] =
-                        data.image[ID0].array.SI64[ii] -
-                        data.image[ID0].array.SI64[xysize + ii];
+                    dcimg[IDout].array.SI64[ii] =
+                        dcimg[ID0].array.SI64[ii] -
+                        dcimg[ID0].array.SI64[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_FLOAT:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.F[ii] =
-                        data.image[ID0].array.F[ii] -
-                        data.image[ID0].array.F[xysize + ii];
+                    dcimg[IDout].array.F[ii] =
+                        dcimg[ID0].array.F[ii] -
+                        dcimg[ID0].array.F[xysize + ii];
                 }
                 break;
 
             case _DATATYPE_DOUBLE:
                 for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    data.image[IDout].array.D[ii] =
-                        data.image[ID0].array.D[ii] -
-                        data.image[ID0].array.D[xysize + ii];
+                    dcimg[IDout].array.D[ii] =
+                        dcimg[ID0].array.D[ii] -
+                        dcimg[ID0].array.D[xysize + ii];
                 }
                 break;
         }
 
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-        data.image[IDout].md[0].cnt0++;
-        data.image[IDout].md[0].write = 0;
+        dcimg[IDout].md[0].cnt0++;
+        dcimg[IDout].md[0].write = 0;
     }
 
     return IDout;

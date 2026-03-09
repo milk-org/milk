@@ -652,8 +652,8 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // ->7
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
-            timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //25
+            timespec_diff_double(dcimg[IDtiming].md[0].atime, tnow);
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //25
         TimerIndex++;
     }
 
@@ -661,14 +661,14 @@ int GPU_loop_MultMat_execute(int   index,
     //    {
 
     if(gpumatmultconf[index].CM_cnt !=
-            data.image[gpumatmultconf[index].CM_ID].md[0].cnt0)
-        if(data.image[gpumatmultconf[index].CM_ID].md[0].write == 0)
+            dcimg[gpumatmultconf[index].CM_ID].md[0].cnt0)
+        if(dcimg[gpumatmultconf[index].CM_ID].md[0].write == 0)
         {
             printf("New CM detected (cnt : %ld)\n",
-                   data.image[gpumatmultconf[index].CM_ID].md[0].cnt0);
+                   dcimg[gpumatmultconf[index].CM_ID].md[0].cnt0);
             GPUloadCmat(index);
             gpumatmultconf[index].CM_cnt =
-                data.image[gpumatmultconf[index].CM_ID].md[0].cnt0;
+                dcimg[gpumatmultconf[index].CM_ID].md[0].cnt0;
         }
     //   }
 
@@ -720,8 +720,8 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // -> 8
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
-            timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //26
+            timespec_diff_double(dcimg[IDtiming].md[0].atime, tnow);
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //26
         TimerIndex++;
     }
 
@@ -777,7 +777,7 @@ int GPU_loop_MultMat_execute(int   index,
         fflush(stdout);
 #endif
 
-        // for safety, set semaphores to zerosem_getvalue(data.image[IDarray[i]].semptr[s], &semval);
+        // for safety, set semaphores to zerosem_getvalue(dcimg[IDarray[i]].semptr[s], &semval);
         if(FORCESEMINIT == 1)
             for(ptn = 0; ptn < gpumatmultconf[index].NBstreams; ptn++)
             {
@@ -805,23 +805,23 @@ int GPU_loop_MultMat_execute(int   index,
     if(timing == 1)
     {
         double tdiffv = timespec_diff_double(tdt0[0], tdt1[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //27
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //27
         TimerIndex++;
 
         tdiffv = timespec_diff_double(tdt1[0], tdt2[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //28
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //28
         TimerIndex++;
 
         tdiffv = timespec_diff_double(tdt2[0], tdt3[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //29
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //29
         TimerIndex++;
 
         tdiffv = timespec_diff_double(tdt3[0], tdt4[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //30
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //30
         TimerIndex++;
 
         tdiffv = timespec_diff_double(tdt4[0], tdt5[0]);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //31
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //31
         TimerIndex++;
     }
 
@@ -838,12 +838,12 @@ int GPU_loop_MultMat_execute(int   index,
         *status = *status + 1; // -> 9
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
-            timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //32
+            timespec_diff_double(dcimg[IDtiming].md[0].atime, tnow);
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //32
         TimerIndex++;
     }
 
-    data.image[gpumatmultconf[index].IDout].md[0].write = 1;
+    dcimg[gpumatmultconf[index].IDout].md[0].write = 1;
 
     for(uint32_t m = 0; m < gpumatmultconf[index].M; m++)
     {
@@ -863,20 +863,20 @@ int GPU_loop_MultMat_execute(int   index,
     {
         struct timespec tnow;
 
-        data.image[gpumatmultconf[index].IDout].md[0].cnt1 =
-            data.image[IDtiming].md[0].cnt1;
+        dcimg[gpumatmultconf[index].IDout].md[0].cnt1 =
+            dcimg[IDtiming].md[0].cnt1;
 
         *status = *status + 1; // -> 10
         clock_gettime(CLOCK_MILK, &tnow);
         double tdiffv =
-            timespec_diff_double(data.image[IDtiming].md[0].atime, tnow);
-        data.image[IDtiming].array.F[TimerIndex] = tdiffv; //33
+            timespec_diff_double(dcimg[IDtiming].md[0].atime, tnow);
+        dcimg[IDtiming].array.F[TimerIndex] = tdiffv; //33
         TimerIndex++;
     }
 
-    data.image[gpumatmultconf[index].IDout].md[0].cnt0++;
+    dcimg[gpumatmultconf[index].IDout].md[0].cnt0++;
     COREMOD_MEMORY_image_set_sempost_byID(gpumatmultconf[index].IDout, -1);
-    data.image[gpumatmultconf[index].IDout].md[0].write = 0;
+    dcimg[gpumatmultconf[index].IDout].md[0].write = 0;
 
 #ifdef _PRINT_TEST
     printf("[%s] [%d] - DONE\n", __FILE__, __LINE__);

@@ -313,8 +313,8 @@ static errno_t compute_function()
     IMGID img =
         imgid_make_from_name(farg_inimname);
     if (resolveIMGID(&img, ERRMODE_WARN,
-            data.image,
-            data.NB_MAX_IMAGE) != 0)
+            dcimg,
+            dcnimg) != 0)
     {
         return RETURN_FAILURE;
     }

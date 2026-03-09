@@ -124,7 +124,7 @@ imageID copy_image_ID_IMGID(
     int shared
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
     uint32_t size[3];
@@ -135,7 +135,7 @@ imageID copy_image_ID_IMGID(
     uint8_t  datatype = imgin->md[0].datatype;
     uint64_t nelement = imgin->md[0].nelement;
 
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
 
     int newim = 0;
     if(imgout->ID != -1)
@@ -178,7 +178,7 @@ imageID copy_image_ID_IMGID(
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
-        resolveIMGID(imgout, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(imgout, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     imgout->md[0].write = 1;
@@ -212,9 +212,9 @@ imageID chname_image_ID_IMGID(
     const char *new_name
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
-    if((image_ID(new_name, data.image, data.NB_MAX_IMAGE) == -1) && (variable_ID(new_name) == -1))
+    if((image_ID(new_name, dcimg, dcnimg) == -1) && (variable_ID(new_name) == -1))
     {
         strcpy(imgin->im->name, new_name);
         strcpy(imgin->name, new_name);
@@ -226,7 +226,7 @@ imageID chname_image_ID_IMGID(
                new_name);
     }
 
-    if(data.MEM_MONITOR == 1)
+    if(dcmemmon == 1)
     {
         list_image_ID_ncurses();
     }
@@ -253,7 +253,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
     IMGID *imgout
 )
 {
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t naxis = imgin->md[0].naxis;
     uint32_t size[3];
@@ -264,7 +264,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
     uint8_t datatype = imgin->md[0].datatype;
 
     int shmOK = 1;
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
     if(imgout->ID != -1)
     {
         // verify type and size
@@ -296,7 +296,7 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
     if(imgout->ID == -1)
     {
         create_image_ID(imgout->name, naxis, size, datatype, 1, 0, 0, &imgout->ID);
-        resolveIMGID(imgout, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(imgout, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     imgout->md[0].write = 1;

@@ -32,7 +32,7 @@ set(SOURCES
     # Core library (no TUI/ncurses dependency)
     add_library(milkprocessinfo SHARED ${SOURCES})
     
-    if(USE_NCURSES)
+    if(USE_NCURSES AND USE_CLI)
         set(SOURCES_TUI
             procCTRL/procCTRL_GetCPUloads.c
             procCTRL/procCTRL_GetNumberCPUs.c
@@ -117,7 +117,7 @@ install(FILES
     timeutils.h
     DESTINATION include)
 
-if(USE_NCURSES)
+if(USE_NCURSES AND USE_CLI)
 # ==========================================
 # milk-procCTRL executable
 # ==========================================

@@ -49,19 +49,46 @@ cd milk
 
 ## Compile
 
-Check required package in Dockerfile.
+Check required packages in Dockerfile.
 
-Standard compile:
+### Full build (default)
+
+Builds everything: interactive CLI, TUI, and all standalone fpsexec programs.
+
+**Requires:** cfitsio, readline, ncurses, bison, flex
 
 ```bash
-mkdir _build
-cd _build
+mkdir _build && cd _build
 cmake ..
 make
 sudo make install
 ```
 
-Compile with Python module (check script help with -h option for details):
+### Standalone-only build (no CLI)
+
+Builds only core libraries and `milk-fpsexec-*` standalone programs.
+No interactive CLI, no TUI. Ideal for embedded/headless deployments.
+
+**Requires:** cfitsio only (no readline, ncurses, bison, or flex)
+
+```bash
+mkdir _build && cd _build
+cmake .. -DUSE_CLI=OFF
+make
+sudo make install
+```
+
+### CMake options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `USE_CLI` | ON | Build interactive CLI (`milk-cli`), TUI, scripts |
+| `USE_NCURSES` | ON | Enable ncurses TUI (`milk-fpsCTRL`, `streamCTRL`) |
+| `USE_READLINE` | ON | Enable readline for CLI input |
+| `USE_GSL` | ON | Enable GSL for plugins (`linopt_imtools`) |
+| `USE_CUDA` | OFF | Enable CUDA GPU acceleration |
+
+### Build with Python module
 
 ```bash
 ./compile.sh $PWD/local

@@ -39,36 +39,36 @@ errno_t clearall()
     imageID ID;
 
     // clear images
-    for(ID = 0; ID < data.NB_MAX_IMAGE; ID++)
+    for(ID = 0; ID < dcnimg; ID++)
     {
-        if(data.image[ID].used == 1)
+        if(dcimg[ID].used == 1)
         {
-            delete_image_ID(data.image[ID].name, DELETE_IMAGE_ERRMODE_WARNING);
+            delete_image_ID(dcimg[ID].name, DELETE_IMAGE_ERRMODE_WARNING);
         }
     }
 
     // clear variables
-    for(ID = 0; ID < data.NB_MAX_VARIABLE; ID++)
+    for(ID = 0; ID < dcnvar; ID++)
     {
-        if(data.variable[ID].used == 1)
+        if(dcvar[ID].used == 1)
         {
-            delete_variable_ID(data.variable[ID].name);
+            delete_variable_ID(dcvar[ID].name);
         }
     }
 
     // clear FPS
 
-    for(int fpsindex = 0; fpsindex < data.NB_MAX_FPS; fpsindex++)
+    for(int fpsindex = 0; fpsindex < dcnfps; fpsindex++)
     {
         DEBUG_TRACEPOINT("clear FPS %d", fpsindex);
-        data.fpsarray[fpsindex].SMfd = -1;
-        if(data.fpsarray[fpsindex].parray != NULL)
+        dcfpsarr[fpsindex].SMfd = -1;
+        if(dcfpsarr[fpsindex].parray != NULL)
         {
-            data.fpsarray[fpsindex].parray = NULL;
+            dcfpsarr[fpsindex].parray = NULL;
         }
-        if(data.fpsarray[fpsindex].md != NULL)
+        if(dcfpsarr[fpsindex].md != NULL)
         {
-            data.fpsarray[fpsindex].md = NULL;
+            dcfpsarr[fpsindex].md = NULL;
         }
     }
 

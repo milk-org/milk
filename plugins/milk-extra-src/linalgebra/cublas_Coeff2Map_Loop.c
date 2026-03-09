@@ -152,7 +152,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     if(offsetmode == 1)
     {
         beta     = 1.0;
-        IDoffset = image_ID(IDoffset_name, data.image, data.NB_MAX_IMAGE);
+        IDoffset = image_ID(IDoffset_name, dcimg, dcnimg);
 
         if(IDoffset == -1)
         {
@@ -161,7 +161,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         }
     }
 
-    IDoutmap = image_ID(IDoutmap_name, data.image, data.NB_MAX_IMAGE);
+    IDoutmap = image_ID(IDoutmap_name, dcimg, dcnimg);
     if(IDoutmap == -1)
     {
         printf("ERROR: missing output stream\n");
@@ -232,23 +232,23 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
 
     // load modes to GPU
 
-    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
+    IDcoeff = image_ID(IDcoeff_name, dcimg, dcnimg);
     NBmodes = 1;
-    for(uint8_t k = 0; k < data.image[IDcoeff].md[0].naxis; k++)
+    for(uint8_t k = 0; k < dcimg[IDcoeff].md[0].naxis; k++)
     {
-        NBmodes *= data.image[IDcoeff].md[0].size[k];
+        NBmodes *= dcimg[IDcoeff].md[0].size[k];
     }
 
-    IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
+    IDmodes = image_ID(IDmodes_name, dcimg, dcnimg);
     uint64_t mdim;
-    if(data.image[IDmodes].md[0].naxis == 3)
+    if(dcimg[IDmodes].md[0].naxis == 3)
     {
-        mdim = data.image[IDmodes].md[0].size[0] *
-               data.image[IDmodes].md[0].size[1];
+        mdim = dcimg[IDmodes].md[0].size[0] *
+               dcimg[IDmodes].md[0].size[1];
     }
     else
     {
-        mdim = data.image[IDmodes].md[0].size[0];
+        mdim = dcimg[IDmodes].md[0].size[0];
     }
 
     printf("Allocating d_modes. Size = %lu x %ld, total = %ld\n",
@@ -269,7 +269,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     fflush(stdout);
     list_image_ID();
     cudaStat = cudaMemcpy(d_modes,
-                          data.image[IDmodes].array.F,
+                          dcimg[IDmodes].array.F,
                           sizeof(float) * mdim * NBmodes,
                           cudaMemcpyHostToDevice);
     if(cudaStat != cudaSuccess)
@@ -308,42 +308,42 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         exit(EXIT_FAILURE);
     }
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -358,9 +358,9 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     while(loopOK == 1)
     {
 
-        if(data.image[IDcoeff].md[0].sem == 0)
+        if(dcimg[IDcoeff].md[0].sem == 0)
         {
-            while(data.image[IDcoeff].md[0].cnt0 ==
+            while(dcimg[IDcoeff].md[0].cnt0 ==
                     cnt) // test if new frame exists
             {
                 struct timespec treq, trem;
@@ -368,7 +368,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                 treq.tv_nsec = 5000;
                 nanosleep(&treq, &trem);
             }
-            cnt  = data.image[IDcoeff].md[0].cnt0;
+            cnt  = dcimg[IDcoeff].md[0].cnt0;
             semr = 0;
         }
         else
@@ -380,20 +380,20 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;
-            semr = ImageStreamIO_semtimedwait(data.image + IDcoeff, 3, &ts);
+            semr = ImageStreamIO_semtimedwait(dcimg + IDcoeff, 3, &ts);
 
             if(iter == 0)
             {
                 //  printf("driving semaphore to zero ... ");
                 // fflush(stdout);
-                semval = ImageStreamIO_semvalue(data.image + IDcoeff, 2);
+                semval = ImageStreamIO_semvalue(dcimg + IDcoeff, 2);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
                     printf("WARNING %s %d  : sem_trywait on semptr2\n",
                            __FILE__,
                            __LINE__);
                     fflush(stdout);
-                    ImageStreamIO_semtrywait(data.image + IDcoeff, 2);
+                    ImageStreamIO_semtrywait(dcimg + IDcoeff, 2);
                 }
                 // printf("done\n");
                 // fflush(stdout);
@@ -407,7 +407,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
 
             // send vector back to GPU
             cudaStat = cudaMemcpy(d_coeff,
-                                  data.image[IDcoeff].array.F,
+                                  dcimg[IDcoeff].array.F,
                                   sizeof(float) * NBmodes,
                                   cudaMemcpyHostToDevice);
             if(cudaStat != cudaSuccess)
@@ -421,7 +421,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             if(offsetmode == 1)
             {
                 cudaStat = cudaMemcpy(d_outmap,
-                                      data.image[IDoffset].array.F,
+                                      dcimg[IDoffset].array.F,
                                       sizeof(float) * mdim,
                                       cudaMemcpyHostToDevice);
                 if(cudaStat != cudaSuccess)
@@ -484,29 +484,29 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             }
 
             // copy result
-            data.image[IDoutmap].md[0].write = 1;
-            cudaStat = cudaMemcpy(data.image[IDoutmap].array.F,
+            dcimg[IDoutmap].md[0].write = 1;
+            cudaStat = cudaMemcpy(dcimg[IDoutmap].array.F,
                                   d_outmap,
                                   sizeof(float) * mdim,
                                   cudaMemcpyDeviceToHost);
-            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 0);
+            semval = ImageStreamIO_semvalue(dcimg + IDoutmap, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDoutmap, 0);
+                ImageStreamIO_sempost(dcimg + IDoutmap, 0);
             }
-            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 1);
+            semval = ImageStreamIO_semvalue(dcimg + IDoutmap, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDoutmap, 1);
+                ImageStreamIO_sempost(dcimg + IDoutmap, 1);
             }
-            data.image[IDoutmap].md[0].cnt0++;
-            data.image[IDoutmap].md[0].write = 0;
+            dcimg[IDoutmap].md[0].cnt0++;
+            dcimg[IDoutmap].md[0].write = 0;
         }
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }

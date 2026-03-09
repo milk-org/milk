@@ -60,8 +60,8 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
     long   *coord;
     long    npix;
 
-    ID    = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    naxis = data.image[ID].md[0].naxis;
+    ID    = image_ID(IDname, dcimg, dcnimg);
+    naxis = dcimg[ID].md[0].naxis;
     coord = (long *) malloc(sizeof(long) * naxis);
     if(coord == NULL)
     {
@@ -72,7 +72,7 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
     npix = 1;
     for(k = 0; k < naxis; k++)
     {
-        npix *= data.image[ID].md[0].size[k];
+        npix *= dcimg[ID].md[0].size[k];
         coord[k] = 0;
     }
 
@@ -88,39 +88,39 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
         {
             fprintf(fpout, "%4ld ", coord[k]);
         }
-        switch(data.image[ID].md[0].datatype)
+        switch(dcimg[ID].md[0].datatype)
         {
             case _DATATYPE_UINT8:
-                fprintf(fpout, " %5u\n", data.image[ID].array.UI8[ii]);
+                fprintf(fpout, " %5u\n", dcimg[ID].array.UI8[ii]);
                 break;
             case _DATATYPE_UINT16:
-                fprintf(fpout, " %5u\n", data.image[ID].array.UI16[ii]);
+                fprintf(fpout, " %5u\n", dcimg[ID].array.UI16[ii]);
                 break;
             case _DATATYPE_UINT32:
-                fprintf(fpout, " %u\n", data.image[ID].array.UI32[ii]);
+                fprintf(fpout, " %u\n", dcimg[ID].array.UI32[ii]);
                 break;
             case _DATATYPE_UINT64:
-                fprintf(fpout, " %lu\n", data.image[ID].array.UI64[ii]);
+                fprintf(fpout, " %lu\n", dcimg[ID].array.UI64[ii]);
                 break;
 
             case _DATATYPE_INT8:
-                fprintf(fpout, " %5d\n", data.image[ID].array.SI8[ii]);
+                fprintf(fpout, " %5d\n", dcimg[ID].array.SI8[ii]);
                 break;
             case _DATATYPE_INT16:
-                fprintf(fpout, " %5d\n", data.image[ID].array.SI16[ii]);
+                fprintf(fpout, " %5d\n", dcimg[ID].array.SI16[ii]);
                 break;
             case _DATATYPE_INT32:
-                fprintf(fpout, " %5d\n", data.image[ID].array.SI32[ii]);
+                fprintf(fpout, " %5d\n", dcimg[ID].array.SI32[ii]);
                 break;
             case _DATATYPE_INT64:
-                fprintf(fpout, " %5ld\n", data.image[ID].array.SI64[ii]);
+                fprintf(fpout, " %5ld\n", dcimg[ID].array.SI64[ii]);
                 break;
 
             case _DATATYPE_FLOAT:
-                fprintf(fpout, " %f\n", data.image[ID].array.F[ii]);
+                fprintf(fpout, " %f\n", dcimg[ID].array.F[ii]);
                 break;
             case _DATATYPE_DOUBLE:
-                fprintf(fpout, " %lf\n", data.image[ID].array.D[ii]);
+                fprintf(fpout, " %lf\n", dcimg[ID].array.D[ii]);
                 break;
         }
         coord[0]++;
@@ -129,7 +129,7 @@ errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
         kOK = 0;
         while((kOK == 0) && (k < naxis))
         {
-            if(coord[k] == data.image[ID].md[0].size[k])
+            if(coord[k] == dcimg[ID].md[0].size[k])
             {
                 coord[k] = 0;
                 coord[k + 1]++;

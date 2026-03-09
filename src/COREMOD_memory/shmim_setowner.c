@@ -104,10 +104,10 @@ imageID shmim_setowner_creator(const char *name)
 {
     imageID ID;
 
-    ID = image_ID(name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(name, dcimg, dcnimg);
     if(ID != -1)
     {
-        data.image[ID].md[0].ownerPID = data.image[ID].md[0].creatorPID;
+        dcimg[ID].md[0].ownerPID = dcimg[ID].md[0].creatorPID;
     }
 
     return ID;
@@ -118,10 +118,10 @@ imageID shmim_setowner_current(const char *name)
 {
     imageID ID;
 
-    ID = image_ID(name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(name, dcimg, dcnimg);
     if(ID != -1)
     {
-        data.image[ID].md[0].ownerPID = getpid();
+        dcimg[ID].md[0].ownerPID = getpid();
     }
 
     return ID;
@@ -135,10 +135,10 @@ imageID shmim_setowner_init(const char *name)
 {
     imageID ID;
 
-    ID = image_ID(name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(name, dcimg, dcnimg);
     if(ID != -1)
     {
-        data.image[ID].md[0].ownerPID = 1;
+        dcimg[ID].md[0].ownerPID = 1;
     }
 
     return ID;

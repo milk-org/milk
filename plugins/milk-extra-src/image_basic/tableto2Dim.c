@@ -375,15 +375,15 @@ imageID basic_tableto2Dim(const char *__restrict fname,
                 slx = totsx / cntx;
                 sly = totsy / cnty;
 
-                data.image[ID].array.F[jj * xsize + ii] =
+                dcimg[ID].array.F[jj * xsize + ii] =
                     (float) vave; //vave + (x-xave)*slx + (y-yave)*sly;
 
-                data.image[IDxerr].array.F[jj * xsize + ii] =
+                dcimg[IDxerr].array.F[jj * xsize + ii] =
                     (float)(x - xave);
-                data.image[IDyerr].array.F[jj * xsize + ii] =
+                dcimg[IDyerr].array.F[jj * xsize + ii] =
                     (float)(y - yave);
-                data.image[IDslx].array.F[jj * xsize + ii] = (float)(slx);
-                data.image[IDsly].array.F[jj * xsize + ii] = (float)(sly);
+                dcimg[IDslx].array.F[jj * xsize + ii] = (float)(slx);
+                dcimg[IDsly].array.F[jj * xsize + ii] = (float)(sly);
             }
         }
     }
@@ -453,20 +453,20 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     delete_image_ID("tmp2dinterpslx", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmp2dinterpsly", DELETE_IMAGE_ERRMODE_WARNING);
 
-    IDxerr = image_ID("tmp2dinterpxerrg", data.image, data.NB_MAX_IMAGE);
-    IDyerr = image_ID("tmp2dinterpyerrg", data.image, data.NB_MAX_IMAGE);
-    IDslx  = image_ID("tmp2dinterpslxg", data.image, data.NB_MAX_IMAGE);
-    IDsly  = image_ID("tmp2dinterpslyg", data.image, data.NB_MAX_IMAGE);
-    ID     = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    IDxerr = image_ID("tmp2dinterpxerrg", dcimg, dcnimg);
+    IDyerr = image_ID("tmp2dinterpyerrg", dcimg, dcnimg);
+    IDslx  = image_ID("tmp2dinterpslxg", dcimg, dcnimg);
+    IDsly  = image_ID("tmp2dinterpslyg", dcimg, dcnimg);
+    ID     = image_ID(ID_name, dcimg, dcnimg);
 
     for(ii = 0; ii < xsize; ii++)
         for(jj = 0; jj < ysize; jj++)
         {
-            //xerr = data.image[IDxerr].array.F[jj*xsize+ii];
-            //yerr = data.image[IDyerr].array.F[jj*xsize+ii];
-            slx = data.image[IDslx].array.F[jj * xsize + ii];
-            sly = data.image[IDsly].array.F[jj * xsize + ii];
-            //	data.image[ID].array.F[jj*xsize+ii] += xerr*slx+yerr*sly;
+            //xerr = dcimg[IDxerr].array.F[jj*xsize+ii];
+            //yerr = dcimg[IDyerr].array.F[jj*xsize+ii];
+            slx = dcimg[IDslx].array.F[jj * xsize + ii];
+            sly = dcimg[IDsly].array.F[jj * xsize + ii];
+            //	dcimg[ID].array.F[jj*xsize+ii] += xerr*slx+yerr*sly;
         }
 
     delete_image_ID("tmp2dinterpxerrg", DELETE_IMAGE_ERRMODE_WARNING);
@@ -474,7 +474,7 @@ imageID basic_tableto2Dim(const char *__restrict fname,
     delete_image_ID("tmp2dinterpslxg", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmp2dinterpslyg", DELETE_IMAGE_ERRMODE_WARNING);
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
     delete_image_ID("kerg", DELETE_IMAGE_ERRMODE_WARNING);
 
     return (ID);

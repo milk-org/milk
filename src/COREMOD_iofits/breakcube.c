@@ -61,10 +61,10 @@ imageID break_cube(const char *restrict ID_name)
     long     i;
     char     framename[STRINGMAXLEN_IMGNAME];
 
-    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
-    naxes[2] = data.image[ID].md[0].size[2];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
+    naxes[2] = dcimg[ID].md[0].size[2];
 
     for(uint32_t kk = 0; kk < naxes[2]; kk++)
     {
@@ -83,8 +83,8 @@ imageID break_cube(const char *restrict ID_name)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
             for(uint32_t jj = 0; jj < naxes[1]; jj++)
             {
-                data.image[ID1].array.F[jj * naxes[0] + ii] =
-                    data.image[ID]
+                dcimg[ID1].array.F[jj * naxes[0] + ii] =
+                    dcimg[ID]
                     .array.F[kk * naxes[0] * naxes[1] + jj * naxes[0] + ii];
             }
     }

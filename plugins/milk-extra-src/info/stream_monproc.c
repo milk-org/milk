@@ -136,7 +136,7 @@ STREAM_MON_STRUCT* stream_monitor_connect(const char *streamname, int create)
     int fd;
     STREAM_MON_STRUCT *smon = NULL;
 
-    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", data.shmdir, streamname);
+    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", dcshmdir, streamname);
 
     int flags = O_RDWR;
     if (create) {
@@ -277,12 +277,12 @@ errno_t stream_monitor_run(
 
     // Connect to input image
     IMGID inimg = imgid_make_from_name(inimname_arg);
-    resolveIMGID(&inimg, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     if (inimg.ID == -1) {
         // Not found, try to load from SHM
-        read_sharedmem_image(inimname_arg, data.image, data.NB_MAX_IMAGE);
-        resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        read_sharedmem_image(inimname_arg, dcimg, dcnimg);
+        resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     uint32_t xsize  = inimg.md->size[0];
@@ -314,7 +314,7 @@ errno_t stream_monitor_run(
     {
         glob_t glob_result;
         char pattern[1024];
-        snprintf(pattern, sizeof(pattern), "%s/%s.cb*.im.shm", data.shmdir, inimg.name);
+        snprintf(pattern, sizeof(pattern), "%s/%s.cb*.im.shm", dcshmdir, inimg.name);
         if (glob(pattern, 0, NULL, &glob_result) == 0) {
             for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
                 char *filename = glob_result.gl_pathv[i];
@@ -597,7 +597,7 @@ errno_t stream_monitor_run(
                 processinfo_exec_end(processinfo);
             }
         } else {
-            if (data.signal_INT) processloopOK = 0;
+            if (dcsigINT) processloopOK = 0;
         }
 
         loopcnt++;

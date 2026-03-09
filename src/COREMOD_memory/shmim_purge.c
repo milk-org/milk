@@ -12,7 +12,10 @@
 
 #include "CLIcore.h"
 #include "fps.h"
+
+#ifndef MILK_NO_CLI
 #include "streamCTRL_find_streams.h"
+#endif
 
 #include "image_ID.h"
 #include "read_shmim.h"
@@ -54,6 +57,16 @@ static char *stringfilter = NULL;
 /** @brief purge orphan shared memory streams */
 errno_t shmim_purge(const char *strfilter)
 {
+#ifdef MILK_NO_CLI
+    /* STREAMINFO and find_streams require
+     * CLI/TUI headers not available in
+     * standalone builds.
+     */
+    (void) strfilter;
+    printf("shmim_purge: not available in "
+           "standalone mode\n");
+    return RETURN_SUCCESS;
+#else
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
@@ -75,12 +88,12 @@ errno_t shmim_purge(const char *strfilter)
                streaminfo[sindex].sname);
         imageID ID = image_ID(
             streaminfo[sindex].sname,
-            data.image, data.NB_MAX_IMAGE);
+            dcimg, dcnimg);
         if(ID == -1)
         {
             ID = read_sharedmem_image(
                 streaminfo[sindex].sname,
-                data.image, data.NB_MAX_IMAGE);
+                dcimg, dcnimg);
         }
         DEBUG_TRACEPOINT(
             "stream %s loaded ID %ld",
@@ -88,7 +101,7 @@ errno_t shmim_purge(const char *strfilter)
             (long) ID);
 
         pid_t opid;
-        opid = data.image[ID].md[0].ownerPID;
+        opid = dcimg[ID].md[0].ownerPID;
         DEBUG_TRACEPOINT("owner PID : %ld",
                          (long) opid);
         printf("owner PID : %ld\n",
@@ -106,7 +119,7 @@ errno_t shmim_purge(const char *strfilter)
                 printf("Purging stream %s\n",
                        streaminfo[sindex].sname);
                 ImageStreamIO_destroyIm(
-                    &data.image[ID]);
+                    &dcimg[ID]);
             }
         }
         else
@@ -114,13 +127,14 @@ errno_t shmim_purge(const char *strfilter)
             printf("Purging stream %s\n",
                    streaminfo[sindex].sname);
             ImageStreamIO_destroyIm(
-                &data.image[ID]);
+                &dcimg[ID]);
         }
     }
 
     free(streaminfo);
 
     return RETURN_SUCCESS;
+#endif /* MILK_NO_CLI */
 }
 
 

@@ -59,7 +59,7 @@ static inline imageID RegisterIMGID(
             img->ID = ID;
             img->im = &imagearray[ID];
             img->md = &imagearray[ID].md[0];
-            // img.createcnt = data.image[img.ID].createcnt; // Should be set? ImageStreamIO doesn't set createcnt?
+            // img.createcnt = dcimg[img.ID].createcnt; // Should be set? ImageStreamIO doesn't set createcnt?
             // Actually createcnt is in IMAGE struct, so it was copied.
 
             imagearray[ID].used = 1; // next_avail_image_ID sets this, but just to be sure if we used different logic
@@ -102,13 +102,13 @@ static inline imageID resolveIMGID(
 {
     // IF:
     // Not resolved before OR create counter mismatch OR not used.
-    // Note: we are comparing img->createcnt to data.image[img->ID].createcnt to check if the
+    // Note: we are comparing img->createcnt to dcimg[img->ID].createcnt to check if the
     // image has been re-created, indicating that our pointers are stale.
     if((img->ID == -1)
             || (img->createcnt != imagearray[img->ID].createcnt)
             || (imagearray[img->ID].used != 1))
     {
-        img->ID = image_ID(img->name, data.image, data.NB_MAX_IMAGE);
+        img->ID = image_ID(img->name, dcimg, dcnimg);
         if(img->ID > -1)  // Resolve success !
         {
             img->im        = &imagearray[img->ID];
@@ -150,9 +150,9 @@ static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
     img.ID = ID;
     strncpy(img.name, name, STRINGMAXLEN_IMAGE_NAME - 1);
 
-    img.im        = &data.image[ID];
-    img.md        = &data.image[ID].md[0];
-    img.createcnt = data.image[ID].createcnt;
+    img.im        = &dcimg[ID];
+    img.md        = &dcimg[ID].md[0];
+    img.createcnt = dcimg[ID].createcnt;
 
     return img;
 }
@@ -173,13 +173,13 @@ stream_connect(
 )
 {
     IMGID img = imgid_make_from_name(imname);
-    resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
     if(img.ID == -1)
     {
         // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname, data.image, data.NB_MAX_IMAGE);
-        resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+        read_sharedmem_image(imname, dcimg, dcnimg);
+        resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     return img;
@@ -198,9 +198,9 @@ static inline imageID createimagefromIMGID(IMGID *img)
                     img->mdt->CBsize,
                     &img->ID);
 
-    img->im        = &data.image[img->ID];
-    img->md        = &data.image[img->ID].md[0];
-    img->createcnt = data.image[img->ID].createcnt;
+    img->im        = &dcimg[img->ID];
+    img->md        = &dcimg[img->ID].md[0];
+    img->createcnt = dcimg[img->ID].createcnt;
 
     return img->ID;
 }
@@ -223,8 +223,8 @@ static inline imageID imcreatelikewiseIMGID(
          */
         imageID old_id = image_ID(
             target_img->name,
-            data.image,
-            data.NB_MAX_IMAGE);
+            dcimg,
+            dcnimg);
         uint64_t old_createcnt = 0;
         int existed = 0;
 
@@ -232,7 +232,7 @@ static inline imageID imcreatelikewiseIMGID(
         {
             existed = 1;
             old_createcnt =
-                data.image[old_id].createcnt;
+                dcimg[old_id].createcnt;
         }
 
         DEBUG_TRACEPOINT("Creating 2D image");
@@ -246,11 +246,11 @@ static inline imageID imcreatelikewiseIMGID(
                         &target_img->ID);
         DEBUG_TRACEPOINT(" ");
         target_img->im        =
-            &data.image[target_img->ID];
+            &dcimg[target_img->ID];
         target_img->md        =
-            &data.image[target_img->ID].md[0];
+            &dcimg[target_img->ID].md[0];
         target_img->createcnt =
-            data.image[target_img->ID].createcnt;
+            dcimg[target_img->ID].createcnt;
 
         /* Determine if image was re-used or
          * (re-)created by comparing createcnt.
@@ -324,14 +324,14 @@ static inline IMGID stream_connect_create_2D(
 )
 {
     IMGID img = imgid_make_from_name(imname);
-    resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
 
     if(img.ID == -1)
     {
         // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname, data.image, data.NB_MAX_IMAGE);
-        resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+        read_sharedmem_image(imname, dcimg, dcnimg);
+        resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     if(img.ID != -1)
@@ -370,9 +370,9 @@ static inline IMGID stream_connect_create_2D(
     if(img.ID != -1)
     {
         imageID ID    = img.ID;
-        img.im        = &data.image[ID];
-        img.md        = data.image[ID].md;
-        img.createcnt = data.image[ID].createcnt;
+        img.im        = &dcimg[ID];
+        img.md        = dcimg[ID].md;
+        img.createcnt = dcimg[ID].createcnt;
         imgid_update_creationparams(&img);
     }
 
@@ -408,14 +408,14 @@ static inline IMGID stream_connect_create_3D(
 )
 {
     IMGID img = imgid_make_from_name(imname);
-    resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
 
     if(img.ID == -1)
     {
         // try to connect to shared memory if not in local memory already
-        read_sharedmem_image(imname, data.image, data.NB_MAX_IMAGE);
-        resolveIMGID(&img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+        read_sharedmem_image(imname, dcimg, dcnimg);
+        resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
     }
 
     if(img.ID != -1)
@@ -458,9 +458,9 @@ static inline IMGID stream_connect_create_3D(
     if(img.ID != -1)
     {
         imageID ID    = img.ID;
-        img.im        = &data.image[ID];
-        img.md        = data.image[ID].md;
-        img.createcnt = data.image[ID].createcnt;
+        img.im        = &dcimg[ID];
+        img.md        = dcimg[ID].md;
+        img.createcnt = dcimg[ID].createcnt;
         imgid_update_creationparams(&img);
     }
 

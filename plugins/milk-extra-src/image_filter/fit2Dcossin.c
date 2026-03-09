@@ -92,8 +92,8 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
     }
     //  exit(0);
 
-    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    size = data.image[ID].md[0].size[0];
+    ID   = image_ID(IDname, dcimg, dcnimg);
+    size = dcimg[ID].md[0].size[0];
     printf("SIZE = %ld\n", size);
     create_2Dimage_ID("residual", size, size, &IDres);
     create_2Dimage_ID("fitim", size, size, &IDfit);
@@ -132,8 +132,8 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
 
     for(ii = 0; ii < size * size; ii++)
     {
-        data.image[IDres].array.F[ii] = data.image[ID].array.F[ii];
-        data.image[IDfit].array.F[ii] = 0.0;
+        dcimg[IDres].array.F[ii] = dcimg[ID].array.F[ii];
+        dcimg[IDfit].array.F[ii] = 0.0;
     }
     for(iter = 0; iter < NBiter; iter++)
     {
@@ -149,7 +149,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
         for(ii = 0; ii < size; ii += step)
             for(jj = 0; jj < size; jj += step)
             {
-                data.image[IDfit].array.F[jj * size + ii] = 0.0;
+                dcimg[IDfit].array.F[jj * size + ii] = 0.0;
             }
         for(i1 = 0; i1 < NBfrequ1D; i1++)
             for(j1 = 0; j1 < 2 * NBfrequ1D - 1; j1++)
@@ -167,8 +167,8 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                                    yarray[ii1] * (j1 - NBfrequ1D + 1));
                             tmpc = cos(tmp);
                             tmps = sin(tmp);
-                            data.image[IDfit].array.F[ii1] += coeffc * tmpc;
-                            data.image[IDfit].array.F[ii1] += coeffs * tmps;
+                            dcimg[IDfit].array.F[ii1] += coeffc * tmpc;
+                            dcimg[IDfit].array.F[ii1] += coeffs * tmps;
                         }
                     }
             }
@@ -193,10 +193,10 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                             tmps = sin(tmp);
 
                             tmpc1 += tmpc * tmpc;
-                            tmpc2 += data.image[IDres].array.F[ii1] * tmpc;
+                            tmpc2 += dcimg[IDres].array.F[ii1] * tmpc;
 
                             tmps1 += tmps * tmps;
-                            tmps2 += data.image[IDres].array.F[ii1] * tmps;
+                            tmps2 += dcimg[IDres].array.F[ii1] * tmps;
                         }
                     }
                 if(tmpc1 > 1e-8)
@@ -234,8 +234,8 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                                              yarray[ii1] * (j - NBfrequ1D + 1));
                             tmpc = cos(tmp);
                             tmps = sin(tmp);
-                            data.image[IDfit].array.F[ii1] += gtmpc * tmpc;
-                            data.image[IDfit].array.F[ii1] += gtmps * tmps;
+                            dcimg[IDfit].array.F[ii1] += gtmpc * tmpc;
+                            dcimg[IDfit].array.F[ii1] += gtmps * tmps;
                         }
                     }
 
@@ -247,13 +247,13 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
                         ii1 = jj * size + ii;
                         if(rarray[ii1] < 1.0)
                         {
-                            data.image[IDres].array.F[ii1] =
-                                data.image[ID].array.F[ii1] -
-                                data.image[IDfit].array.F[ii1];
+                            dcimg[IDres].array.F[ii1] =
+                                dcimg[ID].array.F[ii1] -
+                                dcimg[IDfit].array.F[ii1];
                             if(rarray[ii1] < rlim)
                             {
-                                error += data.image[IDres].array.F[ii1] *
-                                         data.image[IDres].array.F[ii1];
+                                error += dcimg[IDres].array.F[ii1] *
+                                         dcimg[IDres].array.F[ii1];
                                 errorcnt++;
                             }
                         }

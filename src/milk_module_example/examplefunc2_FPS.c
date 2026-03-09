@@ -85,7 +85,7 @@ static errno_t example_compute_2Dimage_total(
     // Ensure the input image is in memory.
     // No harm calling this here and in the upstream function,
     // as the overhead is very small if the image is already resolved
-    resolveIMGID(imgptr, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgptr, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize  = imgptr->md->size[0];
     uint32_t ysize  = imgptr->md->size[1];
@@ -121,7 +121,7 @@ static errno_t compute_function()
     // Check that the input image is in memory,
     // and link it to img if it is
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

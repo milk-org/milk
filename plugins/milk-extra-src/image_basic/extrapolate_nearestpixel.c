@@ -24,23 +24,23 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
 
     long IDmask1;
 
-    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
-    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
+    IDin   = image_ID(IDin_name, dcimg, dcnimg);
+    IDmask = image_ID(IDmask_name, dcimg, dcnimg);
 
     list_image_ID();
-    IDmask1 = image_ID("_mask1", data.image, data.NB_MAX_IMAGE);
+    IDmask1 = image_ID("_mask1", dcimg, dcnimg);
     if(IDmask1 != -1)
     {
         printf("USING MASK\n");
     }
 
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
 
     NBmaskpts = 0;
     for(ii = 0; ii < naxes[0]; ii++)
         for(jj = 0; jj < naxes[1]; jj++)
-            if(data.image[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
+            if(dcimg[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
             {
                 NBmaskpts++;
             }
@@ -66,7 +66,7 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
     NBmaskpts = 0;
     for(ii = 0; ii < naxes[0]; ii++)
         for(jj = 0; jj < naxes[1]; jj++)
-            if(data.image[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
+            if(dcimg[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
             {
                 maskii[NBmaskpts] = ii;
                 maskjj[NBmaskpts] = jj;
@@ -88,7 +88,7 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
                 OKpix = 1;
             else
             {
-                if(data.image[IDmask1].array.F[jj*naxes[1]+ii]>0.5)
+                if(dcimg[IDmask1].array.F[jj*naxes[1]+ii]>0.5)
                     OKpix = 1;
                 else
                     OKpix = 0;
@@ -104,8 +104,8 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
                 if(dist < bdist)
                 {
                     bdist = dist;
-                    data.image[IDout].array.F[jj * naxes[0] + ii] =
-                        data.image[IDin].array.F[jj1 * naxes[0] + ii1];
+                    dcimg[IDout].array.F[jj * naxes[0] + ii] =
+                        dcimg[IDin].array.F[jj1 * naxes[0] + ii1];
                 }
             }
         }

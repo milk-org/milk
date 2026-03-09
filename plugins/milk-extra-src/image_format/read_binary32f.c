@@ -103,7 +103,7 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
     for(jj = 0; jj < ysize; jj++)
         for(ii = 0; ii < xsize; ii++)
         {
-            data.image[ID].array.F[jj * xsize + ii] = buffer[i];
+            dcimg[ID].array.F[jj * xsize + ii] = buffer[i];
             i++;
         }
 

@@ -95,7 +95,7 @@ errno_t saveFITS_opt_trunc_IMGID(
 
 #ifndef FPS_STANDALONE
     resolveIMGID(imgin, ERRMODE_WARN,
-                 data.image, data.NB_MAX_IMAGE);
+                 dcimg, dcnimg);
 #endif
     if (imgin->ID == -1) {
         return RETURN_SUCCESS;
@@ -198,14 +198,14 @@ errno_t saveFITS(
 
 errno_t saveall_fits(const char *savedirname)
 {
-    for (int i = 0; i < data.NB_MAX_IMAGE; i++)
+    for (int i = 0; i < dcnimg; i++)
     {
-        if (data.image[i].used == 1) {
+        if (dcimg[i].used == 1) {
             char fname[STRINGMAXLEN_FILENAME];
             WRITE_FILENAME(fname, "%s/%s.fits",
                 savedirname,
-                data.image[i].name);
-            saveFITS(data.image[i].name,
+                dcimg[i].name);
+            saveFITS(dcimg[i].name,
                      fname, 0, NULL, NULL, 0);
         }
     }
@@ -301,7 +301,7 @@ static errno_t compute_function()
             savefits_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

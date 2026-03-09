@@ -8,11 +8,42 @@ project(milk LANGUAGES C)
 # cmake .. -DUSE_CUDA=ON -DUSE_MAGMA=ON
 # cmake .. -DCMAKE_BUILD_TYPE=Debug
 
-option(build_python_module "Compile Python Wrappers" OFF)
+# =======================================
+# BUILD PROFILE OPTIONS
+# =======================================
+#
+# USE_CLI (default ON):
+#   Build the interactive CLI (milk-cli), including
+#   CLIcore, readline, bison/flex parser, and TUI.
+#   When OFF, only core libraries and standalone
+#   fpsexec executables are built. This removes the
+#   need for readline, ncurses, bison, and flex.
+#
+# USE_NCURSES (default ON, requires USE_CLI):
+#   Enable ncurses TUI (milk-fpsCTRL, streamCTRL).
+#
+# USE_READLINE (default ON, requires USE_CLI):
+#   Enable readline for interactive CLI input.
+#
+# USE_GSL (default ON):
+#   Enable GSL for plugins that need it (e.g.
+#   linopt_imtools). Core milk no longer uses GSL.
+#
+# Examples:
+#   Full build (default):
+#     cmake ..
+#
+#   Standalone-only (no CLI, minimal deps):
+#     cmake .. -DUSE_CLI=OFF
+#
+#   Full build with CUDA:
+#     cmake .. -DUSE_CUDA=ON
+#
 
-option(USE_NCURSES "Enable ncurses and TUI support" ON)
-option(USE_READLINE "Enable readline support" ON)
-option(USE_GSL "Enable GSL support" ON)
+option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
+option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
+option(USE_READLINE "Enable readline support"          ON)
+option(USE_GSL      "Enable GSL for plugins"           ON)
 
 include(CheckLanguage)
 
@@ -50,6 +81,9 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(OPENBLAS openblas)
 pkg_check_modules(MKL mkl-sdl)
 #pkg_check_modules(MKL mkl-static-ilp64-gomp)
+if(USE_GSL)
+    pkg_check_modules(GSL gsl)
+endif()
 
 enable_language(C)
 
@@ -136,11 +170,70 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
-list(APPEND libsrcdir src/libmilkTUI)
-list(APPEND libname milkTUI)
+if(USE_CLI)
+    list(APPEND libsrcdir src/libmilkTUI)
+    list(APPEND libname milkTUI)
 
-list(APPEND libsrcdir src/CommandLineInterface)
-list(APPEND libname CLIcore)
+    list(APPEND libsrcdir src/CommandLineInterface)
+    list(APPEND libname CLIcore)
+else()
+    # Without CLI, modules use CLIcore_standalone.h
+    # stubs via the MILK_NO_CLI compile definition.
+    add_definitions(-DMILK_NO_CLI)
+    # Provide CLI header paths so modules can find
+    # CLIcore.h (which redirects to standalone stubs)
+    include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/CLIcore
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/streamCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/procCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkTUI
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libfps
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libfps/fpsCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libprocessinfo
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkdata
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/ImageStreamIO
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_memory
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_iofits
+    )
+    install(FILES
+        src/CommandLineInterface/CLIcore.h
+        src/CommandLineInterface/CLIcore_standalone.h
+        src/CommandLineInterface/cmdsettings.h
+        src/CommandLineInterface/timeutils.h
+        src/CommandLineInterface/milkDebugTools.h
+        src/CommandLineInterface/IMGID.h
+        DESTINATION include/CommandLineInterface
+    )
+    install(FILES
+        src/CommandLineInterface/CLIcore/CLIcore_checkargs.h
+        DESTINATION include/CommandLineInterface/CLIcore
+    )
+    # Create an INTERFACE library target named CLIcore
+    # so that existing target_link_libraries(... CLIcore)
+    # calls in plugin CMakeLists work without modification.
+    # The INTERFACE target provides header paths only;
+    # CLIcore_standalone.h stubs handle all symbols.
+    add_library(CLIcore INTERFACE)
+    target_include_directories(CLIcore INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/CLIcore>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/streamCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/procCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkTUI>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfps>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfps/fpsCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libprocessinfo>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkdata>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/ImageStreamIO>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_memory>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_iofits>
+        $<INSTALL_INTERFACE:include>
+    )
+    install(TARGETS CLIcore EXPORT milkTargets)
+endif()
 
 list(APPEND libsrcdir src/ImageStreamIO)
 list(APPEND libname ImageStreamIO m)
@@ -227,7 +320,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsCLI milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits ${CFITSIO_LIBRARIES} ${GSL_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -237,7 +330,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     target_compile_definitions(${EXE_NAME} PRIVATE FPS_STANDALONE)
     target_include_directories(${EXE_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
     # Note: ${LIBNAME} must be defined in the calling scope
-    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsCLI milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkfft milkimagegen milkimagefilter milkimagebasic ${CFITSIO_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
+    target_link_libraries(${EXE_NAME} PUBLIC ${LIBNAME} milkfps milkfpsStandalone milkdata milkprocessinfo ImageStreamIO milkCOREMODmemory milkCOREMODtools milkCOREMODarith milkCOREMODiofits milkfft milkimagegen milkimagefilter milkimagebasic ${CFITSIO_LIBRARIES} ${GSL_LIBRARIES} m rt -Wl,--allow-shlib-undefined)
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -280,19 +373,16 @@ add_subdirectory(src/isio-tools)
 # add libfps (standalone fps library exploration)
 add_subdirectory(src/libfps)
 
+# add libmilkdata (core data layer, no CLI dependency)
+add_subdirectory(src/libmilkdata)
+
 # add libprocessinfo
 
 add_subdirectory(src/libprocessinfo)
 
 
 
-# main
-
-add_executable(milk-cli src/CLImain.c)
-
-
-# note: set -SOURCEDIR=\" ${CMAKE_INSTALL_PREFIX}\" for autoload
-
+# Package definitions (needed by both CLI and standalone)
 add_definitions(
     -DPACKAGE_NAME="milk"
     -DCONFIGDIR="/config"
@@ -302,13 +392,18 @@ add_definitions(
     -DPACKAGE_BUGREPORT="https://github.com/milk-org/milk/issues"
 )
 
+set(PROGRAM_PERMISSIONS_DEFAULT
+    OWNER_WRITE OWNER_READ OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE
+    WORLD_READ WORLD_EXECUTE)
 
+# main CLI executable (only when USE_CLI is ON)
+if(USE_CLI)
 
-
+add_executable(milk-cli src/CLImain.c)
 target_link_libraries(milk-cli PUBLIC ${libname})
 
 if(USE_CUDA)
-  # Link CUDA globally to the executable rather than per module.
   find_package(CUDAToolkit 9.0 REQUIRED)
   target_link_libraries(milk-cli PUBLIC CUDA::toolkit
                              PUBLIC CUDA::cusolver
@@ -317,41 +412,29 @@ if(USE_CUDA)
   set(BUILD_FLAGS "${BUILD_FLAGS} -DHAVE_CUDA" )
 endif(USE_CUDA)
 
-
-
-
-
 message("====================================================")
 get_target_property(milkcompopts milk-cli COMPILE_OPTIONS)
-
 message("BUILD_FLAGS             :  ${BUILD_FLAGS}")
 message("COMPILE_FLAGS           :  ${COMPILE_FLAGS}")
 message("COMPILE_OPTIONS         :  ${milkcompopts}")
 message("CMAKE_EXE_LINKER_FLAGS  :  ${CMAKE_EXE_LINKER_FLAGS}")
-
 message("CMAKE_C_FLAGS           :  ${CMAKE_C_FLAGS}")
-message("CMAKE_CXX_FLAGS         :  ${CMAKE_CXX_FLAGS}")
-
 message("CMAKE_C_FLAGS_DEBUG           : ${CMAKE_C_FLAGS_DEBUG}")
 message("CMAKE_C_FLAGS_RELEASE         : ${CMAKE_C_FLAGS_RELEASE}")
-message("CMAKE_C_FLAGS_RELWITHDEBINFO  : ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-message("CMAKE_C_FLAGS_MINSIZEREL      : ${CMAKE_C_FLAGS_MINSIZEREL}")
-
-message("CMAKE_CURRENT_SOURCE_DIR      : ${CMAKE_CURRENT_SOURCE_DIR}")
-message("CMAKE_CURRENT_BINARY_DIR      : ${CMAKE_CURRENT_BINARY_DIR}")
-message("INSTALL_PKGCONFIG_DIR         : ${INSTALL_PKGCONFIG_DIR}")
 message("====================================================")
-
-
-set(PROGRAM_PERMISSIONS_DEFAULT
-    OWNER_WRITE OWNER_READ OWNER_EXECUTE
-    GROUP_READ GROUP_EXECUTE
-    WORLD_READ WORLD_EXECUTE)
-
 
 install(TARGETS milk-cli
       DESTINATION bin
       PERMISSIONS ${PROGRAM_PERMISSIONS_DEFAULT} SETUID)
+
+else()
+
+message("====================================================")
+message("USE_CLI=OFF: Skipping milk-cli, CLIcore, TUI")
+message("  Only standalone fpsexec programs will be built")
+message("====================================================")
+
+endif(USE_CLI)
 
 
 
@@ -445,6 +528,8 @@ if(build_python_module)
   add_subdirectory (python_module)
 endif()
 
+if(USE_CLI)
+
 install(TARGETS CLIcore DESTINATION bin)
 install(PROGRAMS
                         scripts/milk-cli-all
@@ -481,6 +566,8 @@ install(PROGRAMS
                         scripts/tmuxsessionname
                         scripts/waitforfile
       DESTINATION bin)
+
+endif(USE_CLI)
 
 install(FILES doc/help.txt DESTINATION doc)
 

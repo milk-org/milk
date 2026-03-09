@@ -70,8 +70,8 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
     xstep = x0array[0 * NBgridpts1D + 1] - x0array[0 * NBgridpts1D + 0];
     ystep = y0array[1 * NBgridpts1D + 0] - y0array[0 * NBgridpts1D + 0];
 
-    ID   = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    size = data.image[ID].md[0].size[0];
+    ID   = image_ID(IDname, dcimg, dcnimg);
+    size = dcimg[ID].md[0].size[0];
 
     FUNC_CHECK_RETURN(create_2Dimage_ID("testim", size, size, &ID1));
     FUNC_CHECK_RETURN(create_2Dimage_ID("fitim", size, size, &ID2));
@@ -110,12 +110,12 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
             //tmp += 4.8e-6*exp(-280.0*(x-0.007)*(x-0.007))*(x-0.007)*exp(-200.0*y*y);
             tmp += -1.2e-7 * exp(-80.0 * r * r) + 1.4e-7 * exp(-40.0 * r * r);
 
-            data.image[ID1].array.F[jj * size + ii] = tmp;
-            data.image[ID2].array.F[jj * size + ii] =
-                data.image[ID1].array.F[jj * size + ii];
-            data.image[ID3].array.F[jj * size + ii] =
-                data.image[ID].array.F[jj * size + ii] -
-                data.image[ID2].array.F[jj * size + ii];
+            dcimg[ID1].array.F[jj * size + ii] = tmp;
+            dcimg[ID2].array.F[jj * size + ii] =
+                dcimg[ID1].array.F[jj * size + ii];
+            dcimg[ID3].array.F[jj * size + ii] =
+                dcimg[ID].array.F[jj * size + ii] -
+                dcimg[ID2].array.F[jj * size + ii];
         }
 
     save_fl_fits("fitim", "fitim");
@@ -150,7 +150,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
                                         (cos(y1 * PI) + 1.0);
                                 Varraytmp[j * NBgridpts1D + i] +=
                                     value *
-                                    data.image[ID3].array.F[jj * size + ii];
+                                    dcimg[ID3].array.F[jj * size + ii];
                                 Varraycnt[j * NBgridpts1D + i] += value;
                             }
                         }
@@ -178,8 +178,8 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
         for(ii = 0; ii < size; ii++)
             for(jj = 0; jj < size; jj++)
             {
-                data.image[ID2].array.F[jj * size + ii] =
-                    data.image[ID1].array.F[jj * size + ii];
+                dcimg[ID2].array.F[jj * size + ii] =
+                    dcimg[ID1].array.F[jj * size + ii];
             }
 
         for(ii = 0; ii < size; ii++)
@@ -199,7 +199,7 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
                                 //value = (fabs(x1)-1.0)*(fabs(y1)-1.0);
                                 value = 0.25 * (cos(x1 * PI) + 1.0) *
                                         (cos(y1 * PI) + 1.0);
-                                data.image[ID2].array.F[jj * size + ii] +=
+                                dcimg[ID2].array.F[jj * size + ii] +=
                                     value * Varray[j * NBgridpts1D + i];
                             }
                         }
@@ -214,11 +214,11 @@ errno_t filter_fit2DcosKernel(const char *__restrict IDname, float radius)
                 r = sqrt(x * x + y * y);
                 if(r < 1.0)
                 {
-                    data.image[ID3].array.F[jj * size + ii] =
-                        data.image[ID].array.F[jj * size + ii] -
-                        data.image[ID2].array.F[jj * size + ii];
-                    error += data.image[ID3].array.F[jj * size + ii] *
-                             data.image[ID3].array.F[jj * size + ii];
+                    dcimg[ID3].array.F[jj * size + ii] =
+                        dcimg[ID].array.F[jj * size + ii] -
+                        dcimg[ID2].array.F[jj * size + ii];
+                    error += dcimg[ID3].array.F[jj * size + ii] *
+                             dcimg[ID3].array.F[jj * size + ii];
                     cnt++;
                 }
             }

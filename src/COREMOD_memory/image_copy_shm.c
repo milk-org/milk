@@ -59,11 +59,11 @@ errno_t image_copy_shm_IMGID(
 {
     resolveIMGID(
         img, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     resolveIMGID(
         imgshm, ERRMODE_NULL,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     if(imgshm->ID != -1)
     {
         if(imgid_compare_md(*img, *imgshm) > 0)
