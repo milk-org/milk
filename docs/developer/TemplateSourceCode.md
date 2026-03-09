@@ -1,17 +1,15 @@
-# Template Souce Code
+# Template Source Code
 
-Documentation should appear before each function in the .c and .h files, following these teamplates.
+Documentation should appear before each function in the `.c` and `.h` files, following these templates.
 
+## Header File (`.h`)
 
-## .h file
+[View templatemodule.h](templatemodule/templatemodule.h)
 
-<a href="../src/CommandLineInterface/doc/templatemodule/templatemodule.h">Download templatemodule.h</a>
+See corresponding doxygen documentation inside: `templatemodule/templatemodule.h`
 
-See corresponding doxygen documentation : templatemodule/templatemodule.h
+## Source File (`.c`)
 
+[View templatemodule.c](templatemodule/templatemodule.c)
 
-## .c file
-
-<a href="../src/CommandLineInterface/doc/templatemodule/templatemodule.c">Download templatemodule.c</a>
-
-See corresponding doxygen documentation : templatemodule/templatemodule.c
+See corresponding doxygen documentation inside: `templatemodule/templatemodule.c`
