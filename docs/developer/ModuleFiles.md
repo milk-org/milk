@@ -1,5 +1,5 @@
 
-# Module Files {#page_ModuleFiles}
+# Module Files
 
 The code is arranged in modules. Source code, documentation and additional files for each modules are located in :
 
