@@ -29,13 +29,13 @@ To use FPS-enabled functions from the command line efficiently, the typical work
 
 ### The `fpslist.txt` and `fpsmkcmd` workflow
 Create a file named `fpslist.txt` to list the functions and their instance names:
-```text
-# Column 1: root name used to name FPS
-# Column 2: CLI command
-# Column(s) 3+: optional arguments
-fpsrootname0    CLIcommand0
-fpsrootname1    CLIcommand1     optarg00
-```
+
+| FPS Root Name | CLI Command | Optional Arguments |
+|---------------|-------------|--------------------|
+| `fpsrootname0`| `CLIcommand0`|                    |
+| `fpsrootname1`| `CLIcommand1`| `optarg00` ...     |
+
+
 Then run `milk-fpsmkcmd` to automatically generate startup scripts for initialization and running (`<fpsname>-confinit`, `<fpsname>-runstart`, etc.).
 
 ### `milk-fpsCTRL`

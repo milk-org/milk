@@ -16,7 +16,7 @@
 
 ## 1.1. Download and compile {#milkinstall_downloadcompile}
 
-```text
+```bash
 git clone --recursive https://github.com/cacao-org/milk milk
 cd milk
 mkdir _build
@@ -32,7 +32,7 @@ sudo make install
 
 You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
 
-```text
+```bash
 echo "/usr/local/lib" > usrlocal.conf
 sudo mv usrlocal.conf /etc/ld.so.conf.d/
 sudo ldconfig -v
@@ -43,7 +43,7 @@ sudo ldconfig -v
 
 OPTIONAL: Create tmpfs disk for high performance I/O:
 
-```text
+```bash
 echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
 sudo mkdir -p /milk/shm
 sudo mount /milk/shm
@@ -57,40 +57,47 @@ sudo mount /milk/shm
 
 ## 2.1. Libraries 
 
-Libraries required :
+Libraries required:
 
-- **gcc**
-- **openMP**
-- **fitsio**
-- **fftw** (single and double precision), for performing Fourier Transforms
-- **gsl**
-- **readline**, for reading the command line input
-- **tmux**
-- **bash dialog**, version 1.2 minimum
-- **flex**, for parsing the command line input
-- **bison**, to interpret the command line input
-- **gsl**, for math functions and tools
+| Library | Purpose / Notes |
+|---------|-----------------|
+| **gcc** | Standard C compiler |
+| **openMP** | Parallel processing framework |
+| **fitsio** | Reading and writing FITS image files |
+| **fftw** | Fast Fourier Transforms (single and double precision) |
+| **gsl** | GNU Scientific Library for math functions |
+| **readline** | Reading the command line input |
+| **tmux** | Terminal multiplexer for background processes |
+| **bash dialog** | Version 1.2 minimum |
+| **flex** | Parsing the command line input |
+| **bison** | Interpreting the command line input |
 
-Install above libraries (centOS):
+### Package Installation
 
-		sudo yum install readline-devel flex bison-devel fftw3-devel gsl-devel
+Install the above libraries on **CentOS**:
+```bash
+sudo yum install readline-devel flex bison-devel fftw3-devel gsl-devel
+```
 
-Install above libraries (Ubuntu):
-
-		sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
+Install the above libraries on **Ubuntu**:
+```bash
+sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
+```
 
 
 ## 2.2. FITSIO install 
 
 For reading and writing FITS image files
 
-- Visit https://heasarc.gsfc.nasa.gov/fitsio/fitsio.html and download the file Unix .tar file cfitsio3410.tar.gz
-- Extract it , README , install it
-There is the fitsio.h in it. Move it to usr :
+- Visit [HEASARC FITSIO](https://heasarc.gsfc.nasa.gov/fitsio/fitsio.html) and download the file Unix `.tar` file `cfitsio3410.tar.gz`
+- Extract it, view the README, and install it.
+- There is the `fitsio.h` in it. Move it to `/usr`:
 
-		./configure --prefix=/usr
-		make
-		sudo make install
+```bash
+./configure --prefix=/usr
+make
+sudo make install
+```
 
 
 ## 2.3. GPU acceleration (optional, but highly recommended) 
@@ -103,9 +110,11 @@ Required libraries:
 
 ### No package 'magma' found
 
-configure script uses pkg-config to find the package. You need to add in .bashrc :
+The configuration script uses `pkg-config` to find the package. You need to add this to your `.bashrc` or equivalent shell profile:
 
-	export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
+```bash
+export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
+```
 
 ---
 
@@ -118,7 +127,7 @@ configure script uses pkg-config to find the package. You need to add in .bashrc
 
 To install independant versions on the same system, download source code in separate source directories:
 
-```text
+```bash
 cd $HOME/src
 git clone --recursive https://github.com/milk-org/milk milk-1
 git clone --recursive https://github.com/milk-org/milk milk-2
@@ -128,7 +137,7 @@ git clone --recursive https://github.com/milk-org/milk milk-2
 
 Compile each copy with a different target directory :
 
-```text
+```bash
 cd $HOME/src/milk-1
 mkdir _build
 cd _build
@@ -136,7 +145,7 @@ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
 sudo make install
 ```
 
-```text
+```bash
 cd $HOME/src/milk-2
 mkdir _build
 cd _build
@@ -147,19 +156,19 @@ sudo make install
 
 To make version 1 the default on the system :
 
-```text
+```bash
 sudo ln -s /usr/local/milk-1 /usr/local/milk
 ```
 
 
 To run an instance of version 2 :
 
-```text
+```bash
 LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
 ```
 
 
 Additionally, each version may have its own independent shared memory space for streams :
-```text
+```bash
 MILK_SHM_DIR=/milk-2/shm LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
 ```
