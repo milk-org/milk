@@ -37,7 +37,6 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 ## 📖 CLI & Tools Reference
 
 - [**CLI Core Syntax**](cli/CLIcore.md): Argument parsing and command invocation rules.
-- [**CLI User Input**](cli/UserInput.md): Writing interactive prompts.
 - [**Readline Keys**](cli/helpreadline.md): Keyboard shortcuts inside the `milk` shell.
 - [**Help Text**](cli/help.txt): Built-in help text reference.
 - [**Automatically Generated Index**](Markdown_Index.md): Complete list of all Markdown files in the repository.
