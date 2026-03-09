@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
         use_regex = 1;
     }
 
-    ImageStreamIO_set_verbosity(0);
+    // ImageStreamIO_set_verbosity(0);
     signal(SIGINT, sighandler);
     signal(SIGTERM, sighandler);
 

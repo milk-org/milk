@@ -46,7 +46,7 @@
 #include <fps.h>
 #include <processtools.h>
 #include "timeutils.h"
-#include "streamCTRL_TUI.h"
+#include "streamCTRL/streamCTRL_TUI.h"
 
 #include "CLIcore_checkargs.h"
 #include "CLIcore_help.h"
