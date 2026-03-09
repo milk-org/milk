@@ -81,6 +81,9 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 - `plugins/cacao-src/`: Cacao AO loop modules.
 - `docs/`: Documentation.
 
+> [!TIP]
+> **Writing a custom plugin?** See [plugins.md](file:///home/oguyon/src/milk/docs/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
+
 ## 5. Dependency Architecture
 
 ### Header Hierarchy

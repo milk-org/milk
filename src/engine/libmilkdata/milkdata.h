@@ -26,8 +26,10 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "ImageStreamIO/ImageStruct.h"
 
-#include <fps.h>
-#include <processtools.h>
+#define STRINGMAXLEN_FPS_NAME 100
+
+struct FUNCTION_PARAMETER_STRUCT;
+struct PROCESSINFO;
 
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
@@ -159,12 +161,12 @@ typedef struct
     /* Process monitoring */
     int          processinfo;
     int          processinfoActive;
-    PROCESSINFO *pinfo;
+    struct PROCESSINFO *pinfo;
 
     /* FPS */
     long                       NB_MAX_FPS;
-    FUNCTION_PARAMETER_STRUCT *fpsarray;
-    FUNCTION_PARAMETER_STRUCT *fpsptr;
+    struct FUNCTION_PARAMETER_STRUCT *fpsarray;
+    struct FUNCTION_PARAMETER_STRUCT *fpsptr;
     char     FPS_name[STRINGMAXLEN_FPS_NAME];
     long     FPS_TIMESTAMP;
     uint32_t FPS_CMDCODE;

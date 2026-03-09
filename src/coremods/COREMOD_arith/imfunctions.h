@@ -4,6 +4,8 @@
  *
  */
 
+#include <IMGID.h>
+
 /* Functions for bison / flex    */
 
 errno_t arith_image_function_im_im__d_d(const char *ID_name,

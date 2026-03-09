@@ -3,6 +3,8 @@
  *
  */
 
+#include <IMGID.h>
+
 double arith_image_total(const char *ID_name);
 double arith_image_total_IMGID(IMGID *imgin);
 
