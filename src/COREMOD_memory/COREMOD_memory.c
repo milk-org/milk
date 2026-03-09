@@ -104,7 +104,7 @@ INIT_MODULE_LIB(COREMOD_memory)
 static errno_t init_module_CLI()
 {
 
-    data.MEM_MONITOR = 0; // 1 if memory monitor is on
+    dcmemmon = 0; // 1 if memory monitor is on
 
     clearall_addCLIcmd();
     list_image_addCLIcmd();

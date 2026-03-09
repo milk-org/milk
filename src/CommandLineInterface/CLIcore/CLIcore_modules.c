@@ -114,15 +114,15 @@ errno_t load_module_shared(
         // Assemble absolute path module filename
         //printf("Searching for shared object in directory MILK_INSTALLDIR/lib : %s/lib\n", getenv("MILK_INSTALLDIR"));
         DEBUG_TRACEPOINT(
-            "Searching for shared object in directory [data.installdir]/lib : "
+            "Searching for shared object in directory [dcinstalldir]/lib : "
             "%s/lib",
-            data.installdir);
+            dcinstalldir);
 
         {
             int slen = snprintf(libname,
                                 STRINGMAXLEN_MODULE_SOFILENAME,
                                 "%s/lib/lib%s.so",
-                                data.installdir,
+                                dcinstalldir,
                                 modulenameLC);
             if(slen < 1)
             {
@@ -192,7 +192,7 @@ errno_t load_module_shared_local()
 
     WRITE_DIRNAME(dirname, "./milklib");
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf("load modules from directory %s\n", dirname);
     }
@@ -213,7 +213,7 @@ errno_t load_module_shared_local()
                 {
                     WRITE_FULLFILENAME(libname,
                                        "%s/lib/%s",
-                                       data.installdir,
+                                       dcinstalldir,
                                        dir->d_name);
                     //printf("%02d   (re-?) LOADING shared object  %40s -> %s\n", DLib_index, dir->d_name, libname);
                     //fflush(stdout);
@@ -338,7 +338,7 @@ errno_t RegisterModule(const char *__restrict FileName,
     //printf("--- libnameloaded : %s\n", libnameloaded);
 
 
-    if(data.progStatus == 0)
+    if(dcprogstatus == 0)
     {
         OKmsg = 1;
         if(!getenv("MILK_QUIET"))
@@ -349,7 +349,7 @@ errno_t RegisterModule(const char *__restrict FileName,
         //	fflush(stdout);
     }
 
-    if(data.progStatus == 1)
+    if(dcprogstatus == 1)
     {
         OKmsg = 1;
         DEBUG_TRACEPOINT(

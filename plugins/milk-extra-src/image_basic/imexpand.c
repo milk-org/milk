@@ -97,10 +97,10 @@ basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n2)
     long    naxes[2], naxes_out[2];
     int     i, j;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    naxes[0]     = data.image[ID].md[0].size[0];
-    naxes[1]     = data.image[ID].md[0].size[1];
+    naxes[0]     = dcimg[ID].md[0].size[0];
+    naxes[1]     = dcimg[ID].md[0].size[1];
     naxes_out[0] = naxes[0] * n1;
     naxes_out[1] = naxes[1] * n2;
 
@@ -112,9 +112,9 @@ basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n2)
             for(i = 0; i < n1; i++)
                 for(j = 0; j < n2; j++)
                 {
-                    data.image[ID_out]
+                    dcimg[ID_out]
                     .array.F[(jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                        data.image[ID].array.F[jj * naxes[0] + ii];
+                        dcimg[ID].array.F[jj * naxes[0] + ii];
                 }
 
     DEBUG_TRACE_FEXIT();
@@ -131,20 +131,20 @@ imageID basic_expand3D(
     long    naxes[3], naxes_out[3];
     int     i, j, k;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    naxes[0] = data.image[ID].md[0].size[0];
-    if(data.image[ID].md[0].naxis > 1)
+    naxes[0] = dcimg[ID].md[0].size[0];
+    if(dcimg[ID].md[0].naxis > 1)
     {
-        naxes[1] = data.image[ID].md[0].size[1];
+        naxes[1] = dcimg[ID].md[0].size[1];
     }
     else
     {
         naxes[1] = 1;
     }
-    if(data.image[ID].md[0].naxis == 3)
+    if(dcimg[ID].md[0].naxis == 3)
     {
-        naxes[2] = data.image[ID].md[0].size[2];
+        naxes[2] = dcimg[ID].md[0].size[2];
     }
     else
     {
@@ -176,11 +176,11 @@ imageID basic_expand3D(
                     for(j = 0; j < n2; j++)
                         for(k = 0; k < n3; k++)
                         {
-                            data.image[ID_out]
+                            dcimg[ID_out]
                             .array
                             .F[(kk * n3 + k) * naxes_out[0] * naxes_out[1] +
                                              (jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                                   data.image[ID]
+                                   dcimg[ID]
                                    .array.F[kk * naxes[0] * naxes[1] +
                                                jj * naxes[0] + ii];
                         }

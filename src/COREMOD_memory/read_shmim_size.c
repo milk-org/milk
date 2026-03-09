@@ -75,12 +75,12 @@ imageID read_sharedmem_image_size(
     imageID         ID = -1;
 
     if((ID = image_ID(
-            name, data.image,
-            data.NB_MAX_IMAGE)) == -1)
+            name, dcimg,
+            dcnimg)) == -1)
     {
         WRITE_FULLFILENAME(
             SM_fname, "%s/%s.im.shm",
-            data.shmdir, name);
+            dcshmdir, name);
 
         SM_fd = open(SM_fname, O_RDWR);
         if(SM_fd == -1)
@@ -134,12 +134,12 @@ imageID read_sharedmem_image_size(
     {
         fp = fopen(fname, "w");
         for(i = 0;
-             i < data.image[ID].md[0].naxis;
+             i < dcimg[ID].md[0].naxis;
              i++)
         {
             fprintf(
                 fp, "%ld ",
-                (long) data.image[ID]
+                (long) dcimg[ID]
                     .md[0].size[i]);
         }
         fprintf(fp, "\n");

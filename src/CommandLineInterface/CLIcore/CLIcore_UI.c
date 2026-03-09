@@ -206,13 +206,13 @@ retry_fuzzy:
 
     if(data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
     {
-        while(list_index1 < data.NB_MAX_IMAGE)
+        while(list_index1 < dcnimg)
         {
             int iok;
-            iok = data.image[list_index1].used;
+            iok = dcimg[list_index1].used;
             if(iok == 1)
             {
-                name = data.image[list_index1].name;
+                name = dcimg[list_index1].name;
             }
             list_index1++;
             if(iok == 1)
@@ -335,26 +335,26 @@ errno_t write_tracedebugfile()
     WRITE_FILENAME(fname, "milk-codetracepoint.%05d.log", thisPID);
 
     printf("Writing output trace to file %s\n", fname);
-    printf("data.testpointarrayinit = %d\n", data.testpointarrayinit);
+    printf("dctestptinit = %d\n", dctestptinit);
 
     FILE *fp = fopen(fname, "w");
     if(fp != NULL)
     {
         for(uint64_t i = 0; i < CODETESTPOINTARRAY_NBCNT; i++)
         {
-            long j = (i + data.testpointcnt) % CODETESTPOINTARRAY_NBCNT;
+            long j = (i + dctestptcnt) % CODETESTPOINTARRAY_NBCNT;
 
             uint64_t index =
-                data.testpointarray[j].loopcnt * CODETESTPOINTARRAY_NBCNT + j;
+                dctestptarr[j].loopcnt * CODETESTPOINTARRAY_NBCNT + j;
 
-            if(data.testpointarray[j].line != 0)
+            if(dctestptarr[j].line != 0)
             {
                 char timestring[TIMESTRINGLEN];
-                mkUTtimestring_nanosec(timestring, data.testpointarray[j].time);
+                mkUTtimestring_nanosec(timestring, dctestptarr[j].time);
 
                 // extract last word
                 char str[STRINGMAXLEN_FULLFILENAME];
-                strcpy(str, data.testpointarray[j].file);
+                strcpy(str, dctestptarr[j].file);
                 char *lastword = strrchr(str, '/') + 1;
 
                 fprintf(fp,
@@ -362,20 +362,20 @@ errno_t write_tracedebugfile()
                         index,
                         timestring,
                         lastword,
-                        data.testpointarray[j].line,
-                        data.testpointarray[j].func,
-                        data.testpointarray[j].msg);
+                        dctestptarr[j].line,
+                        dctestptarr[j].func,
+                        dctestptarr[j].msg);
                 fprintf(fp,
                         "       FTRACE %d ",
-                        data.testpointarray[j].funclevel);
-                for(int level = 0; level < data.testpointarray[j].funclevel;
+                        dctestptarr[j].funclevel);
+                for(int level = 0; level < dctestptarr[j].funclevel;
                         level++)
                 {
                     fprintf(fp,
                             " (%d) >> %ld:%s",
-                            data.testpointarray[j].linestack[level],
-                            data.testpointarray[j].fcntstack[level],
-                            data.testpointarray[j].funcstack[level]);
+                            dctestptarr[j].linestack[level],
+                            dctestptarr[j].fcntstack[level],
+                            dctestptarr[j].funcstack[level]);
                 }
                 fprintf(fp, "\n\n");
 
@@ -497,7 +497,7 @@ errno_t CLI_execute_line()
         data.cmdNBarg = 0;
 
 
-        if(data.Debug > 0)
+        if(dcdebug > 0)
         {
         }
 
@@ -531,7 +531,7 @@ errno_t CLI_execute_line()
                     // printf("\t processing -- %s\n", cmdargstring);
 
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
-                    if(data.Debug > 1)
+                    if(dcdebug > 1)
                     {
                         printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__,
                                str);
@@ -558,17 +558,17 @@ errno_t CLI_execute_line()
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
-        if(data.Debug > 0)
+        if(dcdebug > 0)
         {
             printf("DEBUG: %s %d: data.cmdNBarg = %ld\n", __func__, __LINE__,
                    data.cmdNBarg);
         }
 
-        if(data.Debug > 1)
+        if(dcdebug > 1)
         {
             long i = 0;
 
-            if(data.Debug > 0)
+            if(dcdebug > 0)
             {
                 printf("DEBUG: %s %d: TOKEN %ld type : %d\n",
                        __func__, __LINE__,
@@ -637,7 +637,7 @@ errno_t CLI_execute_line()
             }
         }
 
-        if(data.Debug > 0)
+        if(dcdebug > 0)
         {
             printf("DEBUG: %s %d: data.parseerror = %d\n",
                    __func__, __LINE__,
@@ -666,7 +666,7 @@ errno_t CLI_execute_line()
                         data.cmd[data.cmdindex].key,
                         data.CMDerrstatus);
 
-                    if(data.errorexit == 1)
+                    if(dcerrorexit == 1)
                     {
                         printf(
                             "%c[%d;%dm -> EXIT CLI "
@@ -676,7 +676,7 @@ errno_t CLI_execute_line()
                             31,
                             (char) 27,
                             0);
-                        data.exitcode = data.CMDerrstatus;
+                        dcexitcode = data.CMDerrstatus;
 
 #ifndef NDEBUG
                         // output trace debug
@@ -690,18 +690,18 @@ errno_t CLI_execute_line()
         }
         else
         {
-            if(data.errorexit == 1)
+            if(dcerrorexit == 1)
             {
-                data.exitcode = 1;
+                dcexitcode = 1;
             }
         }
 
         for(int i = 0; i < data.calctmp_imindex; i++)
         {
             CREATE_IMAGENAME(calctmpimname, "_tmpcalc%d", i);
-            if(image_ID(calctmpimname, data.image, data.NB_MAX_IMAGE) != -1)
+            if(image_ID(calctmpimname, dcimg, dcnimg) != -1)
             {
-                if(data.Debug == 1)
+                if(dcdebug == 1)
                 {
                     printf("Deleting %s\n", calctmpimname);
                 }

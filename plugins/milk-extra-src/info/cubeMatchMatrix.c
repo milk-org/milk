@@ -79,13 +79,13 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
     long kdiffmax = 1005;
     long kmax     = 10;
 
-    IDin   = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
-    xsize  = data.image[IDin].md[0].size[0];
-    ysize  = data.image[IDin].md[0].size[1];
-    zsize  = data.image[IDin].md[0].size[2];
+    IDin   = image_ID(IDin_name, dcimg, dcnimg);
+    xsize  = dcimg[IDin].md[0].size[0];
+    ysize  = dcimg[IDin].md[0].size[1];
+    zsize  = dcimg[IDin].md[0].size[2];
     xysize = xsize * ysize;
 
-    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDout_name, dcimg, dcnimg);
 
     if(IDout == -1)
     {
@@ -108,8 +108,8 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
                 totv = 0.0;
                 for(unsigned long ii = 0; ii < xysize; ii++)
                 {
-                    v1 = (double) data.image[IDin].array.F[kk1 * xysize + ii];
-                    v2 = (double) data.image[IDin].array.F[kk2 * xysize + ii];
+                    v1 = (double) dcimg[IDin].array.F[kk1 * xysize + ii];
+                    v2 = (double) dcimg[IDin].array.F[kk2 * xysize + ii];
                     v  = v1 - v2;
                     totv += v * v;
                     //						printf("   %5ld
@@ -127,7 +127,7 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
                         kk2);
                 fclose(fpout);
 
-                data.image[IDout].array.F[kk2 * zsize + kk1] = (float) totv;
+                dcimg[IDout].array.F[kk2 * zsize + kk1] = (float) totv;
             }
 
             save_fits(IDout_name, "testout.fits");
@@ -136,7 +136,7 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
     }
     else
     {
-        zsize = data.image[IDout].md[0].size[0];
+        zsize = dcimg[IDout].md[0].size[0];
     }
 
     ksize         = (zsize - 1) * (zsize) / 2;
@@ -159,11 +159,11 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
                 printf("ERROR: %ld %ld  %ld / %u\n", kk1, kk2, ii, ksize);
                 exit(0);
             }
-            if(((double) data.image[IDout].array.F[kk2 * zsize + kk1] > 1.0) &&
+            if(((double) dcimg[IDout].array.F[kk2 * zsize + kk1] > 1.0) &&
                     (kk2 - kk1 > kdiffmin) && (kk2 - kk1 < kdiffmax))
             {
                 array_matchV[ii] =
-                    (double) data.image[IDout].array.F[kk2 * zsize + kk1];
+                    (double) dcimg[IDout].array.F[kk2 * zsize + kk1];
                 array_matchii[ii] = kk1;
                 array_matchjj[ii] = kk2;
                 ii++;
@@ -197,9 +197,9 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
     }
     fclose(fpout);
 
-    ID0    = image_ID("imcfull", data.image, data.NB_MAX_IMAGE);
-    xsize  = data.image[ID0].md[0].size[0];
-    ysize  = data.image[ID0].md[0].size[1];
+    ID0    = image_ID("imcfull", dcimg, dcnimg);
+    xsize  = dcimg[ID0].md[0].size[0];
+    ysize  = dcimg[ID0].md[0].size[1];
     xysize = xsize * ysize;
 
     if(ID0 != -1)
@@ -216,16 +216,16 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
             kk2 = array_matchjj[k];
             for(unsigned long ii = 0; ii < xysize; ii++)
             {
-                v1 = data.image[ID0].array.F[kk1 * xysize + ii];
-                v2 = data.image[ID0].array.F[kk2 * xysize + ii];
+                v1 = dcimg[ID0].array.F[kk1 * xysize + ii];
+                v2 = dcimg[ID0].array.F[kk2 * xysize + ii];
                 v  = v1 - v2;
-                data.image[IDrmsim].array.F[ii] += v * v;
+                dcimg[IDrmsim].array.F[ii] += v * v;
             }
         }
         for(unsigned long ii = 0; ii < xysize; ii++)
         {
-            data.image[IDrmsim].array.F[ii] =
-                sqrt(data.image[IDrmsim].array.F[ii] / kmax);
+            dcimg[IDrmsim].array.F[ii] =
+                sqrt(dcimg[IDrmsim].array.F[ii] / kmax);
         }
         save_fits("imRMS", "imRMS.fits");
     }

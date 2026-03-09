@@ -54,11 +54,11 @@ errno_t destroy_shared_image_ID(
     imageID ID;
 
     ID = image_ID(
-        imname, data.image, data.NB_MAX_IMAGE);
+        imname, dcimg, dcnimg);
     if((ID != -1)
-        && (data.image[ID].md[0].shared == 1))
+        && (dcimg[ID].md[0].shared == 1))
     {
-        ImageStreamIO_destroyIm(&data.image[ID]);
+        ImageStreamIO_destroyIm(&dcimg[ID]);
     }
     else
     {

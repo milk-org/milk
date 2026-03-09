@@ -305,14 +305,14 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID in_img = imgid_make_from_name(in_name);
-    resolveIMGID(&in_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_name);
     // for FPS mode:
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        strcpy(data.fpsptr->cmdset.triggerstreamname, in_name);
+        strcpy(dcfpsptr->cmdset.triggerstreamname, in_name);
     }
 
     // HANDLE DATATYPES
@@ -330,24 +330,24 @@ static errno_t compute_function()
 
     // Resolve or create outputs, per need
     IMGID out_ave_img = imgid_make_from_name(out_ave_name);
-    if(resolveIMGID(&out_ave_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
+    if(resolveIMGID(&out_ave_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING(
             "WARNING - output average image not found and being created");
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_ave_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&out_ave_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     IMGID out_std_img = imgid_make_from_name(out_std_name);
-    if(resolveIMGID(&out_std_img, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE))
+    if(resolveIMGID(&out_std_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING("WARNING - output std image not found and being created");
         in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
         in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_std_img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&out_std_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     /*

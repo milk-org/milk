@@ -59,18 +59,18 @@ errno_t printInfo()
     printf("  PID = %d\n", CLIPID);
 
     printf("--------------- GENERAL ----------------------\n");
-    printf("%s  %s\n", data.package_name, data.package_version);
+    printf("%s  %s\n", dcpkgname, dcpkgver);
     printf("IMAGESTRUCT_VERSION %s\n", IMAGESTRUCT_VERSION);
     printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
     printf("\n");
     printf("--------------- SETTINGS ---------------------\n");
-    printf("procinfo status = %d\n", data.processinfo);
+    printf("procinfo status = %d\n", dcprocinfo);
 
-    if(data.precision == 0)
+    if(dcprecision == 0)
     {
         printf("Default precision upon startup : float\n");
     }
-    if(data.precision == 1)
+    if(dcprecision == 1)
     {
         printf("Default precision upon startup : double\n");
     }
@@ -409,8 +409,8 @@ errno_t printInfo()
     printf("\n");
 
     printf("--------------- DIRECTORIES ------------------\n");
-    printf("CONFIGDIR = %s\n", data.configdir);
-    printf("SOURCEDIR = %s\n", data.sourcedir);
+    printf("CONFIGDIR = %s\n", dcconfigdir);
+    printf("SOURCEDIR = %s\n", dcsourcedir);
     printf("\n");
 
     printf("--------------- MALLOC INFO ------------------\n");
@@ -1352,7 +1352,7 @@ errno_t helpreadline()
 
     EXECUTE_SYSTEM_COMMAND(
         "more %s/src/CommandLineInterface/doc/helpreadline.md",
-        data.sourcedir);
+        dcsourcedir);
 
     return RETURN_SUCCESS;
 }

@@ -50,7 +50,7 @@ errno_t fps_generic_CLIfunction(
     function_parameter_getFPSargs_from_CLIfunc(
         fpsname_with_session);
 
-    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+    if (dcfpscode == FPSCMDCODE_IGNORE) {
         return RETURN_SUCCESS;
     }
 
@@ -65,17 +65,17 @@ errno_t fps_generic_CLIfunction(
     }
 
     /* Initialization action */
-    if (data.FPS_CMDCODE == FPSCMDCODE_FPSINIT ||
-        data.FPS_CMDCODE
+    if (dcfpscode == FPSCMDCODE_FPSINIT ||
+        dcfpscode
         == FPSCMDCODE_FPSINITCREATE)
     {
         fps_generic_init(
-            data.FPS_name, app_info,
+            dcfpsname, app_info,
             bindings, nb_b, 0);
         return RETURN_SUCCESS;
     }
 
-    if (data.FPS_CMDCODE == FPSCMDCODE_IGNORE) {
+    if (dcfpscode == FPSCMDCODE_IGNORE) {
         return RETURN_SUCCESS;
     }
 
@@ -84,62 +84,62 @@ errno_t fps_generic_CLIfunction(
            sizeof(FUNCTION_PARAMETER_STRUCT));
     fps.SMfd = -1;
 
-    if (data.FPS_name[0] == '_') {
+    if (dcfpsname[0] == '_') {
         FUNCTION_PARAMETER_STRUCT *lfps =
             fps_local_get_or_create(
-                data.FPS_name,
+                dcfpsname,
                 FUNCTION_PARAMETER_NBPARAM_DEFAULT);
         if (lfps == NULL) {
             return RETURN_FAILURE;
         }
         if (lfps->NBparam == 0) {
             fps_generic_init(
-                data.FPS_name, app_info,
+                dcfpsname, app_info,
                 bindings, nb_b, 0);
         }
         fps = *lfps;
     }
     else {
         if (function_parameter_struct_connect(
-                data.FPS_name, &fps,
+                dcfpsname, &fps,
                 FPSCONNECT_SIMPLE) == -1)
         {
             fps_generic_init(
-                data.FPS_name, app_info,
+                dcfpsname, app_info,
                 bindings, nb_b, 0);
             if (function_parameter_struct_connect(
-                    data.FPS_name, &fps,
+                    dcfpsname, &fps,
                     FPSCONNECT_SIMPLE) == -1)
             {
                 printf("Failed to connect to "
                        "FPS %s\n",
-                       data.FPS_name);
+                       dcfpsname);
                 return RETURN_SUCCESS;
             }
         }
     }
 
     /* Print FPS name and type in color */
-    if (data.FPS_name[0] == '_') {
+    if (dcfpsname[0] == '_') {
         printf("\033[36mFPS \033[1m%s\033[22m"
                " \033[33m[LOCAL]\033[0m\n",
-               data.FPS_name);
+               dcfpsname);
         fps_local_set_creator(
-            data.FPS_name,
+            dcfpsname,
             app_info->fps_name);
     }
     else {
         printf("\033[36mFPS \033[1m%s\033[22m"
                " \033[32m[SHARED]\033[0m\n",
-               data.FPS_name);
+               dcfpsname);
         fps_shared_record_usage(
-            data.FPS_name,
+            dcfpsname,
             app_info->fps_name);
     }
 
     /* Record last-used FPS for ? query */
     strncpy(fps_last_used_name,
-            data.FPS_name,
+            dcfpsname,
             sizeof(fps_last_used_name) - 1);
     fps_last_used_name[
         sizeof(fps_last_used_name) - 1] = '\0';
@@ -149,7 +149,7 @@ errno_t fps_generic_CLIfunction(
     fps_last_used_cmdkey[
         sizeof(fps_last_used_cmdkey) - 1] = '\0';
 
-    data.fpsptr = &fps;
+    dcfpsptr = &fps;
     errno_t retval =
         CLI_checkarg_array(farg, cmdata->nbarg);
 
@@ -160,11 +160,11 @@ errno_t fps_generic_CLIfunction(
         fps_process_cli_and_sync(
             &fps, farg, bindings, nb_b);
 
-        if (data.FPS_name[0] == '\0') {
-            strncpy(data.FPS_name,
+        if (dcfpsname[0] == '\0') {
+            strncpy(dcfpsname,
                     fpsname_with_session,
                     STRINGMAXLEN_FPS_NAME - 1);
-            data.FPS_name[
+            dcfpsname[
                 STRINGMAXLEN_FPS_NAME - 1] = '\0';
         }
 
@@ -211,8 +211,8 @@ errno_t fps_generic_CLIfunction(
         retval = RETURN_SUCCESS;
     }
 
-    data.fpsptr = NULL;
-    if (data.FPS_name[0] != '_') {
+    dcfpsptr = NULL;
+    if (dcfpsname[0] != '_') {
         function_parameter_struct_disconnect(&fps);
     }
     return retval;

@@ -110,15 +110,15 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
     uint8_t datatype;
 
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    naxisin  = data.image[ID].md[0].naxis;
-    datatype = data.image[ID].md[0].datatype;
+    naxisin  = dcimg[ID].md[0].naxis;
+    datatype = dcimg[ID].md[0].datatype;
 
 
-    IDpixindex = image_ID(IDpixindex_name, data.image, data.NB_MAX_IMAGE);
-    IDpixmult  = image_ID(IDpixmult_name, data.image, data.NB_MAX_IMAGE);
-    NBpix      = data.image[IDpixindex].md[0].nelement;
+    IDpixindex = image_ID(IDpixindex_name, dcimg, dcnimg);
+    IDpixmult  = image_ID(IDpixmult_name, dcimg, dcnimg);
+    NBpix      = dcimg[IDpixindex].md[0].nelement;
 
 
     if(naxisin < 3)
@@ -126,54 +126,54 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
         FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name, NBpix, 1, &IDvec));
         for(long k = 0; k < NBpix; k++)
         {
-            data.image[IDvec].array.F[k] =
-                data.image[IDpixmult].array.F[k] *
-                data.image[ID].array.F[data.image[IDpixindex].array.SI64[k]];
+            dcimg[IDvec].array.F[k] =
+                dcimg[IDpixmult].array.F[k] *
+                dcimg[ID].array.F[dcimg[IDpixindex].array.SI64[k]];
         }
     }
     else
     {
-        sizexy = data.image[ID].md[0].size[0] * data.image[ID].md[0].size[1];
+        sizexy = dcimg[ID].md[0].size[0] * dcimg[ID].md[0].size[1];
         if(datatype == _DATATYPE_FLOAT)
         {
             FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
                                                 NBpix,
-                                                data.image[ID].md[0].size[2],
+                                                dcimg[ID].md[0].size[2],
                                                 &IDvec));
 
-            for(uint32_t kk = 0; kk < data.image[ID].md[0].size[2]; kk++)
+            for(uint32_t kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
                 for(long k = 0; k < NBpix; k++)
                 {
-                    data.image[IDvec].array.F[kk * NBpix + k] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
+                    dcimg[IDvec].array.F[kk * NBpix + k] =
+                        dcimg[IDpixmult].array.F[k] *
+                        dcimg[ID]
                         .array.F[kk * sizexy +
-                                    data.image[IDpixindex].array.SI64[k]];
+                                    dcimg[IDpixindex].array.SI64[k]];
                 }
         }
         if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
             FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
                                                 NBpix * 2,
-                                                data.image[ID].md[0].size[2],
+                                                dcimg[ID].md[0].size[2],
                                                 &IDvec));
 
-            for(uint32_t kk = 0; kk < data.image[ID].md[0].size[2]; kk++)
+            for(uint32_t kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
                 for(long k = 0; k < NBpix; k++)
                 {
-                    data.image[IDvec].array.F[kk * NBpix * 2 + 2 * k] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
+                    dcimg[IDvec].array.F[kk * NBpix * 2 + 2 * k] =
+                        dcimg[IDpixmult].array.F[k] *
+                        dcimg[ID]
                         .array
                         .CF[kk * sizexy +
-                               data.image[IDpixindex].array.SI64[k]]
+                               dcimg[IDpixindex].array.SI64[k]]
                         .re;
-                    data.image[IDvec].array.F[kk * NBpix * 2 + 2 * k + 1] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
+                    dcimg[IDvec].array.F[kk * NBpix * 2 + 2 * k + 1] =
+                        dcimg[IDpixmult].array.F[k] *
+                        dcimg[ID]
                         .array
                         .CF[kk * sizexy +
-                               data.image[IDpixindex].array.SI64[k]]
+                               dcimg[IDpixindex].array.SI64[k]]
                         .im;
                 }
         }

@@ -16,9 +16,9 @@ float img_percentile_float(const char *ID_name, float p)
     uint64_t nelements;
     uint64_t n;
 
-    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0]  = data.image[ID].md[0].size[0];
-    naxes[1]  = data.image[ID].md[0].size[1];
+    ID        = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0]  = dcimg[ID].md[0].size[0];
+    naxes[1]  = dcimg[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
 
     array = (float *) malloc(nelements * sizeof(float));
@@ -30,7 +30,7 @@ float img_percentile_float(const char *ID_name, float p)
 
     for(unsigned long ii = 0; ii < nelements; ii++)
     {
-        array[ii] = data.image[ID].array.F[ii];
+        array[ii] = dcimg[ID].array.F[ii];
     }
 
     quick_sort_float(array, nelements);
@@ -60,9 +60,9 @@ double img_percentile_double(const char *ID_name, double p)
     uint64_t nelements;
     uint64_t n;
 
-    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0]  = data.image[ID].md[0].size[0];
-    naxes[1]  = data.image[ID].md[0].size[1];
+    ID        = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0]  = dcimg[ID].md[0].size[0];
+    naxes[1]  = dcimg[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
 
     array = (double *) malloc(nelements * sizeof(double));
@@ -74,7 +74,7 @@ double img_percentile_double(const char *ID_name, double p)
 
     for(unsigned long ii = 0; ii < nelements; ii++)
     {
-        array[ii] = data.image[ID].array.F[ii];
+        array[ii] = dcimg[ID].array.F[ii];
     }
 
     quick_sort_double(array, nelements);
@@ -99,8 +99,8 @@ double img_percentile(const char *ID_name, double p)
     uint8_t datatype;
     double  value = 0.0;
 
-    ID       = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    datatype = data.image[ID].md[0].datatype;
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    datatype = dcimg[ID].md[0].datatype;
 
     if(datatype == _DATATYPE_FLOAT)
     {

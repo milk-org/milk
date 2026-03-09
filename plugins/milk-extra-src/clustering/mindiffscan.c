@@ -93,7 +93,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", outdname);
 
-    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize = img.md->size[0];
     uint32_t ysize = img.md->size[1];
@@ -113,13 +113,13 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
     // FLUX MINIMIZATION MODE: ACTIVE PIXELS
     long    fluxpixcnt = 0;
-    imageID IDmaskflux = image_ID("maskfluxim", data.image, data.NB_MAX_IMAGE);
+    imageID IDmaskflux = image_ID("maskfluxim", dcimg, dcnimg);
     long   *fluxpix    = NULL;
     if(IDmaskflux != -1)
     {
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(data.image[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5)
             {
                 fluxpixcnt++;
             }
@@ -129,7 +129,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
         fluxpixcnt = 0;
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(data.image[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5)
             {
                 fluxpix[fluxpixcnt] = ii;
                 fluxpixcnt++;
@@ -138,7 +138,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     }
 
     // looking for selection mask image
-    imageID IDmask = image_ID("maskim", data.image, data.NB_MAX_IMAGE);
+    imageID IDmask = image_ID("maskim", dcimg, dcnimg);
     if(IDmask == -1)
     {
         printf("Creating default mask image %ld pixel\n", xysize);
@@ -146,7 +146,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            data.image[IDmask].array.F[ii] = 1.0;
+            dcimg[IDmask].array.F[ii] = 1.0;
         }
     }
     else
@@ -159,7 +159,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     long  pixcnt  = 0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        if(data.image[IDmask].array.F[ii] > maskeps)
+        if(dcimg[IDmask].array.F[ii] > maskeps)
         {
             pixcnt++;
         }
@@ -181,10 +181,10 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     long inpixindex = 0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        if(data.image[IDmask].array.F[ii] > maskeps)
+        if(dcimg[IDmask].array.F[ii] > maskeps)
         {
             pixmap[inpixindex]  = ii;
-            pixgain[inpixindex] = data.image[IDmask].array.F[ii];
+            pixgain[inpixindex] = dcimg[IDmask].array.F[ii];
             inpixindex++;
         }
     }
@@ -197,7 +197,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     {
         for(long ii = 0; ii < npix; ii++)
         {
-            data.image[IDc].array.F[zi * npix + ii] =
+            dcimg[IDc].array.F[zi * npix + ii] =
                 pixgain[ii] * img.im->array.F[zi * xysize + pixmap[ii]];
         }
     }
@@ -205,7 +205,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     save_fl_fits("mindiffscan_imc", "mindiffscan_imc.fits");
 
     // looking for distmat image
-    imageID IDdmat = image_ID("distmat", data.image, data.NB_MAX_IMAGE);
+    imageID IDdmat = image_ID("distmat", dcimg, dcnimg);
     if(IDdmat == -1)
     {
         printf("Computing distmat");
@@ -225,8 +225,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 long double dist2 = 0.0;
                 for(long ii = 0; ii < npix; ii++)
                 {
-                    float v0 = data.image[IDc].array.F[zi0 * npix + ii];
-                    float v1 = data.image[IDc].array.F[zi1 * npix + ii];
+                    float v0 = dcimg[IDc].array.F[zi0 * npix + ii];
+                    float v1 = dcimg[IDc].array.F[zi1 * npix + ii];
                     float dv = v0 - v1;
                     dist2 += dv * dv;
                 }
@@ -240,8 +240,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                     zi1p = zsize - zi1p - 1;
                 }
 
-                //data.image[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
-                data.image[IDdmat].array.F[zi0p * zsize + zi1p] = (float) dist2;
+                //dcimg[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
+                dcimg[IDdmat].array.F[zi0p * zsize + zi1p] = (float) dist2;
 
                 diffcnt++;
             }
@@ -311,7 +311,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 }
 
                 distarray[cnt] =
-                    data.image[IDdmat].array.F[zi0p * zsize + zi1p];
+                    dcimg[IDdmat].array.F[zi0p * zsize + zi1p];
                 iarray[cnt] = zi1;
                 cnt++;
             }
@@ -335,7 +335,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
             {
                 for(long ii = 0; ii < fluxpixcnt; ii++)
                 {
-                    fluxtot += data.image[img.ID]
+                    fluxtot += dcimg[img.ID]
                                .array.F[xysize * iarray[k] + fluxpix[ii]];
                 }
             }
@@ -417,8 +417,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 distarray_zbest[k]);
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            data.image[IDbc].array.F[k * xysize + ii] =
-                data.image[img.ID].array.F[xysize * iarray_zbest[k] + ii];
+            dcimg[IDbc].array.F[k * xysize + ii] =
+                dcimg[img.ID].array.F[xysize * iarray_zbest[k] + ii];
         }
     }
     fclose(fpb);

@@ -125,18 +125,18 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     PROCESSINFO *processinfo;
 
-    IDin  = image_ID(inputstream_name, data.image, data.NB_MAX_IMAGE);
-    IDmap = image_ID(IDmap_name, data.image, data.NB_MAX_IMAGE);
+    IDin  = image_ID(inputstream_name, dcimg, dcnimg);
+    IDmap = image_ID(IDmap_name, dcimg, dcnimg);
     // Size of IDmap is different depending if forward or reverse lookup !
     // Reverse = 0: same size as IDin
     // Reverse = 1: same size as IDout
 
-    xsizein = data.image[IDin].md[0].size[0];
-    ysizein = data.image[IDin].md[0].size[1];
+    xsizein = dcimg[IDin].md[0].size[0];
+    ysizein = dcimg[IDin].md[0].size[1];
 
-    if(data.image[IDin].md[0].naxis > 2)
+    if(dcimg[IDin].md[0].naxis > 2)
     {
-        NBslice = data.image[IDin].md[0].size[2];
+        NBslice = dcimg[IDin].md[0].size[2];
     }
     else
     {
@@ -179,10 +179,10 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         abort();
     }
 
-    int in_semwaitindex = ImageStreamIO_getsemwaitindex(&data.image[IDin], 0);
+    int in_semwaitindex = ImageStreamIO_getsemwaitindex(&dcimg[IDin], 0);
 
-    if(reverse == 0 && (xsizein != data.image[IDmap].md[0].size[0] ||
-                        ysizein != data.image[IDmap].md[0].size[1]))
+    if(reverse == 0 && (xsizein != dcimg[IDmap].md[0].size[0] ||
+                        ysizein != dcimg[IDmap].md[0].size[1]))
     {
         printf(
             "ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, "
@@ -191,12 +191,12 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
             xsizein,
             ysizein,
             IDmap_name,
-            data.image[IDmap].md[0].size[0],
-            data.image[IDmap].md[0].size[0]);
+            dcimg[IDmap].md[0].size[0],
+            dcimg[IDmap].md[0].size[0]);
         exit(0);
     }
-    if(reverse == 1 && (xsizeim != data.image[IDmap].md[0].size[0] ||
-                        ysizeim != data.image[IDmap].md[0].size[1]))
+    if(reverse == 1 && (xsizeim != dcimg[IDmap].md[0].size[0] ||
+                        ysizeim != dcimg[IDmap].md[0].size[1]))
     {
         printf(
             "ERROR: xsize, ysize for %s (%d, %d) does not match %s (%d, "
@@ -205,8 +205,8 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
             xsizein,
             ysizein,
             IDmap_name,
-            data.image[IDmap].md[0].size[0],
-            data.image[IDmap].md[0].size[0]);
+            dcimg[IDmap].md[0].size[0],
+            dcimg[IDmap].md[0].size[0]);
         exit(0);
     }
     if(NBslice > 1 && reverse == 1)
@@ -221,21 +221,21 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     create_image_ID(IDout_name,
                     2,
                     sizearray,
-                    data.image[IDin].md->datatype,
+                    dcimg[IDin].md->datatype,
                     1,
-                    data.image[IDin].md->NBkw,
+                    dcimg[IDin].md->NBkw,
                     0,
                     &IDout);
 
     // Copy the keywords over from IDin to IDout
-    int NBkw = data.image[IDin].md[0].NBkw;
+    int NBkw = dcimg[IDin].md[0].NBkw;
     for(int kw = 0; kw < NBkw; ++kw)
     {
-        strcpy(data.image[IDout].kw[kw].name, data.image[IDin].kw[kw].name);
-        data.image[IDout].kw[kw].type  = data.image[IDin].kw[kw].type;
-        data.image[IDout].kw[kw].value = data.image[IDin].kw[kw].value;
-        strcpy(data.image[IDout].kw[kw].comment,
-               data.image[IDin].kw[kw].comment);
+        strcpy(dcimg[IDout].kw[kw].name, dcimg[IDin].kw[kw].name);
+        dcimg[IDout].kw[kw].type  = dcimg[IDin].kw[kw].type;
+        dcimg[IDout].kw[kw].value = dcimg[IDin].kw[kw].value;
+        strcpy(dcimg[IDout].kw[kw].comment,
+               dcimg[IDin].kw[kw].comment);
     }
 
     dtarray = (double *) malloc(sizeof(double) * NBslice);
@@ -312,13 +312,13 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
         for(slice = 0; slice < NBslice; slice++)
         {
-            sliceii = slice * data.image[IDmap].md[0].size[0] *
-                      data.image[IDmap].md[0].size[1];
+            sliceii = slice * dcimg[IDmap].md[0].size[0] *
+                      dcimg[IDmap].md[0].size[1];
             for(ii = 0; ii < nbpixslice[slice]; ii++)
             {
                 // ocam2kpixi files MUST now be in int32 - otherwise we'll overflow in 240x240
-                data.image[IDout_pixslice]
-                .array.UI16[data.image[IDmap].array.UI32[sliceii + ii]] =
+                dcimg[IDout_pixslice]
+                .array.UI16[dcimg[IDmap].array.UI32[sliceii + ii]] =
                     (unsigned short)(1 + slice);
             }
         }
@@ -336,24 +336,24 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     processinfo_loopstart(
         processinfo); // Notify processinfo that we are entering loop
 
-    printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+    printf("cnt0: %ld; loopOK %d\n", dcimg[IDin].md[0].cnt0, loopOK);
     fflush(stdout);
 
     // long loopcnt = 0;
     while(loopOK == 1)
     {
         loopOK = processinfo_loopstep(processinfo);
-        //printf("cnt0: %ld; loopOK %d\n", data.image[IDin].md[0].cnt0, loopOK);
+        //printf("cnt0: %ld; loopOK %d\n", dcimg[IDin].md[0].cnt0, loopOK);
         fflush(stdout);
 
-        if(data.image[IDin].md[0].sem == 0)
+        if(dcimg[IDin].md[0].sem == 0)
         {
-            while(data.image[IDin].md[0].cnt0 ==
+            while(dcimg[IDin].md[0].cnt0 ==
                     cnt) // test if new frame exists
             {
                 usleep(5);
             }
-            cnt = data.image[IDin].md[0].cnt0;
+            cnt = dcimg[IDin].md[0].cnt0;
         }
         else
         {
@@ -364,16 +364,16 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
             }
             ts.tv_sec += 1;
 
-            semr = ImageStreamIO_semtimedwait(&data.image[IDin],
+            semr = ImageStreamIO_semtimedwait(&dcimg[IDin],
                                               in_semwaitindex,
                                               &ts);
 
             if(processinfo->loopcnt == 0)
             {
-                semval = ImageStreamIO_semvalue(data.image + IDin, in_semwaitindex);
+                semval = ImageStreamIO_semvalue(dcimg + IDin, in_semwaitindex);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
-                    ImageStreamIO_semtrywait(data.image + IDin, in_semwaitindex);
+                    ImageStreamIO_semtrywait(dcimg + IDin, in_semwaitindex);
                 }
             }
         }
@@ -384,7 +384,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
         {
             if(semr == 0)
             {
-                slice = data.image[IDin].md[0].cnt1;
+                slice = dcimg[IDin].md[0].cnt1;
                 if(slice > oldslice + 1)
                 {
                     slice = oldslice + 1;
@@ -397,19 +397,19 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 //   clock_gettime(CLOCK_MILK, &tarray[slice]);
                 //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
-                data.image[IDout].md[0].write = 1;
+                dcimg[IDout].md[0].write = 1;
 
                 if(reverse == 0)  // legacy forward lookup mode
                 {
                     if(slice < NBslice)
                     {
-                        sliceii = slice * data.image[IDmap].md[0].size[0] *
-                                  data.image[IDmap].md[0].size[1];
+                        sliceii = slice * dcimg[IDmap].md[0].size[0] *
+                                  dcimg[IDmap].md[0].size[1];
                         for(ii = 0; ii < nbpixslice[slice]; ii++)
                         {
-                            data.image[IDout].array.UI16
-                            [data.image[IDmap].array.UI32[sliceii + ii]] =
-                                data.image[IDin].array.UI16[sliceii + ii];
+                            dcimg[IDout].array.UI16
+                            [dcimg[IDmap].array.UI32[sliceii + ii]] =
+                                dcimg[IDin].array.UI16[sliceii + ii];
                         }
                     }
                 }
@@ -417,40 +417,40 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                 {
                     for(ii = 0; ii < nbpixout; ++ii)
                     {
-                        data.image[IDout].array.UI16[ii] =
-                            data.image[IDin]
-                            .array.UI16[data.image[IDmap].array.UI32[ii]];
+                        dcimg[IDout].array.UI16[ii] =
+                            dcimg[IDin]
+                            .array.UI16[dcimg[IDmap].array.UI32[ii]];
                     }
                 }
 
                 // Copy the value of the keywords
                 for(int kw = 0; kw < NBkw; ++kw)
                 {
-                    data.image[IDout].kw[kw].value =
-                        data.image[IDin].kw[kw].value;
+                    dcimg[IDout].kw[kw].value =
+                        dcimg[IDin].kw[kw].value;
                 }
 
                 if(slice == NBslice - 1)
                 {
-                    processinfo_update_output_stream(processinfo, &data.image[IDout], NULL);
+                    processinfo_update_output_stream(processinfo, &dcimg[IDout], NULL);
                 }
 
-                data.image[IDout].md[0].cnt1 = slice;
+                dcimg[IDout].md[0].cnt1 = slice;
 
                 // Whatever hacks these are to manage slicey business?
-                semval = ImageStreamIO_semvalue(data.image + IDout, 2);
+                semval = ImageStreamIO_semvalue(dcimg + IDout, 2);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image + IDout, 2);
+                    ImageStreamIO_sempost(dcimg + IDout, 2);
                 }
 
-                semval = ImageStreamIO_semvalue(data.image + IDout, 3);
+                semval = ImageStreamIO_semvalue(dcimg + IDout, 3);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image + IDout, 3);
+                    ImageStreamIO_sempost(dcimg + IDout, 3);
                 }
 
-                data.image[IDout].md[0].write = 0;
+                dcimg[IDout].md[0].write = 0;
 
                 oldslice = slice;
             }
@@ -464,7 +464,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     // ==================================
     processinfo_cleanExit(processinfo);
 
-    /*    if((data.processinfo == 1) && (processinfo->loopstat != 4)) {
+    /*    if((dcprocinfo == 1) && (processinfo->loopstat != 4)) {
             processinfo_cleanExit(processinfo);
         }*/
 

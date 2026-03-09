@@ -21,27 +21,27 @@ imageID fft_structure_function(const char *ID_in, const char *ID_out)
     uint8_t  datatype;
 
     autocorrelation(ID_in, ID_out);
-    IDout    = image_ID(ID_out, data.image, data.NB_MAX_IMAGE);
-    nelement = data.image[IDout].md[0].nelement;
+    IDout    = image_ID(ID_out, dcimg, dcnimg);
+    nelement = dcimg[IDout].md[0].nelement;
 
-    datatype = data.image[IDout].md[0].datatype;
+    datatype = dcimg[IDout].md[0].datatype;
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        value = -data.image[IDout].array.F[0];
+        value = -dcimg[IDout].array.F[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.F[ii] += value;
-            data.image[IDout].array.F[ii] *= -2.0 / sqrt(nelement);
+            dcimg[IDout].array.F[ii] += value;
+            dcimg[IDout].array.F[ii] *= -2.0 / sqrt(nelement);
         }
     }
     if(datatype == _DATATYPE_DOUBLE)
     {
-        value = -data.image[IDout].array.D[0];
+        value = -dcimg[IDout].array.D[0];
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
-            data.image[IDout].array.D[ii] += value;
-            data.image[IDout].array.D[ii] *= -2.0 / sqrt(nelement);
+            dcimg[IDout].array.D[ii] += value;
+            dcimg[IDout].array.D[ii] *= -2.0 / sqrt(nelement);
         }
     }
 

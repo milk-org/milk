@@ -94,20 +94,20 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
 
     // CHECK RESULT
     /*   arraysizetmp = (long*) malloc(sizeof(long)*3);
-       ID_R = image_ID("Rmat", data.image, data.NB_MAX_IMAGE);
-       ID_C = image_ID("Cmat", data.image, data.NB_MAX_IMAGE);
+       ID_R = image_ID("Rmat", dcimg, dcnimg);
+       ID_C = image_ID("Cmat", dcimg, dcnimg);
 
-       if(data.image[ID_R].md[0].naxis==3)
+       if(dcimg[ID_R].md[0].naxis==3)
        {
-           m = data.image[ID_R].md[0].size[0]*data.image[ID_R].md[0].size[1];
-           n = data.image[ID_R].md[0].size[2];
+           m = dcimg[ID_R].md[0].size[0]*dcimg[ID_R].md[0].size[1];
+           n = dcimg[ID_R].md[0].size[2];
            printf("3D image -> %ld %ld\n", m, n);
            fflush(stdout);
        }
        else
        {
-           m = data.image[ID_R].md[0].size[0];
-           n = data.image[ID_R].md[0].size[1];
+           m = dcimg[ID_R].md[0].size[0];
+           n = dcimg[ID_R].md[0].size[1];
            printf("2D image -> %ld %ld\n", m, n);
            fflush(stdout);
        }
@@ -122,8 +122,8 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
                {
                    val = 0.0;
                    for(k=0;k<m;k++)
-                       val += data.image[ID_C].array.F[ii*m+k] * data.image[ID_R].array.F[jj*m+k];
-                   data.image[ID].array.F[jj*n+ii] = val;
+                       val += dcimg[ID_C].array.F[ii*m+k] * dcimg[ID_R].array.F[jj*m+k];
+                   dcimg[ID].array.F[jj*n+ii] = val;
                }
        save_fits("SVDcheck", "SVDcheck.fits");
 
@@ -177,9 +177,9 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
                     &ID_cmd_modes);
 
     GPU_loop_MultMat_setup(0,
-                           data.image[ID_contrM].name,
-                           data.image[ID_WFS].name,
-                           data.image[ID_cmd_modes].name,
+                           dcimg[ID_contrM].name,
+                           dcimg[ID_WFS].name,
+                           dcimg[ID_cmd_modes].name,
                            GPUcnt,
                            GPUdevices,
                            0,

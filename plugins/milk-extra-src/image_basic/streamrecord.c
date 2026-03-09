@@ -67,21 +67,21 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
     long          kk;
     char         *ptr;
 
-    IDstream = image_ID(streamname, data.image, data.NB_MAX_IMAGE);
-    xsize    = data.image[IDstream].md[0].size[0];
-    ysize    = data.image[IDstream].md[0].size[1];
+    IDstream = image_ID(streamname, dcimg, dcnimg);
+    xsize    = dcimg[IDstream].md[0].size[0];
+    ysize    = dcimg[IDstream].md[0].size[1];
     zsize    = NBframes;
     xysize   = xsize * ysize;
 
     create_3Dimage_ID(IDname, xsize, ysize, zsize, &ID);
-    cnt = data.image[IDstream].md[0].cnt0;
+    cnt = dcimg[IDstream].md[0].cnt0;
 
     kk = 0;
 
-    ptr = (char *) data.image[ID].array.F;
+    ptr = (char *) dcimg[ID].array.F;
     while(kk != NBframes)
     {
-        while(cnt > data.image[IDstream].md[0].cnt0)
+        while(cnt > dcimg[IDstream].md[0].cnt0)
         {
             usleep(waitdelayus);
         }
@@ -92,10 +92,10 @@ imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
                kk,
                NBframes,
                cnt,
-               data.image[ID].md[0].cnt0);
+               dcimg[ID].md[0].cnt0);
         fflush(stdout);
 
-        memcpy(ptr, data.image[IDstream].array.F, sizeof(float) * xysize);
+        memcpy(ptr, dcimg[IDstream].array.F, sizeof(float) * xysize);
         ptr += sizeof(float) * xysize;
         kk++;
     }

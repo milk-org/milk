@@ -137,10 +137,10 @@ errno_t compute_SVD(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(imgU, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(imgS, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(imgV, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgU, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(imgS, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(imgV, ERRMODE_NULL, dcimg, dcnimg);
 
 
     // input dimensions
@@ -626,7 +626,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM = imgid_make_from_name(inM);
-    resolveIMGID(&imginM, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     IMGID imgU  = imgid_make_from_name(outU);

@@ -1434,12 +1434,11 @@ int main(int argc, char *argv[]) { \
     APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
     CONFCHECK_FN) \
 int main(int argc, char *argv[]) { \
-    extern void CLI_data_init(); \
-    CLI_data_init(); \
+    milk_data_init(); \
     extern void milkfps_set_image_array( \
         IMAGE *imarray, long nb_max); \
     milkfps_set_image_array( \
-        data.image, data.NB_MAX_IMAGE); \
+        milk_data.image, milk_data.NB_MAX_IMAGE); \
     fps_cli_set_standalone_args(argc, argv); \
     char fps_name[STRINGMAXLEN_FPS_NAME] = ""; \
     strncpy(fps_name, \

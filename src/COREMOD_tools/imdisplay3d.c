@@ -61,9 +61,9 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
     char    cmd[512];
     FILE   *fp;
 
-    ID    = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[ID].md[0].size[0];
-    ysize = data.image[ID].md[0].size[1];
+    ID    = image_ID(IDname, dcimg, dcnimg);
+    xsize = dcimg[ID].md[0].size[0];
+    ysize = dcimg[ID].md[0].size[1];
 
     snprintf(cmd, 512, "gnuplot");
 
@@ -94,12 +94,12 @@ errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)
                     "%ld %ld %f\n",
                     ii,
                     jj,
-                    data.image[ID].array.F[jj * xsize + ii]);
+                    dcimg[ID].array.F[jj * xsize + ii]);
             fprintf(fp,
                     "%ld %ld %f\n",
                     ii,
                     jj,
-                    data.image[ID].array.F[jj * xsize + ii]);
+                    dcimg[ID].array.F[jj * xsize + ii]);
         }
         fprintf(fpgnuplot, "\n");
         fprintf(fp, "\n");

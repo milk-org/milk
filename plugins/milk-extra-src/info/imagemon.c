@@ -145,7 +145,7 @@ static errno_t compute_function()
     int diplaycntinterval = (int)((1.0 / *updatefrequency) / pinfotdelay);
     int dispcnt           = 0;
 
-    imageID ID        = image_ID(instreamname, data.image, data.NB_MAX_IMAGE);
+    imageID ID        = image_ID(instreamname, dcimg, dcnimg);
     int     TUIscreen = 2;
     int     sem       = -1;
 
@@ -199,7 +199,7 @@ static errno_t compute_function()
                 if(sem == -1)
                 {
                     int semdefault = 0;
-                    sem = ImageStreamIO_getsemwaitindex(&data.image[ID],
+                    sem = ImageStreamIO_getsemwaitindex(&dcimg[ID],
                                                         semdefault);
                 }
                 long  NBtsamples     = 10000;
@@ -276,7 +276,7 @@ CLIADDCMD_info__imagemon()
 
 errno_t printstatus(imageID ID)
 {
-    IMAGE *image = &data.image[ID];
+    IMAGE *image = &dcimg[ID];
 
     long          j;
     double        frequ;

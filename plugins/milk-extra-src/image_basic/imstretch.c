@@ -19,9 +19,9 @@ imageID basic_stretch(const char *__restrict name_in,
     imageID  IDout;
     long     i, j;
 
-    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
 
     create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout);
 
@@ -32,8 +32,8 @@ imageID basic_stretch(const char *__restrict name_in,
             j = Ycenter + (long)(1.0 * (jj - Ycenter) * coeff);
             if((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
             {
-                data.image[IDout].array.F[jj * naxes[0] + ii] +=
-                    data.image[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
+                dcimg[IDout].array.F[jj * naxes[0] + ii] +=
+                    dcimg[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
             }
         }
 
@@ -66,9 +66,9 @@ imageID basic_stretch_range(const char *__restrict name_in,
     float    eps = 1.0e-5;
     float    u, t, tmp;
 
-    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
 
     FUNC_CHECK_RETURN(create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout));
 
@@ -113,14 +113,14 @@ imageID basic_stretch_range(const char *__restrict name_in,
                         (j > -1))
                 {
                     tmp = (1.0 - u) * (1.0 - t) *
-                          data.image[IDin].array.F[j * naxes[0] + i];
+                          dcimg[IDin].array.F[j * naxes[0] + i];
                     tmp += (1.0 - u) * t *
-                           data.image[IDin].array.F[(j + 1) * naxes[0] + i];
+                           dcimg[IDin].array.F[(j + 1) * naxes[0] + i];
                     tmp += u * (1.0 - t) *
-                           data.image[IDin].array.F[j * naxes[0] + i + 1];
+                           dcimg[IDin].array.F[j * naxes[0] + i + 1];
                     tmp += u * t *
-                           data.image[IDin].array.F[(j + 1) * naxes[0] + i + 1];
-                    data.image[IDout].array.F[jj * naxes[0] + ii] +=
+                           dcimg[IDin].array.F[(j + 1) * naxes[0] + i + 1];
+                    dcimg[IDout].array.F[jj * naxes[0] + ii] +=
                         mcoeff * tmp / coeff / coeff;
                 }
             }
@@ -147,9 +147,9 @@ imageID basic_stretchc(const char *__restrict name_in,
     long     i, j;
     long     Xcenter, Ycenter;
 
-    IDin     = image_ID(name_in, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
     Xcenter  = naxes[0] / 2;
     Ycenter  = naxes[1] / 2;
 
@@ -162,8 +162,8 @@ imageID basic_stretchc(const char *__restrict name_in,
             j = Ycenter + (long)(1.0 * (jj - Ycenter) * coeff);
             if((i < naxes[0]) && (j < naxes[1]) && (i > -1) && (j > -1))
             {
-                data.image[IDout].array.F[jj * naxes[0] + ii] +=
-                    data.image[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
+                dcimg[IDout].array.F[jj * naxes[0] + ii] +=
+                    dcimg[IDin].array.F[j * naxes[0] + i] / coeff / coeff;
             }
         }
 

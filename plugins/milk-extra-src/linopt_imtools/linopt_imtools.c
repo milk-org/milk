@@ -195,7 +195,7 @@ imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
         for(ii = 0; ii < xsize; ii++)
         {
             float r                                    = 1.0 * ii / r0pix;
-            data.image[IDout].array.F[kk * xsize + ii] = pow(r, 1.0 * kk);
+            dcimg[IDout].array.F[kk * xsize + ii] = pow(r, 1.0 * kk);
         }
     }
 
@@ -324,12 +324,12 @@ imageID linopt_imtools_image_construct_stream(
 
 
 
-    IDmodes = image_ID(IDmodes_name, data.image, data.NB_MAX_IMAGE);
-    //datatype = data.image[IDmodes].md[0].datatype;
+    IDmodes = image_ID(IDmodes_name, dcimg, dcnimg);
+    //datatype = dcimg[IDmodes].md[0].datatype;
 
-    xsize = data.image[IDmodes].md[0].size[0];
-    ysize = data.image[IDmodes].md[0].size[1];
-    zsize = data.image[IDmodes].md[0].size[2];
+    xsize = dcimg[IDmodes].md[0].size[0];
+    ysize = dcimg[IDmodes].md[0].size[1];
+    zsize = dcimg[IDmodes].md[0].size[2];
 
     sizexy = xsize * ysize;
 
@@ -342,44 +342,44 @@ imageID linopt_imtools_image_construct_stream(
         NOSEM = 0;
     }
 
-    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
-    IDcoeff = image_ID(IDcoeff_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDout_name, dcimg, dcnimg);
+    IDcoeff = image_ID(IDcoeff_name, dcimg, dcnimg);
 
     while(1 == 1)
     {
-        if((data.image[IDcoeff].md[0].sem == 0) || (NOSEM == 1))
+        if((dcimg[IDcoeff].md[0].sem == 0) || (NOSEM == 1))
         {
-            while(cnt == data.image[IDcoeff].md[0].cnt0) // test if new frame exists
+            while(cnt == dcimg[IDcoeff].md[0].cnt0) // test if new frame exists
             {
                 usleep(5);
             }
-            cnt = data.image[IDcoeff].md[0].cnt0;
+            cnt = dcimg[IDcoeff].md[0].cnt0;
         }
         else
         {
-            ImageStreamIO_semwait(data.image+IDcoeff, 0);
+            ImageStreamIO_semwait(dcimg+IDcoeff, 0);
         }
 
         for(ii = 0; ii < sizexy; ii++)
         {
-            data.image[IDout].array.F[ii] = 0.0;
+            dcimg[IDout].array.F[ii] = 0.0;
         }
 
-        data.image[IDout].md[0].write = 1;
+        dcimg[IDout].md[0].write = 1;
         for(kk = 0; kk < zsize; kk++)
             for(ii = 0; ii < sizexy; ii++)
             {
-                data.image[IDout].array.F[ii] += data.image[IDcoeff].array.F[kk] *
-                                                 data.image[IDmodes].array.F[kk * sizexy + ii];
+                dcimg[IDout].array.F[ii] += dcimg[IDcoeff].array.F[kk] *
+                                                 dcimg[IDmodes].array.F[kk * sizexy + ii];
             }
-        semval = ImageStreamIO_semvalue(data.image+IDout, 0);
+        semval = ImageStreamIO_semvalue(dcimg+IDout, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            ImageStreamIO_sempost(data.image+IDout, 0);
+            ImageStreamIO_sempost(dcimg+IDout, 0);
         }
 
-        data.image[IDout].md[0].cnt0++;
-        data.image[IDout].md[0].write = 0;
+        dcimg[IDout].md[0].cnt0++;
+        dcimg[IDout].md[0].write = 0;
     }
 
     return IDout;
@@ -446,13 +446,13 @@ double linopt_imtools_match_slow(
     params[0] = 0.0;
 
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
-    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
-    IDref = image_ID(IDref_name, data.image, data.NB_MAX_IMAGE);
-    n = data.image[IDref].md[0].size[2];
+    IDmask = image_ID(IDmask_name, dcimg, dcnimg);
+    IDref = image_ID(IDref_name, dcimg, dcnimg);
+    n = dcimg[IDref].md[0].size[2];
 
     printf("Number of points = %ld x %ld\n", naxes[0]*naxes[1], n);
 
@@ -509,11 +509,11 @@ double linopt_imtools_match_slow(
     // compute polynomial coefficients
     for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
     {
-        v0 = (long double)(data.image[ID].array.F[ii] * data.image[IDmask].array.F[ii]);
+        v0 = (long double)(dcimg[ID].array.F[ii] * dcimg[IDmask].array.F[ii]);
         for(k = 0; k < n; k++)
         {
-            tarray[k] = (long double)(data.image[IDref].array.F[naxes[0] * naxes[1] * k +
-                                      ii] * data.image[IDmask].array.F[ii]);
+            tarray[k] = (long double)(dcimg[IDref].array.F[naxes[0] * naxes[1] * k +
+                                      ii] * dcimg[IDmask].array.F[ii]);
         }
         C0 += v0 * v0;
         for(k = 0; k < n; k++)
@@ -658,7 +658,7 @@ double linopt_imtools_match_slow(
     create_2Dimage_ID(IDsol_name, n, 1, &IDsol);
     for(i = 0; i < n; i++)
     {
-        data.image[IDsol].array.F[i] = alphabest[i];
+        dcimg[IDsol].array.F[i] = alphabest[i];
     }
 
 
@@ -669,13 +669,13 @@ double linopt_imtools_match_slow(
 
     for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
     {
-        data.image[IDout].array.F[ii] = 0.0;
+        dcimg[IDout].array.F[ii] = 0.0;
     }
     for(k = 0; k < n; k++)
         for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
         {
-            data.image[IDout].array.F[ii] += alphabest[k] *
-                                             data.image[IDref].array.F[naxes[0] * naxes[1] * k + ii];
+            dcimg[IDout].array.F[ii] += alphabest[k] *
+                                             dcimg[IDref].array.F[naxes[0] * naxes[1] * k + ii];
         }
 
 
@@ -727,13 +727,13 @@ double linopt_imtools_match(
     gsl_matrix *cov;
     double chisq;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     n = naxes[0] * naxes[1];
-    IDmask = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
-    IDref = image_ID(IDref_name, data.image, data.NB_MAX_IMAGE);
-    p = data.image[IDref].md[0].size[2];
+    IDmask = image_ID(IDmask_name, dcimg, dcnimg);
+    IDref = image_ID(IDref_name, dcimg, dcnimg);
+    p = dcimg[IDref].md[0].size[2];
 
     // some verification
     if(IDref == -1)
@@ -744,11 +744,11 @@ double linopt_imtools_match(
     {
         PRINT_ERROR("input mask missing\n");
     }
-    if(data.image[IDmask].md[0].size[0] != data.image[ID].md[0].size[0])
+    if(dcimg[IDmask].md[0].size[0] != dcimg[ID].md[0].size[0])
     {
         PRINT_ERROR("mask size[0] is wrong\n");
     }
-    if(data.image[IDmask].md[0].size[1] != data.image[ID].md[0].size[1])
+    if(dcimg[IDmask].md[0].size[1] != dcimg[ID].md[0].size[1])
     {
         PRINT_ERROR("mask size[1] is wrong\n");
     }
@@ -760,20 +760,20 @@ double linopt_imtools_match(
     y = gsl_vector_alloc(n);  // measurements
     for(i = 0; i < n; i++)
     {
-        gsl_vector_set(y, i, data.image[ID].array.F[i]);
+        gsl_vector_set(y, i, dcimg[ID].array.F[i]);
     }
 
     w = gsl_vector_alloc(n);
     for(i = 0; i < n; i++)
     {
-        gsl_vector_set(w, i, data.image[IDmask].array.F[i]);
+        gsl_vector_set(w, i, dcimg[IDmask].array.F[i]);
     }
 
     X = gsl_matrix_alloc(n, p);
     for(i = 0; i < n; i++)
         for(j = 0; j < p; j++)
         {
-            gsl_matrix_set(X, i, j, data.image[IDref].array.F[j * n + i]);
+            gsl_matrix_set(X, i, j, dcimg[IDref].array.F[j * n + i]);
         }
     c = gsl_vector_alloc(p);  // solution (coefficients)
     cov = gsl_matrix_alloc(p, p);
@@ -789,7 +789,7 @@ double linopt_imtools_match(
     create_2Dimage_ID(IDsol_name, p, 1, &IDsol);
     for(i = 0; i < p; i++)
     {
-        data.image[IDsol].array.F[i] = gsl_vector_get(c, i);
+        dcimg[IDsol].array.F[i] = gsl_vector_get(c, i);
     }
 
     gsl_multifit_linear_free(work);
@@ -806,13 +806,13 @@ double linopt_imtools_match(
     create_2Dimage_ID(IDout_name, naxes[0], naxes[1], &IDout);
     for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
     {
-        data.image[IDout].array.F[ii] = 0.0;
+        dcimg[IDout].array.F[ii] = 0.0;
     }
     for(k = 0; k < p; k++)
         for(ii = 0; ii < naxes[0]*naxes[1]; ii++)
         {
-            data.image[IDout].array.F[ii] += data.image[IDsol].array.F[k] *
-                                             data.image[IDref].array.F[naxes[0] * naxes[1] * k + ii];
+            dcimg[IDout].array.F[ii] += dcimg[IDsol].array.F[k] *
+                                             dcimg[IDref].array.F[naxes[0] * naxes[1] * k + ii];
         }
 
     return(chisq);

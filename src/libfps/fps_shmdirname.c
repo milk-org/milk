@@ -9,7 +9,7 @@
 #include "fps.h"
 #include "fps_internal.h"
 
-// #define SHAREDSHMDIR data.shmdir
+// #define SHAREDSHMDIR dcshmdir
 #ifndef SHAREDSHMDIR
 #define SHAREDSHMDIR "/milk/shm"
 #endif

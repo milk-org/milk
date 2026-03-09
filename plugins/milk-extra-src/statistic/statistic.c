@@ -28,7 +28,7 @@
 /* =============================================================================================== */
 
 #include "CLIcore.h"
-#include <gsl/gsl_randist.h>
+
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -156,8 +156,8 @@ double ran1()
 {
     double value;
 
-    value = data.INVRANDMAX * rand();
-    // gsl_rng_uniform (data.rndgen);// data.INVRANDMAX*rand();
+    value = dcinvrandmax * rand();
+    // gsl_rng_uniform (dcrndgen);// dcinvrandmax*rand();
 
     return (value);
 }
@@ -165,13 +165,13 @@ double ran1()
 double gauss()
 {
     // use first option if using ranlxs generator
-    // return(gsl_ran_ugaussian (data.rndgen));
+    // return(gsl_ran_ugaussian (dcrndgen));
 
     // for speed (4.1x faster than default), but not that random (some fringes appear in image)
-    // return(gsl_ran_gaussian_ziggurat (data.rndgen,1.0));
+    // return(gsl_ran_gaussian_ziggurat (dcrndgen,1.0));
 
     // default
-    return (gsl_ran_gaussian(data.rndgen, 1.0));
+    return (milk_rng_gaussian(1.0));
 }
 
 double gauss_trc()
@@ -188,7 +188,7 @@ double gauss_trc()
 
 long poisson(double mu)
 {
-    return (gsl_ran_poisson(data.rndgen, (double) mu));
+    return (milk_rng_poisson((double) mu));
 }
 
 double cfits_gammaln(double xx)
@@ -298,22 +298,22 @@ long put_poisson_noise(const char *ID_in_name, const char *ID_out_name)
     long naxis;
     long i;
 
-    ID_in     = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
-    naxis     = data.image[ID_in].md[0].naxis;
+    ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
+    naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
     for(i = 0; i < naxis; i++)
     {
-        nelements *= data.image[ID_in].md[0].size[i];
+        nelements *= dcimg[ID_in].md[0].size[i];
     }
 
     copy_image_ID(ID_in_name, ID_out_name, 0);
 
-    ID_out = image_ID(ID_out_name, data.image, data.NB_MAX_IMAGE);
+    ID_out = image_ID(ID_out_name, dcimg, dcnimg);
     //  srand(time(NULL));
 
     for(ii = 0; ii < nelements; ii++)
     {
-        data.image[ID_out].array.F[ii] = poisson(data.image[ID_in].array.F[ii]);
+        dcimg[ID_out].array.F[ii] = poisson(dcimg[ID_in].array.F[ii]);
     }
 
     return (ID_out);
@@ -330,23 +330,23 @@ long put_gauss_noise(const char *ID_in_name,
     long naxis;
     long i;
 
-    ID_in     = image_ID(ID_in_name, data.image, data.NB_MAX_IMAGE);
-    naxis     = data.image[ID_in].md[0].naxis;
+    ID_in     = image_ID(ID_in_name, dcimg, dcnimg);
+    naxis     = dcimg[ID_in].md[0].naxis;
     nelements = 1;
     for(i = 0; i < naxis; i++)
     {
-        nelements *= data.image[ID_in].md[0].size[i];
+        nelements *= dcimg[ID_in].md[0].size[i];
     }
 
     copy_image_ID(ID_in_name, ID_out_name, 0);
 
-    ID_out = image_ID(ID_out_name, data.image, data.NB_MAX_IMAGE);
+    ID_out = image_ID(ID_out_name, dcimg, dcnimg);
     //  srand(time(NULL));
 
     for(ii = 0; ii < nelements; ii++)
     {
-        data.image[ID_out].array.F[ii] =
-            data.image[ID_in].array.F[ii] + ampl * gauss();
+        dcimg[ID_out].array.F[ii] =
+            dcimg[ID_in].array.F[ii] + ampl * gauss();
     }
 
     return (ID_out);
@@ -411,10 +411,10 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
     */
 
     /*
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[IDin].md[0].size[0];
-    ysize = data.image[IDin].md[0].size[1];
-    zsize = data.image[IDin].md[0].size[2];
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
+    xsize = dcimg[IDin].md[0].size[0];
+    ysize = dcimg[IDin].md[0].size[1];
+    zsize = dcimg[IDin].md[0].size[2];
 
     long xysize = xsize*ysize;
 
@@ -482,11 +482,11 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
     k = 0;
     BirchCFarray[k].active = 1;
     BirchCFarray[k].NBpt = 1;
-    memcpy(BirchCFarray[k].sum, data.image[IDin].array.F, sizeof(float)*xysize);
+    memcpy(BirchCFarray[k].sum, dcimg[IDin].array.F, sizeof(float)*xysize);
 
     long ii;
     for(ii=0;ii<xysize;ii++)
-    	BirchCFarray[k].ssum[ii] = data.image[IDin].array.F[ii]*data.image[IDin].array.F[ii];
+    	BirchCFarray[k].ssum[ii] = dcimg[IDin].array.F[ii]*dcimg[IDin].array.F[ii];
 
 
     //
@@ -509,7 +509,7 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
     		for(ii=0;ii<xysize;ii++)
     		{
     			double tmpv;
-    			tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - data.image[IDin].array.F[kin*xysize+ii];
+    			tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - dcimg[IDin].array.F[kin*xysize+ii];
     			distmin += tmpv*tmpv;
     		}
 
@@ -519,7 +519,7 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
     			for(ii=0;ii<xysize;ii++)
     			{
     				double tmpv;
-    				tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - data.image[IDin].array.F[kin*xysize+ii];
+    				tmpv = BirchCFarray[BirchCFarray[k].children_index[kk]].sum[ii]/BirchCFarray[BirchCFarray[k].children_index[kk]].NBpt - dcimg[IDin].array.F[kin*xysize+ii];
     				dist += tmpv*tmpv;
     			}
     			if(dist<distmin)
@@ -593,8 +593,8 @@ long statistic_BIRCH_clustering(__attribute__((unused)) const char *IDin_name,
 
     			for(ii=0;ii<xysize;ii++)
     			{
-    				BirchCFarray[k].sum[ii] += data.image[IDin].array.F[kin*xysize+ii];
-    				BirchCFarray[k].ssum[ii] += data.image[IDin].array.F[kin*xysize+ii]*data.image[IDin].array.F[kin*xysize+ii];
+    				BirchCFarray[k].sum[ii] += dcimg[IDin].array.F[kin*xysize+ii];
+    				BirchCFarray[k].ssum[ii] += dcimg[IDin].array.F[kin*xysize+ii]*dcimg[IDin].array.F[kin*xysize+ii];
     			}
     		}
     	}

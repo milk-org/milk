@@ -193,7 +193,7 @@ PROCESSINFO *processinfo_shm_create(
     pinfo->dtiter_limit_enable = 0;
     pinfo->dtexec_limit_enable = 0;
 
-    // data.pinfo = pinfo; // REMOVED
+    // dcpinfo = pinfo; // REMOVED
     pinfo->PID = PID;
 
     // create logfile

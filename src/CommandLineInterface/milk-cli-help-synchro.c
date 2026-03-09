@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     (void) argv;
 
     // Initialize data structure
-    data.quiet = 1;
+    dcquiet = 1;
     CLI_startup();
 
     // Call the centralized help function

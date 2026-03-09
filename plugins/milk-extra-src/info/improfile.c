@@ -86,9 +86,9 @@ errno_t profile(const char *ID_name,
     int *mask;
     long IDmask; // if profmask exists
 
-    ID        = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0]  = data.image[ID].md[0].size[0];
-    naxes[1]  = data.image[ID].md[0].size[1];
+    ID        = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0]  = dcimg[ID].md[0].size[0];
+    naxes[1]  = dcimg[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
 
     dist = (double *) malloc(nb_step * sizeof(double));
@@ -126,12 +126,12 @@ errno_t profile(const char *ID_name,
         abort();
     }
 
-    IDmask = image_ID("profmask", data.image, data.NB_MAX_IMAGE);
+    IDmask = image_ID("profmask", dcimg, dcnimg);
     if(IDmask != -1)
     {
         for(unsigned long ii = 0; ii < nelements; ii++)
         {
-            if(data.image[IDmask].array.F[ii] > 0.5)
+            if(dcimg[IDmask].array.F[ii] > 0.5)
             {
                 mask[ii] = 1;
             }
@@ -173,9 +173,9 @@ errno_t profile(const char *ID_name,
             if((i < nb_step) && (mask[jj * naxes[0] + ii] == 1))
             {
                 dist[i] += distance;
-                mean[i] += data.image[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += data.image[ID].array.F[jj * naxes[0] + ii] *
-                          data.image[ID].array.F[jj * naxes[0] + ii];
+                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
+                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
+                          dcimg[ID].array.F[jj * naxes[0] + ii];
                 counts[i] += 1;
             }
         }
@@ -196,8 +196,8 @@ errno_t profile(const char *ID_name,
             if((i < nb_step) && (mask[jj * naxes[0] + ii] == 1))
             {
                 rms[i] +=
-                    (data.image[ID].array.F[jj * naxes[0] + ii] - mean[i]) *
-                    (data.image[ID].array.F[jj * naxes[0] + ii] - mean[i]);
+                    (dcimg[ID].array.F[jj * naxes[0] + ii] - mean[i]) *
+                    (dcimg[ID].array.F[jj * naxes[0] + ii] - mean[i]);
                 //	  counts[i] += 1;
             }
         }
@@ -286,12 +286,12 @@ errno_t profile2im(const char   *profile_name,
 
             if(i + 1 < nbpoints)
             {
-                data.image[ID].array.F[jj * size + ii] =
+                dcimg[ID].array.F[jj * size + ii] =
                     (1.0 - x) * profile_array[i] + x * profile_array[i + 1];
             }
             else if(i < nbpoints)
             {
-                data.image[ID].array.F[jj * size + ii] = profile_array[i];
+                dcimg[ID].array.F[jj * size + ii] = profile_array[i];
             }
         }
 
