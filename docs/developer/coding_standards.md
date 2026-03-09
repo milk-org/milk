@@ -1,9 +1,10 @@
-# Coding Standards # {#page_coding_standards}
-
-{#page_coding_standards}
+# Coding Standards # 
 
 
-@note This file: ./src/CommandLineInterface/doc/coding_standards.md
+
+
+> [!NOTE]
+> This file: ./src/CommandLineInterface/doc/coding_standards.md
 
 - @subpage page_ModuleFiles
 - @subpage page_DocumentingCode
