@@ -1,8 +1,15 @@
-#include "CLIcore.h"
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_matrix.h>
+#ifdef USE_MKL
+#include "mkl_lapacke.h"
+#else
+#include <cblas.h>
+#include <lapacke.h>
+#endif
+
+#include "CLIcore.h"
 
 
 /* ================================================================
@@ -85,154 +92,157 @@ void init_cmdsettings(void)
 }
 
 
-// rotation matrix written as SVD_VTm
-
-errno_t linopt_compute_SVDdecomp(const char *IDin_name,
-                                 const char *IDout_name,
-                                 const char *IDcoeff_name,
-                                 imageID    *outID)
+/**
+ * @brief SVD via eigenvalue decomposition
+ *        of D^T * D (LAPACK dsyev + CBLAS dgemm)
+ *
+ * Rotation matrix written as SVD_VTm.
+ */
+errno_t linopt_compute_SVDdecomp(
+    const char *IDin_name,
+    const char *IDout_name,
+    const char *IDcoeff_name,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID                    IDin;
-    imageID                    IDout;
-    imageID                    IDcoeff;
-    gsl_matrix                *matrix_D; /* input */
-    gsl_matrix                *matrix_Dtra;
-    gsl_matrix                *matrix_DtraD;
-    gsl_matrix                *matrix_DtraD_evec;
-    gsl_vector                *matrix_DtraD_eval;
-    gsl_eigen_symmv_workspace *w;
-    gsl_matrix                *matrix_save;
+    imageID    IDin;
+    imageID    IDout;
+    imageID    IDcoeff;
+    imageID    ID_VTmatrix;
+    long       m;
+    long       n;
+    uint32_t  *arraysizetmp;
 
-    long      m;
-    long      n;
-    uint32_t *arraysizetmp;
-
-    imageID ID_VTmatrix;
-
-    arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if(arraysizetmp == NULL)
-    {
-        FUNC_RETURN_FAILURE("malloc returns NULL pointer");
+    arraysizetmp =
+        (uint32_t *) malloc(sizeof(uint32_t) * 3);
+    if (arraysizetmp == NULL) {
+        FUNC_RETURN_FAILURE(
+            "malloc returns NULL pointer");
     }
 
     printf("[SVD start]");
     fflush(stdout);
 
     IDin = image_ID(IDin_name, dcimg, dcnimg);
-
-    n = dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
+    n = dcimg[IDin].md[0].size[0]
+        * dcimg[IDin].md[0].size[1];
     m = dcimg[IDin].md[0].size[2];
 
-    matrix_DtraD_eval = gsl_vector_alloc(m);
-    matrix_D          = gsl_matrix_alloc(n, m);
-    matrix_Dtra       = gsl_matrix_alloc(m, n);
-    matrix_DtraD      = gsl_matrix_alloc(m, m);
-    matrix_DtraD_evec = gsl_matrix_alloc(m, m);
+    /* Allocate work arrays */
+    double *D =
+        calloc((size_t) n * m, sizeof(double));
+    double *DtD =
+        calloc((size_t) m * m, sizeof(double));
+    double *eval =
+        calloc((size_t) m, sizeof(double));
 
-    /* write matrix_D */
-    for(long k = 0; k < m; k++)
-    {
-        for(long ii = 0; ii < n; ii++)
-        {
-            gsl_matrix_set(matrix_D,
-                           ii,
-                           k,
-                           dcimg[IDin].array.F[k * n + ii]);
+    /* Fill D column-major: D[ii + k*n] */
+    for (long k = 0; k < m; k++) {
+        for (long ii = 0; ii < n; ii++) {
+            D[ii + k * n] =
+                dcimg[IDin].array.F[k * n + ii];
         }
     }
-    /* compute DtraD */
-    gsl_blas_dgemm(CblasTrans,
-                   CblasNoTrans,
-                   1.0,
-                   matrix_D,
-                   matrix_D,
-                   0.0,
-                   matrix_DtraD);
 
-    /* compute the inverse of DtraD */
+    /* DtD = D^T * D  (m x m) */
+    cblas_dgemm(CblasColMajor,
+                CblasTrans, CblasNoTrans,
+                (int) m, (int) m, (int) n,
+                1.0, D, (int) n,
+                D, (int) n,
+                0.0, DtD, (int) m);
 
-    /* first, compute the eigenvalues and eigenvectors */
-    w           = gsl_eigen_symmv_alloc(m);
-    matrix_save = gsl_matrix_alloc(m, m);
-    gsl_matrix_memcpy(matrix_save, matrix_DtraD);
-    gsl_eigen_symmv(matrix_save, matrix_DtraD_eval, matrix_DtraD_evec, w);
-
-    gsl_matrix_free(matrix_save);
-    gsl_eigen_symmv_free(w);
-    gsl_eigen_symmv_sort(matrix_DtraD_eval,
-                         matrix_DtraD_evec,
-                         GSL_EIGEN_SORT_ABS_DESC);
-
-    create_2Dimage_ID(IDcoeff_name, m, 1, &IDcoeff);
-
-    for(long k = 0; k < m; k++)
-    {
-        dcimg[IDcoeff].array.F[k] = gsl_vector_get(matrix_DtraD_eval, k);
+    /* Eigenvalue decomposition: DtD overwritten
+     * with eigenvectors (columns) */
+    int info = LAPACKE_dsyev(
+        LAPACK_COL_MAJOR, 'V', 'U',
+        (int) m, DtD, (int) m, eval);
+    if (info != 0) {
+        printf("LAPACKE_dsyev failed: %d\n",
+               info);
     }
 
-    /** Write rotation matrix to go from DM modes to eigenmodes */
+    /* LAPACK returns eigenvalues in ascending
+     * order. Reverse to descending. */
+    /* Reverse eval */
+    for (long i = 0; i < m / 2; i++) {
+        double tmp = eval[i];
+        eval[i] = eval[m - 1 - i];
+        eval[m - 1 - i] = tmp;
+    }
+    /* Reverse eigenvector columns */
+    for (long i = 0; i < m / 2; i++) {
+        for (long j = 0; j < m; j++) {
+            double tmp = DtD[j + i * m];
+            DtD[j + i * m] =
+                DtD[j + (m - 1 - i) * m];
+            DtD[j + (m - 1 - i) * m] = tmp;
+        }
+    }
+
+    /* Write eigenvalues */
+    create_2Dimage_ID(
+        IDcoeff_name, m, 1, &IDcoeff);
+    for (long k = 0; k < m; k++) {
+        dcimg[IDcoeff].array.F[k] =
+            (float) eval[k];
+    }
+
+    /* Write rotation matrix VT */
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
-    ID_VTmatrix     = image_ID("SVD_VTm", dcimg, dcnimg);
-    if(ID_VTmatrix != -1)
-    {
-        delete_image_ID("SVD_VTm", DELETE_IMAGE_ERRMODE_WARNING);
+    ID_VTmatrix =
+        image_ID("SVD_VTm", dcimg, dcnimg);
+    if (ID_VTmatrix != -1) {
+        delete_image_ID(
+            "SVD_VTm",
+            DELETE_IMAGE_ERRMODE_WARNING);
     }
-    create_image_ID("SVD_VTm",
-                    2,
+    create_image_ID("SVD_VTm", 2,
                     arraysizetmp,
                     _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
+                    0, 0, 0,
                     &ID_VTmatrix);
-    for(long ii = 0; ii < m; ii++)   // modes
-        for(long k = 0; k < m; k++)  // modes
-        {
-            dcimg[ID_VTmatrix].array.F[k * m + ii] =
-                (float) gsl_matrix_get(matrix_DtraD_evec, k, ii);
+    for (long ii = 0; ii < m; ii++) {
+        for (long k = 0; k < m; k++) {
+            dcimg[ID_VTmatrix].array.F[
+                k * m + ii] =
+                (float) DtD[k + ii * m];
         }
+    }
 
-    /// Compute SVD decomp
+    /* Compute SVD modes: out = VT^T * in */
+    FUNC_CHECK_RETURN(
+        create_3Dimage_ID(
+            IDout_name,
+            dcimg[IDin].md[0].size[0],
+            dcimg[IDin].md[0].size[1],
+            dcimg[IDin].md[0].size[2],
+            &IDout));
 
-    FUNC_CHECK_RETURN(create_3Dimage_ID(IDout_name,
-                                        dcimg[IDin].md[0].size[0],
-                                        dcimg[IDin].md[0].size[1],
-                                        dcimg[IDin].md[0].size[2],
-                                        &IDout));
-
-    for(long kk = 0; kk < m; kk++)  /// eigen mode index
-    {
-        //        printf("eigenmode %4ld / %4ld  %g\n", kk, m, dcimg[IDcoeff].array.F[kk]);
-        //       fflush(stdout);
-        for(long kk1 = 0; kk1 < m; kk1++)
-        {
-            for(long ii = 0; ii < n; ii++)
-            {
-                dcimg[IDout].array.F[kk * n + ii] +=
-                    dcimg[ID_VTmatrix].array.F[kk1 * m + kk] *
-                    dcimg[IDin].array.F[kk1 * n + ii];
+    for (long kk = 0; kk < m; kk++) {
+        for (long kk1 = 0; kk1 < m; kk1++) {
+            for (long ii = 0; ii < n; ii++) {
+                dcimg[IDout].array.F[
+                    kk * n + ii] +=
+                    dcimg[ID_VTmatrix].array.F[
+                        kk1 * m + kk]
+                    * dcimg[IDin].array.F[
+                        kk1 * n + ii];
             }
         }
     }
 
-    //   delete_image_ID("SVD_VTm");
-
     free(arraysizetmp);
-
-    gsl_matrix_free(matrix_D);
-    gsl_matrix_free(matrix_Dtra);
-    gsl_matrix_free(matrix_DtraD);
-    gsl_matrix_free(matrix_DtraD_evec);
-    gsl_vector_free(matrix_DtraD_eval);
+    free(D);
+    free(DtD);
+    free(eval);
 
     printf("[SVD done]\n");
     fflush(stdout);
 
-    if(outID != NULL)
-    {
+    if (outID != NULL) {
         *outID = IDout;
     }
 
@@ -246,7 +256,9 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    linopt_compute_SVDdecomp(imcinname, outimname, outcoeffname, NULL);
+    linopt_compute_SVDdecomp(
+        imcinname, outimname,
+        outcoeffname, NULL);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -289,4 +301,3 @@ FPS_MAIN_STANDALONE_V2(
     FPS_PARAMS,
     compute_function)
 #endif
-

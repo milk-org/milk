@@ -223,3 +223,9 @@ target_include_directories(milk-stream-rm PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
 target_link_libraries(milk-stream-rm ImageStreamIO)
 install(TARGETS milk-stream-rm DESTINATION bin)
+
+add_executable(milk-streamCTRL-cli milk-streamCTRL-cli.c)
+target_include_directories(milk-streamCTRL-cli PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>)
+target_link_libraries(milk-streamCTRL-cli ImageStreamIO)
+install(TARGETS milk-streamCTRL-cli DESTINATION bin)
