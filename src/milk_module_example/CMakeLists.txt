@@ -57,21 +57,11 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
-if(USE_CLI)
-add_executable(milk-fpsexec-clitest examplefunc_fps_cli_poc.c)
-target_link_libraries(milk-fpsexec-clitest ${LINKLIBS} ${LIBNAME} milkfpsCLI)
-target_include_directories(milk-fpsexec-clitest PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(milk-fpsexec-clitest PRIVATE FPS_STANDALONE)
-install(TARGETS milk-fpsexec-clitest DESTINATION bin)
-add_executable(milk-fpsexec-imsum2 examplefunc2_FPS.c)
-target_link_libraries(milk-fpsexec-imsum2 ${LINKLIBS} ${LIBNAME} milkfpsCLI)
-target_include_directories(milk-fpsexec-imsum2 PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(milk-fpsexec-imsum2 PRIVATE FPS_STANDALONE)
-install(TARGETS milk-fpsexec-imsum2 DESTINATION bin)
-
-add_executable(milk-fpsexec-streamprocess examplefunc4_streamprocess.c)
-target_link_libraries(milk-fpsexec-streamprocess ${LINKLIBS} ${LIBNAME} milkfpsCLI)
-target_include_directories(milk-fpsexec-streamprocess PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_compile_definitions(milk-fpsexec-streamprocess PRIVATE FPS_STANDALONE)
-install(TARGETS milk-fpsexec-streamprocess DESTINATION bin)
-endif()
+# Standalone executables (V2 pattern)
+# Each is a single source file compiled with -DFPS_STANDALONE.
+# add_milk_standalone() handles linking, include paths, and install.
+# ${LIBNAME} must be defined above (set on line 1).
+#
+add_milk_standalone(clitest examplefunc_fps_cli_poc.c)
+add_milk_standalone(imsum2 examplefunc2_FPS.c)
+add_milk_standalone(streamprocess examplefunc4_streamprocess.c)

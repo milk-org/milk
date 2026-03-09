@@ -3,7 +3,11 @@
 
 #include <sched.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

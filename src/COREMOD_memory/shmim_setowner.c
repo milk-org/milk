@@ -3,7 +3,11 @@
  * @brief   set stream owner PID
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "image_ID.h"
 
 // ==========================================
@@ -20,6 +24,7 @@ imageID shmim_setowner_init(const char *name);
 // command line interface wrapper functions
 // ==========================================
 
+#ifndef MILK_NO_CLI
 static errno_t shmim_setowner_creator__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
@@ -98,7 +103,7 @@ errno_t shmim_setowner_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 /** @brief set owner to creator */
 imageID shmim_setowner_creator(const char *name)
 {
@@ -143,3 +148,4 @@ imageID shmim_setowner_init(const char *name)
 
     return ID;
 }
+

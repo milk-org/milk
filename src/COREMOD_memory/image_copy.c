@@ -2,7 +2,11 @@
  * @file    image_copy.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -26,6 +30,7 @@ errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname);
 errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -117,7 +122,7 @@ errno_t image_copy_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 imageID copy_image_ID_IMGID(
     IMGID *imgin,
     IMGID *imgout,
@@ -321,3 +326,4 @@ errno_t COREMOD_MEMORY_cp2shm(
 
     return COREMOD_MEMORY_cp2shm_IMGID(&imgin, &imgout);
 }
+

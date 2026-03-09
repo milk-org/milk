@@ -1,7 +1,11 @@
 #include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -246,7 +250,7 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(

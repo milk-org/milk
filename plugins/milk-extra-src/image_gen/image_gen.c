@@ -29,7 +29,11 @@
 
 #include <fitsio.h> /* required by every program that uses CFITSIO  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -37,6 +41,7 @@
 
 #include "statistic/statistic.h"
 
+#ifndef MILK_NO_CLI
 #include "image_gen/image_gen.h"
 
 #include "mkrandomim.h"
@@ -531,6 +536,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 /** @brief creates a double star */
 imageID make_double_star(const char *ID_name,

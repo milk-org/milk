@@ -2,7 +2,11 @@
  * @file    image_keyword.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "image_ID.h"
 
 // ==========================================
@@ -22,6 +26,7 @@ long image_list_keywords(
 // command line interface wrapper functions
 // ==========================================
 
+#ifndef MILK_NO_CLI
 errno_t image_write_keyword_L__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
@@ -79,7 +84,7 @@ errno_t image_keyword_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 long image_write_keyword_L(const char *IDname,
                            const char *kname,
                            long        value,
@@ -273,3 +278,4 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
 
     return kw0;
 }
+

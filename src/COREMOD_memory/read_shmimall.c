@@ -8,7 +8,11 @@
 #include <sys/stat.h>
 #include <unistd.h> // close
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
@@ -19,6 +23,7 @@
 
 errno_t read_sharedmem_image_all(const char *name);
 
+#ifndef MILK_NO_CLI
 static errno_t read_sharedmem_image_all__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_STR) == 0)
@@ -47,6 +52,7 @@ errno_t read_shmimall_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 errno_t read_sharedmem_image_all(
     const char *strfilter)

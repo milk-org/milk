@@ -5,7 +5,11 @@
 
 #include <dirent.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 // ==========================================
 // Forward declaration(s)
@@ -14,6 +18,7 @@
 errno_t fps_list();
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -34,7 +39,7 @@ errno_t fps_list_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 errno_t fps_list()
 {
     long fpsID;
@@ -107,3 +112,4 @@ errno_t fps_list()
 
     return RETURN_SUCCESS;
 }
+

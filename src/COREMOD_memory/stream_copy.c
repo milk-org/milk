@@ -5,7 +5,11 @@
  * Uses FPS V2 framework.
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "fps.h"
 
 #include "image_ID.h"
@@ -149,7 +153,7 @@ static errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 static errno_t CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(

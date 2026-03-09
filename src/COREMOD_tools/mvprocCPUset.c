@@ -5,7 +5,11 @@
 #define _GNU_SOURCE
 #endif
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 // ==========================================
 // Forward declaration(s)
@@ -28,6 +32,7 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
 // Command line interface wrapper function(s)
 // ==========================================
 
+#ifndef MILK_NO_CLI
 errno_t COREMOD_TOOLS_mvProcRTPrio_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_LONG) == 0)
@@ -149,6 +154,7 @@ errno_t cpuset_utils_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
 {
