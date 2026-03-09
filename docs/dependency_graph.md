@@ -207,6 +207,7 @@ graph TD
     IMGGEN_C["milkimagegen_compute"]:::plugcomp
     IMGBASIC_C["milkimagebasic_compute"]:::plugcomp
     IMGFILT_C["milkimagefilter_compute"]:::plugcomp
+    STAT_C["milkstatistic_compute"]:::plugcomp
 
     MILKEXE["milk-fpsexec-*"]:::exe
     CACAOEXE["cacao-fpsexec-*"]:::exe
@@ -235,6 +236,9 @@ graph TD
     IMGBASIC_C --> IOFITS_C
     IMGFILT_C --> MEMORY_C
     IMGFILT_C --> IOFITS_C
+    STAT_C --> MEMORY_C
+    STAT_C --> IOFITS_C
+    IMGGEN_C --> STAT_C
 
     MILKEXE --> FPSSA
     MILKEXE --> ARITH_C
@@ -336,7 +340,8 @@ graph TD
 | milkfft_compute | fftw3, fftw3f, milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
 | milkimagebasic_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
 | milkimagefilter_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
-| milkimagegen_compute | *(not yet split — via `add_milk_standalone` macro)* |
+| milkimagegen_compute | milkstatistic_compute, milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
+| milkstatistic_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio, m |
 
 ### Cacao Modules
 
@@ -371,13 +376,30 @@ graph TD
 
 | Function | Base link set |
 |---|---|
-| `add_milk_standalone()` | `${LIBNAME}`, milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, milkCOREMODmemory_compute, milkCOREMODtools_compute, milkCOREMODarith_compute, milkCOREMODiofits_compute, cfitsio |
+| `add_milk_standalone()` | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, milkCOREMODmemory_compute, milkCOREMODtools_compute, milkCOREMODarith_compute, milkCOREMODiofits_compute, cfitsio |
 | `add_cacao_standalone()` | same as above |
-| `add_cacao_standalone_plugins()` | above + milkfft_compute, milkimagegen_compute, milkimagefilter_compute, milkimagebasic_compute |
+| `add_cacao_standalone_plugins()` | above + selected plugin _compute libs (default: all 4) |
+
+`add_cacao_standalone_plugins()` accepts an optional list of plugins to link:
+
+```cmake
+add_cacao_standalone_plugins(name src.c)               # all 4 plugins
+add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
+```
+
+Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 
 > [!NOTE]
 > `_compute` library variants are compiled with `MILK_NO_CLI` — they contain pure
-> computation code with CLI registration stubs. Standalone executables never link CLIcore.
+> computation code with CLI registration stubs.
+>
+> Standalone executables do **not** link `${LIBNAME}` by default (which would pull in
+> CLIcore). If a standalone needs module-lib symbols, add an explicit
+> `target_link_libraries(... PUBLIC ${LIBNAME})` after the `add_*_standalone()` call.
+>
+> Currently **76 of 90** standalone executables are CLIcore-free. 14 exceptions are
+> whitelisted in `milk-check-standalone-deps` (they require module-lib symbols
+> for OpenBLAS, FFT, tree algorithms, etc.).
 
 ---
 
