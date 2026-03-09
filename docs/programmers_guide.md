@@ -136,7 +136,107 @@ It is also integrated as a CTest (`standalone-dep-check`) and runs automatically
 `ctest` in the build directory. 14 standalones are whitelisted as known exceptions
 (they require module-lib symbols for OpenBLAS, FFT, etc.).
 
+## 6. CMakeLists.txt Conventions
+
+Use `src/milk_module_example/CMakeLists.txt` as the template for new modules.
+The standard layout has these sections (in order):
+
+```
+# ═══════════════════════════════════════
+#  module_name — Short description
+# ═══════════════════════════════════════
+
+set(LIBNAME ...)
+
+# ── Source files ─────────────────────
+set(SOURCEFILES ...)
+
+# ── Library ──────────────────────────
+add_library(${LIBNAME} ...)
+
+# ── Compute-only variant ─────────────
+# (if applicable)
+set(LIBNAME_COMPUTE ...)
+
+# ── Standalone executables ───────────
+add_milk_standalone(...)
+
+# ── Tests ────────────────────────────
+add_test(...)
+```
+
+**Key rules:**
+- Comment each source file in `SOURCEFILES` if it is also a standalone (dual-mode)
+- Place `target_link_libraries()` calls directly below the `add_*_standalone()` they modify
+- Keep lines ≤ 80 characters; split long `target_link_libraries` across lines
+
+### Standalone helper functions
+
+Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
+
+| Function | Creates | Plugin deps |
+|----------|---------|-------------|
+| `add_milk_standalone(name src)` | `milk-fpsexec-name` | None |
+| `add_cacao_standalone(name src)` | `cacao-fpsexec-name` | None |
+| `add_cacao_standalone_plugins(name src [p…])` | `cacao-fpsexec-name` | Selected |
+
+## 7. C Source File Conventions
+
+### File header
+
+Every `.c` file should start with a kernel-doc header:
+
+```c
+/**
+ * @file    filename.c
+ * @brief   One-line description
+ *
+ * Longer description of algorithm, approach,
+ * and key design choices.
+ */
+```
+
+### Dual-mode files
+
+Files compiled both as part of a shared library (CLI mode) and as standalone
+executables use conditional includes:
+
+```c
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
+```
+
+### Function documentation
+
+Document functions with kernel-doc style above the function body in `.c` files:
+
+```c
+/**
+ * compute_response_matrix() - Build response matrix
+ * @n_modes:   Number of modes to probe
+ * @amp:       Probe amplitude [DM units]
+ *
+ * Measures WFS response to each DM mode by applying
+ * positive and negative pokes and averaging.
+ *
+ * Return: 0 on success, -1 on error
+ */
+```
+
+### Module README
+
+Each module directory should have a `README.md` with:
+- One-line purpose
+- Table of source files with descriptions
+- Table of standalone executables (if any)
+- External dependencies
+
 ---
+
 
 *(This guide is automatically updated by your coding agent based on `.agents/rules/maintain-programmers-guide.md`)*
 
