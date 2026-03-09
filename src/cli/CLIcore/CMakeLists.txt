@@ -50,14 +50,14 @@ set(CORE_FILES
     
                     SHARED
     
-                    streamCTRL/streamCTRL_TUI.c
-            streamCTRL/streamCTRL_find_streams.c
-            streamCTRL/streamCTRL_print_inode.c
-            streamCTRL/streamCTRL_print_procpid.c
-            streamCTRL/streamCTRL_print_trace.c
-            streamCTRL/streamCTRL_scan.c
-            streamCTRL/streamCTRL_utilfuncs.c
-            ${CORE_FILES})
+        ../streamCTRL/streamCTRL_TUI.c
+        ../streamCTRL/streamCTRL_find_streams.c
+        ../streamCTRL/streamCTRL_print_inode.c
+        ../streamCTRL/streamCTRL_print_procpid.c
+        ../streamCTRL/streamCTRL_print_trace.c
+        ../streamCTRL/streamCTRL_scan.c
+        ../streamCTRL/streamCTRL_utilfuncs.c
+        ${CORE_FILES})
 
 # Add milk-help executable
 add_executable(milk-help milk-help.c)
@@ -143,7 +143,7 @@ install(FILES CLIcore.h
               cmdsettings.h
               milkDebugTools.h
               standalone_dependencies.h
-              ../libprocessinfo/timeutils.h
+              ../../engine/libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
 
 install(FILES CLIcore/CLIcore_UI.h
@@ -157,14 +157,14 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
 
-install(FILES ../libprocessinfo/procCTRL/procCTRL_GetCPUloads.h
-              ../libprocessinfo/procCTRL/procCTRL_GetNumberCPUs.h
-              ../libprocessinfo/procCTRL/procCTRL_PIDcollectSystemInfo.h
-              ../libprocessinfo/procCTRL/procCTRL_TUI.h
-              ../libprocessinfo/procCTRL/procCTRL_processinfo_scan.h
+install(FILES ../../engine/libprocessinfo/procCTRL/procCTRL_GetCPUloads.h
+              ../../engine/libprocessinfo/procCTRL/procCTRL_GetNumberCPUs.h
+              ../../engine/libprocessinfo/procCTRL/procCTRL_PIDcollectSystemInfo.h
+              ../../engine/libprocessinfo/procCTRL/procCTRL_TUI.h
+              ../../engine/libprocessinfo/procCTRL/procCTRL_processinfo_scan.h
               DESTINATION include/${SRCNAME}/procCTRL)
 
-add_executable(milk-streamCTRL streamCTRL/milk-streamCTRL.c)
+add_executable(milk-streamCTRL ../streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
 
 install(TARGETS milk-streamCTRL DESTINATION bin)
