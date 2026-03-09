@@ -1,4 +1,9 @@
 /**
+ * @file image_keyword.h
+ * @brief Image keyword module
+ */
+
+/**
  * @file    image_keyword.h
  */
 

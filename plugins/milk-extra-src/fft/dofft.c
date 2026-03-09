@@ -1,3 +1,8 @@
+/**
+ * @file dofft.c
+ * @brief Dofft module
+ */
+
 /** @file dofft.c
  */
 

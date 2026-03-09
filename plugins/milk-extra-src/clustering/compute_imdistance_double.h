@@ -1,3 +1,8 @@
+/**
+ * @file compute_imdistance_double.h
+ * @brief Compute imdistance double module
+ */
+
 #ifndef CLUSTERING__COMPUTE_IMDISTANCE_DOUBLE_H
 #define CLUSTERING__COMPUTE_IMDISTANCE_DOUBLE_H
 

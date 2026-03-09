@@ -1,3 +1,8 @@
+/**
+ * @file read_binary32f.h
+ * @brief Read binary32f module
+ */
+
 /** @file read_binary32f.h
  */
 

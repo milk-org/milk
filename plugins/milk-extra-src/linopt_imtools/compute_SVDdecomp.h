@@ -1,3 +1,8 @@
+/**
+ * @file compute_SVDdecomp.h
+ * @brief Compute svddecomp module
+ */
+
 #ifndef LINOPT_IMTOOLS__COMPUTE_SVDDECOMP_H
 #define LINOPT_IMTOOLS__COMPUTE_SVDDECOMP_H
 

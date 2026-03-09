@@ -1,4 +1,9 @@
 /**
+ * @file images2cube.c
+ * @brief ==========================================
+ */
+
+/**
  * @file    images2cube.c
  */
 

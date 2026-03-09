@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_SIGexit.c
+ * @brief Processinfo sigexit module
+ */
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>

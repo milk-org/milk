@@ -1,3 +1,8 @@
+/**
+ * @file scheduler_display.h
+ * @brief Scheduler display module
+ */
+
 #ifndef FPS_CTRLSCREEN_SCHEDULER_DISPLAY_H
 #define FPS_CTRLSCREEN_SCHEDULER_DISPLAY_H
 

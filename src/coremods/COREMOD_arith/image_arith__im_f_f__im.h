@@ -1,4 +1,9 @@
 /**
+ * @file image_arith__im_f_f__im.h
+ * @brief Image arith  im f f  im module
+ */
+
+/**
  * @file    image_arith__im_f_f__im.h
  */
 

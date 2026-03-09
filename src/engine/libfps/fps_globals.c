@@ -1,3 +1,8 @@
+/**
+ * @file fps_globals.c
+ * @brief Fps globals module
+ */
+
 #include "fps_globals.h"
 
 long FPS_TIMESTAMP = 0;

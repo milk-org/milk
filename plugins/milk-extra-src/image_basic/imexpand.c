@@ -1,3 +1,8 @@
+/**
+ * @file imexpand.c
+ * @brief Imexpand module
+ */
+
 /** @file imexpand.c
  */
 

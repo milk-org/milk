@@ -1,3 +1,8 @@
+/**
+ * @file COREMOD_arith.h
+ * @brief void __attribute__ ((constructor)) libinit_COREMOD_arith();
+ */
+
 #ifndef _ARITH_H
 #define _ARITH_H
 

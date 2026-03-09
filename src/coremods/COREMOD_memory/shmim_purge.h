@@ -1,3 +1,8 @@
+/**
+ * @file shmim_purge.h
+ * @brief Shmim purge module
+ */
+
 #ifndef COREMOD_MEMORY_SHMIM_PURGE_H
 #define COREMOD_MEMORY_SHMIM_PURGE_H
 

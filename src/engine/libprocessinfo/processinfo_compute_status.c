@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_compute_status.c
+ * @brief Processinfo compute status module
+ */
+
 #include "processinfo.h"
 
 int processinfo_compute_status(PROCESSINFO *processinfo)

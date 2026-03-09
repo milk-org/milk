@@ -1,3 +1,8 @@
+/**
+ * @file fftcorrelation.h
+ * @brief Fftcorrelation module
+ */
+
 /** @file fftcorrelation.c
  */
 

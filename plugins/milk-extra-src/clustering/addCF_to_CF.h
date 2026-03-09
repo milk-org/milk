@@ -1,3 +1,8 @@
+/**
+ * @file addCF_to_CF.h
+ * @brief Addcf to cf module
+ */
+
 #ifndef CLUSTERING__ADDCF_TO_CF_H
 #define CLUSTERING__ADDCF_TO_CF_H
 

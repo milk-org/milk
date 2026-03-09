@@ -1,3 +1,8 @@
+/**
+ * @file MVMextractModes.c
+ * @brief Mvmextractmodes module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>

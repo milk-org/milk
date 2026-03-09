@@ -1,4 +1,9 @@
 /**
+ * @file list_variable.h
+ * @brief List variable module
+ */
+
+/**
  * @file    list_variable.h
  */
 

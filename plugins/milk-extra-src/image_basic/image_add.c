@@ -1,3 +1,8 @@
+/**
+ * @file image_add.c
+ * @brief Image add module
+ */
+
 /** @file image_add.c
  */
 

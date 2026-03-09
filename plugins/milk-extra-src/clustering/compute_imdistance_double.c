@@ -1,3 +1,8 @@
+/**
+ * @file compute_imdistance_double.c
+ * @brief Compute imdistance double module
+ */
+
 #include "CLIcore.h"
 #include "clustering_defs.h"
 

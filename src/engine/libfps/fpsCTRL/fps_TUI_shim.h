@@ -1,3 +1,8 @@
+/**
+ * @file fps_TUI_shim.h
+ * @brief Color pair definitions (adjust to match your theme or standard defaults)
+ */
+
 #ifndef _FPS_TUI_SHIM_H
 #define _FPS_TUI_SHIM_H
 

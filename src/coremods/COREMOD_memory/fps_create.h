@@ -1,4 +1,9 @@
 /**
+ * @file fps_create.h
+ * @brief errno_t fps_create_addCLIcmd();
+ */
+
+/**
  * @file    fps_create.h
  */
 

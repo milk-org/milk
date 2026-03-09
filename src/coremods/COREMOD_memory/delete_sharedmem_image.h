@@ -1,3 +1,8 @@
+/**
+ * @file delete_sharedmem_image.h
+ * @brief Delete sharedmem image module
+ */
+
 #ifndef MILK_COREMOD_MEMORY_DELETE_SHAREDMEM_IMAGE_H
 #define MILK_COREMOD_MEMORY_DELETE_SHAREDMEM_IMAGE_H
 

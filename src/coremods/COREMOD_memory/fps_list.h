@@ -1,4 +1,9 @@
 /**
+ * @file fps_list.h
+ * @brief Fps list module
+ */
+
+/**
  * @file    fps_list.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file image_complex.h
+ * @brief Image complex module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_COMPLEX_H
 #define COREMOD_MEMORY_IMAGE_COMPLEX_H
 

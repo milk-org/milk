@@ -1,3 +1,8 @@
+/**
+ * @file cmdsettings.h
+ * @brief command supports FPS mode
+ */
+
 
 #ifndef CMDSETTINGS_H
 #define CMDSETTINGS_H

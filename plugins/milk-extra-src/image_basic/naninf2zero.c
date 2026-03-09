@@ -1,3 +1,8 @@
+/**
+ * @file naninf2zero.c
+ * @brief Naninf2zero module
+ */
+
 /** @file naninf2zero.c
  */
 

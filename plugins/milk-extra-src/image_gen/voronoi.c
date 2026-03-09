@@ -1,3 +1,8 @@
+/**
+ * @file voronoi.c
+ * @brief Voronoi module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #include <math.h>
 

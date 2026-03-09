@@ -1,3 +1,8 @@
+/**
+ * @file milk-procinfo-help.c
+ * @brief Milk procinfo help module
+ */
+
 #include <stdio.h>
 
 #define C_TITLE "\033[1;36m"   /* Cyan Bold   -> Main section headers / separators */

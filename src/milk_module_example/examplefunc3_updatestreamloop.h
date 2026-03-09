@@ -1,3 +1,8 @@
+/**
+ * @file examplefunc3_updatestreamloop.h
+ * @brief Examplefunc3 updatestreamloop module
+ */
+
 #ifndef MILK_MODULE_EXAMPLE_FUNC3_H
 #define MILK_MODULE_EXAMPLE_FUNC3_H
 

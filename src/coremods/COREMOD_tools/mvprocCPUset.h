@@ -1,5 +1,10 @@
 /**
  * @file mvprocCPUset.h
+ * @brief Mvproccpuset module
+ */
+
+/**
+ * @file mvprocCPUset.h
  */
 
 errno_t cpuset_utils_addCLIcmd();

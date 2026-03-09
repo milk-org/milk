@@ -1,3 +1,8 @@
+/**
+ * @file print_nodeinfo.c
+ * @brief Print nodeinfo module
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

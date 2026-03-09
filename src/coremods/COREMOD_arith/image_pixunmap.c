@@ -1,3 +1,8 @@
+/**
+ * @file image_pixunmap.c
+ * @brief Image pixunmap module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"

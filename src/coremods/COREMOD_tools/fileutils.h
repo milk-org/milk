@@ -1,5 +1,10 @@
 /**
  * @file fileutils.h
+ * @brief Fileutils module
+ */
+
+/**
+ * @file fileutils.h
  */
 
 #ifndef _COREMOD_TOOLS_FILEUTILS_H

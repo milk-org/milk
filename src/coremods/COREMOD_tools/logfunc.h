@@ -1,5 +1,10 @@
 /**
  * @file logfunc.h
+ * @brief Logfunc module
+ */
+
+/**
+ * @file logfunc.h
  */
 
 void CORE_logFunctionCall(const int   funclevel,

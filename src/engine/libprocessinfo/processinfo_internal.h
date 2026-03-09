@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_internal.h
+ * @brief Processinfo internal module
+ */
+
 #ifndef PROCESSINFO_INTERNAL_H
 #define PROCESSINFO_INTERNAL_H
 

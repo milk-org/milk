@@ -1,4 +1,9 @@
 /**
+ * @file processinfo.h
+ * @brief Processinfo module
+ */
+
+/**
  * @file    processinfo.h
  *
  *

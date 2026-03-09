@@ -1,3 +1,8 @@
+/**
+ * @file image_to_vec.h
+ * @brief Image to vec module
+ */
+
 #ifndef LINOPT_IMTOOLS__IMAGE_TO_VEC_H
 #define LINOPT_IMTOOLS__IMAGE_TO_VEC_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file write_clustCFave.c
+ * @brief Write clustcfave module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

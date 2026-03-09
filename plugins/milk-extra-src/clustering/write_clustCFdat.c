@@ -1,3 +1,8 @@
+/**
+ * @file write_clustCFdat.c
+ * @brief Write clustcfdat module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

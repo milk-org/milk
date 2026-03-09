@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_scan.c
+ * @brief Streamctrl scan module
+ */
+
 
 #include <string.h>
 

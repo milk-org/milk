@@ -1,3 +1,8 @@
+/**
+ * @file delete_image.h
+ * @brief Delete image module
+ */
+
 #ifndef MILK_COREMOD_MEMORY_DELETE_IMAGE_H
 #define MILK_COREMOD_MEMORY_DELETE_IMAGE_H
 

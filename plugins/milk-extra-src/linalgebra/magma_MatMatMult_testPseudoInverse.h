@@ -1,3 +1,8 @@
+/**
+ * @file magma_MatMatMult_testPseudoInverse.h
+ * @brief Magma matmatmult testpseudoinverse module
+ */
+
 /** @file MatMatMult_testPseudoInverse.c
  */
 

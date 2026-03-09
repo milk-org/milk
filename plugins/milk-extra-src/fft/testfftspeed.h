@@ -1,3 +1,8 @@
+/**
+ * @file testfftspeed.h
+ * @brief Testfftspeed module
+ */
+
 /** @file testfftspeed.h
  */
 

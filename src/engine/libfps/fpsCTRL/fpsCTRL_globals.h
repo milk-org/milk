@@ -1,3 +1,8 @@
+/**
+ * @file fpsCTRL_globals.h
+ * @brief Global arrays for fpsCTRL tool
+ */
+
 #ifndef _FPSCTRL_GLOBALS_H
 #define _FPSCTRL_GLOBALS_H
 

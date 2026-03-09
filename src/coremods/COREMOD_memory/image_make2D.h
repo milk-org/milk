@@ -1,3 +1,8 @@
+/**
+ * @file image_make2D.h
+ * @brief Image make2d module
+ */
+
 #ifndef COREMOD_MEMORY_MK2DIMAGE_H
 #define COREMOD_MEMORY_MK2DIMAGE_H
 

@@ -1,4 +1,9 @@
 /**
+ * @file fft_structure_function.h
+ * @brief Fft structure function module
+ */
+
+/**
  * @file    fft_structure_function.h
  *
  */

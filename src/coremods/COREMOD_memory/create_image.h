@@ -1,4 +1,9 @@
 /**
+ * @file create_image.h
+ * @brief Create image module
+ */
+
+/**
  * @file    create_image.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file image_make3D.h
+ * @brief Image make3d module
+ */
+
 #ifndef COREMOD_MEMORY_MK3DIMAGE_H
 #define COREMOD_MEMORY_MK3DIMAGE_H
 

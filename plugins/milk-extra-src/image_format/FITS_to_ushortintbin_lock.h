@@ -1,3 +1,8 @@
+/**
+ * @file FITS_to_ushortintbin_lock.h
+ * @brief Fits to ushortintbin lock module
+ */
+
 /** @file FITS_to_ushortintbin_lock.h
  */
 

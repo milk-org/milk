@@ -1,5 +1,10 @@
 /**
  * @file logfunc.c
+ * @brief Logfunc module
+ */
+
+/**
+ * @file logfunc.c
  */
 
 #include <stdio.h>

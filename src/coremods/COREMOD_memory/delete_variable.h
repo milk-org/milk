@@ -1,3 +1,8 @@
+/**
+ * @file delete_variable.h
+ * @brief Delete variable module
+ */
+
 /** @file delete_variable.h
  */
 

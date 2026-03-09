@@ -1,3 +1,8 @@
+/**
+ * @file GPU_loop_MultMat_setup.c
+ * @brief Gpu loop multmat setup module
+ */
+
 /** @file GPU_loop_MultMat_setup.c
  */
 

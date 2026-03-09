@@ -1,3 +1,8 @@
+/**
+ * @file CR2tomov.c
+ * @brief Cr2tomov module
+ */
+
 /** @file CR2tomov.c
  */
 

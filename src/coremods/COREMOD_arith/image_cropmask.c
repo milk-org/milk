@@ -1,3 +1,8 @@
+/**
+ * @file image_cropmask.c
+ * @brief Image cropmask module
+ */
+
 #include "ImageStreamIO/ImageStruct.h"
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"

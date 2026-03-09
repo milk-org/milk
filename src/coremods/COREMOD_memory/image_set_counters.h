@@ -1,4 +1,9 @@
 /**
+ * @file image_set_counters.h
+ * @brief Image set counters module
+ */
+
+/**
  * @file    image_set_couters.h
  */
 

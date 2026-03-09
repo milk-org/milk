@@ -1,4 +1,9 @@
 /**
+ * @file image_arith__Cim_Cim__Cim.h
+ * @brief -------------------------------------------------------------------------
+ */
+
+/**
  * @file    image_arith__Cim_Cim__Cim.h
  *
  */

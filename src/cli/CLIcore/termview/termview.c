@@ -1,3 +1,8 @@
+/**
+ * @file termview.c
+ * @brief Termview module
+ */
+
 #include "termview.h"
 #ifdef USE_NCURSES
 #include <ncurses.h>

@@ -1,3 +1,8 @@
+/**
+ * @file milk-fps-search.c
+ * @brief Milk fps search module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
