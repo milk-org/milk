@@ -1,3 +1,8 @@
+/**
+ * @file image_cropmask.h
+ * @brief Image cropmask module
+ */
+
 #ifndef COREMOD_ARITH_CROPMASK_H
 #define COREMOD_ARITH_CROPMASK_H
 

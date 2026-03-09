@@ -1,3 +1,8 @@
+/**
+ * @file writeBMP.c
+ * @brief Writebmp module
+ */
+
 /** @file writeBMP.c
  */
 

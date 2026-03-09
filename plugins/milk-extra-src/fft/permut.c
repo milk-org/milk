@@ -1,3 +1,8 @@
+/**
+ * @file permut.c
+ * @brief Permut module
+ */
+
 /** @file permut.c
  */
 

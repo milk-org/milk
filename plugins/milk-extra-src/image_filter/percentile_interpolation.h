@@ -1,3 +1,8 @@
+/**
+ * @file percentile_interpolation.h
+ * @brief Percentile interpolation module
+ */
+
 /** @file percentile_interpolation.h
  */
 

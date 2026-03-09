@@ -1,3 +1,8 @@
+/**
+ * @file fpsCTRL_FPSdisplay.h
+ * @brief Fpsctrl fpsdisplay module
+ */
+
 #ifndef FPS_CTRLSCREEN_FPSDISPLAY_H
 #define FPS_CTRLSCREEN_FPSDISPLAY_H
 

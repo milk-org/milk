@@ -1,4 +1,9 @@
 /**
+ * @file image_checksize.h
+ * @brief Image checksize module
+ */
+
+/**
  * @file    image_checksize.h
  */
 

@@ -7,24 +7,24 @@ Frequently used image functions
 | File | Description |
 |------|-------------|
 | `cubecollapse.c` | Collapse a cube along z axis |
-| `extrapolate_nearestpixel.c` | No description available. |
-| `im3Dto2D.c` | No description available. |
-| `image_add.c` | No description available. |
-| `imcontract.c` | No description available. |
-| `imexpand.c` | No description available. |
-| `imgetcircasym.c` | No description available. |
-| `imgetcircsym.c` | No description available. |
+| `extrapolate_nearestpixel.c` | Extrapolate nearestpixel module |
+| `im3Dto2D.c` | Im3dto2d module |
+| `image_add.c` | Image add module |
+| `imcontract.c` | Imcontract module |
+| `imexpand.c` | Imexpand module |
+| `imgetcircasym.c` | Imgetcircasym module |
+| `imgetcircsym.c` | Imgetcircsym module |
 | `imresize.c` | Resize 2D image |
 | `imrotate.c` | Rotate 2D image |
-| `imstretch.c` | No description available. |
-| `imswapaxis2D.c` | No description available. |
-| `indexmap.c` | No description available. |
-| `loadfitsimgcube.c` | No description available. |
-| `measure_transl.c` | No description available. |
-| `naninf2zero.c` | No description available. |
-| `streamfeed.c` | No description available. |
-| `streamrecord.c` | No description available. |
-| `tableto2Dim.c` | No description available. |
+| `imstretch.c` | Imstretch module |
+| `imswapaxis2D.c` | Imswapaxis2d module |
+| `indexmap.c` | Indexmap module |
+| `loadfitsimgcube.c` | Loadfitsimgcube module |
+| `measure_transl.c` | Measure transl module |
+| `naninf2zero.c` | Naninf2zero module |
+| `streamfeed.c` | Streamfeed module |
+| `streamrecord.c` | Streamrecord module |
+| `tableto2Dim.c` | Tableto2dim module |
 
 ## Standalone Executables
 

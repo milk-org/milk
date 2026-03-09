@@ -1,3 +1,8 @@
+/**
+ * @file write_clustCFave.h
+ * @brief Write clustcfave module
+ */
+
 #ifndef CLUSTERING_WRITECFAVE
 #define CLUSTERING_WRITECFAVE
 

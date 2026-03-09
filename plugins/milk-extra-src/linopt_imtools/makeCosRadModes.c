@@ -1,3 +1,8 @@
+/**
+ * @file makeCosRadModes.c
+ * @brief Makecosradmodes module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

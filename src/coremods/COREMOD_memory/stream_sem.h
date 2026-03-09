@@ -1,4 +1,9 @@
 /**
+ * @file stream_sem.h
+ * @brief Stream sem module
+ */
+
+/**
  * @file    stream_sem.h
  */
 

@@ -1,4 +1,9 @@
 /**
+ * @file list_image.h
+ * @brief List image module
+ */
+
+/**
  * @file    list_image.h
  */
 

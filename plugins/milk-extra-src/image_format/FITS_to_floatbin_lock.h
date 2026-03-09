@@ -1,3 +1,8 @@
+/**
+ * @file FITS_to_floatbin_lock.h
+ * @brief Fits to floatbin lock module
+ */
+
 /** @file FITS_to_floatbin_lock.h
  */
 

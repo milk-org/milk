@@ -1,3 +1,8 @@
+/**
+ * @file linalgebrainit.h
+ * @brief Linalgebrainit module
+ */
+
 /** @file linalgebrainit.h
  */
 

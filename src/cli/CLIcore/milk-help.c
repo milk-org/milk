@@ -1,3 +1,8 @@
+/**
+ * @file milk-help.c
+ * @brief Initialize data structure
+ */
+
 #include "CLIcore.h"
 
 int main(int argc, char *argv[])

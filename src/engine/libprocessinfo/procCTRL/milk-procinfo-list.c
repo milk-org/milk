@@ -1,3 +1,8 @@
+/**
+ * @file milk-procinfo-list.c
+ * @brief Milk procinfo list module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

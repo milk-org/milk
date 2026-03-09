@@ -1,3 +1,8 @@
+/**
+ * @file milk-stream-list.c
+ * @brief Milk stream list module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

@@ -1,3 +1,8 @@
+/**
+ * @file termview.h
+ * @brief Termview module
+ */
+
 #ifndef _TERMVIEW_H
 #define _TERMVIEW_H
 

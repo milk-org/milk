@@ -1,3 +1,8 @@
+/**
+ * @file droptree.h
+ * @brief Droptree module
+ */
+
 #ifndef CLUSTERING__DROPTREE_H
 #define CLUSTERING__DROPTREE_H
 

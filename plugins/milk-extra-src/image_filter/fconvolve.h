@@ -1,3 +1,8 @@
+/**
+ * @file fconvolve.h
+ * @brief Fconvolve module
+ */
+
 /** @file fconvolve.h
  *
  */

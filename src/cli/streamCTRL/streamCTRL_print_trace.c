@@ -1,3 +1,8 @@
+/**
+ * @file streamCTRL_print_trace.c
+ * @brief Streamctrl print trace module
+ */
+
 #include <stdint.h>
 #include <sys/types.h>
 

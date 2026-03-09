@@ -1,3 +1,8 @@
+/**
+ * @file cublas_Coeff2Map_Loop.h
+ * @brief Cublas coeff2map loop module
+ */
+
 /** @file Coeff2Map_Loop.h
  */
 

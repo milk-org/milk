@@ -6,17 +6,17 @@ Images information
 
 | File | Description |
 |------|-------------|
-| `cubeMatchMatrix.c` | No description available. |
-| `cubestats.c` | No description available. |
-| `image_stats.c` | No description available. |
+| `cubeMatchMatrix.c` | Cubematchmatrix module |
+| `cubestats.c` | Cubestats module |
+| `image_stats.c` | Image stats module |
 | `imagemon.c` | image monitor |
-| `improfile.c` | No description available. |
-| `kbdhit.c` | No description available. |
-| `percentile.c` | No description available. |
-| `print_header.c` | No description available. |
+| `improfile.c` | Improfile module |
+| `kbdhit.c` | Kbdhit module |
+| `percentile.c` | Percentile module |
+| `print_header.c` | Print header module |
 | `stream_monproc.c` | monitor stream with multi-level time binning, circular buffer, and dynamic histogram |
-| `streamtiming_stats.c` | No description available. |
-| `timediff.c` | No description available. |
+| `streamtiming_stats.c` | Streamtiming stats module |
+| `timediff.c` | Timediff module |
 
 ## Standalone Executables
 

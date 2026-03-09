@@ -1,3 +1,8 @@
+/**
+ * @file imswapaxis2D.h
+ * @brief Imswapaxis2d module
+ */
+
 /** @file imswapaxis2D.h
  */
 

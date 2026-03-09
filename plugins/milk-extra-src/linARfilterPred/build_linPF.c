@@ -1,5 +1,10 @@
 /**
  * @file build_linPF.c
+ * @brief Build linpf module
+ */
+
+/**
+ * @file build_linPF.c
  *
  *
  */

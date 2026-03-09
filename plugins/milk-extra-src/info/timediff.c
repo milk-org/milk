@@ -1,3 +1,8 @@
+/**
+ * @file timediff.c
+ * @brief Timediff module
+ */
+
 /** @file timediff.c
  */
 

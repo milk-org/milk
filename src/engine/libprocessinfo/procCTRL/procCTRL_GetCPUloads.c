@@ -1,3 +1,8 @@
+/**
+ * @file procCTRL_GetCPUloads.c
+ * @brief Procctrl getcpuloads module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

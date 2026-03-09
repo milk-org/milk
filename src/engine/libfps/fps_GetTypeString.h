@@ -1,4 +1,9 @@
 /**
+ * @file fps_GetTypeString.h
+ * @brief Fps gettypestring module
+ */
+
+/**
  * @file    fps_GetTypeString.h
  */
 

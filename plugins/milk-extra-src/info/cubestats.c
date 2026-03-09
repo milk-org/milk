@@ -1,3 +1,8 @@
+/**
+ * @file cubestats.c
+ * @brief Cubestats module
+ */
+
 /** @file cubestats.c
  */
 

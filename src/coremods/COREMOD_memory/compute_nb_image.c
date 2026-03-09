@@ -1,4 +1,9 @@
 /**
+ * @file compute_nb_image.c
+ * @brief Compute nb image module
+ */
+
+/**
  * @file    compute_nb_image.c
  */
 

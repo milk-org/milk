@@ -1,3 +1,8 @@
+/**
+ * @file image_mk_amph_from_complex.h
+ * @brief Image mk amph from complex module
+ */
+
 #ifndef COREMOD_MEMORY_IMAGE_MK_AMPH_FROM_COMPLEX_H
 #define COREMOD_MEMORY_IMAGE_MK_AMPH_FROM_COMPLEX_H
 

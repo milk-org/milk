@@ -1,3 +1,8 @@
+/**
+ * @file mask_to_pixtable.c
+ * @brief Mask to pixtable module
+ */
+
 #include "CLIcore.h"
 
 

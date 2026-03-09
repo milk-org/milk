@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_signals.c
+ * @brief Processinfo signals module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>

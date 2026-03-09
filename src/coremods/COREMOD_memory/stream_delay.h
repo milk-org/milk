@@ -1,3 +1,8 @@
+/**
+ * @file stream_delay.h
+ * @brief Stream delay module
+ */
+
 /** @file stream_delay,h
  */
 

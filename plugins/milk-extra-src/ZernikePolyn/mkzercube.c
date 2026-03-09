@@ -1,5 +1,10 @@
 /**
  * @file mkzercube.c
+ * @brief Mkzercube module
+ */
+
+/**
+ * @file mkzercube.c
  *
  */
 

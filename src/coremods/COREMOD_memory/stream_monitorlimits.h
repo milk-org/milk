@@ -1,3 +1,8 @@
+/**
+ * @file stream_monitorlimits.h
+ * @brief Stream monitorlimits module
+ */
+
 /** @file stream_delay,h
  */
 

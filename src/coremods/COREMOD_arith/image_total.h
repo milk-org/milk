@@ -1,4 +1,9 @@
 /**
+ * @file image_total.h
+ * @brief Image total module
+ */
+
+/**
  * @file    image_total.h
  *
  */

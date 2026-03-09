@@ -1,3 +1,8 @@
+/**
+ * @file milk-procCTRL.c
+ * @brief Milk procctrl module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

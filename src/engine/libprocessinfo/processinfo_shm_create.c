@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_shm_create.c
+ * @brief Processinfo shm create module
+ */
+
 #include <sys/file.h>
 #include <sys/mman.h> // mmap()
 #include <sys/types.h>

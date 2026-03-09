@@ -1,3 +1,8 @@
+/**
+ * @file procCTRL_GetNumberCPUs.c
+ * @brief Procctrl getnumbercpus module
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 

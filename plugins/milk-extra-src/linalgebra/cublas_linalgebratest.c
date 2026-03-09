@@ -1,3 +1,8 @@
+/**
+ * @file cublas_linalgebratest.c
+ * @brief Cublas linalgebratest module
+ */
+
 /** @file linalgebratest.c
  */
 

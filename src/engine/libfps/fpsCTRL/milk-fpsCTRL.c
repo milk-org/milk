@@ -1,3 +1,8 @@
+/**
+ * @file milk-fpsCTRL.c
+ * @brief Milk fpsctrl module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

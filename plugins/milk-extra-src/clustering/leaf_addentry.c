@@ -1,3 +1,8 @@
+/**
+ * @file leaf_addentry.c
+ * @brief log all debug trace points to file
+ */
+
 
 #include "CLIcore.h"
 #include "clustering_defs.h"

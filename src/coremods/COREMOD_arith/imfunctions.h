@@ -1,4 +1,9 @@
 /**
+ * @file imfunctions.h
+ * @brief Functions for bison / flex
+ */
+
+/**
  * @file    imfunctions.c
  *
  *

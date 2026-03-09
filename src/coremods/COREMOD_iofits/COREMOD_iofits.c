@@ -1,4 +1,9 @@
 /**
+ * @file COREMOD_iofits.c
+ * @brief Coremod iofits module
+ */
+
+/**
  * @file    COREMOD_iofits.c
  */
 

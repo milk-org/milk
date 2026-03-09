@@ -1,3 +1,8 @@
+/**
+ * @file processinfo_exec_end.c
+ * @brief Processinfo exec end module
+ */
+
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>

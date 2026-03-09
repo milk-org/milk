@@ -1,3 +1,8 @@
+/**
+ * @file image_vecmult.h
+ * @brief Image vecmult module
+ */
+
 #ifndef COREMOD_ARITH_IMAGE_VECMULT_H
 #define COREMOD_ARITH_IMAGE_VECMULT_H
 

@@ -1,5 +1,10 @@
 /**
  * @file mvprocCPUset.c
+ * @brief Mvproccpuset module
+ */
+
+/**
+ * @file mvprocCPUset.c
  */
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE

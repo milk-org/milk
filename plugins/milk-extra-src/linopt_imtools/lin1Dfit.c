@@ -1,3 +1,8 @@
+/**
+ * @file lin1Dfit.c
+ * @brief Lin1dfit module
+ */
+
 #include <math.h>
 
 #include "CLIcore.h"

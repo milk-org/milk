@@ -1,3 +1,8 @@
+/**
+ * @file DFT.h
+ * @brief Dft module
+ */
+
 #ifndef FFT_DFT_H
 #define FFT_DFT_H
 

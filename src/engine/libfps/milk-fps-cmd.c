@@ -1,3 +1,8 @@
+/**
+ * @file milk-fps-cmd.c
+ * @brief Milk fps cmd module
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

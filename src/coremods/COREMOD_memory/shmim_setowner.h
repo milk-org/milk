@@ -1,4 +1,9 @@
 /**
+ * @file shmim_setowner.h
+ * @brief Shmim setowner module
+ */
+
+/**
  * @file    shmim_setowner.h
  */
 

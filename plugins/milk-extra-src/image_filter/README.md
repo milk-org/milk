@@ -6,15 +6,15 @@ Image filtering and convolution
 
 | File | Description |
 |------|-------------|
-| `cubepercentile.c` | No description available. |
-| `fconvolve.c` | No description available. |
-| `fit1D.c` | No description available. |
-| `fit2DcosKernel.c` | No description available. |
-| `fit2Dcossin.c` | No description available. |
+| `cubepercentile.c` | Cubepercentile module |
+| `fconvolve.c` | Fconvolve module |
+| `fit1D.c` | Fit1d module |
+| `fit2DcosKernel.c` | Fit2dcoskernel module |
+| `fit2Dcossin.c` | Fit2dcossin module |
 | `gaussfilter.c` | Gaussian 2D image filtering |
 | `im2Dfilter_1pixbblurr.c` | Apply 1 pixel radius blurr to image |
-| `medianfilter.c` | No description available. |
-| `percentile_interpolation.c` | No description available. |
+| `medianfilter.c` | Medianfilter module |
+| `percentile_interpolation.c` | Percentile interpolation module |
 
 ## Standalone Executables
 

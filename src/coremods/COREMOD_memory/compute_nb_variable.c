@@ -1,4 +1,9 @@
 /**
+ * @file compute_nb_variable.c
+ * @brief Compute nb variable module
+ */
+
+/**
  * @file    compute_nb_variable.c
  */
 
