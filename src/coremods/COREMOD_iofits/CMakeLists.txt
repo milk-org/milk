@@ -86,8 +86,9 @@ message("Found cfitsio")
   target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 
-target_include_directories(${LIBNAME} PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${LIBNAME} PRIVATE m ${CFITSIO_LIBRARIES} milkfps)
+target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+                                              $<INSTALL_INTERFACE:include>)
+target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
 
 message(" CFITSIO_LIBRARIES : ${CFITSIO_LIBRARIES}")
 
@@ -104,9 +105,10 @@ if(${CFITSIO_FOUND})
   target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
   target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
-target_include_directories(${LIBNAME_COMPUTE} PRIVATE
-    ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(${LIBNAME_COMPUTE} PRIVATE
+target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>)
+target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
     m ${CFITSIO_LIBRARIES} milkfps)
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)

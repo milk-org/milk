@@ -3,6 +3,8 @@
  *
  */
 
+#include <IMGID.h>
+
 double Ptrunc(double a, double b, double c);
 
 /* ------------------------------------------------------------------------- */

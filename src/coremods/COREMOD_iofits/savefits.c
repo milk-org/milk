@@ -15,7 +15,7 @@
 #include "savefits.h"
 #include "fps.h"
 #include "processinfo.h"
-#include "ImageStreamIO.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 #include "COREMOD_iofits_common.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "check_fitsio_status.h"

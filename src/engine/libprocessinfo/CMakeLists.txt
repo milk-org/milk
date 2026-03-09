@@ -57,19 +57,11 @@ set(SOURCES
     target_include_directories(milkprocessinfo PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/ImageStreamIO>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libmilkTUI>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/streamCTRL>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/CLIcore>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface/procCTRL>
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/libfps>
         $<INSTALL_INTERFACE:include>
     )
     
     # Link dependencies
-    target_link_libraries(milkprocessinfo ImageStreamIO rt pthread m)
+    target_link_libraries(milkprocessinfo PUBLIC ImageStreamIO milkdata rt pthread m)
         
     install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
     
@@ -81,6 +73,7 @@ add_executable(milk-procinfo-rm milk-procinfo-rm.c)
 target_link_libraries(milk-procinfo-rm PUBLIC 
     milkprocessinfo 
     ImageStreamIO
+    CLIcore
     pthread
     m
 )

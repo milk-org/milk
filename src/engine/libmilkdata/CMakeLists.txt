@@ -4,17 +4,27 @@ set(SOURCEFILES
     milkdata.c
 )
 
+set(INCLUDEFILES
+   milkdata.h
+   milkdata_macros.h
+   milkDebugTools.h
+)
+
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 target_include_directories(${LIBNAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/CommandLineInterface>
     $<INSTALL_INTERFACE:include>
 )
 
+target_include_directories(${LIBNAME} PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+)
+
 target_link_libraries(${LIBNAME}
-    PUBLIC ImageStreamIO milkfps milkprocessinfo m rt
+    PUBLIC ImageStreamIO m rt
 )
 
 install(TARGETS ${LIBNAME}

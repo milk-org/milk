@@ -337,21 +337,16 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Expose architectural tiers globally so that legacy #include
-# directives (e.g. #include "ImageStreamIO/ImageStreamIO.h")
-# continue to resolve without modifying hundreds of source files.
-include_directories(
-    src
-    src/engine
-    src/coremods
-    src/cli
-    src/cli/CLIcore
-    src/cli/CLIcore/CLIcore
-    src/cli/streamCTRL
-    src/cli/CLIcore/termview
-    src/cli/libmilkTUI
-)
+# =====================================================================
+#   3. INCLUDES
+# =====================================================================
 
+# Global includes removed in favor of target_include_directories
 
+if(${USE_BISON})
+# Bison calc uses CLIcore headers somewhat internally
+include_directories(src/cli/CLIcore)
+endif()
 # =======================================
 # SOURCE DIRECTORIES
 # =======================================

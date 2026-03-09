@@ -10,7 +10,7 @@
 
 #include "../cmdsettings.h"
 
-#include "libfps/fps.h"
+#include "fps.h"
 
 // testing argument type for command line interface
 // CLI ARGS consist of two 16-bit fields
