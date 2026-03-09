@@ -33,7 +33,7 @@ Documentation is built by doxygen and written in the ./dochtml/html directory.
 
  To set it up on you local repo, follow these steps AFTER having cloned the repo.
 
-```text
+```bash
 mkdir dochtml
 mkdir dochtml/html
 cd dochtml/html
@@ -49,7 +49,7 @@ Where *reponame* is for example milk, cacao or coffee.
 
 For initial setup (creating gh-pages branch for the first time)
 
-```text
+```bash
 mkdir dochtml
 mkdir dochtml/html
 # exclude dochtml from repo
