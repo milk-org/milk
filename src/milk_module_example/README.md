@@ -1,29 +1,24 @@
-# milk_module_example
+# Module: milk_module_example
 
 Template module demonstrating the `milk` compute unit architecture.
 
-## Files
+## Source Files
 
-| File | Purpose |
-|------|---------|
-| `milk_module_example.c` | Module init and CLI registration |
-| `examplefunc1.c` | Basic function (no FPS) |
-| `examplefunc2_FPS.c` | FPS-enabled compute unit template |
-| `examplefunc4_streamprocess.c` | Stream processing loop template |
-| `examplefunc_fps_cli_poc.c` | V2 standalone template (8-section layout) |
+| File | Description |
+|------|-------------|
+| `examplefunc1.c` | simple function example |
+| `examplefunc2_FPS.c` | simple function example with FPS and processinfo support |
+| `examplefunc3_updatestreamloop.c` | simple procinfo+fps example - brief, no comments, uses macros |
+| `examplefunc4_streamprocess.c` | template for simple stream processing loop |
+| `examplefunc_fps_cli_poc.c` | Template for FPS V2 Compute Units |
 
 ## Standalone Executables
 
-| Executable | Source | Description |
-|-----------|--------|-------------|
-| `milk-fpsexec-clitest` | `examplefunc_fps_cli_poc.c` | V2 template demo |
-| `milk-fpsexec-imsum2` | `examplefunc2_FPS.c` | Image sum (FPS example) |
-| `milk-fpsexec-streamprocess` | `examplefunc4_streamprocess.c` | Stream loop example |
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-clitest` | `examplefunc_fps_cli_poc.c` | Template for FPS V2 Compute Units |
+| `milk-fpsexec-imsum2` | `examplefunc2_FPS.c` | simple function example with FPS and processinfo support |
+| `milk-fpsexec-streamprocess` | `examplefunc4_streamprocess.c` | template for simple stream processing loop |
 
-## Usage
-
-Use this module as the starting point for new compute units:
-
-1. Copy `examplefunc_fps_cli_poc.c` to your module
-2. Follow the 8-section layout (see `docs/programmers_guide.md`)
-3. Add `add_milk_standalone()` to your `CMakeLists.txt`
+## Dependencies
+- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`

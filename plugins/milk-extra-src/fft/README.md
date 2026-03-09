@@ -1,5 +1,30 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/537355d444fb4e6595fb352fb0e14d1b)](https://www.codacy.com/gh/milk-org/fft?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/fft&amp;utm_campaign=Badge_Grade)
-
-# Module fft {#page_module_fft}
+# Module: fft
 
 Fourier Transforms
+
+## Source Files
+
+| File | Description |
+|------|-------------|
+| `DFT.c` | Use DFT to insert Focal Plane Mask |
+| `dofft.c` | No description available. |
+| `fft_autocorrelation.c` | Compute autocorrelation using FFT |
+| `fft_structure_function.c` | Compute structure function using FFT |
+| `fftcorrelation.c` | No description available. |
+| `ffttranslate.c` | No description available. |
+| `fftzoom.c` | No description available. |
+| `init_fftwplan.c` | No description available. |
+| `permut.c` | No description available. |
+| `pup2foc.c` | No description available. |
+| `testfftspeed.c` | Test FFT speed (fftw) |
+| `wisdom.c` | No description available. |
+
+## Standalone Executables
+
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-fft-dofft` | `dofft.c` | No description available. |
+| `milk-fpsexec-fft-pup2foc` | `pup2foc.c` | No description available. |
+
+## Dependencies
+- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
