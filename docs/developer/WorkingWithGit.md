@@ -1,7 +1,7 @@
 # Working with git 
 
 > [!NOTE]
-> This file: ./src/CommandLineInterface/doc/WorkingWithGit.md
+> This file: `docs/developer/WorkingWithGit.md`
 
 
 
@@ -81,18 +81,4 @@ Issue tags for submodules (optional, but helpful to track which submodule versio
 
 # 2. Source Code Documentation (doxygen) 
 
-Documentation tree can be locally built on dev branch with doxygen from main directory  :
-
-	$ git checkout dev
-	$ doxygen
-
-To push it on the origin :
-
-	$ cd dochtml/html
-	$ git add *
-	$ git commit -am 'updated doxygen documentation'
-	$ git push
-
-
-> [!NOTE]
-> When switching branches, you may get an error message "The following untracked working tree files would be overwritten by checkout" preventing branch switch. If the error only lists files in the html directory, you can safely use the -f option to force branch change.
+For generating HTML source code documentation via Doxygen, refer to the up-to-date guide in [DocumentingCode.md](DocumentingCode.md).

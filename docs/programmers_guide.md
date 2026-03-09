@@ -244,5 +244,5 @@ Each module directory should have a `README.md` with:
 ---
 
 
-*(This guide is automatically updated by your coding agent based on `.agents/rules/maintain-programmers-guide.md`)*
+*(This guide is automatically updated by your coding agent using the /update-programmers-guide workflow)*
 
