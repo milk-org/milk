@@ -196,7 +196,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     int loopOK = 1; // Master flag
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
 
     if((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
@@ -222,18 +222,18 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     if(loopOK == 1)
     {
-        xsize    = data.image[ID].md[0].size[0];
-        ysize    = data.image[ID].md[0].size[1];
+        xsize    = dcimg[ID].md[0].size[0];
+        ysize    = dcimg[ID].md[0].size[1];
         NBslices = 1;
-        if(data.image[ID].md[0].naxis > 2 && data.image[ID].md[0].size[2] > 1)
+        if(dcimg[ID].md[0].naxis > 2 && dcimg[ID].md[0].size[2] > 1)
         {
-            NBslices = data.image[ID].md[0].size[2];
+            NBslices = dcimg[ID].md[0].size[2];
         }
     }
 
     if(loopOK == 1)
     {
-        framesize = ImageStreamIO_typesize(data.image[ID].md[0].datatype) * xsize *
+        framesize = ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize *
                     ysize;
         printf("IMAGE FRAME SIZE = %ld\n", framesize);
         fflush(stdout);
@@ -241,7 +241,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     if(loopOK == 1)
     {
-        ptr_img_data = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
+        ptr_img_data = (char *) ImageStreamIO_get_image_d_ptr(&dcimg[ID]);
 
         framesize1 = framesize + sizeof(IMAGE_METADATA);
 
@@ -252,7 +252,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         else
         {
             framesizeall =
-                framesize1 + data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
+                framesize1 + dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD);
         }
 
         // Prepare segmentation into 62k datagrams
@@ -271,11 +271,11 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
         oldslice = 0;
         //sockOK = 1;
-        printf("sem = %d\n", data.image[ID].md[0].sem);
+        printf("sem = %d\n", dcimg[ID].md[0].sem);
         fflush(stdout);
     }
 
-    if((data.image[ID].md[0].sem == 0) || (do_counter_sync == 1))
+    if((dcimg[ID].md[0].sem == 0) || (do_counter_sync == 1))
     {
         processinfo_WriteMessage(processinfo, "sync using counter");
         use_sem = 0;
@@ -299,11 +299,11 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
         if(use_sem == 0)  // use counter
         {
-            while(data.image[ID].md[0].cnt0 == cnt)  // test if new frame exists
+            while(dcimg[ID].md[0].cnt0 == cnt)  // test if new frame exists
             {
                 usleep(5);
             }
-            cnt  = data.image[ID].md[0].cnt0;
+            cnt  = dcimg[ID].md[0].cnt0;
             semr = 0;
         }
         else
@@ -315,26 +315,26 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             }
             ts.tv_sec += 2;
 
-            semr = ImageStreamIO_semtimedwait(data.image + ID, semtrig, &ts);
+            semr = ImageStreamIO_semtimedwait(dcimg + ID, semtrig, &ts);
 
             if(iter == 0)
             {
                 processinfo_WriteMessage(processinfo, "Driving sem to 0");
                 printf("Driving semaphore to zero ... ");
                 fflush(stdout);
-                semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
+                semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
                 int semvalcnt = semval;
                 for(scnt = 0; scnt < semvalcnt; scnt++)
                 {
-                    semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
+                    semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
                     printf("sem = %d\n", semval);
                     fflush(stdout);
-                    ImageStreamIO_semtrywait(data.image + ID, semtrig);
+                    ImageStreamIO_semtrywait(dcimg + ID, semtrig);
                 }
                 printf("done\n");
                 fflush(stdout);
 
-                semval = ImageStreamIO_semvalue(data.image + ID, semtrig);
+                semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
                 printf("-> sem = %d\n", semval);
                 fflush(stdout);
 
@@ -349,7 +349,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             if(semr == 0)
             {
 
-                slice = data.image[ID].md[0].cnt1;
+                slice = dcimg[ID].md[0].cnt1;
                 if(slice > oldslice + 1)
                 {
                     slice = oldslice + 1;
@@ -365,7 +365,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 }
 
                 // Fill up the transmission buffer
-                memcpy(ptr_buff_metadata, &data.image[ID].md[0], sizeof(IMAGE_METADATA));
+                memcpy(ptr_buff_metadata, &dcimg[ID].md[0], sizeof(IMAGE_METADATA));
 
                 ptr_img_data_slice = ptr_img_data + framesize * slice;
                 memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
@@ -373,8 +373,8 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 if(TCPTRANSFERKW == 1)
                 {
                     memcpy(ptr_buff_keywords,
-                           (char *) data.image[ID].kw,
-                           data.image[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
+                           (char *) dcimg[ID].kw,
+                           dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 // Send the datagrams
@@ -418,10 +418,10 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }
@@ -500,7 +500,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     struct sched_param schedpar;
 
     PROCESSINFO *processinfo;
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         // CREATE PROCESSINFO ENTRY
         // see processtools.c in module CommandLineInterface for details
@@ -519,49 +519,49 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     // CATCH SIGNALS
     {
-        if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+        if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGTERM\n");
         }
 
-        if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+        if(sigaction(SIGINT, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGINT\n");
         }
 
-        if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+        if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGABRT\n");
         }
 
-        if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+        if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGBUS\n");
         }
 
-        if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+        if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGSEGV\n");
         }
 
-        if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+        if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGHUP\n");
         }
 
-        if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+        if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
         {
             printf("\ncan't catch SIGPIPE\n");
         }
     }
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    if(seteuid(dcruid) != 0)    //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
@@ -570,7 +570,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
         printf("ERROR creating socket\n");
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = PROCESSINFO_LOOPSTAT_ERROR;
             processinfo_WriteMessage(processinfo, "ERROR creating socket");
@@ -603,7 +603,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         snprintf(msgstring, 200, "ERROR binding socket, port %d", port);
         printf("%s\n", msgstring);
 
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopstat = PROCESSINFO_LOOPSTAT_ERROR;
             processinfo_WriteMessage(processinfo, msgstring);
@@ -629,7 +629,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                      recvsize, n_dgram_wait);
             printf("%s\n", msgstring);
 
-            if(data.processinfo == 1)
+            if(dcprocinfo == 1)
             {
                 processinfo->loopstat = PROCESSINFO_LOOPSTAT_ERROR;
                 processinfo_WriteMessage(processinfo, msgstring);
@@ -648,7 +648,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         }
     }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         char msgstring[200];
         snprintf(msgstring, 200, "Receiving stream %s", imgmd[0].name);
@@ -658,11 +658,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd[0].name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(imgmd[0].name, dcimg, dcnimg);
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd[0].name, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(imgmd[0].name, dcimg, dcnimg);
     }
 
     list_image_ID();
@@ -674,19 +674,19 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     else
     {
         OKim = 1;
-        if(imgmd[0].naxis != data.image[ID].md[0].naxis)
+        if(imgmd[0].naxis != dcimg[ID].md[0].naxis)
         {
             OKim = 0;
         }
         if(OKim == 1)
         {
             for(axis = 0; axis < imgmd[0].naxis; axis++)
-                if(imgmd[0].size[axis] != data.image[ID].md[0].size[axis])
+                if(imgmd[0].size[axis] != dcimg[ID].md[0].size[axis])
                 {
                     OKim = 0;
                 }
         }
-        if(imgmd[0].datatype != data.image[ID].md[0].datatype)
+        if(imgmd[0].datatype != dcimg[ID].md[0].datatype)
         {
             OKim = 0;
         }
@@ -702,7 +702,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if(TCPTRANSFERKW == 1)
     {
         nbkw = imgmd[0].NBkw;
-        if(imgmd[0].NBkw != data.image[ID].md[0].NBkw)
+        if(imgmd[0].NBkw != dcimg[ID].md[0].NBkw)
         {
             OKim = 0;
         }
@@ -729,20 +729,20 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         printf("REUSING EXISTING IMAGE %s\n", imgmd[0].name);
     }
 
-    xsize    = data.image[ID].md[0].size[0];
-    ysize    = data.image[ID].md[0].size[1];
+    xsize    = dcimg[ID].md[0].size[0];
+    ysize    = dcimg[ID].md[0].size[1];
     NBslices = 1;
-    if(data.image[ID].md[0].naxis > 2)
-        if(data.image[ID].md[0].size[2] > 1)
+    if(dcimg[ID].md[0].naxis > 2)
+        if(dcimg[ID].md[0].size[2] > 1)
         {
-            NBslices = data.image[ID].md[0].size[2];
+            NBslices = dcimg[ID].md[0].size[2];
         }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         char typestring[8];
         snprintf(typestring, 8, "%s",
-                 ImageStreamIO_typename(data.image[ID].md[0].datatype));
+                 ImageStreamIO_typename(dcimg[ID].md[0].datatype));
         char msgstring[200];
         snprintf(msgstring,
                  200,
@@ -764,10 +764,10 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     framesize =
-        ImageStreamIO_typesize(data.image[ID].md[0].datatype) * xsize * ysize;
+        ImageStreamIO_typesize(dcimg[ID].md[0].datatype) * xsize * ysize;
     printf("image frame size = %ld\n", framesize);
 
-    ptr_dest_data_root = (char *) ImageStreamIO_get_image_d_ptr(&data.image[ID]);
+    ptr_dest_data_root = (char *) ImageStreamIO_get_image_d_ptr(&dcimg[ID]);
 
     framesize1 = framesize + sizeof(IMAGE_METADATA);
     if(TCPTRANSFERKW == 0)
@@ -795,7 +795,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                    sizeof(total_udp_size));
     }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         //notify processinfo that we are entering loop
         processinfo->loopstat = PROCESSINFO_LOOPSTAT_ACTIVE;
@@ -821,7 +821,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     while(loopOK == 1)
     {
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             while(processinfo->CTRLval == PROCESSINFO_CTRLVAL_PAUSE)
             {
@@ -839,7 +839,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             }
         }
 
-        if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))
+        if((dcprocinfo == 1) && (processinfo->MeasureTiming == 1))
         {
             processinfo_exec_start(processinfo);
         }
@@ -918,7 +918,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             // Weak copy although we now have all the metadata in buff
             imgmd_remote = (IMAGE_METADATA *)(ptr_buff_metadata);
 
-            data.image[ID].md[0].cnt1 =
+            dcimg[ID].md[0].cnt1 =
                 imgmd_remote[0].cnt1; // For multi-slice only, really.
 
             // copy pixel data. Watch that cnt1 == cnt0 for unsliced data, so need to ignore
@@ -964,7 +964,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             if(TCPTRANSFERKW == 1)
             {
                 // copy kw
-                memcpy(data.image[ID].kw,
+                memcpy(dcimg[ID].kw,
                        (IMAGE_KEYWORD *)(ptr_buff_keywords),
                        nbkw * sizeof(IMAGE_KEYWORD));
             }
@@ -989,11 +989,11 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     monitorloopindex,
                     imgmd_remote[0].cnt0,
                     imgmd_remote[0].cnt0 - minputcnt,
-                    data.image[ID].md[0].cnt0,
-                    data.image[ID].md[0].cnt0 - moutputcnt);
+                    dcimg[ID].md[0].cnt0,
+                    dcimg[ID].md[0].cnt0 - moutputcnt);
 
                 minputcnt  = imgmd_remote[0].cnt0;
-                moutputcnt = data.image[ID].md[0].cnt0;
+                moutputcnt = dcimg[ID].md[0].cnt0;
 
                 monitorloopindex++;
                 monitorindex = 0;
@@ -1001,20 +1001,20 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
             monitorindex++;
 
-            data.image[ID].md[0].cnt0++;
-            for(semnb = 0; semnb < data.image[ID].md[0].sem; semnb++)
+            dcimg[ID].md[0].cnt0++;
+            for(semnb = 0; semnb < dcimg[ID].md[0].sem; semnb++)
             {
-                semval = ImageStreamIO_semvalue(data.image + ID, semnb);
+                semval = ImageStreamIO_semvalue(dcimg + ID, semnb);
                 if(semval < SEMAPHORE_MAXVAL)
                 {
-                    ImageStreamIO_sempost(data.image + ID, semnb);
+                    ImageStreamIO_sempost(dcimg + ID, semnb);
                 }
             }
 
-            sem_getvalue(data.image[ID].semlog, &semval);
+            sem_getvalue(dcimg[ID].semlog, &semval);
             if(semval < 2)
             {
-                sem_post(data.image[ID].semlog);
+                sem_post(dcimg[ID].semlog);
             }
         }
 
@@ -1023,45 +1023,45 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             loopOK = 0;
         }
 
-        if((data.processinfo == 1) && (processinfo->MeasureTiming == 1))
+        if((dcprocinfo == 1) && (processinfo->MeasureTiming == 1))
         {
             processinfo_exec_end(processinfo);
         }
 
         // process signals
 
-        if((data.signal_TERM | data.signal_INT | data.signal_ABRT |
-                data.signal_BUS | data.signal_SEGV | data.signal_HUP |
-                data.signal_PIPE) != 0)
+        if((dcsigTERM | dcsigINT | dcsigABRT |
+                dcsigBUS | dcsigSEGV | dcsigHUP |
+                dcsigPIPE) != 0)
         {
             loopOK = 0;
-            if(data.processinfo == 1)
+            if(dcprocinfo == 1)
             {
-                if(data.signal_TERM == 1)
+                if(dcsigTERM == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGTERM);
                 }
-                else if(data.signal_INT == 1)
+                else if(dcsigINT == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGINT);
                 }
-                else if(data.signal_ABRT == 1)
+                else if(dcsigABRT == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGABRT);
                 }
-                else if(data.signal_BUS == 1)
+                else if(dcsigBUS == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGBUS);
                 }
-                else if(data.signal_SEGV == 1)
+                else if(dcsigSEGV == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGSEGV);
                 }
-                else if(data.signal_HUP == 1)
+                else if(dcsigHUP == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGHUP);
                 }
-                else if(data.signal_PIPE == 1)
+                else if(dcsigPIPE == 1)
                 {
                     processinfo_SIGexit(processinfo, SIGPIPE);
                 }
@@ -1069,13 +1069,13 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         }
 
         loopcnt++;
-        if(data.processinfo == 1)
+        if(dcprocinfo == 1)
         {
             processinfo->loopcnt = loopcnt;
         }
     }
 
-    if(data.processinfo == 1)
+    if(dcprocinfo == 1)
     {
         processinfo_cleanExit(processinfo);
     }

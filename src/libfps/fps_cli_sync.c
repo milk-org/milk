@@ -11,7 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef FPS_STANDALONE
 #include "CLIcore.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 #include "fps.h"
 #include "fps_GetParamIndex.h"
 #include "fps_cli_binding.h"
@@ -227,8 +231,15 @@ errno_t fps_process_cli_and_sync(
          * Sync from CLI argdata filled by
          * CLI_checkarg_array.
          */
+#ifndef FPS_STANDALONE
         CLIargs_to_FPSparams_setval(
             farg, nb_b, fps);
+#else
+        (void) farg;
+        fprintf(stderr,
+            "ERROR: CLI sync not available"
+            " in standalone mode\n");
+#endif
     }
 
     /* ---- Step 2: FPS → local C variables ---- */

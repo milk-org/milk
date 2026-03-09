@@ -10,7 +10,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef FPS_STANDALONE
 #include "CLIcore.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 #include "fps.h"
 #include "fps_cli_binding.h"
 #include "fps_cli_init.h"
@@ -75,9 +79,13 @@ int fps_generic_init(
         fps, fps_name, "", app_info->description,
         app_info->description);
 
+#ifndef FPS_STANDALONE
     if (procinfo ||
         (data.cmd[data.cmdindex].cmdsettings.flags
          & CLICMDFLAG_PROCINFO))
+#else
+    if (procinfo)
+#endif
     {
         fps.cmdset.flags |= CLICMDFLAG_PROCINFO;
         fps_add_processinfo_entries(&fps);
@@ -113,7 +121,11 @@ int fps_generic_conf_cb(
         {
             if (confcheck_fn != NULL)
             {
-                data.fpsptr = &fps;
+#ifndef FPS_STANDALONE
+                dcfpsptr = &fps;
+#else
+                milk_data.fpsptr = &fps;
+#endif
                 confcheck_fn();
             }
         });

@@ -9,7 +9,11 @@
 
 #include <string.h>
 
+#ifndef FPS_STANDALONE
 #include "CLIcore.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 #include "fps.h"
 #include "fps_add_entry.h"
 #include "fps_SetParamCLIindex.h"

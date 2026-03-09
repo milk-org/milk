@@ -633,7 +633,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginAB = imgid_make_from_name(inmatAB);
-    resolveIMGID(&imginAB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginAB, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     IMGID imgoutArot  = imgid_make_from_name(outmatArot);

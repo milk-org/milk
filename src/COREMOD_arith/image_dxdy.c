@@ -15,7 +15,7 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
     uint8_t   naxis    = imgin->md[0].naxis;
     if(naxis != 2)
@@ -28,7 +28,7 @@ imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout)
     imgout->mdt->size[0] = imgin->md[0].size[0];
     imgout->mdt->size[1] = imgin->md[0].size[1];
     imgout->mdt->datatype = datatype;
-    imgout->mdt->shared = data.SHARED_DFT;
+    imgout->mdt->shared = dcshareddft;
     imgout->mdt->NBkw   = NB_KEYWNODE_MAX;
 
     imcreateIMGID(imgout);
@@ -70,7 +70,7 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     uint8_t   datatype = imgin->md[0].datatype;
     uint8_t   naxis    = imgin->md[0].naxis;
     if(naxis != 2)
@@ -83,7 +83,7 @@ imageID arith_image_dy_IMGID(IMGID *imgin, IMGID *imgout)
     imgout->mdt->size[0] = imgin->md[0].size[0];
     imgout->mdt->size[1] = imgin->md[0].size[1];
     imgout->mdt->datatype = datatype;
-    imgout->mdt->shared = data.SHARED_DFT;
+    imgout->mdt->shared = dcshareddft;
     imgout->mdt->NBkw   = NB_KEYWNODE_MAX;
 
     imcreateIMGID(imgout);

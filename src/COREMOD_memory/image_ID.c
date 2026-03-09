@@ -99,11 +99,11 @@ imageID next_avail_image_ID(
     imageID ID = -1;
 
     if ( (preferredID > -1)
-            && (preferredID<data.NB_MAX_IMAGE)
-            && (data.image[preferredID].used == 0) )
+            && (preferredID<dcnimg)
+            && (dcimg[preferredID].used == 0) )
     {
         ID = preferredID;
-        data.image[ID].used = 1;
+        dcimg[ID].used = 1;
     }
     else
     {
@@ -113,12 +113,12 @@ imageID next_avail_image_ID(
         #pragma omp critical
         {
 #endif
-            for(i = 0; i < data.NB_MAX_IMAGE; i++)
+            for(i = 0; i < dcnimg; i++)
             {
-                if(data.image[i].used == 0)
+                if(dcimg[i].used == 0)
                 {
                     ID                  = i;
-                    data.image[ID].used = 1;
+                    dcimg[ID].used = 1;
                     break;
                 }
             }
@@ -131,7 +131,7 @@ imageID next_avail_image_ID(
     {
         printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
         printf("NB_MAX_IMAGE should be increased above current value (%ld)\n",
-               data.NB_MAX_IMAGE);
+               dcnimg);
         exit(0);
     }
 

@@ -34,12 +34,12 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
 {
     // Try FPS implementation
 
-    // Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+    // Set data.fpsname, providing default value as first arg, and set dcfpscode value.
     // Default FPS name will be used if CLI process has NOT been named.
     // See code in function_parameter.c for detailed rules.
     function_parameter_getFPSargs_from_CLIfunc("streamdelay");
 
-    if(data.FPS_CMDCODE != 0)
+    if(dcfpscode != 0)
     {
         // use FPS implementation
         // set pointers to CONF and RUN functions
@@ -52,10 +52,10 @@ static errno_t COREMOD_MEMORY_streamDelay__cli()
         extern FUNCTION_PARAMETER_STRUCT *fpsarray;
         FPS_CONFfunc = COREMOD_MEMORY_streamDelay_FPCONF;
         FPS_RUNfunc  = COREMOD_MEMORY_streamDelay_RUN;
-        FPS_CMDCODE  = data.FPS_CMDCODE;
-        fpsarray     = data.fpsarray;
-        strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);
-        strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1);
+        FPS_CMDCODE  = dcfpscode;
+        fpsarray     = dcfpsarr;
+        strncpy(FPS_name, dcfpsname, STRINGMAXLEN_FPS_NAME - 1);
+        strncpy(FPS_callprogname, dcpkgname, FPS_CALLPROGNAME_STRMAXLEN - 1);
         strncpy(FPS_callfuncname, "streamdelay", FPS_CALLFUNCNAME_STRMAXLEN - 1);
         function_parameter_execFPScmd();
         return RETURN_SUCCESS;
@@ -120,7 +120,7 @@ errno_t stream_delay_addCLIcmd()
 errno_t COREMOD_MEMORY_streamDelay_FPCONF()
 {
 
-    FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);
+    FPS_SETUP_INIT(dcfpsname, dcfpscode);
     fps_add_processinfo_entries(&fps);
 
     uint64_t FPFLAG;
@@ -219,7 +219,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // ===========================
     /// ### CONNECT TO FPS
     // ===========================
-    FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);
+    FPS_CONNECT(dcfpsname, FPSCONNECT_RUN);
 
     // ===============================
     /// ### GET FUNCTION PARAMETER VALUES
@@ -262,7 +262,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     char pinfodescr[200];
     sprintf(pinfodescr, "streamdelay %.10s %.10s", IDin_name, IDout_name);
     processinfo =
-        processinfo_setup(data.FPS_name, // re-use fpsname as processinfo name
+        processinfo_setup(dcfpsname, // re-use fpsname as processinfo name
                           pinfodescr,    // description
                           "startup",     // message on startup
                           __FUNCTION__,
@@ -283,7 +283,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // Pre-loop testing, anything that would prevent loop from starting should issue message
     int loopOK = 1;
 
-    IDin = image_ID(IDin_name, data.image, data.NB_MAX_IMAGE);
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
 
     // ERROR HANDLING
     if(IDin == -1)
@@ -312,8 +312,8 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
         loopOK = 0;
     }
 
-    xsize  = data.image[IDin].md[0].size[0];
-    ysize  = data.image[IDin].md[0].size[1];
+    xsize  = dcimg[IDin].md[0].size[0];
+    ysize  = dcimg[IDin].md[0].size[1];
     *zsize = (long)(2 * delayus / dtus);
     if(*zsize < 1)
     {
@@ -325,7 +325,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     create_3Dimage_ID("_tmpc", xsize, ysize, *zsize, &IDimc);
 
-    IDout = image_ID(IDout_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDout_name, dcimg, dcnimg);
     if(IDout == -1)  // CREATE IT
     {
         arraytmp    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
@@ -344,7 +344,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
 
     *kkin  = 0;
     *kkout = 0;
-    //    cnt0old = data.image[IDin].md[0].cnt0;
+    //    cnt0old = dcimg[IDin].md[0].cnt0;
 
     float *arraytmpf;
     arraytmpf = (float *) malloc(sizeof(float) * xsize * ysize);
@@ -360,7 +360,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
     // Specify input stream trigger
 
     processinfo_waitoninputstream_init(processinfo,
-                                       (IDin == -1 ? NULL : &data.image[IDin]),
+                                       (IDin == -1 ? NULL : &dcimg[IDin]),
                                        PROCESSINFO_TRIGGERMODE_SEMAPHORE,
                                        -1);
     processinfo->triggerdelay.tv_sec  = 0;
@@ -398,7 +398,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
             DEBUG_TRACEPOINT(" ");
 
             // has new frame arrived ?
-            //            cnt0 = data.image[IDin].md[0].cnt0;
+            //            cnt0 = dcimg[IDin].md[0].cnt0;
 
             //            if(cnt0 != cnt0old) { // new frame
             clock_gettime(CLOCK_MILK,
@@ -407,8 +407,8 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
             DEBUG_TRACEPOINT(" ");
             for(ii = 0; ii < xysize; ii++)
             {
-                data.image[IDimc].array.F[(*kkin) * xysize + ii] =
-                    data.image[IDin].array.F[ii];
+                dcimg[IDimc].array.F[(*kkin) * xysize + ii] =
+                    dcimg[IDin].array.F[ii];
             }
             (*kkin)++;
             DEBUG_TRACEPOINT(" ");
@@ -458,19 +458,19 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                     {
                         char *ptr; // pointer address
 
-                        data.image[IDout].md[0].write = 1;
+                        dcimg[IDout].md[0].write = 1;
 
-                        ptr = (char *) data.image[IDimc].array.F;
+                        ptr = (char *) dcimg[IDimc].array.F;
                         ptr += SIZEOF_DATATYPE_FLOAT * xysize * *kkout;
 
-                        memcpy(data.image[IDout].array.F,
+                        memcpy(dcimg[IDout].array.F,
                                ptr,
                                SIZEOF_DATATYPE_FLOAT *
                                xysize); // copy time-delayed input to output
 
                         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                        data.image[IDout].md[0].cnt0++;
-                        data.image[IDout].md[0].write = 0;
+                        dcimg[IDout].md[0].cnt0++;
+                        dcimg[IDout].md[0].write = 0;
                     }
                     break;
 
@@ -495,7 +495,7 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                             for(ii = 0; ii < xysize; ii++)
                             {
                                 arraytmpf[ii] +=
-                                    coeff * data.image[IDimc]
+                                    coeff * dcimg[IDimc]
                                     .array.F[kkinscan * xysize + ii];
                             }
                             normframes += coeff;
@@ -506,17 +506,17 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                         normframes = 0.0001; // avoid division by zero
                     }
 
-                    data.image[IDout].md[0].write = 1;
+                    dcimg[IDout].md[0].write = 1;
                     for(ii = 0; ii < xysize; ii++)
                     {
-                        data.image[IDout].array.F[ii] = arraytmpf[ii] / normframes;
+                        dcimg[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                     }
 
-                    processinfo_update_output_stream(processinfo, &data.image[IDout], NULL);
+                    processinfo_update_output_stream(processinfo, &dcimg[IDout], NULL);
                     /*
                         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-                        data.image[IDout].md[0].cnt0++;
-                        data.image[IDout].md[0].write = 0;
+                        dcimg[IDout].md[0].cnt0++;
+                        dcimg[IDout].md[0].write = 0;
                         */
                     break;
             }
@@ -556,8 +556,8 @@ errno_t COREMOD_MEMORY_streamDelay(const char *IDin_name,
     FUNCTION_PARAMETER_STRUCT fps;
 
     // create FPS
-    sprintf(data.FPS_name, "%s-%06u", __FUNCTION__, pindex);
-    data.FPS_CMDCODE = FPSCMDCODE_FPSINIT;
+    sprintf(dcfpsname, "%s-%06u", __FUNCTION__, pindex);
+    dcfpscode = FPSCMDCODE_FPSINIT;
 
     COREMOD_MEMORY_streamDelay_FPCONF();
 

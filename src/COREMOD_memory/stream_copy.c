@@ -104,13 +104,13 @@ static errno_t compute_function()
         imgid_make_from_name(inimname);
     resolveIMGID(
         &imgin, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     IMGID imgout =
         imgid_make_from_name(outimname);
     resolveIMGID(
         &imgout, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     uint64_t im_in_datasize =
         ImageStreamIO_typesize(

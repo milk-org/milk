@@ -52,12 +52,12 @@ errno_t image_slicenormalize(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&maskimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&maskimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    resolveIMGID(&imgaux, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgaux, ERRMODE_NULL, dcimg, dcnimg);
 
-    resolveIMGID(outimg, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(outimg, ERRMODE_NULL, dcimg, dcnimg);
     if(outimg->ID == -1)
     {
         imgid_copy(&inimg, outimg);
@@ -369,13 +369,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID inimg = imgid_make_from_name(inimname);
-    resolveIMGID(&inimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID maskimg = imgid_make_from_name(maskimname);
-    resolveIMGID(&maskimg, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&maskimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imgaux = imgid_make_from_name(auxin);
-    resolveIMGID(&imgaux, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgaux, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID outimg = imgid_make_from_name(outimname);
 

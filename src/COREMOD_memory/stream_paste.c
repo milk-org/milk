@@ -89,12 +89,12 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
     uint8_t            datatype;
     int                FrameIndex;
 
-    ID0 = image_ID(IDstream0_name, data.image, data.NB_MAX_IMAGE);
-    ID1 = image_ID(IDstream1_name, data.image, data.NB_MAX_IMAGE);
+    ID0 = image_ID(IDstream0_name, dcimg, dcnimg);
+    ID1 = image_ID(IDstream1_name, dcimg, dcnimg);
 
-    xsize    = data.image[ID0].md[0].size[0];
-    ysize    = data.image[ID0].md[0].size[1];
-    datatype = data.image[ID0].md[0].datatype;
+    xsize    = dcimg[ID0].md[0].size[0];
+    ysize    = dcimg[ID0].md[0].size[1];
+    datatype = dcimg[ID0].md[0].datatype;
 
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(arraysize == NULL)
@@ -105,7 +105,7 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
     arraysize[0] = 2 * xsize;
     arraysize[1] = ysize;
 
-    IDout = image_ID(IDstreamout_name, data.image, data.NB_MAX_IMAGE);
+    IDout = image_ID(IDstreamout_name, dcimg, dcnimg);
     if(IDout == -1)
     {
         create_image_ID(IDstreamout_name,
@@ -126,18 +126,18 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
         if(FrameIndex == 0)
         {
             // has new frame 0 arrived ?
-            if(data.image[ID0].md[0].sem == 0)
+            if(dcimg[ID0].md[0].sem == 0)
             {
                 while(cnt ==
-                        data.image[ID0].md[0].cnt0) // test if new frame exists
+                        dcimg[ID0].md[0].cnt0) // test if new frame exists
                 {
                     usleep(5);
                 }
-                cnt = data.image[ID0].md[0].cnt0;
+                cnt = dcimg[ID0].md[0].cnt0;
             }
             else
             {
-                ImageStreamIO_semwait(data.image+ID0, semtrig0);
+                ImageStreamIO_semwait(dcimg+ID0, semtrig0);
             }
             Xoffset = 0;
             IDin    = 0;
@@ -145,24 +145,24 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
         else
         {
             // has new frame 1 arrived ?
-            if(data.image[ID1].md[0].sem == 0)
+            if(dcimg[ID1].md[0].sem == 0)
             {
                 while(cnt ==
-                        data.image[ID1].md[0].cnt0) // test if new frame exists
+                        dcimg[ID1].md[0].cnt0) // test if new frame exists
                 {
                     usleep(5);
                 }
-                cnt = data.image[ID1].md[0].cnt0;
+                cnt = dcimg[ID1].md[0].cnt0;
             }
             else
             {
-                ImageStreamIO_semwait(data.image+ID1, semtrig1);
+                ImageStreamIO_semwait(dcimg+ID1, semtrig1);
             }
             Xoffset = xsize;
             IDin    = 1;
         }
 
-        data.image[IDout].md[0].write = 1;
+        dcimg[IDout].md[0].write = 1;
 
         switch(datatype)
         {
@@ -170,8 +170,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.UI8[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.UI8[jj * xsize + ii];
+                        dcimg[IDout].array.UI8[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.UI8[jj * xsize + ii];
                     }
                 break;
 
@@ -179,9 +179,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.UI16[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.UI16[jj * xsize + ii];
+                            dcimg[IDin].array.UI16[jj * xsize + ii];
                     }
                 break;
 
@@ -189,9 +189,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.UI32[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.UI32[jj * xsize + ii];
+                            dcimg[IDin].array.UI32[jj * xsize + ii];
                     }
                 break;
 
@@ -199,9 +199,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.UI64[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.UI64[jj * xsize + ii];
+                            dcimg[IDin].array.UI64[jj * xsize + ii];
                     }
                 break;
 
@@ -209,8 +209,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.SI8[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.SI8[jj * xsize + ii];
+                        dcimg[IDout].array.SI8[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.SI8[jj * xsize + ii];
                     }
                 break;
 
@@ -218,9 +218,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.SI16[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.SI16[jj * xsize + ii];
+                            dcimg[IDin].array.SI16[jj * xsize + ii];
                     }
                 break;
 
@@ -228,9 +228,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.SI32[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.SI32[jj * xsize + ii];
+                            dcimg[IDin].array.SI32[jj * xsize + ii];
                     }
                 break;
 
@@ -238,9 +238,9 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.SI64[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.SI64[jj * xsize + ii];
+                            dcimg[IDin].array.SI64[jj * xsize + ii];
                     }
                 break;
 
@@ -248,8 +248,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.F[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.F[jj * xsize + ii];
+                        dcimg[IDout].array.F[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.F[jj * xsize + ii];
                     }
                 break;
 
@@ -257,8 +257,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.D[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.D[jj * xsize + ii];
+                        dcimg[IDout].array.D[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.D[jj * xsize + ii];
                     }
                 break;
 
@@ -266,8 +266,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.CF[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.CF[jj * xsize + ii];
+                        dcimg[IDout].array.CF[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.CF[jj * xsize + ii];
                     }
                 break;
 
@@ -275,8 +275,8 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
                 for(uint32_t ii = 0; ii < xsize; ii++)
                     for(uint32_t jj = 0; jj < ysize; jj++)
                     {
-                        data.image[IDout].array.CD[jj * 2 * xsize + ii + Xoffset] =
-                            data.image[IDin].array.CD[jj * xsize + ii];
+                        dcimg[IDout].array.CD[jj * 2 * xsize + ii + Xoffset] =
+                            dcimg[IDin].array.CD[jj * xsize + ii];
                     }
                 break;
 
@@ -289,10 +289,10 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
         {
             COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
             ;
-            data.image[IDout].md[0].cnt0++;
+            dcimg[IDout].md[0].cnt0++;
         }
-        data.image[IDout].md[0].cnt1  = FrameIndex;
-        data.image[IDout].md[0].write = 0;
+        dcimg[IDout].md[0].cnt1  = FrameIndex;
+        dcimg[IDout].md[0].write = 0;
 
         if(FrameIndex == 0)
         {

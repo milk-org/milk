@@ -178,10 +178,10 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgamp = imgid_make_from_name(inamp);
-    resolveIMGID(&imgamp, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgamp, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imgpha = imgid_make_from_name(inpha);
-    resolveIMGID(&imgpha, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgpha, ERRMODE_ABORT, dcimg, dcnimg);
 
 //    printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT

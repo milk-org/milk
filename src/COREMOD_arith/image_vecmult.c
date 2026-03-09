@@ -37,12 +37,12 @@ static uint32_t *multaxis;
 
 static errno_t customCONFsetup()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        long fpi = functionparameter_GetParamIndex(data.fpsptr, ".iminname");
+        long fpi = functionparameter_GetParamIndex(dcfpsptr, ".iminname");
         if(fpi >= 0)
         {
-            data.fpsptr->parray[fpi].fpflag |=
+            dcfpsptr->parray[fpi].fpflag |=
                 FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
         }
     }
@@ -106,10 +106,10 @@ errno_t image_vect_multiply(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
-    resolveIMGID(&imgvec, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgvec, ERRMODE_ABORT, dcimg, dcnimg);
 
-    resolveIMGID(imgout, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgout, ERRMODE_NULL, dcimg, dcnimg);
 
     // Create output
     //
@@ -179,10 +179,10 @@ static errno_t compute_function()
     // input
 
     IMGID imgimin = imgid_make_from_name(iminname);
-    resolveIMGID(&imgimin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgimin, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imgvec = imgid_make_from_name(vecname);
-    resolveIMGID(&imgvec, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgvec, ERRMODE_ABORT, dcimg, dcnimg);
 
     // output
 

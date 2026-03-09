@@ -128,7 +128,7 @@ imageID read_PGMimage(const char *__restrict fname,
                     {
                         val =
                             256.0 * ((int) fgetc(fp)) + 1.0 * ((int) fgetc(fp));
-                        data.image[ID].array.F[(ysize - jj - 1) * xsize + ii] =
+                        dcimg[ID].array.F[(ysize - jj - 1) * xsize + ii] =
                             val;
                     }
                 }

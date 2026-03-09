@@ -18,10 +18,10 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
     char tmpzname[STRINGMAXLEN_IMGNAME];
     char tmpz1name[STRINGMAXLEN_IMGNAME];
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     coeff = 1.0 / (factor * factor * naxes[0] * naxes[1]);
     permut(ID_name);
@@ -31,7 +31,7 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
 
     permut(ID_name);
     permut(tmpzname);
-    ID = image_ID(tmpzname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(tmpzname, dcimg, dcnimg);
 
     WRITE_IMAGENAME(tmpz1name, "_tmpz1_%d", (int) getpid());
 
@@ -40,18 +40,18 @@ int fftczoom(const char *ID_name, const char *IDout_name, long factor)
     for(uint32_t ii = 0; ii < naxes[0]; ii++)
         for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
-            data.image[ID1]
+            dcimg[ID1]
             .array
             .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
                                                             factor +
                                                             (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
-            data.image[ID1]
+            .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+            dcimg[ID1]
             .array
             .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
                                                             factor +
                                                             (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+            .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 
@@ -75,10 +75,10 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
     char tmpz2name[STRINGMAXLEN_IMGNAME];
     char tbename[STRINGMAXLEN_IMGNAME];
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     coeff = 1.0 / (factor * factor * naxes[0] * naxes[1]);
     permut(ID_name);
@@ -89,7 +89,7 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
 
     permut(ID_name);
     permut(tmpzname);
-    ID = image_ID(tmpzname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(tmpzname, dcimg, dcnimg);
 
     CREATE_IMAGENAME(tmpz1name, "_tmpz1_%d", (int) getpid());
 
@@ -98,18 +98,18 @@ int fftzoom(const char *ID_name, const char *IDout_name, long factor)
     for(uint32_t ii = 0; ii < naxes[0]; ii++)
         for(uint32_t jj = 0; jj < naxes[1]; jj++)
         {
-            data.image[ID1]
+            dcimg[ID1]
             .array
             .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
                                                             factor +
                                                             (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .re = data.image[ID].array.CF[jj * naxes[0] + ii].re * coeff;
-            data.image[ID1]
+            .re = dcimg[ID].array.CF[jj * naxes[0] + ii].re * coeff;
+            dcimg[ID1]
             .array
             .CF[(jj + factor * naxes[1] / 2 - naxes[1] / 2) * naxes[0] *
                                                             factor +
                                                             (ii + factor * naxes[0] / 2 - naxes[0] / 2)]
-            .im = data.image[ID].array.CF[jj * naxes[0] + ii].im * coeff;
+            .im = dcimg[ID].array.CF[jj * naxes[0] + ii].im * coeff;
         }
     delete_image_ID(tmpzname, DELETE_IMAGE_ERRMODE_WARNING);
 

@@ -130,7 +130,7 @@ errno_t linopt_imtools_makeCosRadModes(
         {
             float y = (1.0 * jj - 0.5 * size) / radius;
             float r = sqrt(x * x + y * y);
-            data.image[IDr].array.F[jj * size + ii] = r;
+            dcimg[IDr].array.F[jj * size + ii] = r;
         }
     }
 
@@ -139,10 +139,10 @@ errno_t linopt_imtools_makeCosRadModes(
     for(long k = 0; k < kmax; k++)
         for(long ii = 0; ii < size2; ii++)
         {
-            float r = data.image[IDr].array.F[ii];
+            float r = dcimg[IDr].array.F[ii];
             if(r < radfactlim)
             {
-                data.image[ID].array.F[k * size2 + ii] = cos(r * M_PI * k);
+                dcimg[ID].array.F[k * size2 + ii] = cos(r * M_PI * k);
             }
         }
 

@@ -210,7 +210,7 @@ errno_t linopt_imtools_makeCPAmodes(
     // If mask exists, compute distance to mask for extrapolation
     //
     int MASKext = 0; // toggles to 1 if applying mask for extrapolation
-    resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgpixdist = imgid_make_from_name("pixdist");
 
@@ -519,7 +519,7 @@ errno_t linopt_imtools_makeCPAmodes(
         {
             // mode 0 (piston) included
 
-            data.image[IDfreq].array.F[0] = 0.0;
+            dcimg[IDfreq].array.F[0] = 0.0;
             for(uint32_t ii = 0; ii < sizexy; ii++)
             {
                 float r = imgr.im->array.F[ii];
@@ -567,8 +567,8 @@ errno_t linopt_imtools_makeCPAmodes(
             float y                           = imgy.im->array.F[ii];
             float r                           = imgr.im->array.F[ii];
 
-            data.image[IDfreq].array.F[k]    = frequency;
-            data.image[IDfreq].array.F[k + 1]  = frequency;
+            dcimg[IDfreq].array.F[k]    = frequency;
+            dcimg[IDfreq].array.F[k + 1]  = frequency;
             if(r < radfactlim)
             {
                 // attenuation factor for extrapolation
@@ -672,7 +672,7 @@ static errno_t compute_function()
     // optional mask
     //
     IMGID imgmask = imgid_make_from_name(maskim);
-    resolveIMGID(&imgmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgoutm = imgid_make_from_name(outimname);
 

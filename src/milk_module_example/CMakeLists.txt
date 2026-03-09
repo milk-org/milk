@@ -57,6 +57,7 @@ install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${SRCNAME}.h ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTFILES} DESTINATION bin)
 
+if(USE_CLI)
 add_executable(milk-fpsexec-clitest examplefunc_fps_cli_poc.c)
 target_link_libraries(milk-fpsexec-clitest ${LINKLIBS} ${LIBNAME} milkfpsCLI)
 target_include_directories(milk-fpsexec-clitest PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
@@ -73,3 +74,4 @@ target_link_libraries(milk-fpsexec-streamprocess ${LINKLIBS} ${LIBNAME} milkfpsC
 target_include_directories(milk-fpsexec-streamprocess PRIVATE ${PROJECT_SOURCE_DIR}/.. ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(milk-fpsexec-streamprocess PRIVATE FPS_STANDALONE)
 install(TARGETS milk-fpsexec-streamprocess DESTINATION bin)
+endif()

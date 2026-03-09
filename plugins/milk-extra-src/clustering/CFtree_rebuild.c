@@ -506,7 +506,7 @@ errno_t CFtree_rebuild(
         {
             for(long lf1=0; lf1 < ctree->nbleaf; lf1 ++)
             {
-                data.image[IDleafdist].array.F[lf1*ctree->nbleaf + lf0] =
+                dcimg[IDleafdist].array.F[lf1*ctree->nbleaf + lf0] =
                     leafdist[lf1*ctree->nbleaf + lf0] / ctree->T;
             }
         }

@@ -68,10 +68,10 @@ errno_t mk_complex_from_reim_IMGID(
 
     resolveIMGID(
         imgre, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     resolveIMGID(
         imgim, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     datatype_re = imgre->md[0].datatype;
     datatype_im = imgim->md[0].datatype;

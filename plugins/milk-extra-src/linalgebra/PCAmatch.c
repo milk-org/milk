@@ -351,10 +351,10 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imgmodesA = imgid_make_from_name(modesA);
-    resolveIMGID(&imgmodesA, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgmodesA, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imgmodesB = imgid_make_from_name(modesB);
-    resolveIMGID(&imgmodesB, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgmodesB, ERRMODE_ABORT, dcimg, dcnimg);
 
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
     fflush(stdout);

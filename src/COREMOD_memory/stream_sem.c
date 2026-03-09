@@ -175,32 +175,32 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
 
-    printf("  cnt0 = %ld \n", data.image[ID].md->cnt0);
-    printf("  cnt1 = %ld \n", data.image[ID].md->cnt1);
-    printf("  NB SEMAPHORES = %3d \n", data.image[ID].md[0].sem);
-    printf(" semWritePID at %p\n", (void *) data.image[ID].semWritePID);
-    printf(" semReadPID  at %p\n", (void *) data.image[ID].semReadPID);
+    printf("  cnt0 = %ld \n", dcimg[ID].md->cnt0);
+    printf("  cnt1 = %ld \n", dcimg[ID].md->cnt1);
+    printf("  NB SEMAPHORES = %3d \n", dcimg[ID].md[0].sem);
+    printf(" semWritePID at %p\n", (void *) dcimg[ID].semWritePID);
+    printf(" semReadPID  at %p\n", (void *) dcimg[ID].semReadPID);
     printf("----------------------------------\n");
     printf(" sem    value   writePID   readPID\n");
     printf("----------------------------------\n");
     int s;
-    for(s = 0; s < data.image[ID].md[0].sem; s++)
+    for(s = 0; s < dcimg[ID].md[0].sem; s++)
     {
         int semval;
 
-        semval = ImageStreamIO_semvalue(data.image+ID, s);
+        semval = ImageStreamIO_semvalue(dcimg+ID, s);
 
         printf("  %2d   %6d   %8d  %8d\n",
                s,
                semval,
-               (int) data.image[ID].semWritePID[s],
-               (int) data.image[ID].semReadPID[s]);
+               (int) dcimg[ID].semWritePID[s],
+               (int) dcimg[ID].semReadPID[s]);
     }
     printf("----------------------------------\n");
     int semval;
-    sem_getvalue(data.image[ID].semlog, &semval);
+    sem_getvalue(dcimg[ID].semlog, &semval);
     printf(" semlog = %3d\n", semval);
     printf("----------------------------------\n");
 
@@ -215,13 +215,13 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
 
-    ImageStreamIO_sempost(&data.image[ID], index);
+    ImageStreamIO_sempost(&dcimg[ID], index);
 
     return ID;
 }
@@ -231,7 +231,7 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
  */
 imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
 {
-    ImageStreamIO_sempost(&data.image[ID], index);
+    ImageStreamIO_sempost(&dcimg[ID], index);
 
     return ID;
 }
@@ -241,7 +241,7 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
  */
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index)
 {
-    ImageStreamIO_sempost_excl(&data.image[ID], index);
+    ImageStreamIO_sempost_excl(&dcimg[ID], index);
 
     return ID;
 }
@@ -255,13 +255,13 @@ COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
 
-    ImageStreamIO_sempost_loop(&data.image[ID], index, dtus);
+    ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
 
     return ID;
 }
@@ -273,13 +273,13 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
 
-    ImageStreamIO_semwait(&data.image[ID], index);
+    ImageStreamIO_semwait(&dcimg[ID], index);
 
     return ID;
 }
@@ -294,10 +294,10 @@ void *waitforsemID(void *ID)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
     tid = pthread_self();
 
-    //    semval = ImageStreamIO_semvalue(data.image+(long) ID, ?sem_index);
-    //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, data.image[(long) ID].name);
+    //    semval = ImageStreamIO_semvalue(dcimg+(long) ID, ?sem_index);
+    //    printf("tid %u waiting for sem ID %ld   sem = %d   (%s)\n", (unsigned int) tid, (long) ID, semval, dcimg[(long) ID].name);
     //    fflush(stdout);
-    ImageStreamIO_semwait(data.image+(imageID) ID, 0);
+    ImageStreamIO_semwait(dcimg+(imageID) ID, 0);
     //    printf("tid %u sem ID %ld done\n", (unsigned int) tid, (long) ID);
     //    fflush(stdout);
 
@@ -362,19 +362,19 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
     list_image_ID();
     for(i = 0; i < NB_ID; i++)
     {
-        for(s = 0; s < data.image[IDarray[i]].md[0].sem; s++)
+        for(s = 0; s < dcimg[IDarray[i]].md[0].sem; s++)
         {
-            semval = ImageStreamIO_semvalue(data.image+IDarray[i], s);
+            semval = ImageStreamIO_semvalue(dcimg+IDarray[i], s);
             printf("sem %d/%d of %s [%ld] = %d\n",
                    s,
-                   data.image[IDarray[i]].md[0].sem,
-                   data.image[IDarray[i]].name,
+                   dcimg[IDarray[i]].md[0].sem,
+                   dcimg[IDarray[i]].name,
                    IDarray[i],
                    semval);
             fflush(stdout);
             for(cnt = 0; cnt < semval; cnt++)
             {
-                ImageStreamIO_semtrywait(data.image+IDarray[i], s);
+                ImageStreamIO_semtrywait(dcimg+IDarray[i], s);
             }
         }
     }
@@ -388,13 +388,13 @@ imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, data.image, data.NB_MAX_IMAGE);
+        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
     }
 
-    ImageStreamIO_semflush(&data.image[ID], index);
+    ImageStreamIO_semflush(&dcimg[ID], index);
 
     return ID;
 }

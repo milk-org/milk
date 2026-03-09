@@ -159,7 +159,7 @@ imageID gauss_filter(
         imgid_make_from_name(ID_name);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         out_name,
         in.md->size[0], in.md->size[1]);
@@ -225,7 +225,7 @@ static errno_t compute_function()
             gaussfilt_inimname);
     resolveIMGID(
         &in, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         gaussfilt_outimname,
         in.md->size[0], in.md->size[1]);

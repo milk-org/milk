@@ -55,15 +55,15 @@ errno_t __attribute__((cold)) im3Dto2D_addCLIcmd()
 
 imageID image_basic_3Dto2D_byID(imageID ID)
 {
-    if(data.image[ID].md[0].naxis != 3)
+    if(dcimg[ID].md[0].naxis != 3)
     {
         printf("ERROR: image needs to have 3 axis\n");
     }
     else
     {
-        data.image[ID].md[0].size[0] *= data.image[ID].md[0].size[1];
-        data.image[ID].md[0].size[1] = data.image[ID].md[0].size[2];
-        data.image[ID].md[0].naxis   = 2;
+        dcimg[ID].md[0].size[0] *= dcimg[ID].md[0].size[1];
+        dcimg[ID].md[0].size[1] = dcimg[ID].md[0].size[2];
+        dcimg[ID].md[0].naxis   = 2;
     }
 
     return ID;
@@ -73,7 +73,7 @@ imageID image_basic_3Dto2D(const char *__restrict IDname)
 {
     imageID ID;
 
-    ID = image_ID(IDname, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDname, dcimg, dcnimg);
     image_basic_3Dto2D_byID(ID);
 
     return ID;

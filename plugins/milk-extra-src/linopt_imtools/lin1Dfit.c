@@ -180,9 +180,9 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
     for(uint_fast32_t ii = 0; ii < NBpt; ii++)
     {
         //			printf("%18.16f  %+18.16f\n", xarray[ii], valarray[ii]);
-        data.image[IDin].array.F[ii]   = valarray[ii];
-        data.image[IDin0].array.F[ii]  = valarray[ii];
-        data.image[IDmask].array.F[ii] = 1.0;
+        dcimg[IDin].array.F[ii]   = valarray[ii];
+        dcimg[IDin0].array.F[ii]  = valarray[ii];
+        dcimg[IDmask].array.F[ii] = 1.0;
     }
 
     NBmodes = MaxOrder;
@@ -199,7 +199,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         {
             for(uint_fast32_t ii = 0; ii < NBpt; ii++)
             {
-                data.image[IDmodes].array.F[m * NBpt + ii] =
+                dcimg[IDmodes].array.F[m * NBpt + ii] =
                     pow(xarray[ii], 1.0 * m);
             }
         }
@@ -209,7 +209,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         {
             for(uint_fast32_t ii = 0; ii < NBpt; ii++)
             {
-                data.image[IDmodes].array.F[m * NBpt + ii] =
+                dcimg[IDmodes].array.F[m * NBpt + ii] =
                     cos(xarray[ii] * M_PI * m);
             }
         }
@@ -230,12 +230,12 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
                           "outcoeffim0",
                           1,
                           NULL));
-        imageID IDout0 = image_ID("outcoeffim0", data.image, data.NB_MAX_IMAGE);
+        imageID IDout0 = image_ID("outcoeffim0", dcimg, dcnimg);
 
         for(uint_fast32_t m = 0; m < NBmodes; m++)
         {
-            data.image[IDout].array.F[m] +=
-                gain * data.image[IDout0].array.F[m];
+            dcimg[IDout].array.F[m] +=
+                gain * dcimg[IDout0].array.F[m];
         }
 
         double err = 0.0;
@@ -244,12 +244,12 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
             double val = 0.0;
             for(int_fast32_t m = 0; m < NBmodes; m++)
             {
-                val += data.image[IDout].array.F[m] *
-                       data.image[IDmodes].array.F[m * NBpt + ii];
+                val += dcimg[IDout].array.F[m] *
+                       dcimg[IDmodes].array.F[m * NBpt + ii];
             }
-            data.image[IDin0].array.F[ii] = data.image[IDin].array.F[ii] - val;
+            dcimg[IDin0].array.F[ii] = dcimg[IDin].array.F[ii] - val;
             err +=
-                data.image[IDin0].array.F[ii] * data.image[IDin0].array.F[ii];
+                dcimg[IDin0].array.F[ii] * dcimg[IDin0].array.F[ii];
         }
         err = sqrt(err / NBpt);
         printf("ITERATION %4ld   residual = %20g   [gain = %20g]\n",
@@ -264,7 +264,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         fp = fopen(fnameout, "w");
         for(long m = 0; m < NBmodes; m++)
         {
-            fprintf(fp, "%4ld %+.8g\n", m, data.image[IDout].array.F[m]);
+            fprintf(fp, "%4ld %+.8g\n", m, dcimg[IDout].array.F[m]);
         }
         fclose(fp);
     }
@@ -278,8 +278,8 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
             double val = 0.0;
             for(int_fast32_t m = 0; m < NBmodes; m++)
             {
-                val += data.image[IDout].array.F[m] *
-                       data.image[IDmodes].array.F[m * NBpt + ii];
+                val += dcimg[IDout].array.F[m] *
+                       dcimg[IDmodes].array.F[m * NBpt + ii];
             }
             double vale = valarray[ii] - val;
             err += vale * vale;

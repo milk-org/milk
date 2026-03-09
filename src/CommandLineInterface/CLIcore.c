@@ -58,7 +58,7 @@
 #endif
 
 #include <fitsio.h>
-#include <gsl/gsl_rng.h> // for random numbers
+
 
 #include "CLIcore.h"
 
@@ -136,7 +136,7 @@ errno_t exitCLI()
         EXECUTE_SYSTEM_COMMAND("rm imlist.txt");
     }
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf("Closing PID %ld (prompt process)\n", (long) getpid());
     }
@@ -184,28 +184,28 @@ static errno_t CLIcore__load_module_as__cli()
 
 errno_t set_processinfoON()
 {
-    data.processinfo = 1;
+    dcprocinfo = 1;
 
     return RETURN_SUCCESS;
 }
 
 errno_t set_processinfoOFF()
 {
-    data.processinfo = 0;
+    dcprocinfo = 0;
 
     return RETURN_SUCCESS;
 }
 
 errno_t set_default_precision_single()
 {
-    data.precision = 0;
+    dcprecision = 0;
 
     return RETURN_SUCCESS;
 }
 
 errno_t set_default_precision_double()
 {
-    data.precision = 1;
+    dcprecision = 1;
 
     return RETURN_SUCCESS;
 }
@@ -295,14 +295,14 @@ errno_t CLI_startup()
 {
     DEBUG_TRACE_FSTART();
 
-    if(data.quiet == 1)
+    if(dcquiet == 1)
     {
         ImageStreamIO_set_verbosity(0);
     }
 
     // get PID and write it to shell env variable MILK_CLI_PID
     CLIPID = getpid();
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf("        CLI PID = %d\n", (int) CLIPID);
 
@@ -320,7 +320,7 @@ errno_t CLI_startup()
     }
 
 #ifdef _OPENMP
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf(
             "        Running with openMP %d, max threads = %d  "
@@ -329,7 +329,7 @@ errno_t CLI_startup()
             omp_get_max_threads());
     }
 #else
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf("        Compiled without openMP\n");
     }
@@ -337,7 +337,7 @@ errno_t CLI_startup()
 
 #ifdef _OPENACC
     int openACC_devtype = acc_get_device_type();
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf(
             "        Running with openACC version %d.  %d device(s), type "
@@ -351,40 +351,35 @@ errno_t CLI_startup()
     // to take advantage of kernel priority:
     // owner=root mode=4755
 
-    getresuid(&data.ruid, &data.euid, &data.suid);
+    getresuid(&dcruid, &dceuid, &dcsuid);
     //This sets it to the privileges of the normal user
-    if(seteuid(data.ruid) != 0)
+    if(seteuid(dcruid) != 0)
     {
         PRINT_ERROR("seteuid error");
     }
 
     // Initialize random-number generator
-    //
-    const gsl_rng_type *rndgenType;
-    //rndgenType = gsl_rng_ranlxs2; // best algorithm but slow
-    //rndgenType = gsl_rng_ranlxs0; // not quite as good, slower
-    rndgenType  = gsl_rng_rand; // not as good but ~10x faster fast
-    data.rndgen = gsl_rng_alloc(rndgenType);
-    gsl_rng_set(data.rndgen, time(NULL));
+    // Pure-C xorshift64* (replaces GSL)
+    milk_rng_init((uint64_t) time(NULL));
 
     // warm up
     //for(i=0; i<10; i++)
-    //    v1 = gsl_rng_uniform (data.rndgen);
+    //    v1 = gsl_rng_uniform (dcrndgen);
 
-    data.progStatus = 0;
+    dcprogstatus = 0;
 
     // Initialize installdir
     char *installdir_env = getenv("MILK_INSTALLDIR");
     if(installdir_env != NULL)
     {
-        strncpy(data.installdir, installdir_env, STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcinstalldir, installdir_env, STRINGMAXLEN_DIRNAME - 1);
     }
     else
     {
 #ifdef INSTALLDIR
-        strncpy(data.installdir, INSTALLDIR, STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcinstalldir, INSTALLDIR, STRINGMAXLEN_DIRNAME - 1);
 #else
-        strncpy(data.installdir, "/usr/local/milk", STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcinstalldir, "/usr/local/milk", STRINGMAXLEN_DIRNAME - 1);
 #endif
     }
 
@@ -392,28 +387,28 @@ errno_t CLI_startup()
     char *sourcedir_env = getenv("MILK_SOURCEDIR");
     if(sourcedir_env != NULL)
     {
-        strncpy(data.sourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcsourcedir, sourcedir_env, STRINGMAXLEN_DIRNAME - 1);
     }
     else
     {
 #ifdef SOURCEDIR
-        strncpy(data.sourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcsourcedir, SOURCEDIR, STRINGMAXLEN_DIRNAME - 1);
 #else
-        strncpy(data.sourcedir, "", STRINGMAXLEN_DIRNAME - 1);
+        strncpy(dcsourcedir, "", STRINGMAXLEN_DIRNAME - 1);
 #endif
     }
 
 
-    data.Debug         = 0;
-    data.overwrite     = 0;
-    data.precision     = 0;  // float is default precision
-    data.SHARED_DFT    = 0;  // do not allocate shared memory for images
-    snprintf(data.SAVEDIR, STRINGMAXLEN_DIRNAME, ".");
+    dcdebug         = 0;
+    dcoverwrite     = 0;
+    dcprecision     = 0;  // float is default precision
+    dcshareddft    = 0;  // do not allocate shared memory for images
+    snprintf(dcsavedir, STRINGMAXLEN_DIRNAME, ".");
 
     data.CLIlogON          = 0; // log every command
     data.fifoON            = 0;
-    data.processinfo       = 1; // process info for intensive processes
-    data.processinfoActive = 0; // toggles to 1 when process is logged
+    dcprocinfo       = 1; // process info for intensive processes
+    dcprocinfoact = 0; // toggles to 1 when process is logged
     data.autocomplete      = 1; // autocomplete preview ON by default
     data.autocomplete_history = 1; // history suggestions ON
     data.autocomplete_arghint = 1; // argument hint line ON
@@ -421,30 +416,30 @@ errno_t CLI_startup()
 
     // signal handling
 
-    data.sigact.sa_handler = sig_handler;
-    sigemptyset(&data.sigact.sa_mask);
-    data.sigact.sa_flags = 0;
+    dcsigact.sa_handler = sig_handler;
+    sigemptyset(&dcsigact.sa_mask);
+    dcsigact.sa_flags = 0;
 
     // Request the kernel for a sigint if parent dies
     // This is useful if stdin is a pipe from the parent process
     // and the parent dies suddenly. This confuses libreadline.
     prctl(PR_SET_PDEATHSIG, SIGINT);
 
-    data.signal_USR1 = 0;
-    data.signal_USR2 = 0;
-    data.signal_TERM = 0;
-    data.signal_INT  = 0;
-    data.signal_BUS  = 0;
-    data.signal_SEGV = 0;
-    data.signal_ABRT = 0;
-    data.signal_HUP  = 0;
-    data.signal_PIPE = 0;
+    dcsigUSR1 = 0;
+    dcsigUSR2 = 0;
+    dcsigTERM = 0;
+    dcsigINT  = 0;
+    dcsigBUS  = 0;
+    dcsigSEGV = 0;
+    dcsigABRT = 0;
+    dcsigHUP  = 0;
+    dcsigPIPE = 0;
 
-    if(sigaction(SIGUSR1, &data.sigact, NULL) == -1)
+    if(sigaction(SIGUSR1, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGUSR1\n");
     }
-    if(sigaction(SIGUSR2, &data.sigact, NULL) == -1)
+    if(sigaction(SIGUSR2, &dcsigact, NULL) == -1)
     {
         printf("\ncan't catch SIGUSR2\n");
     }
@@ -511,14 +506,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     DEBUG_TRACEPOINT("set default fifo name");
     WRITE_FULLFILENAME(data.fifoname,
                        "%s/.%s.fifo.%07d",
-                       data.shmdir,
+                       dcshmdir,
                        data.processname,
                        getpid());
 
     DEBUG_TRACEPOINT("Get command-line options");
     command_line_process_options(argc, argv);
 
-    data.progStatus = 1;
+    dcprogstatus = 1;
     printf("\n");
 
     // Pre-load milkfpsCLI so its constructor registers
@@ -529,7 +524,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         snprintf(fpscli_libname,
                  STRINGMAXLEN_MODULE_SOFILENAME,
                  "%s/lib/libmilkfpsCLI.so",
-                 data.installdir);
+                 dcinstalldir);
         load_sharedobj(fpscli_libname);
     }
 
@@ -541,7 +536,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
     if(CLI_ADD_LIBS != NULL)
     {
-        if(data.quiet == 0)
+        if(dcquiet == 0)
         {
             printf("        MILKCLI_ADD_LIBS '%s'\n", CLI_ADD_LIBS);
         }
@@ -560,7 +555,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     }
     else
     {
-        if(data.quiet == 0)
+        if(dcquiet == 0)
         {
             printf(
                 "        MILKCLI_ADD_LIBS not set -> no additional "
@@ -571,7 +566,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     DEBUG_TRACEPOINT("Initialize data control block");
     CLI_data_init();
 
-    if(data.Debug > 0)
+    if(dcdebug > 0)
     {
         printf("DEBUG: %s: start\n", __func__);
     }
@@ -582,7 +577,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     fdmax = fileno(stdin);
     if(data.fifoON == 1)
     {
-        if(data.quiet == 0)
+        if(dcquiet == 0)
         {
             printf("Creating fifo %s\n", data.fifoname);
         }
@@ -675,7 +670,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                        CLIstartupfilename,
                                        data.fifoname);
 
-                if(data.quiet == 0)
+                if(dcquiet == 0)
                 {
                     printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
                     printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
@@ -730,7 +725,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         while((data.CLIexecuteCMDready == 0) && (data.CLIloopON == 1))
         {
             // Special interrupt clause if CLI mode (not FIFO) AND stdin has been closed.
-            if(data.signal_INT == 1)
+            if(dcsigINT == 1)
             {
                 // stop CLI input loop
                 data.CLIloopON = 0;
@@ -834,7 +829,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 "CLI executing line: "
                                 "%s",
                                 data.CLIcmdline);
-                            if(data.Debug > 0)
+                            if(dcdebug > 0)
                             {
                                 printf("DEBUG: %s: execute line, fifo mode\n", __func__);
                             }
@@ -1047,7 +1042,7 @@ void runCLI_cmd_init()
                        "Set default precision to single",
                        "no argument",
                        "dpsingle",
-                       "data.precision = 0");
+                       "dcprecision = 0");
 
     RegisterCLIcommand("dpdouble",
                        __FILE__,
@@ -1055,7 +1050,7 @@ void runCLI_cmd_init()
                        "Set default precision to double",
                        "no argument",
                        "dpdouple",
-                       "data.precision = 1");
+                       "dcprecision = 1");
 
     // process info
 
@@ -1124,9 +1119,9 @@ void runCLI_cmd_init()
                        "usleep(long tus)");
 
     //  init_modules();
-    // printf("TEST   %s  %ld   data.image[4934].used = %d\n", __FILE__, __LINE__, data.image[4934].used);
+    // printf("TEST   %s  %ld   dcimg[4934].used = %d\n", __FILE__, __LINE__, dcimg[4934].used);
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf("        Loaded %ld modules, %u commands\n",
                data.NBmodule,
@@ -1139,26 +1134,26 @@ static void runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
     // Free
-    DEBUG_TRACEPOINT("free data.image");
-    free(data.image);
+    DEBUG_TRACEPOINT("free dcimg");
+    free(dcimg);
 
-    DEBUG_TRACEPOINT("free data.variable");
-    free(data.variable);
+    DEBUG_TRACEPOINT("free dcvar");
+    free(dcvar);
 
     DEBUG_TRACEPOINT("free data.fps");
-    if(data.fpsarray == NULL)
+    if(dcfpsarr == NULL)
     {
         printf("NULL pointer\n");
     }
     else
     {
-        free(data.fpsarray);
+        free(dcfpsarr);
     }
 
 #endif
     //  free(data.cmd);
-    DEBUG_TRACEPOINT("free data.rndgen");
-    gsl_rng_free(data.rndgen);
+    DEBUG_TRACEPOINT("free dcrndgen");
+    milk_rng_free();
 }
 
 int user_function()
@@ -1253,7 +1248,7 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'v':
-            printf("%s   %s\n", data.package_name, data.package_version);
+            printf("%s   %s\n", dcpkgname, dcpkgver);
             exit(EXIT_SUCCESS);
             break;
 
@@ -1264,15 +1259,15 @@ static int command_line_process_options(int argc, char **argv)
 
         case 'o':
             puts("CAUTION - WILL OVERWRITE EXISTING FITS FILES\n");
-            data.overwrite = 1;
+            dcoverwrite = 1;
             break;
 
         case 'e':
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("Exit on error ON\n");
             }
-            data.errorexit = 1;
+            dcerrorexit = 1;
             break;
 
         case 'Z':
@@ -1289,7 +1284,7 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'A':
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("Autocomplete preview ON\n");
             }
@@ -1315,8 +1310,8 @@ static int command_line_process_options(int argc, char **argv)
 
         case 'd':
             printf("debug level : '%s'\n", optarg);
-            data.Debug = atoi(optarg);
-            printf("Debug = %d\n", data.Debug);
+            dcdebug = atoi(optarg);
+            printf("Debug = %d\n", dcdebug);
             break;
 
         case 'm':
@@ -1325,7 +1320,7 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 'n':
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("process name '%s'\n", optarg);
             }
@@ -1346,7 +1341,7 @@ static int command_line_process_options(int argc, char **argv)
             schedpar.sched_priority = atoi(optarg);
             printf("RUNNING WITH RT PRIORITY = %d\n", schedpar.sched_priority);
 
-            if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+            if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
             {
                 PRINT_ERROR("seteuid() returns non-zero value");
             }
@@ -1355,14 +1350,14 @@ static int command_line_process_options(int argc, char **argv)
                 SCHED_FIFO,
                 &schedpar); //other option is SCHED_RR, might be faster
 
-            if(seteuid(data.ruid) != 0)  //Go back to normal privileges
+            if(seteuid(dcruid) != 0)  //Go back to normal privileges
             {
                 PRINT_ERROR("seteuid() returns non-zero value");
             }
             break;
 
         case 'f':
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("fifo input ON\n");
             }
@@ -1378,7 +1373,7 @@ static int command_line_process_options(int argc, char **argv)
 
         case 's':
             strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
-            if(data.quiet == 0)
+            if(dcquiet == 0)
             {
                 printf("Startup file : %s\n", CLIstartupfilename);
             }

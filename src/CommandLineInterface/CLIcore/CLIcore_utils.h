@@ -267,7 +267,7 @@ typedef struct
 #define INSERT_STD_FPSCONFfunction                                             \
     static errno_t FPSCONFfunction()                                           \
     {                                                                          \
-        FPS_SETUP_INIT(data.FPS_name, data.FPS_CMDCODE);                       \
+        FPS_SETUP_INIT(dcfpsname, dcfpscode);                       \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
         {                                                                      \
             fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
@@ -289,8 +289,8 @@ typedef struct
                 CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
             fps_add_processinfo_entries(&fps);                                 \
         }                                                                      \
-        data.fpsptr = &fps;                                                    \
-        strncpy(data.fpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
+        dcfpsptr = &fps;                                                    \
+        strncpy(dcfpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
         CMDargs_to_FPSparams_create(&fps);                                     \
         STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
         {                                                                      \
@@ -300,7 +300,7 @@ typedef struct
         if (CLIcmddata.FPS_customCONFcheck != NULL)                            \
             CLIcmddata.FPS_customCONFcheck();                                  \
         FPS_CONFLOOP_END                                                       \
-        data.fpsptr = NULL;                                                    \
+        dcfpsptr = NULL;                                                    \
         return RETURN_SUCCESS;                                                 \
     }
 
@@ -313,26 +313,26 @@ typedef struct
     /* set default timeout to 2 sec */                                         \
     CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                        \
     CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                        \
-    if (data.fpsptr != NULL)                                                   \
+    if (dcfpsptr != NULL)                                                   \
     { /* If FPS mode, then FPS settings override defaults*/                    \
-        /* data.fpsptr->cmset entries are read by fps_connect */               \
-        /*CLIcmddata.cmdsettings->flags = data.fpsptr->cmdset.flags;*/         \
-        CLIcmddata.cmdsettings->RT_priority = data.fpsptr->cmdset.RT_priority; \
+        /* dcfpsptr->cmset entries are read by fps_connect */               \
+        /*CLIcmddata.cmdsettings->flags = dcfpsptr->cmdset.flags;*/         \
+        CLIcmddata.cmdsettings->RT_priority = dcfpsptr->cmdset.RT_priority; \
         CLIcmddata.cmdsettings->procinfo_loopcntMax =                          \
-            data.fpsptr->cmdset.procinfo_loopcntMax;                           \
-        CLIcmddata.cmdsettings->triggermode = data.fpsptr->cmdset.triggermode; \
+            dcfpsptr->cmdset.procinfo_loopcntMax;                           \
+        CLIcmddata.cmdsettings->triggermode = dcfpsptr->cmdset.triggermode; \
         strncpy(CLIcmddata.cmdsettings->triggerstreamname,                     \
-               data.fpsptr->cmdset.triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);   \
+               dcfpsptr->cmdset.triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);   \
         CLIcmddata.cmdsettings->semindexrequested =                            \
-            data.fpsptr->cmdset.semindexrequested;                             \
+            dcfpsptr->cmdset.semindexrequested;                             \
         CLIcmddata.cmdsettings->triggerdelay.tv_sec =                          \
-            data.fpsptr->cmdset.triggerdelay.tv_sec;                           \
+            dcfpsptr->cmdset.triggerdelay.tv_sec;                           \
         CLIcmddata.cmdsettings->triggerdelay.tv_nsec =                         \
-            data.fpsptr->cmdset.triggerdelay.tv_nsec;                          \
+            dcfpsptr->cmdset.triggerdelay.tv_nsec;                          \
         CLIcmddata.cmdsettings->triggertimeout.tv_sec =                        \
-            data.fpsptr->cmdset.triggertimeout.tv_sec;                         \
+            dcfpsptr->cmdset.triggertimeout.tv_sec;                         \
         CLIcmddata.cmdsettings->triggertimeout.tv_nsec =                       \
-            data.fpsptr->cmdset.triggertimeout.tv_nsec;                        \
+            dcfpsptr->cmdset.triggertimeout.tv_nsec;                        \
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
     {                                                                          \
@@ -349,15 +349,15 @@ typedef struct
             PRINT_ERROR("snprintf string truncation");                         \
             abort();                                                           \
         }                                                                      \
-        if (data.fpsptr != NULL)                                               \
+        if (dcfpsptr != NULL)                                               \
         {                                                                      \
-            processinfo = processinfo_setup(data.FPS_name,                     \
+            processinfo = processinfo_setup(dcfpsname,                     \
                                             pinfodescr,                        \
                                             "startup",                         \
                                             __FUNCTION__,                      \
                                             __FILE__,                          \
                                             __LINE__);                         \
-            fps_to_processinfo(data.fpsptr, processinfo);                      \
+            fps_to_processinfo(dcfpsptr, processinfo);                      \
         }                                                                      \
         else                                                                   \
         {                                                                      \
@@ -377,12 +377,12 @@ typedef struct
         processinfo->triggerdelay   = CLIcmddata.cmdsettings->triggerdelay;    \
         processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;  \
         processinfo->triggerstreamID =                                         \
-            image_ID(processinfo->triggerstreamname, data.image, data.NB_MAX_IMAGE);                          \
+            image_ID(processinfo->triggerstreamname, dcimg, dcnimg);                          \
         DEBUG_TRACEPOINT("triggerstreamID = %ld",                              \
                          processinfo->triggerstreamID);                        \
         FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                  \
             processinfo,                                                       \
-            (processinfo->triggerstreamID > -1 ? &data.image[processinfo->triggerstreamID] : NULL), \
+            (processinfo->triggerstreamID > -1 ? &dcimg[processinfo->triggerstreamID] : NULL), \
             CLIcmddata.cmdsettings->triggermode,                               \
             CLIcmddata.cmdsettings->semindexrequested));                       \
         DEBUG_TRACEPOINT("setting RT priority to %d",                          \
@@ -441,15 +441,15 @@ typedef struct
     }                                                                          \
     if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {                 \
      if(processinfo != NULL) {                                                 \
-      if(data.fpsptr != NULL) {                                                \
-        if(data.fpsptr->cmdset.triggermodeptr != NULL){                        \
-          processinfo->triggermode = *data.fpsptr->cmdset.triggermodeptr;}     \
-        if(data.fpsptr->cmdset.procinfo_loopcntMax_ptr != NULL){               \
-          processinfo->loopcntMax = *data.fpsptr->cmdset.procinfo_loopcntMax_ptr;}  \
-        if(data.fpsptr->cmdset.triggerdelayptr != NULL){                       \
-          processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];} \
-        if(data.fpsptr->cmdset.triggertimeoutptr != NULL){                     \
-          processinfo->triggertimeout = data.fpsptr->cmdset.triggertimeoutptr[0];} \
+      if(dcfpsptr != NULL) {                                                \
+        if(dcfpsptr->cmdset.triggermodeptr != NULL){                        \
+          processinfo->triggermode = *dcfpsptr->cmdset.triggermodeptr;}     \
+        if(dcfpsptr->cmdset.procinfo_loopcntMax_ptr != NULL){               \
+          processinfo->loopcntMax = *dcfpsptr->cmdset.procinfo_loopcntMax_ptr;}  \
+        if(dcfpsptr->cmdset.triggerdelayptr != NULL){                       \
+          processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];} \
+        if(dcfpsptr->cmdset.triggertimeoutptr != NULL){                     \
+          processinfo->triggertimeout = dcfpsptr->cmdset.triggertimeoutptr[0];} \
         }}                                                                     \
     if(processinfo != NULL) {                                              \
           processinfo_exec_end(processinfo);}                                  \
@@ -464,16 +464,16 @@ typedef struct
 
 /**
  *
-        if(data.fpsptr->cmdset.triggerdelayptr != NULL) {                      \
-        processinfo->triggerdelay = data.fpsptr->cmdset.triggerdelayptr[0];}   \
-        if(data.fpsptr->cmdset.triggertimeoutptr != NULL) {                    \
-        processinfo->triggerdelay = data.fpsptr->cmdset.triggertimeoutptr[0];} \
+        if(dcfpsptr->cmdset.triggerdelayptr != NULL) {                      \
+        processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];}   \
+        if(dcfpsptr->cmdset.triggertimeoutptr != NULL) {                    \
+        processinfo->triggerdelay = dcfpsptr->cmdset.triggertimeoutptr[0];} \
  *
  */
 
 /** @brief FPS run function
  *
- * The FPS name is taken from data.FPS_name, which has to
+ * The FPS name is taken from dcfpsname, which has to
  * have been set up by either the stand-alone function, or the
  * CLI.
  *
@@ -500,10 +500,10 @@ typedef struct
 #define INSERT_STD_FPSRUNfunction                                              \
     static errno_t FPSRUNfunction()                                            \
     {                                                                          \
-        FPS_CONNECT(data.FPS_name, FPSCONNECT_RUN);                            \
-        data.fpsptr                        = &fps;                             \
+        FPS_CONNECT(dcfpsname, FPSCONNECT_RUN);                            \
+        dcfpsptr                        = &fps;                             \
         STD_FARG_LINKfunction errno_t fret = compute_function();               \
-        data.fpsptr                        = NULL;                             \
+        dcfpsptr                        = NULL;                             \
         function_parameter_RUNexit(&fps);                                      \
         return fret;                                                           \
     }
@@ -513,7 +513,7 @@ typedef struct
  * GET ARGUMENTS AND PARAMETERS
  * Try FPS implementation
  *
- * Set data.fpsname, providing default value as first arg, and set data.FPS_CMDCODE value.
+ * Set data.fpsname, providing default value as first arg, and set dcfpscode value.
  * Default FPS name will be used if CLI process has NOT been named.
  * See code in function_parameter.h for detailed rules.
  */
@@ -530,14 +530,14 @@ typedef struct
             extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];      \
             extern FUNCTION_PARAMETER_STRUCT *fpsarray;                        \
             function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);        \
-            if (data.FPS_CMDCODE != 0)                                         \
+            if (dcfpscode != 0)                                         \
             {                                                                  \
                 FPS_CONFfunc = FPSCONFfunction;                                \
                 FPS_RUNfunc  = FPSRUNfunction;                                 \
-                FPS_CMDCODE  = data.FPS_CMDCODE;                               \
-                fpsarray     = data.fpsarray;                                  \
-                strncpy(FPS_name, data.FPS_name, STRINGMAXLEN_FPS_NAME - 1);    \
-                strncpy(FPS_callprogname, data.package_name, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+                FPS_CMDCODE  = dcfpscode;                               \
+                fpsarray     = dcfpsarr;                                  \
+                strncpy(FPS_name, dcfpsname, STRINGMAXLEN_FPS_NAME - 1);    \
+                strncpy(FPS_callprogname, dcpkgname, FPS_CALLPROGNAME_STRMAXLEN - 1); \
                 strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
                 function_parameter_execFPScmd();                               \
                 return RETURN_SUCCESS;                                         \
@@ -547,7 +547,7 @@ typedef struct
         errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);           \
         if (retval == RETURN_CLICHECKARGARRAY_SUCCESS)                         \
         {                                                                      \
-            data.fpsptr = NULL;                                                \
+            dcfpsptr = NULL;                                                \
             STD_FARG_LINKfunction return compute_function();                   \
         }                                                                      \
         if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
@@ -574,7 +574,7 @@ typedef struct
     static errno_t FPSCONFfunction()                                           \
     {                                                                          \
         long nbparam = sizeof(farg) / sizeof(CLICMDARGDEF) + 50;               \
-        FPS_SETUP_INIT_SIZED(data.FPS_name, data.FPS_CMDCODE, nbparam);        \
+        FPS_SETUP_INIT_SIZED(dcfpsname, dcfpscode, nbparam);        \
         if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
         {                                                                      \
             fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
@@ -596,8 +596,8 @@ typedef struct
                 CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
             fps_add_processinfo_entries(&fps);                                 \
         }                                                                      \
-        data.fpsptr = &fps;                                                    \
-        strncpy(data.fpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
+        dcfpsptr = &fps;                                                    \
+        strncpy(dcfpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
         CMDargs_to_FPSparams_create(&fps);                                     \
         STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
         {                                                                      \
@@ -607,7 +607,7 @@ typedef struct
         if (CLIcmddata.FPS_customCONFcheck != NULL)                            \
             CLIcmddata.FPS_customCONFcheck();                                  \
         FPS_CONFLOOP_END                                                       \
-        data.fpsptr = NULL;                                                    \
+        dcfpsptr = NULL;                                                    \
         return RETURN_SUCCESS;                                                 \
     }
 

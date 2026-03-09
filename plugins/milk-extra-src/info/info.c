@@ -69,16 +69,16 @@ double background_photon_noise(
     double        *array;
     uint64_t       nelements;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     nelements = naxes[0] * naxes[1];
 
     array = (double *) malloc(naxes[1] * naxes[0] * sizeof(double));
     for(unsigned long jj = 0; jj < naxes[1]; jj++)
         for(unsigned long ii = 0; ii < naxes[0]; ii++)
         {
-            array[jj * naxes[0] + ii] = data.image[ID].array.F[jj * naxes[0] +
+            array[jj * naxes[0] + ii] = dcimg[ID].array.F[jj * naxes[0] +
 ii];
         }
 

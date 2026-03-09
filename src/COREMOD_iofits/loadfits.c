@@ -305,7 +305,7 @@ errno_t load_fits_IMGID(
                         naxis,
                         naxes,
                         _DATATYPE_FLOAT,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -317,7 +317,7 @@ errno_t load_fits_IMGID(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[imgout->ID].array.F,
+                          dcimg[imgout->ID].array.F,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -334,7 +334,7 @@ errno_t load_fits_IMGID(
                         naxis,
                         naxes,
                         _DATATYPE_DOUBLE,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -346,7 +346,7 @@ errno_t load_fits_IMGID(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[imgout->ID].array.D,
+                          dcimg[imgout->ID].array.D,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -359,12 +359,12 @@ errno_t load_fits_IMGID(
     /* bitpix = 16   TSHORT */
     if(bitpix == 16)
     {
-        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, data.SHARED_DFT, data.NBKEWORD_DFT);
+        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, dcshareddft, data.NBKEWORD_DFT);
         create_image_ID(imgout->name,
                         naxis,
                         naxes,
                         _DATATYPE_UINT16,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -377,7 +377,7 @@ errno_t load_fits_IMGID(
                           fpixel,
                           nelements,
                           &nulval,
-                          data.image[imgout->ID].array.UI16,
+                          dcimg[imgout->ID].array.UI16,
                           &anynul,
                           &status);
             FITSIO_CHECK_ERROR(status,
@@ -394,7 +394,7 @@ errno_t load_fits_IMGID(
                         naxis,
                         naxes,
                         _DATATYPE_INT32,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -423,7 +423,7 @@ errno_t load_fits_IMGID(
         bzero = 0.0;
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[imgout->ID].array.SI32[ii] = larray[ii] * bscale + bzero;
+            dcimg[imgout->ID].array.SI32[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -436,7 +436,7 @@ errno_t load_fits_IMGID(
                         naxis,
                         naxes,
                         _DATATYPE_INT64,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -466,7 +466,7 @@ errno_t load_fits_IMGID(
         bzero = 0.0;
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[imgout->ID].array.SI64[ii] = larray[ii] * bscale + bzero;
+            dcimg[imgout->ID].array.SI64[ii] = larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -479,7 +479,7 @@ errno_t load_fits_IMGID(
                         naxis,
                         naxes,
                         _DATATYPE_FLOAT,
-                        data.SHARED_DFT,
+                        dcshareddft,
                         NB_KEYWNODE_MAX,
                         0,
                         &imgout->ID);
@@ -509,13 +509,13 @@ errno_t load_fits_IMGID(
 
         for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
         {
-            data.image[imgout->ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
+            dcimg[imgout->ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
         }
         free(barray);
         barray = NULL;
     }
 
-    resolveIMGID(imgout, errmode, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgout, errmode, dcimg, dcnimg);
 
 // keywords to ignore
     char *keywordignore[] = {"BITPIX",

@@ -23,7 +23,7 @@ double arith_image_mean_IMGID(IMGID *imgin)
 {
     double  value;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
     value =
         (double)(arith_image_total_IMGID(imgin) / imgin->md[0].nelement);
@@ -43,7 +43,7 @@ double arith_image_min_IMGID(IMGID *imgin)
     uint8_t  datatype;
     int      OK = 0;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
 
     nelement = imgin->md[0].nelement;
@@ -248,7 +248,7 @@ double arith_image_max_IMGID(IMGID *imgin)
     uint8_t datatype;
     int     OK = 0;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
 
     nelement = imgin->md[0].nelement;
@@ -459,7 +459,7 @@ double arith_image_percentile_IMGID(IMGID *imgin, double fraction)
     uint8_t         datatype;
     int             atypeOK = 1;
 
-    resolveIMGID(imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
     datatype = imgin->md[0].datatype;
 
     nelement = imgin->md[0].nelement;

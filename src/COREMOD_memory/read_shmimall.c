@@ -13,7 +13,9 @@
 #include "list_image.h"
 #include "read_shmim.h"
 
+#ifndef MILK_NO_CLI
 #include "streamCTRL_find_streams.h"
+#endif
 
 errno_t read_sharedmem_image_all(const char *name);
 
@@ -46,29 +48,38 @@ errno_t read_shmimall_addCLIcmd()
     return RETURN_SUCCESS;
 }
 
-errno_t read_sharedmem_image_all(const char *strfilter)
+errno_t read_sharedmem_image_all(
+    const char *strfilter)
 {
-    //printf("LOADING ALL STREAMS matching %s\n", strfilter);
-
+#ifdef MILK_NO_CLI
+    (void) strfilter;
+    return RETURN_SUCCESS;
+#else
     int         NBstreamMAX = 10000;
     STREAMINFO *streaminfo;
 
-    streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * NBstreamMAX);
+    streaminfo = (STREAMINFO *)
+        malloc(sizeof(STREAMINFO) * NBstreamMAX);
 
-    int NBstream = find_streams(streaminfo, 1, strfilter);
+    int NBstream =
+        find_streams(streaminfo, 1, strfilter);
 
-    //printf("%d streams found :\n", NBstream);
-    for(int sindex = 0; sindex < NBstream; sindex++)
+    for(int sindex = 0;
+         sindex < NBstream; sindex++)
     {
-        //printf(" %3d   %s\n", sindex, streaminfo[sindex].sname);
-        imageID ID = image_ID(streaminfo[sindex].sname, data.image, data.NB_MAX_IMAGE);
+        imageID ID = image_ID(
+            streaminfo[sindex].sname,
+            dcimg, dcnimg);
         if(ID == -1)
         {
-            read_sharedmem_image(streaminfo[sindex].sname, data.image, data.NB_MAX_IMAGE);
+            read_sharedmem_image(
+                streaminfo[sindex].sname,
+                dcimg, dcnimg);
         }
     }
 
     free(streaminfo);
 
     return RETURN_SUCCESS;
+#endif
 }

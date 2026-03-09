@@ -150,44 +150,44 @@ static uint32_t *writerRTprio  = NULL;
 
 static errno_t customCONFsetup()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
         long fpi;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".saveON");
+            dcfpsptr, ".saveON");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".lastcubeON");
+            dcfpsptr, ".lastcubeON");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".nextcube");
+            dcfpsptr, ".nextcube");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".maxfilecnt");
+            dcfpsptr, ".maxfilecnt");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".maxframecnt");
+            dcfpsptr, ".maxframecnt");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
 
         fpi = functionparameter_GetParamIndex(
-            data.fpsptr, ".writerRTprio");
+            dcfpsptr, ".writerRTprio");
         if(fpi >= 0)
-            data.fpsptr->parray[fpi].fpflag
+            dcfpsptr->parray[fpi].fpflag
                 |= FPFLAG_WRITERUN;
     }
 
@@ -266,14 +266,14 @@ static void *save_telemetry_fits_function(
     struct sched_param schedpar;
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)
+    if(seteuid(dceuid) != 0)
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar);
-    if(seteuid(data.ruid) != 0)
+    if(seteuid(dcruid) != 0)
     {
         PRINT_ERROR("seteuid error");
     }
@@ -460,8 +460,8 @@ static void *save_telemetry_fits_function(
     }
 
     tret = image_ID(tmsg->iname,
-                    data.image,
-                    data.NB_MAX_IMAGE);
+                    dcimg,
+                    dcnimg);
 
     struct timespec tend;
     clock_gettime(CLOCK_MILK, &tend);
@@ -495,7 +495,7 @@ static errno_t compute_function()
         imgid_make_from_name(streamname);
     resolveIMGID(
         &inimg, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     if(inimg.md->naxis == 3)
     {
@@ -628,17 +628,17 @@ static errno_t compute_function()
     long fpi_lastcubeON = -1;
     long fpi_nextcube = -1;
 
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
         fpi_saveON =
             functionparameter_GetParamIndex(
-                data.fpsptr, ".saveON");
+                dcfpsptr, ".saveON");
         fpi_lastcubeON =
             functionparameter_GetParamIndex(
-                data.fpsptr, ".lastcubeON");
+                dcfpsptr, ".lastcubeON");
         fpi_nextcube =
             functionparameter_GetParamIndex(
-                data.fpsptr, ".nextcube");
+                dcfpsptr, ".nextcube");
     }
 
     printf("Start loop\n");
@@ -681,7 +681,7 @@ static errno_t compute_function()
                 {
                     (*saveON) = 0;
                     if(fpi_saveON >= 0)
-                        data.fpsptr
+                        dcfpsptr
                             ->parray[fpi_saveON]
                             .fpflag
                             &= ~FPFLAG_ONOFF;
@@ -891,7 +891,7 @@ static errno_t compute_function()
         {
             (*nextcube) = 0;
             if(fpi_nextcube >= 0)
-                data.fpsptr
+                dcfpsptr
                     ->parray[fpi_nextcube]
                     .fpflag &= ~FPFLAG_ONOFF;
             SaveCube = 1;
@@ -996,7 +996,7 @@ static errno_t compute_function()
                         tmsg
                         ->fname_auxFITSheader,
                         "%s/%s.aux.fits",
-                        data.shmdir,
+                        dcshmdir,
                         streamname);
 
                     if((*compressON) == 0)
@@ -1122,14 +1122,14 @@ static errno_t compute_function()
             {
                 (*saveON) = 0;
                 if(fpi_saveON >= 0)
-                    data.fpsptr
+                    dcfpsptr
                         ->parray[fpi_saveON]
                         .fpflag
                         &= ~FPFLAG_ONOFF;
 
                 (*lastcubeON) = 0;
                 if(fpi_lastcubeON >= 0)
-                    data.fpsptr
+                    dcfpsptr
                         ->parray[fpi_lastcubeON]
                         .fpflag
                         &= ~FPFLAG_ONOFF;

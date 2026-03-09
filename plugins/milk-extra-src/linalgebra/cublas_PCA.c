@@ -300,7 +300,7 @@ static imageID image_PCAdecomp(
     {
         for(uint32_t ii = 0; ii < (uint32_t) n; ii++)
         {
-            data.image[outPCAID].array.D[jj * n + ii] = VT[ii * m + jj];
+            dcimg[outPCAID].array.D[jj * n + ii] = VT[ii * m + jj];
         }
     }
     free(imPCAsize);
@@ -486,7 +486,7 @@ static errno_t compute_function()
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
     IMGID img = imgid_make_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     printf("PCA of %s\n", inimname);
 

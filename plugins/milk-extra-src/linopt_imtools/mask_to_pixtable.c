@@ -100,13 +100,13 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
     uint32_t *sizearray;
     imageID   IDpixindex, IDpixmult;
 
-    ID = image_ID(IDmask_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(IDmask_name, dcimg, dcnimg);
 
-    size = data.image[ID].md[0].nelement;
+    size = dcimg[ID].md[0].nelement;
 
     NBpix = 0;
     for(long ii = 0; ii < size; ii++)
-        if(data.image[ID].array.F[ii] > eps)
+        if(dcimg[ID].array.F[ii] > eps)
         {
             NBpix++;
         }
@@ -140,10 +140,10 @@ errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
 
     k = 0;
     for(long ii = 0; ii < size; ii++)
-        if(data.image[ID].array.F[ii] > eps)
+        if(dcimg[ID].array.F[ii] > eps)
         {
-            data.image[IDpixindex].array.SI64[k] = ii;
-            data.image[IDpixmult].array.F[k]     = data.image[ID].array.F[ii];
+            dcimg[IDpixindex].array.SI64[k] = ii;
+            dcimg[IDpixmult].array.F[k]     = dcimg[ID].array.F[ii];
             k++;
         }
 

@@ -62,9 +62,11 @@ typedef struct
 
 } PROCESSINFOLIST;
 
-
 extern PROCESSINFOLIST *pinfolist;
+
+#ifndef MILK_NO_CLI
 extern pid_t CLIPID;
+#endif
 
 /**
  *

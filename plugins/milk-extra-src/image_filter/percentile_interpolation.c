@@ -33,9 +33,9 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
         step = 1;
     }
 
-    ID    = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
-    xsize = data.image[ID].md[0].size[0];
-    ysize = data.image[ID].md[0].size[1];
+    ID    = image_ID(ID_name, dcimg, dcnimg);
+    xsize = dcimg[ID].md[0].size[0];
+    ysize = dcimg[ID].md[0].size[1];
 
     xsize1 = (long)(xsize / step);
     ysize1 = (long)(ysize / step);
@@ -43,7 +43,7 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
     create_2Dimage_ID("_tmppercintf", xsize1, ysize1, &ID1);
 
     // identify mask if it exists
-    IDpercmask = image_ID("_percmask", data.image, data.NB_MAX_IMAGE);
+    IDpercmask = image_ID("_percmask", dcimg, dcnimg);
 
     array = (double *) malloc(sizeof(double) * boxrad * boxrad * 4);
     if(array == NULL)
@@ -88,7 +88,7 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
                 for(ii = iis; ii < iie; ii += pixstep)
                     for(jj = jjs; jj < jje; jj += pixstep)
                     {
-                        array[cnt] = data.image[ID].array.F[jj * xsize + ii];
+                        array[cnt] = dcimg[ID].array.F[jj * xsize + ii];
                         cnt++;
                     }
             }
@@ -97,21 +97,21 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
                 for(ii = iis; ii < iie; ii += pixstep)
                     for(jj = jjs; jj < jje; jj += pixstep)
                     {
-                        if(data.image[IDpercmask].array.F[jj * xsize + ii] >
+                        if(dcimg[IDpercmask].array.F[jj * xsize + ii] >
                                 0.5)
                         {
                             array[cnt] =
-                                data.image[ID].array.F[jj * xsize + ii];
+                                dcimg[ID].array.F[jj * xsize + ii];
                             cnt++;
                         }
                     }
             }
             quick_sort_double(array, cnt);
 
-            data.image[ID1].array.F[jj1 * xsize1 + ii1] =
+            dcimg[ID1].array.F[jj1 * xsize1 + ii1] =
                 array[(long)(perc * cnt)];
-            //	data.image[IDx].array.F[jj1*xsize1+ii1] = 0.5*(iis+iie);
-            //data.image[IDy].array.F[jj1*xsize1+ii1] = 0.5*(jjs+jje);
+            //	dcimg[IDx].array.F[jj1*xsize1+ii1] = 0.5*(iis+iie);
+            //dcimg[IDy].array.F[jj1*xsize1+ii1] = 0.5*(jjs+jje);
         }
     free(array);
 
@@ -143,12 +143,12 @@ imageID FILTER_percentile_interpol_fast(const char *ID_name,
             u = ii1f - ii1;
             t = jj1f - jj1;
 
-            v00 = data.image[ID1].array.F[jj1 * xsize1 + ii1];
-            v10 = data.image[ID1].array.F[jj1 * xsize1 + ii2];
-            v01 = data.image[ID1].array.F[jj2 * xsize1 + ii1];
-            v11 = data.image[ID1].array.F[jj2 * xsize1 + ii2];
+            v00 = dcimg[ID1].array.F[jj1 * xsize1 + ii1];
+            v10 = dcimg[ID1].array.F[jj1 * xsize1 + ii2];
+            v01 = dcimg[ID1].array.F[jj2 * xsize1 + ii1];
+            v11 = dcimg[ID1].array.F[jj2 * xsize1 + ii2];
 
-            data.image[IDout].array.F[jj * xsize + ii] =
+            dcimg[IDout].array.F[jj * xsize + ii] =
                 (1.0 - u) * (1.0 - t) * v00 + (1.0 - u) * t * v01 +
                 u * (1.0 - t) * v10 + u * t * v11;
         }
@@ -188,10 +188,10 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
     double      x, v1, v2;
     double      pstart, pend;
 
-    ID = image_ID(ID_name, data.image, data.NB_MAX_IMAGE);
+    ID = image_ID(ID_name, dcimg, dcnimg);
 
-    xsize = data.image[ID].md[0].size[0];
-    ysize = data.image[ID].md[0].size[1];
+    xsize = dcimg[ID].md[0].size[0];
+    ysize = dcimg[ID].md[0].size[1];
 
     array = (double *) malloc(sizeof(double) * xsize * ysize);
     if(array == NULL)
@@ -209,7 +209,7 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
 
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        array[ii] = data.image[ID].array.F[ii];
+        array[ii] = dcimg[ID].array.F[ii];
     }
     quick_sort_double(array, xsize * ysize);
 
@@ -247,11 +247,11 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
     tot    = 0.0;
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        tot += data.image[IDkern].array.F[ii];
+        tot += dcimg[IDkern].array.F[ii];
     }
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        data.image[IDkern].array.F[ii] /= tot;
+        dcimg[IDkern].array.F[ii] /= tot;
     }
 
     create_2Dimage_ID("_testpercim1", xsize, ysize, &IDtmp);
@@ -260,14 +260,14 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
         printf("   %ld/%ld threshold = %f\n", k, NBstep, varray[k]);
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            value = data.image[ID].array.F[ii];
+            value = dcimg[ID].array.F[ii];
             if(value < varray[k])
             {
-                data.image[IDtmp].array.F[ii] = 1.0;
+                dcimg[IDtmp].array.F[ii] = 1.0;
             }
             else
             {
-                data.image[IDtmp].array.F[ii] = 0.0;
+                dcimg[IDtmp].array.F[ii] = 0.0;
             }
         }
 
@@ -276,11 +276,11 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
                        (long)(3.0 * sigma),
                        "_testpercim2");
 
-        ID2 = image_ID("_testpercim2", data.image, data.NB_MAX_IMAGE);
+        ID2 = image_ID("_testpercim2", dcimg, dcnimg);
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            data.image[IDc].array.F[k * xsize * ysize + ii] =
-                data.image[ID2].array.F[ii];
+            dcimg[IDc].array.F[k * xsize * ysize + ii] =
+                dcimg[ID2].array.F[ii];
         }
         delete_image_ID("_testpercim2", DELETE_IMAGE_ERRMODE_WARNING);
     }
@@ -298,25 +298,25 @@ imageID FILTER_percentile_interpol(const char *__restrict ID_name,
             k++;
             v1 = v2;
             k1 = k2;
-            v2 = data.image[IDc].array.F[k * xsize * ysize + ii];
+            v2 = dcimg[IDc].array.F[k * xsize * ysize + ii];
             k2 = k;
         }
         // ideally, v1<perc<v2
         if((v1 < perc) && (perc < v2))
         {
             x = (perc - v1) / (v2 - v1);
-            data.image[IDout].array.F[ii] =
+            dcimg[IDout].array.F[ii] =
                 (1.0 - x) * varray[k1] + x * varray[k2];
         }
         else
         {
             if(v1 > perc)
             {
-                data.image[IDout].array.F[ii] = varray[0];
+                dcimg[IDout].array.F[ii] = varray[0];
             }
             else
             {
-                data.image[IDout].array.F[ii] = varray[NBstep - 1];
+                dcimg[IDout].array.F[ii] = varray[NBstep - 1];
             }
         }
     }

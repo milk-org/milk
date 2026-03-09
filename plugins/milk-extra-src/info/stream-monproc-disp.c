@@ -244,7 +244,7 @@ int main(int argc, char *argv[]) {
             char fname[512];
             struct stat st;
 
-            snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", data.shmdir, streamname, bin);
+            snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", dcshmdir, streamname, bin);
             int exists = (stat(fname, &st) == 0);
 
 #ifdef USE_NCURSES

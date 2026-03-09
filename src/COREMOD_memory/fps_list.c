@@ -44,9 +44,9 @@ errno_t fps_list()
     int NBchar_fpsname = 12;
     int NBchar_NBparam = 4;
 
-    for(fpsID = 0; fpsID < data.NB_MAX_FPS; fpsID++)
+    for(fpsID = 0; fpsID < dcnfps; fpsID++)
     {
-        if(data.fpsarray[fpsID].SMfd > -1)
+        if(dcfpsarr[fpsID].SMfd > -1)
         {
 
             if(fpscnt == 0)
@@ -58,11 +58,11 @@ errno_t fps_list()
                    NBchar_fpsID,
                    fpsID,
                    NBchar_fpsname,
-                   data.fpsarray[fpsID].md[0].name,
+                   dcfpsarr[fpsID].md[0].name,
                    NBchar_NBparam,
-                   data.fpsarray[fpsID].NBparamActive,
+                   dcfpsarr[fpsID].NBparamActive,
                    NBchar_NBparam,
-                   data.fpsarray[fpsID].NBparam);
+                   dcfpsarr[fpsID].NBparam);
 
             fpscnt++;
         }
@@ -75,10 +75,10 @@ errno_t fps_list()
     //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
     //printf("\n");
 
-    printf("FPSs in system shared memory (%s):\n", data.shmdir);
+    printf("FPSs in system shared memory (%s):\n", dcshmdir);
 
     struct dirent *de;
-    DIR           *dr = opendir(data.shmdir);
+    DIR           *dr = opendir(dcshmdir);
     if(dr == NULL)
     {
         printf("Could not open current directory");

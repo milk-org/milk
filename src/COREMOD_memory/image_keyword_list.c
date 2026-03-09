@@ -20,7 +20,7 @@ static CLICMDDATA CLIcmddata =
 
 errno_t image_keywords_list(IMGID img)
 {
-    resolveIMGID(&img, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     int NBkw  = img.md->NBkw;
     int kwcnt = 0;

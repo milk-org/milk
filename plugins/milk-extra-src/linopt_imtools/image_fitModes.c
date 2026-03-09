@@ -176,10 +176,10 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
                       "_fm_measvec",
                       NULL));
 
-    IDmvec     = image_ID("_fm_measvec", data.image, data.NB_MAX_IMAGE);
-    IDrecm     = image_ID("_fm_recm", data.image, data.NB_MAX_IMAGE);
-    uint32_t m = data.image[IDrecm].md[0].size[1];
-    uint32_t n = data.image[IDrecm].md[0].size[0];
+    IDmvec     = image_ID("_fm_measvec", dcimg, dcnimg);
+    IDrecm     = image_ID("_fm_recm", dcimg, dcnimg);
+    uint32_t m = dcimg[IDrecm].md[0].size[1];
+    uint32_t n = dcimg[IDrecm].md[0].size[0];
     // printf("m=%ld n=%ld\n", m, n);
     // m = number modes
     // n = number WFS elem
@@ -193,18 +193,18 @@ errno_t linopt_imtools_image_fitModes(const char *ID_name,
                 m,
                 n,
                 1.0,
-                data.image[IDrecm].array.F,
+                dcimg[IDrecm].array.F,
                 n,
-                data.image[IDmvec].array.F,
+                dcimg[IDmvec].array.F,
                 1,
                 0.0,
-                data.image[IDcoeff].array.F,
+                dcimg[IDcoeff].array.F,
                 1);
     //printf(" -> Exiting cblas_sgemv \n");
     //fflush(stdout);
 
     // for(ii=0;ii<m;ii++)
-    //   printf("  coeff %03ld  =  %g\n", ii, data.image[IDcoeff].array.F[ii]);
+    //   printf("  coeff %03ld  =  %g\n", ii, dcimg[IDcoeff].array.F[ii]);
 
     FUNC_CHECK_RETURN(
         delete_image_ID("_fm_measvec", DELETE_IMAGE_ERRMODE_WARNING));

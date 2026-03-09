@@ -207,7 +207,7 @@ static errno_t compute_function()
         imgid_make_from_name(norm_inimname);
     resolveIMGID(
         &idin, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     IMGID idout =
         imgid_make_from_name(norm_outimname);
 

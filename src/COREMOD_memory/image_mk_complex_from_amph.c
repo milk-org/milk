@@ -64,10 +64,10 @@ errno_t mk_complex_from_amph_IMGID(
 
     resolveIMGID(
         imginamp, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
     resolveIMGID(
         imginpha, ERRMODE_ABORT,
-        data.image, data.NB_MAX_IMAGE);
+        dcimg, dcnimg);
 
     uint8_t datatype_am = imginamp->md->datatype;
     uint8_t datatype_ph = imginpha->md->datatype;

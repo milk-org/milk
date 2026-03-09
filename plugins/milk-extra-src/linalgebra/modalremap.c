@@ -142,7 +142,7 @@ errno_t ModalRemap(
     // evaluate fit quality
     {
         IMGID imgM1comp = imgid_make_from_name("imsig");
-        resolveIMGID(&imgM1comp, ERRMODE_NULL, data.image, data.NB_MAX_IMAGE);
+        resolveIMGID(&imgM1comp, ERRMODE_NULL, dcimg, dcnimg);
 
         FILE *fp = fopen("modalremap.log", "w");
         fprintf(fp, "# col1   frame index\n");
@@ -250,13 +250,13 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID imginM0 = imgid_make_from_name(inM);
-    resolveIMGID(&imginM0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginM0, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imginU0 = imgid_make_from_name(inU0);
-    resolveIMGID(&imginU0, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginU0, ERRMODE_ABORT, dcimg, dcnimg);
 
     IMGID imginU1 = imgid_make_from_name(inU1);
-    resolveIMGID(&imginU1, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginU1, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     IMGID imgoutM1  = imgid_make_from_name(outM);

@@ -31,7 +31,7 @@ typedef int errno_t;
 
 
 // default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
-#define SHAREDSHMDIR  data.shmdir
+#define SHAREDSHMDIR  dcshmdir
 
 #include "streamCTRL_TUI.h"
 
@@ -1823,12 +1823,12 @@ errno_t streamCTRL_CTRLscreen()
                 if(streaminfoproc.fuserUpdate == 1)
                 {
                     //      refresh();
-                    if(data.signal_INT == 1)  // stop scan
+                    if(dcsigINT == 1)  // stop scan
                     {
                         // complete loop without scan
                         streaminfoproc.fuserUpdate = 2;
 
-                        data.signal_INT = 0; // reset
+                        dcsigINT = 0; // reset
                     } // complete loop without scan
                 }
 
@@ -1845,10 +1845,10 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT(" ");
 
         loopcnt++;
-        if((data.signal_TERM == 1) || (data.signal_INT == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigTERM == 1) || (dcsigINT == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             sTUIparam.loopOK = 0;
         }

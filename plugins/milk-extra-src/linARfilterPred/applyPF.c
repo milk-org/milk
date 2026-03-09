@@ -139,13 +139,13 @@ static errno_t compute_function()
     // Connect to 2D input stream
     //
     IMGID imgin = imgid_make_from_name(indata);
-    resolveIMGID(&imgin, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
     long NBmodeINmax = imgin.md->size[0] * imgin.md->size[1];
 
     // connect to 2D predictive filter (PF) matrix
     //
     IMGID imgPFmat = imgid_make_from_name(PFmat);
-    resolveIMGID(&imgPFmat, ERRMODE_ABORT, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgPFmat, ERRMODE_ABORT, dcimg, dcnimg);
     long NBmodeOUT = imgPFmat.md->size[1];
 
     list_image_ID();
@@ -156,7 +156,7 @@ static errno_t compute_function()
     // 1: active input
     //
     IMGID imginmask = imgid_make_from_name(inmask);
-    resolveIMGID(&imginmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imginmask, ERRMODE_WARN, dcimg, dcnimg);
 
     long  NBinmaskpix = 0;
     long *inmaskindex;
@@ -242,10 +242,10 @@ static errno_t compute_function()
     // Connect to output mask and data stream
     //
     IMGID imgout = imgid_make_from_name(outdata);
-    resolveIMGID(&imgout, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgout, ERRMODE_WARN, dcimg, dcnimg);
 
     IMGID imgoutmask = imgid_make_from_name(outmask);
-    resolveIMGID(&imgoutmask, ERRMODE_WARN, data.image, data.NB_MAX_IMAGE);
+    resolveIMGID(&imgoutmask, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // output update
