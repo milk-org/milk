@@ -1,6 +1,29 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c4af619a4a63406b8bd1cf3b50fddc32)](https://www.codacy.com/gh/milk-org/info?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/info&amp;utm_campaign=Badge_Grade)
-
-
-# Module info {#page_module_info}
+# Module: info
 
 Images information
+
+## Source Files
+
+| File | Description |
+|------|-------------|
+| `cubeMatchMatrix.c` | No description available. |
+| `cubestats.c` | No description available. |
+| `image_stats.c` | No description available. |
+| `imagemon.c` | image monitor |
+| `improfile.c` | No description available. |
+| `kbdhit.c` | No description available. |
+| `percentile.c` | No description available. |
+| `print_header.c` | No description available. |
+| `stream_monproc.c` | monitor stream with multi-level time binning, circular buffer, and dynamic histogram |
+| `streamtiming_stats.c` | No description available. |
+| `timediff.c` | No description available. |
+
+## Standalone Executables
+
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-info-imagemon` | `imagemon.c` | image monitor |
+| `milk-fpsexec-info-strmonproc` | `stream_monproc.c` | monitor stream with multi-level time binning, circular buffer, and dynamic histogram |
+
+## Dependencies
+- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`

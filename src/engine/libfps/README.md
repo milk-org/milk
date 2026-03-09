@@ -1,86 +1,59 @@
-# libfps: Function Parameter Structure Library
-
-## Overview
-
-`libfps` is a core component of the MILK framework, providing a standardized way to manage function parameters in a distributed environment. It allows processes to share and dynamically update configuration parameters through shared memory (SHM).
-
-## Key Features
-
-- **Shared Memory Storage:** Parameters are stored in SHM, allowing multiple processes to read and write them with near-zero latency.
-- **Dynamic Reconfiguration:** Processes can monitor for parameter changes and update their internal state accordingly.
-- **Hierarchical Keywords:** Parameters use dot-notated keywords (e.g., `ao.gain.loop`) for organized management.
-- **Persistent Storage:** Parameters can be automatically saved to disk on change or on closure, ensuring settings persist across restarts.
-- **Tmux Integration:** Helper functions to manage tmux sessions for running processes (`ctrl`, `conf`, `run` windows).
-
-## Standalone Command Convention
+# Module: libfps
 
 Standalone applications using `libfps` typically support the following commands:
 
-- **fpsinit**: One-time setup. Creates the FPS shared memory structure and sets default values.
-- **confstart**: Starts the configuration loop process (usually runs in `conf` window).
-- **confstep**: Runs a single iteration of the configuration logic.
-- **confstop**: Stops the configuration process.
-- **runstart**: Starts the main processing run loop (usually runs in `run` window).
-- **runstop**: Stops the main processing loop.
+## Source Files
 
-## Tmux Management
+| File | Description |
+|------|-------------|
+| `fps_CONFstart.c` | FPS conf process start |
+| `fps_CONFstop.c` | FPS conf process stop |
+| `fps_FPCONFexit.c` | Exit FPS conf process |
+| `fps_FPCONFloopstep.c` | FPS conf process loop step |
+| `fps_FPCONFsetup.c` | FPS config setup |
+| `fps_FPSremove.c` | remove FPS |
+| `fps_GetFileName.c` | get FPS filename for entry |
+| `fps_GetParamIndex.c` | Get index of parameter |
+| `fps_GetTypeString.c` | No description available. |
+| `fps_ID.c` | find fps ID(s) from name |
+| `fps_PrintParameterInfo.c` | print FPS parameter status/values |
+| `fps_RUNexit.c` | Exit FPS run process |
+| `fps_RUNstart.c` | FPS run process start |
+| `fps_RUNstop.c` | FPS run process stop |
+| `fps_SetParamCLIindex.c` | set parameter CLI index |
+| `fps_WriteParameterToDisk.c` | Write parameter to disk |
+| `fps_add_entry.c` | add parameter entry to FPS |
+| `fps_checkparameter.c` | check FPS entries |
+| `fps_cli_function_registry.c` | Global function pointer definitions |
+| `fps_cli_init.c` | Initialize FPS entries from a bindings array |
+| `fps_connect.c` | connect to FPS |
+| `fps_connectExternalFPS.c` | connect to external FPS |
+| `fps_disconnect.c` | Disconnect from FPS |
+| `fps_execFPScmd.c` | Execute FPS command |
+| `fps_getFPSargs.c` | read FPS args from CLI |
+| `fps_globals.c` | No description available. |
+| `fps_isvalid.c` | Check if FPS is valid |
+| `fps_load.c` | Load FPS |
+| `fps_loadmemstream_lite.c` | Lite version of load memory stream for libfps. |
+| `fps_loadstream.c` | Load image stream with @X: prefix support |
+| `fps_local_store.c` | In-process (local) FPS instance management |
+| `fps_outlog.c` | Get FPS log filename |
+| `fps_paramvalue.c` | set and get parameter values |
+| `fps_print_info.c` | Print content of a Function Parameter Structure (FPS) |
+| `fps_printlist.c` | print list of parameters |
+| `fps_printparameter_valuestring.c` | print parameter value string |
+| `fps_process_fpsCMDarray.c` | Find the next task to execute |
+| `fps_processcmdline.c` | FPS process command line |
+| `fps_processinfo.c` | ProcessInfo integration helpers for FPS |
+| `fps_processinfo_entries.c` | Add parameters to FPS for real-time process settings |
+| `fps_read_fpsCMD_fifo.c` | No description available. |
+| `fps_save2disk.c` | Save FPS content to disk |
+| `fps_scan.c` | scan and load FPSs |
+| `fps_shmdirname.c` | create FPS shared memory directory name |
+| `fps_streamname_parse.c` | Parse @X: modifier prefixes from stream names |
+| `fps_struct_create.c` | create function parameter structure |
+| `fps_tmux.c` | tmux session management |
+| `fps_userinputsetparamvalue.c` | read user input to set parameter value |
 
-`libfps` provides functions to automate the setup of a tmux session with three standard windows:
-- **ctrl**: For user interaction and control.
-- **conf**: For the configuration process (`confstart`).
-- **run**: For the main run process (`runstart`).
-
-### Example Usage (Standalone)
-
-```c
-#include "fps_tmux.h"
-
-// ... inside main(argc, argv) ...
-
-if (use_tmux) {
-    // 1. Ensure session exists (creates ctrl, conf, run windows)
-    functionparameter_FPS_tmux_standalone_setup(fps_name);
-
-    // 2. Dispatch command to appropriate window
-    if (strcmp(command, "confstart") == 0) {
-        functionparameter_FPS_tmux_send(fps_name, "conf", "my_app confstart");
-    } else if (strcmp(command, "runstart") == 0) {
-        functionparameter_FPS_tmux_send(fps_name, "run", "my_app runstart");
-    }
-}
-```
-
-## Basic Usage (Code)
-
-### 1. Initialization (CONF process)
-```c
-#include "fps.h"
-
-// Setup
-FPS_SETUP_INIT("my_fps", FPSCMDCODE_FPSINIT);
-function_parameter_add_entry(&fps, ".gain", "Loop gain", FPTYPE_FLOAT32, FPFLAG_DEFAULT_INPUT, &default_gain, NULL);
-function_parameter_FPCONFexit(&fps);
-```
-
-### 2. Configuration Loop (CONF process)
-```c
-FPS_CONNECT("my_fps", FPSCMDCODE_CONFSTART);
-FPS_CONFLOOP_START
-{
-    // Validate parameters
-    float gain = functionparameter_GetParamValue_FLOAT32(&fps, ".gain");
-    if (gain < 0) { /* clamp or warn */ }
-}
-FPS_CONFLOOP_END
-```
-
-### 3. Run Loop (RUN process)
-```c
-FPS_CONNECT("my_fps", FPSCONNECT_RUN);
-// ... setup loop ...
-while(loop) {
-    // Read parameters
-    float gain = functionparameter_GetParamValue_FLOAT32(&fps, ".gain");
-    // Compute
-}
-```
+## Dependencies
+- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
