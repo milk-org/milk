@@ -8,7 +8,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -24,6 +28,7 @@ errno_t write_float_file(const char *fname, float value);
 // Command line interface wrapper function(s)
 // ==========================================
 
+#ifndef MILK_NO_CLI
 static errno_t write_flot_file_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
@@ -57,6 +62,7 @@ errno_t fileutils_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 int file_exist(char *filename)
 {

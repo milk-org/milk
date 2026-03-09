@@ -2,7 +2,11 @@
  * @file    breakcube.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -16,6 +20,7 @@ imageID break_cube(const char *restrict ID_name);
 // Command line interface wrapper function(s)
 // ==========================================
 
+#ifndef MILK_NO_CLI
 errno_t break_cube_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
@@ -53,6 +58,7 @@ errno_t breakcube_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 imageID break_cube(const char *restrict ID_name)
 {

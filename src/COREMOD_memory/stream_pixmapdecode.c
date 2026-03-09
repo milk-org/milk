@@ -2,7 +2,11 @@
 /** @file stream_pixmapdecode.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -24,6 +28,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
                                       uint32_t    reverse);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -75,7 +80,7 @@ errno_t stream_pixmapdecode_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
@@ -475,3 +480,4 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     return IDout;
 }
+

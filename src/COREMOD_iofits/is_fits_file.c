@@ -3,7 +3,12 @@
  */
 
 #include "COREMOD_iofits_common.h"
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include "milkDebugTools.h"
+#endif
 #include "check_fitsio_status.h"
 
 extern COREMOD_IOFITS_DATA COREMOD_iofits_data;

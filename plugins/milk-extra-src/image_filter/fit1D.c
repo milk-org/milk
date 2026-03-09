@@ -3,7 +3,11 @@
 
 #include <math.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "statistic/statistic.h"
 
 int filter_fit1D(const char *__restrict fname, long NBpts)

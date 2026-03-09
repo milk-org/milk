@@ -10,7 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "imrotate.h"
 #include "fps.h"
 #include "ImageStreamIO.h"

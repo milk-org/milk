@@ -5,7 +5,11 @@
 #include <sched.h>
 #include <time.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 #include "timeutils.h"
 
@@ -21,6 +25,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
 // Command line interface wrapper function(s)
 // ==========================================
 
+#ifndef MILK_NO_CLI
 errno_t COREMOD_TOOLS_statusStat_cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
@@ -54,6 +59,7 @@ errno_t statusstat_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 //
 // watch shared memory status image and perform timing statistics
