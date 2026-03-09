@@ -65,8 +65,11 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 target_include_directories(${LIBNAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
     $<INSTALL_INTERFACE:include>
 )
 
@@ -87,8 +90,6 @@ add_library(milkfpsStandalone SHARED ${SOURCEFILES_STANDALONE})
 target_compile_definitions(milkfpsStandalone PRIVATE FPS_STANDALONE)
 target_include_directories(milkfpsStandalone PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(milkfpsStandalone PUBLIC ${LIBNAME} milkdata)
@@ -109,8 +110,6 @@ set(SOURCEFILES_CLI
 add_library(milkfpsCLI SHARED ${SOURCEFILES_CLI})
 target_include_directories(milkfpsCLI PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME} CLIcore)

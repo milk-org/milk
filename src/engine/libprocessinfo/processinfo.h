@@ -78,7 +78,7 @@ extern pid_t CLIPID;
  * File name:  /tmp/proc.PID.shm
  *
  */
-typedef struct
+typedef struct PROCESSINFO
 {
     char name[STRINGMAXLEN_PROCESSINFO_NAME]; /// process name (human-readable)
 

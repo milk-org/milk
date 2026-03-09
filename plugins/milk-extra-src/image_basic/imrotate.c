@@ -17,7 +17,7 @@
 #endif
 #include "imrotate.h"
 #include "fps.h"
-#include "ImageStreamIO.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 
 /* ================================================================

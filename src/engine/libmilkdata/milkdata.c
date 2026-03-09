@@ -22,6 +22,8 @@
 /* Global core data instance */
 MILK_DATA milk_data;
 
+#include <fps.h>
+
 
 /* Buffer for variable reallocation */
 #define NB_VARIABLES_BUFFER_REALLOC 200
