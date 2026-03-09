@@ -82,6 +82,10 @@ int fpsCTRL_TUI_process_user_key(
 
         // ============ SCREENS
 
+        case KEY_RESIZE:
+            clear();
+            break;
+
         case 'h': // help
             fpsCTRLvar->fpsCTRL_DisplayMode = 1;
             break;
