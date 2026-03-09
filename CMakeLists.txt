@@ -166,15 +166,15 @@ if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/ImageStreamIO/CMakeLists.txt")
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
     message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
 endif()
 
 if(USE_CLI)
-    list(APPEND libsrcdir src/libmilkTUI)
+    list(APPEND libsrcdir src/cli/libmilkTUI)
     list(APPEND libname milkTUI)
 
-    list(APPEND libsrcdir src/CommandLineInterface)
+    list(APPEND libsrcdir src/cli/CLIcore)
     list(APPEND libname CLIcore)
 else()
     # Without CLI, modules use CLIcore_standalone.h
@@ -184,30 +184,31 @@ else()
     # CLIcore.h (which redirects to standalone stubs)
     include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/CLIcore
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/streamCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/procCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkTUI
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libfps
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libfps/fpsCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libprocessinfo
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkdata
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/ImageStreamIO
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_memory
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_iofits
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkTUI
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits
     )
     install(FILES
-        src/CommandLineInterface/CLIcore.h
-        src/CommandLineInterface/CLIcore_standalone.h
-        src/CommandLineInterface/cmdsettings.h
-        src/CommandLineInterface/timeutils.h
-        src/CommandLineInterface/milkDebugTools.h
-        src/CommandLineInterface/IMGID.h
+        src/cli/CLIcore/CLIcore.h
+        src/cli/CLIcore/CLIcore_standalone.h
+        src/cli/CLIcore/cmdsettings.h
+        src/cli/CLIcore/timeutils.h
+        src/cli/CLIcore/milkDebugTools.h
+        src/cli/CLIcore/IMGID.h
         DESTINATION include/CommandLineInterface
     )
     install(FILES
-        src/CommandLineInterface/CLIcore/CLIcore_checkargs.h
+        src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
         DESTINATION include/CommandLineInterface/CLIcore
     )
     # Create an INTERFACE library target named CLIcore
@@ -218,32 +219,32 @@ else()
     add_library(CLIcore INTERFACE)
     target_include_directories(CLIcore INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/CLIcore>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/streamCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/CommandLineInterface/procCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkTUI>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfps>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libfps/fpsCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libprocessinfo>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libmilkdata>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/ImageStreamIO>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_memory>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/COREMOD_iofits>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkTUI>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libmilkdata>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/ImageStreamIO>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_memory>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/coremods/COREMOD_iofits>
         $<INSTALL_INTERFACE:include>
     )
     install(TARGETS CLIcore EXPORT milkTargets)
 endif()
 
-list(APPEND libsrcdir src/ImageStreamIO)
+list(APPEND libsrcdir src/engine/ImageStreamIO)
 list(APPEND libname ImageStreamIO m)
-
 
 list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
 
 foreach(mname IN LISTS modulelist)
 string(REPLACE "_" "" mname1 "${mname}")
-list(APPEND libsrcdir src/${mname})
+list(APPEND libsrcdir src/coremods/${mname})
 list(APPEND libname milk${mname1})
 message("======= adding module  ${mname}")
 endforeach()
@@ -335,8 +336,20 @@ include(${PROJECT_SOURCE_DIR}/cmake/MilkStandalone.cmake)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# Add processinfo include directory globally
-include_directories(src/libprocessinfo)
+# Expose architectural tiers globally so that legacy #include
+# directives (e.g. #include "ImageStreamIO/ImageStreamIO.h")
+# continue to resolve without modifying hundreds of source files.
+include_directories(
+    src
+    src/engine
+    src/coremods
+    src/cli
+    src/cli/CLIcore
+    src/cli/CLIcore/CLIcore
+    src/cli/streamCTRL
+    src/cli/CLIcore/termview
+    src/cli/libmilkTUI
+)
 
 
 # =======================================
@@ -370,14 +383,13 @@ add_subdirectory(src/milk_module_example)
 add_subdirectory(src/isio-tools)
 
 # add libfps (standalone fps library exploration)
-add_subdirectory(src/libfps)
+add_subdirectory(src/engine/libfps)
 
 # add libmilkdata (core data layer, no CLI dependency)
-add_subdirectory(src/libmilkdata)
+add_subdirectory(src/engine/libmilkdata)
 
 # add libprocessinfo
-
-add_subdirectory(src/libprocessinfo)
+add_subdirectory(src/engine/libprocessinfo)
 
 
 
@@ -568,7 +580,7 @@ install(PROGRAMS
 
 endif(USE_CLI)
 
-install(FILES doc/help.txt DESTINATION doc)
+install(FILES docs/help.txt DESTINATION doc)
 
 
 

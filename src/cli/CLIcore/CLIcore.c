@@ -297,7 +297,7 @@ errno_t CLI_startup()
 
     if(dcquiet == 1)
     {
-        ImageStreamIO_set_verbosity(0);
+        // ImageStreamIO_set_verbosity(0);
     }
 
     // get PID and write it to shell env variable MILK_CLI_PID

@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     (void) argv;
 
     // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
-    ImageStreamIO_set_verbosity(0);
+    // ImageStreamIO_set_verbosity(0);
 
     // Initialize data
     if(getenv("MILK_QUIET")) {

@@ -15,8 +15,8 @@
 
 
 #include "CLIcore.h"
-#include "CommandLineInterface/calc.h"
-#include "CommandLineInterface/calc_bison.h"
+#include "CLIcore/calc.h"
+#include "CLIcore/calc_bison.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"

@@ -10,7 +10,7 @@
 #include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "../../libfps/fps_globals.h"
+#include "fps_globals.h"
 
 // keep processing if 1
 static int argcheck_process_flag = 1;
