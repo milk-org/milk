@@ -20,24 +20,24 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## docs/cli
 
-- [CLI Overview {#page_CLI_Overview}](cli/CLI_Overview.md) (CLI_Overview.md)
-- [Command Line Interface Syntax {#page_command_line_interface}](cli/CLIcore.md) (CLIcore.md)
-- [Command Line Interface {#page_userinput}](cli/UserInput.md) (UserInput.md)
-- [Readline Input Keys {#page_readlinekeys}](cli/helpreadline.md) (helpreadline.md)
+- [CLI Overview](cli/CLI_Overview.md) (CLI_Overview.md)
+- [Command Line Interface Syntax](cli/CLIcore.md) (CLIcore.md)
+- [Command Line Interface](cli/UserInput.md) (UserInput.md)
+- [Readline Input Keys](cli/helpreadline.md) (helpreadline.md)
 
 ## docs/developer
 
-- [Documenting Code {#page_DocumentingCode}](developer/DocumentingCode.md) (DocumentingCode.md)
-- [Loading, Creating Additional Modules {#page_LoadingModules}](developer/LoadingModules.md) (LoadingModules.md)
-- [Module Files {#page_ModuleFiles}](developer/ModuleFiles.md) (ModuleFiles.md)
-- [Template Souce Code {#page_TemplateSourceCode}](developer/TemplateSourceCode.md) (TemplateSourceCode.md)
-- [Working with git {#page_WorkingWithGit}](developer/WorkingWithGit.md) (WorkingWithGit.md)
-- [Coding Standards # {#page_coding_standards}](developer/coding_standards.md) (coding_standards.md)
+- [Documenting Code](developer/DocumentingCode.md) (DocumentingCode.md)
+- [Loading, Creating Additional Modules](developer/LoadingModules.md) (LoadingModules.md)
+- [Module Files](developer/ModuleFiles.md) (ModuleFiles.md)
+- [Template Souce Code](developer/TemplateSourceCode.md) (TemplateSourceCode.md)
+- [Working with git](developer/WorkingWithGit.md) (WorkingWithGit.md)
+- [Coding Standards #](developer/coding_standards.md) (coding_standards.md)
 - [Adding a Plugin to Milk](developer/plugins.md) (plugins.md)
 
 ## docs/install
 
-- [Installation {#page_installation}](install/compile.md) (compile.md)
+- [Installation](install/compile.md) (compile.md)
 - [p1.md](install/p1.md)
 - [p2.md](install/p2.md)
 
@@ -63,7 +63,7 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## plugins/milk-extra-src/ZernikePolyn
 
-- [Module ZernikePolyn {#page_module_ZernikePolyn}](../plugins/milk-extra-src/ZernikePolyn/README.md) (README.md)
+- [Module ZernikePolyn](../plugins/milk-extra-src/ZernikePolyn/README.md) (README.md)
 
 ## plugins/milk-extra-src/clustering
 
@@ -71,39 +71,39 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## plugins/milk-extra-src/fft
 
-- [Module fft {#page_module_fft}](../plugins/milk-extra-src/fft/README.md) (README.md)
+- [Module fft](../plugins/milk-extra-src/fft/README.md) (README.md)
 
 ## plugins/milk-extra-src/image_basic
 
-- [Module image_basic {#page_module_image_basic}](../plugins/milk-extra-src/image_basic/README.md) (README.md)
+- [Module image_basic](../plugins/milk-extra-src/image_basic/README.md) (README.md)
 
 ## plugins/milk-extra-src/image_filter
 
-- [Module image_filter {#page_module_image_filter}](../plugins/milk-extra-src/image_filter/README.md) (README.md)
+- [Module image_filter](../plugins/milk-extra-src/image_filter/README.md) (README.md)
 
 ## plugins/milk-extra-src/image_format
 
-- [Module image_format {#page_module_image_format}](../plugins/milk-extra-src/image_format/README.md) (README.md)
+- [Module image_format](../plugins/milk-extra-src/image_format/README.md) (README.md)
 
 ## plugins/milk-extra-src/image_gen
 
-- [Module image_gen {#page_module_image_gen}](../plugins/milk-extra-src/image_gen/README.md) (README.md)
+- [Module image_gen](../plugins/milk-extra-src/image_gen/README.md) (README.md)
 
 ## plugins/milk-extra-src/img_reduce
 
-- [Module img_reduce {#page_module_img_reduce}](../plugins/milk-extra-src/img_reduce/README.md) (README.md)
+- [Module img_reduce](../plugins/milk-extra-src/img_reduce/README.md) (README.md)
 
 ## plugins/milk-extra-src/info
 
-- [Module info {#page_module_info}](../plugins/milk-extra-src/info/README.md) (README.md)
+- [Module info](../plugins/milk-extra-src/info/README.md) (README.md)
 
 ## plugins/milk-extra-src/kdtree
 
-- [Module kdtree {#page_module_kdtree}](../plugins/milk-extra-src/kdtree/README.md) (README.md)
+- [Module kdtree](../plugins/milk-extra-src/kdtree/README.md) (README.md)
 
 ## plugins/milk-extra-src/linARfilterPred
 
-- [Module linARfilterPred {#page_module_linARfilterPred}](../plugins/milk-extra-src/linARfilterPred/README.md) (README.md)
+- [Module linARfilterPred](../plugins/milk-extra-src/linARfilterPred/README.md) (README.md)
 
 ## plugins/milk-extra-src/linalgebra
 
@@ -111,15 +111,15 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## plugins/milk-extra-src/linopt_imtools
 
-- [Module linopt_imtools {#page_module_linopt_imtools}](../plugins/milk-extra-src/linopt_imtools/README.md) (README.md)
+- [Module linopt_imtools](../plugins/milk-extra-src/linopt_imtools/README.md) (README.md)
 
 ## plugins/milk-extra-src/psf
 
-- [Module psf {#page_module_psf}](../plugins/milk-extra-src/psf/README.md) (README.md)
+- [Module psf](../plugins/milk-extra-src/psf/README.md) (README.md)
 
 ## plugins/milk-extra-src/statistic
 
-- [Module statistic {#page_module_statistic}](../plugins/milk-extra-src/statistic/README.md) (README.md)
+- [Module statistic](../plugins/milk-extra-src/statistic/README.md) (README.md)
 
 ## python_module
 
@@ -127,8 +127,8 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## src/cli/CLIcore
 
-- [CommandLineInterface Change Log {#page_CommandLineInterface_ChangeLog}](../src/cli/CLIcore/CHANGELOG.md) (CHANGELOG.md)
-- [Module CommandLineInterface  {#page_module_CommandLineInterface}](../src/cli/CLIcore/README.md) (README.md)
+- [CommandLineInterface Change Log](../src/cli/CLIcore/CHANGELOG.md) (CHANGELOG.md)
+- [Module CommandLineInterface](../src/cli/CLIcore/README.md) (README.md)
 
 ## src/cli/libmilkTUI
 
@@ -136,24 +136,24 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## src/coremods/COREMOD_arith
 
-- [Module COREMOD_arith {#page_module_COREMOD_arith}](../src/coremods/COREMOD_arith/README.md) (README.md)
+- [Module COREMOD_arith](../src/coremods/COREMOD_arith/README.md) (README.md)
 
 ## src/coremods/COREMOD_iofits
 
-- [Module COREMOD_iofits {#page_module_COREMOD_iofits}](../src/coremods/COREMOD_iofits/README.md) (README.md)
+- [Module COREMOD_iofits](../src/coremods/COREMOD_iofits/README.md) (README.md)
 
 ## src/coremods/COREMOD_memory
 
-- [Module COREMOD_memory {#page_module_COREMOD_memory}](../src/coremods/COREMOD_memory/README.md) (README.md)
+- [Module COREMOD_memory](../src/coremods/COREMOD_memory/README.md) (README.md)
 
 ## src/coremods/COREMOD_tools
 
-- [Module COREMOD_tools {#page_module_COREMOD_tools}](../src/coremods/COREMOD_tools/README.md) (README.md)
+- [Module COREMOD_tools](../src/coremods/COREMOD_tools/README.md) (README.md)
 
 ## src/engine/ImageStreamIO
 
 - [Change Log](../src/engine/ImageStreamIO/CHANGELOG.md) (CHANGELOG.md)
-- [Module ImageStreamIO {#page_module_ImageStreamIO}](../src/engine/ImageStreamIO/README.md) (README.md)
+- [Module ImageStreamIO](../src/engine/ImageStreamIO/README.md) (README.md)
 
 ## src/engine/ImageStreamIO/python_module
 

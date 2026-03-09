@@ -1,4 +1,4 @@
-# Template Souce Code {#page_TemplateSourceCode}
+# Template Souce Code
 
 Documentation should appear before each function in the .c and .h files, following these teamplates.
 
