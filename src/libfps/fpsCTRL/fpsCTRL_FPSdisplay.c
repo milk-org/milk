@@ -341,21 +341,81 @@ errno_t fpsCTRL_FPSdisplay(
                 }
             }
         }
+        short unsigned int wrow=0, wcol=0;
+        TUI_get_terminal_size(&wrow, &wcol);
+
+        int dispindexMax = wrow - 14; 
+        if(dispindexMax < 5) dispindexMax = 5;
+
+        int cl_scroll = fpsCTRLvar->currentlevel;
+        if(cl_scroll < 0) cl_scroll = 0;
+        
+        int pindexActiveSelected = fpsCTRLvar->GUIlineSelected[cl_scroll];
+        int doffsetindex = fpsCTRLvar->display_offset[cl_scroll];
+
+        int margin = 2; // Keep at least 2 items visible above/below the cursor
+        
+        if (pindexActiveSelected < doffsetindex + margin) {
+            doffsetindex = pindexActiveSelected - margin;
+        }
+        if (pindexActiveSelected > doffsetindex + dispindexMax - 1 - margin) {
+            doffsetindex = pindexActiveSelected - dispindexMax + 1 + margin;
+        }
+        
+        if (doffsetindex > GUIlineMax - dispindexMax) doffsetindex = GUIlineMax - dispindexMax;
+        if (doffsetindex < 0) doffsetindex = 0;
+        
+        fpsCTRLvar->display_offset[cl_scroll] = doffsetindex;
+
+        int lastindex = doffsetindex + dispindexMax;
+        if (lastindex > GUIlineMax) lastindex = GUIlineMax;
+
         if (!summary_printed)
         {
             TUI_newline();
         }
 
-        for(int GUIline = 0; GUIline < GUIlineMax;
+        int root_offset = fpsCTRLvar->display_offset[0];
+        if (root_offset > 0) {
+            attron(A_BOLD);
+            screenprint_setcolor(3);
+            TUI_printfw("  ^^^^ (%d more entries above) ^^^^", root_offset);
+            screenprint_unsetcolor(3);
+            attroff(A_BOLD);
+            TUI_newline();
+        }
+
+        for (int l = 0; l < MAXNBLEVELS; l++) {
+            if (l == fpsCTRLvar->currentlevel) {
+                child_index[l] = doffsetindex;
+            } else if (l < fpsCTRLvar->currentlevel) {
+                int start = fpsCTRLvar->display_offset[l];
+                int n_items = keywnode[nodechain[l]].NBchild;
+                int sel = fpsCTRLvar->GUIlineSelected[l];
+                
+                if (sel < start + margin) start = sel - margin;
+                if (sel > start + dispindexMax - 1 - margin) start = sel - dispindexMax + 1 + margin;
+                if (start > n_items - dispindexMax) start = n_items - dispindexMax;
+                if (start < 0) start = 0;
+                
+                child_index[l] = start;
+                fpsCTRLvar->display_offset[l] = start;
+            } else {
+                child_index[l] = doffsetindex;
+            }
+        }
+
+        for(int GUIline = doffsetindex; GUIline < lastindex;
                 GUIline++)   // GUIline is the line number on GUI display
         {
             for(level = 0; level < fpsCTRLvar->currentlevel; level ++)
             {
+                int c_idx = child_index[level];
                 if(level == 0)
                 {
-                    if(GUIline < keywnode[nodechain[0]].NBchild)
+                    if(c_idx >= 0 && c_idx < keywnode[nodechain[0]].NBchild)
                     {
-                        int knodeindex = keywnode[nodechain[0]].child[GUIline];
+                        int knodeindex = keywnode[nodechain[0]].child[c_idx];
                         int fpsindex = keywnode[knodeindex].fpsindex;
                         fpsCTRLscreen_level0node_summary(fpsarray, fpsindex);
                     }
@@ -365,13 +425,13 @@ errno_t fpsCTRL_FPSdisplay(
                     }
                 }
 
-                if(GUIline < keywnode[nodechain[level]].NBchild)
+                if(c_idx >= 0 && c_idx < keywnode[nodechain[level]].NBchild)
                 {
                     int snode = 0; // selected node
-                    int knodeindex = keywnode[nodechain[level]].child[GUIline];
+                    int knodeindex = keywnode[nodechain[level]].child[c_idx];
 
                     // toggle highlight if node is in the chain
-                    int v1 = keywnode[nodechain[level]].child[GUIline];
+                    int v1 = keywnode[nodechain[level]].child[c_idx];
                     int v2 = nodechain[level + 1];
                     if(v1 == v2)
                     {
@@ -724,7 +784,18 @@ errno_t fpsCTRL_FPSdisplay(
             TUI_newline();
         }
 
+        int lastindex_root = fpsCTRLvar->display_offset[0] + dispindexMax;
+        if (lastindex_root < GUIlineMax) {
+            attron(A_BOLD);
+            screenprint_setcolor(3);
+            TUI_printfw("  vvvv (%d more entries below) vvvv", GUIlineMax - lastindex_root);
+            screenprint_unsetcolor(3);
+            attroff(A_BOLD);
+            TUI_newline();
+        }
+
         fpsCTRLvar->NBindex = GUIlineMax; // Matches number of lines displayed
+
         if(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] > fpsCTRLvar->NBindex - 1)
             fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] = fpsCTRLvar->NBindex - 1;
 
