@@ -3,7 +3,11 @@
  * @brief   list variables
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
 // ==========================================
 // Forward declaration(s)
@@ -14,6 +18,7 @@ errno_t list_variable_ID();
 errno_t list_variable_ID_file(const char *fname);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -55,7 +60,7 @@ errno_t list_variable_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 errno_t list_variable_ID()
 {
     variableID i;
@@ -91,3 +96,4 @@ errno_t list_variable_ID_file(const char *fname)
 
     return RETURN_SUCCESS;
 }
+

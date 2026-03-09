@@ -3,7 +3,11 @@
  * @brief   find variable ID(s) from name
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
 
 /* ID number corresponding to a name */
 variableID variable_ID(const char *name)

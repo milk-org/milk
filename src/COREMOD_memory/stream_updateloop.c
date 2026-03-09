@@ -3,7 +3,11 @@
 
 #include <sched.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "timeutils.h"
 
 #include "create_image.h"
@@ -39,6 +43,7 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname,
         int         timingmode);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -152,7 +157,7 @@ errno_t stream_updateloop_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 /** @brief Send single burst of frames to stream
  *
  */
@@ -658,3 +663,4 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     return IDout;
 }
+

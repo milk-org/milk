@@ -13,6 +13,9 @@
 // Module short description
 #define MODULE_DESCRIPTION "Image filtering"
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
 
 #include "fconvolve.h"
@@ -41,5 +44,4 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-
-
+#endif /* MILK_NO_CLI */

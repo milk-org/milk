@@ -2,7 +2,11 @@
  * @file    stream_diff.c
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"
@@ -21,6 +25,7 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
 // command line interface wrapper functions
 // ==========================================
 
+#ifndef MILK_NO_CLI
 static errno_t COREMOD_MEMORY_streamDiff__cli()
 {
     if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
@@ -60,7 +65,7 @@ errno_t stream_diff_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 /**
  * ## Purpose
  *
@@ -159,3 +164,4 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
 
     return IDout;
 }
+

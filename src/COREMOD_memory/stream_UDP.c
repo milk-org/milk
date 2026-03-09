@@ -8,7 +8,11 @@
 #include <netinet/tcp.h>
 #include <sched.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -37,6 +41,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(int port,
         int RT_priority);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -107,7 +112,7 @@ errno_t stream__UDP_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 /** continuously transmits 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */
@@ -1092,3 +1097,4 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
     return ID;
 }
+

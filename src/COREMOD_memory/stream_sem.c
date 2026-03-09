@@ -5,7 +5,11 @@
 
 #include <pthread.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
@@ -41,6 +45,7 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID);
 imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -170,6 +175,7 @@ errno_t stream_sem_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 {

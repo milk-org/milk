@@ -3,7 +3,11 @@
  * @brief difference between two halves of stream image
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"
@@ -17,6 +21,7 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
         long        semtrig);
 
 // ==========================================
+#ifndef MILK_NO_CLI
 // Command line interface wrapper function(s)
 // ==========================================
 
@@ -55,7 +60,7 @@ errno_t stream_halfimdiff_addCLIcmd()
 
     return RETURN_SUCCESS;
 }
-
+#endif /* MILK_NO_CLI */
 //
 // compute difference between two halves of an image stream
 // triggers on instream
@@ -272,3 +277,4 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
 
     return IDout;
 }
+

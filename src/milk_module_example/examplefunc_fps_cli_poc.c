@@ -63,9 +63,32 @@
  *   8. Standalone main  - FPS_MAIN_STANDALONE_V2
  */
 
+/* ================================================================
+ * INCLUDES
+ *
+ * Dependency structure:
+ *   - fps.h: FPS types, X-macro expanders,
+ *     FPS_MAIN_STANDALONE_V2 macro
+ *   - CLIcore.h (full CLI build): CLICMDDATA,
+ *     CLICMDARGDEF, INSERT_STD_* macros, module
+ *     registration
+ *   - CLIcore_standalone.h (standalone build):
+ *     Provides stub types so the same source file
+ *     compiles in both modes
+ *
+ * If your compute unit is PURE COMPUTATION (no
+ * CLI registration, no INSERT_STD macros), you
+ * can replace CLIcore.h with targeted includes:
+ *   #include "libmilkdata/milkdata.h"
+ *   #include "milkDebugTools.h"
+ * ============================================================= */
+
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "fps.h"
-#include "fps_GetParamIndex.h"
 
 
 /* ================================================================

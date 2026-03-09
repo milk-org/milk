@@ -11,15 +11,21 @@
 
 #include <fftw3.h>
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 
+#include "wisdom.h"
+
+#ifndef MILK_NO_CLI
 #include "dofft.h"
 #include "fftcorrelation.h"
 #include "ffttranslate.h"
 #include "init_fftwplan.h"
 #include "permut.h"
 #include "testfftspeed.h"
-#include "wisdom.h"
 
 #include "pup2foc.h"
 
@@ -75,6 +81,7 @@ static void __attribute__((destructor)) close_fftwlib()
 #endif
     }
 }
+#endif /* MILK_NO_CLI */
 
 int fft_setNthreads(__attribute__((unused)) int nt)
 {

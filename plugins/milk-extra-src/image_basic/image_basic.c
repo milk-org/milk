@@ -31,6 +31,9 @@
 
 //#include <fitsio.h>  /* required by every program that uses CFITSIO  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
 //#include "COREMOD_tools/COREMOD_tools.h"
 //#include "COREMOD_memory/COREMOD_memory.h"
@@ -115,6 +118,7 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
 
 /*
 

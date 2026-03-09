@@ -7,7 +7,11 @@
  * from examplefunc_fps_cli_poc.c.
  */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
+#endif
 #include "fps.h"
 
 
@@ -152,7 +156,7 @@ static errno_t compute_function()
  * 7.  MILK MODULE REGISTRATION
  * ============================================================= */
 
-#ifndef FPS_STANDALONE
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 /**
  * @brief Unified milk CLI entry point.
  */

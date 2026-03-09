@@ -5,7 +5,13 @@
  * Scan for source location, load stream of FITS file
  */
 
-#include "CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#include <fps.h>
+#include "ImageStreamIO/ImageStreamIO.h"
+#endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
 

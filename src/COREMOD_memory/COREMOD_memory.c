@@ -26,6 +26,9 @@
 /* =============================================================================================== */
 /* =============================================================================================== */
 
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
 #include "CLIcore.h"
 
 #include "timeutils.h"
@@ -184,3 +187,4 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
+#endif /* MILK_NO_CLI */
