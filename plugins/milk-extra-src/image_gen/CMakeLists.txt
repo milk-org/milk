@@ -66,9 +66,9 @@ target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<INSTALL_INTERFACE:include/${SRCNAME}>)
 target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
     m ${CFITSIO_LIBRARIES}
-    milkCOREMODmemory_compute milkCOREMODiofits_compute milkstatistic)
+    milkCOREMODmemory_compute milkCOREMODiofits_compute milkstatistic_compute)
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets DESTINATION lib)
 
 add_milk_standalone(imggen-mkrandom mkrandomim.c)
-target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC milkstatistic)
+target_link_libraries(milk-fpsexec-imggen-mkrandom PUBLIC ${LIBNAME} milkstatistic)
 add_milk_standalone(imggen-voronoi voronoi.c)
