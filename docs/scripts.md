@@ -1,9 +1,13 @@
 # Scripts Reference
 
-`milk` includes shell scripts for common operations. Scripts are
-installed to `bin/` alongside the compiled executables.
+`milk` includes shell scripts for common operations. Scripts
+are installed to `bin/` alongside the compiled executables.
 
-## Core Scripts (`scripts/`)
+See also: [Streams](streams.md) ·
+[FPS](fps.md) ·
+[FAQ](faq.md)
+
+## 1. Core Scripts (`scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -22,7 +26,7 @@ installed to `bin/` alongside the compiled executables.
 | `milk-fpsmkcmd` | Generate FPS command scripts |
 | `milk-fps-set-completion.bash` | Bash completion for `milk-fps-set` |
 
-## Stream Utilities (`scripts/`)
+## 2. Stream Utilities (`scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -33,7 +37,7 @@ installed to `bin/` alongside the compiled executables.
 | `milk-shmim-rm` | Remove a shared memory image |
 | `milk-shm2FITSloop` | Continuously save SHM stream to FITS files |
 
-## Logging Scripts (`scripts/`)
+## 3. Logging Scripts (`scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -43,7 +47,7 @@ installed to `bin/` alongside the compiled executables.
 | `milk-logshimoff` | Disable logging for a stream |
 | `milk-logshimstat` | Show logging status |
 
-## Image Utilities (`scripts/`)
+## 4. Image Utilities (`scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -52,9 +56,9 @@ installed to `bin/` alongside the compiled executables.
 | `milk-images-merge` | Merge multiple FITS images |
 | `milk-makecsetandrt` | Create cpuset and set real-time scheduling |
 
-## COREMOD Scripts
+## 5. COREMOD Scripts
 
-### COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
+### 5.1. COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -69,7 +73,7 @@ installed to `bin/` alongside the compiled executables.
 | `milk-nettransmit` | Transmit SHM stream over network |
 | `milk-rmshmim` | Remove a shared memory image |
 
-### COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
+### 5.2. COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
 
 | Script | Description |
 |--------|-------------|

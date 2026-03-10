@@ -1,6 +1,14 @@
 # Developer Tutorial: Writing Your First Milk Module
 
-Welcome to `milk`! This tutorial will guide you through creating your first module and standalone `fpsexec` compute block. By the end of this guide, you will have a working module linked to the `milk` core frameworks.
+Welcome to `milk`! This tutorial will guide you through
+creating your first module and standalone `fpsexec` compute
+block. By the end of this guide, you will have a working
+module linked to the `milk` core frameworks.
+
+See also: [Programmer's Guide](../programmers_guide.md) ·
+[Adding Plugins](plugins.md) ·
+[FPS](../fps.md) ·
+[FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md)
 
 ## 1. Setting Up the Directory Structure
 
