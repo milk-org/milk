@@ -1,17 +1,16 @@
-# Installation 
+# Installation
 
 > [!NOTE]
 > This file: `docs/install/compile.md`
 
-
-
 ---
 
-
-# 1. Download and install milk {#milkinstall}
+## 1. Download and install milk
 
 > [!WARNING]
-> This page describes installation of the core package milk. If you install application package (cacao or coffee), replace "milk" with "cacao" in these instructions.
+> This page describes installation of the core package milk.
+> If you install an application package (cacao or coffee),
+> replace "milk" with "cacao" in these instructions.
 
 For download, build commands, and CMake options, see the
 [Quick Start section in README.md](../../README.md#download).
@@ -19,13 +18,14 @@ For download, build commands, and CMake options, see the
 For configuring minimal or partial builds (engine-only, core
 without cfitsio, etc.), see [Build Tiers](build_tiers.md).
 
-The sections below cover post-installation setup and optional
-configuration not covered in the README.
+The sections below cover post-installation setup, dependencies,
+and optional configuration not covered in the README.
 
 
-## 1.2. Post-installation {#milkinstall_postinstall}
+## 2. Post-installation
 
-You may need to add /usr/local/lib to LD_LIBRARY_PATH environment variable:
+You may need to add `/usr/local/lib` to the linker search
+path:
 
 ```bash
 echo "/usr/local/lib" > usrlocal.conf
@@ -34,9 +34,9 @@ sudo ldconfig -v
 ```
 
 
-## 1.3. tmpfs (optional) {#milkinstall_tmpfs}
+## 3. tmpfs (optional)
 
-OPTIONAL: Create tmpfs disk for high performance I/O:
+Create a tmpfs disk for high-performance shared-memory I/O:
 
 ```bash
 echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
@@ -44,64 +44,76 @@ sudo mkdir -p /milk/shm
 sudo mount /milk/shm
 ```
 
-
 ---
 
-# 2. Dependencies 
+## 4. Dependencies
 
+### 4.1. Required (full build)
 
-## 2.1. Libraries 
+| Dependency | Purpose |
+|------------|---------|
+| **gcc** | C compiler (C17) |
+| **cmake** ≥ 3.10 | Build system |
+| **pkg-config** | Locates installed libraries |
+| **pthreads** | POSIX threading (provided by libc) |
 
-Libraries required:
+### 4.2. Optional
 
-| Library | Purpose / Notes |
-|---------|-----------------|
-| **gcc** | Standard C compiler |
-| **openMP** | Parallel processing framework |
-| **fitsio** | Reading and writing FITS image files |
-| **fftw** | Fast Fourier Transforms (single and double precision) |
-| **gsl** | GNU Scientific Library for math functions |
-| **readline** | Reading the command line input |
+| Dependency | CMake option | Default | Purpose |
+|------------|-------------|---------|---------|
+| **cfitsio** | `USE_CFITSIO` | ON | FITS file I/O (`COREMOD_iofits`) |
+| **readline** | `USE_READLINE` | ON | Interactive CLI line editing |
+| **ncurses** | `USE_NCURSES` | ON | TUI screens (fpsCTRL, procCTRL, streamCTRL) |
+| **GSL** | `USE_GSL` | ON | Numerical routines in plugins |
+| **fftw3** | — | auto | FFT (used by some plugins) |
+| **openMP** | — | auto | Parallel processing |
 
-### Package Installation
+> [!TIP]
+> For a minimal POSIX-only build, all optional dependencies
+> can be skipped. See [Build Tiers](build_tiers.md) for
+> details.
 
-Install the above libraries on **CentOS**:
+### 4.3. Package installation
+
+**Ubuntu / Debian:**
 ```bash
-sudo yum install readline-devel fftw3-devel gsl-devel
+sudo apt-get install \
+    libcfitsio-dev libreadline-dev libncurses5-dev \
+    libfftw3-dev libgsl-dev
 ```
 
-Install the above libraries on **Ubuntu**:
+**CentOS / RHEL / Fedora:**
 ```bash
-sudo apt-get install libcfitsio-dev libreadline-dev libncurses5-dev libfftw3-dev libgsl-dev
+sudo yum install \
+    cfitsio-devel readline-devel ncurses-devel \
+    fftw3-devel gsl-devel
 ```
 
+### 4.4. cfitsio from source (alternative)
 
-## 2.2. FITSIO install 
+If your distribution does not package cfitsio, install it
+from source:
 
-For reading and writing FITS image files
-
-- Visit [HEASARC FITSIO](https://heasarc.gsfc.nasa.gov/fitsio/fitsio.html) and download the file Unix `.tar` file `cfitsio3410.tar.gz`
-- Extract it, view the README, and install it.
-- There is the `fitsio.h` in it. Move it to `/usr`:
+1. Download from [HEASARC](https://heasarc.gsfc.nasa.gov/fitsio/)
+2. Build and install:
 
 ```bash
-./configure --prefix=/usr
+tar xzf cfitsio-*.tar.gz
+cd cfitsio-*
+./configure --prefix=/usr/local
 make
 sudo make install
 ```
 
+### 4.5. GPU acceleration (optional)
 
-## 2.3. GPU acceleration (optional, but highly recommended) 
+For GPU-accelerated linear algebra:
 
-Required libraries:
+- Install **NVIDIA driver** and **CUDA toolkit**
+- Install **MAGMA**
 
-- install **NVIDIA driver**
-- install **CUDA**
-- install **MAGMA**
-
-### No package 'magma' found
-
-The configuration script uses `pkg-config` to find the package. You need to add this to your `.bashrc` or equivalent shell profile:
+If cmake reports "No package 'magma' found", add the MAGMA
+pkg-config path to your shell profile:
 
 ```bash
 export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
@@ -109,57 +121,48 @@ export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 
 ---
 
-
-# 3. Running multiple versions {#milk_multipleversions}
-
+## 5. Running multiple versions
 
 > [!WARNING]
-> Untested, may require tweaking
+> Untested — may require tweaking.
 
-To install independant versions on the same system, download source code in separate source directories:
+Install independent versions by specifying different prefixes:
 
 ```bash
-cd $HOME/src
+cd ~/src
 git clone --recursive https://github.com/milk-org/milk milk-1
 git clone --recursive https://github.com/milk-org/milk milk-2
 ```
 
-
-
-Compile each copy with a different target directory :
-
 ```bash
-cd $HOME/src/milk-1
-mkdir _build
-cd _build
+cd ~/src/milk-1/_build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
 sudo make install
-```
 
-```bash
-cd $HOME/src/milk-2
-mkdir _build
-cd _build
+cd ~/src/milk-2/_build
 cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-2 ..
 sudo make install
 ```
 
-
-To make version 1 the default on the system :
+Make version 1 the system default:
 
 ```bash
 sudo ln -s /usr/local/milk-1 /usr/local/milk
 ```
 
-
-To run an instance of version 2 :
+Run version 2 explicitly:
 
 ```bash
-LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
+LD_LIBRARY_PATH=/usr/local/milk-2/lib \
+PATH=/usr/local/milk-2/bin \
+milk
 ```
 
+Each version can also use its own shared-memory directory:
 
-Additionally, each version may have its own independent shared memory space for streams :
 ```bash
-MILK_SHM_DIR=/milk-2/shm LD_LIBRARY_PATH=/usr/local/milk-2/lib PATH=/usr/local/milk-2/bin milk
+MILK_SHM_DIR=/milk-2/shm \
+LD_LIBRARY_PATH=/usr/local/milk-2/lib \
+PATH=/usr/local/milk-2/bin \
+milk
 ```
