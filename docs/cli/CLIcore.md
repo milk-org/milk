@@ -1,75 +1,80 @@
 # Command Line Interface Syntax
 
-The interactive CLI is provided by the `milk-cli` executable (typically aliased as `milk`). Source code is in `src/cli/CLIcore/`.
+The interactive CLI is provided by the `milk-cli` executable
+(typically aliased as `milk`). Source code is in
+`src/cli/CLIcore/`.
 
 > [!NOTE]
-> Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
+> Standalone executables (`milk-fpsexec-*`) have their own
+> command-line interfaces. See
+> [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
 
 ## Command Line Options
 
-When launching `milk` (or `milk-cli`), the following arguments are available:
+When launching `milk-cli`, the following arguments are
+available:
 
 | Option | Description |
-|---|---|
-| `-h`, `--help` | Print this message and exit |
+|--------|-------------|
+| `-h`, `--help` | Print help and exit |
 | `-i`, `--info` | Print version, settings, info and exit |
-| `-j`, `--journal` | Keeps journal of commands (Write all commands to file `milk_cmdlog.txt` as they are entered) |
+| `-j`, `--journal` | Write all commands to `milk_cmdlog.txt` |
 | `--verbose` | Be verbose |
-| `-d`, `--debug=DEBUGLEVEL` | Set debug level at startup |
-| `-o`, `--overwrite` | Automatically overwrite files if necessary (**USE WITH CAUTION - WILL OVERWRITE EXISTING FITS FILES**) |
-| `-l` | Keeps a list of images in file `imlist.txt` |
-| `-m`, `--mmon=TTYDEVICE` | Open memory monitor on tty device. <br> Example: `milk -m /dev/tty2` |
-| `-n`, `--pname=<processname>` | Rename process to `<processname>` |
-| `-p`, `--priority=<PR>` | Change process priority (0-99). Higher number = higher priority. <br> Example: `milk -p 90` |
-| `-f`, `--fifo=<FIFONAME>` | Specify fifo name. <br> Example: `milk -f /tmp/fifo24` |
-| `-s`, `--startup=STARTUPFILE` | Execute specified script on startup. Requires the `-f` option, as the script is loaded into fifo. |
+| `-d`, `--debug=LEVEL` | Set debug level at startup |
+| `-o`, `--overwrite` | Auto-overwrite FITS files (**use with caution**) |
+| `-l` | Write image list to `imlist.txt` |
+| `-m`, `--mmon=TTY` | Open memory monitor on tty device |
+| `-n`, `--pname=NAME` | Rename process |
+| `-p`, `--priority=PR` | Set RT priority (0–99, higher = higher) |
+| `-f`, `--fifo=FIFO` | Specify fifo name |
+| `-s`, `--startup=FILE` | Execute script on startup (requires `-f`) |
+
+**Examples:**
+
+```bash
+$ milk-cli -m /dev/tty2       # memory monitor
+$ milk-cli -p 90              # high priority
+$ milk-cli -f /tmp/fifo24     # custom fifo
+```
 
 ## Syntax Rules and Parser
 
-- Spaces are used to separate arguments. The number of spaces is irrelevant.
-- Comments are written after the special character `#`.
-- If a command is not found, the input string will be interpreted as an arithmetic operation (See **Arithmetic Operations** below).
+- Spaces separate arguments (count doesn't matter)
+- Comments follow `#`
+- Unrecognized input is interpreted as arithmetic
 
-```bash
-<command> <arg1> <arg2>   # comment
+```text
+milk> <command> <arg1> <arg2>   # comment
 ```
 
 ## Tab Completion
 
-Tab completion is provided and behaves as follows:
-- **First argument:** Try to match command, then image, then filename.
-- **Additional arguments:** Try to match image, then filename.
+- **First argument:** matches command → image → filename
+- **Additional arguments:** matches image → filename
 
 ## Input
 
-GNU readline is used to read input. See [GNU readline documentation](http://tiswww.case.edu/php/chet/readline/rltop.html). For a quick help on readline input, type:
-```text
-> helprl
-```
+GNU readline is used for line editing. Type `helprl` at the
+prompt for a quick reference. See
+[GNU readline documentation](http://tiswww.case.edu/php/chet/readline/rltop.html).
 
-The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.txt` exists, commands will be read one by one from top to bottom, and will be removed from the file as they are read, until the file is empty.
+The CLI reads commands from `cmdfile.txt` if it exists,
+executing them top-to-bottom and removing each line as it
+is read.
 
 <details>
 <summary><b>Help Commands</b></summary>
 
 ```text
-> ?
-> help
-	# print this help file
-> helprl
-	# print readline quick help
-> lm?
-	# list all modules loaded
-> m? <module>
-	# list all commands for a module
-> m?
-	# perform m? on all modules loaded
-> cmd? <command>
-	# command description for <command>
-> cmd?
-	# command description for all commands
-> h? str
-	# search for string <str> in all commands and their descriptions
+milk> ?                       # print help
+milk> help                    # same as ?
+milk> helprl                  # readline quick reference
+milk> lm?                     # list all loaded modules
+milk> m? <module>             # list commands for a module
+milk> m?                      # list commands for all modules
+milk> cmd? <command>          # detailed command description
+milk> cmd?                    # describe all commands
+milk> h? <str>                # search commands by string
 ```
 
 </details>
@@ -78,23 +83,14 @@ The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.t
 <summary><b>Important Commands</b></summary>
 
 ```text
-> ci
-	# compilation time and memory usage
-> listim
-	# list all images in memory
-> listimf <filename>
-	# list all images in memory and write output to file <filename>
-> !<syscommand>
-	# execute system command
-> showhist
-	# prints history of all commands
-> quit
-	# exit the shell (exit also works)
-
-> setdp <val>
-	# set default precision to float (<val> = 0) or double (<val> = 1)
-> creaim <im> <xs> <ys>
-	# creates a 2D image named <im>, size = <xs> x <ys> pixels
+milk> ci                      # compilation time & memory usage
+milk> listim                  # list all images in memory
+milk> listimf <file>          # list images, write to file
+milk> !<syscmd>               # execute system command
+milk> showhist                # print command history
+milk> quit                    # exit (or: exit)
+milk> setdp <val>             # precision: 0=float, 1=double
+milk> creaim <im> <xs> <ys>   # create 2D image
 ```
 
 </details>
@@ -102,68 +98,62 @@ The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.t
 <details>
 <summary><b>FITS Files I/O</b></summary>
 
-FITSIO is used for FITS files I/O. See FITSIO documentation for more detailed instructions. (See also modules `COREMOD_memory` and `COREMOD_iofits`).
+FITSIO is used for FITS file I/O. See also `COREMOD_memory`
+and `COREMOD_iofits`.
 
 > [!NOTE]
 > FITS I/O requires `USE_CFITSIO=ON` at build time.
 > See [Build Tiers](../install/build_tiers.md).
 
-### Loading Files
+**Loading:**
 
 ```text
-> loadfits <fname> <imname>
-	# load FITS file <fname> into image <imname>
-> loadfits im1.fits imf1
-	# load file im1.fits in memory with name imf1
-> loadfits im1.fits
-	# load file im1.fits in memory with name im1 (default name is composed of all chars before first ".")
-> loadfits im1.fits.gz im1
-	# load compressed file
+milk> loadfits im1.fits imf1       # load as "imf1"
+milk> loadfits im1.fits            # load as "im1" (auto-name)
+milk> loadfits im1.fits.gz im1     # load compressed
 ```
 
-### Saving Files
+**Saving:**
 
 ```text
-> save_fl  <imname> <fname>
-	# save image <imname> into FITS file <fname> (float)
-> save_fl im1 imf1.fits
-	# write image im1 to disk file imf1.fits
-> save_fl im1
-	# write image im1 to disk file im1.fits (default file name = image name + ".fits")
-> save_fl im1 "!im1.fits"
-	# overwrite file im1.fits if it exists
-> save_fl im1 "../dir2/im1.fits"
-	# specify full path
-> save_fl im1 im1.fits.gz
-	# save compressed image
+milk> save_fl im1 imf1.fits        # save as float
+milk> save_fl im1                  # save as im1.fits (auto)
+milk> save_fl im1 "!im1.fits"      # overwrite existing
+milk> save_fl im1 ../dir2/im1.fits # specify path
+milk> save_fl im1 im1.fits.gz      # save compressed
 ```
 
 </details>
 
-
 <details>
 <summary><b>Integration with Standard Linux Tools</b></summary>
 
-### Using `cmdfile.txt` to Drive milk from UNIX Prompt
+### Using `cmdfile.txt` to drive milk-cli
 
-`milk` can use standard Linux tools and commands thanks to the `cmdfile.txt` file, which, if it exists, is executed as `milk` commands.
+`milk-cli` executes commands from `cmdfile.txt` if the file
+exists. This enables scripting from both inside and outside
+the CLI.
 
-For example, to load all `im*.fits` files in memory, you can type within `milk`:
-```bash
-> !ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
+**From inside `milk-cli`:**
+
+```text
+milk> !ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
 ```
 
-You can also drive `milk` from the unix command line if you are not in the `milk` interactive shell, but `milk` is running in the same directory. For example, the following command will load all `im*.fits` into `milk` from the unix command line:
+**From a separate shell (while `milk-cli` is running):**
+
 ```bash
 $ ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
 ```
 
 ### Using `imlist.txt` and `cmdfile.txt`
 
-If you start `milk` with the `-l` option, the file `imlist.txt` contains the list of images currently in memory in an ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with an x-size > 200 onto disk as single precision FITS files:
+Start `milk-cli` with `-l` to maintain `imlist.txt`. Then
+filter and act on the list:
 
-```bash
-> !awk '{if ($4>200) print $2}' imlist.txt | xargs -I {} echo save_fl {} {}_tmp.fits > cmdfile.txt
+```text
+milk> !awk '{if ($4>200) print $2}' imlist.txt \
+        | xargs -I {} echo save_fl {} {}_tmp.fits > cmdfile.txt
 ```
 
 </details>
@@ -171,6 +161,5 @@ If you start `milk` with the `-l` option, the file `imlist.txt` contains the lis
 ## Arithmetic Operations
 
 ```text
-> im1=sqrt(im+2.0)
-	# will perform an arithmetic operation on image im and store the result in image im1
+milk> im1=sqrt(im+2.0)       # arithmetic on images
 ```

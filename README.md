@@ -45,8 +45,8 @@ For a full list of all available documentation in this repository, see the [Mark
 ## Download
 
 ```bash
-git clone --recursive https://github.com/milk-org/milk.git
-cd milk
+$ git clone --recursive https://github.com/milk-org/milk.git
+$ cd milk
 ```
 
 ## Build
@@ -57,10 +57,10 @@ Builds everything: interactive CLI, TUI, all plugins, and
 standalone fpsexec programs.
 
 ```bash
-mkdir _build && cd _build
-cmake ..
-make -j$(nproc)
-sudo make install
+$ mkdir _build && cd _build
+$ cmake ..
+$ make -j$(nproc)
+$ sudo make install
 ```
 
 ### Build tiers
@@ -93,7 +93,7 @@ disabled, see [Build Tiers](docs/install/build_tiers.md).
 ### Build with Python module
 
 ```bash
-./compile.sh $PWD/local
+$ ./compile.sh $PWD/local
 ```
 
 ### Environment variables
@@ -109,7 +109,7 @@ Set in `.bashrc` or equivalent:
 ### Verify installation
 
 ```bash
-milk-check
+$ milk-check
 ```
 
 For post-installation steps and dependency details, see
@@ -120,7 +120,7 @@ For post-installation steps and dependency details, see
 Pre-requisites: tmux, nnn
 
 ```bash
-milk-tutorial
+$ milk-tutorial
 ```
 
 ## Adding plugins
@@ -128,13 +128,13 @@ milk-tutorial
 Compile with cacao plugins:
 
 ```bash
-./fetch_cacao_dev.sh
-./compile.sh $PWD/local
+$ ./fetch_cacao_dev.sh
+$ ./compile.sh $PWD/local
 ```
 
 Compile with coffee plugins:
 
 ```bash
-./fetch_coffee_dev.sh
-./compile.sh $PWD/local
+$ ./fetch_coffee_dev.sh
+$ ./compile.sh $PWD/local
 ```
