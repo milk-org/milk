@@ -57,7 +57,9 @@
 #include <openacc.h>
 #endif
 
+#ifdef USE_CFITSIO
 #include <fitsio.h>
+#endif
 
 
 #include "CLIcore.h"
@@ -67,7 +69,9 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
+#ifdef USE_CFITSIO
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "CLIcore_UI.h"
@@ -526,11 +530,15 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Explicitly reference core module constructors to ensure linker doesn't drop them
     // (these are single-run safe due to their internal INITSTATUS mechanism)
     extern void libinit_COREMOD_memory(void);
+#ifdef USE_CFITSIO
     extern void libinit_COREMOD_iofits(void);
+#endif
     extern void libinit_COREMOD_arith(void);
     extern void libinit_COREMOD_tools(void);
     libinit_COREMOD_memory();
+#ifdef USE_CFITSIO
     libinit_COREMOD_iofits();
+#endif
     libinit_COREMOD_arith();
     libinit_COREMOD_tools();
 

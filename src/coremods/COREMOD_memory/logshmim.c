@@ -28,7 +28,9 @@
 #include "fps.h"
 #include "timeutils.h"
 
+#ifdef USE_CFITSIO
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 
 #include "COREMOD_memory/image_keyword_addD.h"
 #include "COREMOD_memory/image_keyword_addS.h"
@@ -388,6 +390,7 @@ static void *save_telemetry_fits_function(
            "  = \"%s\"\n",
            __LINE__, tmsg->iname);
 
+#ifdef USE_CFITSIO
     saveFITS_opt_trunc(tmsg->iname,
                        tmsg->partial
                        ? tmsg->cubesize : -1,
@@ -397,6 +400,13 @@ static void *save_telemetry_fits_function(
                        imkwarray,
                        NBcustomKW,
                        tmsg->compress_string);
+#else
+    (void) tmsg->fname;
+    (void) tmsg->fname_auxFITSheader;
+    (void) tmsg->compress_string;
+    printf("WARNING: FITS save disabled"
+           " (built without cfitsio)\n");
+#endif
 
     free(imkwarray);
 
