@@ -5,6 +5,7 @@ It provides a complete index of all Markdown documentation available in the repo
 
 ## Root
 
+- [Contributing to milk](../CONTRIBUTING.md) (CONTRIBUTING.md)
 - [Project: milk](../GEMINI.md) (GEMINI.md)
 - [Milk](../README.md) (README.md)
 
@@ -12,10 +13,12 @@ It provides a complete index of all Markdown documentation available in the repo
 
 - [FPS Standalone and CMD Modes](FPS_Standalone_CMD_Modes.md) (FPS_Standalone_CMD_Modes.md)
 - [Milk + Cacao Dependency Graph](dependency_graph.md) (dependency_graph.md)
+- [FAQ & Troubleshooting](faq.md) (faq.md)
 - [Function Processing System (FPS)](fps.md) (fps.md)
 - [Milk Documentation](index.md) (index.md)
 - [Process Info (`procinfo`)](procinfo.md) (procinfo.md)
 - [Programmer's Guide to `milk`](programmers_guide.md) (programmers_guide.md)
+- [Scripts Reference](scripts.md) (scripts.md)
 - [Shared Memory Streams (`ImageStreamIO`)](streams.md) (streams.md)
 
 ## docs/cli
