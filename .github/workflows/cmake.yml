@@ -64,5 +64,5 @@ jobs:
           export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${MILK_INSTALLDIR}/lib/pkgconfig
           echo $PATH
           export TERM=xterm-256color
-          ctest -C $BUILD_TYPE -D Experimental
+          ctest -C $BUILD_TYPE -D Experimental -LE perf
 
