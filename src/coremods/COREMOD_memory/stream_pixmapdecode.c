@@ -17,7 +17,9 @@
 #include "image_ID.h"
 #include "stream_sem.h"
 
+#ifdef USE_CFITSIO
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 
 // ==========================================
 // Forward declaration(s)
@@ -333,7 +335,13 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
             }
         }
 
+#ifdef USE_CFITSIO
         save_fits("outpixsl", IDout_pixslice_fname);
+#else
+        (void) IDout_pixslice_fname;
+        printf("WARNING: FITS save disabled"
+               " (built without cfitsio)\n");
+#endif
         delete_image_ID("outpixsl", DELETE_IMAGE_ERRMODE_WARNING);
     }
 
