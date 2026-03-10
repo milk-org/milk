@@ -25,25 +25,45 @@ project(milk LANGUAGES C)
 # USE_READLINE (default ON, requires USE_CLI):
 #   Enable readline for interactive CLI input.
 #
+# USE_CFITSIO (default ON):
+#   Enable FITS file I/O (COREMOD_iofits). Requires
+#   cfitsio. Disable for a POSIX-only core build.
+#
 # USE_GSL (default ON):
 #   Enable GSL for plugins that need it (e.g.
 #   linopt_imtools). Core milk no longer uses GSL.
 #
-# Examples:
+# Build tiers (see docs/install/build_tiers.md):
+#
+#   Engine-only (POSIX deps only):
+#     cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF
+#
+#   Core (engine + coremods, no CLI/plugins):
+#     cmake .. -DUSE_CLI=OFF
+#
+#   Core without cfitsio:
+#     cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF
+#
 #   Full build (default):
 #     cmake ..
-#
-#   Standalone-only (no CLI, minimal deps):
-#     cmake .. -DUSE_CLI=OFF
 #
 #   Full build with CUDA:
 #     cmake .. -DUSE_CUDA=ON
 #
 
+option(USE_COREMODS "Build core modules (COREMOD_*)"   ON)
+option(USE_CFITSIO  "Build FITS I/O (needs cfitsio)"   ON)
 option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
 option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
 option(USE_READLINE "Enable readline support"          ON)
 option(USE_GSL      "Enable GSL for plugins"           ON)
+
+# Enforce dependency chain:
+# USE_CLI requires USE_COREMODS
+if(USE_CLI AND NOT USE_COREMODS)
+  message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
+  set(USE_COREMODS ON CACHE BOOL "" FORCE)
+endif()
 
 include(CheckLanguage)
 
@@ -137,11 +157,15 @@ SET(CMAKE_FIND_PACKAGE_SORT_DIRECTION DEC)
 # linked to executable by default
 #
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO cfitsio)
-if(${CFITSIO_FOUND})
-message("Found cfitsio version ${CFITSIO_VERSION}")
-message("CFITS library  : ${CFITSIO_LIBRARY}")
-message("CFITS libraries: ${CFITSIO_LIBRARIES}")
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+  if(${CFITSIO_FOUND})
+    message("Found cfitsio version ${CFITSIO_VERSION}")
+    message("CFITS library  : ${CFITSIO_LIBRARY}")
+    message("CFITS libraries: ${CFITSIO_LIBRARIES}")
+  endif()
+else()
+  message(STATUS "USE_CFITSIO=OFF: FITS file I/O disabled")
 endif()
 
 # =======================================
@@ -240,14 +264,21 @@ endif()
 list(APPEND libsrcdir src/engine/ImageStreamIO)
 list(APPEND libname ImageStreamIO m)
 
-list(APPEND modulelist COREMOD_arith COREMOD_iofits COREMOD_memory COREMOD_tools)
+if(USE_COREMODS)
+  list(APPEND modulelist COREMOD_arith COREMOD_memory COREMOD_tools)
+  if(USE_CFITSIO)
+    list(APPEND modulelist COREMOD_iofits)
+  endif()
 
-foreach(mname IN LISTS modulelist)
-string(REPLACE "_" "" mname1 "${mname}")
-list(APPEND libsrcdir src/coremods/${mname})
-list(APPEND libname milk${mname1})
-message("======= adding module  ${mname}")
-endforeach()
+  foreach(mname IN LISTS modulelist)
+    string(REPLACE "_" "" mname1 "${mname}")
+    list(APPEND libsrcdir src/coremods/${mname})
+    list(APPEND libname milk${mname1})
+    message("======= adding module  ${mname}")
+  endforeach()
+else()
+  message(STATUS "USE_COREMODS=OFF: skipping COREMOD_*")
+endif()
 
 # =======================================
 # BUILD TYPE
@@ -352,9 +383,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 # =======================================
 # Core modules (libsrcdir) and plugins (libextradir)
 # are discovered and added as subdirectories.
-execute_process(COMMAND bash -c "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
-                OUTPUT_VARIABLE libextradir)
-string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
+# Discover plugins (only when coremods are enabled)
+if(USE_COREMODS)
+  execute_process(COMMAND bash -c "find -L ${PROJECT_SOURCE_DIR}/plugins -mindepth 2 -maxdepth 2 -type d | grep -v .git | grep -v .vscode"
+                  OUTPUT_VARIABLE libextradir)
+  string(REGEX REPLACE "\n" "; " libextradir "${libextradir}")
+endif()
 
 foreach(lsrcdir IN LISTS libsrcdir libextradir)
   string(REGEX REPLACE " " "" lsrcdir "${lsrcdir}")
@@ -371,11 +405,11 @@ foreach(lsrcdir IN LISTS libsrcdir libextradir)
   endif()
 endforeach()
 
-# add example module
-add_subdirectory(src/milk_module_example)
-
-# add isio-tools
-add_subdirectory(src/isio-tools)
+# example module and isio-tools depend on coremods
+if(USE_COREMODS)
+  add_subdirectory(src/milk_module_example)
+  add_subdirectory(src/isio-tools)
+endif()
 
 # add libfps (standalone fps library exploration)
 add_subdirectory(src/engine/libfps)
