@@ -5,7 +5,7 @@ running `milk`.
 
 ---
 
-## Installation
+## 1. Installation
 
 <details>
 <summary><b>CMake cannot find cfitsio</b></summary>
@@ -28,7 +28,8 @@ Or build without cfitsio:
 cmake .. -DUSE_CFITSIO=OFF
 ```
 
-See [Build Tiers](install/build_tiers.md) for details.
+See [Build Tiers](install/build_tiers.md) and
+[Compile Instructions](install/compile.md) for details.
 
 </details>
 
@@ -73,7 +74,9 @@ export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 ---
 
-## Shared Memory
+## 2. Shared Memory
+
+See also: [Streams](streams.md)
 
 <details>
 <summary><b>Permission denied when accessing /milk/shm</b></summary>
@@ -121,7 +124,11 @@ export MILK_SHM_DIR=/path/to/custom/shm
 
 ---
 
-## FPS / Process Control
+## 3. FPS / Process Control
+
+See also: [FPS](fps.md) ·
+[Process Info](procinfo.md) ·
+[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
 <details>
 <summary><b>FPS process won't start — "FPS already exists"</b></summary>
@@ -162,7 +169,9 @@ If standalone executables launched with `-tmux` don't appear:
 
 ---
 
-## CLI
+## 4. CLI
+
+See also: [CLI Reference](cli/CLIcore.md)
 
 <details>
 <summary><b>milk-cli prompt jumps to bottom of terminal</b></summary>
@@ -194,7 +203,7 @@ file is in the library path.
 
 ---
 
-## Performance
+## 5. Performance
 
 <details>
 <summary><b>Real-time scheduling</b></summary>
@@ -222,7 +231,7 @@ Typical values: >100 kHz on modern hardware.
 
 ---
 
-## Getting Help
+## 6. Getting Help
 
 - **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
 - **Command help:** `cmd? <command>` for detailed usage
