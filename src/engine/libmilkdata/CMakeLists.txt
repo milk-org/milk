@@ -21,6 +21,7 @@ target_include_directories(${LIBNAME} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine>
 )
 
 target_link_libraries(${LIBNAME}
