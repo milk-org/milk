@@ -28,9 +28,9 @@ You may need to add `/usr/local/lib` to the linker search
 path:
 
 ```bash
-echo "/usr/local/lib" > usrlocal.conf
-sudo mv usrlocal.conf /etc/ld.so.conf.d/
-sudo ldconfig -v
+$ echo "/usr/local/lib" > usrlocal.conf
+$ sudo mv usrlocal.conf /etc/ld.so.conf.d/
+$ sudo ldconfig -v
 ```
 
 
@@ -39,9 +39,9 @@ sudo ldconfig -v
 Create a tmpfs disk for high-performance shared-memory I/O:
 
 ```bash
-echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
-sudo mkdir -p /milk/shm
-sudo mount /milk/shm
+$ echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
+$ sudo mkdir -p /milk/shm
+$ sudo mount /milk/shm
 ```
 
 ---
@@ -83,14 +83,14 @@ sudo mount /milk/shm
 
 **Ubuntu / Debian:**
 ```bash
-sudo apt-get install \
+$ sudo apt-get install \
     libcfitsio-dev libreadline-dev libncurses5-dev \
     libfftw3-dev libgsl-dev
 ```
 
 **CentOS / RHEL / Fedora:**
 ```bash
-sudo yum install \
+$ sudo yum install \
     cfitsio-devel readline-devel ncurses-devel \
     fftw3-devel gsl-devel
 ```
@@ -107,11 +107,11 @@ from source:
 2. Build and install:
 
 ```bash
-tar xzf cfitsio-*.tar.gz
-cd cfitsio-*
-./configure --prefix=/usr/local
-make
-sudo make install
+$ tar xzf cfitsio-*.tar.gz
+$ cd cfitsio-*
+$ ./configure --prefix=/usr/local
+$ make
+$ sudo make install
 ```
 
 </details>
@@ -144,42 +144,42 @@ export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 Install independent versions by specifying different prefixes:
 
 ```bash
-cd ~/src
-git clone --recursive https://github.com/milk-org/milk milk-1
-git clone --recursive https://github.com/milk-org/milk milk-2
+$ cd ~/src
+$ git clone --recursive https://github.com/milk-org/milk milk-1
+$ git clone --recursive https://github.com/milk-org/milk milk-2
 ```
 
 ```bash
-cd ~/src/milk-1/_build
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
-sudo make install
+$ cd ~/src/milk-1/_build
+$ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-1 ..
+$ sudo make install
 
-cd ~/src/milk-2/_build
-cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-2 ..
-sudo make install
+$ cd ~/src/milk-2/_build
+$ cmake -DCMAKE_INSTALL_PREFIX=/usr/local/milk-2 ..
+$ sudo make install
 ```
 
 Make version 1 the system default:
 
 ```bash
-sudo ln -s /usr/local/milk-1 /usr/local/milk
+$ sudo ln -s /usr/local/milk-1 /usr/local/milk
 ```
 
 Run version 2 explicitly:
 
 ```bash
-LD_LIBRARY_PATH=/usr/local/milk-2/lib \
-PATH=/usr/local/milk-2/bin \
-milk
+$ LD_LIBRARY_PATH=/usr/local/milk-2/lib \
+  PATH=/usr/local/milk-2/bin \
+  milk-cli
 ```
 
 Each version can also use its own shared-memory directory:
 
 ```bash
-MILK_SHM_DIR=/milk-2/shm \
-LD_LIBRARY_PATH=/usr/local/milk-2/lib \
-PATH=/usr/local/milk-2/bin \
-milk
+$ MILK_SHM_DIR=/milk-2/shm \
+  LD_LIBRARY_PATH=/usr/local/milk-2/lib \
+  PATH=/usr/local/milk-2/bin \
+  milk-cli
 ```
 
 </details>
