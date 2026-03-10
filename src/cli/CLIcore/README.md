@@ -2,8 +2,8 @@
 
 Command Line Interface (CLI) for the **milk** package.
 
-Uses GNU Bison (parser generator) and Flex (lexical analysis)
-to process user input.
+Uses a hand-written recursive-descent (Pratt) parser
+for expression evaluation and command dispatch.
 
 ## Role
 
@@ -23,4 +23,4 @@ The following frameworks have been factored out into their own libraries:
 ## Dependencies
 
 - `milkfps`, `milkprocessinfo`, `ImageStreamIO`, `libmilkdata`
-- System: `readline`, `flex`, `bison`, `ncurses`
+- System: `readline`, `ncurses`

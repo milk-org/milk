@@ -346,10 +346,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # can resolve #include "ImageStreamIO/ImageStreamIO.h"
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 
-if(${USE_BISON})
-# Bison calc uses CLIcore headers somewhat internally
-include_directories(src/cli/CLIcore)
-endif()
+
 # =======================================
 # SOURCE DIRECTORIES
 # =======================================
