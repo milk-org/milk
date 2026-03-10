@@ -57,6 +57,9 @@ sudo mount /milk/shm
 | **pkg-config** | Locates installed libraries |
 | **pthreads** | POSIX threading (provided by libc) |
 
+<details>
+<summary><b>Optional dependencies</b></summary>
+
 ### 4.2. Optional
 
 | Dependency | CMake option | Default | Purpose |
@@ -73,7 +76,10 @@ sudo mount /milk/shm
 > can be skipped. See [Build Tiers](build_tiers.md) for
 > details.
 
-### 4.3. Package installation
+</details>
+
+<details>
+<summary><b>Package installation commands</b></summary>
 
 **Ubuntu / Debian:**
 ```bash
@@ -89,7 +95,10 @@ sudo yum install \
     fftw3-devel gsl-devel
 ```
 
-### 4.4. cfitsio from source (alternative)
+</details>
+
+<details>
+<summary><b>cfitsio from source (alternative)</b></summary>
 
 If your distribution does not package cfitsio, install it
 from source:
@@ -105,7 +114,10 @@ make
 sudo make install
 ```
 
-### 4.5. GPU acceleration (optional)
+</details>
+
+<details>
+<summary><b>GPU acceleration (optional)</b></summary>
 
 For GPU-accelerated linear algebra:
 
@@ -119,9 +131,12 @@ pkg-config path to your shell profile:
 export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 ```
 
+</details>
+
 ---
 
-## 5. Running multiple versions
+<details>
+<summary><b>Running multiple versions side by side</b></summary>
 
 > [!WARNING]
 > Untested — may require tweaking.
@@ -166,3 +181,5 @@ LD_LIBRARY_PATH=/usr/local/milk-2/lib \
 PATH=/usr/local/milk-2/bin \
 milk
 ```
+
+</details>
