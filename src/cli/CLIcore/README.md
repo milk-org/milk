@@ -1,12 +1,26 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/9a353bc4127449018e663280295d4016)](https://www.codacy.com/gh/milk-org/CommandLineInterface?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/CommandLineInterface&amp;utm_campaign=Badge_Grade)
+# CLIcore
 
+Command Line Interface (CLI) for the **milk** package.
 
-# Module CommandLineInterface  {#page_module_CommandLineInterface}
+Uses GNU Bison (parser generator) and Flex (lexical analysis)
+to process user input.
 
-Command Line Interface (CLI) for **milk** package.
+## Role
 
-Uses GNU Bison (parser generator) and Flex (lexical analysis) to process input.
+CLIcore provides:
+- The interactive `milk` CLI prompt (REPL)
+- Module/command registration (`CLIADDCMD`)
+- Argument parsing and type-checked function dispatch
+- Startup scripts and configuration loading
 
-Module inclues key frameworks :
-- **processinfo** : process management and control
-- **function parameter structure (FPS)** : reading/writing function parameters
+## Related Components
+
+The following frameworks have been factored out into their own libraries:
+- **libfps** (`src/engine/libfps/`): Function Parameter Structure core
+- **libprocessinfo** (`src/engine/libprocessinfo/`): Process monitoring
+- **libmilkTUI** (`src/cli/libmilkTUI/`): Terminal UI widgets
+
+## Dependencies
+
+- `milkfps`, `milkprocessinfo`, `ImageStreamIO`, `libmilkdata`
+- System: `readline`, `flex`, `bison`, `ncurses`

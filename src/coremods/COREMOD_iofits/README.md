@@ -26,4 +26,4 @@ I/O routines for FITS format
 | `milk-fpsexec-iofits-imgs2cube` | `images2cube.c` | ========================================== |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

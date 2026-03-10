@@ -49,4 +49,4 @@ Light interface to linea algebra libs (BLAS, CUDA and MAGMA)
 | `milk-fpsexec-linalg-modalremap` | `modalremap.c` | Use mapping between two spaces to remap input |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

@@ -126,7 +126,7 @@ It provides a complete index of all Markdown documentation available in the repo
 ## src/cli/CLIcore
 
 - [CommandLineInterface Change Log {#page_CommandLineInterface_ChangeLog}](../src/cli/CLIcore/CHANGELOG.md) (CHANGELOG.md)
-- [Module CommandLineInterface  {#page_module_CommandLineInterface}](../src/cli/CLIcore/README.md) (README.md)
+- [CLIcore](../src/cli/CLIcore/README.md) (README.md)
 
 ## src/cli/libmilkTUI
 

@@ -27,4 +27,4 @@ Fourier Transforms
 | `milk-fpsexec-fft-pup2foc` | `pup2foc.c` | Pup2foc module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

@@ -58,4 +58,4 @@ Arith functions on images
 | `milk-fpsexec-arith-imtrunc` | `image_arith__im_f_f__im.c` | arith functions |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

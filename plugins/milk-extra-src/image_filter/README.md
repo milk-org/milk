@@ -24,4 +24,4 @@ Image filtering and convolution
 | `milk-fpsexec-imgfilt-im2Dfilt1pxbb` | `im2Dfilter_1pixbblurr.c` | Apply 1 pixel radius blurr to image |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

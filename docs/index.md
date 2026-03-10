@@ -6,12 +6,13 @@ Welcome to the `milk` documentation!
 
 ## 🚀 Getting Started
 
-If you are new to the `milk` environment, start here to get the software installed and learn the basic concepts.
+If you are new to the `milk` environment, follow these steps:
 
-- [**Installation Guide**](install/compile.md)
-- [**Command Line Interface (CLI) Overview**](cli/CLI_Overview.md)
-- [**Shared Memory Streams**](streams.md): Core concept covering zero-copy image passing.
-- [**Function Processing System (FPS)**](fps.md): Core concept covering process parameters and configuration.
+1. [**Install milk**](install/compile.md) — clone, build, and configure.
+2. [**CLI Overview**](cli/CLI_Overview.md) — understand `milk-cli` and standalone executables.
+3. [**Shared Memory Streams**](streams.md) — core concept: zero-copy image passing.
+4. [**Function Processing System (FPS)**](fps.md) — core concept: process parameters and configuration.
+5. [**Developer Tutorial**](developer/tutorial.md) — write your first compute module.
 
 ## 🏛️ Core Architecture
 
