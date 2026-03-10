@@ -59,21 +59,17 @@ Libraries required:
 | **fftw** | Fast Fourier Transforms (single and double precision) |
 | **gsl** | GNU Scientific Library for math functions |
 | **readline** | Reading the command line input |
-| **tmux** | Terminal multiplexer for background processes |
-| **bash dialog** | Version 1.2 minimum |
-| **flex** | Parsing the command line input |
-| **bison** | Interpreting the command line input |
 
 ### Package Installation
 
 Install the above libraries on **CentOS**:
 ```bash
-sudo yum install readline-devel flex bison-devel fftw3-devel gsl-devel
+sudo yum install readline-devel fftw3-devel gsl-devel
 ```
 
 Install the above libraries on **Ubuntu**:
 ```bash
-sudo apt-get install libcfitsio-dev libreadline-dev libncurses5-dev libfftw3-dev libgsl-dev flex bison
+sudo apt-get install libcfitsio-dev libreadline-dev libncurses5-dev libfftw3-dev libgsl-dev
 ```
 
 
