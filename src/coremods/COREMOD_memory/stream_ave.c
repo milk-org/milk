@@ -112,6 +112,30 @@ static errno_t fpsexec(
             double v = 0;
             switch (imgin->md[0].datatype)
             {
+            case _DATATYPE_UINT8:
+                v = imgin->array.UI8[i];
+                break;
+            case _DATATYPE_INT8:
+                v = imgin->array.SI8[i];
+                break;
+            case _DATATYPE_UINT16:
+                v = imgin->array.UI16[i];
+                break;
+            case _DATATYPE_INT16:
+                v = imgin->array.SI16[i];
+                break;
+            case _DATATYPE_UINT32:
+                v = imgin->array.UI32[i];
+                break;
+            case _DATATYPE_INT32:
+                v = imgin->array.SI32[i];
+                break;
+            case _DATATYPE_UINT64:
+                v = imgin->array.UI64[i];
+                break;
+            case _DATATYPE_INT64:
+                v = imgin->array.SI64[i];
+                break;
             case _DATATYPE_FLOAT:
                 v = imgin->array.F[i];
                 break;
@@ -132,6 +156,30 @@ static errno_t fpsexec(
             double v = 0;
             switch (imgin->md[0].datatype)
             {
+            case _DATATYPE_UINT8:
+                v = imgin->array.UI8[i];
+                break;
+            case _DATATYPE_INT8:
+                v = imgin->array.SI8[i];
+                break;
+            case _DATATYPE_UINT16:
+                v = imgin->array.UI16[i];
+                break;
+            case _DATATYPE_INT16:
+                v = imgin->array.SI16[i];
+                break;
+            case _DATATYPE_UINT32:
+                v = imgin->array.UI32[i];
+                break;
+            case _DATATYPE_INT32:
+                v = imgin->array.SI32[i];
+                break;
+            case _DATATYPE_UINT64:
+                v = imgin->array.UI64[i];
+                break;
+            case _DATATYPE_INT64:
+                v = imgin->array.SI64[i];
+                break;
             case _DATATYPE_FLOAT:
                 v = imgin->array.F[i];
                 break;
