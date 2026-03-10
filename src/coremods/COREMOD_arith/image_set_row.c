@@ -78,6 +78,62 @@ static errno_t fpsexec(IMAGE *inimg)
         return RETURN_FAILURE;
     }
     switch (inimg->md[0].datatype) {
+    case _DATATYPE_UINT8:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.UI8[
+                row * xsize + i] =
+                (uint8_t) val;
+        }
+        break;
+    case _DATATYPE_INT8:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.SI8[
+                row * xsize + i] =
+                (int8_t) val;
+        }
+        break;
+    case _DATATYPE_UINT16:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.UI16[
+                row * xsize + i] =
+                (uint16_t) val;
+        }
+        break;
+    case _DATATYPE_INT16:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.SI16[
+                row * xsize + i] =
+                (int16_t) val;
+        }
+        break;
+    case _DATATYPE_UINT32:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.UI32[
+                row * xsize + i] =
+                (uint32_t) val;
+        }
+        break;
+    case _DATATYPE_INT32:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.SI32[
+                row * xsize + i] =
+                (int32_t) val;
+        }
+        break;
+    case _DATATYPE_UINT64:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.UI64[
+                row * xsize + i] =
+                (uint64_t) val;
+        }
+        break;
+    case _DATATYPE_INT64:
+        for (uint32_t i = 0; i < xsize; i++) {
+            inimg->array.SI64[
+                row * xsize + i] =
+                (int64_t) val;
+        }
+        break;
     case _DATATYPE_FLOAT:
         for (uint32_t i = 0; i < xsize; i++) {
             inimg->array.F[
@@ -92,6 +148,9 @@ static errno_t fpsexec(IMAGE *inimg)
                 (double) val;
         }
         break;
+    default:
+        PRINT_ERROR("unsupported datatype");
+        return RETURN_FAILURE;
     }
     return RETURN_SUCCESS;
 }
