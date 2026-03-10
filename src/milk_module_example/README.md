@@ -21,4 +21,4 @@ Template module demonstrating the `milk` compute unit architecture.
 | `milk-fpsexec-streamprocess` | `examplefunc4_streamprocess.c` | template for simple stream processing loop |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

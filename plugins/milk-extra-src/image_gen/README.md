@@ -17,4 +17,4 @@ Generate test images, useful images.
 | `milk-fpsexec-imggen-voronoi` | `voronoi.c` | Voronoi module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
