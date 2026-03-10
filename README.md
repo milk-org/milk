@@ -58,7 +58,7 @@ Check required packages in Dockerfile.
 
 Builds everything: interactive CLI, TUI, and all standalone fpsexec programs.
 
-**Requires:** cfitsio, readline, ncurses, bison, flex
+**Requires:** cfitsio, readline, ncurses
 
 ```bash
 mkdir _build && cd _build
@@ -72,7 +72,7 @@ sudo make install
 Builds only core libraries and `milk-fpsexec-*` standalone programs.
 No interactive CLI, no TUI. Ideal for embedded/headless deployments.
 
-**Requires:** cfitsio only (no readline, ncurses, bison, or flex)
+**Requires:** cfitsio only (no readline, ncurses)
 
 ```bash
 mkdir _build && cd _build
