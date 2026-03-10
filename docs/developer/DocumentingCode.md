@@ -63,17 +63,20 @@ sudo yum install doxygen graphviz
 ```
 
 ### 3.2 Generating the Documentation
-There is currently no tracked `Doxyfile` in the repository by default, as development relies heavily on the GitHub markdown manuals. To generate the API reference locally:
+A tracked `Doxyfile` is maintained at the repository root. It is also used by CI (`.github/workflows/doxygen.yml`) to deploy the API reference to GitHub Pages on every push to `main` or `dev`.
+
+To generate the documentation locally:
 
 1. Navigate to the repository root.
-2. Generate a default Doxygen configuration tailored to the repository:
-```bash
-doxygen -g
-```
-3. Edit the generated `Doxyfile` to configure the source directories (e.g., set `INPUT = src/ plugins/` and `RECURSIVE = YES`).
-4. Run doxygen to generate the `html/` output directory:
+2. Run Doxygen:
 ```bash
 doxygen Doxyfile
 ```
+3. Open the generated output:
+```bash
+xdg-open docs/doxygen/html/index.html
+```
 
-You can then open `html/index.html` in your web browser to browse the C API reference.
+> [!TIP]
+> The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the live URL.
+

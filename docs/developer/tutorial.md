@@ -62,46 +62,51 @@ Use the `FPS_PARAMS` X-Macro to define the configuration parameters you want to 
 
 ```c
 // Local Variables
-static int param_iterations = 100;
-static float param_gain = 0.5f;
+static int32_t param_iterations = 100;
+static float   param_gain = 0.5f;
 
-// Parameter mapping
-#define FPS_PARAMS \
-    FPSEXEC_PARAM_INT32("Iterations", &param_iterations) \
-    FPSEXEC_PARAM_FLOAT32("Gain", &param_gain)
+// Parameter mapping (X-macro)
+#define FPS_PARAMS(X) \
+    X(".iterations", &param_iterations, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "Number of iterations") \
+    X(".gain", &param_gain, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "Loop gain")
 ```
 
-### C. Implement the Execution Loop
-This is the core compute function. It is automatically called after parameters are synced.
+### C. Implement the Compute Function
+This is the core compute function. It is called after parameters are synced from FPS shared memory.
 
 ```c
-int run_my_compute(void) {
-    FPS_PRINTINFO("Starting compute with gain %f and %d iterations.", param_gain, param_iterations);
-    
-    // Core loop controlled by processinfo
-    while(data.processinfo->loopstat == 0) {
+static errno_t fpsexec(void) {
+    printf("Running with gain %f, %d iterations\n",
+           param_gain, param_iterations);
+
+    for (int i = 0; i < param_iterations; i++) {
         // Do math here...
-        
-        // Let the CPU rest
-        usleep(10000); 
     }
-    
-    return 0;
+
+    return RETURN_SUCCESS;
 }
 ```
 
 ### D. The Main Entry Point
-Use the standardized multi-mode macro to build both the CLI command and the standalone `main()` function automatically:
+The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create, exec, confstart, runstart, etc.):
 
 ```c
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {"myexec", "Run my compute block", CLICMD_FIELDS_DEFAULTS};
-#else
-static CLICMDDATA CLIcmddata = {"myexec", "Run my compute block", CLICMD_FIELDS_DEFAULTS};
-#endif
+// Processinfo-wrapped entry point
+static errno_t compute_function() {
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    fpsexec();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    return RETURN_SUCCESS;
+}
 
-// This macro creates the main() entry point for the standalone executable.
-FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, run_my_compute)
+// Standalone main (compiled with -DFPS_STANDALONE)
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(FPS_app_info, FPS_PARAMS, compute_function)
+#endif
 ```
 
 ## 4. Compile and Run!
