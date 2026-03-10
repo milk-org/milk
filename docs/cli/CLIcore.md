@@ -106,9 +106,8 @@ milk-cli > creaim <im> <xs> <ys>   # create 2D image
 FITSIO is used for FITS file I/O. See also `COREMOD_memory`
 and `COREMOD_iofits`.
 
-> [!NOTE]
-> FITS I/O requires `USE_CFITSIO=ON` at build time.
-> See [Build Tiers](../install/build_tiers.md).
+**ℹ️ Note:** FITS I/O requires `USE_CFITSIO=ON` at build
+time. See [Build Tiers](../install/build_tiers.md).
 
 **Loading:**
 

@@ -71,10 +71,9 @@ $ sudo mount /milk/shm
 | **fftw3** | — | auto | FFT (used by some plugins) |
 | **openMP** | — | auto | Parallel processing |
 
-> [!TIP]
-> For a minimal POSIX-only build, all optional dependencies
-> can be skipped. See [Build Tiers](build_tiers.md) for
-> details.
+**💡 Tip:** For a minimal POSIX-only build, all optional
+dependencies can be skipped.
+See [Build Tiers](build_tiers.md) for details.
 
 </details>
 
@@ -138,8 +137,7 @@ export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 <details>
 <summary><b>Running multiple versions side by side</b></summary>
 
-> [!WARNING]
-> Untested — may require tweaking.
+**⚠️ Warning:** Untested — may require tweaking.
 
 Install independent versions by specifying different prefixes:
 
