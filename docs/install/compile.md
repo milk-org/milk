@@ -1,7 +1,9 @@
 # Installation
 
-> [!NOTE]
-> This file: `docs/install/compile.md`
+See also: [Build Tiers](build_tiers.md) ·
+[FAQ & Troubleshooting](../faq.md) ·
+[CLI Overview](../cli/CLI_Overview.md) ·
+[Programmer's Guide](../programmers_guide.md)
 
 ---
 

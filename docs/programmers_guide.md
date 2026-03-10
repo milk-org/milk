@@ -3,15 +3,72 @@
 Welcome to `milk`. This document serves as an overview of its core architecture and programming model. If you are reading this while setting up a new module, debugging, or wanting to write a custom module, this guide will orient you on the core concepts.
 
 ## 1. Core Architecture
-`milk` is structured around decoupled, high-performance computing components. Instead of monolithic structures, it relies on small modular units ("compute units") talking to each other via standard inter-process communication mechanisms.
+`milk` is structured around decoupled, high-performance
+computing components. Instead of monolithic structures, it
+relies on small modular units ("compute units") talking to
+each other via standard inter-process communication
+mechanisms.
 
 The architecture orbits around two primary concepts:
 
 1. **ImageStreamIO (Streams):**
-   - The primary data layer. Shared memory images/data cubes are passed around with near-zero copy overhead. Stream metadata holds dimensions, data format, keywords, and synchronization semaphores that trigger downstream processes.
+   - The primary data layer. Shared memory images/data
+     cubes are passed around with near-zero copy overhead.
+     Stream metadata holds dimensions, data format,
+     keywords, and synchronization semaphores that trigger
+     downstream processes.
 
 2. **Function Processing System (FPS):**
-   - The control and parameter layer. FPS manages configuration parameters, state, and commands for compute units. FPS instances reside in shared memory (`/dev/shm/fps.*`), allowing for real-time adjustments via the CLI, GUI, or other automated processes without restarting the compute module itself.
+   - The control and parameter layer. FPS manages
+     configuration parameters, state, and commands for
+     compute units. FPS instances reside in shared memory
+     (`/dev/shm/fps.*`), allowing for real-time adjustments
+     via the CLI, GUI, or other automated processes without
+     restarting the compute module itself.
+
+```mermaid
+graph TD
+    subgraph "User Interfaces"
+        CLI["milk-cli<br/>(interactive shell)"]
+        TUI["milk-fpsCTRL<br/>(TUI dashboard)"]
+        SCTRL["milk-streamCTRL<br/>(stream monitor)"]
+    end
+
+    subgraph "/dev/shm (Shared Memory)"
+        SHM["ImageStreamIO Streams<br/>*.im.shm"]
+        FPSSHM["FPS Instances<br/>fps.*.shm"]
+        PINFO["processinfo<br/>proc.*.shm"]
+    end
+
+    subgraph "Compute Units"
+        SA["milk-fpsexec-A<br/>(standalone)"]
+        SB["milk-fpsexec-B<br/>(standalone)"]
+        SC["cacao-fpsexec-C<br/>(standalone)"]
+    end
+
+    subgraph "Process Isolation"
+        TMUX["tmux sessions<br/>(fault isolation)"]
+    end
+
+    SA -- "read/write frames" --> SHM
+    SB -- "read/write frames" --> SHM
+    SC -- "read/write frames" --> SHM
+    SA -- "sync params" --> FPSSHM
+    SB -- "sync params" --> FPSSHM
+    SC -- "sync params" --> FPSSHM
+    SA -- "heartbeat" --> PINFO
+    SB -- "heartbeat" --> PINFO
+    SC -- "heartbeat" --> PINFO
+
+    CLI -- "commands" --> FPSSHM
+    TUI -- "monitor/edit" --> FPSSHM
+    TUI -- "status" --> PINFO
+    SCTRL -- "inspect" --> SHM
+
+    TMUX -. "isolates" .-> SA
+    TMUX -. "isolates" .-> SB
+    TMUX -. "isolates" .-> SC
+```
 
 ## 2. Process Management
 
