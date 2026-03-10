@@ -16,7 +16,7 @@ if(USE_READLINE)
 endif()
 find_package(OpenMP)
 
-pkg_check_modules(HWLOC hwloc)
+
 
 pkg_check_modules(CFITSIO cfitsio)
 
@@ -38,7 +38,7 @@ set(CORE_FILES
     cli_calc_tokenizer.c
     cli_calc_parser.c)
     
-    link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
+    link_directories(${NCURSES_LIBRARY_DIRS})
     
         # main
     
@@ -104,9 +104,7 @@ target_link_libraries(CLIcore
                               $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
                               milkCOREMODarith milkCOREMODiofits milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkdata)
 
-if(${HWLOC_FOUND})
-  target_compile_definitions(CLIcore PUBLIC USE_HWLOC)
-endif()
+
 target_include_directories(CLIcore
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
@@ -114,14 +112,14 @@ target_include_directories(CLIcore
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../streamCTRL>
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
-                                  ${HWLOC_INCLUDE_DIR} $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
+                                  $<$<BOOL:${USE_NCURSES}>:${NCURSES_INCLUDE_DIR}>)
 target_compile_options(CLIcore PUBLIC)
 
 target_link_directories(CLIcore
-                        PUBLIC $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}> ${HWLOC_LIBRARY_DIRS})
+                        PUBLIC $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARY_DIRS}>)
 
 target_link_libraries(CLIcore
-                      PUBLIC ${CMAKE_THREAD_LIBS_INIT} ${HWLOC_LIBRARIES}
+                      PUBLIC ${CMAKE_THREAD_LIBS_INIT}
                              $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}> )
 
 if(${python_module})
