@@ -16,6 +16,9 @@
 For download, build commands, and CMake options, see the
 [Quick Start section in README.md](../../README.md#download).
 
+For configuring minimal or partial builds (engine-only, core
+without cfitsio, etc.), see [Build Tiers](build_tiers.md).
+
 The sections below cover post-installation setup and optional
 configuration not covered in the README.
 

@@ -35,8 +35,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <fitsio.h>
-
 #ifdef _OPENMP
 #include <omp.h>
 #define OMP_NELEMENT_LIMIT 1000000
