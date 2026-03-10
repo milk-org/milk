@@ -127,9 +127,9 @@ a transitive dependency on CLIcore. If a standalone needs module-lib symbols, ad
 | `add_cacao_standalone()` | Same as above | cacao-fpsexec-* (no plugin deps) |
 | `add_cacao_standalone_plugins()` | Above + selected plugin _compute libs | cacao-fpsexec-* that use plugin functions |
 
-> [!TIP]
-> Use `_compute` variants of libraries (e.g. `milkstatistic_compute`) when linking
-> standalone executables. The `_compute` variants never pull in CLIcore.
+**💡 Tip:** Use `_compute` variants of libraries
+(e.g. `milkstatistic_compute`) when linking standalone
+executables. The `_compute` variants never pull in CLIcore.
 
 </details>
 
