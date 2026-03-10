@@ -342,6 +342,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 # =====================================================================
 
 # Global includes removed in favor of target_include_directories
+# Exception: src/engine is needed globally so that all targets
+# can resolve #include "ImageStreamIO/ImageStreamIO.h"
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/engine)
 
 if(${USE_BISON})
 # Bison calc uses CLIcore headers somewhat internally
