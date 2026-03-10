@@ -16,8 +16,6 @@ RUN apt-get update && \
         libgsl-dev \
         libfftw3-dev \
         libncurses-dev \
-        libbison-dev \
-        libfl-dev \
         libreadline-dev \
         gfortran libopenblas-dev liblapacke-dev \
 		pkg-config \

@@ -20,13 +20,9 @@ pkg_check_modules(HWLOC hwloc)
 
 pkg_check_modules(CFITSIO cfitsio)
 
-find_package(BISON)
-find_package(FLEX)
-# find_package(Curses REQUIRED) # already performed in main build dir
+
+
 find_package(Threads REQUIRED)
-bison_target(MilkBison calc_bison.y ${PROJECT_SOURCE_DIR}/calc_bison.c)
-flex_target(MilkFlex calc_flex.l ${PROJECT_SOURCE_DIR}/calc_flex.c)
-add_flex_bison_dependency(MilkFlex MilkBison)
 
 set(CORE_FILES
     CLIcore.c
@@ -39,8 +35,8 @@ set(CORE_FILES
     CLIcore/CLIcore_modules.c
     CLIcore/CLIcore_setSHMdir.c
     CLIcore/CLIcore_signals.c
-    ${BISON_MilkBison_OUTPUTS}
-                ${FLEX_MilkFlex_OUTPUTS})
+    cli_calc_tokenizer.c
+    cli_calc_parser.c)
     
     link_directories(${NCURSES_LIBRARY_DIRS} ${HWLOC_LIBRARY_DIRS})
     
@@ -138,8 +134,8 @@ install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 install(FILES CLIcore.h
               IMGID.h
               ../libmilkTUI/TUItools.h
-              calc.h
-              calc_bison.h
+              cli_calc_parser.h
+              cli_calc_tokenizer.h
               cmdsettings.h
               ../../engine/libmilkdata/milkDebugTools.h
               standalone_dependencies.h
