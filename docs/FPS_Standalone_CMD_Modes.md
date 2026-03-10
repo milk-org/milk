@@ -25,20 +25,17 @@ In this mode, arguments are captured via the CLI parser (stored in `data.cmdargt
 **Example Implementation (`examplefunc_fps_cli_poc.c`):**
 ```c
 static FPS_CLI_BINDING my_bindings[] = {
-    { .fpskeyword = "gain", .ptr = &param_gain, .type = FPTYPE_FLOAT64, .cli_index = 0 },
-    // ...
+    FPS_PARAMS(FPS_X_BINDING)
 };
 
-static errno_t example_fps_cli_wrapper(void) {
-    FUNCTION_PARAMETER_STRUCT fps = {0};
-    // ... Initialize local FPS ...
-    
-    // Process CLI arguments mapped by CLIcore
-    FPS_process_CLI_and_sync(&fps, my_bindings, 2);
-    
-    // Execute logic
-    example_fps_computation();
-    return RETURN_SUCCESS;
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
 }
 ```
 

@@ -1,7 +1,7 @@
 # Installation 
 
 > [!NOTE]
-> This file: ./src/CommandLineInterface/doc/DownloadCompile.md
+> This file: `docs/install/compile.md`
 
 
 
@@ -17,12 +17,12 @@
 ## 1.1. Download and compile {#milkinstall_downloadcompile}
 
 ```bash
-git clone --recursive https://github.com/cacao-org/milk milk
+git clone --recursive https://github.com/milk-org/milk.git milk
 cd milk
 mkdir _build
 cd _build
 cmake ..
-# If you use NVIDIA GPUs, install cuda and magma libraries, and use "cmake .. -DUSE_MAGMA=ON"
+# If you use NVIDIA GPUs, install CUDA and MAGMA libraries, and use "cmake .. -DUSE_CUDA=ON"
 make
 sudo make install
 ```
@@ -52,7 +52,7 @@ sudo mount /milk/shm
 
 ---
 
-# 2. Dependancies 
+# 2. Dependencies 
 
 
 ## 2.1. Libraries 
@@ -81,7 +81,7 @@ sudo yum install readline-devel flex bison-devel fftw3-devel gsl-devel
 
 Install the above libraries on **Ubuntu**:
 ```bash
-sudo apt-get install libcfitsio3 libcfitsio3-dev libreadline6-dev libncurses5-dev libfftw3-dev libgsl0-dev flex bison
+sudo apt-get install libcfitsio-dev libreadline-dev libncurses5-dev libfftw3-dev libgsl-dev flex bison
 ```
 
 

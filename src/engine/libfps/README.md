@@ -56,4 +56,4 @@ Standalone applications using `libfps` typically support the following commands:
 | `fps_userinputsetparamvalue.c` | read user input to set parameter value |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `ImageStreamIO`, `milkprocessinfo`
