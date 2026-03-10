@@ -1,6 +1,6 @@
 # Module: linalgebra
 
-Light interface to linea algebra libs (BLAS, CUDA and MAGMA)
+Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS, CUDA, and MAGMA (BLAS, CUDA and MAGMA)
 
 ## Source Files
 
