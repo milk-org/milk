@@ -17,7 +17,6 @@ Code metrics (dev branch) :
 
 
 
-
 ***
 
 # Milk
@@ -34,11 +33,11 @@ milk-core for **milk** package
 
 ## Contents
 
-Module includes key frameworks :
+Module includes key frameworks:
 
-- [**image streams**](docs/streams.md) : low-latency shared memory streams
-- [**processinfo**](docs/procinfo.md) : process management and control
-- [**function parameter structure (FPS)**](docs/fps.md) : reading/writing function parameters. See [FPS Standalone and CMD Modes](docs/FPS_Standalone_CMD_Modes.md) for implementation details.
+- [**Image streams**](docs/streams.md) — low-latency shared memory streams
+- [**processinfo**](docs/procinfo.md) — process management and control
+- [**Function Parameter Structure (FPS)**](docs/fps.md) — reading/writing function parameters. See [FPS Standalone and CMD Modes](docs/FPS_Standalone_CMD_Modes.md) for implementation details.
 
 For a comprehensive guide, see the [Documentation Index](docs/index.md).
 For a full list of all available documentation in this repository, see the [Markdown Documentation Index](docs/Markdown_Index.md).
@@ -46,49 +45,49 @@ For a full list of all available documentation in this repository, see the [Mark
 ## Download
 
 ```bash
-git clone https://github.com/milk-org/milk.git
+git clone --recursive https://github.com/milk-org/milk.git
 cd milk
 ```
 
-## Compile
+## Build
 
-Check required packages in Dockerfile.
+### Quick start (full build)
 
-### Full build (default)
-
-Builds everything: interactive CLI, TUI, and all standalone fpsexec programs.
-
-**Requires:** cfitsio, readline, ncurses
+Builds everything: interactive CLI, TUI, all plugins, and
+standalone fpsexec programs.
 
 ```bash
 mkdir _build && cd _build
 cmake ..
-make
+make -j$(nproc)
 sudo make install
 ```
 
-### Standalone-only build (no CLI)
+### Build tiers
 
-Builds only core libraries and `milk-fpsexec-*` standalone programs.
-No interactive CLI, no TUI. Ideal for embedded/headless deployments.
+The build system supports four tiers with decreasing
+dependency requirements:
 
-**Requires:** cfitsio only (no readline, ncurses)
+| Tier | cmake command | External deps |
+|------|---------------|---------------|
+| **Engine** | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | POSIX only |
+| **Core** | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF` | POSIX only |
+| **Core + FITS** | `cmake .. -DUSE_CLI=OFF` | cfitsio |
+| **Full** (default) | `cmake ..` | cfitsio, readline, ncurses |
 
-```bash
-mkdir _build && cd _build
-cmake .. -DUSE_CLI=OFF
-make
-sudo make install
-```
+For details on each tier, what gets built, and what is
+disabled, see [Build Tiers](docs/install/build_tiers.md).
 
 ### CMake options
 
 | Option | Default | Description |
 |--------|---------|-------------|
+| `USE_COREMODS` | ON | Build core modules (COREMOD_*) |
+| `USE_CFITSIO` | ON | Build FITS I/O (requires cfitsio) |
 | `USE_CLI` | ON | Build interactive CLI (`milk-cli`), TUI, scripts |
 | `USE_NCURSES` | ON | Enable ncurses TUI (`milk-fpsCTRL`, `streamCTRL`) |
 | `USE_READLINE` | ON | Enable readline for CLI input |
-| `USE_GSL` | ON | Enable GSL for plugins (`linopt_imtools`) |
+| `USE_GSL` | ON | Enable GSL for plugins |
 | `USE_CUDA` | OFF | Enable CUDA GPU acceleration |
 
 ### Build with Python module
@@ -97,23 +96,29 @@ sudo make install
 ./compile.sh $PWD/local
 ```
 
-Set environment variables (.bashrc or equivalent):
-- MILK_ROOT: Source code directory, for example "/home/coldpenguin/src/milk"
-- MILK_INSTALLDIR: Installation directory, for example "/usr/local/milk"
-- MILK_SHM_DIR: Shared memory directory, for exmaple "/milk/shm"
+### Environment variables
 
+Set in `.bashrc` or equivalent:
 
-Check installation (from any directory) :
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `MILK_ROOT` | `/home/user/src/milk` | Source code directory |
+| `MILK_INSTALLDIR` | `/usr/local/milk` | Installation directory |
+| `MILK_SHM_DIR` | `/milk/shm` | Shared memory directory |
+
+### Verify installation
+
 ```bash
 milk-check
 ```
 
-
-
+For post-installation steps and dependency details, see
+[Installation](docs/install/compile.md).
 
 ## Interactive tutorial
 
 Pre-requisites: tmux, nnn
+
 ```bash
 milk-tutorial
 ```
@@ -126,6 +131,7 @@ Compile with cacao plugins:
 ./fetch_cacao_dev.sh
 ./compile.sh $PWD/local
 ```
+
 Compile with coffee plugins:
 
 ```bash
