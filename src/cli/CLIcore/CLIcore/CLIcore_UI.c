@@ -15,8 +15,7 @@
 
 
 #include "CLIcore.h"
-#include "CLIcore/calc.h"
-#include "CLIcore/calc_bison.h"
+#include "CLIcore/cli_calc_parser.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
@@ -531,15 +530,7 @@ errno_t CLI_execute_line()
                     // printf("\t processing -- %s\n", cmdargstring);
 
                     snprintf(str, strmaxlen, "%s\n", cmdargstring);
-                    if(dcdebug > 1)
-                    {
-                        printf("DEBUG: %s %d: calling yy_scan_string on \"%s\"\n", __func__, __LINE__,
-                               str);
-                    }
-                    yy_scan_string(str);
-                    data.calctmp_imindex = 0;
-                    yyparse();
-                    yylex_destroy();
+                    cli_parse(str);
 
                     cmdargstring = strtok(NULL, " ");
                     data.cmdNBarg++;
