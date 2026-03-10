@@ -1,0 +1,78 @@
+# Scripts Reference
+
+`milk` includes shell scripts for common operations. Scripts are
+installed to `bin/` alongside the compiled executables.
+
+## Core Scripts (`scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-check` | Verify installation (libraries, paths, SHM) |
+| `milk-check-standalone-deps` | Check standalone build dependencies |
+| `milk-argparse` | Argument parsing helper for milk scripts |
+| `milk-script-std-config` | Standard configuration for milk scripts |
+| `milk-scriptexample` | Example/template for writing new scripts |
+| `milk-exec` | Execute a milk CLI command non-interactively |
+| `milk-cli-all` | Launch milk-cli on all accessible instances |
+| `milk-commands` | List all available milk CLI commands |
+| `milk-completion.sh` | Bash tab-completion for milk commands |
+| `milk-debug` | Launch milk with GDB debugging |
+| `milk-fpsinit` | Initialize FPS instances from configuration |
+| `milk-fpslist-addentry` | Add an entry to `fpslist.txt` |
+| `milk-fpsmkcmd` | Generate FPS command scripts |
+| `milk-fps-set-completion.bash` | Bash completion for `milk-fps-set` |
+
+## Stream Utilities (`scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-FITS2shm` | Load a FITS file into shared memory |
+| `milk-cubeslice2shm` | Extract a slice from a FITS cube into SHM |
+| `milk-stream-scan` | Scan and list active shared memory streams |
+| `milk-streamlink` | Create symbolic links to stream SHM files |
+| `milk-shmim-rm` | Remove a shared memory image |
+| `milk-shm2FITSloop` | Continuously save SHM stream to FITS files |
+
+## Logging Scripts (`scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-logshim` | Start logging a stream to disk |
+| `milk-logshimkill` | Kill a running log process |
+| `milk-logshimon` | Enable logging for a stream |
+| `milk-logshimoff` | Disable logging for a stream |
+| `milk-logshimstat` | Show logging status |
+
+## Image Utilities (`scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-cr2tofits` | Convert Canon RAW (CR2) files to FITS |
+| `milk-fitsheader` | Display FITS file header |
+| `milk-images-merge` | Merge multiple FITS images |
+| `milk-makecsetandrt` | Create cpuset and set real-time scheduling |
+
+## COREMOD Scripts
+
+### COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-semloopspeed` | Benchmark semaphore loop speed |
+| `milk-shmimave` | Compute running average of a SHM stream |
+| `milk-shmimcopy-semtrig` | Copy stream on semaphore trigger |
+| `milk-shmimlog` | Log shared memory stream to disk |
+| `milk-shmimpoke` | Write test pattern to a SHM image |
+| `milk-shmimpoke-semtrig` | Poke SHM image on semaphore trigger |
+| `milk-shmimpurge` | Remove stale SHM files |
+| `milk-streamFITSlog` | Log stream to FITS files with timestamps |
+| `milk-nettransmit` | Transmit SHM stream over network |
+| `milk-rmshmim` | Remove a shared memory image |
+
+### COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
+
+| Script | Description |
+|--------|-------------|
+| `milk-stream-crop` | Crop a sub-region from a stream |
+| `milk-fpslistadd-SCICROPMASK` | Add science crop mask to FPS list |
+| `milk-fpslistadd-WFSCROPMASK` | Add WFS crop mask to FPS list |
