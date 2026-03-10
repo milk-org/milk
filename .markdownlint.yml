@@ -1,0 +1,25 @@
+# markdownlint configuration for milk project
+# See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Disable line-length — we wrap manually but tables and
+# long links can legitimately exceed 80 chars.
+MD013: false
+
+# Allow inline HTML — we use <details>, <summary>, <br/>
+# tags legitimately in collapsible sections and diagrams.
+MD033: false
+
+# Allow first line to not be a heading — some files start
+# with badges, YAML frontmatter, or NOTE alerts.
+MD041: false
+
+# Allow duplicate headings in different sections
+# (e.g. "Dependencies" appears in multiple plugin READMEs)
+MD024:
+  siblings_only: true
+
+# Allow trailing punctuation in headings (e.g. "FAQ?")
+MD026: false
+
+# Allow multiple blank lines (used for visual separation)
+MD012: false

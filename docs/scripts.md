@@ -80,3 +80,48 @@ See also: [Streams](streams.md) ·
 | `milk-stream-crop` | Crop a sub-region from a stream |
 | `milk-fpslistadd-SCICROPMASK` | Add science crop mask to FPS list |
 | `milk-fpslistadd-WFSCROPMASK` | Add WFS crop mask to FPS list |
+
+---
+
+## 6. Usage Examples
+
+### Loading a FITS file into shared memory
+
+```bash
+$ milk-FITS2shm myimage.fits mystream
+```
+
+This creates the shared memory stream `mystream` from the
+FITS file `myimage.fits`. Other processes can then connect
+to `mystream` via `ImageStreamIO`.
+
+### Benchmarking semaphore speed
+
+```bash
+$ milk-semloopspeed
+```
+
+Measures the round-trip semaphore post/wait latency.
+Typical values on modern hardware exceed 100 kHz.
+
+### Logging a stream to disk
+
+```bash
+# Start logging stream "wfs" to FITS files
+$ milk-logshim wfs
+
+# Check logging status
+$ milk-logshimstat
+
+# Stop logging
+$ milk-logshimkill wfs
+```
+
+### Streaming a FITS cube slice into shared memory
+
+```bash
+$ milk-cubeslice2shm mycube.fits 0 myslice
+```
+
+Extracts slice 0 from the FITS cube and writes it to the
+shared memory stream `myslice`.

@@ -2,6 +2,11 @@
 
 The code is organized in modules under two main directories:
 
+See also: [Programmer's Guide](../programmers_guide.md) ·
+[Coding Standards](coding_standards.md) ·
+[Adding Plugins](plugins.md) ·
+[Template Source Code](TemplateSourceCode.md)
+
 | Location | Contains |
 |----------|----------|
 | `src/` | Core modules (engine, CLI, coremods) |
