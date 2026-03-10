@@ -89,7 +89,8 @@ Standalones are specifically designed to execute one compute unit in isolation w
 
 ## 5. Dependency Architecture
 
-### Header Hierarchy
+<details>
+<summary><b>Header Hierarchy</b></summary>
 
 Compute unit source files use conditional includes to support both CLI and standalone builds:
 
@@ -110,7 +111,10 @@ Compute unit source files use conditional includes to support both CLI and stand
 | `libmilkdata/milkdata.h` | IMGID, imageID, dcimg, dcnimg | Compute-only files that work with images |
 | `milkDebugTools.h` | PRINT_ERROR, DEBUG_TRACE* | Compute-only files that use debug macros |
 
-### Library Link Patterns
+</details>
+
+<details>
+<summary><b>Library Link Patterns</b></summary>
 
 Standalone executables link **`_compute` variants** of COREMOD libraries (no CLI code).
 By default, they do **not** link their module's shared library (`${LIBNAME}`), avoiding
@@ -127,13 +131,18 @@ a transitive dependency on CLIcore. If a standalone needs module-lib symbols, ad
 > Use `_compute` variants of libraries (e.g. `milkstatistic_compute`) when linking
 > standalone executables. The `_compute` variants never pull in CLIcore.
 
-### Compile-Time Guards
+</details>
+
+<details>
+<summary><b>Compile-Time Guards</b></summary>
 
 | Macro | Set by | Effect |
 |-------|--------|--------|
 | `MILK_NO_CLI` | CMake (`-DMILK_NO_CLI`) | Excludes CLI registration code, uses `CLIcore_standalone.h` |
 | `FPS_STANDALONE` | CMake (`-DFPS_STANDALONE`) | Includes `main()` via `FPS_MAIN_STANDALONE_V2` |
 | `USE_CLI` | CMake option | Controls whether CLI targets are built |
+
+</details>
 
 ### Verifying Dependencies
 
@@ -144,8 +153,11 @@ It is also integrated as a CTest (`standalone-dep-check`) and runs automatically
 
 ## 6. CMakeLists.txt Conventions
 
-Use `src/milk_module_example/CMakeLists.txt` as the template for new modules.
-The standard layout has these sections (in order):
+Use `src/milk_module_example/CMakeLists.txt` as the template
+for new modules.
+
+<details>
+<summary><b>Standard CMakeLists.txt layout</b></summary>
 
 ```
 # ═══════════════════════════════════════
@@ -176,7 +188,10 @@ add_test(...)
 - Place `target_link_libraries()` calls directly below the `add_*_standalone()` they modify
 - Keep lines ≤ 80 characters; split long `target_link_libraries` across lines
 
-### Standalone helper functions
+</details>
+
+<details>
+<summary><b>Standalone helper functions</b></summary>
 
 Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
 
@@ -186,9 +201,12 @@ Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
 | `add_cacao_standalone(name src)` | `cacao-fpsexec-name` | None |
 | `add_cacao_standalone_plugins(name src [p…])` | `cacao-fpsexec-name` | Selected |
 
+</details>
+
 ## 7. C Source File Conventions
 
-### File header
+<details>
+<summary><b>File header template</b></summary>
 
 Every `.c` file should start with a kernel-doc header:
 
@@ -202,10 +220,13 @@ Every `.c` file should start with a kernel-doc header:
  */
 ```
 
-### Dual-mode files
+</details>
 
-Files compiled both as part of a shared library (CLI mode) and as standalone
-executables use conditional includes:
+<details>
+<summary><b>Dual-mode files</b></summary>
+
+Files compiled both as part of a shared library (CLI mode)
+and as standalone executables use conditional includes:
 
 ```c
 #ifdef MILK_NO_CLI
@@ -216,9 +237,13 @@ executables use conditional includes:
 #include "fps.h"
 ```
 
-### Function documentation
+</details>
 
-Document functions with kernel-doc style above the function body in `.c` files:
+<details>
+<summary><b>Function documentation</b></summary>
+
+Document functions with kernel-doc style above the function
+body in `.c` files:
 
 ```c
 /**
@@ -233,13 +258,18 @@ Document functions with kernel-doc style above the function body in `.c` files:
  */
 ```
 
-### Module README
+</details>
+
+<details>
+<summary><b>Module README</b></summary>
 
 Each module directory should have a `README.md` with:
 - One-line purpose
 - Table of source files with descriptions
 - Table of standalone executables (if any)
 - External dependencies
+
+</details>
 
 ---
 
