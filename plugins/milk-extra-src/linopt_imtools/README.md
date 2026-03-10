@@ -37,4 +37,4 @@ Linear analsys of images.
 | `milk-fpsexec-linopt-vec2Dimg` | `vec_to_2Dimage.c` | Vec to 2dimage module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

@@ -15,4 +15,4 @@ Misc tools
 | `stringutils.c` | Stringutils module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
