@@ -48,13 +48,13 @@ While milk comes with its own set of modules, others can be added at runtime. Mo
 Note that the commands above will compile the module into a shared object, but it will not be loaded by default at runtime. There are 4 options to load the module into the milk executable, detailed in the following section. For example, the new module may be loaded within the milk command line interface as follows:
 
 	# start milk
-	$ milk
+	$ milk-cli
 
 	# load module from command line interface
-	milk> mload NewModuleName
+	milk-cli > mload NewModuleName
 
 	# check list of modules. NewModuleName should appear
-	milk> m?
+	milk-cli > m?
 
 
 ## 1.3. A simple example 
@@ -85,20 +85,20 @@ Check the source code (well documented) to see how modules are written. To compi
 Lets run it :
 
 	# start milk
-	$ milk
+	$ milk-cli
 
 	# load module as "mex" (short for module example)
-	milk> mloadas milk_module_example mex
+	milk-cli > mloadas milk_module_example mex
 
 	# check we have it
-	milk> m?
+	milk-cli > m?
 
 	# run the test function, which creates an image
 	# note you can tab complete after typying "mex." to list functions
-	milk> mex.func1 im1 1.2
+	milk-cli > mex.func1 im1 1.2
 
 	# check the image is in memory
-	milk> listim
+	milk-cli > listim
 
 
 
@@ -120,14 +120,14 @@ Any shared object in the `./lib/` subdirectory of source code will be loaded upo
 
 Pre-compiled modules can be linked with the `soload` command within the CLI:
 
-	milk> soload <fullsoname>
+	milk-cli > soload <fullsoname>
 
 The `fullsoname` is the shared object file name, path relative to current directory. For example "../mylib/myodule.so".
 
 Provided that the module follows milk conventions, linking the module will add the corresponding functions to the CLI. This can be checked by probing the module functions:
 
-	milk> m?                # lists linked modules
-	milk> m? <modulename>   # lists CLI commands in the module
+	milk-cli > m?                # lists linked modules
+	milk-cli > m? <modulename>   # lists CLI commands in the module
 
 
 
@@ -135,15 +135,15 @@ Provided that the module follows milk conventions, linking the module will add t
 
 By default, modules shared objects are installed in `/usr/local/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
 
-	milk> mload <modulename>
+	milk-cli > mload <modulename>
 
 Alternatively, a short name can be specified
 
-	milk> mloadas <modulename> <shortname>
+	milk-cli > mloadas <modulename> <shortname>
 
 Module functions are called from the command line interface prompt:
 
-	milk> <shortname>.<functionname> <arguments...>
+	milk-cli > <shortname>.<functionname> <arguments...>
 
 
 
@@ -151,7 +151,7 @@ Module functions are called from the command line interface prompt:
 
 Upon startup, milk will read the CLI_ADD_LIBS environment variable to link shared objects. For example:
 
-	CLI_ADD_LIBS="/usr/local/libs/libMyFirstModule.so /usr/local/libs/libMySecondModule.so" milk
+	CLI_ADD_LIBS="/usr/local/libs/libMyFirstModule.so /usr/local/libs/libMySecondModule.so" milk-cli
 
 will link modules `MyFirstModule` and `MySecondModule`.
 
@@ -216,7 +216,7 @@ For example:
 > [!NOTE]
 > Several versions of the executable can also be defined, each with its own set of automatically loaded modules. For example, the following line can be saved as an executable script:
 
-	CLI_ADD_LIBS="/usr/local/libs/libWFpropagate.so" milk
+	CLI_ADD_LIBS="/usr/local/libs/libWFpropagate.so" milk-cli
 
 
 
@@ -259,7 +259,7 @@ To load the new modules automatically on milk startup, create a sym link in the 
 
 Alternatively, you can load it from the CLI at anytime:
 
-	milk > soload "<pathtomilk>/src/exampleModule/libexamplemodule.so"
+	milk-cli > soload "<pathtomilk>/src/exampleModule/libexamplemodule.so"
 
 
 
