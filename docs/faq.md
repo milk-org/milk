@@ -42,10 +42,10 @@ fatal error: readline/readline.h: No such file or directory
 **Solution:** Install the development headers, or build without CLI:
 ```bash
 # Install headers
-sudo apt-get install libreadline-dev libncurses5-dev
+$ sudo apt-get install libreadline-dev libncurses5-dev
 
 # Or build standalone-only (no interactive CLI)
-cmake .. -DUSE_CLI=OFF
+$ cmake .. -DUSE_CLI=OFF
 ```
 
 </details>
@@ -59,9 +59,9 @@ error while loading shared libraries: libImageStreamIO.so
 
 **Solution:** Add the install directory to the linker path:
 ```bash
-echo "/usr/local/lib" > usrlocal.conf
-sudo mv usrlocal.conf /etc/ld.so.conf.d/
-sudo ldconfig
+$ echo "/usr/local/lib" > usrlocal.conf
+$ sudo mv usrlocal.conf /etc/ld.so.conf.d/
+$ sudo ldconfig
 ```
 
 Or set `LD_LIBRARY_PATH` in your shell profile:
@@ -84,14 +84,14 @@ Cannot open /milk/shm/stream.im.shm: Permission denied
 
 **Solution:** Ensure the SHM directory exists and is writable:
 ```bash
-sudo mkdir -p /milk/shm
-sudo chmod 1777 /milk/shm
+$ sudo mkdir -p /milk/shm
+$ sudo chmod 1777 /milk/shm
 ```
 
 For best performance, mount as tmpfs:
 ```bash
-echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
-sudo mount /milk/shm
+$ echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
+$ sudo mount /milk/shm
 ```
 
 </details>
@@ -103,11 +103,8 @@ Old `.im.shm` files from crashed processes can interfere.
 
 **Solution:**
 ```bash
-# Remove all stale SHM files
-milk-shmimpurge
-
-# Or remove a specific stream
-milk-shmim-rm <streamname>
+$ milk-shmimpurge              # remove all stale SHM files
+$ milk-shmim-rm <streamname>   # remove a specific stream
 ```
 
 </details>
@@ -135,7 +132,7 @@ ERROR: FPS already exists
 
 **Solution:** Remove the stale FPS, then retry:
 ```bash
-milk-fps-set <fpsname> ..delete
+$ milk-fps-set <fpsname> ..delete
 ```
 
 </details>
@@ -146,11 +143,8 @@ milk-fps-set <fpsname> ..delete
 Ensure the processinfo SHM directory exists and processes are
 registered:
 ```bash
-# Check for processinfo files
-ls $MILK_SHM_DIR/proc.*.shm
-
-# Scan for processes
-milk-procinfo-list
+$ ls $MILK_SHM_DIR/proc.*.shm   # check for processinfo files
+$ milk-procinfo-list             # scan for processes
 ```
 
 </details>
@@ -188,12 +182,9 @@ Unknown command: mycommand
 ```
 
 **Solution:** Check that the module is loaded:
-```bash
-# List all loaded modules
-> m?
-
-# Search for a command
-> h? mycommand
+```text
+milk> m?                      # list all loaded modules
+milk> h? mycommand            # search for a command
 ```
 
 If the module is a plugin, ensure it was compiled and the `.so`
@@ -208,15 +199,12 @@ file is in the library path.
 <details>
 <summary><b>Real-time scheduling</b></summary>
 
-For latency-critical applications (AO loops), configure real-time
-scheduling:
+For latency-critical applications (AO loops), configure
+real-time scheduling:
 
 ```bash
-# Create cpuset and enable RT scheduling
-milk-makecsetandrt
-
-# Set process priority (0-99, higher = higher priority)
-milk -p 90
+$ milk-makecsetandrt           # create cpuset, enable RT
+$ milk-cli -p 90               # launch with high priority
 ```
 
 </details>
@@ -226,7 +214,7 @@ milk -p 90
 
 Benchmark semaphore performance:
 ```bash
-milk-semloopspeed
+$ milk-semloopspeed
 ```
 Typical values: >100 kHz on modern hardware.
 
@@ -236,7 +224,7 @@ Typical values: >100 kHz on modern hardware.
 
 ## Getting Help
 
-- **CLI help:** Type `?` or `help` at the milk prompt
+- **CLI help:** Type `?` or `help` at the `milk>` prompt
 - **Command help:** `cmd? <command>` for detailed usage
 - **Module list:** `m?` to list all loaded modules
 - **Documentation:** See [docs/index.md](index.md)
