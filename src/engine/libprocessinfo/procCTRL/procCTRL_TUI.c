@@ -67,9 +67,7 @@ static char local_shmdir[STRINGMAXLEN_DIRNAME];
 
 #include "procCTRL_TUI.h"
 
-#ifdef USE_HWLOC
-#include <hwloc.h>
-#endif
+
 
 int procCTRL_debug_mode = 0;
 char procCTRL_logfile[1024] = "";
