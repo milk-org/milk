@@ -5,74 +5,58 @@
 
 
 
-
-
-
-
-
 ***
 
 # 1. Source Code and Modules 
 
-Most of milk's code is in a set of modules. Each module is compiled as a shared object loaded by the main process at runtime.
+Most of milk's code is organized in directories under `src/` (core modules)
+and `plugins/` (optional modules). Modules are compiled as shared objects
+loaded by the main process at runtime.
 
-In Git, each module has its own repository, linked to the package as a git submodule.
-
-
-
-
-## 1.1. Synchronization: loading updated modules 
-
-To get latest modules (master branches) :
-
-	$ git submodule foreach "(git checkout master; git pull)"
-
-To get latest modules (dev branches) :
-
-	$ git submodule foreach "(git checkout dev; git pull)"
+Some plugin directories (e.g., `plugins/cacao-src`) may be symbolic links
+to external source trees or git submodules.
 
 
-## 1.2. Editing submodule source code 
+## 1.1. Standard development workflow 
 
-When developing, work in dev branch and set branch to dev in all submodules and main package:
+The primary branches are:
+- **`main`**: Stable release branch.
+- **`dev`**: Active development branch.
 
-	$ git submodule foreach "(git checkout dev; git pull; git push)"
+When developing, work in the `dev` branch:
+
 	$ git checkout dev
 	$ git pull
+	# ... make changes ...
 	$ git push
 
 
-## 1.3. Updating master branches 
+## 1.2. Updating main branch 
 
-To synchronize master to latest dev:
+To synchronize `main` to latest `dev`:
 
-	$ git submodule foreach "(git checkout master; git merge dev)"
-	$ git checkout master
+	$ git checkout main
 	$ git merge dev
-	$ git submodule foreach "(git checkout master; git push)"
 	$ git push
 
 
-## 1.4. Releasing a new version 
+## 1.3. Releasing a new version 
 
-In dev branch:
-- Update version number in the CMakeList.txt
-- Edit version number in README.md
+In `dev` branch:
+- Update version number in `CMakeLists.txt`
+- Update version information in `README.md`
 
-Update master branch to current dev branch.
+Merge `dev` into `main`, then tag:
 
-Issue a git tag for the version:
-
+	$ git checkout main
+	$ git merge dev
 	$ git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
-	$ git push origin vX.YY.ZZ
-
-Issue tags for submodules (optional, but helpful to track which submodule version makes it into package version):
-
-	$ git submodule foreach git tag -a milk-vX.Y.ZZ -m "milk version X.YY.ZZ"
-	$ git submodule foreach git push origin milk-vX.Y.ZZ
+	$ git push origin main --tags
 
 > [!NOTE]
-> Modules inherit version numbers from the package(s) to which they belong. Consequently, modules that are shared between packages can have parallel version number histories. For example, the version history for a module may be: milk-v0.1.01 -> cacao-v0.1.01 -> cacao-v0.1.02 -> cacao-v0.2.00 -> milk-v0.1.02. Any new version, regardless of which package it is associated with, still includes all previous changes: there is a single version thread.
+> Modules that are shared between packages (e.g., `milk` and `cacao`) can have
+> parallel version number histories. Any new version, regardless of which
+> package it is associated with, includes all previous changes.
 
 
 
@@ -81,4 +65,5 @@ Issue tags for submodules (optional, but helpful to track which submodule versio
 
 # 2. Source Code Documentation (doxygen) 
 
-For generating HTML source code documentation via Doxygen, refer to the up-to-date guide in [DocumentingCode.md](DocumentingCode.md).
+For generating HTML source code documentation via Doxygen, refer to the
+up-to-date guide in [DocumentingCode.md](DocumentingCode.md).
