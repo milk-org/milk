@@ -2,7 +2,13 @@
 
 Plugins in `milk` are external modules or compute units that extend its functionality without modifying the core codebase. They are automatically discovered and built thanks to `milk`'s CMake configuration.
 
-This guide outlines exactly how to create, structure, and link a custom plugin.
+This guide outlines exactly how to create, structure, and
+link a custom plugin.
+
+See also: [Programmer's Guide](../programmers_guide.md) ·
+[Developer Tutorial](tutorial.md) ·
+[Build Tiers](../install/build_tiers.md) ·
+[Loading Modules](LoadingModules.md)
 
 ## 1. Where do plugins go?
 
