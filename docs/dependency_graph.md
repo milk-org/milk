@@ -1,6 +1,9 @@
 # Milk + Cacao Dependency Graph
 
-> Generated from current CMakeLists.txt — 2026-03-09
+> Generated from current CMakeLists.txt — 2026-03-10
+>
+> For build tier definitions and cmake commands, see
+> [Build Tiers](install/build_tiers.md).
 
 ---
 
@@ -12,10 +15,13 @@ graph TD
     NCURSES["ncurses"]:::ext
     READLINE["readline"]:::ext
 
-    ISIO["ImageStreamIO"]:::core
-    PROCINFO["milkprocessinfo"]:::core
-    FPS["milkfps"]:::core
-    MILKDATA["milkdata"]:::core
+    subgraph engine ["Engine Tier (POSIX only)"]
+        ISIO["ImageStreamIO"]:::core
+        PROCINFO["milkprocessinfo"]:::core
+        FPS["milkfps"]:::core
+        MILKDATA["milkdata"]:::core
+    end
+
     MILKTUI["milkTUI"]:::core
 
     PITUI["milkprocessinfoTUI"]:::fw
@@ -23,10 +29,13 @@ graph TD
     FPSCLI["milkfpsCLI"]:::fw
     FPSSTANDALONE["milkfpsStandalone"]:::fw
 
-    ARITH["COREMODarith"]:::coremod
-    IOFITS["COREMODiofits"]:::coremod
-    MEMORY["COREMODmemory"]:::coremod
-    TOOLS["COREMODtools"]:::coremod
+    subgraph coremods ["Core Tier (USE_COREMODS)"]
+        ARITH["COREMODarith"]:::coremod
+        MEMORY["COREMODmemory"]:::coremod
+        TOOLS["COREMODtools"]:::coremod
+    end
+
+    IOFITS["COREMODiofits"]:::coremod_fits
 
     CLICORE["CLIcore"]:::fw
 
@@ -49,10 +58,10 @@ graph TD
     IOFITS --> FPS
     IOFITS --> CFITSIO
     ARITH --> FPS
-    ARITH --> IOFITS
-    ARITH --> CFITSIO
+    ARITH -.->|USE_CFITSIO| IOFITS
+    ARITH -.->|USE_CFITSIO| CFITSIO
     MEMORY --> FPS
-    MEMORY --> CFITSIO
+    MEMORY -.->|USE_CFITSIO| CFITSIO
     TOOLS --> FPS
 
     PITUI --> PROCINFO
@@ -65,7 +74,7 @@ graph TD
     FPSSTANDALONE --> MILKDATA
 
     CLICORE --> ARITH
-    CLICORE --> IOFITS
+    CLICORE -.->|USE_CFITSIO| IOFITS
     CLICORE --> MEMORY
     CLICORE --> TOOLS
     CLICORE --> FPS
@@ -76,7 +85,7 @@ graph TD
     CLICORE --> PITUI
     CLICORE --> READLINE
     CLICORE --> NCURSES
-    CLICORE --> CFITSIO
+    CLICORE -.->|USE_CFITSIO| CFITSIO
 
     FPSCTRL --> FPSTUI
     FPSCTRL --> CLICORE
@@ -91,8 +100,15 @@ graph TD
     classDef core fill:#1a5276,stroke:#123,color:#fff
     classDef fw fill:#2e86c1,stroke:#1a5,color:#fff
     classDef coremod fill:#1e8449,stroke:#145,color:#fff
+    classDef coremod_fits fill:#27ae60,stroke:#145,color:#fff,stroke-dasharray: 5 5
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
+
+> [!NOTE]
+> **Dashed arrows** (`-.->`) indicate conditional dependencies
+> that are only active when `USE_CFITSIO=ON`.
+> `COREMODiofits` (dashed border) is only built when
+> `USE_CFITSIO=ON`.
 
 ## Plugins & Cacao
 
@@ -187,6 +203,10 @@ graph TD
     classDef cacao fill:#d35400,stroke:#a00,color:#fff
 ```
 
+> [!NOTE]
+> Plugins and cacao modules are only built in the **Full**
+> tier (`USE_COREMODS=ON`, `USE_CLI=ON`).
+
 ## Standalone Build (USE_CLI=OFF)
 
 ```mermaid
@@ -199,7 +219,7 @@ graph TD
     FPSSA["milkfpsStandalone"]:::core
 
     ARITH_C["COREMODarith_compute"]:::compute
-    IOFITS_C["COREMODiofits_compute"]:::compute
+    IOFITS_C["COREMODiofits_compute"]:::compute_fits
     MEMORY_C["COREMODmemory_compute"]:::compute
     TOOLS_C["COREMODtools_compute"]:::compute
 
@@ -224,32 +244,33 @@ graph TD
     IOFITS_C --> CFITSIO
     IOFITS_C --> FPS
     ARITH_C --> FPS
-    ARITH_C --> IOFITS_C
+    ARITH_C -.->|USE_CFITSIO| IOFITS_C
     MEMORY_C --> FPS
+    MEMORY_C -.->|USE_CFITSIO| CFITSIO
     TOOLS_C --> FPS
 
     FFT_C --> MEMORY_C
-    FFT_C --> IOFITS_C
+    FFT_C -.->|USE_CFITSIO| IOFITS_C
     IMGGEN_C --> MEMORY_C
-    IMGGEN_C --> IOFITS_C
+    IMGGEN_C -.->|USE_CFITSIO| IOFITS_C
     IMGBASIC_C --> MEMORY_C
-    IMGBASIC_C --> IOFITS_C
+    IMGBASIC_C -.->|USE_CFITSIO| IOFITS_C
     IMGFILT_C --> MEMORY_C
-    IMGFILT_C --> IOFITS_C
+    IMGFILT_C -.->|USE_CFITSIO| IOFITS_C
     STAT_C --> MEMORY_C
-    STAT_C --> IOFITS_C
+    STAT_C -.->|USE_CFITSIO| IOFITS_C
     IMGGEN_C --> STAT_C
 
     MILKEXE --> FPSSA
     MILKEXE --> ARITH_C
     MILKEXE --> MEMORY_C
     MILKEXE --> TOOLS_C
-    MILKEXE --> IOFITS_C
+    MILKEXE -.->|USE_CFITSIO| IOFITS_C
     CACAOEXE --> FPSSA
     CACAOEXE --> ARITH_C
     CACAOEXE --> MEMORY_C
     CACAOEXE --> TOOLS_C
-    CACAOEXE --> IOFITS_C
+    CACAOEXE -.->|USE_CFITSIO| IOFITS_C
     CACAOEXE_P --> FPSSA
     CACAOEXE_P --> FFT_C
     CACAOEXE_P --> IMGGEN_C
@@ -260,6 +281,7 @@ graph TD
     classDef ext fill:#566573,stroke:#333,color:#fff
     classDef core fill:#1a5276,stroke:#123,color:#fff
     classDef compute fill:#1e8449,stroke:#145,color:#fff
+    classDef compute_fits fill:#27ae60,stroke:#145,color:#fff,stroke-dasharray: 5 5
     classDef plugcomp fill:#7d3c98,stroke:#5a2,color:#fff
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
@@ -269,51 +291,72 @@ graph TD
 | Color | Layer |
 |---|---|
 | ⚫ Grey | External libraries |
-| 🔵 Dark blue | Core (ISIO → procinfo → FPS → milkdata) |
+| 🔵 Dark blue | Engine tier (ISIO → procinfo → FPS → milkdata) |
 | 🔵 Light blue | Framework (CLIcore, fpsCLI/TUI, fpsStandalone) |
 | 🟢 Green | COREMODs / _compute variants |
+| 🟢 Green dashed | CFITSIO-dependent (only with `USE_CFITSIO=ON`) |
 | 🟣 Purple | milk-extra plugins / _compute variants |
 | 🟠 Orange | Cacao modules |
 | 🟡 Yellow | Executables |
+| `-.->` | Conditional dependency (active only with specific CMake option) |
+
+---
+
+## Build Tier Summary
+
+See [Build Tiers](install/build_tiers.md) for full details
+and cmake commands.
+
+| Tier | CMake flags | What is built |
+|------|-------------|---------------|
+| **Engine** | `-DUSE_COREMODS=OFF -DUSE_CLI=OFF` | ImageStreamIO, milkprocessinfo, milkfps, milkdata |
+| **Core** | `-DUSE_CLI=OFF -DUSE_CFITSIO=OFF` | Engine + COREMOD_arith, memory, tools |
+| **Core + FITS** | `-DUSE_CLI=OFF` | Core + COREMOD_iofits |
+| **Full** | *(defaults)* | Core + FITS + CLI + plugins + cacao |
 
 ---
 
 ## Exhaustive Dependency Table
 
-### Core Libraries
+### Core Libraries (Engine Tier)
 
 | Target | Links to | Optional |
 |---|---|---|
 | ImageStreamIO | *(none at link time)* | cfitsio (headers), CUDA |
 | milkprocessinfo | ImageStreamIO | |
-| milkprocessinfoTUI | milkprocessinfo, milkTUI, ncurses | |
 | milkfps | ImageStreamIO, milkprocessinfo | |
 | milkdata | ImageStreamIO, milkfps, milkprocessinfo | |
+
+### Framework Libraries
+
+| Target | Links to | Optional |
+|---|---|---|
 | milkTUI | ImageStreamIO, ncurses | |
+| milkprocessinfoTUI | milkprocessinfo, milkTUI, ncurses | |
+| milkfpsTUI | milkfps, milkTUI, ncurses | |
 | milkfpsStandalone | milkfps, milkdata | |
 | milkfpsCLI | milkfps, CLIcore | |
-| milkfpsTUI | milkfps, milkTUI, ncurses | |
-| CLIcore | milkCOREMODarith, milkCOREMODiofits, milkCOREMODmemory, milkCOREMODtools, milkfps, milkdata, milkprocessinfo, milkTUI, milkfpsTUI, milkprocessinfoTUI, cfitsio, readline, ncurses | OpenMP, hwloc |
+| CLIcore | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkdata, milkprocessinfo, milkTUI, milkfpsTUI, milkprocessinfoTUI, readline, ncurses | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
-### COREMOD Libraries
+### COREMOD Libraries (Core Tier)
 
-| Target | Links to |
-|---|---|
-| milkCOREMODiofits | milkfps, cfitsio |
-| milkCOREMODarith | milkfps, milkCOREMODiofits, cfitsio |
-| milkCOREMODmemory | milkfps, cfitsio |
-| milkCOREMODtools | milkfps |
+| Target | Links to | Conditional |
+|---|---|---|
+| milkCOREMODtools | milkfps | |
+| milkCOREMODmemory | milkfps | cfitsio (USE_CFITSIO) |
+| milkCOREMODarith | milkfps | COREMODiofits, cfitsio (USE_CFITSIO) |
+| milkCOREMODiofits | milkfps, cfitsio | *only built with USE_CFITSIO* |
 
 ### COREMOD _compute Variants (MILK_NO_CLI)
 
-| Target | Links to |
-|---|---|
-| milkCOREMODiofits_compute | milkfps, cfitsio |
-| milkCOREMODarith_compute | milkfps, milkCOREMODiofits_compute, cfitsio |
-| milkCOREMODmemory_compute | milkfps, cfitsio |
-| milkCOREMODtools_compute | milkfps |
+| Target | Links to | Conditional |
+|---|---|---|
+| milkCOREMODtools_compute | milkfps | |
+| milkCOREMODmemory_compute | milkfps | cfitsio (USE_CFITSIO) |
+| milkCOREMODarith_compute | milkfps | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
+| milkCOREMODiofits_compute | milkfps, cfitsio | *only built with USE_CFITSIO* |
 
-### milk-extra Plugins (full / CLI)
+### milk-extra Plugins (Full Tier)
 
 | Target | Links to | Optional |
 |---|---|---|
@@ -335,15 +378,15 @@ graph TD
 
 ### milk-extra Plugin _compute Variants (MILK_NO_CLI)
 
-| Target | Links to |
-|---|---|
-| milkfft_compute | fftw3, fftw3f, milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
-| milkimagebasic_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
-| milkimagefilter_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
-| milkimagegen_compute | milkstatistic_compute, milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio |
-| milkstatistic_compute | milkCOREMODmemory_compute, milkCOREMODiofits_compute, cfitsio, m |
+| Target | Links to | Conditional |
+|---|---|---|
+| milkfft_compute | fftw3, fftw3f, COREMODmemory_compute | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
+| milkimagebasic_compute | COREMODmemory_compute | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
+| milkimagefilter_compute | COREMODmemory_compute | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
+| milkimagegen_compute | milkstatistic_compute, COREMODmemory_compute | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
+| milkstatistic_compute | COREMODmemory_compute | COREMODiofits_compute, cfitsio (USE_CFITSIO) |
 
-### Cacao Modules
+### Cacao Modules (Full Tier)
 
 | Target | Links to | Optional |
 |---|---|---|
@@ -376,7 +419,7 @@ graph TD
 
 | Function | Base link set |
 |---|---|
-| `add_milk_standalone()` | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, milkCOREMODmemory_compute, milkCOREMODtools_compute, milkCOREMODarith_compute, milkCOREMODiofits_compute, cfitsio |
+| `add_milk_standalone()` | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO, COREMODmemory_compute, COREMODtools_compute, COREMODarith_compute + COREMODiofits_compute, cfitsio (USE_CFITSIO) |
 | `add_cacao_standalone()` | same as above |
 | `add_cacao_standalone_plugins()` | above + selected plugin _compute libs (default: all 4) |
 
@@ -406,11 +449,16 @@ Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 ## Core Library Chain (Bottom-Up)
 
 ```
-cfitsio (headers only)
-  ╌╌ ImageStreamIO
+cfitsio (headers only, optional)
+  ╌╌ ImageStreamIO                    ← Engine tier
        └─ milkprocessinfo
             └─ milkfps
                  └─ milkdata
                       ├─ milkfpsStandalone  (standalone path)
                       └─ CLIcore            (full CLI path)
+
+COREMOD_arith ─┐
+COREMOD_memory ┼─ Core tier           ← USE_COREMODS=ON
+COREMOD_tools ─┘
+COREMOD_iofits ── Core+FITS tier      ← USE_CFITSIO=ON
 ```
