@@ -2,6 +2,11 @@
 
 Thank you for your interest in contributing to `milk`!
 
+See also: [Coding Standards](docs/developer/coding_standards.md) ·
+[Programmer's Guide](docs/programmers_guide.md) ·
+[Developer Tutorial](docs/developer/tutorial.md) ·
+[Working with Git](docs/developer/WorkingWithGit.md)
+
 ## Getting Started
 
 1. Fork the repository and clone your fork.
