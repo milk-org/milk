@@ -16,4 +16,4 @@ Zernike Polynomials
 | `milk-fpsexec-zernike-mkzercube` | `mkzercube.c` | Mkzercube module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

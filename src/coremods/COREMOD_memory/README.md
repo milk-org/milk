@@ -68,4 +68,4 @@ Memory management for images
 | `milk-fpsexec-mem-streamave` | `stream_ave.c` | Average stream of images |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

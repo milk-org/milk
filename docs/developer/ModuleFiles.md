@@ -1,22 +1,29 @@
-
 # Module Files
 
-The code is arranged in modules. Source code, documentation and additional files for each modules are located in :
+The code is organized in modules under two main directories:
 
-	./src/<modulename>/
+| Location | Contains |
+|----------|----------|
+| `src/` | Core modules (engine, CLI, coremods) |
+| `plugins/` | Optional plugin modules |
 
+Within each module directory:
 
+| Path | Content |
+|------|---------|
+| `<modulename>.c` | Main C source and module registration |
+| `<modulename>.h` | Module header and function prototypes |
+| `CMakeLists.txt` | CMake build configuration |
+| `README.md` | Module overview, source file list, dependencies |
+| `scripts/` | Shell scripts and utilities (optional) |
+| `*.c` / `*.h` | Additional source files for individual functions |
 
-|  File / Directory                       |  Content                           |
-|-----------------------------------------|------------------------------------|
-| `./src/<modulename>/<modulename>.c`       | C source code                      |
-| `./src/<modulename>/<modulename>.h`       | Function prototypes                |
-| `./src/<modulename>/CMakeLists.txt`       | CMake configuration                |
-| `./src/<modulename>/doc/`                 | documentation                      |
-| `./src/<modulename>/docdir/`              | extended documentation (optional)  |
-| `./src/<modulename>/data/`                | module data file       (optional)  |
-| `./src/<modulename>/scripts/`             | high level scripts     (optional)  |
-| `./src/<modulename>/examples/`            | examples               (optional)  |
+Modules are compiled into shared object libraries (`.so`) and loaded
+by `milk-cli` at runtime. Standalone executables (`milk-fpsexec-*`)
+are built separately and installed to `bin/`.
 
+## Examples
 
-Modules are compiled into shared object libraries and stored in standard system directories `/usr/local/lib/` or the build output directory `_build/`.
+- Core module: `src/coremods/COREMOD_memory/`
+- Plugin module: `plugins/milk-extra-src/fft/`
+- Template module: `src/milk_module_example/`

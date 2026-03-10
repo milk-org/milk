@@ -26,4 +26,4 @@ Images information
 | `milk-fpsexec-info-strmonproc` | `stream_monproc.c` | monitor stream with multi-level time binning, circular buffer, and dynamic histogram |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
