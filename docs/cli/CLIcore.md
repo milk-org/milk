@@ -44,7 +44,7 @@ $ milk-cli -f /tmp/fifo24     # custom fifo
 - Unrecognized input is interpreted as arithmetic
 
 ```text
-milk> <command> <arg1> <arg2>   # comment
+milk-cli > <command> <arg1> <arg2>   # comment
 ```
 
 ## Tab Completion
@@ -66,15 +66,15 @@ is read.
 <summary><b>Help Commands</b></summary>
 
 ```text
-milk> ?                       # print help
-milk> help                    # same as ?
-milk> helprl                  # readline quick reference
-milk> lm?                     # list all loaded modules
-milk> m? <module>             # list commands for a module
-milk> m?                      # list commands for all modules
-milk> cmd? <command>          # detailed command description
-milk> cmd?                    # describe all commands
-milk> h? <str>                # search commands by string
+milk-cli > ?                       # print help
+milk-cli > help                    # same as ?
+milk-cli > helprl                  # readline quick reference
+milk-cli > lm?                     # list all loaded modules
+milk-cli > m? <module>             # list commands for a module
+milk-cli > m?                      # list commands for all modules
+milk-cli > cmd? <command>          # detailed command description
+milk-cli > cmd?                    # describe all commands
+milk-cli > h? <str>                # search commands by string
 ```
 
 </details>
@@ -83,14 +83,14 @@ milk> h? <str>                # search commands by string
 <summary><b>Important Commands</b></summary>
 
 ```text
-milk> ci                      # compilation time & memory usage
-milk> listim                  # list all images in memory
-milk> listimf <file>          # list images, write to file
-milk> !<syscmd>               # execute system command
-milk> showhist                # print command history
-milk> quit                    # exit (or: exit)
-milk> setdp <val>             # precision: 0=float, 1=double
-milk> creaim <im> <xs> <ys>   # create 2D image
+milk-cli > ci                      # compilation time & memory usage
+milk-cli > listim                  # list all images in memory
+milk-cli > listimf <file>          # list images, write to file
+milk-cli > !<syscmd>               # execute system command
+milk-cli > showhist                # print command history
+milk-cli > quit                    # exit (or: exit)
+milk-cli > setdp <val>             # precision: 0=float, 1=double
+milk-cli > creaim <im> <xs> <ys>   # create 2D image
 ```
 
 </details>
@@ -108,19 +108,19 @@ and `COREMOD_iofits`.
 **Loading:**
 
 ```text
-milk> loadfits im1.fits imf1       # load as "imf1"
-milk> loadfits im1.fits            # load as "im1" (auto-name)
-milk> loadfits im1.fits.gz im1     # load compressed
+milk-cli > loadfits im1.fits imf1       # load as "imf1"
+milk-cli > loadfits im1.fits            # load as "im1" (auto-name)
+milk-cli > loadfits im1.fits.gz im1     # load compressed
 ```
 
 **Saving:**
 
 ```text
-milk> save_fl im1 imf1.fits        # save as float
-milk> save_fl im1                  # save as im1.fits (auto)
-milk> save_fl im1 "!im1.fits"      # overwrite existing
-milk> save_fl im1 ../dir2/im1.fits # specify path
-milk> save_fl im1 im1.fits.gz      # save compressed
+milk-cli > save_fl im1 imf1.fits        # save as float
+milk-cli > save_fl im1                  # save as im1.fits (auto)
+milk-cli > save_fl im1 "!im1.fits"      # overwrite existing
+milk-cli > save_fl im1 ../dir2/im1.fits # specify path
+milk-cli > save_fl im1 im1.fits.gz      # save compressed
 ```
 
 </details>
@@ -137,7 +137,7 @@ the CLI.
 **From inside `milk-cli`:**
 
 ```text
-milk> !ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
+milk-cli > !ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
 ```
 
 **From a separate shell (while `milk-cli` is running):**
@@ -152,7 +152,7 @@ Start `milk-cli` with `-l` to maintain `imlist.txt`. Then
 filter and act on the list:
 
 ```text
-milk> !awk '{if ($4>200) print $2}' imlist.txt \
+milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
         | xargs -I {} echo save_fl {} {}_tmp.fits > cmdfile.txt
 ```
 
@@ -161,5 +161,5 @@ milk> !awk '{if ($4>200) print $2}' imlist.txt \
 ## Arithmetic Operations
 
 ```text
-milk> im1=sqrt(im+2.0)       # arithmetic on images
+milk-cli > im1=sqrt(im+2.0)       # arithmetic on images
 ```
