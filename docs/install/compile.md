@@ -13,19 +13,11 @@
 > [!WARNING]
 > This page describes installation of the core package milk. If you install application package (cacao or coffee), replace "milk" with "cacao" in these instructions.
 
+For download, build commands, and CMake options, see the
+[Quick Start section in README.md](../../README.md#download).
 
-## 1.1. Download and compile {#milkinstall_downloadcompile}
-
-```bash
-git clone --recursive https://github.com/milk-org/milk.git milk
-cd milk
-mkdir _build
-cd _build
-cmake ..
-# If you use NVIDIA GPUs, install CUDA and MAGMA libraries, and use "cmake .. -DUSE_CUDA=ON"
-make
-sudo make install
-```
+The sections below cover post-installation setup and optional
+configuration not covered in the README.
 
 
 ## 1.2. Post-installation {#milkinstall_postinstall}

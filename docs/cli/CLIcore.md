@@ -1,10 +1,13 @@
 # Command Line Interface Syntax
 
-Files `CLIcore.c` and `CLIcore.h` contain the source code for the command line interpreter (CLI).
+The interactive CLI is provided by the `milk-cli` executable (typically aliased as `milk`). Source code is in `src/cli/CLIcore/`.
+
+> [!NOTE]
+> Standalone executables (`milk-fpsexec-*`) have their own command-line interfaces. See [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
 
 ## Command Line Options
 
-When launching the `milk` executable, the following arguments are available:
+When launching `milk` (or `milk-cli`), the following arguments are available:
 
 | Option | Description |
 |---|---|
