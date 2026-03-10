@@ -468,10 +468,9 @@ add_cacao_standalone_plugins(name src.c fft imagegen)   # selective
 
 Valid plugin names: `fft`, `imagegen`, `imagefilter`, `imagebasic`.
 
-> [!NOTE]
-> `_compute` variants contain pure computation code
-> (`MILK_NO_CLI`). Standalone executables do **not** link
-> `${LIBNAME}` by default. Currently **76 of 90** standalones
-> are CLIcore-free.
+**ℹ️ Note:** `_compute` variants contain pure computation
+code (`MILK_NO_CLI`). Standalone executables do **not** link
+`${LIBNAME}` by default. Currently **76 of 90** standalones
+are CLIcore-free.
 
 </details>
