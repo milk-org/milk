@@ -1,0 +1,52 @@
+---
+description: Ensure all new or modified documentation
+  follows the project's adopted standards.
+---
+
+When creating or editing markdown documentation in the
+`milk` repository, you MUST follow these standards:
+
+## Formatting Rules
+
+1. **Line length:** Wrap prose at ~72 characters. Tables
+   and code blocks may exceed this limit.
+2. **Headings:** Use ATX-style headings (`#`). Do not
+   skip heading levels (e.g., `##` → `####`).
+3. **Code blocks:** Always specify the language.
+   Use `bash` for shell, `c` for C, `python` for Python.
+4. **Shell prompts:** Use `$` prefix for shell commands.
+   Use `milk-cli>` for CLI prompts.
+   Use `#` for comments inside code blocks.
+5. **No V1 macros:** Do not reference `FPS_MAIN_STANDALONE`
+   (the V1 macro). Always use `FPS_MAIN_STANDALONE_V2` or
+   `FPS_MAIN_STANDALONE_V2_CONFCHECK`.
+
+## Structure Rules
+
+1. **"See also" bar:** Every page under `docs/` MUST have
+   a "See also" breadcrumb bar near the top, linking to
+   3–5 related pages. Format:
+   ```
+   See also: [Page A](pageA.md) ·
+   [Page B](pageB.md) ·
+   [Page C](pageC.md)
+   ```
+2. **Plugin READMEs:** Must follow the standardized
+   template with: one-line module description, source file
+   table (`| File | Description |`), and dependency list.
+3. **New topic pages:** Must be added to `docs/index.md`
+   in the appropriate section.
+
+## Before Committing
+
+1. Verify that all relative links resolve. Run:
+   ```bash
+   npx markdown-link-check \
+     --config .markdown-link-check.json <file>
+   ```
+2. Run markdown linting:
+   ```bash
+   npx markdownlint-cli2 <file>
+   ```
+3. If you added a new `.md` file, check if
+   `docs/Markdown_Index.md` needs regeneration.
