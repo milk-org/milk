@@ -16,7 +16,7 @@
 ## Core Concepts
 
 ### PROCESSINFO
-The main structure stored in shared memory (`/tmp/milk/proc.<PID>.shm`). It contains:
+The main structure stored in shared memory (`$MILK_SHM_DIR/proc.<name>.<PID>.shm`, where `MILK_SHM_DIR` defaults to `/milk/shm`). It contains:
 - Process identification (PID, name, source code location).
 - Loop counters and control flags.
 - Timing buffers for performance analysis.

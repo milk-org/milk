@@ -61,13 +61,18 @@ Note that the commands above will compile the module into a shared object, but i
 
 milk includes an example module, which is not compiled or linked by default, to demonstrate how to write and add modules.
 
-The example module is in directory 'src/milk_module_example' :
+The example module is in directory `src/milk_module_example` :
 
 	$ cd src/milk_module_example
 	$ ls
 	CMakeLists.txt
-	create_example_image.c
-	create_example_image.h
+	examplefunc1.c
+	examplefunc1.h
+	examplefunc2_FPS.c
+	examplefunc2_FPS.h
+	examplefunc4_streamprocess.c
+	examplefunc4_streamprocess.h
+	examplefunc_fps_cli_poc.c    # V2 template
 	milk_module_example.c
 	milk_module_example.h
 
@@ -166,7 +171,7 @@ will link modules `MyFirstModule` and `MySecondModule`.
 
 ## 3.1. Principles 
 
-Modules that are always loaded upon startup are explicitely listed in CLImain.c. Additional modules may be loaded using the C dlopen() command. The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
+Modules that are always loaded upon startup are registered in the module's `initlib_<modulename>` function, which is called automatically when the shared object is loaded. Additional modules may be loaded using the C `dlopen()` command. The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
 
 \see http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules.
 \see https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html

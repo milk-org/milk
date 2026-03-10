@@ -75,7 +75,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS core library), `libprocessinfo`, and `libmilkdata`.
 - `src/cli/`: User interfaces, including `CLIcore`, `libmilkTUI`, and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
-- `src/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
+- `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).
 - `plugins/cacao-src/`: Cacao AO loop modules.
 - `docs/`: Documentation.

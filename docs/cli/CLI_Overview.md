@@ -1,9 +1,16 @@
 # CLI Overview
 
-The entire C code is compiled into a single executable :
+`milk` compiles into multiple executables:
 
-	./bin/<packagename>
+- **`milk-cli`**: The interactive command line interface (CLI). Running it starts
+  a prompt from which all module functions can be launched. Type `m?` to list
+  loaded modules and their commands.
+- **`milk-fpsexec-*`**: Standalone executables for individual compute units.
+  Each runs a single FPS-enabled function in isolation, managed via `tmux` and
+  `milk-fpsCTRL`.
 
-Running the executable starts a command line interface (CLI) prompt from which all functions can be launched.
+The source code is organized in modules. A module includes C code and
+documentation. It may also include data files, scripts, and extended
+documentation.
 
-The source code is organized in modules. A module included C code and documentation. It may also include data files and extended documentation. Run `m?` in the CLI prompt to list modules.
+For more details see the [Programmer's Guide](../programmers_guide.md).
