@@ -11,10 +11,12 @@ See also: [Coding Standards](docs/developer/coding_standards.md) ·
 
 1. Fork the repository and clone your fork.
 2. Create a feature branch from `dev`:
+
    ```bash
    git checkout dev
    git checkout -b feature/my-change
    ```
+
 3. Build and test your changes (see [Installation](docs/install/compile.md)).
 
 ## Code Style
@@ -42,7 +44,7 @@ New functions should follow the V2 template pattern:
 
 Use conventional-style prefixes:
 
-```
+```text
 feat: add new stream filter function
 fix: correct semaphore race in DM combiner
 docs: update FPS parameter table
@@ -70,6 +72,7 @@ refactor: extract processinfo loop into helper
 ## Reporting Issues
 
 Use GitHub Issues. Include:
+
 - milk version (`milk-cli -i`)
 - OS and compiler version
 - Steps to reproduce
