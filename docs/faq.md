@@ -1,12 +1,14 @@
 # FAQ & Troubleshooting
 
-Common issues and solutions when building, installing, and running `milk`.
+Common issues and solutions when building, installing, and
+running `milk`.
 
 ---
 
 ## Installation
 
-### CMake cannot find cfitsio
+<details>
+<summary><b>CMake cannot find cfitsio</b></summary>
 
 ```
 Could NOT find CFITSIO
@@ -21,7 +23,17 @@ sudo apt-get install libcfitsio-dev
 sudo yum install cfitsio-devel
 ```
 
-### Build fails with missing readline/ncurses
+Or build without cfitsio:
+```bash
+cmake .. -DUSE_CFITSIO=OFF
+```
+
+See [Build Tiers](install/build_tiers.md) for details.
+
+</details>
+
+<details>
+<summary><b>Build fails with missing readline/ncurses</b></summary>
 
 ```
 fatal error: readline/readline.h: No such file or directory
@@ -36,7 +48,10 @@ sudo apt-get install libreadline-dev libncurses5-dev
 cmake .. -DUSE_CLI=OFF
 ```
 
-### Library not found at runtime
+</details>
+
+<details>
+<summary><b>Library not found at runtime</b></summary>
 
 ```
 error while loading shared libraries: libImageStreamIO.so
@@ -54,11 +69,14 @@ Or set `LD_LIBRARY_PATH` in your shell profile:
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ```
 
+</details>
+
 ---
 
 ## Shared Memory
 
-### Permission denied when accessing /milk/shm
+<details>
+<summary><b>Permission denied when accessing /milk/shm</b></summary>
 
 ```
 Cannot open /milk/shm/stream.im.shm: Permission denied
@@ -76,7 +94,10 @@ echo "tmpfs /milk/shm tmpfs rw,nosuid,nodev" | sudo tee -a /etc/fstab
 sudo mount /milk/shm
 ```
 
-### Stale shared memory files
+</details>
+
+<details>
+<summary><b>Stale shared memory files</b></summary>
 
 Old `.im.shm` files from crashed processes can interfere.
 
@@ -89,18 +110,24 @@ milk-shmimpurge
 milk-shmim-rm <streamname>
 ```
 
-### SHM directory location
+</details>
+
+<details>
+<summary><b>SHM directory location</b></summary>
 
 The default shared memory directory is `/milk/shm`. Override with:
 ```bash
 export MILK_SHM_DIR=/path/to/custom/shm
 ```
 
+</details>
+
 ---
 
 ## FPS / Process Control
 
-### FPS process won't start
+<details>
+<summary><b>FPS process won't start — "FPS already exists"</b></summary>
 
 ```
 ERROR: FPS already exists
@@ -111,7 +138,10 @@ ERROR: FPS already exists
 milk-fps-set <fpsname> ..delete
 ```
 
-### milk-fpsCTRL shows no processes
+</details>
+
+<details>
+<summary><b>milk-fpsCTRL shows no processes</b></summary>
 
 Ensure the processinfo SHM directory exists and processes are
 registered:
@@ -123,7 +153,10 @@ ls $MILK_SHM_DIR/proc.*.shm
 milk-procinfo-list
 ```
 
-### tmux dispatch not working
+</details>
+
+<details>
+<summary><b>tmux dispatch not working</b></summary>
 
 If standalone executables launched with `-tmux` don't appear:
 
@@ -131,18 +164,24 @@ If standalone executables launched with `-tmux` don't appear:
 2. Check if the tmux session exists: `tmux ls`
 3. Verify the FPS name has no spaces or special characters.
 
+</details>
+
 ---
 
 ## CLI
 
-### milk-cli prompt jumps to bottom of terminal
+<details>
+<summary><b>milk-cli prompt jumps to bottom of terminal</b></summary>
 
 This can happen when the startup banner clears the screen.
 
 **Solution:** This is a known cosmetic issue. The prompt will
 stabilize after the first command.
 
-### Command not found in CLI
+</details>
+
+<details>
+<summary><b>Command not found — "Unknown command"</b></summary>
 
 ```
 Unknown command: mycommand
@@ -160,11 +199,14 @@ Unknown command: mycommand
 If the module is a plugin, ensure it was compiled and the `.so`
 file is in the library path.
 
+</details>
+
 ---
 
 ## Performance
 
-### Real-time scheduling
+<details>
+<summary><b>Real-time scheduling</b></summary>
 
 For latency-critical applications (AO loops), configure real-time
 scheduling:
@@ -177,13 +219,18 @@ milk-makecsetandrt
 milk -p 90
 ```
 
-### Semaphore loop speed
+</details>
+
+<details>
+<summary><b>Semaphore loop speed</b></summary>
 
 Benchmark semaphore performance:
 ```bash
 milk-semloopspeed
 ```
 Typical values: >100 kHz on modern hardware.
+
+</details>
 
 ---
 

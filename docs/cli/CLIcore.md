@@ -49,7 +49,8 @@ GNU readline is used to read input. See [GNU readline documentation](http://tisw
 
 The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.txt` exists, commands will be read one by one from top to bottom, and will be removed from the file as they are read, until the file is empty.
 
-## Help Commands
+<details>
+<summary><b>Help Commands</b></summary>
 
 ```text
 > ?
@@ -71,7 +72,10 @@ The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.t
 	# search for string <str> in all commands and their descriptions
 ```
 
-## Important Commands
+</details>
+
+<details>
+<summary><b>Important Commands</b></summary>
 
 ```text
 > ci
@@ -93,9 +97,16 @@ The CLI will take input from file `cmdfile.txt` if it exists. If file `cmdfile.t
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 ```
 
-## FITS Files I/O
+</details>
+
+<details>
+<summary><b>FITS Files I/O</b></summary>
 
 FITSIO is used for FITS files I/O. See FITSIO documentation for more detailed instructions. (See also modules `COREMOD_memory` and `COREMOD_iofits`).
+
+> [!NOTE]
+> FITS I/O requires `USE_CFITSIO=ON` at build time.
+> See [Build Tiers](../install/build_tiers.md).
 
 ### Loading Files
 
@@ -127,8 +138,11 @@ FITSIO is used for FITS files I/O. See FITSIO documentation for more detailed in
 	# save compressed image
 ```
 
+</details>
 
-## Integration with Standard Linux Tools
+
+<details>
+<summary><b>Integration with Standard Linux Tools</b></summary>
 
 ### Using `cmdfile.txt` to Drive milk from UNIX Prompt
 
@@ -151,6 +165,8 @@ If you start `milk` with the `-l` option, the file `imlist.txt` contains the lis
 ```bash
 > !awk '{if ($4>200) print $2}' imlist.txt | xargs -I {} echo save_fl {} {}_tmp.fits > cmdfile.txt
 ```
+
+</details>
 
 ## Arithmetic Operations
 
