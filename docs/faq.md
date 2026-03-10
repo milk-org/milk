@@ -183,8 +183,8 @@ Unknown command: mycommand
 
 **Solution:** Check that the module is loaded:
 ```text
-milk> m?                      # list all loaded modules
-milk> h? mycommand            # search for a command
+milk-cli > m?                      # list all loaded modules
+milk-cli > h? mycommand            # search for a command
 ```
 
 If the module is a plugin, ensure it was compiled and the `.so`
@@ -224,7 +224,7 @@ Typical values: >100 kHz on modern hardware.
 
 ## Getting Help
 
-- **CLI help:** Type `?` or `help` at the `milk>` prompt
+- **CLI help:** Type `?` or `help` at the `milk-cli >` prompt
 - **Command help:** `cmd? <command>` for detailed usage
 - **Module list:** `m?` to list all loaded modules
 - **Documentation:** See [docs/index.md](index.md)
