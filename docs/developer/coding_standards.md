@@ -1,6 +1,14 @@
 # Coding Standards
 
-This document outlines the standard C coding conventions expected for the `milk` project. Consistent conventions help ensure readability, maintainability, and seamless integration of new code or plugins.
+This document outlines the standard C coding conventions
+expected for the `milk` project. Consistent conventions help
+ensure readability, maintainability, and seamless integration
+of new code or plugins.
+
+See also: [Programmer's Guide](../programmers_guide.md) ·
+[Documenting Code](DocumentingCode.md) ·
+[Template Source Code](TemplateSourceCode.md) ·
+[Module Files](ModuleFiles.md)
 
 ## General C Code Style
 - **Linux Kernel Style:** Use the [Linux kernel's C coding style](https://www.kernel.org/doc/html/v4.10/process/coding-style.html) as the baseline for indentation and formatting, wherever it doesn't conflict with the rules below.

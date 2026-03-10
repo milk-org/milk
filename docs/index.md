@@ -22,6 +22,8 @@ For a deep dive into how `milk` components interact at a system level, these doc
 - [**Dependency Graph**](dependency_graph.md): Visual map of module dependencies.
 - [**FPS Standalone and CMD Modes**](FPS_Standalone_CMD_Modes.md): Execution context details for `milk-fpsexec-*` binaries.
 - [**Process Info (`procinfo`)**](procinfo.md): Telemetry, heartbeat monitoring, and profiling.
+- [**Debugging**](debugging.md): GDB, procinfo diagnostics, tmux log inspection, common failure patterns.
+- [**Performance Tuning**](performance.md): CPU pinning, RT scheduling, shared memory, GPU acceleration.
 
 ## 🛠️ Developer Guides
 
@@ -35,6 +37,8 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 - [**Documenting Code**](developer/DocumentingCode.md): In-code documentation standards.
 - [**Developer Tutorial**](developer/tutorial.md): Step-by-step guide to writing your first module.
 - [**Module Files Layout**](developer/ModuleFiles.md): Directory structure conventions.
+- [**Python API**](python.md): Accessing streams from Python with `pyMilk` and numpy.
+- [**Valkey Integration**](valkey.md): Multi-host FPS parameter sync via Valkey.
 
 ## 📖 CLI & Tools Reference
 
