@@ -32,6 +32,7 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 - [**Loading Custom Modules**](developer/LoadingModules.md): Linking `.so` modules at runtime.
 - [**Working With Git**](developer/WorkingWithGit.md): Branching and commit workflow.
 - [**Documenting Code**](developer/DocumentingCode.md): In-code documentation standards.
+- [**Developer Tutorial**](developer/tutorial.md): Step-by-step guide to writing your first module.
 - [**Module Files Layout**](developer/ModuleFiles.md): Directory structure conventions.
 
 ## 📖 CLI & Tools Reference
