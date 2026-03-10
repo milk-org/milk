@@ -9,7 +9,12 @@ The interactive CLI is provided by the `milk-cli` executable
 > command-line interfaces. See
 > [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md).
 
-## Command Line Options
+See also: [FPS](../fps.md) ·
+[Streams](../streams.md) ·
+[FAQ](../faq.md) ·
+[Build Tiers](../install/build_tiers.md)
+
+## 1. Command Line Options
 
 When launching `milk-cli`, the following arguments are
 available:
@@ -37,7 +42,7 @@ $ milk-cli -p 90              # high priority
 $ milk-cli -f /tmp/fifo24     # custom fifo
 ```
 
-## Syntax Rules and Parser
+## 2. Syntax Rules and Parser
 
 - Spaces separate arguments (count doesn't matter)
 - Comments follow `#`
@@ -47,12 +52,12 @@ $ milk-cli -f /tmp/fifo24     # custom fifo
 milk-cli > <command> <arg1> <arg2>   # comment
 ```
 
-## Tab Completion
+## 3. Tab Completion
 
 - **First argument:** matches command → image → filename
 - **Additional arguments:** matches image → filename
 
-## Input
+## 4. Input
 
 GNU readline is used for line editing. Type `helprl` at the
 prompt for a quick reference. See
@@ -158,7 +163,7 @@ milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
 
 </details>
 
-## Arithmetic Operations
+## 5. Arithmetic Operations
 
 ```text
 milk-cli > im1=sqrt(im+2.0)       # arithmetic on images

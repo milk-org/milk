@@ -4,6 +4,10 @@ This document outlines the conventions for documenting the `milk` project. The d
 1. **Manuals and Guides:** Written in Markdown (like the file you are reading) and hosted directly on GitHub.
 2. **C API Reference:** Written directly in the `.c` and `.h` source code using Doxygen syntax.
 
+See also: [Programmer's Guide](../programmers_guide.md) ·
+[Working with Git](WorkingWithGit.md) ·
+[Coding Standards](coding_standards.md)
+
 ## 1. Writing Manuals and Guides (Markdown)
 General instructional documentation, architectural overviews, and tutorials should be placed in the `docs/` folder in standard GitHub Flavored Markdown (`.md`).
 - Use `> [!NOTE]`, `> [!WARNING]`, and `> [!TIP]` to call out important information.

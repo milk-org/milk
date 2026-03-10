@@ -1,8 +1,17 @@
 # Shared Memory Streams (`ImageStreamIO`)
 
-`milk` is built around a low-latency, zero-copy architecture designed for high-performance pipelines. This core feature is powered by `ImageStreamIO` which allocates streams (n-dimensional tensors, typically images or data cubes) directly in the Linux tmpfs (`/dev/shm/`).
+`milk` is built around a low-latency, zero-copy architecture
+designed for high-performance pipelines. This core feature is
+powered by `ImageStreamIO` which allocates streams
+(n-dimensional tensors, typically images or data cubes)
+directly in the Linux tmpfs (`/dev/shm/`).
 
-## Core Concepts
+See also: [FPS](fps.md) ·
+[Process Info](procinfo.md) ·
+[CLI Reference](cli/CLIcore.md) ·
+[Scripts Reference](scripts.md)
+
+## 1. Core Concepts
 
 Unlike file-system-based intermediate data passing, `ImageStreamIO` provides direct memory pointers to running compute units. Processes can read from or write to the same stream with microsecond latencies.
 
@@ -26,7 +35,7 @@ sequenceDiagram
     end
 ```
 
-## Metadata and Semaphores
+## 2. Metadata and Semaphores
 
 Every stream contains more than just pixel values. It includes a comprehensive metadata header:
 1. **Dimensionality:** Size and shape axes (1D arrays to 3D cubes).
@@ -34,7 +43,7 @@ Every stream contains more than just pixel values. It includes a comprehensive m
 3. **Keywords:** An embedded dictionary of FITS-style keywords to propagate state (e.g., exposure parameters or telemetry data).
 4. **Semaphores:** Posix semaphores are bound natively to the streams. When a compute unit finishes writing its frame to a stream, it naturally posts a semaphore. Downstream processes that are blocking (waiting) on that stream immediately wake up, ensuring perfectly synchronized cascading pipelines.
 
-## Stream Modifiers
+## 3. Stream Modifiers
 
 When interacting with streams on the CLI or within `milk` algorithms, standard modifiers are supported directly inside the stream string. E.g. passing `myImage@L:` to a module.
 
@@ -44,14 +53,14 @@ When interacting with streams on the CLI or within `milk` algorithms, standard m
 
 *When writing modules using updated `fpsexec` patterns, passing a non-existent or disallowed modifier automatically alerts the user and securely aborts the module spin-up to prevent silent failures.*
 
-## Introspection
+## 4. Introspection
 Tools like `milk-streamCTRL` provide real-time introspection into active streams, displaying frame arrival rates, recent values, and the current state of semaphores without disrupting operations.
 
-## C API (`IMGID`)
+## 5. C API (`IMGID`)
 
 `milk` uses the `IMGID` structure to hold references to images and streams. This structure is one level above `ImageStreamIO`, and is local to the `milk` process. It is the preferred way to pass images and streams as function arguments.
 
-### Creating an `IMGID`
+### 5.1. Creating an `IMGID`
 
 Creating a blank `IMGID` (this does not allocate memory yet):
 ```c
@@ -64,7 +73,7 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 ```
 *(Special characters like `s>tf32>im1` can also be used to automatically set type and location properties).*
 
-### Connecting to a stream
+### 5.2. Connecting to a stream
 
 If you expect the stream to already exist, you can connect to it:
 ```c
@@ -76,7 +85,7 @@ if(img1.ID == -1) {
 }
 ```
 
-### Creating an image in shared memory
+### 5.3. Creating an image in shared memory
 
 To create a new stream:
 ```c
@@ -93,7 +102,7 @@ imgid_mkimage(&img);
 imgid_free(&img);
 ```
 
-### Creating or connecting with format checks
+### 5.4. Creating or connecting with format checks
 
 Often, you want to ensure the stream has specific dimensions and types before using it, or create it if it doesn't match:
 

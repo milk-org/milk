@@ -6,7 +6,14 @@ Recent enhancements allow developers to seamlessly expose FPS-driven functionali
 1. **CMD/CLI Mode:** Registered commands inside the `milk` environment.
 2. **Standalone Mode:** Self-contained executables invoked directly from the terminal.
 
-These modes aim to unify the function parameter management such that developers write the core logic once, abstract the arguments into bindings, and expose them universally.
+These modes aim to unify the function parameter management
+such that developers write the core logic once, abstract the
+arguments into bindings, and expose them universally.
+
+See also: [FPS](fps.md) ·
+[CLI Reference](cli/CLIcore.md) ·
+[Programmer's Guide](programmers_guide.md) ·
+[Developer Tutorial](developer/tutorial.md)
 
 ---
 
