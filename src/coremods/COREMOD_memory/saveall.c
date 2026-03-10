@@ -17,7 +17,9 @@
 #include "image_copy.h"
 #include "list_image.h"
 
+#ifdef USE_CFITSIO
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 
 // ==========================================
 // Forward declaration(s)
@@ -140,6 +142,7 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
 
     list_image_ID();
 
+#ifdef USE_CFITSIO
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
@@ -150,6 +153,11 @@ errno_t COREMOD_MEMORY_SaveAll_snapshot(const char *dirname)
                            dcimg[ID].name);
         save_fits(imnamecp, fnamecp);
     }
+#else
+    (void) fnamecp;
+    printf("WARNING: FITS save disabled"
+           " (built without cfitsio)\n");
+#endif
 
     free(IDarray);
     free(IDarraycp);
@@ -252,6 +260,7 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
 
     list_image_ID();
 
+#ifdef USE_CFITSIO
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
@@ -259,6 +268,11 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(const char *dirname,
         sprintf(fnameout, "./%s/%s_out.fits", dirname, dcimg[ID].name);
         save_fits(imnameout, fnameout);
     }
+#else
+    (void) fnameout;
+    printf("WARNING: FITS save disabled"
+           " (built without cfitsio)\n");
+#endif
 
     free(IDarray);
     free(IDarrayout);

@@ -113,17 +113,20 @@ project(lib_${LIBNAME}_project)
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(CFITSIO cfitsio)
-if(${CFITSIO_FOUND})
-  link_directories(${CFITSIO_LIBRARY_DIRS})
-  target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
-  target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+if(USE_CFITSIO)
+  pkg_check_modules(CFITSIO cfitsio)
+  if(${CFITSIO_FOUND})
+    link_directories(${CFITSIO_LIBRARY_DIRS})
+    target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
+    target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+    target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
+  endif()
 endif()
 
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
 											$<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps milkCOREMODiofits)
+target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps
+    $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits>)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
@@ -134,7 +137,7 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 set(LIBNAME_COMPUTE "${LIBNAME}_compute")
 add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
 target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
-if(${CFITSIO_FOUND})
+if(USE_CFITSIO AND CFITSIO_FOUND)
   target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
   target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
   target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
@@ -143,7 +146,8 @@ target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
-    m ${CFITSIO_LIBRARIES} milkfps milkCOREMODiofits_compute)
+    m ${CFITSIO_LIBRARIES} milkfps
+    $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits_compute>)
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)
 
