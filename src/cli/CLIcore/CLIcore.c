@@ -520,12 +520,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // fps_generic_CLIfunction_ptr and fps_fill_farg_examples_ptr
     // before any V2 module commands are used.
     {
-        char fpscli_libname[STRINGMAXLEN_MODULE_SOFILENAME];
-        snprintf(fpscli_libname,
-                 STRINGMAXLEN_MODULE_SOFILENAME,
-                 "%s/lib/libmilkfpsCLI.so",
-                 dcinstalldir);
-        load_sharedobj(fpscli_libname);
+        load_sharedobj("libmilkfpsCLI.so");
     }
 
     // Explicitly reference core module constructors to ensure linker doesn't drop them
