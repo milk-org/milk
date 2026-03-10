@@ -37,4 +37,4 @@ Fast distance-based clustering of streams.
 | `milk-fpsexec-clustering-mindiffscan` | `mindiffscan.c` | Mindiffscan module |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

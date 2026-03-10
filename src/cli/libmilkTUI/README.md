@@ -9,4 +9,4 @@ Terminal User Interface (TUI) library for `milk`.
 | `TUItools.c` | Text User Interface tools |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `ImageStreamIO`, `ncurses`

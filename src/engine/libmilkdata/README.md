@@ -1,6 +1,7 @@
 # Module: libmilkdata
 
-Core data structure library providing the `MILK_DATA` type and image management.
+Core data structure library providing the `MILK_DATA` type and
+image management.
 
 ## Source Files
 
@@ -9,4 +10,4 @@ Core data structure library providing the `MILK_DATA` type and image management.
 | `milkdata.c` | Core milk data global and initialization |
 
 ## Dependencies
-- Implicit standard: `milkdata`, `ImageStreamIO`, `CLIcore`
+- `ImageStreamIO`
