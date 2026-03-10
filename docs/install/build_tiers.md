@@ -71,10 +71,10 @@
 All tiers are built with:
 
 ```bash
-mkdir _build && cd _build
-cmake .. [OPTIONS]        # see table above
-make -j$(nproc)
-sudo make install
+$ mkdir _build && cd _build
+$ cmake .. [OPTIONS]        # see table above
+$ make -j$(nproc)
+$ sudo make install
 ```
 
 ---
