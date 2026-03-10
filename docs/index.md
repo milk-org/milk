@@ -40,7 +40,9 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 
 - [**CLI Core Syntax**](cli/CLIcore.md): Argument parsing and command invocation rules.
 - [**Readline Keys**](cli/helpreadline.md): Keyboard shortcuts inside the `milk` shell.
+- [**Scripts Reference**](scripts.md): All `milk-*` shell scripts and utilities.
 - [**Help Text**](cli/help.txt): Built-in help text reference.
+- [**FAQ & Troubleshooting**](faq.md): Common issues and solutions.
 - [**Automatically Generated Index**](Markdown_Index.md): Complete list of all Markdown files in the repository.
 
 ***
