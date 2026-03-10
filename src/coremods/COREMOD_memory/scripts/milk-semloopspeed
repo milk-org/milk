@@ -41,11 +41,11 @@ NBLOOP="${inputMSargARRAY[0]}"
 
 SEMTRIG="3"
 
-milk << EOF
-mk2Dim "s>imA" 100 100
-mk2Dim "s>imB" 100 100
-imsetsempost imA -1
-imsetsempost imB -1
+milk-cli << EOF
+mem.mk2Dim "s>imA" 100 100
+mem.mk2Dim "s>imB" 100 100
+mem.imsetsempost imA -1
+mem.imsetsempost imB -1
 exitCLI
 EOF
 
@@ -53,32 +53,32 @@ set +e
 tmux new-session -d -s loopAB
 #tmux new-session -d -s loopBA
 
-tmux send-keys -t loopAB "milk" C-M
-tmux send-keys -t loopAB "readshmim imA" C-M
-tmux send-keys -t loopAB "readshmim imB" C-M
-tmux send-keys -t loopAB "shmimpoke ..procinfo 1" C-M
+tmux send-keys -t loopAB "milk-cli" C-M
+tmux send-keys -t loopAB "mem.readshmim imA" C-M
+tmux send-keys -t loopAB "mem.readshmim imB" C-M
+tmux send-keys -t loopAB "mem.shmimpoke ..procinfo 1" C-M
 
 # set trigger mode to semaphore
-tmux send-keys -t loopAB "shmimpoke ..triggermode 3" C-M
+tmux send-keys -t loopAB "mem.shmimpoke ..triggermode 3" C-M
 
 # set trigger semaphore name
-tmux send-keys -t loopAB "shmimpoke ..triggersname imA" C-M
+tmux send-keys -t loopAB "mem.shmimpoke ..triggersname imA" C-M
 
 # number of loops
-tmux send-keys -t loopAB "shmimpoke ..loopcntMax ${NBLOOP}" C-M
+tmux send-keys -t loopAB "mem.shmimpoke ..loopcntMax ${NBLOOP}" C-M
 
-tmux send-keys -t loopAB "shmimpoke imB" C-M
+tmux send-keys -t loopAB "mem.shmimpoke imB" C-M
 tmux send-keys -t loopAB "exitCLI" C-M
 
-milk << EOF
-readshmim imA
-readshmim imB
-shmimpoke ..procinfo 1
-shmimpoke ..triggermode 3
-shmimpoke ..triggersname imB
-shmimpoke ..loopcntMax ${NBLOOP}
-shmimpoke imA
-imseminfo imA
+milk-cli << EOF
+mem.readshmim imA
+mem.readshmim imB
+mem.shmimpoke ..procinfo 1
+mem.shmimpoke ..triggermode 3
+mem.shmimpoke ..triggersname imB
+mem.shmimpoke ..loopcntMax ${NBLOOP}
+mem.shmimpoke imA
+mem.imseminfo imA
 exitCLI
 EOF
 

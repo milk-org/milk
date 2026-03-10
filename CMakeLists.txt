@@ -575,7 +575,7 @@ install(PROGRAMS
 
 endif(USE_CLI)
 
-install(FILES docs/help.txt DESTINATION doc)
+install(FILES docs/cli/help.txt DESTINATION doc)
 
 
 
