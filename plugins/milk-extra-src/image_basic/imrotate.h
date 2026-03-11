@@ -6,7 +6,7 @@
 #ifndef IMAGE_BASIC_IMROTATE_H
 #define IMAGE_BASIC_IMROTATE_H
 
-errno_t imrotate_addCLIcmd();
+errno_t CLIADDCMD_image_basic__imrotate();
 
 imageID basic_rotate(
     const char *ID_name,

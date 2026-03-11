@@ -100,19 +100,20 @@ INIT_MODULE_LIB(image_basic)
 static errno_t init_module_CLI()
 {
 
-    imswapaxis2D_addCLIcmd();
-    im3Dto2D_addCLIcmd();
-    image_add_addCLIcmd();
-    imexpand_addCLIcmd();
-    imgetcircsym_addCLIcmd();
-    imgetcircasym_addCLIcmd();
-    imresize_addCLIcmd();
-    imcontract_addCLIcmd();
-    imrotate_addCLIcmd();
-    loadfitsimgcube_addCLIcmd();
-    streamfeed_addCLIcmd();
-    streamrecord_addCLIcmd();
-    cubecollapse_addCLIcmd();
+    CLIADDCMD_image_basic__imswapaxis2D();
+    CLIADDCMD_image_basic__im3Dto2D();
+    CLIADDCMD_image_basic__image_add();
+    CLIADDCMD_image_basic__imexpand();
+    CLIADDCMD_image_basic__imgetcircsym();
+    CLIADDCMD_image_basic__imgetcircasym();
+    CLIADDCMD_image_basic__imresize();
+    CLIADDCMD_image_basic__imcontract();
+    CLIADDCMD_image_basic__imrotate();
+    CLIADDCMD_image_basic__loadfitsimgcube();
+    CLIADDCMD_image_basic__streamfeed();
+    CLIADDCMD_image_basic__streamrecord();
+    CLIADDCMD_image_basic__cubecollapse();
+    CLIADDCMD_image_basic__indexmap();
 
     // add atexit functions here
 

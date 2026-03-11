@@ -1,9 +1,6 @@
 /**
  * @file image_add.c
- * @brief Image add module
- */
-
-/** @file image_add.c
+ * @brief Add 2D/3D images with offsets
  */
 
 #ifdef MILK_NO_CLI
@@ -11,95 +8,228 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declarations
+imageID basic_add(
+    const char *__restrict ID_name1,
+    const char *__restrict ID_name2,
+    const char *__restrict ID_name_out,
+    long off1, long off2);
 
-imageID basic_add(const char *__restrict ID_name1,
-                  const char *__restrict ID_name2,
-                  const char *__restrict ID_name_out,
-                  long off1,
-                  long off2);
+imageID basic_add3D(
+    const char *__restrict ID_name1,
+    const char *__restrict ID_name2,
+    const char *__restrict ID_name_out,
+    long off1, long off2, long off3);
 
-imageID basic_add3D(const char *__restrict ID_name1,
-                    const char *__restrict ID_name2,
-                    const char *__restrict ID_name_out,
-                    long off1,
-                    long off2,
-                    long off3);
+/* ---- Command 1: addim ---- */
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static char p1_in1[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p1_in2[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static char p1_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+static long long p1_ox = 23;
+static long long p1_oy = 201;
 
-static errno_t image_basic_add_cli()
+static FPS_APP_INFO FPS_app_info_1 = {
+    .fps_name    = "addim",
+    .cmdkey      = "addim",
+    .description =
+        "add two 2D images with offset"
+};
+
+#define FPS_PARAMS_1(X) \
+    X(".in1", p1_in1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 1") \
+    X(".in2", p1_in2, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 2") \
+    X(".out", p1_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".offx", &p1_ox, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x offset") \
+    X(".offy", &p1_oy, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y offset")
+
+static FPS_CLI_BINDING my_bindings_1[] = {
+    FPS_PARAMS_1(FPS_X_BINDING)
+};
+static const int nb_bindings_1 =
+    sizeof(my_bindings_1) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_1[] = {
+    FPS_PARAMS_1(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_1 = {
+    "", "", __FILE__,
+    sizeof(farg_1) / sizeof(CLICMDARGDEF),
+    farg_1, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_1 = {0};
+
+static __attribute__((constructor))
+void init_cms_1(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 2) ==
-            0)
-    {
-        basic_add(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
-                  data.cmdargtoken[3].val.string,
-                  data.cmdargtoken[4].val.numl,
-                  data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_1.key,
+            FPS_app_info_1.cmdkey,
+            sizeof(CLIcmddata_1.key) - 1);
+    strncpy(CLIcmddata_1.description,
+            FPS_app_info_1.description,
+            sizeof(CLIcmddata_1.description)
+            - 1);
+    if (CLIcmddata_1.cmdsettings == NULL) {
+        CLIcmddata_1.cmdsettings = &cms_1;
     }
 }
 
-static errno_t image_basic_add3D_cli()
+static errno_t compute_function_1()
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 2) + CLI_checkarg(6, 2) ==
-            0)
-    {
-        basic_add3D(data.cmdargtoken[1].val.string,
-                    data.cmdargtoken[2].val.string,
-                    data.cmdargtoken[3].val.string,
-                    data.cmdargtoken[4].val.numl,
-                    data.cmdargtoken[5].val.numl,
-                    data.cmdargtoken[6].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    basic_add(p1_in1, p1_in2, p1_out,
+              (long) p1_ox, (long) p1_oy);
+    return RETURN_SUCCESS;
+}
+
+static errno_t CLIfunction_1(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1, farg_1,
+        &CLIcmddata_1,
+        my_bindings_1, nb_bindings_1,
+        compute_function_1);
+}
+
+/* ---- Command 2: addim3D ---- */
+
+static char p2_in1[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p2_in2[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static char p2_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+static long long p2_ox = 23;
+static long long p2_oy = 201;
+static long long p2_oz = 0;
+
+static FPS_APP_INFO FPS_app_info_2 = {
+    .fps_name    = "addim3D",
+    .cmdkey      = "addim3D",
+    .description =
+        "add two 3D images with offset"
+};
+
+#define FPS_PARAMS_2(X) \
+    X(".in1", p2_in1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 1") \
+    X(".in2", p2_in2, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 2") \
+    X(".out", p2_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".offx", &p2_ox, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x offset") \
+    X(".offy", &p2_oy, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y offset") \
+    X(".offz", &p2_oz, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "z offset")
+
+static FPS_CLI_BINDING my_bindings_2[] = {
+    FPS_PARAMS_2(FPS_X_BINDING)
+};
+static const int nb_bindings_2 =
+    sizeof(my_bindings_2) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_2[] = {
+    FPS_PARAMS_2(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_2 = {
+    "", "", __FILE__,
+    sizeof(farg_2) / sizeof(CLICMDARGDEF),
+    farg_2, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_2 = {0};
+
+static __attribute__((constructor))
+void init_cms_2(void)
+{
+    strncpy(CLIcmddata_2.key,
+            FPS_app_info_2.cmdkey,
+            sizeof(CLIcmddata_2.key) - 1);
+    strncpy(CLIcmddata_2.description,
+            FPS_app_info_2.description,
+            sizeof(CLIcmddata_2.description)
+            - 1);
+    if (CLIcmddata_2.cmdsettings == NULL) {
+        CLIcmddata_2.cmdsettings = &cms_2;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) image_add_addCLIcmd()
+static errno_t compute_function_2()
 {
+    basic_add3D(p2_in1, p2_in2, p2_out,
+                (long) p2_ox,
+                (long) p2_oy,
+                (long) p2_oz);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "addim",
-        __FILE__,
-        image_basic_add_cli,
-        "add two 2D images of different size",
-        "<im1> <im2> <outim> <offsetx> <offsety>",
-        "addim im1 im2 outim 23 201",
-        "long basic_add(const char *ID_name1, const char *ID_name2, const char "
-        "*ID_name_out, long off1, long off2)");
+static errno_t CLIfunction_2(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_2, farg_2,
+        &CLIcmddata_2,
+        my_bindings_2, nb_bindings_2,
+        compute_function_2);
+}
 
-    RegisterCLIcommand("addim3D",
-                       __FILE__,
-                       image_basic_add3D_cli,
-                       "add two 3D images of different size",
-                       "<im1> <im2> <outim> <offsetx> <offsety> <offsetz>",
-                       "addim3D im1 im2 outim 23 201 0",
-                       "long basic_add3D(const char *ID_name1, const char "
-                       "*ID_name2, const char *ID_name_out, long "
-                       "off1, long off2, long off3)");
+errno_t
+CLIADDCMD_image_basic__image_add()
+{
+    safe_fps_fill_farg_examples(
+        farg_1, my_bindings_1,
+        nb_bindings_1);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1, CLIfunction_1);
+        CLIcmddata_1.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    safe_fps_fill_farg_examples(
+        farg_2, my_bindings_2,
+        nb_bindings_2);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_2, CLIfunction_2);
+        CLIcmddata_2.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }

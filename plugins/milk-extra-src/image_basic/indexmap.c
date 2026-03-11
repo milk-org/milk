@@ -1,9 +1,6 @@
 /**
  * @file indexmap.c
- * @brief Indexmap module
- */
-
-/** @file indexmap.c
+ * @brief Map values using index map
  */
 
 #ifdef MILK_NO_CLI
@@ -11,52 +8,94 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID image_basic_indexmap(
+    const char *__restrict ID_index_name,
+    const char *__restrict ID_values_name,
+    const char *__restrict IDout_name);
 
-imageID image_basic_indexmap(const char *__restrict ID_index_name,
-                             const char *__restrict ID_values_name,
-                             const char *__restrict IDout_name);
+static char p_idx[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imap";
+static char p_val[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imval";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outmap";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imindexmap",
+    .cmdkey      = "imindexmap",
+    .description =
+        "map values using index map"
+};
 
-static errno_t image_basic_indexmap_cli()
+#define FPS_PARAMS(X) \
+    X(".in_index", p_idx, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "index map image") \
+    X(".in_values", p_val, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "values image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
-    {
-        image_basic_indexmap(data.cmdargtoken[1].val.string,
-                             data.cmdargtoken[2].val.string,
-                             data.cmdargtoken[3].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) indexmap_addCLIcmd()
+static errno_t compute_function()
 {
+    image_basic_indexmap(p_idx, p_val,
+                         p_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imindexmap",
-                       __FILE__,
-                       image_basic_indexmap_cli,
-                       "map input values to output image unsing index map",
-                       "imindexmap <indexmap> <values> <output>",
-                       "imindexmap imap imval outmap",
-                       "long image_basic_indexmap(char *ID_index_name, char "
-                       "*ID_values_name, char *IDout_name)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_basic__indexmap()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

@@ -6,7 +6,7 @@
 /** @file imgetcircasym.h
  */
 
-errno_t __attribute__((cold)) imgetcircasym_addCLIcmd();
+errno_t __attribute__((cold)) CLIADDCMD_image_basic__imgetcircasym();
 
 imageID
 IMAGE_BASIC_get_circasym_component_byID(imageID ID,
