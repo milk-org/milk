@@ -1,11 +1,8 @@
 /**
  * @file testfftspeed.h
- * @brief Testfftspeed module
+ * @brief Test FFTW speed
  */
 
-/** @file testfftspeed.h
- */
-
-errno_t testfftspeed_addCLIcmd();
+errno_t CLIADDCMD_milkfft__testfftspeed();
 
 int test_fftspeed(int nmax);
