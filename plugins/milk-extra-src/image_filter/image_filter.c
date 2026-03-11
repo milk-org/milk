@@ -36,7 +36,7 @@ INIT_MODULE_LIB(image_filter)
 static errno_t init_module_CLI()
 {
     gaussfilter_addCLIcmd();
-    fconvolve_addCLIcmd();
+    CLIADDCMD_image_filter__fconvolve();
 
     CLIADDCMD_image_filter__im2Dfilter_1pixblurr();
 
