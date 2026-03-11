@@ -35,10 +35,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imresize_inimname  = NULL;
-static char *imresize_outimname = NULL;
-static long *imresize_xsize     = NULL;
-static long *imresize_ysize     = NULL;
+static char imresize_inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char imresize_outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static int64_t imresize_xsize = 64;
+static int64_t imresize_ysize = 64;
 
 
 /* ================================================================
@@ -46,11 +48,11 @@ static long *imresize_ysize     = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &imresize_inimname, \
+    X(".in_name", imresize_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
-    X(".out_name", &imresize_outimname, \
+    X(".out_name", imresize_outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image") \
@@ -209,7 +211,7 @@ static errno_t compute_function()
         dcimg, dcnimg);
     IMGID out = stream_connect_create_2Df32(
         imresize_outimname,
-        *imresize_xsize, *imresize_ysize);
+        imresize_xsize, imresize_ysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

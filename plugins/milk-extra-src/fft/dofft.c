@@ -41,9 +41,11 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *dofft_inimname  = NULL;
-static char *dofft_outimname = NULL;
-static int  *dofft_dir       = NULL;
+static char dofft_inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char dofft_outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static int32_t dofft_dir = 0;
 
 
 /* ================================================================
@@ -51,11 +53,11 @@ static int  *dofft_dir       = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &dofft_inimname, \
+    X(".in_name", dofft_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input complex image") \
-    X(".out_name", &dofft_outimname, \
+    X(".out_name", dofft_outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output complex image") \
