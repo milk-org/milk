@@ -70,70 +70,202 @@ INIT_MODULE_LIB(ZernikePolyn)
 /* ================================================================== */
 /* ================================================================== */
 
-// CLI commands
-//
-// function CLI_checkarg used to check arguments
-// 1: float
-// 2: long
-// 3: string
-// 4: existing image
-//
+// Forward declarations
+imageID mk_zer(
+    const char *ID_name,
+    long SIZE,
+    long zer_nb,
+    float rpix);
 
-errno_t mk_zer_cli()
+long ZERNIKEPOLYN_rmPiston(
+    const char *ID_name,
+    const char *IDmask_name);
+
+/* ============================================
+ * Command: mkzer
+ * ============================================ */
+
+static char mkz_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "z43";
+static int64_t mkz_size = 512;
+static int64_t mkz_index = 43;
+static double mkz_rpix = 100.0;
+
+static FPS_APP_INFO FPS_app_info_mkz = {
+    .fps_name    = "mkzer",
+    .cmdkey      = "mkzer",
+    .description =
+        "create Zernike polynomial"
+};
+
+#define FPS_PARAMS_MKZ(X) \
+    X(".out_name", mkz_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".size", &mkz_size, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image size") \
+    X(".zerindex", &mkz_index, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Zernike index") \
+    X(".rpix", &mkz_rpix, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius in pixels")
+
+#include "fps.h"
+
+static FPS_CLI_BINDING mkz_bindings[] = {
+    FPS_PARAMS_MKZ(FPS_X_BINDING)
+};
+static const int mkz_nb_bindings =
+    sizeof(mkz_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_MKZ(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS mkz_cms = {0};
+
+static __attribute__((constructor))
+void init_mkz_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_STR_NOT_IMG) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_FLOAT64) ==
-            0)
-    {
-        mk_zer(data.cmdargtoken[1].val.string,
-               data.cmdargtoken[2].val.numl,
-               data.cmdargtoken[3].val.numl,
-               data.cmdargtoken[4].val.numf);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info_mkz.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info_mkz.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    CLIcmddata.nbarg =
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &mkz_cms;
     }
 }
 
-errno_t ZERNIKEPOLYN_rmPiston_cli()
+static errno_t mkz_compute(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) == 0)
-    {
-        ZERNIKEPOLYN_rmPiston(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string);
+    mk_zer(mkz_out,
+            (long) mkz_size,
+            (long) mkz_index,
+            (float) mkz_rpix);
+    return RETURN_SUCCESS;
+}
 
-        return CLICMD_SUCCESS;
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_mkz, farg,
+        &CLIcmddata,
+        mkz_bindings, mkz_nb_bindings,
+        mkz_compute);
+}
+
+/* ============================================
+ * Command: rmcpiston
+ * ============================================ */
+
+static char rmp_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "wfc";
+static char rmp_mask[FUNCTION_PARAMETER_STRMAXLEN]
+    = "mask";
+
+static FPS_APP_INFO FPS_app_info_rmp = {
+    .fps_name    = "rmcpiston",
+    .cmdkey      = "rmcpiston",
+    .description =
+        "remove piston term from WF cube"
+};
+
+#define FPS_PARAMS_RMP(X) \
+    X(".in_name", rmp_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "WF cube") \
+    X(".mask_name", rmp_mask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "aperture mask")
+
+static FPS_CLI_BINDING rmp_bindings[] = {
+    FPS_PARAMS_RMP(FPS_X_BINDING)
+};
+static const int rmp_nb_bindings =
+    sizeof(rmp_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rmp_farg[] = {
+    FPS_PARAMS_RMP(FPS_X_FARG)
+};
+static CLICMDDATA rmp_CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS rmp_cms = {0};
+
+static __attribute__((constructor))
+void init_rmp_cms(void)
+{
+    strncpy(rmp_CLIcmddata.key,
+            FPS_app_info_rmp.cmdkey,
+            sizeof(rmp_CLIcmddata.key) - 1);
+    strncpy(rmp_CLIcmddata.description,
+            FPS_app_info_rmp.description,
+            sizeof(rmp_CLIcmddata.description)
+            - 1);
+    rmp_CLIcmddata.nbarg =
+        sizeof(rmp_farg) / sizeof(CLICMDARGDEF);
+    rmp_CLIcmddata.funcfpscliarg = rmp_farg;
+    rmp_CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (rmp_CLIcmddata.cmdsettings == NULL) {
+        rmp_CLIcmddata.cmdsettings = &rmp_cms;
     }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+}
+
+static errno_t rmp_compute(void)
+{
+    ZERNIKEPOLYN_rmPiston(rmp_in, rmp_mask);
+    return RETURN_SUCCESS;
+}
+
+static errno_t rmp_CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rmp, rmp_farg,
+        &rmp_CLIcmddata,
+        rmp_bindings, rmp_nb_bindings,
+        rmp_compute);
 }
 
 static errno_t init_module_CLI()
 {
+    /* mkzer */
+    {
+        safe_fps_fill_farg_examples(
+            farg, mkz_bindings,
+            mkz_nb_bindings);
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
-    RegisterCLIcommand(
-        "mkzer",
-        __FILE__,
-        mk_zer_cli,
-        "create Zernike polynomial",
-        "<output image> <size> <zern index> <rpix>",
-        "mkzer z43 512 43 100.0",
-        "mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)");
-
-    RegisterCLIcommand("rmcpiston",
-                       __FILE__,
-                       ZERNIKEPOLYN_rmPiston_cli,
-                       "remove piston term from WF cube",
-                       "<WF cube> <aperture mask>",
-                       "rmcpiston wfc mask",
-                       "long ZERNIKEPOLYN_rmPiston(const char *ID_name, const "
-                       "char *IDmask_name);");
-
+    /* rmcpiston */
+    {
+        safe_fps_fill_farg_examples(
+            rmp_farg, rmp_bindings,
+            rmp_nb_bindings);
+        int cmdi = RegisterCLIcmd(
+            rmp_CLIcmddata, rmp_CLIfunction);
+        rmp_CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     CLIADDCMD_ZernikePolyn__mkzercube();
 

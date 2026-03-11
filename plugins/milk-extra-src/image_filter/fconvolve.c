@@ -1,10 +1,6 @@
 /**
  * @file fconvolve.c
- * @brief Fconvolve module
- */
-
-/** @file fconvolve.c
- *
+ * @brief Fourier-based convolution
  */
 
 #include <math.h>
@@ -14,56 +10,101 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "fft/fft.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID fconvolve(
+    const char *__restrict name_in,
+    const char *__restrict name_ke,
+    const char *__restrict name_out);
 
-imageID fconvolve(const char *__restrict name_in,
-                  const char *__restrict name_ke,
-                  const char *__restrict name_out);
+static char fconv_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static char fconv_ke[FUNCTION_PARAMETER_STRMAXLEN]
+    = "kernim";
+static char fconv_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "fconv",
+    .cmdkey      = "fconv",
+    .description =
+        "Fourier-based convolution"
+};
 
-static errno_t fconvolve_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", fconv_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".ke_name", fconv_ke, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "kernel image") \
+    X(".out_name", fconv_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING FPS_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(FPS_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
-    {
-        fconvolve(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
-                  data.cmdargtoken[3].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    CLIcmddata.nbarg =
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t fconvolve_addCLIcmd()
+static errno_t compute_function()
 {
+    fconvolve(fconv_in, fconv_ke, fconv_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("fconv",
-                       __FILE__,
-                       fconvolve_cli,
-                       "Fourier-based convolution",
-                       "<input image> <kernel> <output image>",
-                       "fconv imin kernim imout",
-                       "long fconvolve(const char *ID_in, const char *ID_ke, "
-                       "const char *ID_out)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg,
+        &CLIcmddata,
+        FPS_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_filter__fconvolve()
+{
+    safe_fps_fill_farg_examples(
+        farg, FPS_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
