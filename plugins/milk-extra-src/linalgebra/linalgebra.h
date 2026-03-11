@@ -22,7 +22,6 @@
 #include "linalgebra/GPU_loop_MultMat_setup.h"
 #include "linalgebra/GPUloadCmat.h"
 #include "linalgebra/magma_MatMatMult_testPseudoInverse.h"
-#include "linalgebra/cublas_linalgebra_MVMextractModesLoop.h"
 #include "linalgebra/linalgebrainit.h"
 #include "linalgebra/cublas_linalgebratest.h"
 #include "linalgebra/magma_compute_SVDpseudoInverse.h"
