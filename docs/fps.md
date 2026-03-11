@@ -120,3 +120,6 @@ identity, defining `FPS_PARAMS` with an X-macro to bind
 shared memory to local C references, and wrapping the
 core math inside `fpsexec()`.
 
+
+---
+← [Documentation Index](index.md)

@@ -139,3 +139,6 @@ milk-fpsCTRL myfirstexec
 ```
 
 Congratulations! You've successfully written a milk module and an FPS compute block.
+
+---
+← [Documentation Index](../index.md)

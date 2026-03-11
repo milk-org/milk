@@ -128,3 +128,6 @@ $ sudo make install
 See
 [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 for detailed build instructions and prerequisites.
+
+---
+← [Documentation Index](index.md)

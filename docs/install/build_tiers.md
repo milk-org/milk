@@ -96,3 +96,6 @@ are compiled out via `#ifdef USE_CFITSIO` guards:
 > real-time deployments where only shared-memory stream
 > processing is needed and disk I/O to FITS files is
 > unnecessary.
+
+---
+← [Documentation Index](../index.md)

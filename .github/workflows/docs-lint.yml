@@ -44,3 +44,18 @@ jobs:
           folder-path: 'docs/'
           file-extension: '.md'
           use-quiet-mode: 'yes'
+
+  spell-check:
+    name: Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check spelling
+        uses: crate-ci/typos@v1.29.5
+        with:
+          files: |
+            docs/
+            README.md
+            CONTRIBUTING.md
+            plugins/milk-extra-src/*/README.md
