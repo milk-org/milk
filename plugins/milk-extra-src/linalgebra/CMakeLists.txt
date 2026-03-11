@@ -9,7 +9,6 @@ set(SOURCEFILES
 	cublas_Coeff2Map_Loop.c
 	linalgebrainit.c
 	cublas_linalgebratest.c
-	cublas_linalgebra_MVMextractModesLoop.c
 	GPU_loop_MultMat_free.c
 	GPU_loop_MultMat_execute.c
 	GPU_loop_MultMat_setup.c
@@ -39,7 +38,6 @@ set(INCLUDEFILES
 	linalgebra_types.h
 	linalgebrainit.h
 	cublas_linalgebratest.h
-	cublas_linalgebra_MVMextractModesLoop.h
 	GPU_loop_MultMat_free.h
 	GPU_loop_MultMat_execute.h
 	GPU_loop_MultMat_setup.h

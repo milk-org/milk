@@ -26,7 +26,6 @@
 #include "GramSchmidt.h"
 #include "MVMextractModes.h"
 #include "magma_MatMatMult_testPseudoInverse.h"
-#include "cublas_linalgebra_MVMextractModesLoop.h"
 #include "linalgebrainit.h"
 #include "cublas_linalgebratest.h"
 #include "magma_compute_SVDpseudoInverse.h"
@@ -108,7 +107,6 @@ static errno_t init_module_CLI()
 #endif
 
     Coeff2Map_Loop_addCLIcmd();
-    linalgebra_MVMextractModesLoop_addCLIcmd();
 #endif
 
     CLIADDCMD_linalgebra__MVMextractModes();
