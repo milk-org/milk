@@ -34,7 +34,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imname = NULL;
+static char imname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
 
 
 /* ================================================================
@@ -42,7 +43,7 @@ static char *imname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".imname", &imname, \
+    X(".imname", imname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "image name")

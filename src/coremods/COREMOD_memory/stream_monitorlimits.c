@@ -33,12 +33,13 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inimname = NULL;
-static int64_t *dtus     = NULL;
-static int32_t *minON    = NULL;
-static float   *minVal   = NULL;
-static int32_t *maxON    = NULL;
-static float   *maxVal   = NULL;
+static char    inimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static int64_t dtus     = 100000;
+static int32_t minON    = 0;
+static float   minVal   = 0.0;
+static int32_t maxON    = 0;
+static float   maxVal   = 1000.0;
 
 
 /* ================================================================
@@ -46,7 +47,7 @@ static float   *maxVal   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
+    X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input stream") \
@@ -109,17 +110,17 @@ static errno_t monitor_logic(IMGID *imgptr)
         STRINGMAXLEN_PROCESSINFO_STATUSMSG];
     msg[0] = '\0';
 
-    if(*minON && (minv < *minVal))
+    if(minON && (minv < minVal))
     {
         limit_exceeded = 1;
         snprintf(
             msg,
             STRINGMAXLEN_PROCESSINFO_STATUSMSG,
             "MIN LIMIT EXCEEDED: %f < %f",
-            minv, *minVal);
+            minv, minVal);
     }
 
-    if(*maxON && (maxv > *maxVal))
+    if(maxON && (maxv > maxVal))
     {
         limit_exceeded = 1;
         if(msg[0] != '\0')
@@ -131,7 +132,7 @@ static errno_t monitor_logic(IMGID *imgptr)
         char tmpmsg[100];
         snprintf(tmpmsg, 100,
                  "MAX LIMIT EXCEEDED: %f > %f",
-                 maxv, *maxVal);
+                 maxv, maxVal);
         strncat(msg, tmpmsg,
                 STRINGMAXLEN_PROCESSINFO_STATUSMSG
                 - strlen(msg) - 1);
@@ -214,7 +215,7 @@ static errno_t compute_function()
             -1);
         processinfo->triggerdelay.tv_sec = 0;
         processinfo->triggerdelay.tv_nsec =
-            (*dtus) * 1000;
+            dtus * 1000;
         while(processinfo->triggerdelay.tv_nsec
               >= 1000000000)
         {
@@ -278,18 +279,13 @@ FPS_MAIN_STANDALONE_V2(
 errno_t stream_monitorlimits(
     const char *instreamname)
 {
-    inimname = strdup(instreamname);
-    int64_t default_dtus  = 100000;
-    int32_t default_minON = 0;
-    float   default_minVal = 0.0;
-    int32_t default_maxON = 0;
-    float   default_maxVal = 1000.0;
-
-    dtus   = &default_dtus;
-    minON  = &default_minON;
-    minVal = &default_minVal;
-    maxON  = &default_maxON;
-    maxVal = &default_maxVal;
+    strncpy(inimname, instreamname,
+        FUNCTION_PARAMETER_STRMAXLEN - 1);
+    dtus   = 100000;
+    minON  = 0;
+    minVal = 0.0;
+    maxON  = 0;
+    maxVal = 1000.0;
 
     return compute_function();
 }

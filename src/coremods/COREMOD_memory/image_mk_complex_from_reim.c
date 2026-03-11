@@ -30,9 +30,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inreimname  = NULL;
-static char *inimimname  = NULL;
-static char *outimname   = NULL;
+static char inreimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "imre";
+static char inimimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "imim";
+static char outimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "imc";
 
 
 /* ================================================================
@@ -40,15 +43,15 @@ static char *outimname   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".imre_name", &inreimname, \
+    X(".imre_name", inreimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "real image") \
-    X(".imim_name", &inimimname, \
+    X(".imim_name", inimimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "imaginary image") \
-    X(".out_name", &outimname, \
+    X(".out_name", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output complex image")

@@ -18,20 +18,23 @@ static FPS_APP_INFO FPS_app_info = {
     .description = "multiply image by vector"
 };
 
-static char *iminname;
-static char *vecname;
-static char *imoutname;
-static uint32_t *multaxis;
+static char iminname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char vecname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char imoutname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static uint32_t multaxis = 0;
 
 
 #define FPS_PARAMS(X) \
-    X(".iminname", &iminname, \
+    X(".iminname", iminname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input image name") \
-    X(".vecname", &vecname, \
+    X(".vecname", vecname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input vector name") \
-    X(".imoutname", &imoutname, \
+    X(".imoutname", imoutname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, "output image name") \
     X(".axis", &multaxis, \
@@ -196,7 +199,7 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        image_vect_multiply(imgimin, imgvec, &imgout, *multaxis);
+        image_vect_multiply(imgimin, imgvec, &imgout, multaxis);
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END

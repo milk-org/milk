@@ -81,7 +81,7 @@ static int CLI_checkarg0(
     DEBUG_TRACE_FSTART();
 
     int      rval = 2; // Default to 'wrong type'
-    uint32_t ftype = funcargtype & 0x0000FFFF;
+    uint32_t ftype = funcargtype;
     int      ttype = data.cmdargtoken[CLIargnum].type;
 
     if(strcmp(data.cmdargtoken[CLIargnum].val.string, "?") == 0)

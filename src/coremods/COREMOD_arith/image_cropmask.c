@@ -17,22 +17,25 @@ static FPS_APP_INFO FPS_app_info = {
     .description = "crop and mask image"
 };
 
-static char *cminsname;
-static char *masksname;
-static char *outsname;
-static uint32_t *cropxstart;
-static uint32_t *cropxsize;
-static uint32_t *cropystart;
-static uint32_t *cropysize;
+static char cminsname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char masksname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outsname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static uint32_t cropxstart = 0;
+static uint32_t cropxsize  = 64;
+static uint32_t cropystart = 0;
+static uint32_t cropysize  = 64;
 
 #define FPS_PARAMS(X) \
-    X(".insname", &cminsname, \
+    X(".insname", cminsname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input stream name") \
-    X(".masksname", &masksname, \
+    X(".masksname", masksname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "mask stream name") \
-    X(".outsname", &outsname, \
+    X(".outsname", outsname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "output stream name") \
     X(".cropxstart", &cropxstart, \
@@ -116,20 +119,20 @@ static errno_t compute_function()
     //long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNNECT TO OR CREATE MASK STREAM
-    IMGID imgmask = stream_connect_create_2Df32(masksname, *cropxsize, *cropysize);
+    IMGID imgmask = stream_connect_create_2Df32(masksname, cropxsize, cropysize);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
-    IMGID imgout = stream_connect_create_2Df32(outsname, *cropxsize, *cropysize);
+    IMGID imgout = stream_connect_create_2Df32(outsname, cropxsize, cropysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
         const uint32_t in_xsize = imgin.md->size[0];
-        const uint32_t crop_xsize = *cropxsize;
-        const uint32_t crop_ysize = *cropysize;
-        const uint32_t crop_ystart = *cropystart;
-        const uint32_t crop_xstart = *cropxstart;
+        const uint32_t crop_xsize = cropxsize;
+        const uint32_t crop_ysize = cropysize;
+        const uint32_t crop_ystart = cropystart;
+        const uint32_t crop_xstart = cropxstart;
 
         for(uint32_t jj = 0; jj < crop_ysize; jj++)
         {

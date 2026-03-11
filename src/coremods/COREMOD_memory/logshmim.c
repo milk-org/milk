@@ -66,21 +66,24 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *streamname    = NULL;
-static int32_t  *saveON        = NULL;
-static int32_t  *lastcubeON    = NULL;
-static int32_t  *nextcube      = NULL;
-static uint32_t *cubesize      = NULL;
-static char     *savedirname   = NULL;
-static uint64_t *frameindex    = NULL;
-static uint64_t *framecnt      = NULL;
-static uint64_t *maxframecnt   = NULL;
-static uint64_t *filecnt       = NULL;
-static uint64_t *maxfilecnt    = NULL;
-static char     *outfname      = NULL;
-static int32_t  *compressON    = NULL;
-static float    *savetime      = NULL;
-static uint32_t *writerRTprio  = NULL;
+static char     streamname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static int32_t  saveON        = 0;
+static int32_t  lastcubeON    = 0;
+static int32_t  nextcube      = 0;
+static uint32_t cubesize      = 10000;
+static char     savedirname[
+    FUNCTION_PARAMETER_STRMAXLEN] = ".";
+static uint64_t frameindex    = 0;
+static uint64_t framecnt      = 0;
+static uint64_t maxframecnt   = 0;
+static uint64_t filecnt       = 0;
+static uint64_t maxfilecnt    = 0;
+static char     outfname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "";
+static int32_t  compressON    = 0;
+static float    savetime      = 0.0;
+static uint32_t writerRTprio  = 0;
 
 
 /* ================================================================
@@ -88,7 +91,7 @@ static uint32_t *writerRTprio  = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".sname", &streamname, \
+    X(".sname", streamname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "stream image") \
@@ -108,7 +111,7 @@ static uint32_t *writerRTprio  = NULL;
       FPTYPE_UINT32, 1, \
       (FPFLAG_DEFAULT_INPUT), \
       "cube size, nb frame per cube") \
-    X(".dirname", &savedirname, \
+    X(".dirname", savedirname, \
       FPTYPE_STRING, 1, \
       (FPFLAG_DEFAULT_INPUT), \
       "log directory") \
@@ -132,7 +135,7 @@ static uint32_t *writerRTprio  = NULL;
       FPTYPE_UINT64, 0, \
       FPFLAG_DEFAULT_INPUT, \
       "max file counter") \
-    X(".outfname", &outfname, \
+    X(".outfname", outfname, \
       FPTYPE_STRING, 0, \
       FPFLAG_DEFAULT_OUTPUT, \
       "output file name") \
@@ -524,7 +527,7 @@ static errno_t compute_function()
     {
         ysize = 1;
     }
-    uint32_t zsize = (*cubesize);
+    uint32_t zsize = cubesize;
 
     uint8_t datatype = inimg.md->datatype;
 
@@ -602,7 +605,7 @@ static errno_t compute_function()
     {
     }
 
-    int saveON_last = (*saveON);
+    int saveON_last = saveON;
 
     char FITSffilename[
         STRINGMAXLEN_FULLFILENAME];
@@ -614,22 +617,22 @@ static errno_t compute_function()
 
     double *array_time =
         (double *) malloc(sizeof(double)
-                          * (*cubesize) * 2);
+                          * cubesize * 2);
     double *array_aqtime =
         (double *) malloc(sizeof(double)
-                          * (*cubesize) * 2);
+                          * cubesize * 2);
     uint64_t *array_cnt0 =
         (uint64_t *) malloc(sizeof(uint64_t)
-                            * (*cubesize) * 2);
+                            * cubesize * 2);
     uint64_t *array_cnt1 =
         (uint64_t *) malloc(sizeof(uint64_t)
-                            * (*cubesize) * 2);
+                            * cubesize * 2);
 
     int thread_initialized = 0;
 
-    *framecnt   = 0;
-    *frameindex = 0;
-    *filecnt    = 0;
+    framecnt   = 0;
+    frameindex = 0;
+    filecnt    = 0;
 
     int lastcube = 0;
 
@@ -683,17 +686,17 @@ static errno_t compute_function()
             {
 
                 if((saveON_last == 0)
-                    && ((*saveON) == 1))
+                    && (saveON == 1))
                 {
                     lastcube = 0;
-                    (*framecnt) = 0;
-                    (*filecnt) = 0;
+                    framecnt = 0;
+                    filecnt = 0;
                 }
 
-                if((*framecnt)
-                    >= (*maxframecnt))
+                if(framecnt
+                    >= maxframecnt)
                 {
-                    (*saveON) = 0;
+                    saveON = 0;
                     if(fpi_saveON >= 0)
                         dcfpsptr
                             ->parray[fpi_saveON]
@@ -701,15 +704,15 @@ static errno_t compute_function()
                             &= ~FPFLAG_ONOFF;
                 }
 
-                if((*filecnt)
-                    >= (*maxfilecnt) - 1)
+                if(filecnt
+                    >= maxfilecnt - 1)
                 {
                     lastcube = 1;
                 }
 
-                if((*saveON) == 1)
+                if(saveON == 1)
                 {
-                    if((*frameindex) == 0)
+                    if(frameindex == 0)
                     {
                         printf(
                             "========================="
@@ -787,9 +790,9 @@ static errno_t compute_function()
 
                     {
                         long tindex =
-                            (*frameindex)
+                            frameindex
                             + buffindex
-                            * (*cubesize);
+                            * cubesize;
                         {
                             array_cnt0[tindex] =
                                 inimg.md->cnt0;
@@ -861,7 +864,7 @@ static errno_t compute_function()
                         }
                         ptr1 = ptr1_0
                             + framesize
-                            * (*frameindex);
+                            * frameindex;
 
                         memcpy((void *) ptr1,
                                (void *) ptr0,
@@ -873,11 +876,11 @@ static errno_t compute_function()
                         "buff %d file %lu"
                         " frameindex %lu",
                         buffindex,
-                        (*filecnt),
-                        (*frameindex));
+                        filecnt,
+                        frameindex);
 
-                    (*frameindex) ++;
-                    (*framecnt) ++;
+                    frameindex ++;
+                    framecnt ++;
                 }
                 else
                 {
@@ -890,20 +893,20 @@ static errno_t compute_function()
 
         int SaveCube = 0;
 
-        if((*frameindex) >= (*cubesize))
+        if(frameindex >= cubesize)
         {
             SaveCube = 1;
         }
 
         if((saveON_last == 1)
-            && ((*saveON) == 0))
+            && (saveON == 0))
         {
             SaveCube = 1;
         }
 
-        if((*nextcube) == 1)
+        if(nextcube == 1)
         {
-            (*nextcube) = 0;
+            nextcube = 0;
             if(fpi_nextcube >= 0)
                 dcfpsptr
                     ->parray[fpi_nextcube]
@@ -919,13 +922,14 @@ static errno_t compute_function()
 
         if(SaveCube == 1)
         {
-            if((*frameindex) > 0)
+            if(frameindex > 0)
             {
                 printf(
                     "SAVING %5ld FRAMES"
                     " of BUFFER %d to"
                     " FILE %s\n",
-                    (*frameindex), buffindex,
+                    (long) frameindex,
+                    buffindex,
                     FITSffilename);
                 fflush(stdout);
 
@@ -956,10 +960,10 @@ static errno_t compute_function()
                            ASCIITIMEffilename);
                     tmsg->saveascii = 1;
                     tmsg->cubesize =
-                        (*frameindex);
+                        frameindex;
 
-                    if((*frameindex)
-                        != (*cubesize))
+                    if(frameindex
+                        != cubesize)
                     {
                         tmsg->partial = 1;
                     }
@@ -991,19 +995,19 @@ static errno_t compute_function()
                                ->name);
                         tmsg->arrayindex =
                             &array_cnt0[
-                                (*cubesize)];
+                                cubesize];
                         tmsg->arraycnt0 =
                             &array_cnt0[
-                                (*cubesize)];
+                                cubesize];
                         tmsg->arraycnt1 =
                             &array_cnt1[
-                                (*cubesize)];
+                                cubesize];
                         tmsg->arraytime =
                             &array_time[
-                                (*cubesize)];
+                                cubesize];
                         tmsg->arrayaqtime =
                             &array_aqtime[
-                                (*cubesize)];
+                                cubesize];
                     }
 
                     WRITE_FILENAME(
@@ -1013,7 +1017,7 @@ static errno_t compute_function()
                         dcshmdir,
                         streamname);
 
-                    if((*compressON) == 0)
+                    if(compressON == 0)
                     {
                         strcpy(
                             tmsg
@@ -1075,7 +1079,7 @@ static errno_t compute_function()
                                     __LINE__);
                             }
                         }
-                        (*savetime) =
+                        savetime =
                             tmsg->timespan;
                         printf(
                             "\n **************"
@@ -1086,7 +1090,7 @@ static errno_t compute_function()
                     }
 
                     tmsg->writerRTprio =
-                        (*writerRTprio);
+                        writerRTprio;
                     iret_savefits =
                         pthread_create(
                             &thread_savefits,
@@ -1108,8 +1112,8 @@ static errno_t compute_function()
                 }
                 SaveCube = 0;
 
-                (*frameindex) = 0;
-                (*filecnt) ++;
+                frameindex = 0;
+                filecnt ++;
             }
 
             if(buffindex == 0)
@@ -1132,16 +1136,16 @@ static errno_t compute_function()
             }
 
             if((lastcube == 1)
-                || ((*lastcubeON) == 1))
+                || (lastcubeON == 1))
             {
-                (*saveON) = 0;
+                saveON = 0;
                 if(fpi_saveON >= 0)
                     dcfpsptr
                         ->parray[fpi_saveON]
                         .fpflag
                         &= ~FPFLAG_ONOFF;
 
-                (*lastcubeON) = 0;
+                lastcubeON = 0;
                 if(fpi_lastcubeON >= 0)
                     dcfpsptr
                         ->parray[fpi_lastcubeON]
@@ -1150,7 +1154,7 @@ static errno_t compute_function()
             }
         }
 
-        saveON_last = (*saveON);
+        saveON_last = saveON;
     }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
