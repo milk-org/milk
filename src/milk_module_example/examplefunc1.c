@@ -35,8 +35,6 @@ static double *scoeff; // matches CLIARG_FLOAT64
 // static int64_t *    for CLIARG_INT64, CLIARG_ONOFF, CLIARG_LONG
 
 
-
-
 // List of arguments to function
 // { CLItype, tag, description, initial value, flag, fptype, fpflag }
 //
@@ -73,7 +71,6 @@ static CLICMDDATA CLIcmddata =
     "compute total of image example1", // brief (1-line) description of what the function does
     CLICMD_FIELDS_NOFPS                // do NOT use Function Parameter Structure (FPS)
 };
-
 
 
 /** @brief Compute function code
@@ -156,7 +153,6 @@ static errno_t compute_function()
 
 
 INSERT_STD_CLIfunction
-
 
 
 /** @brief Register CLI command

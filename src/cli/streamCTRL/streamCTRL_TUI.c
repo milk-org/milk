@@ -9,8 +9,6 @@
  */
 
 
-
-
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
@@ -51,7 +49,6 @@ typedef int errno_t;
 static short unsigned int wrow, wcol;
 
 
-
 // current streamCTRL TUI status
 
 struct streamCTRL_TUI_parameters
@@ -69,12 +66,6 @@ struct streamCTRL_TUI_parameters
     float frequ; // Hz
     long ssindex[streamNBID_MAX]; // sorted index array
 } sTUIparam;
-
-
-
-
-
-
 
 
 static void streamCTRL_TUI_exit()
@@ -323,14 +314,6 @@ static errno_t streamCTRL_keyinput_process(
 }
 
 
-
-
-
-
-
-
-
-
 /**
  * @brief Control screen for stream structures
  *
@@ -354,7 +337,6 @@ errno_t streamCTRL_CTRLscreen()
     sTUIparam.frequ = 32.0; // Hz
 
 
-
     int stringmaxlen = 300;
 
     // Display fields
@@ -366,11 +348,8 @@ errno_t streamCTRL_CTRLscreen()
     long doffsetindex = 0; // offset index if more entries than can be displayed
 
 
-
     int monstrlen = 200;
     char  monstring[monstrlen];
-
-
 
 
     DEBUG_TRACEPOINT("function start ");
@@ -455,8 +434,6 @@ errno_t streamCTRL_CTRLscreen()
     long long loopcnt  = 0;
 
 
-
-
     streaminfoproc.filter       = 0;
     streaminfoproc.NBstream     = 0;
     streaminfoproc.twaitus      = 50000; // 20 Hz
@@ -505,7 +482,6 @@ errno_t streamCTRL_CTRLscreen()
     DEBUG_TRACEPOINT("Scan thread started");
 
 
-
     loopcnt = 0;
 
     DEBUG_TRACEPOINT("get terminal size");
@@ -547,7 +523,6 @@ errno_t streamCTRL_CTRLscreen()
 
         DEBUG_TRACEPOINT("Process input character");
         streamCTRL_keyinput_process(ch, &streamCTRLdata);
-
 
 
         DEBUG_TRACEPOINT("Input character processed");
@@ -991,9 +966,6 @@ errno_t streamCTRL_CTRLscreen()
             }
 
 
-
-
-
             // DISPLAY
             //
             //
@@ -1094,7 +1066,6 @@ errno_t streamCTRL_CTRLscreen()
                             TUI_printfw("failed verification");
                             break;
                         }
-
 
 
                         if(dindex == sTUIparam.dindexSelected)

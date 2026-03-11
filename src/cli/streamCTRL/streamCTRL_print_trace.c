@@ -16,8 +16,6 @@ typedef int errno_t;
 #include "streamCTRL_print_procpid.h"
 
 
-
-
 errno_t streamCTRL_print_SPTRACE_details(
     IMAGE   *streamCTRLimages,
     imageID  ID,

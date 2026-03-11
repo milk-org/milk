@@ -71,7 +71,9 @@ int function_parameter_print_info(
             if (fps->parray[pindex].type == FPTYPE_STREAMNAME) {
                 snprintf(valstring, 200, "%s", fps->parray[pindex].val.string[0]);
             } else {
-                functionparameter_GetParamValueString(&fps->parray[pindex], valstring, 200);
+                functionparameter_GetParamValueString(&fps->parray[pindex],
+                    valstring,
+                    200);
             }
             int vl = strlen(valstring);
             if (vl > val_width) val_width = vl;
@@ -90,7 +92,9 @@ int function_parameter_print_info(
             if (fps->parray[pindex].type == FPTYPE_STREAMNAME) {
                 snprintf(valstring, 200, "%s", fps->parray[pindex].val.string[0]);
             } else {
-                functionparameter_GetParamValueString(&fps->parray[pindex], valstring, 200);
+                functionparameter_GetParamValueString(&fps->parray[pindex],
+                    valstring,
+                    200);
             }
             
             const char* type_str = "UNKNOWN";

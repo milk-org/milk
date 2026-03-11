@@ -143,7 +143,9 @@ int main(int argc, char *argv[])
             if(track_idx == -1) {
                 // New FPS found
                 track_idx = track_list_cnt++;
-                strncpy(track_list[track_idx].name, fpsarray[i].md->name, STRINGMAXLEN_FPS_NAME - 1);
+                strncpy(track_list[track_idx].name,
+                    fpsarray[i].md->name,
+                    STRINGMAXLEN_FPS_NAME - 1);
                 track_list[track_idx].NBparam = fpsarray[i].md->NBparamMAX;
                 track_list[track_idx].params = (PARAM_TRACK *) calloc(fpsarray[i].md->NBparamMAX, sizeof(PARAM_TRACK));
                 
@@ -157,9 +159,14 @@ int main(int argc, char *argv[])
                 // Initialize values
                 for(int p = 0; p < fpsarray[i].md->NBparamMAX; p++) {
                     if (fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE) {
-                        strncpy(track_list[track_idx].params[p].keywordfull, fpsarray[i].parray[p].keywordfull, sizeof(track_list[0].params[0].keywordfull)-1);
+                        strncpy(track_list[track_idx].params[p].keywordfull,
+                            fpsarray[i].parray[p].keywordfull,
+                            sizeof(track_list[0].params[0].keywordfull)-1);
                         track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
-                        functionparameter_GetParamValueString(&fpsarray[i].parray[p], track_list[track_idx].params[p].value, VALSTR_LEN);
+                        functionparameter_GetParamValueString(
+                            &fpsarray[i].parray[p],
+                            track_list[track_idx].params[p].value,
+                            VALSTR_LEN);
                     } else {
                         track_list[track_idx].params[p].cnt0 = -1;
                         track_list[track_idx].params[p].keywordfull[0] = '\0';
@@ -173,9 +180,14 @@ int main(int argc, char *argv[])
                 // Initialize new ones if any
                 for(int p = track_list[track_idx].NBparam; p < fpsarray[i].md->NBparamMAX; p++) {
                     if (fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE) {
-                        strncpy(track_list[track_idx].params[p].keywordfull, fpsarray[i].parray[p].keywordfull, sizeof(track_list[0].params[0].keywordfull)-1);
+                        strncpy(track_list[track_idx].params[p].keywordfull,
+                            fpsarray[i].parray[p].keywordfull,
+                            sizeof(track_list[0].params[0].keywordfull)-1);
                         track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
-                        functionparameter_GetParamValueString(&fpsarray[i].parray[p], track_list[track_idx].params[p].value, VALSTR_LEN);
+                        functionparameter_GetParamValueString(
+                            &fpsarray[i].parray[p],
+                            track_list[track_idx].params[p].value,
+                            VALSTR_LEN);
                     } else {
                         track_list[track_idx].params[p].keywordfull[0] = '\0';
                         track_list[track_idx].params[p].cnt0 = -1;
@@ -191,7 +203,10 @@ int main(int argc, char *argv[])
                 
                 if(fpsarray[i].parray[p].cnt0 != track_list[track_idx].params[p].cnt0) {
                     char current_val[VALSTR_LEN];
-                    functionparameter_GetParamValueString(&fpsarray[i].parray[p], current_val, VALSTR_LEN);
+                    functionparameter_GetParamValueString(
+                        &fpsarray[i].parray[p],
+                        current_val,
+                        VALSTR_LEN);
                     
                     if (track_list[track_idx].params[p].cnt0 != -1) {
                          print_ut_timestamp();
@@ -204,8 +219,12 @@ int main(int argc, char *argv[])
                          fflush(stdout);
                     }
                     
-                    strncpy(track_list[track_idx].params[p].keywordfull, fpsarray[i].parray[p].keywordfull, sizeof(track_list[0].params[0].keywordfull)-1);
-                    strncpy(track_list[track_idx].params[p].value, current_val, VALSTR_LEN - 1);
+                    strncpy(track_list[track_idx].params[p].keywordfull,
+                        fpsarray[i].parray[p].keywordfull,
+                        sizeof(track_list[0].params[0].keywordfull)-1);
+                    strncpy(track_list[track_idx].params[p].value,
+                        current_val,
+                        VALSTR_LEN - 1);
                     track_list[track_idx].params[p].cnt0 = fpsarray[i].parray[p].cnt0;
                 }
             }

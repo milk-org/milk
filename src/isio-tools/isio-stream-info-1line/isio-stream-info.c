@@ -20,7 +20,6 @@
 #include "ImageStreamIO/ImageStreamIO.h"
 
 
-
 int main(int argc, char *argv[])
 {
     char *shmdirname = getenv("MILK_SHM_DIR");
@@ -39,7 +38,6 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-
 
 
     for(int i = 1; i < argc; i++)

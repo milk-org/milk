@@ -21,8 +21,6 @@
 #endif
 
 
-
-
 errno_t function_parameter_struct_create(
     int NBparamMAX,
     const char *name
@@ -100,9 +98,13 @@ errno_t function_parameter_struct_create(
     strncpy(fps.md->name, name, STRINGMAXLEN_FPS_NAME - 1);
 
     // Use global defaults
-    strncpy(fps.md->callprogname, FPS_callprogname, FPS_CALLPROGNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callprogname,
+        FPS_callprogname,
+        FPS_CALLPROGNAME_STRMAXLEN - 1);
 
-    strncpy(fps.md->callfuncname, FPS_callfuncname, FPS_CALLFUNCNAME_STRMAXLEN - 1);
+    strncpy(fps.md->callfuncname,
+        FPS_callfuncname,
+        FPS_CALLFUNCNAME_STRMAXLEN - 1);
 
     {
         char path[512];
@@ -225,7 +227,12 @@ errno_t function_parameter_struct_realloc(
 
     // 3. Remap
     fps->md = (FUNCTION_PARAMETER_STRUCT_MD *)
-              mmap(0, sharedsize_new, PROT_READ | PROT_WRITE, MAP_SHARED, fps->SMfd, 0);
+              mmap(0,
+                  sharedsize_new,
+                  PROT_READ | PROT_WRITE,
+                  MAP_SHARED,
+                  fps->SMfd,
+                  0);
     if(fps->md == MAP_FAILED)
     {
         perror("Error re-mmapping the file");
@@ -237,7 +244,9 @@ errno_t function_parameter_struct_realloc(
     fps->parray = (FUNCTION_PARAMETER *) mapv;
 
     // 4. Initialize new part
-    memset(&fps->parray[fps->md->NBparamMAX], 0, (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FUNCTION_PARAMETER));
+    memset(&fps->parray[fps->md->NBparamMAX],
+        0,
+        (NBparamMAX_new - fps->md->NBparamMAX) * sizeof(FUNCTION_PARAMETER));
 
     fps->md->NBparamMAX = NBparamMAX_new;
 

@@ -26,8 +26,6 @@ static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
-
-
 errno_t load_sharedobj(
     const char *__restrict libname
 )
@@ -75,7 +73,6 @@ errno_t load_sharedobj(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
 
 
 errno_t load_module_shared(
@@ -142,16 +139,12 @@ errno_t load_module_shared(
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
 
 
-
-
-
     // a custom module is about to be loaded, so we set the type accordingly
     // this variable will be written by module register function into module struct
     strncpy(data.moduleloadname,
             modulenameLC,
             STRINGMAXLEN_MODULE_LOADNAME - 1);
     strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
-
 
 
     if(load_sharedobj(libname) == RETURN_SUCCESS)
@@ -174,8 +167,6 @@ errno_t load_module_shared(
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
 
 
 errno_t load_module_shared_local()
@@ -271,8 +262,6 @@ errno_t load_module_shared_local()
 }
 
 
-
-
 errno_t RegisterModule(const char *__restrict FileName,
                        const char *__restrict PackageName,
                        const char *__restrict InfoString,
@@ -288,7 +277,6 @@ errno_t RegisterModule(const char *__restrict FileName,
     data.moduleindex = moduleindex; // current module index
 
     data.NBmodule++;
-
 
 
     if(strlen(data.modulename) == 0)
@@ -331,8 +319,6 @@ errno_t RegisterModule(const char *__restrict FileName,
     data.module[moduleindex].versionpatch = versionpatch;
 
     data.module[moduleindex].type = data.moduletype;
-
-
 
 
     //printf("--- libnameloaded : %s\n", libnameloaded);
@@ -396,8 +382,6 @@ errno_t RegisterModule(const char *__restrict FileName,
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
 
 
 // Legacy function
@@ -491,8 +475,6 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
 }
 
 
-
-
 /**
  Register command
 Replaces legacy function RegisterCLIcommand
@@ -509,14 +491,18 @@ uint32_t RegisterCLIcmd(
     if(data.cmd[data.NBcmd].moduleindex == -1)
     {
         strncpy(data.cmd[data.NBcmd].module, "MAIN", STRINGMAXLEN_MODULE_NAME - 1);
-        strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY - 1);
+        strncpy(data.cmd[data.NBcmd].key,
+            CLIcmddata.key,
+            STRINGMAXLEN_CMD_KEY - 1);
     }
     else
     {
 
         if(strlen(data.module[data.moduleindex].shortname) == 0)
         {
-            strncpy(data.cmd[data.NBcmd].key, CLIcmddata.key, STRINGMAXLEN_CMD_KEY);
+            strncpy(data.cmd[data.NBcmd].key,
+                CLIcmddata.key,
+                STRINGMAXLEN_CMD_KEY);
         }
         else
         {
@@ -574,7 +560,9 @@ uint32_t RegisterCLIcmd(
     CLIhelp_make_argstring(farg_visible,
                            nbarg_visible,
                            argstring);
-    strncpy(data.cmd[data.NBcmd].syntax, argstring, STRINGMAXLEN_CMD_SYNTAX - 1);
+    strncpy(data.cmd[data.NBcmd].syntax,
+        argstring,
+        STRINGMAXLEN_CMD_SYNTAX - 1);
 
 
     // assemble example string for help

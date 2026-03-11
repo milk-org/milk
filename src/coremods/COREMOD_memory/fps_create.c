@@ -15,7 +15,6 @@
 #endif
 
 
-
 //errno_t function_parameter_struct_create(int NBparamMAX, const char *name);
 
 
@@ -55,7 +54,6 @@ static errno_t fps_create__cli()
 */
 
 
-
 /*
 errno_t function_parameter_struct_create(
     int NBparamMAX,
@@ -93,7 +91,6 @@ errno_t function_parameter_struct_create(
     if(SM_fd == -1)
     {
         perror("Error opening file for writing");
-        printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
     }
@@ -111,7 +108,6 @@ errno_t function_parameter_struct_create(
             __FILE__,
             __func__,
             __LINE__);
-        printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
     }
@@ -121,7 +117,6 @@ errno_t function_parameter_struct_create(
     {
         close(SM_fd);
         perror("Error writing last byte of the file");
-        printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
     }
@@ -132,7 +127,6 @@ errno_t function_parameter_struct_create(
     {
         close(SM_fd);
         perror("Error mmapping the file");
-        printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(0);
     }

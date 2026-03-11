@@ -60,7 +60,6 @@
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
 
-
 #include "CLIcore.h"
 
 //

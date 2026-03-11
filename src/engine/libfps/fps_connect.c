@@ -62,7 +62,6 @@ long function_parameter_struct_connect(
     char shmdname[stringmaxlen];
 
 
-
     if(FPS_TIMESTAMP == 0)
     {
         {
@@ -101,7 +100,6 @@ long function_parameter_struct_connect(
         functionparameter_outlog("CONNECTION", ">>>>");
         // functionparameter_outlog_namelink(); // This function depends on CLIcore
     }
-
 
 
     DEBUG_TRACEPOINT("Connect to fps %s\n", name);
@@ -143,7 +141,6 @@ long function_parameter_struct_connect(
     {
         close(SM_fd);
         perror("Error mmapping the file");
-        printf("STEP %s %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(EXIT_FAILURE);
     }
