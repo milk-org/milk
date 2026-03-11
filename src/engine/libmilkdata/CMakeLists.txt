@@ -8,6 +8,7 @@ set(INCLUDEFILES
    milkdata.h
    milkdata_macros.h
    milkDebugTools.h
+   pixel_dispatch.h
 )
 
 add_library(${LIBNAME} SHARED ${SOURCEFILES})
@@ -29,5 +30,5 @@ target_link_libraries(${LIBNAME}
 
 install(TARGETS ${LIBNAME}
     EXPORT milkTargets DESTINATION lib)
-install(FILES milkdata.h milkdata_macros.h
+install(FILES milkdata.h milkdata_macros.h pixel_dispatch.h
     DESTINATION include/libmilkdata)
