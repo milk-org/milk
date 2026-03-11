@@ -1,56 +1,89 @@
 /**
  * @file imtoASCII.c
- * @brief ==========================================
- */
-
-/** @file imtoASCII.c
+ * @brief Convert image file to ASCII
  */
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+errno_t IMAGE_FORMAT_im_to_ASCII(
+    const char *__restrict IDname,
+    const char *__restrict foutname);
 
-errno_t IMAGE_FORMAT_im_to_ASCII(const char *__restrict IDname,
-                                 const char *__restrict foutname);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im.txt";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "im2ascii",
+    .cmdkey      = "im2ascii",
+    .description =
+        "convert image file to ASCII"
+};
 
-static errno_t IMAGE_FORMAT_im_to_ASCII_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output ASCII file")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) == 0)
-    {
-        IMAGE_FORMAT_im_to_ASCII(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.string);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t imtoASCII_addCLIcmd()
+static errno_t compute_function()
 {
+    IMAGE_FORMAT_im_to_ASCII(p_in, p_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "im2ascii",
-        __FILE__,
-        IMAGE_FORMAT_im_to_ASCII_cli,
-        "convert image file to ASCII",
-        "<input image> <output ASCII file>",
-        "im2ascii im im.txt",
-        "int IMAGE_FORMAT_im_to_ASCII(const char *IDname, const char *fname)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_format__imtoASCII()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

@@ -1,62 +1,105 @@
 /**
  * @file read_binary32f.c
- * @brief ==========================================
- */
-
-/** @file read_binary32f.c
+ * @brief Read 32-bit float RAW image
  */
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID IMAGE_FORMAT_read_binary32f(
+    const char *__restrict fname,
+    long xsize,
+    long ysize,
+    const char *__restrict IDname);
 
-imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
-                                    long xsize,
-                                    long ysize,
-                                    const char *__restrict IDname);
+static char p_fname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im.bin";
+static long long p_xsize = 512;
+static long long p_ysize = 512;
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "readb32fim",
+    .cmdkey      = "readb32fim",
+    .description =
+        "read 32-bit float RAW image"
+};
 
-static errno_t IMAGE_FORMAT_read_binary32f_cli()
+#define FPS_PARAMS(X) \
+    X(".in_fname", p_fname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "binary file") \
+    X(".xsize", &p_xsize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x size") \
+    X(".ysize", &p_ysize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y size") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 3) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        IMAGE_FORMAT_read_binary32f(data.cmdargtoken[1].val.string,
-                                    data.cmdargtoken[2].val.numl,
-                                    data.cmdargtoken[3].val.numl,
-                                    data.cmdargtoken[4].val.string);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t read_binary32f_addCLIcmd()
+static errno_t compute_function()
 {
+    IMAGE_FORMAT_read_binary32f(
+        p_fname,
+        (long) p_xsize,
+        (long) p_ysize,
+        p_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("readb32fim",
-                       __FILE__,
-                       IMAGE_FORMAT_read_binary32f_cli,
-                       "read 32-bit float RAW image",
-                       "<bin file> <xsize> <ysize> <output image>",
-                       "readb32fim im.bin xsize ysize im",
-                       "long IMAGE_FORMAT_read_binary32f(const char *fname, "
-                       "long xsize, long ysize, const char *IDname)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_format__read_binary32f()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
