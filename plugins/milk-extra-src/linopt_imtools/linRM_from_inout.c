@@ -28,10 +28,14 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * inputimname = NULL;
-static char * inmaskname = NULL;
-static char * mrespimname = NULL;
-static char * outRMimname = NULL;
+static char inputimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char inmaskname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char mrespimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outRMimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
 
 /* ================================================================
@@ -39,19 +43,19 @@ static char * outRMimname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".inimname", &inputimname, \
+    X(".inimname", inputimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
-    X(".inmaskname", &inmaskname, \
+    X(".inmaskname", inmaskname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "mask image") \
-    X(".mrespimname", &mrespimname, \
+    X(".mrespimname", mrespimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "measured response images") \
-    X(".outRM", &outRMimname, \
+    X(".outRM", outRMimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output RM image")
@@ -341,10 +345,7 @@ errno_t linopt_compute_linRM_from_inout(
     return RETURN_SUCCESS;
 }
 
-static char *inputimname;
-static char *inmaskname;
-static char *mrespimname;
-static char *outRMimname;
+
 
 static errno_t compute_function()
 {
