@@ -26,11 +26,11 @@ INIT_MODULE_LIB(COREMOD_tools)
 
 static errno_t init_module_CLI()
 {
-    cpuset_utils_addCLIcmd();
+    CLIADDCMD_COREMOD_tools__mvprocCPUset();
 
     CLIADDCMD_COREMOD_tools__fileutils();
-    imdisplay3d_addCLIcmd();
-    statusstat_addCLIcmd();
+    CLIADDCMD_COREMOD_tools__imdisplay3d();
+    CLIADDCMD_COREMOD_tools__statusstat();
 
     return RETURN_SUCCESS;
 }
