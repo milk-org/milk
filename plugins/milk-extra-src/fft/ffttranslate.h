@@ -1,14 +1,12 @@
 /**
  * @file ffttranslate.h
- * @brief Ffttranslate module
+ * @brief Translate image using FFT
  */
 
-/** @file ffttranslate.h
- */
+errno_t CLIADDCMD_milkfft__ffttranslate();
 
-errno_t ffttranslate_addCLIcmd();
-
-int fft_image_translate(const char *ID_name,
-                        const char *ID_out,
-                        double      xtransl,
-                        double      ytransl);
+int fft_image_translate(
+    const char *ID_name,
+    const char *ID_out,
+    double xtransl,
+    double ytransl);
