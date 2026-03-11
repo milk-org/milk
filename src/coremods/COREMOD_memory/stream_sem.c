@@ -1,6 +1,8 @@
 /**
  * @file    stream_sem.c
  * @brief   stream semaphores
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <pthread.h>
@@ -10,6 +12,8 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
@@ -17,165 +21,396 @@
 static pthread_t *thrarray_semwait;
 static long       NB_thrarray_semwait;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-imageID COREMOD_MEMORY_image_seminfo(const char *IDname);
-
-imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index);
-
-imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index);
-
-imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index);
-
-imageID COREMOD_MEMORY_image_set_sempost_loop(const char *IDname,
-        long        index,
-        long        dtus);
-
-imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index);
-
+/* forward decls */
+imageID COREMOD_MEMORY_image_seminfo(
+    const char *IDname);
+imageID COREMOD_MEMORY_image_set_sempost(
+    const char *IDname, long index);
+imageID COREMOD_MEMORY_image_set_sempost_byID(
+    imageID ID, long index);
+imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
+    imageID ID, long index);
+imageID COREMOD_MEMORY_image_set_sempost_loop(
+    const char *IDname, long index,
+    long dtus);
+imageID COREMOD_MEMORY_image_set_semwait(
+    const char *IDname, long index);
 void *waitforsemID(void *ID);
+errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
+    imageID *IDarray, long NB_ID);
+errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
+    imageID *IDarray, long NB_ID);
+imageID COREMOD_MEMORY_image_set_semflush(
+    const char *IDname, long index);
 
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray,
-        long     NB_ID);
 
-errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID);
+/* ================================================================
+ *  COMMON PARAMS (image + semindex)
+ * ============================================================= */
 
-imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index);
+static char p_imname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static long long p_semindex = 0;
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+#define FPS_PARAMS_IMSEM(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".semindex", &p_semindex, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "semaphore index")
 
-static errno_t COREMOD_MEMORY_image_seminfo__cli()
+
+/* ================================================================
+ *  CMD 1: imseminfo (1 arg)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_seminfo = {
+    .fps_name    = "imseminfo",
+    .cmdkey      = "imseminfo",
+    .description =
+        "display semaphore info"
+};
+
+static CLICMDDATA CLIcmddata_seminfo = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms1 = {0};
+
+static __attribute__((constructor))
+void init_cms1(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        COREMOD_MEMORY_image_seminfo(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_seminfo.key,
+            FPS_app_info_seminfo.cmdkey,
+            sizeof(CLIcmddata_seminfo.key)
+            - 1);
+    strncpy(
+        CLIcmddata_seminfo.description,
+        FPS_app_info_seminfo.description,
+        sizeof(
+            CLIcmddata_seminfo.description
+        ) - 1);
+    if (CLIcmddata_seminfo.cmdsettings
+        == NULL) {
+        CLIcmddata_seminfo.cmdsettings =
+            &cms1;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_set_sempost__cli()
+static errno_t compute_seminfo()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_MEMORY_image_set_sempost(data.cmdargtoken[1].val.string,
-                                         data.cmdargtoken[2].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    COREMOD_MEMORY_image_seminfo(p_imname);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 2: imsetsempost (2 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_sempost = {
+    .fps_name    = "imsetsempost",
+    .cmdkey      = "imsetsempost",
+    .description =
+        "post image semaphore"
+};
+
+static CLICMDDATA CLIcmddata_sempost = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms2 = {0};
+
+static __attribute__((constructor))
+void init_cms2(void)
+{
+    strncpy(CLIcmddata_sempost.key,
+            FPS_app_info_sempost.cmdkey,
+            sizeof(CLIcmddata_sempost.key)
+            - 1);
+    strncpy(
+        CLIcmddata_sempost.description,
+        FPS_app_info_sempost.description,
+        sizeof(
+            CLIcmddata_sempost.description
+        ) - 1);
+    if (CLIcmddata_sempost.cmdsettings
+        == NULL) {
+        CLIcmddata_sempost.cmdsettings =
+            &cms2;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_set_sempost_loop__cli()
+static errno_t compute_sempost()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_set_sempost_loop(data.cmdargtoken[1].val.string,
-                                              data.cmdargtoken[2].val.numl,
-                                              data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    COREMOD_MEMORY_image_set_sempost(
+        p_imname, p_semindex);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 3: imsetsempostl (3 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imsetsempostl",
+    .cmdkey      = "imsetsempostl",
+    .description =
+        "post image semaphore loop"
+};
+
+static long long p_dtus = 1000;
+
+#define FPS_PARAMS(X) \
+    FPS_PARAMS_IMSEM(X) \
+    X(".dtus", &p_dtus, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "time interval [us]")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms3 = {0};
+
+static __attribute__((constructor))
+void init_cms3(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms3;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_set_semwait__cli()
+static errno_t compute_function()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_MEMORY_image_set_semwait(data.cmdargtoken[1].val.string,
-                                         data.cmdargtoken[2].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    COREMOD_MEMORY_image_set_sempost_loop(
+        p_imname, p_semindex, p_dtus);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 4: imsetsemwait (2 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_semwait = {
+    .fps_name    = "imsetsemwait",
+    .cmdkey      = "imsetsemwait",
+    .description =
+        "wait image semaphore"
+};
+
+static CLICMDDATA CLIcmddata_semwait = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms4 = {0};
+
+static __attribute__((constructor))
+void init_cms4(void)
+{
+    strncpy(CLIcmddata_semwait.key,
+            FPS_app_info_semwait.cmdkey,
+            sizeof(CLIcmddata_semwait.key)
+            - 1);
+    strncpy(
+        CLIcmddata_semwait.description,
+        FPS_app_info_semwait.description,
+        sizeof(
+            CLIcmddata_semwait.description
+        ) - 1);
+    if (CLIcmddata_semwait.cmdsettings
+        == NULL) {
+        CLIcmddata_semwait.cmdsettings =
+            &cms4;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_set_semflush__cli()
+static errno_t compute_semwait()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_MEMORY_image_set_semflush(data.cmdargtoken[1].val.string,
-                                          data.cmdargtoken[2].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    COREMOD_MEMORY_image_set_semwait(
+        p_imname, p_semindex);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 5: imsetsemflush (2 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_semflush = {
+    .fps_name    = "imsetsemflush",
+    .cmdkey      = "imsetsemflush",
+    .description =
+        "flush image semaphore"
+};
+
+static CLICMDDATA CLIcmddata_semflush = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms5 = {0};
+
+static __attribute__((constructor))
+void init_cms5(void)
+{
+    strncpy(CLIcmddata_semflush.key,
+            FPS_app_info_semflush.cmdkey,
+            sizeof(CLIcmddata_semflush.key)
+            - 1);
+    strncpy(
+        CLIcmddata_semflush.description,
+        FPS_app_info_semflush.description,
+        sizeof(
+            CLIcmddata_semflush.description
+        ) - 1);
+    if (CLIcmddata_semflush.cmdsettings
+        == NULL) {
+        CLIcmddata_semflush.cmdsettings =
+            &cms5;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t stream_sem_addCLIcmd()
+static errno_t compute_semflush()
 {
-    RegisterCLIcommand("imseminfo",
-                       __FILE__,
-                       COREMOD_MEMORY_image_seminfo__cli,
-                       "display semaphore info",
-                       "<image>",
-                       "imseminfo im1",
-                       "long COREMOD_MEMORY_image_seminfo(const char *IDname)");
+    COREMOD_MEMORY_image_set_semflush(
+        p_imname, p_semindex);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "imsetsempost",
-        __FILE__,
-        COREMOD_MEMORY_image_set_sempost__cli,
-        "post image semaphore. If sem index = -1, post all semaphores",
-        "<image> <sem index>",
-        "imsetsempost im1 2",
-        "long COREMOD_MEMORY_image_set_sempost(const char *IDname, long "
-        "index)");
 
-    RegisterCLIcommand(
-        "imsetsempostl",
-        __FILE__,
-        COREMOD_MEMORY_image_set_sempost_loop__cli,
-        "post image semaphore loop. If sem index = -1, post all semaphores",
-        "<image> <sem index> <time interval [us]>",
-        "imsetsempostl im1 -1 1000",
-        "long COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long "
-        "index, long dtus)");
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
 
-    RegisterCLIcommand(
-        "imsetsemwait",
-        __FILE__,
-        COREMOD_MEMORY_image_set_semwait__cli,
-        "wait image semaphore",
-        "<image>",
-        "imsetsemwait im1",
-        "long COREMOD_MEMORY_image_set_semwait(const char *IDname)");
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
-    RegisterCLIcommand("imsetsemflush",
-                       __FILE__,
-                       COREMOD_MEMORY_image_set_semflush__cli,
-                       "flush image semaphore",
-                       "<image> <sem index>",
-                       "imsetsemflush im1 0",
-                       "long COREMOD_MEMORY_image_set_semflush(const char "
-                       "*IDname, long index)");
+/* bindings for 2-arg commands */
+static FPS_CLI_BINDING bindings_imsem[] = {
+    FPS_PARAMS_IMSEM(FPS_X_BINDING)
+};
+static const int nb_bindings_imsem =
+    sizeof(bindings_imsem) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_imsem[] = {
+    FPS_PARAMS_IMSEM(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_seminfo(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_seminfo,
+        farg_imsem, &CLIcmddata_seminfo,
+        bindings_imsem, nb_bindings_imsem,
+        compute_seminfo);
+}
+
+static errno_t CLIfunction_sempost(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_sempost,
+        farg_imsem, &CLIcmddata_sempost,
+        bindings_imsem, nb_bindings_imsem,
+        compute_sempost);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+static errno_t CLIfunction_semwait(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_semwait,
+        farg_imsem, &CLIcmddata_semwait,
+        bindings_imsem, nb_bindings_imsem,
+        compute_semwait);
+}
+
+static errno_t CLIfunction_semflush(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_semflush,
+        farg_imsem, &CLIcmddata_semflush,
+        bindings_imsem, nb_bindings_imsem,
+        compute_semflush);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_sem()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(
+        farg_imsem, bindings_imsem,
+        nb_bindings_imsem);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_seminfo,
+            CLIfunction_seminfo);
+        CLIcmddata_seminfo.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_sempost,
+            CLIfunction_sempost);
+        CLIcmddata_sempost.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_semwait,
+            CLIfunction_semwait);
+        CLIcmddata_semwait.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_semflush,
+            CLIfunction_semflush);
+        CLIcmddata_semflush.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
 
 imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 {

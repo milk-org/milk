@@ -1,6 +1,8 @@
 /**
  * @file    read_shmimall.c
- * @brief   read all shared memory stream
+ * @brief   read all shared memory streams
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <fcntl.h>    // open
@@ -13,6 +15,8 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "image_ID.h"
 #include "list_image.h"
 #include "read_shmim.h"
@@ -21,38 +25,41 @@
 #include "streamCTRL_find_streams.h"
 #endif
 
-errno_t read_sharedmem_image_all(const char *name);
 
-#ifndef MILK_NO_CLI
-static errno_t read_sharedmem_image_all__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_STR) == 0)
-    {
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-        read_sharedmem_image_all(data.cmdargtoken[1].val.string);
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "readshmimall",
+    .cmdkey      = "readshmimall",
+    .description =
+        "read all shared memory images"
+};
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
 
-errno_t read_shmimall_addCLIcmd()
-{
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    RegisterCLIcommand("readshmimall",
-                       __FILE__,
-                       read_sharedmem_image_all__cli,
-                       "read all shared memory images",
-                       "<string filter>",
-                       "readshmimall aol_",
-                       "read_sharedmem_image_all(const char *name)");
+static char strfilter[FUNCTION_PARAMETER_STRMAXLEN]
+    = "aol_";
 
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".strfilter", strfilter, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "string filter")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
 
 errno_t read_sharedmem_image_all(
     const char *strfilter)
@@ -89,3 +96,95 @@ errno_t read_sharedmem_image_all(
     return RETURN_SUCCESS;
 #endif
 }
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    FUNC_CHECK_RETURN(
+        read_sharedmem_image_all(strfilter));
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__read_shmimall()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif
