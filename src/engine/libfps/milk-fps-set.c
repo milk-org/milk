@@ -86,7 +86,9 @@ void do_completion_scan(const char *word) {
         char *param_prefix = dot + 1;
 
         FUNCTION_PARAMETER_STRUCT fps;
-        long NBparam = function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+        long NBparam = function_parameter_struct_connect(fpsname,
+            &fps,
+            FPSCONNECT_SIMPLE);
         if(NBparam != -1) {
             fps.NBparam = NBparam;
             for(int i=0; i<fps.NBparam; i++) {
@@ -174,7 +176,9 @@ int main(int argc, char *argv[])
     char *keyword = dot; // Includes the dot
 
     FUNCTION_PARAMETER_STRUCT fps;
-    long NBparam = function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+    long NBparam = function_parameter_struct_connect(fpsname,
+        &fps,
+        FPSCONNECT_SIMPLE);
     if(NBparam == -1) {
         fprintf(stderr, "Error: Could not connect to FPS '%s'\n", fpsname);
         return 1;
@@ -235,7 +239,9 @@ int main(int argc, char *argv[])
         case FPTYPE_DIRNAME:
         case FPTYPE_STREAMNAME:
         case FPTYPE_FPSNAME:
-            strncpy(fps.parray[pindex].val.string[0], value_str, FUNCTION_PARAMETER_STRMAXLEN-1);
+            strncpy(fps.parray[pindex].val.string[0],
+                value_str,
+                FUNCTION_PARAMETER_STRMAXLEN-1);
             break;
         case FPTYPE_ONOFF:
             if(strcasecmp(value_str, "ON") == 0 || strcmp(value_str, "1") == 0) {

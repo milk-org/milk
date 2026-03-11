@@ -431,7 +431,14 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
     if(imgout->ID == -1)
     {
-        create_image_ID(imgout->name, naxis, size, datatype, 1, 0, 0, &imgout->ID);
+        create_image_ID(imgout->name,
+            naxis,
+            size,
+            datatype,
+            1,
+            0,
+            0,
+            &imgout->ID);
         resolveIMGID(imgout, ERRMODE_ABORT, dcimg, dcnimg);
     }
 

@@ -349,8 +349,16 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         exit(0);
     }
 
-    setsockopt(fds_client, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
-    setsockopt(fds_client, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+    setsockopt(fds_client,
+        SOL_SOCKET,
+        SO_REUSEADDR,
+        (char *) & flag,
+        sizeof(flag));
+    setsockopt(fds_client,
+        SOL_SOCKET,
+        SO_REUSEPORT,
+        (char *) & flag,
+        sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_client, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
@@ -510,7 +518,9 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 }
 
                 // Fill up the transmission buffer
-                memcpy(ptr_buff_metadata, &dcimg[ID].md[0], sizeof(IMAGE_METADATA));
+                memcpy(ptr_buff_metadata,
+                    &dcimg[ID].md[0],
+                    sizeof(IMAGE_METADATA));
 
                 ptr_img_data_slice = ptr_img_data + framesize * slice;
                 memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
@@ -729,9 +739,21 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     sock_server.sin_port        = htons(port);
     sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    setsockopt(fds_server, SOL_SOCKET, SO_NO_CHECK, (char *) & flag, sizeof(flag));
-    setsockopt(fds_server, SOL_SOCKET, SO_REUSEADDR, (char *) & flag, sizeof(flag));
-    setsockopt(fds_server, SOL_SOCKET, SO_REUSEPORT, (char *) & flag, sizeof(flag));
+    setsockopt(fds_server,
+        SOL_SOCKET,
+        SO_NO_CHECK,
+        (char *) & flag,
+        sizeof(flag));
+    setsockopt(fds_server,
+        SOL_SOCKET,
+        SO_REUSEADDR,
+        (char *) & flag,
+        sizeof(flag));
+    setsockopt(fds_server,
+        SOL_SOCKET,
+        SO_REUSEPORT,
+        (char *) & flag,
+        sizeof(flag));
 
 #ifdef SO_ATTACH_REUSEPORT_CBPF
     setsockopt(fds_server, SOL_SOCKET, SO_ATTACH_REUSEPORT_CBPF, (char *) & flag,
@@ -1097,7 +1119,9 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     abort_frame = 1;
                     break;
                 }
-                memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE, buff_udp + 2, this_dgram_bytes);
+                memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE,
+                    buff_udp + 2,
+                    this_dgram_bytes);
             }
         }
         if(socketOpen == 1 && abort_frame == 0)

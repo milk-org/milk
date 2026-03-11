@@ -9,9 +9,6 @@
 #include "TUItools.h"
 
 
-
-
-
 /** @brief print PID with highlighting
  *
  */

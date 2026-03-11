@@ -125,7 +125,10 @@ int main(int argc, char *argv[]) {
 
     // Call the main TUI function
     // functionparameter_CTRLscreen(uint32_t mode, char *fpsnamemask, char *fpsCTRLfifoname);
-    functionparameter_CTRLscreen((uint32_t)matchmode, fpsnamemask, fifoname, 0.0);
+    functionparameter_CTRLscreen((uint32_t)matchmode,
+        fpsnamemask,
+        fifoname,
+        0.0);
 
     return 0;
 }

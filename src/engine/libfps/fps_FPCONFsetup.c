@@ -12,8 +12,6 @@
 #include "fps_disconnect.h"
 
 
-
-
 /** @brief FPS config setup
  *
  * called by conf and run functions
@@ -39,7 +37,6 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
     FPS_TIMESTAMP = 0;
     strcpy(FPS_PROCESS_TYPE, "UNDEF");
-
 
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists
@@ -107,11 +104,6 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
     return fps;
 }
-
-
-
-
-
 
 
 FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup(

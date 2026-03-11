@@ -17,16 +17,12 @@ variableID create_variable_ID(const char *name, double value)
     variableID ID;
     long       i1, i2;
 
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     ID = -1;
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     i1 = image_ID(name, dcimg, dcnimg);
-    //printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     i2 = variable_ID(name);
-    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
 
     if(i1 != -1)
     {
@@ -52,7 +48,6 @@ variableID create_variable_ID(const char *name, double value)
         strcpy(dcvar[ID].name, name);
         dcvar[ID].value.f = value;
     }
-    //    printf("TEST   %s  %ld   %ld %ld ================== \n", __FILE__, __LINE__, dcnimg, dcnvar);
     return ID;
 }
 
