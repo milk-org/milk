@@ -39,6 +39,7 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 - [**Module Files Layout**](developer/ModuleFiles.md): Directory structure conventions.
 - [**Python API**](python.md): Accessing streams from Python with `pyMilk` and numpy.
 - [**Valkey Integration**](valkey.md): Multi-host FPS parameter sync via Valkey.
+- [**Code Assist Tools**](code_assist.md): Agent rules and workflows for AI-assisted development.
 
 ## 📖 CLI & Tools Reference
 
