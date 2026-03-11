@@ -23,9 +23,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *modesimname = NULL;
-static char *invecname   = NULL;
-static char *outimname   = NULL;
+static char modesimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char invecname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
 
 /* ================================================================
@@ -33,15 +36,15 @@ static char *outimname   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".modes", &modesimname, \
+    X(".modes", modesimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "modes image cube") \
-    X(".invec", &invecname, \
+    X(".invec", invecname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input vector") \
-    X(".outim", &outimname, \
+    X(".outim", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image")
