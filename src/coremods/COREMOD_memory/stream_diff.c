@@ -1,10 +1,8 @@
 /**
- * @file stream_diff.c
- * @brief Stream diff module
- */
-
-/**
  * @file    stream_diff.c
+ * @brief   compute difference between two streams
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -12,65 +10,81 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"
 
-// ==========================================
-// forward declarations
-// ==========================================
 
-imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
-                                  const char *IDstream1_name,
-                                  const char *IDstreammask_name,
-                                  const char *IDstreamout_name,
-                                  long        semtrig);
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// ==========================================
-// command line interface wrapper functions
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streamdiff",
+    .cmdkey      = "streamdiff",
+    .description =
+        "compute stream difference"
+};
 
-#ifndef MILK_NO_CLI
-static errno_t COREMOD_MEMORY_streamDiff__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, 5) + CLI_checkarg(4, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(5, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_streamDiff(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.string,
-                                  data.cmdargtoken[4].val.string,
-                                  data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-errno_t stream_diff_addCLIcmd()
-{
-    RegisterCLIcommand("streamdiff",
-                       __FILE__,
-                       COREMOD_MEMORY_streamDiff__cli,
-                       "compute difference between two image streams",
-                       "<in stream 0> <in stream 1> <out stream> <optional "
-                       "mask> <sem trigger index>",
-                       "streamdiff stream0 stream1 null outstream 3",
-                       "long COREMOD_MEMORY_streamDiff(const char "
-                       "*IDstream0_name, const char *IDstream1_name, const "
-                       "char *IDstreamout_name, long semtrig)");
+static char p_stream0[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream0";
 
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+static char p_stream1[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream1";
+
+static char p_mask[FUNCTION_PARAMETER_STRMAXLEN]
+    = "null";
+
+static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outstream";
+
+static long long p_semtrig = 3;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_stream0", p_stream0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream 0") \
+    X(".in_stream1", p_stream1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream 1") \
+    X(".mask", p_mask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional mask (null=none)") \
+    X(".out_stream", p_outstream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output stream") \
+    X(".semtrig", &p_semtrig, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sem trigger index")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC — forward decl
+ * ============================================================= */
+
+imageID COREMOD_MEMORY_streamDiff(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreammask_name,
+    const char *IDstreamout_name,
+    long        semtrig);
 /**
  * ## Purpose
  *
@@ -170,3 +184,96 @@ imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
     return IDout;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    COREMOD_MEMORY_streamDiff(
+        p_stream0, p_stream1,
+        p_mask, p_outstream,
+        p_semtrig);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_diff()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif

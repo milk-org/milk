@@ -1,10 +1,8 @@
 /**
- * @file image_keyword.c
- * @brief Image keyword module
- */
-
-/**
  * @file    image_keyword.c
+ * @brief   image keyword read/write
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -12,88 +10,234 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "image_ID.h"
 
-// ==========================================
-// forward declarations
-// ==========================================
+/* forward decls */
+long image_write_keyword_L(
+    const char *IDname, const char *kname,
+    long value, const char *comment);
 
-long image_write_keyword_L(const char *IDname,
-                           const char *kname,
-                           long        value,
-                           const char *comment);
+imageID image_list_keywords(
+    const char *restrict IDname);
 
-long image_list_keywords(
-    const char * __restrict IDname
-);
 
-// ==========================================
-// command line interface wrapper functions
-// ==========================================
+/* ================================================================
+ *  CMD 1: imlistkw (1 arg)
+ * ============================================================= */
 
-#ifndef MILK_NO_CLI
-errno_t image_write_keyword_L__cli()
+static FPS_APP_INFO FPS_app_info_listkw = {
+    .fps_name    = "imlistkw",
+    .cmdkey      = "imlistkw",
+    .description = "list image keywords"
+};
+
+static char p_listkw_imname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+
+#define FPS_PARAMS_listkw(X) \
+    X(".imname", p_listkw_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name")
+
+static FPS_CLI_BINDING bindings_listkw[] = {
+    FPS_PARAMS_listkw(FPS_X_BINDING)
+};
+
+static const int nb_bindings_listkw =
+    sizeof(bindings_listkw) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg_listkw[] = {
+    FPS_PARAMS_listkw(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata_listkw = {
+    "",
+    "",
+    CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS cms_listkw = {0};
+
+static __attribute__((constructor))
+void init_cms_listkw(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) +
-            CLI_checkarg(4, CLIARG_STR_NOT_IMG) ==
-            0)
-    {
-        image_write_keyword_L(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string,
-                              data.cmdargtoken[3].val.numl,
-                              data.cmdargtoken[4].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_listkw.key,
+            FPS_app_info_listkw.cmdkey,
+            sizeof(CLIcmddata_listkw.key)
+            - 1);
+    strncpy(
+        CLIcmddata_listkw.description,
+        FPS_app_info_listkw.description,
+        sizeof(
+            CLIcmddata_listkw.description
+        ) - 1);
+    if (CLIcmddata_listkw.cmdsettings
+        == NULL) {
+        CLIcmddata_listkw.cmdsettings =
+            &cms_listkw;
     }
 }
 
-errno_t image_list_keywords__cli()
+static errno_t compute_listkw()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        image_list_keywords(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    image_list_keywords(p_listkw_imname);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 2: imwritekwL (4 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imwritekwL",
+    .cmdkey      = "imwritekwL",
+    .description =
+        "write long type keyword"
+};
+
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "im1";
+static char p_kname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "kw2";
+static long long p_kwval = 34;
+static char p_comment[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "my_keyword_comment";
+
+#define FPS_PARAMS(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".kname", p_kname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "keyword name") \
+    X(".kwval", &p_kwval, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "keyword value") \
+    X(".comment", p_comment, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "comment")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_writkw = {0};
+
+static __attribute__((constructor))
+void init_cms_writkw(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &cms_writkw;
     }
 }
 
-// ==========================================
-// Register CLI commands
-// ==========================================
-
-errno_t image_keyword_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("imwritekwL",
-                       __FILE__,
-                       image_write_keyword_L__cli,
-                       "write long type keyword",
-                       "<imname> <kname> <value [long]> <comment>",
-                       "imwritekwL im1 kw2 34 my_keyword_comment",
-                       "long image_write_keyword_L(const char *IDname, const "
-                       "char *kname, long value, const char *comment)");
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    image_write_keyword_L(
+        p_imname, p_kname,
+        p_kwval, p_comment);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imlistkw",
-                       __FILE__,
-                       image_list_keywords__cli,
-                       "list image keywords",
-                       "<imname>",
-                       "imlistkw im1",
-                       "long image_list_keywords(const char *IDname)");
+
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static errno_t CLIfunction_listkw(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_listkw,
+        farg_listkw, &CLIcmddata_listkw,
+        bindings_listkw, nb_bindings_listkw,
+        compute_listkw);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__image_keyword()
+{
+    {
+        safe_fps_fill_farg_examples(
+            farg_listkw, bindings_listkw,
+            nb_bindings_listkw);
+
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_listkw,
+            CLIfunction_listkw);
+        CLIcmddata_listkw.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    {
+        safe_fps_fill_farg_examples(
+            farg, my_bindings, nb_bindings);
+
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
-long image_write_keyword_L(const char *IDname,
-                           const char *kname,
-                           long        value,
-                           const char *comment)
+#endif
+
+
+/* ================================================================
+ *  COMPUTATION CODE
+ * ============================================================= */
+
+long image_write_keyword_L(
+    const char *IDname,
+    const char *kname,
+    long        value,
+    const char *comment)
 {
     imageID ID;
     long    kw, NBkw, kw0;
@@ -102,7 +246,8 @@ long image_write_keyword_L(const char *IDname,
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N')
+          && (kw < NBkw))
     {
         kw++;
     }
@@ -110,24 +255,28 @@ long image_write_keyword_L(const char *IDname,
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available keyword entry\n");
+        printf("ERROR: no available"
+               " keyword entry\n");
         exit(0);
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name, kname);
+        strcpy(dcimg[ID].kw[kw].name,
+               kname);
         dcimg[ID].kw[kw].type       = 'L';
         dcimg[ID].kw[kw].value.numl = value;
-        strcpy(dcimg[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].comment,
+               comment);
     }
 
     return kw0;
 }
 
-long image_write_keyword_D(const char *IDname,
-                           const char *kname,
-                           double      value,
-                           const char *comment)
+long image_write_keyword_D(
+    const char *IDname,
+    const char *kname,
+    double      value,
+    const char *comment)
 {
     imageID ID;
     long    kw;
@@ -138,7 +287,8 @@ long image_write_keyword_D(const char *IDname,
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N')
+          && (kw < NBkw))
     {
         kw++;
     }
@@ -146,24 +296,28 @@ long image_write_keyword_D(const char *IDname,
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available keyword entry\n");
+        printf("ERROR: no available"
+               " keyword entry\n");
         exit(0);
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name, kname);
+        strcpy(dcimg[ID].kw[kw].name,
+               kname);
         dcimg[ID].kw[kw].type       = 'D';
         dcimg[ID].kw[kw].value.numf = value;
-        strcpy(dcimg[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].comment,
+               comment);
     }
 
     return kw0;
 }
 
-long image_write_keyword_S(const char *IDname,
-                           const char *kname,
-                           const char *value,
-                           const char *comment)
+long image_write_keyword_S(
+    const char *IDname,
+    const char *kname,
+    const char *value,
+    const char *comment)
 {
     imageID ID;
     long    kw;
@@ -174,7 +328,8 @@ long image_write_keyword_S(const char *IDname,
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
-    while((dcimg[ID].kw[kw].type != 'N') && (kw < NBkw))
+    while((dcimg[ID].kw[kw].type != 'N')
+          && (kw < NBkw))
     {
         kw++;
     }
@@ -182,23 +337,26 @@ long image_write_keyword_S(const char *IDname,
 
     if(kw0 == NBkw)
     {
-        printf("ERROR: no available keyword entry\n");
+        printf("ERROR: no available"
+               " keyword entry\n");
         exit(0);
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name, kname);
+        strcpy(dcimg[ID].kw[kw].name,
+               kname);
         dcimg[ID].kw[kw].type = 'D';
-        strcpy(dcimg[ID].kw[kw].value.valstr, value);
-        strcpy(dcimg[ID].kw[kw].comment, comment);
+        strcpy(dcimg[ID].kw[kw].value.valstr,
+               value);
+        strcpy(dcimg[ID].kw[kw].comment,
+               comment);
     }
 
     return kw0;
 }
 
 imageID image_list_keywords(
-    const char * __restrict IDname
-)
+    const char *restrict IDname)
 {
     imageID ID;
     long    kw;
@@ -206,43 +364,52 @@ imageID image_list_keywords(
     ID = image_ID(IDname, dcimg, dcnimg);
 
     int kwcnt = 0;
-    for(kw = 0; kw < dcimg[ID].md->NBkw; kw++)
+    for(kw = 0;
+        kw < dcimg[ID].md->NBkw;
+        kw++)
     {
 
         switch (dcimg[ID].kw[kw].type)
         {
         case 'L' :
-            printf("%18s  %20ld %s\n",
-                   dcimg[ID].kw[kw].name,
-                   dcimg[ID].kw[kw].value.numl,
-                   dcimg[ID].kw[kw].comment);
+            printf(
+                "%18s  %20ld %s\n",
+                dcimg[ID].kw[kw].name,
+                dcimg[ID].kw[kw].value.numl,
+                dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'D' :
-            printf("%18s  %20lf %s\n",
-                   dcimg[ID].kw[kw].name,
-                   dcimg[ID].kw[kw].value.numf,
-                   dcimg[ID].kw[kw].comment);
+            printf(
+                "%18s  %20lf %s\n",
+                dcimg[ID].kw[kw].name,
+                dcimg[ID].kw[kw].value.numf,
+                dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
 
         case 'S' :
-            printf("%18s  %20s %s\n",
-                   dcimg[ID].kw[kw].name,
-                   dcimg[ID].kw[kw].value.valstr,
-                   dcimg[ID].kw[kw].comment);
+            printf(
+                "%18s  %20s %s\n",
+                dcimg[ID].kw[kw].name,
+                dcimg[ID].kw[kw].value.valstr,
+                dcimg[ID].kw[kw].comment);
             kwcnt ++;
             break;
         }
     }
 
-    printf("%d / %d keywords set\n", kwcnt,  dcimg[ID].md->NBkw);
+    printf("%d / %d keywords set\n",
+           kwcnt, dcimg[ID].md->NBkw);
 
     return ID;
 }
 
-long image_read_keyword_D(const char *IDname, const char *kname, double *val)
+long image_read_keyword_D(
+    const char *IDname,
+    const char *kname,
+    double *val)
 {
     variableID ID;
     long       kw;
@@ -250,20 +417,29 @@ long image_read_keyword_D(const char *IDname, const char *kname, double *val)
 
     ID  = image_ID(IDname, dcimg, dcnimg);
     kw0 = -1;
-    for(kw = 0; kw < dcimg[ID].md[0].NBkw; kw++)
+    for(kw = 0;
+        kw < dcimg[ID].md[0].NBkw;
+        kw++)
     {
-        if((dcimg[ID].kw[kw].type == 'D') &&
-                (strncmp(kname, dcimg[ID].kw[kw].name, strlen(kname)) == 0))
+        if((dcimg[ID].kw[kw].type == 'D')
+           && (strncmp(
+                   kname,
+                   dcimg[ID].kw[kw].name,
+                   strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val = dcimg[ID].kw[kw].value.numf;
+            *val =
+                dcimg[ID].kw[kw].value.numf;
         }
     }
 
     return kw0;
 }
 
-long image_read_keyword_L(const char *IDname, const char *kname, long *val)
+long image_read_keyword_L(
+    const char *IDname,
+    const char *kname,
+    long *val)
 {
     variableID ID;
     long       kw;
@@ -271,16 +447,21 @@ long image_read_keyword_L(const char *IDname, const char *kname, long *val)
 
     ID  = image_ID(IDname, dcimg, dcnimg);
     kw0 = -1;
-    for(kw = 0; kw < dcimg[ID].md[0].NBkw; kw++)
+    for(kw = 0;
+        kw < dcimg[ID].md[0].NBkw;
+        kw++)
     {
-        if((dcimg[ID].kw[kw].type == 'L') &&
-                (strncmp(kname, dcimg[ID].kw[kw].name, strlen(kname)) == 0))
+        if((dcimg[ID].kw[kw].type == 'L')
+           && (strncmp(
+                   kname,
+                   dcimg[ID].kw[kw].name,
+                   strlen(kname)) == 0))
         {
             kw0  = kw;
-            *val = dcimg[ID].kw[kw].value.numl;
+            *val =
+                dcimg[ID].kw[kw].value.numl;
         }
     }
 
     return kw0;
 }
-

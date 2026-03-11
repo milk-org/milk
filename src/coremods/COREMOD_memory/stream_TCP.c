@@ -2,6 +2,8 @@
 /**
  * @file    stream_TCP.c
  * @brief   TCP stream transfer
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <arpa/inet.h>
@@ -14,6 +16,8 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -31,121 +35,324 @@ typedef struct
     long cnt1;
 } TCP_BUFFER_METADATA;
 
-long FRAME_MD_MAGIC = 0x12341234ff; // Doesn't matter.
+long FRAME_MD_MAGIC = 0x12341234ff;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decls */
+errno_t COREMOD_MEMORY_testfunction_semaphore(
+    const char *IDname,
+    int semtrig, int testmode);
 
-errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
-        int         semtrig,
-        int         testmode);
+imageID COREMOD_MEMORY_image_NETWORKtransmit(
+    const char *IDname,
+    const char *IPaddr,
+    int port, int mode,
+    int RT_priority);
 
-imageID COREMOD_MEMORY_image_NETWORKtransmit(const char *IDname,
-        const char *IPaddr,
-        int         port,
-        int         mode,
-        int         RT_priority);
+imageID COREMOD_MEMORY_image_NETWORKreceive(
+    int port, int mode,
+    int RT_priority);
 
-imageID
-COREMOD_MEMORY_image_NETWORKreceive(int port, int mode, int RT_priority);
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  PARAMS
+ * ============================================================= */
 
-static errno_t COREMOD_MEMORY_testfunction_semaphore__cli()
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_ipaddr[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "127.0.0.1";
+static long long p_port = 8888;
+static long long p_mode = 0;
+static long long p_rtprio = 80;
+static long long p_semtrig_tcp = 1;
+static long long p_testmode = 0;
+
+
+/* ================================================================
+ *  CMD 1: testfuncsem (3 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_tsem = {
+    .fps_name    = "testfuncsem",
+    .cmdkey      = "testfuncsem",
+    .description =
+        "test semaphore loop"
+};
+
+#define FPS_PARAMS_TSEM(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".semindex", &p_semtrig_tcp, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sem index") \
+    X(".testmode", &p_testmode, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "test mode")
+
+static CLICMDDATA CLIcmddata_tsem = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_tsem = {0};
+
+static __attribute__((constructor))
+void init_cms_tsem(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_testfunction_semaphore(data.cmdargtoken[1].val.string,
-                                              data.cmdargtoken[2].val.numl,
-                                              data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_tsem.key,
+            FPS_app_info_tsem.cmdkey,
+            sizeof(CLIcmddata_tsem.key)
+            - 1);
+    strncpy(
+        CLIcmddata_tsem.description,
+        FPS_app_info_tsem.description,
+        sizeof(
+            CLIcmddata_tsem.description
+        ) - 1);
+    if (CLIcmddata_tsem.cmdsettings
+        == NULL) {
+        CLIcmddata_tsem.cmdsettings =
+            &cms_tsem;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_NETWORKtransmit__cli()
+static errno_t compute_tsem()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETWORKtransmit(data.cmdargtoken[1].val.string,
-                                             data.cmdargtoken[2].val.string,
-                                             data.cmdargtoken[3].val.numl,
-                                             data.cmdargtoken[4].val.numl,
-                                             data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    COREMOD_MEMORY_testfunction_semaphore(
+        p_imname, p_semtrig_tcp,
+        p_testmode);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 2: imnetwtransmit (5 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imnetwtransmit",
+    .cmdkey      = "imnetwtransmit",
+    .description =
+        "transmit image over network"
+};
+
+#define FPS_PARAMS(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".ipaddr", p_ipaddr, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "IP address") \
+    X(".port", &p_port, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "port") \
+    X(".mode", &p_mode, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sync mode") \
+    X(".rtprio", &p_rtprio, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "RT priority")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_tx = {0};
+
+static __attribute__((constructor))
+void init_cms_tx(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms_tx;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_NETWORKreceive__cli()
+static errno_t compute_function()
 {
-    if(0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETWORKreceive(data.cmdargtoken[1].val.numl,
-                                            data.cmdargtoken[2].val.numl,
-                                            data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    COREMOD_MEMORY_image_NETWORKtransmit(
+        p_imname, p_ipaddr,
+        p_port, p_mode, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 3: imnetwreceive (3 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_rx = {
+    .fps_name    = "imnetwreceive",
+    .cmdkey      = "imnetwreceive",
+    .description =
+        "receive image(s) over network"
+};
+
+#define FPS_PARAMS_RX(X) \
+    X(".port", &p_port, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "port") \
+    X(".mode", &p_mode, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "mode (1=counter sync)") \
+    X(".rtprio", &p_rtprio, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "RT priority")
+
+static CLICMDDATA CLIcmddata_rx = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_rx = {0};
+
+static __attribute__((constructor))
+void init_cms_rx(void)
+{
+    strncpy(CLIcmddata_rx.key,
+            FPS_app_info_rx.cmdkey,
+            sizeof(CLIcmddata_rx.key) - 1);
+    strncpy(
+        CLIcmddata_rx.description,
+        FPS_app_info_rx.description,
+        sizeof(
+            CLIcmddata_rx.description
+        ) - 1);
+    if (CLIcmddata_rx.cmdsettings
+        == NULL) {
+        CLIcmddata_rx.cmdsettings =
+            &cms_rx;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t stream__TCP_addCLIcmd()
+static errno_t compute_rx()
 {
-    RegisterCLIcommand("testfuncsem",
-                       __FILE__,
-                       COREMOD_MEMORY_testfunction_semaphore__cli,
-                       "test semaphore loop",
-                       "<image> <semindex> <testmode>",
-                       "testfuncsem im1 1 0",
-                       "int COREMOD_MEMORY_testfunction_semaphore(const char "
-                       "*IDname, int semtrig, int testmode)");
+    COREMOD_MEMORY_image_NETWORKreceive(
+        p_port, p_mode, p_rtprio);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imnetwtransmit",
-                       __FILE__,
-                       COREMOD_MEMORY_image_NETWORKtransmit__cli,
-                       "transmit image over network",
-                       "<image> <IP addr> <port [long]> <sync mode [int]>",
-                       "imnetwtransmit im1 127.0.0.1 0 8888 0",
-                       "long COREMOD_MEMORY_image_NETWORKtransmit(const char "
-                       "*IDname, const char *IPaddr, int port, int mode)");
 
-    RegisterCLIcommand("imnetwreceive",
-                       __FILE__,
-                       COREMOD_MEMORY_image_NETWORKreceive__cli,
-                       "receive image(s) over network. mode=1 uses counter "
-                       "instead of semaphore",
-                       "<port [long]> <mode [int]> <RT priority>",
-                       "imnetwreceive 8887 0 80",
-                       "long COREMOD_MEMORY_image_NETWORKreceive(int port, int "
-                       "mode, int RT_priority)");
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static FPS_CLI_BINDING bindings_tsem[] = {
+    FPS_PARAMS_TSEM(FPS_X_BINDING)
+};
+static const int nb_bindings_tsem =
+    sizeof(bindings_tsem) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_tsem[] = {
+    FPS_PARAMS_TSEM(FPS_X_FARG)
+};
+
+static FPS_CLI_BINDING bindings_rx[] = {
+    FPS_PARAMS_RX(FPS_X_BINDING)
+};
+static const int nb_bindings_rx =
+    sizeof(bindings_rx) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_rx[] = {
+    FPS_PARAMS_RX(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_tsem(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_tsem,
+        farg_tsem, &CLIcmddata_tsem,
+        bindings_tsem, nb_bindings_tsem,
+        compute_tsem);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+static errno_t CLIfunction_rx(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rx,
+        farg_rx, &CLIcmddata_rx,
+        bindings_rx, nb_bindings_rx,
+        compute_rx);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_TCP()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(
+        farg_tsem, bindings_tsem,
+        nb_bindings_tsem);
+    safe_fps_fill_farg_examples(
+        farg_rx, bindings_rx,
+        nb_bindings_rx);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_tsem,
+            CLIfunction_tsem);
+        CLIcmddata_tsem.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_rx,
+            CLIfunction_rx);
+        CLIcmddata_rx.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
 errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
         int         semtrig,
         int         testmode)

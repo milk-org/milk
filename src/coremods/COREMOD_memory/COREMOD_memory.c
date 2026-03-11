@@ -109,11 +109,11 @@ static errno_t init_module_CLI()
 
     dcmemmon = 0; // 1 if memory monitor is on
 
-    clearall_addCLIcmd();
-    list_image_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__clearall();
+    CLIADDCMD_COREMOD_memory__list_image();
 
     //KEYWORDS
-    image_keyword_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__image_keyword();
     CLIADDCMD_COREMOD_memory__image_keyword_list();
     CLIADDCMD_COREMOD_memory__image_keyword_addD();
     CLIADDCMD_COREMOD_memory__image_keyword_addL();
@@ -122,24 +122,24 @@ static errno_t init_module_CLI()
     // READ SHARED MEM IMAGE AND SIZE
     CLIADDCMD_COREMOD_memory__read_sharedmem_image();
     CLIADDCMD_COREMOD_memory__read_sharedmem_image_size();
-    read_shmimall_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__read_shmimall();
 
     // CREATE IMAGE
     CLIADDCMD_COREMOD_memory__mk2Dim();
     CLIADDCMD_COREMOD_memory__mk3Dim();
 
     // COPY IMAGE
-    image_copy_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__image_copy();
     CLIADDCMD_COREMOD_memory__image_copy_shm();
 
     // DELETE IMAGE
     CLIADDCMD_COREMOD_memory__delete_image();
     CLIADDCMD_COREMOD_memory__delete_sharedmem_image();
 
-    list_variable_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__list_variable();
 
     // FPS
-    fps_list_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__fps_list();
     //fps_create_addCLIcmd();
 
     // TYPE CONVERSIONS TO AND FROM COMPLEX
@@ -149,30 +149,30 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD__mk_amph_from_complex();
 
     // SET IMAGE FLAGS / COUNTERS
-    image_set_counters_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__image_set_counters();
 
     // MANAGE SEMAPHORES
-    stream_sem_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__stream_sem();
 
     // STREAMS
     CLIADDCMD_COREMOD_memory__shmim_purge();
-    shmim_setowner_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__shmim_setowner();
 
-    stream_updateloop_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__stream_updateloop();
     CLIADDCMD_COREMOD_memory__streamdelay();
-    saveall_addCLIcmd();
-    stream__TCP_addCLIcmd();
-    stream__UDP_addCLIcmd();
-    stream_pixmapdecode_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__saveall();
+    CLIADDCMD_COREMOD_memory__stream_TCP();
+    CLIADDCMD_COREMOD_memory__stream_UDP();
+    CLIADDCMD_COREMOD_memory__stream_pixmapdecode();
 
     CLIADDCMD_COREMOD_memory__stream_copy();
     CLIADDCMD_COREMOD_memory__stream_merge();
     CLIADDCMD_COREMOD_memory__stream_poke();
     CLIADDCMD_COREMOD_memory__im3D_to_stream2D();
 
-    stream_diff_addCLIcmd();
-    stream_paste_addCLIcmd();
-    stream_halfimdiff_addCLIcmd();
+    CLIADDCMD_COREMOD_memory__stream_diff();
+    CLIADDCMD_COREMOD_memory__stream_paste();
+    CLIADDCMD_COREMOD_memory__stream_halfimdiff();
 
     CLIADDCMD_streamaverage();
     stream_monitorlimits_addCLIcmd();

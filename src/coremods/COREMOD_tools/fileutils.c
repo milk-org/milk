@@ -1,10 +1,8 @@
 /**
- * @file fileutils.c
- * @brief Fileutils module
- */
-
-/**
- * @file fileutils.c
+ * @file    fileutils.c
+ * @brief   file utility functions
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <stdio.h>
@@ -18,52 +16,120 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #define SBUFFERSIZE 1000
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decl */
+errno_t write_float_file(
+    const char *fname, float value);
 
-errno_t write_float_file(const char *fname, float value);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-#ifndef MILK_NO_CLI
-static errno_t write_flot_file_cli()
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "writef2file",
+    .cmdkey      = "writef2file",
+    .description =
+        "write float to file"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char p_fname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "val.txt";
+
+static double p_value = 0.0;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".fname", p_fname, \
+      FPTYPE_FILENAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output filename") \
+    X(".value", &p_value, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "float value")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(2, CLIARG_FLOAT64) ==
-            0)
-    {
-        write_float_file(data.cmdargtoken[1].val.string,
-                         data.cmdargtoken[2].val.numf);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t fileutils_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("writef2file",
-                       __FILE__,
-                       write_flot_file_cli,
-                       "write float to file",
-                       "<filename> <float variable>",
-                       "writef2file val.txt a",
-                       "int write_float_file(const char *fname, float value)");
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    FUNC_CHECK_RETURN(
+        write_float_file(p_fname, p_value));
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t CLIADDCMD_COREMOD_tools__fileutils()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
 
     return RETURN_SUCCESS;
 }
