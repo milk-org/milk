@@ -39,8 +39,8 @@ fi
 set -u
 
 SF="${SFDIR}/milkCLIstartup.${pname}.$$"
-echo "readshmim ${sname}" > $SF
-echo "rmshmim ${sname}" >> $SF
+echo "mem.readshmim ${sname}" > $SF
+echo "mem.rmshmim ${sname}" >> $SF
 echo "exitCLI" >> $SF
 
 MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}

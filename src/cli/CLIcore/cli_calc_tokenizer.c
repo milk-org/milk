@@ -104,7 +104,7 @@ static int is_ident_char(int c)
  */
 static int is_ident_start(int c)
 {
-    return isalpha(c) || c == '?';
+    return isalpha(c) || c == '?' || c == '.';
 }
 
 /**
