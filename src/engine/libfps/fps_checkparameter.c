@@ -22,8 +22,6 @@ int is_fits_file(const char *filename);
 int functionparameter_ConnectExternalFPS(FUNCTION_PARAMETER_STRUCT *fpsentry, int pindex, FUNCTION_PARAMETER_STRUCT *fpstest);
 
 
-
-
 int functionparameter_CheckParameter(
     FUNCTION_PARAMETER_STRUCT *fpsentry,
     int                        pindex
@@ -75,7 +73,6 @@ int functionparameter_CheckParameter(
             fpsentry->md->conferrcnt++;
             err = 1;
         }
-
 
 
     if(err == 0)
@@ -492,8 +489,6 @@ int functionparameter_CheckParameter(
 
     return err;
 }
-
-
 
 
 int functionparameter_CheckParametersAll(FUNCTION_PARAMETER_STRUCT *fpsentry)

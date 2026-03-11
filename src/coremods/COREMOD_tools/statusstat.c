@@ -168,7 +168,7 @@ imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
     {
         double tdiffv;
 
-        usleep((long)(usec0 + usec1 * (1.0 * k / NBkiter)));
+        usleep((long)(usec0 + usec1 * ((double) k / NBkiter)));
         st = dcimg[IDstat].array.UI16[0];
         if(st < indexmax)
         {

@@ -1,7 +1,6 @@
 #include <string.h>
 
 
-
 #include "CLIcore.h"
 
 
@@ -42,7 +41,6 @@ imageID image_ID_from_images(
 }
 
 
-
 /**
  * @brief Returns first available ID in image array
  *
@@ -72,7 +70,6 @@ imageID image_get_first_ID_available_from_images(
 
     return -1;
 }
-
 
 
 /**
@@ -109,7 +106,6 @@ errno_t get_process_name_by_pid(
 
     return RETURN_SUCCESS;
 }
-
 
 
 /**

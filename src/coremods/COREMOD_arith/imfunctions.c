@@ -226,7 +226,9 @@ errno_t arith_image_function_im_im__d_d(
         imgout.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    errno_t ret = arith_image_function_im_im__d_d_IMGID(&imgin, &imgout, pt2function);
+    errno_t ret = arith_image_function_im_im__d_d_IMGID(&imgin,
+        &imgout,
+        pt2function);
     
     if (imgout.ID == -1 && imgout.im != NULL) {
         RegisterIMGID(&imgout, dcimg, dcnimg);
@@ -421,7 +423,10 @@ errno_t arith_image_function_imd_im__dd_d(
         imgout.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    errno_t ret = arith_image_function_imd_im__dd_d_IMGID(&imgin, v0, &imgout, pt2function);
+    errno_t ret = arith_image_function_imd_im__dd_d_IMGID(&imgin,
+        v0,
+        &imgout,
+        pt2function);
     
     if (imgout.ID == -1 && imgout.im != NULL) {
         RegisterIMGID(&imgout, dcimg, dcnimg);
@@ -628,7 +633,11 @@ errno_t arith_image_function_imdd_im__ddd_d(const char *ID_name,
         imgout.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    errno_t ret = arith_image_function_imdd_im__ddd_d_IMGID(&imgin, v0, v1, &imgout, pt2function);
+    errno_t ret = arith_image_function_imdd_im__ddd_d_IMGID(&imgin,
+        v0,
+        v1,
+        &imgout,
+        pt2function);
 
     if (imgout.ID == -1 && imgout.im != NULL) {
         RegisterIMGID(&imgout, dcimg, dcnimg);
@@ -1524,7 +1533,9 @@ errno_t arith_image_function_2_1_IMGID(
     else {
         ptr1allocate = 1;
         ptr1array = (double *) malloc(sizeof(double) * nbpix1);
-        for(uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im, ii);
+        for(
+            uint64_t ii = 0; ii < nbpix1; ii++) ptr1array[ii] = get_pixel_double(inimg1->im,
+            ii);
     }
 
     double * ptr2array;
@@ -1533,16 +1544,22 @@ errno_t arith_image_function_2_1_IMGID(
     else {
         ptr2allocate = 1;
         ptr2array = (double *) malloc(sizeof(double) * nbpix2);
-        for(uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im, ii);
+        for(
+            uint64_t ii = 0; ii < nbpix2; ii++) ptr2array[ii] = get_pixel_double(inimg2->im,
+            ii);
     }
 
     if ( outimg->mdt->datatype == _DATATYPE_FLOAT )
     {
-        for(uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
+        for(
+            uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.F[ii] = (float)pt2function(ptr1array[inpix1[ii]],
+            ptr2array[inpix2[ii]]);
     }
     else if ( outimg->mdt->datatype == _DATATYPE_DOUBLE )
     {
-        for(uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]], ptr2array[inpix2[ii]]);
+        for(
+            uint64_t ii = 0; ii < nbpix; ii++ ) outimg->im->array.D[ii] = pt2function(ptr1array[inpix1[ii]],
+            ptr2array[inpix2[ii]]);
     }
 
     if(ptr1allocate == 1) free(ptr1array);
@@ -1588,7 +1605,10 @@ errno_t arith_image_function_2_1(
         outimg.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    errno_t ret = arith_image_function_2_1_IMGID(&inimg1, &inimg2, &outimg, pt2function);
+    errno_t ret = arith_image_function_2_1_IMGID(&inimg1,
+        &inimg2,
+        &outimg,
+        pt2function);
     
     if (outimg.ID == -1 && outimg.im != NULL) {
         RegisterIMGID(&outimg, dcimg, dcnimg);
@@ -1712,7 +1732,8 @@ errno_t arith_image_function_CF_CF__CF(
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
-            dcimg[IDout].array.CF[ii] = pt2function(dcimg[ID1].array.CF[ii], dcimg[ID2].array.CF[ii]);
+            dcimg[IDout].array.CF[ii] = pt2function(dcimg[ID1].array.CF[ii],
+                dcimg[ID2].array.CF[ii]);
         }
 #ifdef _OPENMP
     }
@@ -1764,7 +1785,8 @@ errno_t arith_image_function_CD_CD__CD(
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
-            dcimg[IDout].array.CD[ii] = pt2function(dcimg[ID1].array.CD[ii], dcimg[ID2].array.CD[ii]);
+            dcimg[IDout].array.CD[ii] = pt2function(dcimg[ID1].array.CD[ii],
+                dcimg[ID2].array.CD[ii]);
         }
 #ifdef _OPENMP
     }
@@ -1914,7 +1936,11 @@ int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const 
         imgout.mdt->NBkw = NB_KEYWNODE_MAX;
     }
 
-    int ret = arith_image_function_1ff_1_IMGID(&imgin, f1, f2, &imgout, pt2function);
+    int ret = arith_image_function_1ff_1_IMGID(&imgin,
+        f1,
+        f2,
+        &imgout,
+        pt2function);
     
     if (imgout.ID == -1 && imgout.im != NULL) {
         RegisterIMGID(&imgout, dcimg, dcnimg);

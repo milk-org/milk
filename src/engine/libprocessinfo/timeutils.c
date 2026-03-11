@@ -18,12 +18,10 @@
 #endif
 
 
-
 errno_t milk_clock_gettime(struct timespec *tnow_p)
 {
     return clock_gettime(CLOCK_MILK, tnow_p);
 }
-
 
 
 errno_t mkUTtimestring_nanosec(
@@ -64,8 +62,6 @@ errno_t mkUTtimestring_nanosec(
 }
 
 
-
-
 errno_t mkUTtimestring_nanosec_now(char *timestring)
 {
     struct timespec tnow;
@@ -75,7 +71,6 @@ errno_t mkUTtimestring_nanosec_now(char *timestring)
 
     return RETURN_SUCCESS;
 }
-
 
 
 errno_t mkUTtimestring_microsec(
@@ -116,7 +111,6 @@ errno_t mkUTtimestring_microsec(
 }
 
 
-
 errno_t mkUTtimestring_microsec_now(char *timestring)
 {
     struct timespec tnow;
@@ -126,7 +120,6 @@ errno_t mkUTtimestring_microsec_now(char *timestring)
 
     return RETURN_SUCCESS;
 }
-
 
 
 errno_t mkUTtimestring_millisec(
@@ -224,8 +217,6 @@ errno_t mkUTtimestring_sec_now(char *timestring)
 }
 
 
-
-
 struct timespec timespec_diff(struct timespec start, struct timespec end)
 {
     struct timespec temp;
@@ -242,7 +233,6 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
     }
     return temp;
 }
-
 
 
 double timespec_diff_double(struct timespec start, struct timespec end)
@@ -266,8 +256,6 @@ double timespec_diff_double(struct timespec start, struct timespec end)
 
     return val;
 }
-
-
 
 
 /**

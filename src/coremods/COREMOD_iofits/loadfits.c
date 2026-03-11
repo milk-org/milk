@@ -51,7 +51,6 @@ static int64_t *FITSIOerrmode;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /// errmode values :
 /// LOADFITS_ERRMODE_IGNORE  (0) print warning, do not show error messages, continue
 /// LOADFITS_ERRMODE_WARNING (1) print error, continue
@@ -547,7 +546,10 @@ errno_t load_fits_IMGID(
                 if(strlen(tailstr) == 0)
                 {
                     kwtypeOK = 1;
-                    image_keyword_addD(*imgout, keyname, kwdoubleval, kwcomment);
+                    image_keyword_addD(*imgout,
+                        keyname,
+                        kwdoubleval,
+                        kwcomment);
                 }
 
                 if(kwtypeOK == 0)
@@ -557,7 +559,10 @@ errno_t load_fits_IMGID(
                     kwvaluestr[strlen(kwvaluestr) - 1] = '\0';
                     char *kwvaluestr1;
                     kwvaluestr1 = kwvaluestr + 1;
-                    image_keyword_addS(*imgout, keyname, kwvaluestr1, kwcomment);
+                    image_keyword_addS(*imgout,
+                        keyname,
+                        kwvaluestr1,
+                        kwcomment);
                 }
             }
         }

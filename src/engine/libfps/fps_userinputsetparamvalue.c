@@ -22,8 +22,6 @@
 #endif
 
 
-
-
 /** @brief Enter new value for parameter
  *
  *
@@ -101,7 +99,6 @@ int functionparameter_UserInputSetParamValue(
             buff[stringindex] = '\0';
             inputOK           = 1;
         }
-
 
 
         if(esc_toggle == 0)  // update value if escape key has not been pressed

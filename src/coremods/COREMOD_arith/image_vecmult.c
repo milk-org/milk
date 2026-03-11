@@ -1,9 +1,9 @@
-#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    image_vecmult.c
  * @brief   multiply image by vector
  *
  */
+#include "ImageStreamIO/ImageStruct.h"
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
@@ -64,7 +64,6 @@ static errno_t customCONFcheck()
 
 
 FPS_V2_SECTION5(FPS_PARAMS)
-
 
 
 errno_t image_vect_multiply(

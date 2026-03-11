@@ -95,7 +95,9 @@ void fpsCTRLscreen_print_nodeinfo(
     
     if(keywnode[nodeSelected].leaf > 0) {
         char typestring[100];
-        functionparameter_GetTypeString(fps[fpsindexSelected].parray[pindexSelected].type, typestring);
+        functionparameter_GetTypeString(
+            fps[fpsindexSelected].parray[pindexSelected].type,
+            typestring);
         TUI_printfw("type %s\n", typestring);
     } else {
         TUI_printfw("-DIRECTORY-\n");

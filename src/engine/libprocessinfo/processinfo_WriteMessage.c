@@ -61,7 +61,6 @@ int processinfo_WriteMessage(
 }
 
 
-
 int processinfo_WriteMessage_fmt(
     PROCESSINFO *processinfo,
     const char *format,

@@ -84,7 +84,9 @@ static errno_t compute_function()
     //long m = imgin.md->size[0] * imgin.md->size[1];
 
     // CONNNECT TO OR CREATE MASK STREAM
-    IMGID imgmask = stream_connect_create_2Df32(masksname, cropxsize, cropysize);
+    IMGID imgmask = stream_connect_create_2Df32(masksname,
+        cropxsize,
+        cropysize);
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
     IMGID imgout = stream_connect_create_2Df32(outsname, cropxsize, cropysize);

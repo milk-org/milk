@@ -95,7 +95,8 @@ int main(int argc, char *argv[]) {
     }
 
     IMAGE image;
-    errno_t res = ImageStreamIO_read_sharedmem_image_toIMAGE(streamname, &image);
+    errno_t res = ImageStreamIO_read_sharedmem_image_toIMAGE(streamname,
+        &image);
     if (res != 0) {
         fprintf(stderr, "Error: could not read shared memory image %s\n", streamname);
         return 1;

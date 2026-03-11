@@ -52,7 +52,6 @@ errno_t functionparameter_scan_fps(
     static char shmdname[STRINGMAXLEN_SHMDIRNAME] = {0};
 
 
-
     for(int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
     {
         keywnode[kindex].NBchild = 0;
@@ -220,7 +219,6 @@ errno_t functionparameter_scan_fps(
 #endif
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
-                    printf("File %s line %d\n", __FILE__, __LINE__);
                     fflush(stdout);
                     exit(EXIT_FAILURE);
                 }
@@ -311,7 +309,8 @@ errno_t functionparameter_scan_fps(
                 char *fps_filtstring_name = getenv("FPS_FILTSTRING_NAME");
                 if(fps_filtstring_name)
                 {
-                    char *ptr = strstr(fps[fpsindex].md->name, fps_filtstring_name);
+                    char *ptr = strstr(fps[fpsindex].md->name,
+                        fps_filtstring_name);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -323,7 +322,8 @@ errno_t functionparameter_scan_fps(
                 char *fps_filtstring_keyword = getenv("FPS_FILTSTRING_KEYWORD");
                 if(fps_filtstring_keyword)
                 {
-                    char *ptr = strstr(fps[fpsindex].md->keywordarray, fps_filtstring_keyword);
+                    char *ptr = strstr(fps[fpsindex].md->keywordarray,
+                        fps_filtstring_keyword);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -331,12 +331,12 @@ errno_t functionparameter_scan_fps(
                 }
 
 
-
                 // call function
                 char *fps_filtstring_callfunc = getenv("FPS_FILTSTRING_CALLFUNC");
                 if(fps_filtstring_callfunc)
                 {
-                    char *ptr = strstr(fps[fpsindex].md->callfuncname, fps_filtstring_callfunc);
+                    char *ptr = strstr(fps[fpsindex].md->callfuncname,
+                        fps_filtstring_callfunc);
                     if(ptr == NULL)  // string not found
                     {
                         fpskeep = 0;
@@ -367,8 +367,6 @@ errno_t functionparameter_scan_fps(
                         fpskeep = 0;
                     }
                 }
-
-
 
 
                 DEBUG_TRACEPOINT("A tracepoint here (%s); fpskeep = %d\n", dir->d_name, fpskeep);
@@ -412,7 +410,6 @@ errno_t functionparameter_scan_fps(
                                             {
                                                 match = 0;
                                             }
-                                            //  printf("TEST MATCH : %16s %16s  %d\n", fps[fpsindex].parray[i].keyword[l], keywnode[kwnindex].keyword[l], match);
                                         }
                                         if(match == 1)  // we have a match
                                         {
@@ -569,7 +566,6 @@ errno_t functionparameter_scan_fps(
         char shmdname[STRINGMAXLEN_SHMDIRNAME];
         function_parameter_struct_shmdirname(shmdname);
         printf("ERROR: missing %s directory\n", shmdname);
-        printf("File %s line %d\n", __FILE__, __LINE__);
         fflush(stdout);
         exit(EXIT_FAILURE);
     }

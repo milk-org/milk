@@ -1,10 +1,10 @@
-#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_TCP.c
  * @brief   TCP stream transfer
  *
  * Uses FPS V2 framework.
  */
+#include "ImageStreamIO/ImageStruct.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -1206,7 +1206,10 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
         long recv_bytes = framesizefull;
         while(recv_bytes == framesizefull)
         {
-            recv_bytes = recv(fds_client, socket_flush_buff, framesizefull, MSG_DONTWAIT);
+            recv_bytes = recv(fds_client,
+                socket_flush_buff,
+                framesizefull,
+                MSG_DONTWAIT);
             printf("TCP recv buffer flush. %ld stray bytes.\n", recv_bytes);
         }
         if(recv_bytes >

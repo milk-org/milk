@@ -1304,7 +1304,8 @@ int execute_arith(const char *cmd1)
                     }
                     if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_sqrt(word[highest_priority_index + 1], name);
+                        arith_image_sqrt(word[highest_priority_index + 1],
+                            name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1338,7 +1339,8 @@ int execute_arith(const char *cmd1)
                     }
                     if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_sinh(word[highest_priority_index + 1], name);
+                        arith_image_sinh(word[highest_priority_index + 1],
+                            name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
@@ -1391,7 +1393,8 @@ int execute_arith(const char *cmd1)
                     }
                     if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
                     {
-                        arith_image_positive(word[highest_priority_index + 1], name);
+                        arith_image_positive(word[highest_priority_index + 1],
+                            name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }

@@ -517,7 +517,9 @@ errno_t COREMOD_MEMORY_streamDelay_RUN()
                         dcimg[IDout].array.F[ii] = arraytmpf[ii] / normframes;
                     }
 
-                    processinfo_update_output_stream(processinfo, &dcimg[IDout], NULL);
+                    processinfo_update_output_stream(processinfo,
+                        &dcimg[IDout],
+                        NULL);
                     /*
                         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
                         dcimg[IDout].md[0].cnt0++;

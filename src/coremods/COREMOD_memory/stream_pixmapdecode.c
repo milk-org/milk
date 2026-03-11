@@ -475,7 +475,9 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 if(slice == NBslice - 1)
                 {
-                    processinfo_update_output_stream(processinfo, &dcimg[IDout], NULL);
+                    processinfo_update_output_stream(processinfo,
+                        &dcimg[IDout],
+                        NULL);
                 }
 
                 dcimg[IDout].md[0].cnt1 = slice;
@@ -525,7 +527,6 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
  * ============================================================= */
 
 FPS_V2_SECTION5(FPS_PARAMS)
-
 
 
 /* ================================================================

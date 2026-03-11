@@ -139,7 +139,9 @@ int main(int argc, char *argv[]) {
                     if(S_ISLNK(buf.st_mode))
                     {
                         char linktarget[STRINGMAXLEN_FULLFILENAME];
-                        ssize_t len = readlink(fullname, linktarget, sizeof(linktarget)-1);
+                        ssize_t len = readlink(fullname,
+                            linktarget,
+                            sizeof(linktarget)-1);
                         if (len != -1) {
                             linktarget[len] = '\0';
                             
@@ -172,7 +174,9 @@ int main(int argc, char *argv[]) {
                         // Try to open image to get details
                         IMAGE image = {0};
                         
-                        errno_t ret = ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &image); 
+                        errno_t ret = ImageStreamIO_read_sharedmem_image_toIMAGE(
+                            sname,
+                            &image);
                         
                         if (ret == IMAGESTREAMIO_SUCCESS) {
                             const char *typestr = ImageStreamIO_typename(image.md->datatype);

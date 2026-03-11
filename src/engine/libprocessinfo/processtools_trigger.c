@@ -320,7 +320,9 @@ errno_t processinfo_waitoninputstream(PROCESSINFO *processinfo)
                 ts.tv_sec++;
             }
 
-            semr = ImageStreamIO_semtimedwait(image, processinfo->triggersem, &ts);
+            semr = ImageStreamIO_semtimedwait(image,
+                processinfo->triggersem,
+                &ts);
             if(semr == -1)
             {
                 if(errno == ETIMEDOUT)

@@ -23,7 +23,6 @@
 #define SHAREDSHMDIR  dcshmdir
 
 
-
 /** @brief find shared memory streams on system
  *
  * If filter is set to 1, require stream name to contain namefilter string

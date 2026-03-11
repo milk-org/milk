@@ -51,7 +51,6 @@ static short unsigned int wrow, wcol;
 #define DISPLAYMODE_SEQUENCER 4
 
 
-
 inline static void
 fpsCTRLscreen_print_DisplayMode_status(
     int fpsCTRL_DisplayMode,
@@ -82,8 +81,6 @@ fpsCTRLscreen_print_DisplayMode_status(
     TUI_printfw("%s", monstring); // Simplified header
     screenprint_unsetbold();
     TUI_newline();
-
-
 
 
     if(fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
@@ -292,9 +289,6 @@ inline static void fpsCTRLscreen_print_FPShelp(
 }
 
 
-
-
-
 /** @brief runs fpsCTRL GUI
  *
  * ## Purpose
@@ -468,7 +462,6 @@ errno_t functionparameter_CTRLscreen(
     }
 
     int refresh_screen = 1; // 1 if screen should be refreshed
-
 
 
     while(loopOK == 1)
@@ -674,8 +667,6 @@ errno_t functionparameter_CTRLscreen(
             DEBUG_TRACEPOINT(" ");
 
 
-
-
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
             {
                 fpsCTRLscreen_print_help();
@@ -700,7 +691,6 @@ errno_t functionparameter_CTRLscreen(
             {
                 fpsCTRL_FPSlog(keywnode, &fpsCTRLvar);
             }
-
 
 
             DEBUG_TRACEPOINT(" ");
@@ -728,15 +718,11 @@ errno_t functionparameter_CTRLscreen(
     }
 
 
-
-
     if(run_display == 1)
     {
         // TUI_exit();
         endwin();
     }
-
-
 
 
     {

@@ -338,7 +338,6 @@ imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
