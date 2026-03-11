@@ -95,7 +95,7 @@ INIT_MODULE_LIB(COREMOD_arith)
 static errno_t init_module_CLI()
 {
 
-    image_crop_addCLIcmd();
+    CLIADDCMD_COREMOD_arith__image_crop();
 
     image_arith__im_f_f__im_addCLIcmd();
 
