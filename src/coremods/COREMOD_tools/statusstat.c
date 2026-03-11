@@ -1,10 +1,8 @@
 /**
  * @file statusstat.c
- * @brief Statusstat module
- */
-
-/**
- * @file statusstat.c
+ * @brief Status statistics monitoring
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <sched.h>
@@ -15,56 +13,105 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "timeutils.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decl */
+imageID COREMOD_TOOLS_statusStat(
+    const char *IDstat_name,
+    long indexmax);
 
-imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  PARAMS
+ * ============================================================= */
 
-#ifndef MILK_NO_CLI
-errno_t COREMOD_TOOLS_statusStat_cli()
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "imst";
+static long long p_nbstep = 100000;
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "ctsmstats",
+    .cmdkey      = "ctsmstats",
+    .description =
+        "monitors shared variable status"
+};
+
+#define FPS_PARAMS(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "status image") \
+    X(".nbstep", &p_nbstep, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of steps")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_TOOLS_statusStat(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numl);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t statusstat_addCLIcmd()
+static errno_t compute_function()
 {
-
-    RegisterCLIcommand("ctsmstats",
-                       __FILE__,
-                       COREMOD_TOOLS_statusStat_cli,
-                       "monitors shared variable status",
-                       "<imname> <NBstep>",
-                       "ctsmstats imst 100000",
-                       "long COREMOD_TOOLS_statusStat(const char *IDstat_name, "
-                       "long indexmax)");
-
+    COREMOD_TOOLS_statusStat(
+        p_imname, p_nbstep);
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_tools__statusstat()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+    return RETURN_SUCCESS;
+}
+#endif
 
 //
 // watch shared memory status image and perform timing statistics

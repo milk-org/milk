@@ -1,12 +1,11 @@
 /**
  * @file statusstat.h
- * @brief Statusstat module
+ * @brief Status statistics monitoring
  */
 
-/**
- * @file statusstat.h
- */
+errno_t
+CLIADDCMD_COREMOD_tools__statusstat();
 
-errno_t statusstat_addCLIcmd();
-
-imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax);
+imageID COREMOD_TOOLS_statusStat(
+    const char *IDstat_name,
+    long indexmax);
