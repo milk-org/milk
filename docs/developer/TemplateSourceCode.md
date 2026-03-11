@@ -21,3 +21,6 @@ The primary template for writing new compute units is the V2 template in
 
 Use Kernel-Doc style comments above each function. See
 `docs/developer/DocumentingCode.md` for the full style guide.
+
+---
+← [Documentation Index](../index.md)

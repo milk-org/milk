@@ -155,3 +155,6 @@ imgid_connect_create_2Df32("streamname1", &img1, xsize, ysize);
 
 > [!TIP]
 > Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through `img.im->array.F` or similar data type unions based on `img.im->md[0].datatype`.
+
+---
+← [Documentation Index](index.md)

@@ -474,3 +474,6 @@ code (`MILK_NO_CLI`). Standalone executables do **not** link
 are CLIcore-free.
 
 </details>
+
+---
+← [Documentation Index](index.md)

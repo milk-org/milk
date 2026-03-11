@@ -84,3 +84,6 @@ xdg-open docs/doxygen/html/index.html
 > [!TIP]
 > The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the live URL.
 
+
+---
+← [Documentation Index](../index.md)
