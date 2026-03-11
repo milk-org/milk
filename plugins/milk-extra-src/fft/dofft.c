@@ -66,66 +66,135 @@ static int32_t dofft_dir = 0;
       FPFLAG_DEFAULT_INPUT, \
       "FFT direction")
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declarations
+imageID do1dfft(const char *in_name,
+                const char *out_name);
 
-imageID do1dfft(const char *in_name, const char *out_name);
+imageID do1drfft(const char *in_name,
+                 const char *out_name);
 
-imageID do1drfft(const char *in_name, const char *out_name);
+imageID do2dfft(const char *in_name,
+                const char *out_name);
 
-imageID do2dfft(const char *in_name, const char *out_name);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  CMD 2: do1Dfft (2 args)
+ * ======================================= */
 
-errno_t fft_do1dfft_cli()
+static char p_1dfft_in[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "in";
+static char p_1dfft_out[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "out";
+
+static FPS_APP_INFO FPS_app_info_1dfft = {
+    .fps_name    = "do1Dfft",
+    .cmdkey      = "do1Dfft",
+    .description =
+        "perform 1D complex->complex FFT"
+};
+
+#define FPS_PARAMS_1DFFT(X) \
+    X(".in_name", p_1dfft_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input complex image") \
+    X(".out_name", p_1dfft_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output complex image")
+
+static CLICMDDATA CLIcmddata_1dfft = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_1dfft = {0};
+
+static __attribute__((constructor))
+void init_cms_1dfft(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) == 0)
-    {
-        do1dfft(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_1dfft.key,
+            FPS_app_info_1dfft.cmdkey,
+            sizeof(CLIcmddata_1dfft.key)
+            - 1);
+    strncpy(CLIcmddata_1dfft.description,
+            FPS_app_info_1dfft.description,
+            sizeof(
+                CLIcmddata_1dfft
+                .description) - 1);
+    if (CLIcmddata_1dfft.cmdsettings
+        == NULL) {
+        CLIcmddata_1dfft.cmdsettings =
+            &cms_1dfft;
     }
 }
 
-errno_t fft_do1drfft_cli()
+static errno_t compute_1dfft()
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) == 0)
-    {
-        do1drfft(data.cmdargtoken[1].val.string,
-                 data.cmdargtoken[2].val.string);
+    do1dfft(p_1dfft_in, p_1dfft_out);
+    return RETURN_SUCCESS;
+}
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+
+/* =========================================
+ *  CMD 3: do1Drfft (2 args)
+ * ======================================= */
+
+static char p_1drfft_in[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "in";
+static char p_1drfft_out[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "out";
+
+static FPS_APP_INFO FPS_app_info_1drfft = {
+    .fps_name    = "do1Drfft",
+    .cmdkey      = "do1Drfft",
+    .description =
+        "perform 1D real->complex FFT"
+};
+
+#define FPS_PARAMS_1DRFFT(X) \
+    X(".in_name", p_1drfft_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input real image") \
+    X(".out_name", p_1drfft_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output complex image")
+
+static CLICMDDATA CLIcmddata_1drfft = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_1drfft = {0};
+
+static __attribute__((constructor))
+void init_cms_1drfft(void)
+{
+    strncpy(CLIcmddata_1drfft.key,
+            FPS_app_info_1drfft.cmdkey,
+            sizeof(CLIcmddata_1drfft.key)
+            - 1);
+    strncpy(
+        CLIcmddata_1drfft.description,
+        FPS_app_info_1drfft.description,
+        sizeof(
+            CLIcmddata_1drfft
+            .description) - 1);
+    if (CLIcmddata_1drfft.cmdsettings
+        == NULL) {
+        CLIcmddata_1drfft.cmdsettings =
+            &cms_1drfft;
     }
 }
 
-errno_t fft_do2dfft_cli()
+static errno_t compute_1drfft()
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) == 0)
-    {
-        do2dfft(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+    do1drfft(p_1drfft_in, p_1drfft_out);
+    return RETURN_SUCCESS;
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
 /* ================================================================
  * 5.  BINDINGS, FARG, AND CLI DATA
@@ -195,31 +264,72 @@ static errno_t CLIfunction(void)
         compute_function);
 }
 
-errno_t dofft_addCLIcmd()
+static FPS_CLI_BINDING b_1dfft[] = {
+    FPS_PARAMS_1DFFT(FPS_X_BINDING)
+};
+static CLICMDARGDEF fa_1dfft[] = {
+    FPS_PARAMS_1DFFT(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_1dfft(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1dfft,
+        fa_1dfft, &CLIcmddata_1dfft,
+        b_1dfft,
+        sizeof(b_1dfft) /
+        sizeof(FPS_CLI_BINDING),
+        compute_1dfft);
+}
+
+static FPS_CLI_BINDING b_1drfft[] = {
+    FPS_PARAMS_1DRFFT(FPS_X_BINDING)
+};
+static CLICMDARGDEF fa_1drfft[] = {
+    FPS_PARAMS_1DRFFT(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_1drfft(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1drfft,
+        fa_1drfft, &CLIcmddata_1drfft,
+        b_1drfft,
+        sizeof(b_1drfft) /
+        sizeof(FPS_CLI_BINDING),
+        compute_1drfft);
+}
+
+errno_t
+CLIADDCMD_milkfft__dofft()
 {
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
 
-    RegisterCLIcommand(
-        "do1Dfft",
-        __FILE__,
-        fft_do1dfft_cli,
-        "perform 1D complex->complex FFT",
-        "<input> <output>",
-        "do1Dfft in out",
-        "int do1dfft(const char *in_name,"
-        " const char *out_name)");
+    safe_fps_fill_farg_examples(
+        fa_1dfft, b_1dfft,
+        sizeof(b_1dfft) /
+        sizeof(FPS_CLI_BINDING));
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1dfft,
+            CLIfunction_1dfft);
+        CLIcmddata_1dfft.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
-    RegisterCLIcommand(
-        "do1Drfft",
-        __FILE__,
-        fft_do1drfft_cli,
-        "perform 1D real->complex FFT",
-        "<input> <output>",
-        "do1drfft in out",
-        "int do1drfft(const char *in_name,"
-        " const char *out_name)");
+    safe_fps_fill_farg_examples(
+        fa_1drfft, b_1drfft,
+        sizeof(b_1drfft) /
+        sizeof(FPS_CLI_BINDING));
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1drfft,
+            CLIfunction_1drfft);
+        CLIcmddata_1drfft.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }

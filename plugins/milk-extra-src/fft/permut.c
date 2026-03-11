@@ -1,9 +1,6 @@
 /**
  * @file permut.c
- * @brief Permut module
- */
-
-/** @file permut.c
+ * @brief Permut image quadrants
  */
 
 #ifdef MILK_NO_CLI
@@ -11,86 +8,128 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#define SWAPf(x, y)                                                            \
-    do                                                                         \
-    {                                                                          \
-        float swaptmp = x;                                                     \
-        x             = y;                                                     \
-        y             = swaptmp;                                               \
+#define SWAPf(x, y)                    \
+    do                                 \
+    {                                  \
+        float swaptmp = x;             \
+        x             = y;             \
+        y             = swaptmp;       \
     } while (0)
 
-#define SWAPd(x, y)                                                            \
-    do                                                                         \
-    {                                                                          \
-        double swaptmp = x;                                                    \
-        x              = y;                                                    \
-        y              = swaptmp;                                              \
+#define SWAPd(x, y)                    \
+    do                                 \
+    {                                  \
+        double swaptmp = x;            \
+        x              = y;            \
+        y              = swaptmp;      \
     } while (0)
 
-#define CSWAPcf(x, y)                                                          \
-    do                                                                         \
-    {                                                                          \
-        float swaptmp = x.re;                                                  \
-        x.re          = y.re;                                                  \
-        y.re          = swaptmp;                                               \
-        swaptmp       = x.im;                                                  \
-        x.im          = y.im;                                                  \
-        y.im          = swaptmp;                                               \
+#define CSWAPcf(x, y)                  \
+    do                                 \
+    {                                  \
+        float swaptmp = x.re;          \
+        x.re          = y.re;          \
+        y.re          = swaptmp;       \
+        swaptmp       = x.im;          \
+        x.im          = y.im;          \
+        y.im          = swaptmp;       \
     } while (0)
 
-#define CSWAPcd(x, y)                                                          \
-    do                                                                         \
-    {                                                                          \
-        double swaptmp = (x.re);                                               \
-        x.re           = y.re;                                                 \
-        y.re           = swaptmp;                                              \
-        swaptmp        = x.im;                                                 \
-        x.im           = y.im;                                                 \
-        y.im           = swaptmp;                                              \
+#define CSWAPcd(x, y)                  \
+    do                                 \
+    {                                  \
+        double swaptmp = (x.re);       \
+        x.re           = y.re;         \
+        y.re           = swaptmp;      \
+        swaptmp        = x.im;         \
+        x.im           = y.im;         \
+        y.im           = swaptmp;      \
     } while (0)
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
+// Forward declaration
 int permut(const char *ID_name);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  V2 PARAMS
+ * ======================================= */
 
-errno_t fft_permut_cli()
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "permut",
+    .cmdkey      = "permut",
+    .description =
+        "permut image quadrants"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in_name", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        permut(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t permut_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("permut",
-                       __FILE__,
-                       fft_permut_cli,
-                       "permut image quadrants",
-                       "<image>",
-                       "permut im1",
-                       "int permut(const char *ID_name)");
-
+    permut(p_imname);
     return RETURN_SUCCESS;
 }
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_milkfft__permut()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
 
 int permut(const char *ID_name)
 {
