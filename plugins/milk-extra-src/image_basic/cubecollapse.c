@@ -34,8 +34,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *cubecollapse_inimname  = NULL;
-static char *cubecollapse_outimname = NULL;
+static char cubecollapse_inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char cubecollapse_outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
 
 /* ================================================================
@@ -43,11 +45,11 @@ static char *cubecollapse_outimname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &cubecollapse_inimname, \
+    X(".in_name", cubecollapse_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input cube image") \
-    X(".out_name", &cubecollapse_outimname, \
+    X(".out_name", cubecollapse_outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output 2D image")
