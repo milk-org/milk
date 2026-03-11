@@ -1320,6 +1320,11 @@ void print_milk_cli_help(void)
     printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest the closest match.\n");
     printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "milk-fpsexec-list <keyword>" C_RST " filters matches.\n");
     printf("  " C_NOTE "Bash completion:" C_RST " Source scripts/milk-completion.sh for standard tab completion.\n");
+    printf("\n");
+    printf(C_HDR "Piping Commands:\n" C_RST);
+    printf("  Commands can be piped to milk-cli via stdin:\n");
+    printf("  " C_CMD "echo -e \"a=1\\nb=2\\nc=a+b\" | milk-cli\n" C_RST);
+    printf("  Use " C_BOLD "\\n" C_RST " to separate multiple commands.\n");
 
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
@@ -1331,8 +1336,9 @@ void print_milk_cli_help(void)
     printf(C_CMD "  m? [module]     " C_RST "List commands in module\n");
     printf(C_CMD "  h? [string]     " C_RST "Search command descriptions\n");
     printf(C_CMD "  ci              " C_RST "System info and memory usage\n");
-    printf(C_CMD "  listim / listimf" C_RST "List images in memory\n");
-    printf(C_CMD "  loadfits / savefits " C_RST "FITS file I/O operations\n");
+    printf(C_CMD "  mem.listim      " C_RST "List images in memory\n");
+    printf(C_CMD "  iofits.loadfits " C_RST "Load FITS file " C_NOTE "(requires CFITS)\n" C_RST);
+    printf(C_CMD "  iofits.savefits " C_RST "Save FITS file " C_NOTE "(requires CFITS)\n" C_RST);
     printf(C_CMD "  quit / exit     " C_RST "Exit the milk shell\n");
     printf(C_CMD "  !<syscommand>   " C_RST "Execute shell command\n");
     printf("\n");
