@@ -1,12 +1,11 @@
 /**
  * @file imdisplay3d.h
- * @brief Imdisplay3d module
+ * @brief Display 2D image as 3D surface
  */
 
-/**
- * @file imdisplay3d.h
- */
+errno_t
+CLIADDCMD_COREMOD_tools__imdisplay3d();
 
-errno_t imdisplay3d_addCLIcmd();
-
-errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long step);
