@@ -1431,6 +1431,62 @@ int main(int argc, char *argv[]) { \
     }
 
 
+/**
+ * @brief Stamp out V2 section 5 boilerplate.
+ *
+ * Produces: my_bindings[], nb_bindings, farg[],
+ * CLIcmddata, default_cmdsettings, and init_cmdsettings().
+ *
+ * Requires: FPS_app_info to be declared before this macro.
+ *
+ * Usage (replaces ~35 lines of copy-paste):
+ * @code
+ * FPS_V2_SECTION5(FPS_PARAMS)
+ * @endcode
+ */
+#define FPS_V2_SECTION5(PARAMS_MACRO)               \
+    static FPS_CLI_BINDING my_bindings[] = {         \
+        PARAMS_MACRO(FPS_X_BINDING)                  \
+    };                                               \
+    static const int nb_bindings =                   \
+        (int)(sizeof(my_bindings)                     \
+            / sizeof(FPS_CLI_BINDING));              \
+    static CLICMDARGDEF farg[] = {                   \
+        PARAMS_MACRO(FPS_X_FARG)                     \
+    };                                               \
+    FPS_V2_CLICMDDATA_DECL_                          \
+    static CMDSETTINGS default_cmdsettings_ = {0};   \
+    static __attribute__((constructor))              \
+    void init_cmdsettings_(void) {                   \
+        strncpy(CLIcmddata.key,                      \
+                FPS_app_info.cmdkey,                 \
+                sizeof(CLIcmddata.key) - 1);         \
+        strncpy(CLIcmddata.description,              \
+                FPS_app_info.description,            \
+                sizeof(CLIcmddata.description) - 1); \
+        if (CLIcmddata.cmdsettings == NULL) {        \
+            CLIcmddata.cmdsettings =                 \
+                &default_cmdsettings_;               \
+        }                                            \
+    }
+
+/**
+ * @brief Helper: CLIcmddata declaration with
+ * proper linkage based on FPS_STANDALONE.
+ */
+#ifdef FPS_STANDALONE
+#define FPS_V2_CLICMDDATA_DECL_                      \
+    CLICMDDATA CLIcmddata = {                        \
+        "", "", CLICMD_FIELDS_DEFAULTS               \
+    };
+#else
+#define FPS_V2_CLICMDDATA_DECL_                      \
+    static CLICMDDATA CLIcmddata = {                 \
+        "", "", CLICMD_FIELDS_DEFAULTS               \
+    };
+#endif
+
+
 #define _FPS_MAIN_STANDALONE_V2_IMPL( \
     APP_INFO, PARAMS_MACRO, COMPUTE_FN, \
     CONFCHECK_FN) \
