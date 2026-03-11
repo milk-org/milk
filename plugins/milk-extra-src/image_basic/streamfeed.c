@@ -1,9 +1,6 @@
 /**
  * @file streamfeed.c
- * @brief Streamfeed module
- */
-
-/** @file streamfeed.c
+ * @brief Feed stream of images
  */
 
 #include <sched.h>
@@ -13,50 +10,92 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
-                            const char *__restrict streamname,
-                            float frequ);
+// Forward declaration
+long IMAGE_BASIC_streamfeed(
+    const char *__restrict IDname,
+    const char *__restrict streamname,
+    float frequ);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_stream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imstream";
+static double p_freq = 100.0;
 
-static errno_t image_basic_streamfeed_cli()
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgstreamfeed",
+    .cmdkey      = "imgstreamfeed",
+    .description = "feed stream of images"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image/cube") \
+    X(".stream", p_stream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output stream") \
+    X(".freq", &p_freq, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "frequency [Hz]")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) == 0)
-    {
-        IMAGE_BASIC_streamfeed(data.cmdargtoken[1].val.string,
-                               data.cmdargtoken[2].val.string,
-                               data.cmdargtoken[3].val.numf);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) streamfeed_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("imgstreamfeed",
-                       __FILE__,
-                       image_basic_streamfeed_cli,
-                       "feed stream of images",
-                       "<input image/cube> <stream> <fequ [Hz]>",
-                       "imgstreamfeed im imstream 100",
-                       "long IMAGE_BASIC_streamfeed(const char *IDname, const "
-                       "char *streamname, float frequ)");
+    IMAGE_BASIC_streamfeed(
+        p_in, p_stream, (float) p_freq);
+    return RETURN_SUCCESS;
+}
 
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_image_basic__streamfeed()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

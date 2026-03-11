@@ -1,9 +1,6 @@
 /**
  * @file imexpand.c
- * @brief Imexpand module
- */
-
-/** @file imexpand.c
+ * @brief Expand/upsample images
  */
 
 #ifdef MILK_NO_CLI
@@ -11,85 +8,213 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-imageID
-basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n2);
+// Forward declarations
+imageID basic_expand(
+    const char *ID_name,
+    const char *ID_name_out,
+    int n1, int n2);
 
 imageID basic_expand3D(
-    const char *ID_name, const char *ID_name_out, int n1, int n2, int n3);
+    const char *ID_name,
+    const char *ID_name_out,
+    int n1, int n2, int n3);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* ---- Command 1: imexpand ---- */
 
-static errno_t image_basic_expand_cli()
+static char pe1_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char pe1_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static long long pe1_fx = 2;
+static long long pe1_fy = 2;
+
+static FPS_APP_INFO FPS_app_info_1 = {
+    .fps_name    = "imexpand",
+    .cmdkey      = "imexpand",
+    .description = "expand 2D image"
+};
+
+#define FPS_PARAMS_1(X) \
+    X(".in_name", pe1_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", pe1_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".factx", &pe1_fx, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x expand factor") \
+    X(".facty", &pe1_fy, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y expand factor")
+
+static FPS_CLI_BINDING my_bindings_1[] = {
+    FPS_PARAMS_1(FPS_X_BINDING)
+};
+static const int nb_bindings_1 =
+    sizeof(my_bindings_1) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_1[] = {
+    FPS_PARAMS_1(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_1 = {
+    "", "", __FILE__,
+    sizeof(farg_1) / sizeof(CLICMDARGDEF),
+    farg_1, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_1 = {0};
+
+static __attribute__((constructor))
+void init_cms_1(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) ==
-            0)
-    {
-        basic_expand(data.cmdargtoken[1].val.string,
-                     data.cmdargtoken[2].val.string,
-                     data.cmdargtoken[3].val.numl,
-                     data.cmdargtoken[4].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_1.key,
+            FPS_app_info_1.cmdkey,
+            sizeof(CLIcmddata_1.key) - 1);
+    strncpy(CLIcmddata_1.description,
+            FPS_app_info_1.description,
+            sizeof(CLIcmddata_1.description)
+            - 1);
+    if (CLIcmddata_1.cmdsettings == NULL) {
+        CLIcmddata_1.cmdsettings = &cms_1;
     }
 }
 
-static errno_t image_basic_expand3D_cli()
+static errno_t compute_function_1()
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 2) ==
-            0)
-    {
-        basic_expand3D(data.cmdargtoken[1].val.string,
-                       data.cmdargtoken[2].val.string,
-                       data.cmdargtoken[3].val.numl,
-                       data.cmdargtoken[4].val.numl,
-                       data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    basic_expand(pe1_in, pe1_out,
+                 (int) pe1_fx,
+                 (int) pe1_fy);
+    return RETURN_SUCCESS;
+}
+
+static errno_t CLIfunction_1(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1, farg_1,
+        &CLIcmddata_1,
+        my_bindings_1, nb_bindings_1,
+        compute_function_1);
+}
+
+/* ---- Command 2: imexpand3D ---- */
+
+static char pe2_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char pe2_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static long long pe2_fx = 2;
+static long long pe2_fy = 2;
+static long long pe2_fz = 2;
+
+static FPS_APP_INFO FPS_app_info_2 = {
+    .fps_name    = "imexpand3D",
+    .cmdkey      = "imexpand3D",
+    .description = "expand 3D image"
+};
+
+#define FPS_PARAMS_2(X) \
+    X(".in_name", pe2_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", pe2_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".factx", &pe2_fx, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x expand factor") \
+    X(".facty", &pe2_fy, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y expand factor") \
+    X(".factz", &pe2_fz, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "z expand factor")
+
+static FPS_CLI_BINDING my_bindings_2[] = {
+    FPS_PARAMS_2(FPS_X_BINDING)
+};
+static const int nb_bindings_2 =
+    sizeof(my_bindings_2) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_2[] = {
+    FPS_PARAMS_2(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_2 = {
+    "", "", __FILE__,
+    sizeof(farg_2) / sizeof(CLICMDARGDEF),
+    farg_2, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_2 = {0};
+
+static __attribute__((constructor))
+void init_cms_2(void)
+{
+    strncpy(CLIcmddata_2.key,
+            FPS_app_info_2.cmdkey,
+            sizeof(CLIcmddata_2.key) - 1);
+    strncpy(CLIcmddata_2.description,
+            FPS_app_info_2.description,
+            sizeof(CLIcmddata_2.description)
+            - 1);
+    if (CLIcmddata_2.cmdsettings == NULL) {
+        CLIcmddata_2.cmdsettings = &cms_2;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t imexpand_addCLIcmd()
+static errno_t compute_function_2()
 {
+    basic_expand3D(pe2_in, pe2_out,
+                   (int) pe2_fx,
+                   (int) pe2_fy,
+                   (int) pe2_fz);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imexpand",
-                       __FILE__,
-                       image_basic_expand_cli,
-                       "expand 2D image",
-                       "<image in> <output image> <x factor> <y factor>",
-                       "imexpand im1 im2 2 2",
-                       "long basic_expand(const char *ID_name, const char "
-                       "*ID_name_out, int n1, int n2)");
+static errno_t CLIfunction_2(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_2, farg_2,
+        &CLIcmddata_2,
+        my_bindings_2, nb_bindings_2,
+        compute_function_2);
+}
 
-    RegisterCLIcommand(
-        "imexpand3D",
-        __FILE__,
-        image_basic_expand3D_cli,
-        "expand 3D image",
-        "<image in> <output image> <x factor> <y factor> <z factor>",
-        "imexpand3D im1 im2 2 2 2",
-        "long basic_expand3D(const char *ID_name, const char *ID_name_out, int "
-        "n1, int n2, int n3)");
+errno_t
+CLIADDCMD_image_basic__imexpand()
+{
+    safe_fps_fill_farg_examples(
+        farg_1, my_bindings_1,
+        nb_bindings_1);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1, CLIfunction_1);
+        CLIcmddata_1.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    safe_fps_fill_farg_examples(
+        farg_2, my_bindings_2,
+        nb_bindings_2);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_2, CLIfunction_2);
+        CLIcmddata_2.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
