@@ -210,7 +210,7 @@ static errno_t CLIfunction(void)
         compute_function);
 }
 
-errno_t imrotate_addCLIcmd()
+errno_t CLIADDCMD_image_basic__imrotate()
 {
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);

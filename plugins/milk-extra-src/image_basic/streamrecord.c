@@ -1,9 +1,6 @@
 /**
  * @file streamrecord.c
- * @brief Streamrecord module
- */
-
-/** @file streamrecord.c
+ * @brief Record stream of images
  */
 
 #include <sched.h>
@@ -13,52 +10,93 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID IMAGE_BASIC_streamrecord(
+    const char *__restrict streamname,
+    long NBframes,
+    const char *__restrict IDname);
 
-imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
-                                 long NBframes,
-                                 const char *__restrict IDname);
+static char p_stream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imstream";
+static long long p_nframes = 100;
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imrec";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgstreamrec",
+    .cmdkey      = "imgstreamrec",
+    .description =
+        "record stream of images"
+};
 
-static errno_t IMAGE_BASIC_streamrecord_cli()
+#define FPS_PARAMS(X) \
+    X(".stream", p_stream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".nframes", &p_nframes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of frames") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
-    {
-        IMAGE_BASIC_streamrecord(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numl,
-                                 data.cmdargtoken[3].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) streamrecord_addCLIcmd()
+static errno_t compute_function()
 {
+    IMAGE_BASIC_streamrecord(
+        p_stream, (long) p_nframes, p_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imgstreamrec",
-                       __FILE__,
-                       IMAGE_BASIC_streamrecord_cli,
-                       "record stream of images",
-                       "<stream> <# frames> <output>",
-                       "imgstreamrec imstream 100 imrec",
-                       "long IMAGE_BASIC_streamrecord(const char *streamname, "
-                       "long NBframes, const char *IDname)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_basic__streamrecord()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

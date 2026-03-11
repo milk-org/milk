@@ -6,7 +6,7 @@
 /** @file im3Dto2D.h
  */
 
-errno_t __attribute__((cold)) im3Dto2D_addCLIcmd();
+errno_t __attribute__((cold)) CLIADDCMD_image_basic__im3Dto2D();
 
 imageID image_basic_3Dto2D_byID(imageID ID);
 

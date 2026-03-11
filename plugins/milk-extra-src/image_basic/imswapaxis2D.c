@@ -1,9 +1,6 @@
 /**
  * @file imswapaxis2D.c
- * @brief Imswapaxis2d module
- */
-
-/** @file imswapaxis2D.c
+ * @brief Swap axis of a 2D image
  */
 
 #ifdef MILK_NO_CLI
@@ -11,50 +8,86 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID image_basic_SwapAxis2D(
+    const char *__restrict IDin_name,
+    const char *__restrict IDout_name);
 
-imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
-                               const char *__restrict IDout_name);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imswapaxis2D",
+    .cmdkey      = "imswapaxis2D",
+    .description =
+        "swap axis of a 2D image"
+};
 
-static errno_t image_basic_SwapAxis2D_cli() // swap axis of a 2D image
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) == 0)
-    {
-        image_basic_SwapAxis2D(data.cmdargtoken[1].val.string,
-                               data.cmdargtoken[2].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) imswapaxis2D_addCLIcmd()
+static errno_t compute_function()
 {
+    image_basic_SwapAxis2D(p_in, p_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imswapaxis2D",
-                       __FILE__,
-                       image_basic_SwapAxis2D_cli,
-                       "Swap axis of a 2D image",
-                       "<input image> <output image>",
-                       "imswapaxis2D im1 im2",
-                       "long image_basic_SwapAxis2D(const char *IDin_name, "
-                       "const char *IDout_name)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_basic__imswapaxis2D()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

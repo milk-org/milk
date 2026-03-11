@@ -6,7 +6,7 @@
 #ifndef IMAGE_BASIC_IMRESIZE_H
 #define IMAGE_BASIC_IMRESIZE_H
 
-errno_t imresize_addCLIcmd();
+errno_t CLIADDCMD_image_basic__imresize();
 
 long basic_resizeim(
     const char *imname_in,
