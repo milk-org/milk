@@ -104,8 +104,6 @@ errno_t runCLI_prompt(char *promptstring, char *prompt)
 }
 
 
-
-
 static void *xmalloc(int size)
 {
     void *buf;
@@ -388,8 +386,6 @@ errno_t write_tracedebugfile()
 }
 
 
-
-
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -403,7 +399,6 @@ errno_t CLI_execute_line()
     struct timespec *thetime =
         (struct timespec *) malloc(sizeof(struct timespec));
     char calctmpimname[STRINGMAXLEN_IMGNAME];
-
 
 
 #ifdef USE_READLINE
@@ -717,7 +712,8 @@ errno_t CLI_execute_line()
             const char *best_match = NULL;
 
             for(unsigned int i = 0; i < data.NBcmd; i++) {
-                int d = levenshtein_distance((const char*)input_cmd, (const char*)data.cmd[i].key);
+                int d = levenshtein_distance((const char*)input_cmd,
+                    (const char*)data.cmd[i].key);
                 if(d < best_dist) {
                     best_dist = d;
                     best_match = data.cmd[i].key;
@@ -1187,7 +1183,6 @@ static void CLI_redisplay(void)
         update_hint_area();
         return;
     }
-
 
 
     if(rl_point != rl_end)

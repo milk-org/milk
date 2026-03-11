@@ -64,8 +64,6 @@ int  *savefits_outbitpix = NULL;
 char *savefits_inheader  = NULL;
 
 
-
-
 /* =========================================
  * Core FITS write — no CLIcore dependency
  * ========================================= */

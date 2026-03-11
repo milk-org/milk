@@ -25,11 +25,8 @@
 #include "streamCTRL_utilfuncs.h"
 
 
-
-
 // default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
 #define SHAREDSHMDIR  dcshmdir
-
 
 
 void *streamCTRL_scan(
@@ -52,8 +49,6 @@ void *streamCTRL_scan(
 
     // if set, write file list to file on first scan
     //int WriteFlistToFile = 1;
-
-
 
 
     while(streaminfoproc->loop == 1)
@@ -84,7 +79,6 @@ void *streamCTRL_scan(
             clock_gettime(CLOCK_MILK, &t0);
             streaminfoproc->dtscan = tdiffv;
         }
-
 
 
         // look for streams on filesystem
@@ -184,7 +178,9 @@ void *streamCTRL_scan(
                 // force used to be 1 even if load fails, so we can keep track of attempted loads
                 images[ID].used = 1;
                 // keep track of name
-                strncpy(images[ID].name, streaminfo[sindex].sname, STRINGMAXLEN_IMAGE_NAME - 1);
+                strncpy(images[ID].name,
+                    streaminfo[sindex].sname,
+                    STRINGMAXLEN_IMAGE_NAME - 1);
                 images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
                 streaminfo[sindex].deltacnt0          = 1;
@@ -268,12 +264,9 @@ void *streamCTRL_scan(
         }
 
 
-
-
         streaminfoproc->WriteFlistToFile = 0;
 
         firstIter = 0;
-
 
 
         if(streaminfoproc->fuserUpdate == 1)

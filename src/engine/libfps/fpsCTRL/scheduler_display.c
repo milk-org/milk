@@ -71,13 +71,16 @@ errno_t fpsCTRL_scheduler_display(
             }
 
             // measure age since submission
-            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].creationtime, tnow);
+            tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].creationtime,
+                tnow);
             double tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
             TUI_printfw("%6.2f s ", tdiffv);
 
             if(fpsctrltasklist[fpscmdindex].status & FPSTASK_STATUS_RUNNING)
             {
-                tdiff =  timespec_diff(fpsctrltasklist[fpscmdindex].activationtime, tnow);
+                tdiff =  timespec_diff(
+                    fpsctrltasklist[fpscmdindex].activationtime,
+                    tnow);
                 tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
                 TUI_printfw(" %6.2f s ", tdiffv);
             }

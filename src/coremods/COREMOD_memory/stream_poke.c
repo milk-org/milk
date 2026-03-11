@@ -62,7 +62,6 @@ static char inimname[FUNCTION_PARAMETER_STRMAXLEN]
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */

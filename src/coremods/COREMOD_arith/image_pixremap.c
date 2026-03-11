@@ -75,7 +75,10 @@ static errno_t compute_function()
     if(outshared == 1)
     {
         imgid_free(&imgout);
-        imgout = stream_connect_create_2D(outimname, xsize, ysize, imgin.md->datatype);
+        imgout = stream_connect_create_2D(outimname,
+            xsize,
+            ysize,
+            imgin.md->datatype);
     }
     else
     {

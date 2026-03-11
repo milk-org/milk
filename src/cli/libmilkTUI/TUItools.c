@@ -180,8 +180,6 @@ void TUI_newline()
 }
 
 
-
-
 void screenprint_setcolor(int colorcode)
 {
 #ifdef USE_NCURSES
@@ -407,8 +405,6 @@ void screenprint_setnormal()
 }
 
 
-
-
 /**
  * @brief Print header line
  *
@@ -548,8 +544,6 @@ void TUI_handle_winch(int sig)
 }
 
 
-
-
 /** @brief INITIALIZE ncurses
  *
  */
@@ -634,8 +628,6 @@ errno_t TUI_initncurses(short unsigned int *wrowptr,
     return RETURN_SUCCESS;
 }
 #endif
-
-
 
 
 errno_t TUI_init_terminal(short unsigned int *wrowptr,
@@ -822,8 +814,6 @@ int get_singlechar_nonblock()
 
     return ch;
 }
-
-
 
 
 int get_singlechar_block()

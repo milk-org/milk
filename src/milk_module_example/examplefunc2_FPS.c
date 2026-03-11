@@ -69,9 +69,6 @@ void init_cmdsettings(void)
 }
 
 
-
-
-
 /**
  * @brief Sum pixel values
  *
