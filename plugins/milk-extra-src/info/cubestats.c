@@ -1,62 +1,97 @@
 /**
  * @file cubestats.c
- * @brief Cubestats module
- */
-
-/** @file cubestats.c
+ * @brief Image cube stats
  */
 
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+// Forward declaration
+imageID info_cubestats(
+    const char *ID_name,
+    const char *IDmask_name,
+    const char *outfname);
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+static char p_cube[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imc";
+static char p_mask[FUNCTION_PARAMETER_STRMAXLEN]
+    = "immask";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imc_stats.txt";
 
-imageID info_cubestats(const char *ID_name,
-                       const char *IDmask_name,
-                       const char *outfname);
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cubestats",
+    .cmdkey      = "cubestats",
+    .description = "image cube stats"
+};
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+#define FPS_PARAMS(X) \
+    X(".in_cube", p_cube, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input 3D image") \
+    X(".in_mask", p_mask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "mask image") \
+    X(".out_fname", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output file")
 
-errno_t info_cubestats_cli()
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, CLIARG_STR_NOT_IMG) ==
-            0)
-    {
-        info_cubestats(data.cmdargtoken[1].val.string,
-                       data.cmdargtoken[2].val.string,
-                       data.cmdargtoken[3].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t cubestats_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("cubestats",
-                       __FILE__,
-                       info_cubestats_cli,
-                       "image cube stats",
-                       "<3Dimage> <mask> <output file>",
-                       "cubestats imc immask imc_stats.txt",
-                       "long info_cubestats(const char *ID_name, const char "
-                       "*IDmask_name, const char *outfname)");
+    info_cubestats(p_cube, p_mask, p_out);
+    return RETURN_SUCCESS;
+}
 
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_info__cubestats()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

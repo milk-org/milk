@@ -1,77 +1,176 @@
 /**
  * @file image_stats.c
- * @brief Image stats module
- */
-
-/** @file image_stats.c
+ * @brief Image statistics
  */
 
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
+// Forward declaration
+errno_t info_image_stats(
+    const char *ID_name,
+    const char *options);
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* =========================================
+ *  Command 1: imstats
+ * ======================================= */
 
-errno_t info_image_stats(const char *ID_name, const char *options);
+static char p1_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info_1 = {
+    .fps_name    = "imstats",
+    .cmdkey      = "imstats",
+    .description = "image stats"
+};
 
-static errno_t info_image_stats_cli()
+#define FPS_PARAMS_1(X) \
+    X(".in_name", p1_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+static FPS_CLI_BINDING my_bindings_1[] = {
+    FPS_PARAMS_1(FPS_X_BINDING)
+};
+static const int nb_bindings_1 =
+    sizeof(my_bindings_1) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_1[] = {
+    FPS_PARAMS_1(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_1 = {
+    "", "", __FILE__,
+    sizeof(farg_1) / sizeof(CLICMDARGDEF),
+    farg_1, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_1 = {0};
+
+static __attribute__((constructor))
+void init_cms_1(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        info_image_stats(data.cmdargtoken[1].val.string, "");
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_1.key,
+            FPS_app_info_1.cmdkey,
+            sizeof(CLIcmddata_1.key) - 1);
+    strncpy(CLIcmddata_1.description,
+            FPS_app_info_1.description,
+            sizeof(CLIcmddata_1.description)
+            - 1);
+    if (CLIcmddata_1.cmdsettings == NULL) {
+        CLIcmddata_1.cmdsettings = &cms_1;
     }
 }
 
-static errno_t info_image_statsf_cli()
+static errno_t compute_function_1()
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        info_image_stats(data.cmdargtoken[1].val.string, "fileout");
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    info_image_stats(p1_in, "");
+    return RETURN_SUCCESS;
+}
+
+static errno_t CLIfunction_1(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1, farg_1,
+        &CLIcmddata_1,
+        my_bindings_1, nb_bindings_1,
+        compute_function_1);
+}
+
+/* =========================================
+ *  Command 2: imstatsf
+ * ======================================= */
+
+static char p2_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+
+static FPS_APP_INFO FPS_app_info_2 = {
+    .fps_name    = "imstatsf",
+    .cmdkey      = "imstatsf",
+    .description =
+        "image stats with file output"
+};
+
+#define FPS_PARAMS_2(X) \
+    X(".in_name", p2_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+static FPS_CLI_BINDING my_bindings_2[] = {
+    FPS_PARAMS_2(FPS_X_BINDING)
+};
+static const int nb_bindings_2 =
+    sizeof(my_bindings_2) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_2[] = {
+    FPS_PARAMS_2(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_2 = {
+    "", "", __FILE__,
+    sizeof(farg_2) / sizeof(CLICMDARGDEF),
+    farg_2, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_2 = {0};
+
+static __attribute__((constructor))
+void init_cms_2(void)
+{
+    strncpy(CLIcmddata_2.key,
+            FPS_app_info_2.cmdkey,
+            sizeof(CLIcmddata_2.key) - 1);
+    strncpy(CLIcmddata_2.description,
+            FPS_app_info_2.description,
+            sizeof(CLIcmddata_2.description)
+            - 1);
+    if (CLIcmddata_2.cmdsettings == NULL) {
+        CLIcmddata_2.cmdsettings = &cms_2;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t image_stats_addCLIcmd()
+static errno_t compute_function_2()
 {
-    RegisterCLIcommand("imstats",
-                       __FILE__,
-                       info_image_stats_cli,
-                       "image stats",
-                       "<image>",
-                       "imgstats im1",
-                       "int info_image_stats(const char *ID_name, \"\")");
+    info_image_stats(p2_in, "fileout");
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "imstatsf",
-        __FILE__,
-        info_image_statsf_cli,
-        "image stats with file output",
-        "<image>",
-        "imgstatsf im1",
-        "int info_image_stats(const char *ID_name, \"fileout\")");
+static errno_t CLIfunction_2(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_2, farg_2,
+        &CLIcmddata_2,
+        my_bindings_2, nb_bindings_2,
+        compute_function_2);
+}
+
+errno_t
+CLIADDCMD_info__image_stats()
+{
+    safe_fps_fill_farg_examples(
+        farg_1, my_bindings_1,
+        nb_bindings_1);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1, CLIfunction_1);
+        CLIcmddata_1.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    safe_fps_fill_farg_examples(
+        farg_2, my_bindings_2,
+        nb_bindings_2);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_2, CLIfunction_2);
+        CLIcmddata_2.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
