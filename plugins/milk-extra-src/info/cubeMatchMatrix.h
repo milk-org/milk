@@ -1,11 +1,10 @@
 /**
  * @file cubeMatchMatrix.h
- * @brief Cubematchmatrix module
+ * @brief Compute sqsum diffs between cube slices
  */
 
-/** @file cubeMatchMatrix.h
- */
+errno_t CLIADDCMD_info__cubeMatchMatrix();
 
-errno_t cubeMatchMatrix_addCLIcmd();
-
-imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name);
+imageID info_cubeMatchMatrix(
+    const char *IDin_name,
+    const char *IDout_name);

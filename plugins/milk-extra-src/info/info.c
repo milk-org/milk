@@ -26,14 +26,14 @@ INIT_MODULE_LIB(info)
 
 static errno_t init_module_CLI()
 {
-    cubeMatchMatrix_addCLIcmd();
-    cubestats_addCLIcmd();
+    CLIADDCMD_info__cubeMatchMatrix();
+    CLIADDCMD_info__cubestats();
 
     CLIADDCMD_info__imagemon();
     CLIADDCMD_info__stream_monproc();
 
-    image_stats_addCLIcmd();
-    improfile_addCLIcmd();
+    CLIADDCMD_info__image_stats();
+    CLIADDCMD_info__improfile();
 
     return RETURN_SUCCESS;
 }
