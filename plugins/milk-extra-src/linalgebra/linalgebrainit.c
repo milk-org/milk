@@ -21,48 +21,52 @@ extern int cuda_deviceCount;
 int LINALGEBRA_init();
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: linalgebrainit
 // ==========================================
 
-
-/*
-static errno_t delete_image_ID__cli()
-{
-    long i = 1;
-    printf("%ld : %d\n", i, data.cmdargtoken[i].type);
-    while(data.cmdargtoken[i].type != 0)
-    {
-        if(data.cmdargtoken[i].type == 4)
-        {
-            delete_image_ID(data.cmdargtoken[i].val.string,
-                            DELETE_IMAGE_ERRMODE_WARNING);
-        }
-        else
-        {
-            printf("Image %s does not exist\n", data.cmdargtoken[i].val.string);
-        }
-        i++;
-    }
-
-    return CLICMD_SUCCESS;
+static FPS_APP_INFO FPS_app_info_li = {
+    .fps_name = "linalgebrainit",
+    .cmdkey   = "linalgebrainit",
+    .description = "init linalgebra"
+};
+#define FPS_PARAMS_LI(X)
+#include "fps.h"
+static FPS_CLI_BINDING li_b[] = {{0}};
+static const int li_nb = 0;
+static CLICMDARGDEF farg[] = {{0}};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS li_cms = {0};
+static __attribute__((constructor))
+void init_li(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_li.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_li.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg = 0;
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &li_cms;
 }
-*/
-
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t li_compute(void) {
+    LINALGEBRA_init();
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_li, farg,
+        &CLIcmddata,
+        li_b, li_nb, li_compute);
+}
 
 errno_t linalgebrainit_addCLIcmd()
 {
-
-    RegisterCLIcommand("linalgebrainit",
-                       __FILE__,
-                       LINALGEBRA_init,
-                       "init linalgebra",
-                       "no argument",
-                       "linalgebrainit",
-                       "int LINALGEBRA_init()");
+    safe_fps_fill_farg_examples(
+        farg, li_b, li_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }

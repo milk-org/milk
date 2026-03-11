@@ -22,90 +22,168 @@ extern int cuda_deviceCount;
 // Forward declaration(s)
 // ==========================================
 
-errno_t LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name,
-                                  const char *IDcoeff_name,
-                                  int         GPUindex,
-                                  const char *IDoutmap_name,
-                                  int         offsetmode,
-                                  const char *IDoffset_name);
+errno_t LINALGEBRA_Coeff2Map_Loop(
+    const char *IDmodes_name,
+    const char *IDcoeff_name,
+    int GPUindex,
+    const char *IDoutmap_name,
+    int offsetmode,
+    const char *IDoffset_name);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI commands
 // ==========================================
 
-static errno_t LINALGEBRA_Coeff2Map_Loop_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) ==
-            0)
-    {
-        LINALGEBRA_Coeff2Map_Loop(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.numl,
-                                  data.cmdargtoken[4].val.string,
-                                  0,
-                                  " ");
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+/* ===== Command: cudacoeff2map ===== */
+static char cm_m[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modes";
+static char cm_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "coeff";
+static int64_t cm_gpu = 4;
+static char cm_o[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outmap";
+static FPS_APP_INFO FPS_app_info_cm = {
+    .fps_name = "cudacoeff2map",
+    .cmdkey   = "cudacoeff2map",
+    .description =
+        "CUDA multiply vector by modes"
+};
+#define FPS_PARAMS_CM(X) \
+    X(".modes", cm_m, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "modes") \
+    X(".coeff", cm_c, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "coeff") \
+    X(".gpuindex", &cm_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "GPU index") \
+    X(".outmap", cm_o, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "output map")
+#include "fps.h"
+static FPS_CLI_BINDING cm_b[] = {
+    FPS_PARAMS_CM(FPS_X_BINDING) };
+static const int cm_nb =
+    sizeof(cm_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF cm_farg[] = {
+    FPS_PARAMS_CM(FPS_X_FARG) };
+static CLICMDDATA cm_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS cm_cms = {0};
+static __attribute__((constructor))
+void init_cm(void) {
+    strncpy(cm_d.key,
+        FPS_app_info_cm.cmdkey,
+        sizeof(cm_d.key)-1);
+    strncpy(cm_d.description,
+        FPS_app_info_cm.description,
+        sizeof(cm_d.description)-1);
+    cm_d.nbarg =
+        sizeof(cm_farg)/sizeof(CLICMDARGDEF);
+    cm_d.funcfpscliarg = cm_farg;
+    cm_d.flags = CLICMDFLAG_FPS;
+    if(!cm_d.cmdsettings)
+        cm_d.cmdsettings = &cm_cms;
+}
+static errno_t cm_compute(void) {
+    LINALGEBRA_Coeff2Map_Loop(
+        cm_m, cm_c, (int)cm_gpu,
+        cm_o, 0, " ");
+    return RETURN_SUCCESS;
+}
+static errno_t cm_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_cm, cm_farg, &cm_d,
+        cm_b, cm_nb, cm_compute);
 }
 
-static errno_t LINALGEBRA_Coeff2Map_offset_Loop_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) + CLI_checkarg(5, 4) ==
-            0)
-    {
-        LINALGEBRA_Coeff2Map_Loop(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.numl,
-                                  data.cmdargtoken[4].val.string,
-                                  1,
-                                  data.cmdargtoken[5].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+/* ===== Command: cudacoeffo2map ===== */
+static char co_m[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modes";
+static char co_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "coeff";
+static int64_t co_gpu = 4;
+static char co_o[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outmap";
+static char co_off[FUNCTION_PARAMETER_STRMAXLEN]
+    = "offsetim";
+static FPS_APP_INFO FPS_app_info_co = {
+    .fps_name = "cudacoeffo2map",
+    .cmdkey   = "cudacoeffo2map",
+    .description =
+        "CUDA coeff2map with offset"
+};
+#define FPS_PARAMS_CO(X) \
+    X(".modes", co_m, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "modes") \
+    X(".coeff", co_c, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "coeff") \
+    X(".gpuindex", &co_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "GPU index") \
+    X(".outmap", co_o, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".offset", co_off, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "offset")
+static FPS_CLI_BINDING co_b[] = {
+    FPS_PARAMS_CO(FPS_X_BINDING) };
+static const int co_nb =
+    sizeof(co_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF co_farg[] = {
+    FPS_PARAMS_CO(FPS_X_FARG) };
+static CLICMDDATA co_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS co_cms = {0};
+static __attribute__((constructor))
+void init_co(void) {
+    strncpy(co_d.key,
+        FPS_app_info_co.cmdkey,
+        sizeof(co_d.key)-1);
+    strncpy(co_d.description,
+        FPS_app_info_co.description,
+        sizeof(co_d.description)-1);
+    co_d.nbarg =
+        sizeof(co_farg)/sizeof(CLICMDARGDEF);
+    co_d.funcfpscliarg = co_farg;
+    co_d.flags = CLICMDFLAG_FPS;
+    if(!co_d.cmdsettings)
+        co_d.cmdsettings = &co_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t co_compute(void) {
+    LINALGEBRA_Coeff2Map_Loop(
+        co_m, co_c, (int)co_gpu,
+        co_o, 1, co_off);
+    return RETURN_SUCCESS;
+}
+static errno_t co_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_co, co_farg, &co_d,
+        co_b, co_nb, co_compute);
+}
 
 errno_t Coeff2Map_Loop_addCLIcmd()
 {
-
-    RegisterCLIcommand(
-        "cudacoeff2map",
-        __FILE__,
-        LINALGEBRA_Coeff2Map_Loop_cli,
-        "CUDA multiply vector by modes",
-        "<modes> <coeffs vector> <GPU index [long]> <output map>",
-        "cudacoeff2map modes coeff 4 outmap",
-        "int LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name, const char "
-        "*IDcoeff_name, int GPUindex, "
-        "const char *IDoutmap_name, int offsetmode, const char "
-        "*IDoffset_name)");
-
-    RegisterCLIcommand(
-        "cudacoeffo2map",
-        __FILE__,
-        LINALGEBRA_Coeff2Map_offset_Loop_cli,
-        "CUDA multiply vector by modes and add offset",
-        "<modes> <coeffs vector> <GPU index [long]> <output "
-        "map> <offset image>",
-        "cudacoeffo2map modes coeff 4 outmap offsetim",
-        "int LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name, "
-        "const char *IDcoeff_name, int GPUindex, "
-        "const char *IDoutmap_name, int offsetmode, const char "
-        "*IDoffset_name)");
+    {
+        safe_fps_fill_farg_examples(
+            cm_farg, cm_b, cm_nb);
+        int cmdi = RegisterCLIcmd(
+            cm_d, cm_CLIfunc);
+        cm_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            co_farg, co_b, co_nb);
+        int cmdi = RegisterCLIcmd(
+            co_d, co_CLIfunc);
+        co_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }

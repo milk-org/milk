@@ -40,66 +40,93 @@ static magma_int_t *magma_iwork;
 // Forward declaration(s)
 // ==========================================
 
-errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
-        const char *ID_Cmatrix_name,
-        double      SVDeps,
-        long        MaxNBmodes,
-        const char *ID_VTmatrix_name,
-        int         LOOPmode,
-        int         testmode,
-        int         precision,
-        int         GPUdevice,
-        imageID    *outID);
+errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(
+    const char *ID_Rmatrix_name,
+    const char *ID_Cmatrix_name,
+    double SVDeps, long MaxNBmodes,
+    const char *ID_VTmatrix_name,
+    int LOOPmode, int testmode,
+    int precision, int GPUdevice,
+    imageID *outID);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: linalgebrapsinv
 // ==========================================
 
-static errno_t LINALGEBRA_magma_compute_SVDpseudoInverse_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 3) + CLI_checkarg(6, 2) +
-            CLI_checkarg(7, 1) + CLI_checkarg(8, 1) ==
-            0)
-    {
-        LINALGEBRA_magma_compute_SVDpseudoInverse(data.cmdargtoken[1].val.string,
-                                                data.cmdargtoken[2].val.string,
-                                                data.cmdargtoken[3].val.numf,
-                                                data.cmdargtoken[4].val.numl,
-                                                data.cmdargtoken[5].val.string,
-                                                0,
-                                                0,
-                                                64,
-                                                0,
-                                                NULL);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char pi_r[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matA";
+static char pi_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matAinv";
+static double pi_eps = 0.01;
+static int64_t pi_nm = 100;
+static char pi_vt[FUNCTION_PARAMETER_STRMAXLEN]
+    = "VTmat";
+static FPS_APP_INFO FPS_app_info_pi = {
+    .fps_name = "linalgebrapsinv",
+    .cmdkey   = "linalgebrapsinv",
+    .description =
+        "compute pseudo inverse"
+};
+#define FPS_PARAMS_PI(X) \
+    X(".inmat", pi_r, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input mat") \
+    X(".outmat", pi_c, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".svdeps", &pi_eps, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "SVD eps") \
+    X(".nbmodes", &pi_nm, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "max modes") \
+    X(".vtmat", pi_vt, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "VT matrix")
+#include "fps.h"
+static FPS_CLI_BINDING pi_b[] = {
+    FPS_PARAMS_PI(FPS_X_BINDING) };
+static const int pi_nb =
+    sizeof(pi_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_PI(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS pi_cms = {0};
+static __attribute__((constructor))
+void init_pi(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_pi.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_pi.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &pi_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t pi_compute(void) {
+    LINALGEBRA_magma_compute_SVDpseudoInverse(
+        pi_r, pi_c, pi_eps,
+        (long)pi_nm, pi_vt,
+        0, 0, 64, 0, NULL);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_pi, farg,
+        &CLIcmddata,
+        pi_b, pi_nb, pi_compute);
+}
 
 errno_t magma_compute_SVDpseudoInverse_addCLIcmd()
 {
-
-    RegisterCLIcommand("linalgebrapsinv",
-                       __FILE__,
-                       LINALGEBRA_magma_compute_SVDpseudoInverse_cli,
-                       "compute pseudo inverse",
-                       "<input matrix [string]> <output pseudoinv [string]> "
-                       "<eps [float]> <NBmodes [long]> <VTmat [string]>",
-                       "linalgebrapsinv matA matAinv 0.01 100 VTmat 0 1e-4 1e-7",
-                       "int LINALGEBRA_magma_compute_SVDpseudoInverse(const char "
-                       "*ID_Rmatrix_name, const char *ID_Cmatrix_name, double "
-                       "SVDeps, long MaxNBmodes, const char *ID_VTmatrix_name, "
-                       "int LOOPmode, int PSINV_MODE, double qdwh_s, float "
-                       "qdwh_tol)");
+    safe_fps_fill_farg_examples(
+        farg, pi_b, pi_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }
