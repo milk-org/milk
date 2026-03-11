@@ -6,7 +6,7 @@
 /** @file imswapaxis2D.h
  */
 
-errno_t __attribute__((cold)) imswapaxis2D_addCLIcmd();
+errno_t __attribute__((cold)) CLIADDCMD_image_basic__imswapaxis2D();
 
 imageID image_basic_SwapAxis2D_byID(imageID IDin,
                                     const char *__restrict IDout_name);

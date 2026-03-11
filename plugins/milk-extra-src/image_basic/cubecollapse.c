@@ -189,7 +189,7 @@ static errno_t CLIfunction(void)
 }
 
 errno_t __attribute__((cold))
-cubecollapse_addCLIcmd()
+CLIADDCMD_image_basic__cubecollapse()
 {
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
