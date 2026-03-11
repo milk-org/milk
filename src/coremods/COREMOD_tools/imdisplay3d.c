@@ -1,10 +1,8 @@
 /**
  * @file imdisplay3d.c
- * @brief Imdisplay3d module
- */
-
-/**
- * @file imdisplay3d.c
+ * @brief Display 2D image as 3D surface
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -12,55 +10,106 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 static FILE *fpgnuplot;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decl */
+errno_t COREMOD_TOOLS_imgdisplay3D(
+    const char *IDname,
+    long step);
 
-errno_t COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  PARAMS
+ * ============================================================= */
 
-#ifndef MILK_NO_CLI
-errno_t COREMOD_TOOLS_imgdisplay3D_cli()
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static long long p_step = 5;
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "dispim3d",
+    .cmdkey      = "dispim3d",
+    .description =
+        "display 2D image as 3D surface "
+        "using gnuplot"
+};
+
+#define FPS_PARAMS(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".step", &p_step, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "pixel step")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) == 0)
-    {
-        COREMOD_TOOLS_imgdisplay3D(data.cmdargtoken[1].val.string,
-                                   data.cmdargtoken[2].val.numl);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t imdisplay3d_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand(
-        "dispim3d",
-        __FILE__,
-        COREMOD_TOOLS_imgdisplay3D_cli,
-        "display 2D image as 3D surface using gnuplot",
-        "<imname> <step>",
-        "dispim3d im1 5",
-        "int COREMOD_TOOLS_imgdisplay3D(const char *IDname, long step)");
-
+    COREMOD_TOOLS_imgdisplay3D(
+        p_imname, p_step);
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_tools__imdisplay3d()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+    return RETURN_SUCCESS;
+}
+#endif
 
 // displays 2D image in 3D using gnuplot
 //
