@@ -21,18 +21,20 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image names
-static char *inimname;
-static char *outimname;
-static uint32_t *axisA;
-static uint32_t *axisB;
-static uint32_t *colsize;
+static char inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static uint32_t axisA   = 0;
+static uint32_t axisB   = 0;
+static uint32_t colsize = 1;
 
 
 #define FPS_PARAMS(X) \
-    X(".inim", &inimname, \
+    X(".inim", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input image") \
-    X(".outim", &outimname, \
+    X(".outim", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, "output image") \
     X(".axisA", &axisA, \
@@ -239,9 +241,9 @@ static errno_t compute_function()
         image_unfold(
             inimg,
             &outimg,
-            *axisA,
-            *axisB,
-            *colsize
+            axisA,
+            axisB,
+            colsize
         );
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);

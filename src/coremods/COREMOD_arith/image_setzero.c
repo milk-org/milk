@@ -30,7 +30,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imsetzero_imname = NULL;
+static char imsetzero_imname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
 
 
 /* ================================================================
@@ -40,7 +41,7 @@ static char *imsetzero_imname = NULL;
  * ============================================================= */
 
 #define IMSETZERO_PARAMS(X) \
-    X(".imname", &imsetzero_imname, \
+    X(".imname", imsetzero_imname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image")
