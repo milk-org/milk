@@ -39,8 +39,9 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *imname = NULL;
-static int64_t *errmode_ptr = NULL;
+static char imname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static int64_t errmode_ptr = 0;
 
 
 /* ================================================================
@@ -48,7 +49,7 @@ static int64_t *errmode_ptr = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".imname", &imname, \
+    X(".imname", imname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "image name") \
@@ -121,7 +122,7 @@ static errno_t compute_function()
     IMGID img = imgid_make_from_name(imname);
     FUNC_CHECK_RETURN(
         delete_image_IMGID(
-            &img, (int) *errmode_ptr));
+            &img, (int) errmode_ptr));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 

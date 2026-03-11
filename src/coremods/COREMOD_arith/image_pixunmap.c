@@ -18,23 +18,26 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image
-static char *insname;
+static char insname[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
 // unmapping array to 1D
-static char *mapsname;
+static char mapsname[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
 // output image
-static char *outimname;
-static int32_t *outshared;
+static char outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static int32_t outshared = 0;
 
 #define FPS_PARAMS(X) \
-    X(".insname", &insname, \
+    X(".insname", insname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input image name") \
-    X(".map", &mapsname, \
+    X(".map", mapsname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "mapping image name") \
-    X(".out_name", &outimname, \
+    X(".out_name", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, "output image name") \
     X(".out_shared", &outshared, \
@@ -136,8 +139,8 @@ static errno_t compute_function()
     }
 
     IMGID imgout = imgid_make_from_name(outimname);
-    imgout.mdt->shared = *outshared;
-    if(*outshared == 1)
+    imgout.mdt->shared = outshared;
+    if(outshared == 1)
     {
         imgid_free(&imgout);
         imgout = stream_connect_create_2D(outimname, x1Dsize, 1, outdatatype);

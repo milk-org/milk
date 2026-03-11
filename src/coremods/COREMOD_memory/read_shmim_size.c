@@ -36,8 +36,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *insname = NULL;
-static char *outfname = NULL;
+static char insname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream";
+static char outfname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imsize.txt";
 
 
 /* ================================================================
@@ -45,11 +47,11 @@ static char *outfname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", &insname, \
+    X(".in_sname", insname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input stream") \
-    X(".outfname", &outfname, \
+    X(".outfname", outfname, \
       FPTYPE_STRING_NOT_STREAM, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output file name")

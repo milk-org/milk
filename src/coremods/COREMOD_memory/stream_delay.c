@@ -39,15 +39,17 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *inimname       = NULL;
-static char     *outimname      = NULL;
-static float    *delaysec       = NULL;
-static uint64_t *timebuffsize   = NULL;
-static int32_t  *avemode        = NULL;
-static uint64_t *avedtns        = NULL;
-static uint64_t *statusframelag = NULL;
-static uint64_t *statuskkin     = NULL;
-static uint64_t *statuskkout    = NULL;
+static char     inimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static char     outimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
+static float    delaysec       = 0.001;
+static uint64_t timebuffsize   = 1000;
+static int32_t  avemode        = 0;
+static uint64_t avedtns        = 0;
+static uint64_t statusframelag = 0;
+static uint64_t statuskkin     = 0;
+static uint64_t statuskkout    = 0;
 
 
 /* ================================================================
@@ -55,11 +57,11 @@ static uint64_t *statuskkout    = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
+    X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
-    X(".out_name", &outimname, \
+    X(".out_name", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image") \
@@ -175,7 +177,7 @@ static errno_t streamdelay(
 
         bufferindex_input++;
         if(bufferindex_input
-            == (*timebuffsize))
+            == (timebuffsize))
         {
             bufferindex_input = 0;
         }
@@ -191,7 +193,7 @@ static errno_t streamdelay(
     int  updateflag = 0;
     long bufferindex_output_last = 0;
     while((warray[bufferindex_output] == 0)
-          && (tdiffv > (*delaysec)))
+          && (tdiffv > (delaysec)))
     {
         updateflag = 1;
         warray[bufferindex_output] = 1;
@@ -200,7 +202,7 @@ static errno_t streamdelay(
             bufferindex_output;
         bufferindex_output++;
         if(bufferindex_output
-            == (*timebuffsize))
+            == (timebuffsize))
         {
             bufferindex_output = 0;
         }
@@ -307,7 +309,7 @@ static errno_t compute_function()
             "streamdelaybuff",
             inimg.mdt->size[0],
             inimg.mdt->size[1],
-            *timebuffsize);
+            timebuffsize);
     bufferimg.mdt->datatype =
         inimg.mdt->datatype;
     imcreateIMGID(&bufferimg);
@@ -315,11 +317,11 @@ static errno_t compute_function()
     struct timespec *timeinarray;
     timeinarray = (struct timespec *)
         malloc(sizeof(struct timespec)
-               * (*timebuffsize));
+               * (timebuffsize));
     struct timespec tnow;
     clock_gettime(CLOCK_MILK, &tnow);
     for(uint64_t i = 0;
-         i < *timebuffsize; i++)
+         i < timebuffsize; i++)
     {
         timeinarray[i].tv_sec  = tnow.tv_sec;
         timeinarray[i].tv_nsec = tnow.tv_nsec;
@@ -327,9 +329,9 @@ static errno_t compute_function()
 
     int *warray;
     warray = (int *)
-        malloc(sizeof(int) * (*timebuffsize));
+        malloc(sizeof(int) * (timebuffsize));
     for(uint64_t i = 0;
-         i < *timebuffsize; i++)
+         i < timebuffsize; i++)
     {
         warray[i] = 1;
     }

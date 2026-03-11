@@ -29,10 +29,12 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *inimname    = NULL;
-static char    *outname     = NULL;
-static int64_t *slice_index = NULL;
-static int32_t *loop_mode   = NULL;
+static char    inimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "im3d";
+static char    outname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "im2d";
+static int64_t slice_index = 0;
+static int32_t loop_mode   = 0;
 
 
 /* ================================================================
@@ -40,11 +42,11 @@ static int32_t *loop_mode   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
+    X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input 3D image") \
-    X(".outname", &outname, \
+    X(".outname", outname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output stream name") \
@@ -180,21 +182,21 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
-        if(*loop_mode == 0)
+        if(loop_mode == 0)
         {
             extract_slice_to_2D(
-                &inimg, &outimg, *slice_index);
+                &inimg, &outimg, slice_index);
         }
         else
         {
-            *slice_index = (*slice_index + 1)
+            slice_index = (slice_index + 1)
                 % inimg.mdt->size[2];
             extract_slice_to_2D(
-                &inimg, &outimg, *slice_index);
+                &inimg, &outimg, slice_index);
         }
 
         extract_slice_to_2D(
-            &inimg, &outimg, *slice_index);
+            &inimg, &outimg, slice_index);
         processinfo_update_output_stream(
             processinfo, outimg.im, NULL);
     }

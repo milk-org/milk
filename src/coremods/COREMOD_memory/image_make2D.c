@@ -28,9 +28,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *outimname = NULL;
-static uint32_t *imxsize   = NULL;
-static uint32_t *imysize   = NULL;
+static char     outimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2D";
+static uint32_t imxsize = 256;
+static uint32_t imysize = 256;
 
 
 /* ================================================================
@@ -38,7 +39,7 @@ static uint32_t *imysize   = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".out_name", &outimname, \
+    X(".out_name", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image") \
@@ -125,7 +126,7 @@ static errno_t compute_function()
     DEBUG_TRACE_FSTART();
 
     IMGID img = imgid_make_from_name_2D(
-        outimname, *imxsize, *imysize);
+        outimname, imxsize, imysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
