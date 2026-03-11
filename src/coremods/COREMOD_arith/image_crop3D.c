@@ -2,7 +2,7 @@
  * @file    image_crop.c
  * @brief   crop functions
  *
- *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -10,119 +10,265 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decls */
+imageID arith_image_crop(
+    const char *ID_name,
+    const char *ID_out,
+    long *start, long *end,
+    long cropdim);
 
-imageID arith_image_crop(const char *ID_name,
-                         const char *ID_out,
-                         long       *start,
-                         long       *end,
-                         long        cropdim);
+imageID arith_image_extract2D(
+    const char *in_name,
+    const char *out_name,
+    long size_x, long size_y,
+    long xstart, long ystart);
 
-imageID arith_image_extract2D(const char *in_name,
-                              const char *out_name,
-                              long        size_x,
-                              long        size_y,
-                              long        xstart,
-                              long        ystart);
+imageID arith_image_extract3D(
+    const char *in_name,
+    const char *out_name,
+    long size_x, long size_y,
+    long size_z,
+    long xstart, long ystart,
+    long zstart);
 
-imageID arith_image_extract3D(const char *in_name,
-                              const char *out_name,
-                              long        size_x,
-                              long        size_y,
-                              long        size_z,
-                              long        xstart,
-                              long        ystart,
-                              long        zstart);
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  PARAMS
+ * ============================================================= */
 
-static errno_t arith_image_extract2D__cli()
+static char p_inname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_outname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "ime";
+static long long p_sizex = 256;
+static long long p_sizey = 256;
+static long long p_sizez = 5;
+static long long p_xstart = 100;
+static long long p_ystart = 100;
+static long long p_zstart = 0;
+
+
+/* ================================================================
+ *  CMD 1: extractim (6 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_2d = {
+    .fps_name    = "extractim",
+    .cmdkey      = "extractim",
+    .description = "crop 2D image"
+};
+
+#define FPS_PARAMS_2D(X) \
+    X(".inname", p_inname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".outname", p_outname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".sizex", &p_sizex, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size X") \
+    X(".sizey", &p_sizey, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size Y") \
+    X(".xstart", &p_xstart, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "X start") \
+    X(".ystart", &p_ystart, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Y start")
+
+static CLICMDDATA CLIcmddata_2d = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_2d = {0};
+
+static __attribute__((constructor))
+void init_cms_2d(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) + CLI_checkarg(6, CLIARG_INT64) ==
-            0)
-    {
-        arith_image_extract2D(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string,
-                              data.cmdargtoken[3].val.numl,
-                              data.cmdargtoken[4].val.numl,
-                              data.cmdargtoken[5].val.numl,
-                              data.cmdargtoken[6].val.numl);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_2d.key,
+            FPS_app_info_2d.cmdkey,
+            sizeof(CLIcmddata_2d.key) - 1);
+    strncpy(CLIcmddata_2d.description,
+            FPS_app_info_2d.description,
+            sizeof(CLIcmddata_2d.description)
+            - 1);
+    if (CLIcmddata_2d.cmdsettings
+        == NULL) {
+        CLIcmddata_2d.cmdsettings =
+            &cms_2d;
     }
 }
 
-static errno_t arith_image_extract3D__cli()
+static errno_t compute_2d()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) + CLI_checkarg(6, CLIARG_INT64) +
-            CLI_checkarg(7, CLIARG_INT64) + CLI_checkarg(8, CLIARG_INT64) ==
-            0)
-    {
-        arith_image_extract3D(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string,
-                              data.cmdargtoken[3].val.numl,
-                              data.cmdargtoken[4].val.numl,
-                              data.cmdargtoken[5].val.numl,
-                              data.cmdargtoken[6].val.numl,
-                              data.cmdargtoken[7].val.numl,
-                              data.cmdargtoken[8].val.numl);
+    arith_image_extract2D(
+        p_inname, p_outname,
+        p_sizex, p_sizey,
+        p_xstart, p_ystart);
+    return RETURN_SUCCESS;
+}
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return 1;
+
+/* ================================================================
+ *  CMD 2: extract3Dim (8 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "extract3Dim",
+    .cmdkey      = "extract3Dim",
+    .description = "crop 3D image"
+};
+
+#define FPS_PARAMS(X) \
+    X(".inname", p_inname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".outname", p_outname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".sizex", &p_sizex, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size X") \
+    X(".sizey", &p_sizey, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size Y") \
+    X(".sizez", &p_sizez, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size Z") \
+    X(".xstart", &p_xstart, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "X start") \
+    X(".ystart", &p_ystart, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Y start") \
+    X(".zstart", &p_zstart, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Z start")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t image_crop_addCLIcmd()
+static errno_t compute_function()
 {
+    arith_image_extract3D(
+        p_inname, p_outname,
+        p_sizex, p_sizey, p_sizez,
+        p_xstart, p_ystart, p_zstart);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "extractim",
-        __FILE__,
-        arith_image_extract2D__cli,
-        "crop 2D image",
-        "<input image> <output image> <sizex> <sizey> <xstart> <ystart>",
-        "extractim im ime 256 256 100 100",
-        "int arith_image_extract2D(const char *in_name, const char *out_name, "
-        "long size_x, long size_y, "
-        "long xstart, long ystart)");
 
-    RegisterCLIcommand("extract3Dim",
-                       __FILE__,
-                       arith_image_extract3D__cli,
-                       "crop 3D image",
-                       "<input image> <output image> <sizex> <sizey> <sizez> "
-                       "<xstart> <ystart> <zstart>",
-                       "extractim im ime 256 256 5 100 100 0",
-                       "int arith_image_extract3D(const char *in_name, const "
-                       "char *out_name, long size_x, long size_y, "
-                       "long size_z, long xstart, long ystart, long zstart)");
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static FPS_CLI_BINDING bindings_2d[] = {
+    FPS_PARAMS_2D(FPS_X_BINDING)
+};
+static const int nb_bindings_2d =
+    sizeof(bindings_2d) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_2d[] = {
+    FPS_PARAMS_2D(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_2d(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_2d,
+        farg_2d, &CLIcmddata_2d,
+        bindings_2d, nb_bindings_2d,
+        compute_2d);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_arith__image_crop()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(
+        farg_2d, bindings_2d,
+        nb_bindings_2d);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_2d,
+            CLIfunction_2d);
+        CLIcmddata_2d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
+
 imageID arith_image_crop(const char *ID_name,
                          const char *ID_out,
                          long       *start,
