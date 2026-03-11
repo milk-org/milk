@@ -1,13 +1,9 @@
 /**
  * @file init_fftwplan.h
- * @brief Init fftwplan module
+ * @brief Initialize FFTW plans
  */
 
-/**
- * @file init_fftwplan.h
- */
-
-errno_t init_fftwplan_addCLIcmd();
+errno_t CLIADDCMD_milkfft__init_fftwplan();
 
 errno_t init_fftw_plans(int mode);
 errno_t init_fftw_plans0();

@@ -8,50 +8,89 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "dofft.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
+// Forward declaration
 int test_fftspeed(int nmax);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  V2 PARAMS
+ * ======================================= */
 
-errno_t test_fftspeed_cli()
+static long long p_nmax = 10;
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "testfftspeed",
+    .cmdkey      = "testfftspeed",
+    .description = "test FFTW speed"
+};
+
+#define FPS_PARAMS(X) \
+    X(".nmax", &p_nmax, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "max power of 2")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_INT64) == 0)
-    {
-        test_fftspeed((int) data.cmdargtoken[1].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t testfftspeed_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("testfftspeed",
-                       __FILE__,
-                       test_fftspeed_cli,
-                       "test FFTW speed",
-                       "no argument",
-                       "testfftspeed",
-                       "int test_fftwspeed(int nmax)");
-
+    test_fftspeed((int) p_nmax);
     return RETURN_SUCCESS;
 }
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_milkfft__testfftspeed()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
 
 /** @brief Test FFT speed (fftw)
  *

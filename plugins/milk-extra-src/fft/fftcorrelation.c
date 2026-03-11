@@ -1,9 +1,6 @@
 /**
  * @file fftcorrelation.c
- * @brief Fftcorrelation module
- */
-
-/** @file fftcorrelation.c
+ * @brief Correlate two images using FFT
  */
 
 #include <math.h>
@@ -13,6 +10,7 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -20,53 +18,102 @@
 #include "dofft.h"
 #include "permut.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
+// Forward declaration
 imageID fft_correlation(const char *ID_name1,
                         const char *ID_name2,
                         const char *ID_nameout);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  V2 PARAMS
+ * ======================================= */
 
-errno_t fft_correlation_cli()
+static char p_in1[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_in2[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static char p_out[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "fcorrel",
+    .cmdkey      = "fcorrel",
+    .description =
+        "correlate two images"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in1", p_in1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 1") \
+    X(".in2", p_in2, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image 2") \
+    X(".out", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output correlation")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, CLIARG_STR_NOT_IMG) ==
-            0)
-    {
-        fft_correlation(data.cmdargtoken[1].val.string,
-                        data.cmdargtoken[2].val.string,
-                        data.cmdargtoken[3].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t fftcorrelation_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("fcorrel",
-                       __FILE__,
-                       fft_correlation_cli,
-                       "correlate two images",
-                       "<imagein1> <imagein2> <correlout>",
-                       "fcorrel im1 im2 outim",
-                       "long fft_correlation(const char *ID_name1, const char "
-                       "*ID_name2, const char *ID_nameout)");
-
+    fft_correlation(p_in1, p_in2, p_out);
     return RETURN_SUCCESS;
 }
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_milkfft__fftcorrelation()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
 
 imageID fft_correlation(const char *ID_name1,
                         const char *ID_name2,
