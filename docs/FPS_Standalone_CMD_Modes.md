@@ -89,7 +89,8 @@ in `fps.h`.
 Standalone executables support two layers of argument
 parsing:
 
-#### A. Standard FPS Process Control Commands
+<details>
+<summary><b>A. Standard FPS Process Control Commands</b></summary>
 
 Before mapping to business logic, the executable looks
 for built-in flags and process control commands. This
@@ -113,7 +114,10 @@ segment.
     configuration loop.
   - `runstart`, `runstop`: Manage the execution loop.
 
-#### B. Direct Execution (Positional Arguments)
+</details>
+
+<details>
+<summary><b>B. Direct Execution (Positional Arguments)</b></summary>
 
 If the user passes positional arguments that do not
 match the built-in control commands (e.g.,
@@ -129,6 +133,8 @@ operates as a streamlined one-shot execution tool:
 3. **Synchronization & Execution:** Bound C pointers are
    updated synchronously, and the core logic executes
    exactly as it would inside the `milk-cli` environment.
+
+</details>
 
 ### Using `FPS_MAIN_STANDALONE_V2`
 
@@ -157,3 +163,6 @@ FPS_MAIN_STANDALONE_V2_CONFCHECK(
     customCONFcheck
 )
 ```
+
+---
+← [Documentation Index](index.md)

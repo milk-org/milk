@@ -238,3 +238,6 @@ Typical values: >100 kHz on modern hardware.
 - **Module list:** `m?` to list all loaded modules
 - **Documentation:** See [docs/index.md](index.md)
 - **Issues:** Report on [GitHub Issues](https://github.com/milk-org/milk/issues)
+
+---
+← [Documentation Index](index.md)

@@ -167,3 +167,6 @@ milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
 ```text
 milk-cli > im1=sqrt(im+2.0)       # arithmetic on images
 ```
+
+---
+← [Documentation Index](../index.md)

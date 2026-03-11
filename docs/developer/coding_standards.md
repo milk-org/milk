@@ -34,3 +34,6 @@ inline static errno_t example_compute_sum(
 ## Compilation and Headers
 - **Compiler Warnings:** Enable and enforce compiler warnings (`-Wall`, `-Wextra`) during development to catch missing declarations early. Treat them as errors (`-Werror`) in CI/CD pipelines.
 - **Explicit Includes:** Make sure every `.c` file strictly includes the exact headers it relies on. Do **not** implicitly rely on another header to include them (e.g., relying on `CLIcore.h` to provide `<math.h>` or `<stdlib.h>`).
+
+---
+← [Documentation Index](../index.md)
