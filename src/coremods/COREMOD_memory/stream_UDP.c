@@ -1,6 +1,8 @@
 /**
- * @file    stream_TCP.c
- * @brief   TCP stream transfer
+ * @file    stream_UDP.c
+ * @brief   UDP stream transfer
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <arpa/inet.h>
@@ -13,6 +15,8 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -22,97 +26,233 @@
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
-static int MULTIGRAM_MAGIC = 0x3E; // Random magic to start datagrams with.
+static int MULTIGRAM_MAGIC = 0x3E;
 static int DGRAM_CHUNK_SIZE = 62 *
-                              1024; // Max payload per datagram, just shy of the maximum 65507 bytes
+    1024;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decls */
+imageID COREMOD_MEMORY_image_NETUDPtransmit(
+    const char *IDname,
+    const char *IPaddr,
+    int port, int do_counter_sync,
+    int RT_priority);
 
-imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
-        const char *IPaddr,
-        int         port,
-        int         do_counter_sync,
-        int         RT_priority);
+imageID COREMOD_MEMORY_image_NETUDPreceive(
+    int port, int do_counter_sync,
+    int RT_priority);
 
-imageID COREMOD_MEMORY_image_NETUDPreceive(int port,
-        int do_counter_sync,
-        int RT_priority);
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  PARAMS
+ * ============================================================= */
 
-static errno_t COREMOD_MEMORY_image_NETUDPtransmit__cli()
+static char p_imname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_ipaddr[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "127.0.0.1";
+static long long p_port = 8888;
+static long long p_csync = 0;
+static long long p_rtprio = 80;
+
+
+/* ================================================================
+ *  CMD 1: imudptransmit (5 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imudptransmit",
+    .cmdkey      = "imudptransmit",
+    .description =
+        "transmit image over UDP network"
+};
+
+#define FPS_PARAMS(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name") \
+    X(".ipaddr", p_ipaddr, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "IP address") \
+    X(".port", &p_port, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "port") \
+    X(".csync", &p_csync, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "counter sync") \
+    X(".rtprio", &p_rtprio, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "RT priority")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_tx = {0};
+
+static __attribute__((constructor))
+void init_cms_tx(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETUDPtransmit(data.cmdargtoken[1].val.string,
-                                            data.cmdargtoken[2].val.string,
-                                            data.cmdargtoken[3].val.numl,
-                                            data.cmdargtoken[4].val.numl,
-                                            data.cmdargtoken[5].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms_tx;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_NETUDPreceive__cli()
+static errno_t compute_function()
 {
-    if(0 + CLI_checkarg(1, CLIARG_INT64) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_NETUDPreceive(data.cmdargtoken[1].val.numl,
-                                           data.cmdargtoken[2].val.numl,
-                                           data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    COREMOD_MEMORY_image_NETUDPtransmit(
+        p_imname, p_ipaddr,
+        p_port, p_csync, p_rtprio);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 2: imudpreceive (3 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_rx = {
+    .fps_name    = "imudpreceive",
+    .cmdkey      = "imudpreceive",
+    .description =
+        "receive image(s) over UDP "
+        "network"
+};
+
+#define FPS_PARAMS_RX(X) \
+    X(".port", &p_port, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "port") \
+    X(".csync", &p_csync, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "counter sync") \
+    X(".rtprio", &p_rtprio, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "RT priority")
+
+static CLICMDDATA CLIcmddata_rx = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_rx = {0};
+
+static __attribute__((constructor))
+void init_cms_rx(void)
+{
+    strncpy(CLIcmddata_rx.key,
+            FPS_app_info_rx.cmdkey,
+            sizeof(CLIcmddata_rx.key) - 1);
+    strncpy(
+        CLIcmddata_rx.description,
+        FPS_app_info_rx.description,
+        sizeof(
+            CLIcmddata_rx.description
+        ) - 1);
+    if (CLIcmddata_rx.cmdsettings
+        == NULL) {
+        CLIcmddata_rx.cmdsettings =
+            &cms_rx;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t stream__UDP_addCLIcmd()
+static errno_t compute_rx()
 {
+    COREMOD_MEMORY_image_NETUDPreceive(
+        p_port, p_csync, p_rtprio);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "imudptransmit",
-        __FILE__,
-        COREMOD_MEMORY_image_NETUDPtransmit__cli,
-        "transmit image over network",
-        "<image> <IP addr> <port [long]> <do_counter_sync [int]>",
-        "imudptransmit im1 127.0.0.1 0 8888 0",
-        "long COREMOD_MEMORY_image_NETWORKtransmit(const char "
-        "*IDname, const char *IPaddr, int port, int do_counter_sync)");
 
-    RegisterCLIcommand(
-        "imudpreceive",
-        __FILE__,
-        COREMOD_MEMORY_image_NETUDPreceive__cli,
-        "receive image(s) over network. do_counter_sync=1 uses counter "
-        "instead of semaphore",
-        "<port [long]> <do_counter_sync [int]> <RT priority>",
-        "imupdreceive 8887 0 80",
-        "long COREMOD_MEMORY_image_NETWORKreceive(int port, int "
-        "do_counter_sync, int RT_priority)");
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static FPS_CLI_BINDING bindings_rx[] = {
+    FPS_PARAMS_RX(FPS_X_BINDING)
+};
+static const int nb_bindings_rx =
+    sizeof(bindings_rx) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_rx[] = {
+    FPS_PARAMS_RX(FPS_X_FARG)
+};
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+static errno_t CLIfunction_rx(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rx,
+        farg_rx, &CLIcmddata_rx,
+        bindings_rx, nb_bindings_rx,
+        compute_rx);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_UDP()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(
+        farg_rx, bindings_rx,
+        nb_bindings_rx);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_rx,
+            CLIfunction_rx);
+        CLIcmddata_rx.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
 /** continuously transmits 2D image through TCP link
  * do_counter_sync = 1, force counter to be used for synchronization, ignore semaphores if they exist
  */

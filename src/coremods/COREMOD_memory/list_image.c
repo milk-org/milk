@@ -1,6 +1,8 @@
 /**
  * @file    list_image.c
  * @brief   list images
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef USE_NCURSES
@@ -19,6 +21,8 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "compute_image_memory.h"
 #include "compute_nb_image.h"
 #include "image_ID.h"
@@ -29,68 +33,181 @@
 static FILE   *listim_scr_fpo;
 static FILE   *listim_scr_fpi;
 #ifdef USE_NCURSES
-static SCREEN *listim_scr; // for memory monitoring
+static SCREEN *listim_scr;
 #endif
 
 static int listim_scr_wrow;
 static int listim_scr_wcol;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
-errno_t memory_monitor(const char *termttyname);
-
-errno_t init_list_image_ID_ncurses(const char *termttyname);
-
+/* forward decls */
+errno_t memory_monitor(
+    const char *termttyname);
+errno_t init_list_image_ID_ncurses(
+    const char *termttyname);
 void close_list_image_ID_ncurses();
-
 errno_t list_image_ID_ncurses();
-
 errno_t list_image_ID_ofp(FILE *fo);
-
 errno_t list_image_ID_ofp_simple(FILE *fo);
-
 errno_t list_image_ID();
-
-errno_t list_image_ID_file(const char *fname);
-
+errno_t list_image_ID_file(
+    const char *fname);
 errno_t list_variable_ID();
+errno_t list_variable_ID_file(
+    const char *fname);
 
-errno_t list_variable_ID_file(const char *fname);
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  CMD 1: mmon (1 arg, primary)
+ * ============================================================= */
 
-static errno_t memory_monitor__cli()
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mmon",
+    .cmdkey      = "mmon",
+    .description =
+        "monitor memory content"
+};
+
+static char p_ttyname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "/dev/pts/4";
+
+#define FPS_PARAMS(X) \
+    X(".ttyname", p_ttyname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "terminal tty name")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_mmon = {0};
+
+static __attribute__((constructor))
+void init_cms_mmon(void)
 {
-    memory_monitor(data.cmdargtoken[1].val.string);
-    return CLICMD_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms_mmon;
+    }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t list_image_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("mmon",
-                       __FILE__,
-                       memory_monitor__cli,
-                       "Monitor memory content",
-                       "terminal tty name",
-                       "mmon /dev/pts/4",
-                       "int memory_monitor(const char *ttyname)");
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    memory_monitor(p_ttyname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("listim",
-                       __FILE__,
-                       list_image_ID,
-                       "list images in memory",
-                       "no argument",
-                       "listim",
-                       "errno_t list_image_ID()");
+
+/* ================================================================
+ *  CMD 2: listim (0 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_listim = {
+    .fps_name    = "listim",
+    .cmdkey      = "listim",
+    .description =
+        "list images in memory"
+};
+
+static CLICMDDATA CLIcmddata_listim = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS cms_listim = {0};
+
+static __attribute__((constructor))
+void init_cms_listim(void)
+{
+    strncpy(CLIcmddata_listim.key,
+            FPS_app_info_listim.cmdkey,
+            sizeof(CLIcmddata_listim.key)
+            - 1);
+    strncpy(
+        CLIcmddata_listim.description,
+        FPS_app_info_listim.description,
+        sizeof(
+            CLIcmddata_listim.description
+        ) - 1);
+    if (CLIcmddata_listim.cmdsettings
+        == NULL) {
+        CLIcmddata_listim.cmdsettings =
+            &cms_listim;
+    }
+}
+
+static errno_t compute_listim()
+{
+    list_image_ID();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+static errno_t CLIfunction_listim(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_listim,
+        farg, &CLIcmddata_listim,
+        my_bindings, nb_bindings,
+        compute_listim);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__list_image()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_listim,
+            CLIfunction_listim);
+        CLIcmddata_listim.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }

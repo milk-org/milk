@@ -1,14 +1,11 @@
 /**
  * @file stream_halfimdiff.h
- * @brief Stream halfimdiff module
+ * @brief Half-image difference
  */
 
-/**
- * @file stream_hlfimdiff.h
- */
+errno_t CLIADDCMD_COREMOD_memory__stream_halfimdiff();
 
-errno_t stream_halfimdiff_addCLIcmd();
-
-imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
-        const char *IDstreamout_name,
-        long        semtrig);
+imageID COREMOD_MEMORY_stream_halfimDiff(
+    const char *IDstream_name,
+    const char *IDstreamout_name,
+    long        semtrig);

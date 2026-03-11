@@ -1,16 +1,16 @@
 /**
  * @file image_set_counters.h
- * @brief Image set counters module
+ * @brief Set image flags / counters
  */
 
-/**
- * @file    image_set_couters.h
- */
+errno_t
+CLIADDCMD_COREMOD_memory__image_set_counters();
 
-errno_t image_set_counters_addCLIcmd();
+errno_t COREMOD_MEMORY_image_set_status(
+    const char *IDname, int status);
 
-errno_t COREMOD_MEMORY_image_set_status(const char *IDname, int status);
+errno_t COREMOD_MEMORY_image_set_cnt0(
+    const char *IDname, int cnt0);
 
-errno_t COREMOD_MEMORY_image_set_cnt0(const char *IDname, int cnt0);
-
-errno_t COREMOD_MEMORY_image_set_cnt1(const char *IDname, int cnt1);
+errno_t COREMOD_MEMORY_image_set_cnt1(
+    const char *IDname, int cnt1);

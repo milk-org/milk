@@ -28,7 +28,7 @@ static errno_t init_module_CLI()
 {
     cpuset_utils_addCLIcmd();
 
-    fileutils_addCLIcmd();
+    CLIADDCMD_COREMOD_tools__fileutils();
     imdisplay3d_addCLIcmd();
     statusstat_addCLIcmd();
 

@@ -100,7 +100,7 @@ static errno_t CLIfunction(void)
 }
 
 // Register CLI command(s)
-errno_t images2cube_addCLIcmd()
+errno_t CLIADDCMD_COREMOD_iofits__images2cube()
 {
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
