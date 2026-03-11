@@ -1,12 +1,8 @@
 /**
  * @file fps_list.h
- * @brief Fps list module
+ * @brief List function parameter structures
  */
 
-/**
- * @file    fps_list.h
- */
-
-errno_t fps_list_addCLIcmd();
+errno_t CLIADDCMD_COREMOD_memory__fps_list();
 
 errno_t fps_list();

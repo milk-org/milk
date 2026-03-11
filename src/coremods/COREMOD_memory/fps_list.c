@@ -1,6 +1,8 @@
 /**
  * @file    fps_list.c
- * @brief   list function parameter structure
+ * @brief   list function parameter structures
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <dirent.h>
@@ -10,36 +12,39 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
-errno_t fps_list();
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "fpslist",
+    .cmdkey      = "fpslist",
+    .description =
+        "list function parameter structures"
+};
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
-errno_t fps_list_addCLIcmd()
-{
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    RegisterCLIcommand("fpslist",
-                       __FILE__,
-                       fps_list,
-                       "list function parameter structures (FPSs)",
-                       "no argument",
-                       "fpslist",
-                       "errno_t fps_list()");
+/* (none — zero-arg command) */
 
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X)  /* empty */
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
 errno_t fps_list()
 {
     long fpsID;
@@ -53,21 +58,21 @@ errno_t fps_list()
     {
         if(dcfpsarr[fpsID].SMfd > -1)
         {
-
             if(fpscnt == 0)
             {
-                printf("FPSs currently connected :\n");
+                printf(
+                    "FPSs currently connected :\n");
             }
-            // connected
-            printf("%*ld  %*s  %*ld/%*ld entries\n",
-                   NBchar_fpsID,
-                   fpsID,
-                   NBchar_fpsname,
-                   dcfpsarr[fpsID].md[0].name,
-                   NBchar_NBparam,
-                   dcfpsarr[fpsID].NBparamActive,
-                   NBchar_NBparam,
-                   dcfpsarr[fpsID].NBparam);
+            printf(
+                "%*ld  %*s  %*ld/%*ld entries\n",
+                NBchar_fpsID,
+                fpsID,
+                NBchar_fpsname,
+                dcfpsarr[fpsID].md[0].name,
+                NBchar_NBparam,
+                dcfpsarr[fpsID].NBparamActive,
+                NBchar_NBparam,
+                dcfpsarr[fpsID].NBparam);
 
             fpscnt++;
         }
@@ -77,10 +82,9 @@ errno_t fps_list()
         printf("No FPS currently connected\n");
     }
 
-    //printf("\n %ld FPS(s) currently loaded\n\n", fpscnt);
-    //printf("\n");
-
-    printf("FPSs in system shared memory (%s):\n", dcshmdir);
+    printf(
+        "FPSs in system shared memory (%s):\n",
+        dcshmdir);
 
     struct dirent *de;
     DIR           *dr = opendir(dcshmdir);
@@ -93,10 +97,12 @@ errno_t fps_list()
     fpscnt = 0;
     while((de = readdir(dr)) != NULL)
     {
-        if(strstr(de->d_name, ".fps.shm") != NULL)
+        if(strstr(de->d_name, ".fps.shm")
+            != NULL)
         {
             char fpsname[100];
-            int  slen1 = 100 - strlen(".fps.shm");
+            int  slen1 =
+                100 - strlen(".fps.shm");
 
             strncpy(fpsname, de->d_name, slen1);
             fpsname[slen1] = '\0';
@@ -113,3 +119,75 @@ errno_t fps_list()
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    FUNC_CHECK_RETURN(fps_list());
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, NULL, &CLIcmddata,
+        NULL, 0,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__fps_list()
+{
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif

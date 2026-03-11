@@ -1,17 +1,14 @@
 /**
  * @file stream_paste.h
- * @brief Stream paste module
+ * @brief Paste two 2D streams
  */
 
-/**
- * @file stream_paste.h
- */
+errno_t CLIADDCMD_COREMOD_memory__stream_paste();
 
-errno_t stream_paste_addCLIcmd();
-
-imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
-                                   const char *IDstream1_name,
-                                   const char *IDstreamout_name,
-                                   long        semtrig0,
-                                   long        semtrig1,
-                                   int         master);
+imageID COREMOD_MEMORY_streamPaste(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreamout_name,
+    long        semtrig0,
+    long        semtrig1,
+    int         master);

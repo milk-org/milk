@@ -37,8 +37,8 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_iofits__loadfits();
     CLIADDCMD_COREMOD_iofits__saveFITS();
 
-    breakcube_addCLIcmd();
-    images2cube_addCLIcmd();
+    CLIADDCMD_COREMOD_iofits__breakcube();
+    CLIADDCMD_COREMOD_iofits__images2cube();
 
     // add atexit functions here
 

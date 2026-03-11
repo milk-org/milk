@@ -1,11 +1,8 @@
 /**
  * @file clearall.h
- * @brief Clearall module
+ * @brief Remove all images, variables, and FPS
  */
 
-/** @file clearall.h
- */
-
-errno_t clearall_addCLIcmd();
+errno_t CLIADDCMD_COREMOD_memory__clearall();
 
 errno_t clearall();
