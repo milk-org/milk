@@ -409,6 +409,7 @@ if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
 	fi
 
 	if [[ ${NBargin} -ne ${NBarg} ]]; then
+		printHELP
 		echo "${fgRed} ERROR: ${NBarg} arguments expected, ${NBargin} entered ${txReset}"
 		exit 1
 	fi
