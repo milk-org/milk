@@ -20,48 +20,80 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t GPUcomp_test(__attribute__((unused)) long NBact,
-                     long                         NBmodes,
-                     long                         WFSsize,
-                     long                         GPUcnt);
+errno_t GPUcomp_test(
+    __attribute__((unused)) long NBact,
+    long NBmodes, long WFSsize,
+    long GPUcnt);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: linalgebratest
 // ==========================================
 
-static errno_t LINALGEBRA_test_cli()
-{
-    if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) ==
-            0)
-    {
-        GPUcomp_test(data.cmdargtoken[1].val.numl,
-                     data.cmdargtoken[2].val.numl,
-                     data.cmdargtoken[3].val.numl,
-                     data.cmdargtoken[4].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_ERROR;
-    }
+static int64_t lt_nact = 1000;
+static int64_t lt_nmod = 20;
+static int64_t lt_wsz = 1000;
+static int64_t lt_gpu = 1;
+static FPS_APP_INFO FPS_app_info_lt = {
+    .fps_name = "linalgebratest",
+    .cmdkey   = "linalgebratest",
+    .description = "test CUDA comp"
+};
+#define FPS_PARAMS_LT(X) \
+    X(".nbact", &lt_nact, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB act") \
+    X(".nbmodes", &lt_nmod, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB modes") \
+    X(".wfssize", &lt_wsz, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB pixels") \
+    X(".gpucnt", &lt_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB GPU")
+#include "fps.h"
+static FPS_CLI_BINDING lt_b[] = {
+    FPS_PARAMS_LT(FPS_X_BINDING) };
+static const int lt_nb =
+    sizeof(lt_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_LT(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS lt_cms = {0};
+static __attribute__((constructor))
+void init_lt(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_lt.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_lt.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &lt_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t lt_compute(void) {
+    GPUcomp_test((long)lt_nact,
+        (long)lt_nmod, (long)lt_wsz,
+        (long)lt_gpu);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_lt, farg,
+        &CLIcmddata,
+        lt_b, lt_nb, lt_compute);
+}
 
 errno_t linalgebratest_addCLIcmd()
 {
-    RegisterCLIcommand("linalgebratest",
-                       __FILE__,
-                       LINALGEBRA_test_cli,
-                       "test CUDA comp",
-                       "<NB actuators [long]> <NB modes [long]> <NB pixels "
-                       "[long]> <NB GPU [long]>",
-                       "linalgebratest 1000 20 1000 1",
-                       "int GPUcomp_test(long NBact, long NBmodes, long "
-                       "WFSsize, long GPUcnt)");
+    safe_fps_fill_farg_examples(
+        farg, lt_b, lt_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }
