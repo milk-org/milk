@@ -34,8 +34,9 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    *stream_basename = NULL;
-static int32_t *ptr_n_input     = NULL;
+static char    stream_basename[
+    FUNCTION_PARAMETER_STRMAXLEN] = "stream";
+static int32_t ptr_n_input     = 2;
 
 
 /* ================================================================
@@ -43,7 +44,7 @@ static int32_t *ptr_n_input     = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".stream_basename", &stream_basename, \
+    X(".stream_basename", stream_basename, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output stream & input basename") \
@@ -104,7 +105,7 @@ static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    int32_t n_input = *ptr_n_input;
+    int32_t n_input = ptr_n_input;
 
     IMGID *img_in_arr = (IMGID *)
         malloc(n_input * sizeof(IMGID));

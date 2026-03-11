@@ -34,14 +34,17 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *streamave_inimname    = NULL;
-static char     *streamave_outimave    = NULL;
-static uint32_t *streamave_outimshared = NULL;
-static char     *streamave_outimrms    = NULL;
-static uint64_t *streamave_NBcoadd     = NULL;
-static uint64_t *streamave_cntindex    = NULL;
-static uint64_t *streamave_compave     = NULL;
-static uint64_t *streamave_comprms     = NULL;
+static char     streamave_inimname[
+    FUNCTION_PARAMETER_STRMAXLEN] = "instream";
+static char     streamave_outimave[
+    FUNCTION_PARAMETER_STRMAXLEN] = "outave";
+static uint32_t streamave_outimshared = 0;
+static char     streamave_outimrms[
+    FUNCTION_PARAMETER_STRMAXLEN] = "outrms";
+static uint64_t streamave_NBcoadd     = 100;
+static uint64_t streamave_cntindex    = 0;
+static uint64_t streamave_compave     = 1;
+static uint64_t streamave_comprms     = 0;
 
 
 /* ================================================================
@@ -49,11 +52,11 @@ static uint64_t *streamave_comprms     = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &streamave_inimname, \
+    X(".in_name", streamave_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
-    X(".outave_name", &streamave_outimave, \
+    X(".outave_name", streamave_outimave, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output average image") \
@@ -61,7 +64,7 @@ static uint64_t *streamave_comprms     = NULL;
       FPTYPE_UINT32, 0, \
       FPFLAG_DEFAULT_INPUT, \
       "output shared flag") \
-    X(".outrms_name", &streamave_outimrms, \
+    X(".outrms_name", streamave_outimrms, \
       FPTYPE_STREAMNAME, 0, \
       FPFLAG_DEFAULT_INPUT, \
       "output RMS image") \
@@ -105,7 +108,7 @@ static errno_t fpsexec(
         imgin->md[0].size[0]
         * imgin->md[0].size[1];
 
-    if (*streamave_cntindex == 0) {
+    if (streamave_cntindex == 0) {
         for (uint64_t i = 0;
              i < xysize; i++)
         {
@@ -144,7 +147,7 @@ static errno_t fpsexec(
                 break;
             }
             imdataarray[i] = v;
-            if (*streamave_comprms) {
+            if (streamave_comprms) {
                 imdataarrayPOW[i] =
                     v * v;
             }
@@ -188,19 +191,19 @@ static errno_t fpsexec(
                 break;
             }
             imdataarray[i] += v;
-            if (*streamave_comprms) {
+            if (streamave_comprms) {
                 imdataarrayPOW[i] +=
                     v * v;
             }
         }
     }
 
-    (*streamave_cntindex)++;
+    (streamave_cntindex)++;
 
-    if (*streamave_cntindex
-        >= *streamave_NBcoadd)
+    if (streamave_cntindex
+        >= streamave_NBcoadd)
     {
-        if (*streamave_compave
+        if (streamave_compave
             && imgoutave)
         {
             for (uint64_t i = 0;
@@ -208,12 +211,12 @@ static errno_t fpsexec(
             {
                 imgoutave->array.F[i] =
                     imdataarray[i]
-                    / (*streamave_cntindex);
+                    / (streamave_cntindex);
             }
             processinfo_update_output_stream(
                 NULL, imgoutave, NULL);
         }
-        if (*streamave_comprms
+        if (streamave_comprms
             && imgoutrms)
         {
             for (uint64_t i = 0;
@@ -221,12 +224,12 @@ static errno_t fpsexec(
             {
                 imgoutrms->array.F[i] =
                     sqrt(imdataarrayPOW[i])
-                    / (*streamave_cntindex);
+                    / (streamave_cntindex);
             }
             processinfo_update_output_stream(
                 NULL, imgoutrms, NULL);
         }
-        *streamave_cntindex = 0;
+        streamave_cntindex = 0;
     }
     return RETURN_SUCCESS;
 }

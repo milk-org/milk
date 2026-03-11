@@ -21,29 +21,33 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // input image names
-static char *inimname;
-static char *maskimname;
-static char *outimname;
-static uint32_t *sliceaxis;
-static char *auxin;
+static char inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char maskimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static uint32_t sliceaxis = 0;
+static char auxin[
+    FUNCTION_PARAMETER_STRMAXLEN];
 
-// changed from uint64_t* to int32_t* for V2
-static int32_t *modeRMS;
+// changed from uint64_t* to int32_t for V2
+static int32_t modeRMS = 0;
 
 #define FPS_PARAMS(X) \
-    X(".in0name", &inimname, \
+    X(".in0name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input image 0") \
-    X(".maskim", &maskimname, \
+    X(".maskim", maskimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input image mask") \
-    X(".outname", &outimname, \
+    X(".outname", outimname, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, "output image") \
     X(".axis", &sliceaxis, \
       FPTYPE_UINT32, 1, \
       FPFLAG_DEFAULT_INPUT, "norm axis") \
-    X(".auxin", &auxin, \
+    X(".auxin", auxin, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "auxillary input image, in-place update") \
     X(".RMS", &modeRMS, \
@@ -397,9 +401,9 @@ static errno_t compute_function()
             inimg,
             maskimg,
             &outimg,
-            *sliceaxis,
+            sliceaxis,
             imgaux,
-            *modeRMS
+            modeRMS
         );
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);

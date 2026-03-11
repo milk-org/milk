@@ -36,7 +36,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *stringfilter = NULL;
+static char stringfilter[
+    FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 
 /* ================================================================
@@ -44,7 +45,7 @@ static char *stringfilter = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".strfilter", &stringfilter, \
+    X(".strfilter", stringfilter, \
       FPTYPE_STRING, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "string filter")

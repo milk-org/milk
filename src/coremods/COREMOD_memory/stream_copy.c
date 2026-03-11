@@ -34,8 +34,10 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *inimname  = NULL;
-static char *outimname = NULL;
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
 
 
 /* ================================================================
@@ -43,11 +45,11 @@ static char *outimname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", &inimname, \
+    X(".in_sname", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input stream") \
-    X(".out_sname", &outimname, \
+    X(".out_sname", outimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output stream")

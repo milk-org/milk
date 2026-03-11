@@ -38,7 +38,8 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char *insname = NULL;
+static char insname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream";
 
 
 /* ================================================================
@@ -46,7 +47,7 @@ static char *insname = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_sname", &insname, \
+    X(".in_sname", insname, \
       FPTYPE_STRING_NOT_STREAM, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input stream")
@@ -64,7 +65,7 @@ imageID read_sharedmem_image(
 {
     IMGID img = imgid_make_from_name(sname);
     resolveIMGID(
-        &img, ERRMODE_ABORT,
+        &img, ERRMODE_NULL,
         imagearray, NB_images);
     imgid_connect(&img, IMGID_CONNECT_NOCHECK);
     if (img.ID == -1)
