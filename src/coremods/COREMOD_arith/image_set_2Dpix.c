@@ -11,6 +11,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -78,60 +79,19 @@ static errno_t fpsexec(IMAGE *inimg)
     {
         return RETURN_FAILURE;
     }
+#define SET2D_CASE_(DT, ACC, CT)                    \
+    case DT:                                        \
+        inimg->array.ACC[row * xsize + col] =       \
+            (CT) val;                               \
+        break;
+
     switch (inimg->md[0].datatype) {
-    case _DATATYPE_UINT8:
-        inimg->array.UI8[
-            row * xsize + col] =
-            (uint8_t) val;
-        break;
-    case _DATATYPE_INT8:
-        inimg->array.SI8[
-            row * xsize + col] =
-            (int8_t) val;
-        break;
-    case _DATATYPE_UINT16:
-        inimg->array.UI16[
-            row * xsize + col] =
-            (uint16_t) val;
-        break;
-    case _DATATYPE_INT16:
-        inimg->array.SI16[
-            row * xsize + col] =
-            (int16_t) val;
-        break;
-    case _DATATYPE_UINT32:
-        inimg->array.UI32[
-            row * xsize + col] =
-            (uint32_t) val;
-        break;
-    case _DATATYPE_INT32:
-        inimg->array.SI32[
-            row * xsize + col] =
-            (int32_t) val;
-        break;
-    case _DATATYPE_UINT64:
-        inimg->array.UI64[
-            row * xsize + col] =
-            (uint64_t) val;
-        break;
-    case _DATATYPE_INT64:
-        inimg->array.SI64[
-            row * xsize + col] =
-            (int64_t) val;
-        break;
-    case _DATATYPE_FLOAT:
-        inimg->array.F[
-            row * xsize + col] = val;
-        break;
-    case _DATATYPE_DOUBLE:
-        inimg->array.D[
-            row * xsize + col] =
-            (double) val;
-        break;
+        FOREACH_REAL_DATATYPE(SET2D_CASE_)
     default:
         PRINT_ERROR("unsupported datatype");
         return RETURN_FAILURE;
     }
+#undef SET2D_CASE_
     return RETURN_SUCCESS;
 }
 
@@ -140,43 +100,7 @@ static errno_t fpsexec(IMAGE *inimg)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
-
-static const int nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-static CMDSETTINGS default_cmdsettings = {0};
-
-static __attribute__((constructor))
-void init_cmdsettings(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &default_cmdsettings;
-    }
-}
+FPS_V2_SECTION5(FPS_PARAMS)
 
 
 /* ================================================================

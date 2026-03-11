@@ -11,6 +11,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -80,70 +81,19 @@ static errno_t fpsexec(IMAGE *inimg)
     if (mi >= ma) {
         return RETURN_FAILURE;
     }
+#define SET1D_CASE_(DT, ACC, CT)                \
+    case DT:                                    \
+        for (uint32_t i = mi; i < ma; i++)      \
+            inimg->array.ACC[i] = (CT) val;     \
+        break;
+
     switch (inimg->md[0].datatype) {
-    case _DATATYPE_UINT8:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.UI8[i] =
-                (uint8_t) val;
-        }
-        break;
-    case _DATATYPE_INT8:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.SI8[i] =
-                (int8_t) val;
-        }
-        break;
-    case _DATATYPE_UINT16:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.UI16[i] =
-                (uint16_t) val;
-        }
-        break;
-    case _DATATYPE_INT16:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.SI16[i] =
-                (int16_t) val;
-        }
-        break;
-    case _DATATYPE_UINT32:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.UI32[i] =
-                (uint32_t) val;
-        }
-        break;
-    case _DATATYPE_INT32:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.SI32[i] =
-                (int32_t) val;
-        }
-        break;
-    case _DATATYPE_UINT64:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.UI64[i] =
-                (uint64_t) val;
-        }
-        break;
-    case _DATATYPE_INT64:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.SI64[i] =
-                (int64_t) val;
-        }
-        break;
-    case _DATATYPE_FLOAT:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.F[i] = val;
-        }
-        break;
-    case _DATATYPE_DOUBLE:
-        for (uint32_t i = mi; i < ma; i++) {
-            inimg->array.D[i] =
-                (double) val;
-        }
-        break;
+        FOREACH_REAL_DATATYPE(SET1D_CASE_)
     default:
         PRINT_ERROR("unsupported datatype");
         return RETURN_FAILURE;
     }
+#undef SET1D_CASE_
     return RETURN_SUCCESS;
 }
 
@@ -152,43 +102,7 @@ static errno_t fpsexec(IMAGE *inimg)
  * 5.  BINDINGS, FARG, AND CLI DATA
  * ============================================================= */
 
-static FPS_CLI_BINDING my_bindings[] = {
-    FPS_PARAMS(FPS_X_BINDING)
-};
-
-static const int nb_bindings =
-    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
-
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS(FPS_X_FARG)
-};
-
-#ifdef FPS_STANDALONE
-CLICMDDATA CLIcmddata = {
-#else
-static CLICMDDATA CLIcmddata = {
-#endif
-    "",
-    "",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-static CMDSETTINGS default_cmdsettings = {0};
-
-static __attribute__((constructor))
-void init_cmdsettings(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &default_cmdsettings;
-    }
-}
+FPS_V2_SECTION5(FPS_PARAMS)
 
 
 /* ================================================================
