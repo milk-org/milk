@@ -6,7 +6,7 @@
 /** @file image_add.h
  */
 
-errno_t image_add_addCLIcmd();
+errno_t CLIADDCMD_image_basic__image_add();
 
 imageID basic_add(const char *__restrict ID_name1,
                   const char *__restrict ID_name2,

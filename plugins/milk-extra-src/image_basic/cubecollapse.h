@@ -7,7 +7,7 @@
 #define IMAGE_BASIC_CUBECOLLAPSE_H
 
 errno_t __attribute__((cold))
-cubecollapse_addCLIcmd();
+CLIADDCMD_image_basic__cubecollapse();
 
 imageID cube_collapse(
     const char *ID_in_name,

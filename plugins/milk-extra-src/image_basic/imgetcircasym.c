@@ -1,9 +1,6 @@
 /**
  * @file imgetcircasym.c
- * @brief Imgetcircasym module
- */
-
-/** @file imgetcircasym.c
+ * @brief Extract non-circular symmetric part
  */
 
 #include <math.h>
@@ -13,60 +10,102 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID IMAGE_BASIC_get_circasym_component(
+    const char *__restrict ID_name,
+    const char *__restrict ID_out_name,
+    float       xcenter,
+    float       ycenter,
+    const char *options);
 
-imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
-        const char *__restrict ID_out_name,
-        float       xcenter,
-        float       ycenter,
-        const char *options);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
+static double p_xcenter = 256.0;
+static double p_ycenter = 230.5;
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgetcircasym",
+    .cmdkey      = "imgetcircasym",
+    .description =
+        "extract non-circ symmetric part"
+};
 
-static errno_t IMAGE_BASIC_get_circasym_component_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".xcenter", &p_xcenter, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x center") \
+    X(".ycenter", &p_ycenter, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y center")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 1) ==
-            0)
-    {
-        IMAGE_BASIC_get_circasym_component(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.string,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.numf,
-                                           "");
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) imgetcircasym_addCLIcmd()
+static errno_t compute_function()
 {
+    IMAGE_BASIC_get_circasym_component(
+        p_in, p_out,
+        (float) p_xcenter,
+        (float) p_ycenter, "");
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("imgetcircasym",
-                       __FILE__,
-                       IMAGE_BASIC_get_circasym_component_cli,
-                       "extract non-circular symmetric part of image",
-                       "<inim> <outim> <xcenter> <ycenter>",
-                       "imcgetcircassym imin imout 256.0 230.5",
-                       "long IMAGE_BASIC_get_asym_component(const char "
-                       "*ID_name, const char *ID_out_name, float "
-                       "xcenter, float ycenter, const char *options)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_basic__imgetcircasym()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
