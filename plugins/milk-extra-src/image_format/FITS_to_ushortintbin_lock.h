@@ -1,12 +1,11 @@
 /**
  * @file FITS_to_ushortintbin_lock.h
- * @brief Fits to ushortintbin lock module
+ * @brief Write ushort binary with file locking
  */
 
-/** @file FITS_to_ushortintbin_lock.h
- */
+errno_t
+CLIADDCMD_image_format__ushortintbin_lock();
 
-errno_t FITS_to_ushortintbin_lock_addCLIcmd();
-
-imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
-        const char *__restrict fname);
+imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(
+    const char *__restrict IDname,
+    const char *__restrict fname);

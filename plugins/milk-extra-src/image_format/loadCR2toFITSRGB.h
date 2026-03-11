@@ -1,14 +1,13 @@
 /**
  * @file loadCR2toFITSRGB.h
- * @brief Loadcr2tofitsrgb module
+ * @brief Load CR2 file into R G B images
  */
 
-/** @file loadCR2toFITSRGB.h
- */
+errno_t
+CLIADDCMD_image_format__loadCR2toFITSRGB();
 
-errno_t loadCR2toFITSRGB_addCLIcmd();
-
-errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
-                         const char *__restrict fnameFITSr,
-                         const char *__restrict fnameFITSg,
-                         const char *__restrict fnameFITSb);
+errno_t loadCR2toFITSRGB(
+    const char *__restrict fnameCR2,
+    const char *__restrict fnameFITSr,
+    const char *__restrict fnameFITSg,
+    const char *__restrict fnameFITSb);

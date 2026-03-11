@@ -1,12 +1,10 @@
 /**
  * @file CR2toFITS.c
- * @brief Cr2tofits module
- */
-
-/** @file CR2toFITS.c
+ * @brief Convert CR2 file to FITS
  */
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -14,45 +12,91 @@
 #include "readPGM.h"
 
 static int CR2toFITS_NORM = 0;
-// 1 if FITS should be normalized to ISO = 1, exposure = 1 sec, and F/1.0
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID CR2toFITS(
+    const char *__restrict fnameCR2,
+    const char *__restrict fnameFITS);
 
-imageID CR2toFITS(const char *__restrict fnameCR2,
-                  const char *__restrict fnameFITS);
+/* =========================================
+ *  V2 PARAMS
+ * ======================================= */
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static char p_in[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im01.CR2";
+static char p_out[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im01.fits";
 
-static errno_t CR2toFITS_cli()
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cr2tofits",
+    .cmdkey      = "cr2tofits",
+    .description =
+        "convert cr2 file to fits"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input CR2 file") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output FITS file")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    //  if(CLI_checkarg(1, 3)+CLI_checkarg(2, 3))
-    CR2toFITS(data.cmdargtoken[1].val.string, data.cmdargtoken[2].val.string);
-    // else
-    // return(0);
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
+    }
+}
 
+static errno_t compute_function()
+{
+    CR2toFITS(p_in, p_out);
     return RETURN_SUCCESS;
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t CR2toFITS_addCLIcmd()
+static errno_t CLIfunction(void)
 {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-    RegisterCLIcommand(
-        "cr2tofits",
-        __FILE__,
-        CR2toFITS_cli,
-        "convert cr2 file to fits",
-        "<input CR2 file> <output FITS file>",
-        "cr2tofits im01.CR2 im01.fits",
-        "int CR2toFITS(const char *fnameCR2, const char *fnameFITS)");
-
+errno_t
+CLIADDCMD_image_format__CR2toFITS()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
