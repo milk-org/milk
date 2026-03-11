@@ -184,3 +184,6 @@ $ sudo make install
 > Remember to switch back to `Release` or
 > `RelWithDebInfo` for production use — `Debug` builds
 > disable optimizations and are significantly slower.
+
+---
+← [Documentation Index](index.md)

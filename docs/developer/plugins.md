@@ -98,3 +98,6 @@ Once your `CMakeLists.txt` and C sources are in progress:
 1. Navigate back to the main `milk` build directory.
 2. Run `cmake ..`
 3. Look for the message `ADDING SUBDIR = plugins/milk-extra-src/my_new_plugin`. If you see that, `milk` has successfully hooked your plugin into the global project.
+
+---
+← [Documentation Index](../index.md)

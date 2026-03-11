@@ -14,3 +14,6 @@ documentation. It may also include data files, scripts, and extended
 documentation.
 
 For more details see the [Programmer's Guide](../programmers_guide.md).
+
+---
+← [Documentation Index](../index.md)

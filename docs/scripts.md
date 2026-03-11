@@ -125,3 +125,6 @@ $ milk-cubeslice2shm mycube.fits 0 myslice
 
 Extracts slice 0 from the FITS cube and writes it to the
 shared memory stream `myslice`.
+
+---
+← [Documentation Index](index.md)

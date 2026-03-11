@@ -8,6 +8,8 @@ Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.sv
 **main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
 **dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
 
+[![Docs Lint](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml)
+
 
 Code metrics (dev branch) :
 [![CodeScene Code Health](https://codescene.io/projects/14777/status-badges/code-health)](https://codescene.io/projects/14777)
