@@ -85,270 +85,669 @@ INIT_MODULE_LIB(linARfilterPred)
 /* ================================================================== */
 /* ================================================================== */
 
-errno_t LINARFILTERPRED_LoadASCIIfiles_cli()
-{
-    if(CLI_checkarg(1, 1) + CLI_checkarg(2, 1) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 5) ==
-            0)
-    {
-        LINARFILTERPRED_LoadASCIIfiles(data.cmdargtoken[1].val.numf,
-                                       data.cmdargtoken[2].val.numf,
-                                       data.cmdargtoken[3].val.numl,
-                                       data.cmdargtoken[4].val.numl,
-                                       data.cmdargtoken[5].val.string);
+/* ===== Command: pfloadascii ===== */
+long LINARFILTERPRED_LoadASCIIfiles(
+    double tstart, double dt,
+    long NBpt, long NBfr,
+    const char *IDoutname);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static double la_tstart = 200.0;
+static double la_dt = 0.001;
+static int64_t la_nbpt = 10000;
+static int64_t la_nbfr = 4;
+static char la_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "pfin";
+static FPS_APP_INFO FPS_app_info_la = {
+    .fps_name = "pfloadascii",
+    .cmdkey   = "pfloadascii",
+    .description =
+        "load ascii files to PF input"
+};
+#define FPS_PARAMS_LA(X) \
+    X(".tstart", &la_tstart, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "tstart") \
+    X(".dt", &la_dt, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "dt") \
+    X(".nbpt", &la_nbpt, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb points") \
+    X(".nbfr", &la_nbfr, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb frames") \
+    X(".out_name", la_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+
+#include "fps.h"
+
+static FPS_CLI_BINDING la_b[] = {
+    FPS_PARAMS_LA(FPS_X_BINDING) };
+static const int la_nb =
+    sizeof(la_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_LA(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS la_cms = {0};
+static __attribute__((constructor))
+void init_la(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_la.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_la.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &la_cms;
+}
+static errno_t la_compute(void) {
+    LINARFILTERPRED_LoadASCIIfiles(
+        la_tstart, la_dt,
+        (long)la_nbpt, (long)la_nbfr, la_out);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_la, farg, &CLIcmddata,
+        la_b, la_nb, la_compute);
 }
 
-errno_t LINARFILTERPRED_SelectBlock_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        LINARFILTERPRED_SelectBlock(data.cmdargtoken[1].val.string,
-                                    data.cmdargtoken[2].val.string,
-                                    data.cmdargtoken[3].val.numl,
-                                    data.cmdargtoken[4].val.string);
+/* ===== Command: mselblock ===== */
+imageID LINARFILTERPRED_SelectBlock(
+    const char *IDin_name,
+    const char *IDblknb_name,
+    long blkNB,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char sb_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modevals";
+static char sb_bm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "blockmap";
+static int64_t sb_blk = 23;
+static char sb_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "blk23modevals";
+static FPS_APP_INFO FPS_app_info_sb = {
+    .fps_name = "mselblock",
+    .cmdkey   = "mselblock",
+    .description =
+        "select modes belonging to block"
+};
+#define FPS_PARAMS_SB(X) \
+    X(".in_name", sb_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input modes") \
+    X(".bm_name", sb_bm, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "block map") \
+    X(".blk", &sb_blk, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "block number") \
+    X(".out_name", sb_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING sb_b[] = {
+    FPS_PARAMS_SB(FPS_X_BINDING) };
+static const int sb_nb =
+    sizeof(sb_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF sb_farg[] = {
+    FPS_PARAMS_SB(FPS_X_FARG) };
+static CLICMDDATA sb_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS sb_cms = {0};
+static __attribute__((constructor))
+void init_sb(void) {
+    strncpy(sb_d.key,
+        FPS_app_info_sb.cmdkey,
+        sizeof(sb_d.key)-1);
+    strncpy(sb_d.description,
+        FPS_app_info_sb.description,
+        sizeof(sb_d.description)-1);
+    sb_d.nbarg =
+        sizeof(sb_farg)/sizeof(CLICMDARGDEF);
+    sb_d.funcfpscliarg = sb_farg;
+    sb_d.flags = CLICMDFLAG_FPS;
+    if(!sb_d.cmdsettings)
+        sb_d.cmdsettings = &sb_cms;
+}
+static errno_t sb_compute(void) {
+    LINARFILTERPRED_SelectBlock(
+        sb_in, sb_bm, (long)sb_blk, sb_out);
+    return RETURN_SUCCESS;
+}
+static errno_t sb_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_sb, sb_farg, &sb_d,
+        sb_b, sb_nb, sb_compute);
 }
 
-errno_t linARfilterPred_repeat_shift_X_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
-    {
-        linARfilterPred_repeat_shift_X(data.cmdargtoken[1].val.string,
-                                       data.cmdargtoken[2].val.numl,
-                                       data.cmdargtoken[3].val.string);
+/* ===== Command: imrepshiftx ===== */
+imageID linARfilterPred_repeat_shift_X(
+    const char *IDin_name,
+    long NBstep,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char rs_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static int64_t rs_nb = 5;
+static char rs_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
+static FPS_APP_INFO FPS_app_info_rs = {
+    .fps_name = "imrepshiftx",
+    .cmdkey   = "imrepshiftx",
+    .description =
+        "repeat and shift image along X"
+};
+#define FPS_PARAMS_RS(X) \
+    X(".in_name", rs_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input") \
+    X(".nbstep", &rs_nb, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb steps") \
+    X(".out_name", rs_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING rs_b[] = {
+    FPS_PARAMS_RS(FPS_X_BINDING) };
+static const int rs_nbb =
+    sizeof(rs_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rs_farg[] = {
+    FPS_PARAMS_RS(FPS_X_FARG) };
+static CLICMDDATA rs_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS rs_cms = {0};
+static __attribute__((constructor))
+void init_rs(void) {
+    strncpy(rs_d.key,
+        FPS_app_info_rs.cmdkey,
+        sizeof(rs_d.key)-1);
+    strncpy(rs_d.description,
+        FPS_app_info_rs.description,
+        sizeof(rs_d.description)-1);
+    rs_d.nbarg =
+        sizeof(rs_farg)/sizeof(CLICMDARGDEF);
+    rs_d.funcfpscliarg = rs_farg;
+    rs_d.flags = CLICMDFLAG_FPS;
+    if(!rs_d.cmdsettings)
+        rs_d.cmdsettings = &rs_cms;
+}
+static errno_t rs_compute(void) {
+    linARfilterPred_repeat_shift_X(
+        rs_in, (long)rs_nb, rs_out);
+    return RETURN_SUCCESS;
+}
+static errno_t rs_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rs, rs_farg, &rs_d,
+        rs_b, rs_nbb, rs_compute);
 }
 
-errno_t LINARFILTERPRED_Build_LinPredictor_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 1) + CLI_checkarg(5, 1) + CLI_checkarg(6, 3) +
-            CLI_checkarg(7, 2) + CLI_checkarg(8, 1) + CLI_checkarg(9, 2) ==
-            0)
-    {
-        LINARFILTERPRED_Build_LinPredictor(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.numl,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.numf,
-                                           data.cmdargtoken[5].val.numf,
-                                           data.cmdargtoken[6].val.string,
-                                           1,
-                                           data.cmdargtoken[7].val.numl,
-                                           data.cmdargtoken[8].val.numf,
-                                           data.cmdargtoken[9].val.numl);
+/* ===== Command: mkARpfilt ===== */
+imageID LINARFILTERPRED_Build_LinPredictor(
+    const char *IDin_name,
+    long PForder, float PFlag,
+    double SVDeps, double RegLambda,
+    const char *IDoutPF_name,
+    int outMode, int LOOPmode,
+    float LOOPgain, int testmode);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char mk_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "indata";
+static int64_t mk_ord = 5;
+static double mk_lag = 2.4;
+static double mk_svd = 0.0001;
+static double mk_reg = 0.0;
+static char mk_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static int64_t mk_loop = 0;
+static double mk_gain = 0.1;
+static int64_t mk_test = 1;
+static FPS_APP_INFO FPS_app_info_mk = {
+    .fps_name = "mkARpfilt",
+    .cmdkey   = "mkARpfilt",
+    .description =
+        "make linear AR filter"
+};
+#define FPS_PARAMS_MK(X) \
+    X(".in_name", mk_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input data") \
+    X(".pforder", &mk_ord, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF order") \
+    X(".pflag", &mk_lag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF lag") \
+    X(".svdeps", &mk_svd, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "SVD eps") \
+    X(".reglambda", &mk_reg, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "reg param") \
+    X(".out_name", mk_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output PF") \
+    X(".loopmode", &mk_loop, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop mode") \
+    X(".loopgain", &mk_gain, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop gain") \
+    X(".testmode", &mk_test, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "test mode")
+static FPS_CLI_BINDING mk_b[] = {
+    FPS_PARAMS_MK(FPS_X_BINDING) };
+static const int mk_nbb =
+    sizeof(mk_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF mk_farg[] = {
+    FPS_PARAMS_MK(FPS_X_FARG) };
+static CLICMDDATA mk_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS mk_cms = {0};
+static __attribute__((constructor))
+void init_mk(void) {
+    strncpy(mk_d.key,
+        FPS_app_info_mk.cmdkey,
+        sizeof(mk_d.key)-1);
+    strncpy(mk_d.description,
+        FPS_app_info_mk.description,
+        sizeof(mk_d.description)-1);
+    mk_d.nbarg =
+        sizeof(mk_farg)/sizeof(CLICMDARGDEF);
+    mk_d.funcfpscliarg = mk_farg;
+    mk_d.flags = CLICMDFLAG_FPS;
+    if(!mk_d.cmdsettings)
+        mk_d.cmdsettings = &mk_cms;
+}
+static errno_t mk_compute(void) {
+    LINARFILTERPRED_Build_LinPredictor(
+        mk_in, (long)mk_ord,
+        (float)mk_lag, mk_svd, mk_reg,
+        mk_out, 1,
+        (int)mk_loop,
+        (float)mk_gain, (int)mk_test);
+    return RETURN_SUCCESS;
+}
+static errno_t mk_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_mk, mk_farg, &mk_d,
+        mk_b, mk_nbb, mk_compute);
 }
 
-errno_t LINARFILTERPRED_Apply_LinPredictor_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        LINARFILTERPRED_Apply_LinPredictor(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.string,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.string);
+/* ===== Command: applyARpfilt ===== */
+long LINARFILTERPRED_Apply_LinPredictor(
+    const char *IDfilt_name,
+    const char *IDin_name,
+    float PFlag,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char ap_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "indata";
+static char ap_filt[FUNCTION_PARAMETER_STRMAXLEN]
+    = "Pfilt";
+static double ap_lag = 2.4;
+static char ap_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static FPS_APP_INFO FPS_app_info_ap = {
+    .fps_name = "applyARpfilt",
+    .cmdkey   = "applyARpfilt",
+    .description =
+        "apply linear AR filter"
+};
+#define FPS_PARAMS_AP(X) \
+    X(".in_name", ap_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input data") \
+    X(".filt_name", ap_filt, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "predictor") \
+    X(".pflag", &ap_lag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF lag") \
+    X(".out_name", ap_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING ap_b[] = {
+    FPS_PARAMS_AP(FPS_X_BINDING) };
+static const int ap_nbb =
+    sizeof(ap_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF ap_farg[] = {
+    FPS_PARAMS_AP(FPS_X_FARG) };
+static CLICMDDATA ap_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS ap_cms = {0};
+static __attribute__((constructor))
+void init_ap(void) {
+    strncpy(ap_d.key,
+        FPS_app_info_ap.cmdkey,
+        sizeof(ap_d.key)-1);
+    strncpy(ap_d.description,
+        FPS_app_info_ap.description,
+        sizeof(ap_d.description)-1);
+    ap_d.nbarg =
+        sizeof(ap_farg)/sizeof(CLICMDARGDEF);
+    ap_d.funcfpscliarg = ap_farg;
+    ap_d.flags = CLICMDFLAG_FPS;
+    if(!ap_d.cmdsettings)
+        ap_d.cmdsettings = &ap_cms;
+}
+static errno_t ap_compute(void) {
+    LINARFILTERPRED_Apply_LinPredictor(
+        ap_in, ap_filt,
+        (float)ap_lag, ap_out);
+    return RETURN_SUCCESS;
+}
+static errno_t ap_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_ap, ap_farg, &ap_d,
+        ap_b, ap_nbb, ap_compute);
 }
 
-errno_t LINARFILTERPRED_ScanGain_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 1) + CLI_checkarg(3, 1) == 0)
-    {
-        LINARFILTERPRED_ScanGain(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numf,
-                                 data.cmdargtoken[3].val.numf);
+/* ===== Command: mscangain ===== */
+float LINARFILTERPRED_ScanGain(
+    char *IDin_name,
+    float multfact,
+    float framelag);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char sg_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "olwfsmeas";
+static double sg_mf = 0.98;
+static double sg_fl = 2.65;
+static FPS_APP_INFO FPS_app_info_sg = {
+    .fps_name = "mscangain",
+    .cmdkey   = "mscangain",
+    .description = "scan gain"
+};
+#define FPS_PARAMS_SG(X) \
+    X(".in_name", sg_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "mode vals") \
+    X(".multfact", &sg_mf, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "mult factor") \
+    X(".framelag", &sg_fl, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "frame lag")
+static FPS_CLI_BINDING sg_b[] = {
+    FPS_PARAMS_SG(FPS_X_BINDING) };
+static const int sg_nbb =
+    sizeof(sg_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF sg_farg[] = {
+    FPS_PARAMS_SG(FPS_X_FARG) };
+static CLICMDDATA sg_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS sg_cms = {0};
+static __attribute__((constructor))
+void init_sg(void) {
+    strncpy(sg_d.key,
+        FPS_app_info_sg.cmdkey,
+        sizeof(sg_d.key)-1);
+    strncpy(sg_d.description,
+        FPS_app_info_sg.description,
+        sizeof(sg_d.description)-1);
+    sg_d.nbarg =
+        sizeof(sg_farg)/sizeof(CLICMDARGDEF);
+    sg_d.funcfpscliarg = sg_farg;
+    sg_d.flags = CLICMDFLAG_FPS;
+    if(!sg_d.cmdsettings)
+        sg_d.cmdsettings = &sg_cms;
+}
+static errno_t sg_compute(void) {
+    LINARFILTERPRED_ScanGain(
+        sg_in, (float)sg_mf, (float)sg_fl);
+    return RETURN_SUCCESS;
+}
+static errno_t sg_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_sg, sg_farg, &sg_d,
+        sg_b, sg_nbb, sg_compute);
 }
 
-errno_t LINARFILTERPRED_PF_updatePFmatrix_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 5) + CLI_checkarg(3, 1) == 0)
-    {
-        LINARFILTERPRED_PF_updatePFmatrix(data.cmdargtoken[1].val.string,
-                                          data.cmdargtoken[2].val.string,
-                                          data.cmdargtoken[3].val.numf);
+/* ===== Command: linARPFMupdate ===== */
+long LINARFILTERPRED_PF_updatePFmatrix(
+    const char *IDPF_name,
+    const char *IDPFM_name,
+    float alpha);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char pu_pf[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static char pu_pfm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "PFMat";
+static double pu_alpha = 0.1;
+static FPS_APP_INFO FPS_app_info_pu = {
+    .fps_name = "linARPFMupdate",
+    .cmdkey   = "linARPFMupdate",
+    .description =
+        "update predictive filter matrix"
+};
+#define FPS_PARAMS_PU(X) \
+    X(".pf_name", pu_pf, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "3D predictor") \
+    X(".pfm_name", pu_pfm, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "2D matrix") \
+    X(".alpha", &pu_alpha, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "update coeff")
+static FPS_CLI_BINDING pu_b[] = {
+    FPS_PARAMS_PU(FPS_X_BINDING) };
+static const int pu_nbb =
+    sizeof(pu_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF pu_farg[] = {
+    FPS_PARAMS_PU(FPS_X_FARG) };
+static CLICMDDATA pu_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS pu_cms = {0};
+static __attribute__((constructor))
+void init_pu(void) {
+    strncpy(pu_d.key,
+        FPS_app_info_pu.cmdkey,
+        sizeof(pu_d.key)-1);
+    strncpy(pu_d.description,
+        FPS_app_info_pu.description,
+        sizeof(pu_d.description)-1);
+    pu_d.nbarg =
+        sizeof(pu_farg)/sizeof(CLICMDARGDEF);
+    pu_d.funcfpscliarg = pu_farg;
+    pu_d.flags = CLICMDFLAG_FPS;
+    if(!pu_d.cmdsettings)
+        pu_d.cmdsettings = &pu_cms;
+}
+static errno_t pu_compute(void) {
+    LINARFILTERPRED_PF_updatePFmatrix(
+        pu_pf, pu_pfm, (float)pu_alpha);
+    return RETURN_SUCCESS;
+}
+static errno_t pu_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_pu, pu_farg, &pu_d,
+        pu_b, pu_nbb, pu_compute);
 }
 
-errno_t LINARFILTERPRED_PF_RealTimeApply_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) + CLI_checkarg(5, 2) + CLI_checkarg(6, 5) +
-            CLI_checkarg(7, 2) + CLI_checkarg(8, 2) + CLI_checkarg(9, 2) +
-            CLI_checkarg(10, 2) + CLI_checkarg(11, 1) + CLI_checkarg(12, 2) ==
-            0)
-    {
-        LINARFILTERPRED_PF_RealTimeApply(data.cmdargtoken[1].val.string,
-                                         data.cmdargtoken[2].val.numl,
-                                         data.cmdargtoken[3].val.numl,
-                                         data.cmdargtoken[4].val.string,
-                                         data.cmdargtoken[5].val.numl,
-                                         data.cmdargtoken[6].val.string,
-                                         data.cmdargtoken[7].val.numl,
-                                         data.cmdargtoken[8].val.numl,
-                                         data.cmdargtoken[9].val.numl,
-                                         data.cmdargtoken[10].val.numl,
-                                         data.cmdargtoken[11].val.numf,
-                                         data.cmdargtoken[12].val.numl);
+/* ===== Command: linARapplyRT ===== */
+long LINARFILTERPRED_PF_RealTimeApply(
+    const char *IDmodevalOL_name,
+    long IndexOffset, int semtrig,
+    const char *IDPFM_name,
+    long NBPFstep,
+    const char *IDPFout_name,
+    int nbGPU, long loop,
+    long NBiter, int SAVEMODE,
+    float tlag, long PFindex);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char rt_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modevalOL";
+static int64_t rt_off = 0;
+static int64_t rt_sem = 2;
+static char rt_pfm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "PFmat";
+static int64_t rt_ord = 5;
+static char rt_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPFmodeval";
+static int64_t rt_gpu = 0;
+static int64_t rt_loop = 0;
+static int64_t rt_nbit = 0;
+static int64_t rt_save = 0;
+static double rt_tlag = 1.8;
+static int64_t rt_pfi = 0;
+static FPS_APP_INFO FPS_app_info_rt = {
+    .fps_name = "linARapplyRT",
+    .cmdkey   = "linARapplyRT",
+    .description =
+        "RT apply predictive filter"
+};
+#define FPS_PARAMS_RT(X) \
+    X(".in_name", rt_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "OL coeffs") \
+    X(".offset", &rt_off, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "index off") \
+    X(".semtrig", &rt_sem, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "sem trig") \
+    X(".pfm_name", rt_pfm, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF matrix") \
+    X(".pforder", &rt_ord, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "filter order") \
+    X(".out_name", rt_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".nbgpu", &rt_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb GPUs") \
+    X(".loop", &rt_loop, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop flag") \
+    X(".nbiter", &rt_nbit, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb iter") \
+    X(".savemode", &rt_save, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "save mode") \
+    X(".tlag", &rt_tlag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "time lag") \
+    X(".pfindex", &rt_pfi, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF index")
+static FPS_CLI_BINDING rt_b[] = {
+    FPS_PARAMS_RT(FPS_X_BINDING) };
+static const int rt_nbb =
+    sizeof(rt_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rt_farg[] = {
+    FPS_PARAMS_RT(FPS_X_FARG) };
+static CLICMDDATA rt_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS rt_cms = {0};
+static __attribute__((constructor))
+void init_rt(void) {
+    strncpy(rt_d.key,
+        FPS_app_info_rt.cmdkey,
+        sizeof(rt_d.key)-1);
+    strncpy(rt_d.description,
+        FPS_app_info_rt.description,
+        sizeof(rt_d.description)-1);
+    rt_d.nbarg =
+        sizeof(rt_farg)/sizeof(CLICMDARGDEF);
+    rt_d.funcfpscliarg = rt_farg;
+    rt_d.flags = CLICMDFLAG_FPS;
+    if(!rt_d.cmdsettings)
+        rt_d.cmdsettings = &rt_cms;
 }
+static errno_t rt_compute(void) {
+    LINARFILTERPRED_PF_RealTimeApply(
+        rt_in, (long)rt_off, (int)rt_sem,
+        rt_pfm, (long)rt_ord, rt_out,
+        (int)rt_gpu, (long)rt_loop,
+        (long)rt_nbit, (int)rt_save,
+        (float)rt_tlag, (long)rt_pfi);
+    return RETURN_SUCCESS;
+}
+static errno_t rt_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rt, rt_farg, &rt_d,
+        rt_b, rt_nbb, rt_compute);
+}
+
+/* ===== Module init ===== */
 
 static errno_t init_module_CLI()
 {
-    RegisterCLIcommand(
-        "pfloadascii",
-        __FILE__,
-        LINARFILTERPRED_LoadASCIIfiles_cli,
-        "load ascii files to PF input",
-        "<tstart> <dt> <NBpt> <NBfr> <output>",
-        "pfloadascii 200.0 0.001 10000 4 pfin",
-        "long LINARFILTERPRED_LoadASCIIfiles(double tstart, double dt, long "
-        "NBpt, long NBfr, const char *IDoutname)");
-
-    RegisterCLIcommand(
-        "mselblock",
-        __FILE__,
-        LINARFILTERPRED_SelectBlock_cli,
-        "select modes belonging to a block",
-        "<input mode values> <block map> <selected block> <output>",
-        "mselblock modevals blockmap 23 blk23modevals",
-        "long LINARFILTERPRED_SelectBlock(const char *IDin_name, const char "
-        "*IDblknb_name, long blkNB, "
-        "const char *IDout_name)");
-
-    RegisterCLIcommand("imrepshiftx",
-                       __FILE__,
-                       linARfilterPred_repeat_shift_X_cli,
-                       "repeat and shift image, extend along X axis",
-                       "<input image> <NBstep> <output image>",
-                       "imrepshiftx imin 5 imout",
-                       "long linARfilterPred_repeat_shift_X(const char "
-                       "*IDin_name, long NBstep, const char *IDout_name)");
-
-    RegisterCLIcommand(
-        "mkARpfilt",
-        __FILE__,
-        LINARFILTERPRED_Build_LinPredictor_cli,
-        "Make linear auto-regressive filter",
-        "<input data> <PForder> <PFlag> <SVDeps> <regularization param> "
-        "<output filters> <LOOPmode> <LOOPgain> "
-        "<testmode>",
-        "mkARpfilt indata 5 2.4 0.0001 0.0 outPF 0 0.1 1",
-        "int LINARFILTERPRED_Build_LinPredictor(const char *IDin_name, long "
-        "PForder, float PFlag, double SVDeps, "
-        "double RegLambda, const char *IDoutPF, int outMode, int LOOPmode, "
-        "float LOOPgain, int testmode)");
-
-    /*  strcpy(data.cmd[data.NBcmd].key,"applyPfiltRT");
-      strcpy(data.cmd[data.NBcmd].module,__FILE__);
-      data.cmd[data.NBcmd].fp = LINARFILTERPRED_Apply_LinPredictor_RT_cli;
-      strcpy(data.cmd[data.NBcmd].info,"Apply real-time linear predictive filter");
-      strcpy(data.cmd[data.NBcmd].syntax,"<input data> <predictor filter> <output>");
-      strcpy(data.cmd[data.NBcmd].example,"applyPfiltRT indata Pfilt outPF");
-      strcpy(data.cmd[data.NBcmd].Ccall,"long LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name, const char *IDin_name, const char *IDout_name)");
-      data.NBcmd++;
-    */
-
-    RegisterCLIcommand("applyARpfilt",
-                       __FILE__,
-                       LINARFILTERPRED_Apply_LinPredictor_cli,
-                       "Apply linear auto-regressive filter",
-                       "<input data> <predictor> <PFlag> <prediction>",
-                       "applyARpfilt indata Pfilt 2.4 outPF",
-                       "long LINARFILTERPRED_Apply_LinPredictor(const char "
-                       "*IDfilt_name, const char *IDin_name, float "
-                       "PFlag, const char *IDout_name)");
-
-    RegisterCLIcommand(
-        "mscangain",
-        __FILE__,
-        LINARFILTERPRED_ScanGain_cli,
-        "scan gain",
-        "<input mode values> <multiplicative factor (leak)> <latency [frame]>",
-        "mscangain olwfsmeas 0.98 2.65",
-        "LINARFILTERPRED_ScanGain(char* IDin_name, float multfact, float "
-        "framelag)");
-
-    RegisterCLIcommand("linARPFMupdate",
-                       __FILE__,
-                       LINARFILTERPRED_PF_updatePFmatrix_cli,
-                       "update predictive filter matrix",
-                       "<input 3D predictor> <output 2D matrix> <update coeff>",
-                       "linARPFMupdate outPF PFMat 0.1",
-                       "long LINARFILTERPRED_PF_updatePFmatrix(const char "
-                       "*IDPF_name, const char *IDPFM_name, float alpha)");
-
-    RegisterCLIcommand(
-        "linARapplyRT",
-        __FILE__,
-        LINARFILTERPRED_PF_RealTimeApply_cli,
-        "Real-time apply predictive filter",
-        "<input open loop coeffs stream> <offset index> <trigger semaphore "
-        "index> <2D predictive "
-        "matrix> <filter order> <output stream> <nbGPU> <loop> <NBiter> "
-        "<savemode> <timelag> <PFindex>",
-        "linARapplyRT modevalOL 0 2 PFmat 5 outPFmodeval 0 0 0 0 1.8 0",
-        "long LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalOL_name, "
-        "long IndexOffset, int "
-        "semtrig, const char *IDPFM_name, long NBPFstep, const char "
-        "*IDPFout_name, int nbGPU, long "
-        "loop, long NBiter, int SAVEMODE, float tlag, long PFindex)");
-
-
-
+    {
+        safe_fps_fill_farg_examples(
+            farg, la_b, la_nb);
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            sb_farg, sb_b, sb_nb);
+        int cmdi = RegisterCLIcmd(
+            sb_d, sb_CLIfunc);
+        sb_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            rs_farg, rs_b, rs_nbb);
+        int cmdi = RegisterCLIcmd(
+            rs_d, rs_CLIfunc);
+        rs_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            mk_farg, mk_b, mk_nbb);
+        int cmdi = RegisterCLIcmd(
+            mk_d, mk_CLIfunc);
+        mk_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            ap_farg, ap_b, ap_nbb);
+        int cmdi = RegisterCLIcmd(
+            ap_d, ap_CLIfunc);
+        ap_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            sg_farg, sg_b, sg_nbb);
+        int cmdi = RegisterCLIcmd(
+            sg_d, sg_CLIfunc);
+        sg_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            pu_farg, pu_b, pu_nbb);
+        int cmdi = RegisterCLIcmd(
+            pu_d, pu_CLIfunc);
+        pu_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            rt_farg, rt_b, rt_nbb);
+        int cmdi = RegisterCLIcmd(
+            rt_d, rt_CLIfunc);
+        rt_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     CLIADDCMD_LinARfilterPred__build_linPF();
     CLIADDCMD_LinARfilterPred__applyPF();
