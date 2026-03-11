@@ -1,13 +1,11 @@
 /**
  * @file cubestats.h
- * @brief Cubestats module
+ * @brief Image cube stats
  */
 
-/** @file cubestats.h
- */
+errno_t CLIADDCMD_info__cubestats();
 
-errno_t cubestats_addCLIcmd();
-
-imageID info_cubestats(const char *ID_name,
-                       const char *IDmask_name,
-                       const char *outfname);
+imageID info_cubestats(
+    const char *ID_name,
+    const char *IDmask_name,
+    const char *outfname);
