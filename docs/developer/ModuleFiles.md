@@ -32,3 +32,6 @@ are built separately and installed to `bin/`.
 - Core module: `src/coremods/COREMOD_memory/`
 - Plugin module: `plugins/milk-extra-src/fft/`
 - Template module: `src/milk_module_example/`
+
+---
+← [Documentation Index](../index.md)

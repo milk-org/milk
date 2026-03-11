@@ -51,3 +51,6 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 
 ***
 *Can't find what you're looking for? Check the [Automatically Generated Document Index](Markdown_Index.md) for all plugin READMEs.*
+
+---
+← [Documentation Index](index.md)

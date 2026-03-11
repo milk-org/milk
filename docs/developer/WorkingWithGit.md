@@ -69,3 +69,6 @@ Merge `dev` into `main`, then tag:
 
 For generating HTML source code documentation via Doxygen, refer to the
 up-to-date guide in [DocumentingCode.md](DocumentingCode.md).
+
+---
+← [Documentation Index](../index.md)

@@ -124,3 +124,6 @@ int functiontemplate_usingprocessinfo() {
     return RETURN_SUCCESS;
 }
 ```
+
+---
+← [Documentation Index](index.md)

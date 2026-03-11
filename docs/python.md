@@ -181,3 +181,6 @@ $ pip install .
 See
 [`python_module/README.md`](../python_module/README.md)
 for usage details.
+
+---
+← [Documentation Index](index.md)

@@ -1,20 +1,20 @@
 # Module: image_gen
 
-Generate test images, useful images.
+Creating images (shapes, useful functions, and patterns).
 
 ## Source Files
 
 | File | Description |
 |------|-------------|
-| `mkrandomim.c` | Make random image |
-| `voronoi.c` | Voronoi module |
+| `mkrandomim.c` | Generate random-noise images |
+| `voronoi.c` | Generate Voronoi tessellation patterns |
 
 ## Standalone Executables
 
 | Executable | Source File | Description |
 |------------|-------------|-------------|
-| `milk-fpsexec-imggen-mkrandom` | `mkrandomim.c` | Make random image |
-| `milk-fpsexec-imggen-voronoi` | `voronoi.c` | Voronoi module |
+| `milk-fpsexec-imggen-mkrandom` | `mkrandomim.c` | Generate random-noise images |
+| `milk-fpsexec-imggen-voronoi` | `voronoi.c` | Generate Voronoi tessellation patterns |
 
 ## Dependencies
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
