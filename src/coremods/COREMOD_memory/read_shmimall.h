@@ -1,17 +1,9 @@
 /**
  * @file read_shmimall.h
- * @brief Read shmimall module
+ * @brief Read all shared memory streams
  */
 
-/**
- * @file    read_shmimall.h
- */
+errno_t CLIADDCMD_COREMOD_memory__read_shmimall();
 
-#ifndef _READ_SHMIMALL_H
-#define _READ_SHMIMALL_H
-
-errno_t read_shmimall_addCLIcmd();
-
-imageID read_sharedmem_image_all(const char *strfilter);
-
-#endif
+errno_t read_sharedmem_image_all(
+    const char *strfilter);

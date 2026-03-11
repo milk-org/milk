@@ -1,14 +1,11 @@
 /**
  * @file images2cube.h
- * @brief Images2cube module
+ * @brief Combine individual images into cube
  */
 
-/**
- * @file    images2cube.h
- */
+errno_t CLIADDCMD_COREMOD_iofits__images2cube();
 
-errno_t images2cube_addCLIcmd();
-
-errno_t images_to_cube(const char *restrict img_name,
-                       long nbframes,
-                       const char *restrict cube_name);
+errno_t images_to_cube(
+    const char *restrict img_name,
+    long nbframes,
+    const char *restrict cube_name);

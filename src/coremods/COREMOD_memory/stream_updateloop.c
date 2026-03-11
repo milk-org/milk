@@ -1,4 +1,6 @@
 /** @file stream_updateloop.c
+ *
+ * Uses FPS V2 framework.
  */
 
 #include <sched.h>
@@ -8,6 +10,7 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 #include "timeutils.h"
 
 #include "create_image.h"
@@ -16,148 +19,335 @@
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decls */
+errno_t COREMOD_MEMORY_image_streamburst(
+    const char *IDin_name,
+    const char *IDout_name,
+    long periodus);
 
-errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
-        const char *IDout_name,
-        long        periodus);
+imageID COREMOD_MEMORY_image_streamupdateloop(
+    const char *IDinname,
+    const char *IDoutname,
+    long usperiod,
+    long NBcubes,
+    long period,
+    long offsetus,
+    const char *IDsync_name,
+    int semtrig,
+    int timingmode);
 
-imageID COREMOD_MEMORY_image_streamupdateloop(const char *IDinname,
-        const char *IDoutname,
-        long        usperiod,
-        long        NBcubes,
-        long        period,
-        long        offsetus,
-        const char *IDsync_name,
-        int         semtrig,
-        int         timingmode);
+imageID
+COREMOD_MEMORY_image_streamupdateloop_semtrig(
+    const char *IDinname,
+    const char *IDoutname,
+    long period,
+    long offsetus,
+    const char *IDsync_name,
+    int semtrig,
+    int timingmode);
 
-imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(const char *IDinname,
-        const char *IDoutname,
-        long        period,
-        long        offsetus,
-        const char *IDsync_name,
-        int         semtrig,
-        int         timingmode);
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+/* ================================================================
+ *  COMMON PARAMS
+ * ============================================================= */
 
-static errno_t COREMOD_MEMORY_image_streamburst__cli()
+static char p_inname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "imcube";
+static char p_outname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "outstream";
+static long long p_usperiod = 1000;
+static long long p_NBcubes = 3;
+static long long p_period = 3;
+static long long p_offsetus = 154;
+static char p_syncname[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "ircam1";
+static long long p_semtrig = 3;
+static long long p_timingmode = 0;
+
+
+/* ================================================================
+ *  CMD 1: streamburst (3 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_burst = {
+    .fps_name    = "streamburst",
+    .cmdkey      = "streamburst",
+    .description =
+        "send burst of frames to stream"
+};
+
+#define FPS_PARAMS_BURST(X) \
+    X(".inname", p_inname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input cube") \
+    X(".outname", p_outname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output stream") \
+    X(".usperiod", &p_usperiod, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "period [us]")
+
+static CLICMDDATA CLIcmddata_burst = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_burst = {0};
+
+static __attribute__((constructor))
+void init_cms_burst(void)
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) +
-            CLI_checkarg(3, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_streamburst(data.cmdargtoken[1].val.string,
-                                         data.cmdargtoken[2].val.string,
-                                         data.cmdargtoken[3].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_burst.key,
+            FPS_app_info_burst.cmdkey,
+            sizeof(CLIcmddata_burst.key)
+            - 1);
+    strncpy(
+        CLIcmddata_burst.description,
+        FPS_app_info_burst.description,
+        sizeof(
+            CLIcmddata_burst.description
+        ) - 1);
+    if (CLIcmddata_burst.cmdsettings
+        == NULL) {
+        CLIcmddata_burst.cmdsettings =
+            &cms_burst;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_streamupdateloop__cli()
+static errno_t compute_burst()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_INT64) + CLI_checkarg(6, CLIARG_INT64) +
-            CLI_checkarg(7, CLIARG_STR) + CLI_checkarg(8, CLIARG_INT64) +
-            CLI_checkarg(9, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_streamupdateloop(data.cmdargtoken[1].val.string,
-                                              data.cmdargtoken[2].val.string,
-                                              data.cmdargtoken[3].val.numl,
-                                              data.cmdargtoken[4].val.numl,
-                                              data.cmdargtoken[5].val.numl,
-                                              data.cmdargtoken[6].val.numl,
-                                              data.cmdargtoken[7].val.string,
-                                              data.cmdargtoken[8].val.numl,
-                                              data.cmdargtoken[9].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    COREMOD_MEMORY_image_streamburst(
+        p_inname, p_outname, p_usperiod);
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 2: creaimstream (9 args, primary)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "creaimstream",
+    .cmdkey      = "creaimstream",
+    .description =
+        "create 2D stream from 3D cube"
+};
+
+#define FPS_PARAMS(X) \
+    X(".inname", p_inname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input 3D cube") \
+    X(".outname", p_outname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output 2D stream") \
+    X(".usperiod", &p_usperiod, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "interval [us]") \
+    X(".NBcubes", &p_NBcubes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of cubes") \
+    X(".period", &p_period, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sync period") \
+    X(".offsetus", &p_offsetus, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "time offset [us]") \
+    X(".syncname", p_syncname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sync stream name") \
+    X(".semtrig", &p_semtrig, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sem trigger index") \
+    X(".timingmode", &p_timingmode, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "timing mode")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_main = {0};
+
+static __attribute__((constructor))
+void init_cms_main(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms_main;
     }
 }
 
-static errno_t COREMOD_MEMORY_image_streamupdateloop_semtrig__cli()
+static errno_t compute_function()
 {
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_INT64) +
-            CLI_checkarg(5, CLIARG_STR) + CLI_checkarg(6, CLIARG_INT64) +
-            CLI_checkarg(7, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_image_streamupdateloop_semtrig(
-            data.cmdargtoken[1].val.string,
-            data.cmdargtoken[2].val.string,
-            data.cmdargtoken[3].val.numl,
-            data.cmdargtoken[4].val.numl,
-            data.cmdargtoken[5].val.string,
-            data.cmdargtoken[6].val.numl,
-            data.cmdargtoken[7].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    COREMOD_MEMORY_image_streamupdateloop(
+        p_inname, p_outname,
+        p_usperiod, p_NBcubes,
+        p_period, p_offsetus,
+        p_syncname, p_semtrig,
+        p_timingmode);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  CMD 3: creaimstreamstrig (7 args)
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_strig = {
+    .fps_name    = "creaimstreamstrig",
+    .cmdkey      = "creaimstreamstrig",
+    .description =
+        "create 2D stream from 3D cube "
+        "(sem-triggered)"
+};
+
+static CLICMDDATA CLIcmddata_strig = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+static CMDSETTINGS cms_strig = {0};
+
+static __attribute__((constructor))
+void init_cms_strig(void)
+{
+    strncpy(CLIcmddata_strig.key,
+            FPS_app_info_strig.cmdkey,
+            sizeof(CLIcmddata_strig.key)
+            - 1);
+    strncpy(
+        CLIcmddata_strig.description,
+        FPS_app_info_strig.description,
+        sizeof(
+            CLIcmddata_strig.description
+        ) - 1);
+    if (CLIcmddata_strig.cmdsettings
+        == NULL) {
+        CLIcmddata_strig.cmdsettings =
+            &cms_strig;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t stream_updateloop_addCLIcmd()
+static errno_t compute_strig()
 {
-    RegisterCLIcommand("streamburst",
-                       __FILE__,
-                       COREMOD_MEMORY_image_streamburst__cli,
-                       "send burst of frames to stream",
-                       "<input cube> <output stream> <period[us]>",
-                       "streamburst inC outstream 1000",
-                       "errno_t COREMOD_MEMORY_image_streamburst(const char "
-                       "*IDin_name, const char *IDout_name, long periodus)");
+    COREMOD_MEMORY_image_streamupdateloop_semtrig(
+        p_inname, p_outname,
+        p_period, p_offsetus,
+        p_syncname, p_semtrig,
+        p_timingmode);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "creaimstream",
-        __FILE__,
-        COREMOD_MEMORY_image_streamupdateloop__cli,
-        "create 2D image stream from 3D cube",
-        "<image3d in> <image2d out> <interval [us]> <NBcubes> <period> "
-        "<offsetus> <sync stream name> <semtrig> <timing "
-        "mode>",
-        "creaimstream imcube imstream 1000 3 3 154 ircam1 3 0",
-        "long COREMOD_MEMORY_image_streamupdateloop(const char *IDinname, "
-        "const char *IDoutname, long usperiod, long "
-        "NBcubes, long period, long offsetus, const char *IDsync_name, int "
-        "semtrig, int timingmode)");
 
-    RegisterCLIcommand(
-        "creaimstreamstrig",
-        __FILE__,
-        COREMOD_MEMORY_image_streamupdateloop_semtrig__cli,
-        "create 2D image stream from 3D cube, use other stream to synchronize",
-        "<image3d in> <image2d out> <period [int]> <delay [us]> <sync stream> "
-        "<sync sem index> <timing mode>",
-        "creaimstreamstrig imcube outstream 3 152 streamsync 3 0",
-        "long COREMOD_MEMORY_image_streamupdateloop_semtrig(const char "
-        "*IDinname, const char *IDoutname, long period, "
-        "long offsetus, const char *IDsync_name, int semtrig, int timingmode)");
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+/* separate bindings for burst (3 args) */
+static FPS_CLI_BINDING bindings_burst[] = {
+    FPS_PARAMS_BURST(FPS_X_BINDING)
+};
+static const int nb_bindings_burst =
+    sizeof(bindings_burst) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_burst[] = {
+    FPS_PARAMS_BURST(FPS_X_FARG)
+};
+
+static errno_t CLIfunction_burst(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_burst,
+        farg_burst, &CLIcmddata_burst,
+        bindings_burst, nb_bindings_burst,
+        compute_burst);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+static errno_t CLIfunction_strig(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_strig,
+        farg, &CLIcmddata_strig,
+        my_bindings, nb_bindings,
+        compute_strig);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_updateloop()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    safe_fps_fill_farg_examples(
+        farg_burst, bindings_burst,
+        nb_bindings_burst);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_burst,
+            CLIfunction_burst);
+        CLIcmddata_burst.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_strig,
+            CLIfunction_strig);
+        CLIcmddata_strig.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
 /** @brief Send single burst of frames to stream
  *
  */

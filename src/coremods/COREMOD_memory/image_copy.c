@@ -1,10 +1,8 @@
 /**
- * @file image_copy.c
- * @brief Image copy module
- */
-
-/**
  * @file    image_copy.c
+ * @brief   image copy, rename, copy to shm
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -12,6 +10,7 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -21,113 +20,240 @@
 #include "stream_sem.h"
 #include "image_copy.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* forward decls */
+imageID copy_image_ID(
+    const char *name,
+    const char *newname, int shared);
+imageID copy_image_ID_IMGID(
+    IMGID *imgin, IMGID *imgout, int shared);
+imageID chname_image_ID(
+    const char *ID_name,
+    const char *new_name);
+imageID chname_image_ID_IMGID(
+    IMGID *imgin, const char *new_name);
+errno_t COREMOD_MEMORY_cp2shm(
+    const char *IDname,
+    const char *IDshmname);
+errno_t COREMOD_MEMORY_cp2shm_IMGID(
+    IMGID *imgin, IMGID *imgout);
 
-imageID copy_image_ID(const char *name, const char *newname, int shared);
-imageID copy_image_ID_IMGID(IMGID *imgin, IMGID *imgout, int shared);
 
-imageID chname_image_ID(const char *ID_name, const char *new_name);
-imageID chname_image_ID_IMGID(IMGID *imgin, const char *new_name);
+/* ================================================================
+ *  COMMON PARAMS (2 string args)
+ * ============================================================= */
 
-errno_t COREMOD_MEMORY_cp2shm(const char *IDname, const char *IDshmname);
-errno_t COREMOD_MEMORY_cp2shm_IMGID(IMGID *imgin, IMGID *imgout);
+static char p_srcname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_dstname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im4";
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+#define FPS_PARAMS_2STR(X) \
+    X(".srcname", p_srcname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "source image") \
+    X(".dstname", p_dstname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "destination image")
 
-static errno_t copy_image_ID__cli()
+
+/* ================================================================
+ *  CMD 1: cp
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_cp = {
+    .fps_name    = "cp",
+    .cmdkey      = "cp",
+    .description = "copy image"
+};
+
+static CLICMDDATA CLIcmddata_cp = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS cms_cp = {0};
+
+static __attribute__((constructor))
+void init_cms_cp(void)
 {
-    if(data.cmdargtoken[1].type != CLIARG_IMG)
-    {
-        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_cp.key,
+            FPS_app_info_cp.cmdkey,
+            sizeof(CLIcmddata_cp.key) - 1);
+    strncpy(CLIcmddata_cp.description,
+            FPS_app_info_cp.description,
+            sizeof(
+                CLIcmddata_cp.description
+            ) - 1);
+    if (CLIcmddata_cp.cmdsettings == NULL) {
+        CLIcmddata_cp.cmdsettings = &cms_cp;
     }
-
-    copy_image_ID(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
-                  0);
-
-    return CLICMD_SUCCESS;
 }
 
-static errno_t chname_image_ID__cli()
+static errno_t compute_cp()
 {
-    if(data.cmdargtoken[1].type != CLIARG_IMG)
-    {
-        printf("Image %s does not exist\n", data.cmdargtoken[1].val.string);
-        return CLICMD_INVALID_ARG;
-    }
-
-    chname_image_ID(data.cmdargtoken[1].val.string,
-                    data.cmdargtoken[2].val.string);
-
-    return CLICMD_SUCCESS;
+    copy_image_ID(p_srcname, p_dstname, 0);
+    return RETURN_SUCCESS;
 }
 
-static errno_t COREMOD_MEMORY_cp2shm__cli()
+
+/* ================================================================
+ *  CMD 2: mv
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info_mv = {
+    .fps_name    = "mv",
+    .cmdkey      = "mv",
+    .description = "change image name"
+};
+
+static CLICMDDATA CLIcmddata_mv = {
+    "", "", CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS cms_mv = {0};
+
+static __attribute__((constructor))
+void init_cms_mv(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) == 0)
-    {
-        COREMOD_MEMORY_cp2shm(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_mv.key,
+            FPS_app_info_mv.cmdkey,
+            sizeof(CLIcmddata_mv.key) - 1);
+    strncpy(CLIcmddata_mv.description,
+            FPS_app_info_mv.description,
+            sizeof(
+                CLIcmddata_mv.description
+            ) - 1);
+    if (CLIcmddata_mv.cmdsettings == NULL) {
+        CLIcmddata_mv.cmdsettings = &cms_mv;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t image_copy_addCLIcmd()
+static errno_t compute_mv()
 {
-    RegisterCLIcommand(
-        "cp",
-        __FILE__,
-        copy_image_ID__cli,
-        "copy image",
-        "source, dest",
-        "cp im1 im4",
-        "long copy_image_ID(const char *name, const char *newname, 0)");
+    chname_image_ID(p_srcname, p_dstname);
+    return RETURN_SUCCESS;
+}
 
-  /*  RegisterCLIcommand(
-        "cpsh",
-        __FILE__,
-        copy_image_ID_sharedmem__cli,
-        "copy image - create in shared mem if does not exist",
-        "source, dest",
-        "cp im1 im4",
-        "long copy_image_ID(const char *name, const char *newname, 1)");
-*/
 
-    RegisterCLIcommand(
-        "mv",
-        __FILE__,
-        chname_image_ID__cli,
-        "change image name",
-        "source, dest",
-        "mv im1 im4",
-        "long chname_image_ID(const char *name, const char *newname)");
+/* ================================================================
+ *  CMD 3: imcp2shm (primary)
+ * ============================================================= */
 
-    RegisterCLIcommand("imcp2shm",
-                       __FILE__,
-                       COREMOD_MEMORY_cp2shm__cli,
-                       "copy image ot shared memory",
-                       "<image> <shared mem image>",
-                       "imcp2shm im1 ims1",
-                       "long COREMOD_MEMORY_cp2shm(const char *IDname, const "
-                       "char *IDshmname)");
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imcp2shm",
+    .cmdkey      = "imcp2shm",
+    .description =
+        "copy image to shared memory"
+};
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS_2STR(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_2STR(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS cms_shm = {0};
+
+static __attribute__((constructor))
+void init_cms_shm(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms_shm;
+    }
+}
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+    COREMOD_MEMORY_cp2shm(
+        p_srcname, p_dstname);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ *  REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+
+static errno_t CLIfunction_cp(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_cp,
+        farg, &CLIcmddata_cp,
+        my_bindings, nb_bindings,
+        compute_cp);
+}
+
+static errno_t CLIfunction_mv(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_mv,
+        farg, &CLIcmddata_mv,
+        my_bindings, nb_bindings,
+        compute_mv);
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__image_copy()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_cp, CLIfunction_cp);
+        CLIcmddata_cp.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_mv, CLIfunction_mv);
+        CLIcmddata_mv.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
-#endif /* MILK_NO_CLI */
+#endif
 imageID copy_image_ID_IMGID(
     IMGID *imgin,
     IMGID *imgout,

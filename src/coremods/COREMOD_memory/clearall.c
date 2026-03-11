@@ -1,9 +1,8 @@
 /**
- * @file clearall.c
- * @brief Clearall module
- */
-
-/** @file clearall.c
+ * @file    clearall.c
+ * @brief   remove all images, variables, and FPS
+ *
+ * Uses FPS V2 framework.
  */
 
 #ifdef MILK_NO_CLI
@@ -11,39 +10,42 @@
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "delete_image.h"
 #include "delete_variable.h"
 #include "image_ID.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
-errno_t clearall();
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "rmall",
+    .cmdkey      = "rmall",
+    .description = "remove all images"
+};
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
-errno_t clearall_addCLIcmd()
-{
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    RegisterCLIcommand("rmall",
-                       __FILE__,
-                       clearall,
-                       "remove all images",
-                       "no argument",
-                       "rmall",
-                       "int clearall()");
+/* (none — zero-arg command) */
 
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X)  /* empty */
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
 errno_t clearall()
 {
     imageID ID;
@@ -53,7 +55,9 @@ errno_t clearall()
     {
         if(dcimg[ID].used == 1)
         {
-            delete_image_ID(dcimg[ID].name, DELETE_IMAGE_ERRMODE_WARNING);
+            delete_image_ID(
+                dcimg[ID].name,
+                DELETE_IMAGE_ERRMODE_WARNING);
         }
     }
 
@@ -67,10 +71,11 @@ errno_t clearall()
     }
 
     // clear FPS
-
-    for(int fpsindex = 0; fpsindex < dcnfps; fpsindex++)
+    for(int fpsindex = 0;
+        fpsindex < dcnfps; fpsindex++)
     {
-        DEBUG_TRACEPOINT("clear FPS %d", fpsindex);
+        DEBUG_TRACEPOINT(
+            "clear FPS %d", fpsindex);
         dcfpsarr[fpsindex].SMfd = -1;
         if(dcfpsarr[fpsindex].parray != NULL)
         {
@@ -85,3 +90,75 @@ errno_t clearall()
     return RETURN_SUCCESS;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_NOPARAM
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    FUNC_CHECK_RETURN(clearall());
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, NULL, &CLIcmddata,
+        NULL, 0,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__clearall()
+{
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif

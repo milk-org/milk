@@ -1,17 +1,19 @@
 /**
- * @file stream_pixmapdecode.c
- * @brief Stream pixmapdecode module
+ * @file    stream_pixmapdecode.c
+ * @brief   decode image stream via pixel map
+ *
+ * Uses FPS V2 framework.
  */
 
 #include "ImageStreamIO/ImageStruct.h"
-/** @file stream_pixmapdecode.c
- */
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else
 #include "CLIcore.h"
 #endif
+#include "fps.h"
+
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
@@ -21,73 +23,96 @@
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #endif
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
-imageID COREMOD_MEMORY_PixMapDecode_U(const char *inputstream_name,
-                                      uint32_t    xsizeim,
-                                      uint32_t    ysizeim,
-                                      const char *NBpix_fname,
-                                      const char *IDmap_name,
-                                      const char *IDout_name,
-                                      const char *IDout_pixslice_fname,
-                                      uint32_t    reverse);
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// ==========================================
-#ifndef MILK_NO_CLI
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "impixdecodeU",
+    .cmdkey      = "impixdecodeU",
+    .description =
+        "decode image stream"
+};
 
-static errno_t COREMOD_MEMORY_PixMapDecode_U__cli()
-{
-    if(0 + CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(5, CLIARG_IMG) + CLI_checkarg(6, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(7, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(8, CLIARG_INT64) ==
-            0)
-    {
-        COREMOD_MEMORY_PixMapDecode_U(data.cmdargtoken[1].val.string,
-                                      data.cmdargtoken[2].val.numl,
-                                      data.cmdargtoken[3].val.numl,
-                                      data.cmdargtoken[4].val.string,
-                                      data.cmdargtoken[5].val.string,
-                                      data.cmdargtoken[6].val.string,
-                                      data.cmdargtoken[7].val.string,
-                                      data.cmdargtoken[8].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
-}
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-errno_t stream_pixmapdecode_addCLIcmd()
-{
-    RegisterCLIcommand("impixdecodeU",
-                       __FILE__,
-                       COREMOD_MEMORY_PixMapDecode_U__cli,
-                       "decode image stream",
-                       "<in stream> <xsize [long]> <ysize [long]> <nbpix per "
-                       "slice [ASCII file]> <decode map> <out "
-                       "stream> <out image slice index [FITS]> <reverse mode>",
-                       "impixdecodeU streamin 120 120 pixsclienb.txt decmap "
-                       "outim outsliceindex.fits 0",
-                       "COREMOD_MEMORY_PixMapDecode_U(const char "
-                       "*inputstream_name, uint32_t xsizeim, uint32_t "
-                       "ysizeim, const char* NBpix_fname, const char* "
-                       "IDmap_name, const char *IDout_name, const char "
-                       "*IDout_pixslice_fname, uint32_t reverse)");
+static char p_instream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "streamin";
 
-    return RETURN_SUCCESS;
-}
-#endif /* MILK_NO_CLI */
+static long long p_xsizeim  = 120;
+static long long p_ysizeim  = 120;
+
+static char p_nbpix_fname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "pixsclienb.txt";
+
+static char p_mapname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "decmap";
+
+static char p_outname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+
+static char p_outslice[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outsliceindex.fits";
+
+static long long p_reverse = 0;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_stream", p_instream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".xsizeim", &p_xsizeim, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output x size") \
+    X(".ysizeim", &p_ysizeim, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output y size") \
+    X(".nbpix_fname", p_nbpix_fname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "nb pix per slice file") \
+    X(".mapname", p_mapname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "decode map") \
+    X(".out_name", p_outname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output stream") \
+    X(".out_pixslice", p_outslice, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output slice index file") \
+    X(".reverse", &p_reverse, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "reverse mode (0/1)")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC — forward decl
+ * ============================================================= */
+
+imageID COREMOD_MEMORY_PixMapDecode_U(
+    const char *inputstream_name,
+    uint32_t    xsizeim,
+    uint32_t    ysizeim,
+    const char *NBpix_fname,
+    const char *IDmap_name,
+    const char *IDout_name,
+    const char *IDout_pixslice_fname,
+    uint32_t    reverse);
 //
 // pixel decode for unsigned short
 // sem0, cnt0 gets updated at each full frame
@@ -494,3 +519,96 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     return IDout;
 }
 
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
+    CLICMD_FIELDS_DEFAULTS
+};
+
+static CMDSETTINGS default_cmdsettings = {0};
+
+static __attribute__((constructor))
+void init_cmdsettings(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
+}
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    COREMOD_MEMORY_PixMapDecode_U(
+        p_instream, p_xsizeim, p_ysizeim,
+        p_nbpix_fname, p_mapname,
+        p_outname, p_outslice, p_reverse);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_pixmapdecode()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif
