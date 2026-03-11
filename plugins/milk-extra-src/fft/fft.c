@@ -51,12 +51,12 @@ static errno_t init_module_CLI()
     //fftwf_set_timelimit(1000.0);
     //fftw_set_timelimit(1000.0);
 
-    init_fftwplan_addCLIcmd();
-    permut_addCLIcmd();
-    dofft_addCLIcmd();
-    testfftspeed_addCLIcmd();
-    ffttranslate_addCLIcmd();
-    fftcorrelation_addCLIcmd();
+    CLIADDCMD_milkfft__init_fftwplan();
+    CLIADDCMD_milkfft__permut();
+    CLIADDCMD_milkfft__dofft();
+    CLIADDCMD_milkfft__testfftspeed();
+    CLIADDCMD_milkfft__ffttranslate();
+    CLIADDCMD_milkfft__fftcorrelation();
 
     CLIADDCMD_milk_fft__pup2foc();
 

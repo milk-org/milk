@@ -8,7 +8,7 @@
 
 #include "CLIcore.h"
 
-errno_t dofft_addCLIcmd();
+errno_t CLIADDCMD_milkfft__dofft();
 
 imageID do1dfft(
     const char *in_name,
