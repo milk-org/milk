@@ -23,7 +23,6 @@ Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS, 
 | `basis_rotate_match.c` | Rotate and match modal basis sets |
 | `cublas_Coeff2Map_Loop.c` | cuBLAS coefficient-to-map streaming loop |
 | `cublas_PCA.c` | PCA decomposition via cuBLAS |
-| `cublas_linalgebra_MVMextractModesLoop.c` | CUDA MVM mode-extraction loop wrapper |
 | `cublas_linalgebratest.c` | cuBLAS linear algebra test/benchmark |
 | `linalgebrainit.c` | Initialize CUDA and MAGMA contexts |
 | `magma_MatMatMult_testPseudoInverse.c` | Test pseudo-inverse via MAGMA MatMatMult |
