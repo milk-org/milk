@@ -51,7 +51,6 @@
 #endif
 
 
-
 errno_t printInfo()
 {
     float f1;
@@ -422,8 +421,6 @@ errno_t printInfo()
 }
 
 
-
-
 errno_t list_commands()
 {
     int cols = 120; // default
@@ -472,8 +469,6 @@ errno_t list_commands()
 
     return RETURN_SUCCESS;
 }
-
-
 
 
 errno_t list_commands_module(const char *__restrict modulename)
@@ -569,7 +564,6 @@ errno_t list_commands_module(const char *__restrict modulename)
 
     return RETURN_SUCCESS;
 }
-
 
 
 /** @brief Construct command line (CLI) arguments help string
@@ -676,7 +670,6 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
 
     return strlen(outargstring);
 }
-
 
 
 /** @brief Assemble command line (CLI) example command string
@@ -1103,8 +1096,6 @@ errno_t help_command(
 
     return RETURN_SUCCESS;
 }
-
-
 
 
 /**

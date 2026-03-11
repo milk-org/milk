@@ -7,8 +7,6 @@
 #include "timeutils.h"
 
 
-
-
 // set to 1 if logging
 // toggles to 0 (don't log), 1 (log to shmdir) or 2 (custom log file)
 //
@@ -42,16 +40,12 @@ int get_FLAG_FPSOUTLOG()
 }
 
 
-
 errno_t set_FLAG_FPSOUTLOG(int val)
 {
     FLAG_FPSOUTLOG = val;
 
     return RETURN_SUCCESS;
 }
-
-
-
 
 
 /** @brief Get FPS log filename
@@ -85,7 +79,6 @@ errno_t getFPSlogfname(
 
     return RETURN_SUCCESS;
 }
-
 
 
 errno_t functionparameter_outlog_file(
@@ -123,8 +116,6 @@ errno_t functionparameter_outlog_file(
 
     return RETURN_SUCCESS;
 }
-
-
 
 
 /**
@@ -217,8 +208,6 @@ errno_t functionparameter_outlog(
 
     return RETURN_SUCCESS;
 }
-
-
 
 
 /** @brief Establish sym link for convenience

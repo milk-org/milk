@@ -294,7 +294,6 @@ imageID COREMOD_MEMORY_stream_halfimDiff(const char *IDstream_name,
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */

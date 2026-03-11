@@ -29,8 +29,6 @@
 #include "fps_printparameter_valuestring.h"
 
 
-
-
 /** @brief process command line
  *
  * ## Purpose
@@ -700,7 +698,6 @@ int functionparameter_FPSprocess_cmdline(
         }
 
 
-
         // fpsrm
         //
         if((cmdFOUND == 0) && (strcmp(FPScommand, "fpsrm") == 0))
@@ -769,7 +766,6 @@ int functionparameter_FPSprocess_cmdline(
                 }
             }
         }
-
 
 
         // setval
@@ -1220,8 +1216,6 @@ int functionparameter_FPSprocess_cmdline(
         }
 
 
-
-
         // getval or fwrval
         //
         if((cmdFOUND == 0) && ((strcmp(FPScommand, "getval") == 0) ||
@@ -1319,8 +1313,6 @@ int functionparameter_FPSprocess_cmdline(
 
     return fpsindex;
 }
-
-
 
 
 int functionparameter_FPSprocess_cmdfile(

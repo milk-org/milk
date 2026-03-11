@@ -131,7 +131,8 @@ void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm) {
                     
                     if (pindex < PROCESSINFOLISTSIZE) {
                         int fd;
-                        PROCESSINFO *pinfo = processinfo_shm_link(fullpath, &fd);
+                        PROCESSINFO *pinfo = processinfo_shm_link(fullpath,
+                            &fd);
                         if (pinfo != (PROCESSINFO *)MAP_FAILED) {
                             // Check if still alive
                             if (kill(pid, 0) == 0) {
@@ -142,14 +143,20 @@ void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm) {
                             }
                             
                             pinfolist->PIDarray[pindex] = pid;
-                            strncpy(pinfolist->pnamearray[pindex], name, STRINGMAXLEN_PROCESSINFO_NAME - 1);
+                            strncpy(pinfolist->pnamearray[pindex],
+                                name,
+                                STRINGMAXLEN_PROCESSINFO_NAME - 1);
                             pinfolist->createtime[pindex] = 1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
                             
                             // Restore stats in scan_shm
                             scan_shm->pinfodisp[pindex].PID = pid;
                             scan_shm->pinfodisp[pindex].loopcnt = pinfo->loopcnt;
-                            strncpy(scan_shm->pinfodisp[pindex].name, pinfo->name, 39);
-                            strncpy(scan_shm->pinfodisp[pindex].statusmsg, pinfo->statusmsg, 199);
+                            strncpy(scan_shm->pinfodisp[pindex].name,
+                                pinfo->name,
+                                39);
+                            strncpy(scan_shm->pinfodisp[pindex].statusmsg,
+                                pinfo->statusmsg,
+                                199);
 
                             processinfo_shm_close(pinfo, fd);
                             pindex++;
@@ -270,15 +277,20 @@ int main(int argc, char *argv[]) {
                         char SM_fname[STRINGMAXLEN_FULLFILENAME];
                         snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
                         int fd;
-                        PROCESSINFO *pinfo = processinfo_shm_link(SM_fname, &fd);
+                        PROCESSINFO *pinfo = processinfo_shm_link(SM_fname,
+                            &fd);
                         if (pinfo != (PROCESSINFO *)MAP_FAILED) {
                             if (pinfo->loopstat == 3) pinfolist->active[i] = 2; // STOPPED
                             else pinfolist->active[i] = 3; // CRASHED
                             
                             // FINAL SNAPSHOT
                             scan_shm->pinfodisp[i].loopcnt = pinfo->loopcnt;
-                            strncpy(scan_shm->pinfodisp[i].statusmsg, pinfo->statusmsg, 199);
-                            strncpy(scan_shm->pinfodisp[i].name, pinfo->name, 39);
+                            strncpy(scan_shm->pinfodisp[i].statusmsg,
+                                pinfo->statusmsg,
+                                199);
+                            strncpy(scan_shm->pinfodisp[i].name,
+                                pinfo->name,
+                                39);
 
                             processinfo_shm_close(pinfo, fd);
                             if (pinfo_mappings[i]) {
@@ -326,7 +338,8 @@ int main(int argc, char *argv[]) {
                     if (pinfo_mappings[i] == NULL) {
                         char SM_fname[STRINGMAXLEN_FULLFILENAME];
                         snprintf(SM_fname, sizeof(SM_fname), "%s/proc.%s.%06d.shm", procdname, pinfolist->pnamearray[i], pinfolist->PIDarray[i]);
-                        pinfo_mappings[i] = processinfo_shm_link(SM_fname, &pinfo_fds[i]);
+                        pinfo_mappings[i] = processinfo_shm_link(SM_fname,
+                            &pinfo_fds[i]);
                         if (pinfo_mappings[i] == (PROCESSINFO *)MAP_FAILED) pinfo_mappings[i] = NULL;
                     }
 
@@ -337,12 +350,20 @@ int main(int argc, char *argv[]) {
                                             scan_shm->pinfodisp[i].loopcntMax = pinfo_mappings[i]->loopcntMax;
                                             scan_shm->pinfodisp[i].loopstat = pinfo_mappings[i]->loopstat;
                                             scan_shm->pinfodisp[i].rt_priority = pinfo_mappings[i]->RT_priority;
-                                            strncpy(scan_shm->pinfodisp[i].statusmsg, pinfo_mappings[i]->statusmsg, 199);
-                                            strncpy(scan_shm->pinfodisp[i].name, pinfo_mappings[i]->name, 39);
+                                            strncpy(
+                                                scan_shm->pinfodisp[i].statusmsg,
+                                                pinfo_mappings[i]->statusmsg,
+                                                199);
+                                            strncpy(scan_shm->pinfodisp[i].name,
+                                                pinfo_mappings[i]->name,
+                                                39);
                                             
                                             // Triggering info
                                             scan_shm->pinfodisp[i].triggermode = pinfo_mappings[i]->triggermode;
-                                            strncpy(scan_shm->pinfodisp[i].triggerstreamname, pinfo_mappings[i]->triggerstreamname, 79);
+                                            strncpy(
+                                                scan_shm->pinfodisp[i].triggerstreamname,
+                                                pinfo_mappings[i]->triggerstreamname,
+                                                79);
                                             scan_shm->pinfodisp[i].triggersem = pinfo_mappings[i]->triggersem;
                                             scan_shm->pinfodisp[i].triggerstreamcnt = pinfo_mappings[i]->triggerstreamcnt;
                                             scan_shm->pinfodisp[i].triggertimeout = pinfo_mappings[i]->triggertimeout;
@@ -368,8 +389,10 @@ int main(int argc, char *argv[]) {
                                                        1000000000L * (pinfo_mappings[i]->texecend[ti0].tv_sec - pinfo_mappings[i]->texecstart[ti0].tv_sec);
                             }
                             
-                            quick_sort_long(dtiter_array, PROCESSINFO_NBtimer - 1);
-                            quick_sort_long(dtexec_array, PROCESSINFO_NBtimer - 1);
+                            quick_sort_long(dtiter_array,
+                                PROCESSINFO_NBtimer - 1);
+                            quick_sort_long(dtexec_array,
+                                PROCESSINFO_NBtimer - 1);
                             
                             pinfo_mappings[i]->dtmedian_iter_ns = dtiter_array[(PROCESSINFO_NBtimer - 1) / 2];
                             pinfo_mappings[i]->dtmedian_exec_ns = dtexec_array[(PROCESSINFO_NBtimer - 1) / 2];
@@ -401,7 +424,9 @@ int main(int argc, char *argv[]) {
         usleep(usleep_time);
     }
     
-    for(long i=0; i<PROCESSINFOLISTSIZE; i++) if(pinfo_mappings[i]) processinfo_shm_close(pinfo_mappings[i], pinfo_fds[i]);
+    for(
+        long i=0; i<PROCESSINFOLISTSIZE; i++) if(pinfo_mappings[i]) processinfo_shm_close(pinfo_mappings[i],
+        pinfo_fds[i]);
     free(timearray);
     free(indexarray);
     munmap(scan_shm, sizeof(PROCSCAN_SHM));

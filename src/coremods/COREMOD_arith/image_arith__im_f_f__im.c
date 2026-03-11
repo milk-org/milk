@@ -115,7 +115,6 @@ int arith_image_trunc_inplace_byID(long ID, double f1, double f2)
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 /* ================================================================
  * 6.  COMPUTE WRAPPER
  * ============================================================= */

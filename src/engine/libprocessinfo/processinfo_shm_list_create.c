@@ -72,7 +72,12 @@ long processinfo_shm_list_create()
         }
 
         pinfolist = (PROCESSINFOLIST *) \
-                    mmap(0, sharedsize, PROT_READ | PROT_WRITE, MAP_SHARED, SM_fd, 0);
+                    mmap(0,
+                        sharedsize,
+                        PROT_READ | PROT_WRITE,
+                        MAP_SHARED,
+                        SM_fd,
+                        0);
         if(pinfolist == MAP_FAILED)
         {
             close(SM_fd);

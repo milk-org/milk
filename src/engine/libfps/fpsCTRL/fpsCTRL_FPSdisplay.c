@@ -41,7 +41,9 @@ static void print_sliding_string(const char *str, int width, int row_index)
     
     // Total cycle time in seconds for one back-and-forth slide
     double cycle_time = 4.0; 
-    double time_in_cycle = fmod((double)now.tv_sec + (double)now.tv_nsec * 1e-9 + (double)row_index * 0.5, cycle_time);
+    double time_in_cycle = fmod(
+        (double)now.tv_sec + (double)now.tv_nsec * 1e-9 + (double)row_index * 0.5,
+        cycle_time);
     
     int max_offset = len - width;
     int offset;
@@ -200,7 +202,10 @@ errno_t fpsCTRL_FPSdisplay(
                 if (fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                     snprintf(valstring, 200, "%s", fpsarray[fpsindex].parray[pindex].val.string[0]);
                 } else {
-                    functionparameter_GetParamValueString(&fpsarray[fpsindex].parray[pindex], valstring, 200);
+                    functionparameter_GetParamValueString(
+                        &fpsarray[fpsindex].parray[pindex],
+                        valstring,
+                        200);
                 }
                 int val_len = strlen(valstring);
                 if (val_len > max_val_width) max_val_width = val_len;
@@ -650,7 +655,10 @@ errno_t fpsCTRL_FPSdisplay(
                     if (fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                         snprintf(valstring, 200, "%s", fpsarray[fpsindex].parray[pindex].val.string[0]);
                     } else {
-                        functionparameter_GetParamValueString(&fpsarray[fpsindex].parray[pindex], valstring, 200);
+                        functionparameter_GetParamValueString(
+                            &fpsarray[fpsindex].parray[pindex],
+                            valstring,
+                            200);
                     }
 
                     /* Color path-like values green/red */

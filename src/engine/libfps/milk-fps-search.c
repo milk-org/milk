@@ -180,7 +180,10 @@ int main(int argc, char *argv[])
                     if (fps->parray[pindex].type == FPTYPE_STREAMNAME) {
                         snprintf(valstring, 200, "%s", fps->parray[pindex].val.string[0]);
                     } else {
-                        functionparameter_GetParamValueString(&fps->parray[pindex], valstring, 200);
+                        functionparameter_GetParamValueString(
+                            &fps->parray[pindex],
+                            valstring,
+                            200);
                     }
                     
                     const char* type_str = "UNKNOWN";

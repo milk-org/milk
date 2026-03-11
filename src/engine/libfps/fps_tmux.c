@@ -51,7 +51,6 @@ int functionparameter_FPS_tmux_attach(
 }
 
 
-
 /** @brief Initialize FPS tmux session
  *
  * Creates a tmux session with 3 windows: ctrl, conf, run.

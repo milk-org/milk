@@ -491,7 +491,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     struct timeval tv; // sleep 100 us after reading FIFO
 
 
-
     strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
 
     // Set CLI prompt
@@ -837,7 +836,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         if(buf0[0] == '\n')
                         {
                             buf1[total_bytes - 1] = '\0';
-                            strncpy(data.CLIcmdline, buf1, STRINGMAXLEN_CLICMDLINE - 1);
+                            strncpy(data.CLIcmdline,
+                                buf1,
+                                STRINGMAXLEN_CLICMDLINE - 1);
 
                             DEBUG_TRACEPOINT(
                                 "CLI executing line: "
@@ -917,8 +918,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
 
 
 /**
@@ -1133,7 +1132,6 @@ void runCLI_cmd_init()
                        "usleep(long tus)");
 
     //  init_modules();
-    // printf("TEST   %s  %ld   dcimg[4934].used = %d\n", __FILE__, __LINE__, dcimg[4934].used);
 
     if(dcquiet == 0)
     {
@@ -1184,7 +1182,6 @@ void fnExit1(void)
 {
     //
 }
-
 
 
 static int command_line_process_options(int argc, char **argv)
@@ -1386,7 +1383,9 @@ static int command_line_process_options(int argc, char **argv)
             break;
 
         case 's':
-            strncpy(CLIstartupfilename, optarg, STRINGMAXLEN_CLISTARTUPFILENAME - 1);
+            strncpy(CLIstartupfilename,
+                optarg,
+                STRINGMAXLEN_CLISTARTUPFILENAME - 1);
             if(dcquiet == 0)
             {
                 printf("Startup file : %s\n", CLIstartupfilename);

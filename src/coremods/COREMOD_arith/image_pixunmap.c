@@ -48,7 +48,6 @@ static int32_t outshared = 0;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-
 static errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
