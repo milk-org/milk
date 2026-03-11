@@ -1,58 +1,92 @@
 /**
  * @file cubeMatchMatrix.c
- * @brief Cubematchmatrix module
- */
-
-/** @file cubeMatchMatrix.c
+ * @brief Compute sqsum diffs between cube slices
  */
 
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
+// Forward declaration
+imageID info_cubeMatchMatrix(
+    const char *IDin_name,
+    const char *IDout_name);
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "incube";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
 
-imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name);
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cubeslmatch",
+    .cmdkey      = "cubeslmatch",
+    .description =
+        "compute sqsum diffs between slices"
+};
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
 
-static errno_t info_cubeMatchMatrix_cli()
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR) == 0)
-    {
-        info_cubeMatchMatrix(data.cmdargtoken[1].val.string,
-                             data.cmdargtoken[2].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t cubeMatchMatrix_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand("cubeslmatch",
-                       __FILE__,
-                       info_cubeMatchMatrix_cli,
-                       "compute sqsum differences between slices",
-                       "<imagecube> <output file>",
-                       "cubeslmatch incube outim",
-                       "long info_cubeMatchMatrix(const char* IDin_name, const "
-                       "char* IDout_name)");
+    info_cubeMatchMatrix(p_in, p_out);
+    return RETURN_SUCCESS;
+}
 
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_info__cubeMatchMatrix()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

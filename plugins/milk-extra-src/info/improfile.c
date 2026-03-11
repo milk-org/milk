@@ -1,72 +1,116 @@
 /**
  * @file improfile.c
- * @brief Improfile module
- */
-
-/**
- * @file    improfile.c
+ * @brief Radial profile
  */
 
 #include <math.h>
 
 #include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+// Forward declaration
+errno_t profile(
+    const char *ID_name,
+    const char *outfile,
+    double      xcenter,
+    double      ycenter,
+    double      step,
+    long        nb_step);
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "psf";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "psf.prof";
+static double p_xcenter = 256.0;
+static double p_ycenter = 256.0;
+static double p_step    = 1.0;
+static long long p_nbstep = 100;
 
-errno_t profile(const char *ID_name,
-                const char *outfile,
-                double      xcenter,
-                double      ycenter,
-                double      step,
-                long        nb_step);
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "profile",
+    .cmdkey      = "profile",
+    .description = "radial profile"
+};
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output file") \
+    X(".xcenter", &p_xcenter, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x center") \
+    X(".ycenter", &p_ycenter, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y center") \
+    X(".step", &p_step, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "step size") \
+    X(".nbstep", &p_nbstep, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of steps")
 
-errno_t info_profile_cli()
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_FLOAT64) + CLI_checkarg(4, CLIARG_FLOAT64) +
-            CLI_checkarg(5, CLIARG_FLOAT64) + CLI_checkarg(6, CLIARG_INT64) ==
-            0)
-    {
-        profile(data.cmdargtoken[1].val.string,
-                data.cmdargtoken[2].val.string,
-                data.cmdargtoken[3].val.numf,
-                data.cmdargtoken[4].val.numf,
-                data.cmdargtoken[5].val.numf,
-                data.cmdargtoken[6].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t improfile_addCLIcmd()
+static errno_t compute_function()
 {
-    RegisterCLIcommand(
-        "profile",
-        __FILE__,
-        info_profile_cli,
-        "radial profile",
-        "<image> <output file> <xcenter> <ycenter> <step> <Nbstep>",
-        "profile psf psf.prof 256 256 1.0 100",
-        "int profile(const char *ID_name, const char *outfile, double xcenter, "
-        "double ycenter, double "
-        "step, long nb_step)");
+    profile(p_in, p_out,
+            p_xcenter, p_ycenter,
+            p_step, (long) p_nbstep);
+    return RETURN_SUCCESS;
+}
 
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_info__improfile()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 

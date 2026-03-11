@@ -1,11 +1,10 @@
 /**
  * @file image_stats.h
- * @brief Image stats module
+ * @brief Image statistics
  */
 
-/** @file image_stats.h
- */
+errno_t CLIADDCMD_info__image_stats();
 
-errno_t image_stats_addCLIcmd();
-
-errno_t info_image_stats(const char *ID_name, const char *options);
+errno_t info_image_stats(
+    const char *ID_name,
+    const char *options);
