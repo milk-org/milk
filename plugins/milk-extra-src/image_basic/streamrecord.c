@@ -100,53 +100,62 @@ CLIADDCMD_image_basic__streamrecord()
     return RETURN_SUCCESS;
 }
 
-// works only for floats
-//
-imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
-                                 long NBframes,
-                                 const char *__restrict IDname)
+/**
+ * Record NBframes from a float stream
+ * into a 3D cube.
+ */
+imageID IMAGE_BASIC_streamrecord(
+    const char *__restrict streamname,
+    long NBframes,
+    const char *__restrict IDname)
 {
-    imageID       ID;
-    imageID       IDstream;
-    long          xsize, ysize, zsize, xysize;
-    unsigned long cnt;
-    long          waitdelayus = 50;
-    long          kk;
-    char         *ptr;
+    IMGID imgin =
+        imgid_make_from_name(streamname);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDstream = image_ID(streamname, dcimg, dcnimg);
-    xsize    = dcimg[IDstream].md[0].size[0];
-    ysize    = dcimg[IDstream].md[0].size[1];
-    zsize    = NBframes;
-    xysize   = xsize * ysize;
+    long xsize  = imgin.md->size[0];
+    long ysize  = imgin.md->size[1];
+    long xysize = xsize * ysize;
 
-    create_3Dimage_ID(IDname, xsize, ysize, zsize, &ID);
-    cnt = dcimg[IDstream].md[0].cnt0;
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            IDname,
+            xsize, ysize, NBframes);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    kk = 0;
+    unsigned long cnt = imgin.md->cnt0;
+    long kk = 0;
+    long waitdelayus = 50;
 
-    ptr = (char *) dcimg[ID].array.F;
+    char *ptr =
+        (char *) imgout.im->array.F;
     while(kk != NBframes)
     {
-        while(cnt > dcimg[IDstream].md[0].cnt0)
+        while(cnt > imgin.md->cnt0)
         {
             usleep(waitdelayus);
         }
 
         cnt++;
 
-        printf("\r%ld / %ld  [%ld %ld]      ",
-               kk,
-               NBframes,
+        printf("\r%ld / %ld  [%lu %lu]"
+               "      ",
+               kk, NBframes,
                cnt,
-               dcimg[ID].md[0].cnt0);
+               imgout.md->cnt0);
         fflush(stdout);
 
-        memcpy(ptr, dcimg[IDstream].array.F, sizeof(float) * xysize);
+        memcpy(ptr,
+               imgin.im->array.F,
+               sizeof(float) * xysize);
         ptr += sizeof(float) * xysize;
         kk++;
     }
     printf("\n\n");
 
-    return ID;
+    return imgout.ID;
 }
