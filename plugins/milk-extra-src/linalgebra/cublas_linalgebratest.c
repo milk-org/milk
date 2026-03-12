@@ -180,38 +180,67 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
     cmsize[0] = WFSsize;
     cmsize[1] = WFSsize;
     cmsize[2] = NBmodes;
-    create_image_ID("cudatestcm",
-                    3,
-                    cmsize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_contrM);
+    {
+        IMGID img_cm =
+            imgid_make_from_name(
+                "cudatestcm");
+        img_cm.mdt->naxis = 3;
+        img_cm.mdt->size[0] = cmsize[0];
+        img_cm.mdt->size[1] = cmsize[1];
+        img_cm.mdt->size[2] = cmsize[2];
+        img_cm.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_cm.mdt->shared = 1;
+        img_cm.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_cm);
+        ID_contrM = img_cm.ID;
+    }
 
     wfssize    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     wfssize[0] = WFSsize;
     wfssize[1] = WFSsize;
-    create_image_ID("cudatestwfs",
-                    2,
-                    wfssize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_WFS);
+    {
+        IMGID img_wfs =
+            imgid_make_from_name(
+                "cudatestwfs");
+        img_wfs.mdt->naxis = 2;
+        img_wfs.mdt->size[0] =
+            wfssize[0];
+        img_wfs.mdt->size[1] =
+            wfssize[1];
+        img_wfs.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_wfs.mdt->shared = 1;
+        img_wfs.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_wfs);
+        ID_WFS = img_wfs.ID;
+    }
 
     cmdmodessize    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     cmdmodessize[0] = NBmodes;
     cmdmodessize[1] = 1;
-    create_image_ID("cudatestcmd",
-                    2,
-                    cmdmodessize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_cmd_modes);
+    {
+        IMGID img_cmd =
+            imgid_make_from_name(
+                "cudatestcmd");
+        img_cmd.mdt->naxis = 2;
+        img_cmd.mdt->size[0] =
+            cmdmodessize[0];
+        img_cmd.mdt->size[1] =
+            cmdmodessize[1];
+        img_cmd.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_cmd.mdt->shared = 1;
+        img_cmd.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_cmd);
+        ID_cmd_modes = img_cmd.ID;
+    }
 
     GPU_loop_MultMat_setup(0,
                            dcimg[ID_contrM].name,
