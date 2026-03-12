@@ -12,9 +12,8 @@
 #endif
 #include "fps.h"
 
-#include "create_image.h"
-#include "image_ID.h"
 #include "stream_sem.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 
 /* ================================================================
@@ -79,255 +78,131 @@ static long long p_master   = 0;
 
 
 /* ================================================================
- * 4.  COMPUTATION LOGIC — forward decl
+ * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
+/**
+ * Paste two 2D streams side-by-side into one
+ * output stream. Triggers alternately on stream0
+ * and stream1.
+ */
 imageID COREMOD_MEMORY_streamPaste(
     const char *IDstream0_name,
     const char *IDstream1_name,
     const char *IDstreamout_name,
     long        semtrig0,
     long        semtrig1,
-    int         master);
-//
-// compute difference between two 2D streams
-// triggers alternatively on stream0 and stream1
-//
-imageID COREMOD_MEMORY_streamPaste(const char *IDstream0_name,
-                                   const char *IDstream1_name,
-                                   const char *IDstreamout_name,
-                                   long        semtrig0,
-                                   long        semtrig1,
-                                   int         master)
+    int         master)
 {
-    imageID            ID0;
-    imageID            ID1;
-    imageID            IDout;
-    imageID            IDin;
-    long               Xoffset;
-    uint32_t           xsize;
-    uint32_t           ysize;
-    uint32_t          *arraysize;
-    unsigned long long cnt;
-    uint8_t            datatype;
-    int                FrameIndex;
+    IMGID img0 = imgid_make_from_name(IDstream0_name);
+    resolveIMGID(&img0, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID0 = image_ID(IDstream0_name, dcimg, dcnimg);
-    ID1 = image_ID(IDstream1_name, dcimg, dcnimg);
+    IMGID img1 = imgid_make_from_name(IDstream1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    xsize    = dcimg[ID0].md[0].size[0];
-    ysize    = dcimg[ID0].md[0].size[1];
-    datatype = dcimg[ID0].md[0].datatype;
+    uint32_t xsize = img0.md->size[0];
+    uint32_t ysize = img0.md->size[1];
+    uint8_t  datatype = img0.md->datatype;
 
-    arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(arraysize == NULL)
+    IMGID imgout =
+        imgid_make_from_name(IDstreamout_name);
+    resolveIMGID(&imgout, ERRMODE_NULL,
+                 dcimg, dcnimg);
+    if(imgout.ID == -1)
     {
-        PRINT_ERROR("malloc error");
-        abort();
+        imgout = stream_connect_create_2D(
+            IDstreamout_name,
+            2 * xsize, ysize, datatype);
     }
-    arraysize[0] = 2 * xsize;
-    arraysize[1] = ysize;
 
-    IDout = image_ID(IDstreamout_name, dcimg, dcnimg);
-    if(IDout == -1)
-    {
-        create_image_ID(IDstreamout_name,
-                        2,
-                        arraysize,
-                        datatype,
-                        1,
-                        0,
-                        0,
-                        &IDout);
-    }
-    free(arraysize);
-
-    FrameIndex = 0;
+    IMGID imgin[2] = {img0, img1};
+    long  semtrigs[2] = {semtrig0, semtrig1};
+    int   FrameIndex = 0;
+    unsigned long long cnt = 0;
 
     while(1)
     {
-        if(FrameIndex == 0)
+        IMGID *cur = &imgin[FrameIndex];
+        if(cur->md->sem == 0)
         {
-            // has new frame 0 arrived ?
-            if(dcimg[ID0].md[0].sem == 0)
+            while(cnt == cur->md->cnt0)
             {
-                while(cnt ==
-                        dcimg[ID0].md[0].cnt0) // test if new frame exists
-                {
-                    usleep(5);
-                }
-                cnt = dcimg[ID0].md[0].cnt0;
+                usleep(5);
             }
-            else
-            {
-                ImageStreamIO_semwait(dcimg+ID0, semtrig0);
-            }
-            Xoffset = 0;
-            IDin    = 0;
+            cnt = cur->md->cnt0;
         }
         else
         {
-            // has new frame 1 arrived ?
-            if(dcimg[ID1].md[0].sem == 0)
-            {
-                while(cnt ==
-                        dcimg[ID1].md[0].cnt0) // test if new frame exists
-                {
-                    usleep(5);
-                }
-                cnt = dcimg[ID1].md[0].cnt0;
-            }
-            else
-            {
-                ImageStreamIO_semwait(dcimg+ID1, semtrig1);
-            }
-            Xoffset = xsize;
-            IDin    = 1;
+            ImageStreamIO_semwait(
+                cur->im,
+                semtrigs[FrameIndex]);
         }
 
-        dcimg[IDout].md[0].write = 1;
+        long Xoffset = FrameIndex * xsize;
+
+        imgout.md->write = 1;
+
+#define PASTE_CASE_(DT, ACC, CT)                    \
+    case DT:                                         \
+        for(uint32_t ii = 0; ii < xsize; ii++)       \
+            for(uint32_t jj = 0; jj < ysize; jj++)  \
+            {                                        \
+                imgout.im->array.ACC[               \
+                    jj * 2 * xsize + ii             \
+                    + Xoffset] =                     \
+                    cur->im->array.ACC[             \
+                        jj * xsize + ii];           \
+            }                                        \
+        break;
 
         switch(datatype)
         {
-            case _DATATYPE_UINT8:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.UI8[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.UI8[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_UINT16:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.UI16[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.UI16[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_UINT32:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.UI32[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.UI32[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_UINT64:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.UI64[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.UI64[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_INT8:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.SI8[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.SI8[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_INT16:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.SI16[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.SI16[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_INT32:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.SI32[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.SI32[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_INT64:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout]
-                        .array.SI64[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.SI64[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_FLOAT:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.F[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.F[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_DOUBLE:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.D[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.D[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_COMPLEX_FLOAT:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.CF[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.CF[jj * xsize + ii];
-                    }
-                break;
-
-            case _DATATYPE_COMPLEX_DOUBLE:
-                for(uint32_t ii = 0; ii < xsize; ii++)
-                    for(uint32_t jj = 0; jj < ysize; jj++)
-                    {
-                        dcimg[IDout].array.CD[jj * 2 * xsize + ii + Xoffset] =
-                            dcimg[IDin].array.CD[jj * xsize + ii];
-                    }
-                break;
-
-            default:
-                printf("Unknown data type\n");
-                exit(0);
-                break;
+            FOREACH_REAL_DATATYPE(PASTE_CASE_)
+        case _DATATYPE_COMPLEX_FLOAT:
+            for(uint32_t ii = 0; ii < xsize; ii++)
+                for(uint32_t jj = 0;
+                        jj < ysize; jj++)
+                {
+                    imgout.im->array.CF[
+                        jj * 2 * xsize + ii
+                        + Xoffset] =
+                        cur->im->array.CF[
+                            jj * xsize + ii];
+                }
+            break;
+        case _DATATYPE_COMPLEX_DOUBLE:
+            for(uint32_t ii = 0; ii < xsize; ii++)
+                for(uint32_t jj = 0;
+                        jj < ysize; jj++)
+                {
+                    imgout.im->array.CD[
+                        jj * 2 * xsize + ii
+                        + Xoffset] =
+                        cur->im->array.CD[
+                            jj * xsize + ii];
+                }
+            break;
+        default:
+            PRINT_ERROR("Unknown data type");
+            break;
         }
+#undef PASTE_CASE_
+
         if(FrameIndex == master)
         {
-            COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-            ;
-            dcimg[IDout].md[0].cnt0++;
+            COREMOD_MEMORY_image_set_sempost_byID(
+                imgout.ID, -1);
+            imgout.md->cnt0++;
         }
-        dcimg[IDout].md[0].cnt1  = FrameIndex;
-        dcimg[IDout].md[0].write = 0;
+        imgout.md->cnt1  = FrameIndex;
+        imgout.md->write = 0;
 
-        if(FrameIndex == 0)
-        {
-            FrameIndex = 1;
-        }
-        else
-        {
-            FrameIndex = 0;
-        }
+        FrameIndex = (FrameIndex == 0) ? 1 : 0;
     }
 
-    return IDout;
+    return imgout.ID;
 }
 
 
