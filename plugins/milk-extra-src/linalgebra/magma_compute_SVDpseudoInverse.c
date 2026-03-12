@@ -1454,14 +1454,28 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             arraysizetmp[1] = N;
         }
 
-        FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                          dcimg[ID_Rmatrix].md[0].naxis,
-                                          arraysizetmp,
-                                          datatype,
-                                          0,
-                                          0,
-                                          0,
-                                          &ID_Cmatrix));
+        {
+            IMGID imgcm =
+                imgid_make_from_name(
+                    ID_Cmatrix_name);
+            imgcm.mdt->naxis =
+                dcimg[ID_Rmatrix].md[0]
+                    .naxis;
+            for(int a = 0;
+                a < imgcm.mdt->naxis;
+                a++)
+            {
+                imgcm.mdt->size[a] =
+                    arraysizetmp[a];
+            }
+            imgcm.mdt->datatype =
+                datatype;
+            imgcm.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgcm);
+            ID_Cmatrix = imgcm.ID;
+        }
 
         free(arraysizetmp);
     }

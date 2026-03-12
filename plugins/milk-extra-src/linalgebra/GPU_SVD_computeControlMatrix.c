@@ -452,14 +452,26 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         arraysizetmp[1] = n;
     }
 
-    FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                      dcimg[ID_Rmatrix].md[0].naxis,
-                                      arraysizetmp,
-                                      _DATATYPE_FLOAT,
-                                      0,
-                                      0,
-                                      0,
-                                      &ID_Cmatrix));
+    {
+        IMGID imgcm =
+            imgid_make_from_name(
+                ID_Cmatrix_name);
+        imgcm.mdt->naxis =
+            dcimg[ID_Rmatrix].md[0].naxis;
+        for(int a = 0;
+            a < imgcm.mdt->naxis; a++)
+        {
+            imgcm.mdt->size[a] =
+                arraysizetmp[a];
+        }
+        imgcm.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgcm.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgcm);
+        ID_Cmatrix = imgcm.ID;
+    }
 
     //   cudaStat = cudaMemcpy(dcimg[ID_Cmatrix].array.F, d_M, sizeof(float)*m*n, cudaMemcpyDeviceToHost);
 
