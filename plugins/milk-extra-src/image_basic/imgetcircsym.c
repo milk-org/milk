@@ -108,30 +108,30 @@ CLIADDCMD_image_basic__imgetcircsym()
     return RETURN_SUCCESS;
 }
 
-imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
-        const char *__restrict ID_out_name,
-        float xcenter,
-        float ycenter)
+/**
+ * Extract the circularly symmetric
+ * component of a 2D image.
+ */
+imageID IMAGE_BASIC_get_circsym_component(
+    const char *__restrict ID_name,
+    const char *__restrict ID_out_name,
+    float xcenter,
+    float ycenter)
 {
-    float    step = 1.0;
-    imageID  ID;
+    float step = 1.0;
+
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
     uint32_t naxes[2];
-    float    distance;
-    float   *dist;
-    float   *mean;
-    float   *rms;
-    long    *counts;
-    long     i;
-    long     nb_step;
-    imageID  IDout;
-    float    ifloat, x;
+    naxes[0] = imgin.md->size[0];
+    naxes[1] = imgin.md->size[1];
+    long nb_step = naxes[0] / 2;
 
-    ID       = image_ID(ID_name, dcimg, dcnimg);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-    nb_step  = naxes[0] / 2;
-
-    dist = (float *) malloc(sizeof(float) * nb_step);
+    float *dist = (float *) malloc(
+        sizeof(float) * nb_step);
     if(dist == NULL)
     {
         C_ERRNO = errno;
@@ -139,7 +139,8 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
         exit(0);
     }
 
-    mean = (float *) malloc(sizeof(float) * nb_step);
+    float *mean = (float *) malloc(
+        sizeof(float) * nb_step);
     if(mean == NULL)
     {
         C_ERRNO = errno;
@@ -147,7 +148,8 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
         exit(0);
     }
 
-    rms = (float *) malloc(sizeof(float) * nb_step);
+    float *rms = (float *) malloc(
+        sizeof(float) * nb_step);
     if(rms == NULL)
     {
         C_ERRNO = errno;
@@ -155,7 +157,8 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
         exit(0);
     }
 
-    counts = (long *) malloc(sizeof(long) * nb_step);
+    long *counts = (long *) malloc(
+        sizeof(long) * nb_step);
     if(counts == NULL)
     {
         C_ERRNO = errno;
@@ -163,7 +166,7 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
         exit(0);
     }
 
-    for(i = 0; i < nb_step; i++)
+    for(long i = 0; i < nb_step; i++)
     {
         dist[i]   = 0;
         mean[i]   = 0;
@@ -171,52 +174,95 @@ imageID IMAGE_BASIC_get_circsym_component(const char *__restrict ID_name,
         counts[i] = 0;
     }
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for(uint32_t jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(uint32_t ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step + 0.5);
+            float distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            long i = (long)(
+                1.0 * distance
+                / step + 0.5);
             if(i < nb_step)
             {
                 dist[i] += distance;
-                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
-                          dcimg[ID].array.F[jj * naxes[0] + ii];
+                mean[i] +=
+                    imgin.im->array.F[
+                        jj * naxes[0]
+                        + ii];
+                rms[i] +=
+                    imgin.im->array.F[
+                        jj * naxes[0]
+                        + ii]
+                    * imgin.im->array.F[
+                          jj * naxes[0]
+                          + ii];
                 counts[i] += 1;
             }
         }
+    }
 
-    for(i = 0; i < nb_step; i++)
+    for(long i = 0; i < nb_step; i++)
     {
         dist[i] /= counts[i];
         mean[i] /= counts[i];
-        rms[i] = sqrt(rms[i] - 1.0 * counts[i] * mean[i] * mean[i]) /
-                 sqrt(counts[i]);
+        rms[i] = sqrt(
+            rms[i]
+            - 1.0 * counts[i]
+              * mean[i] * mean[i])
+            / sqrt(counts[i]);
     }
 
-    printf("%u %u\n", naxes[0], naxes[1]);
-    create_2Dimage_ID(ID_out_name, naxes[0], naxes[1], &IDout);
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    printf("%u %u\n",
+           naxes[0], naxes[1]);
+
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            ID_out_name,
+            naxes[0], naxes[1]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(uint32_t jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(uint32_t ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step);
-            ifloat   = 1.0 * distance / step;
-            x        = ifloat - i;
+            float distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            long i = (long)(
+                1.0 * distance / step);
+            float ifloat =
+                1.0 * distance / step;
+            float x = ifloat - i;
 
             if((i + 1) < nb_step)
             {
-                dcimg[IDout].array.F[jj * naxes[0] + ii] =
-                    ((1.0 - x) * mean[i] + x * mean[i + 1]);
+                imgout.im->array.F[
+                    jj * naxes[0] + ii] =
+                    ((1.0 - x) * mean[i]
+                     + x * mean[i + 1]);
             }
         }
+    }
 
     free(counts);
     free(dist);
     free(mean);
     free(rms);
 
-    return (IDout);
+    return imgout.ID;
 }

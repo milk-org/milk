@@ -109,49 +109,60 @@ CLIADDCMD_image_basic__imgetcircasym()
     return RETURN_SUCCESS;
 }
 
+/**
+ * Extract the non-circularly symmetric
+ * component of a 2D image (by imageID).
+ */
 imageID
-IMAGE_BASIC_get_circasym_component_byID(imageID ID,
-                                        const char *__restrict ID_out_name,
-                                        float       xcenter,
-                                        float       ycenter,
-                                        const char *options)
+IMAGE_BASIC_get_circasym_component_byID(
+    imageID ID,
+    const char *__restrict ID_out_name,
+    float       xcenter,
+    float       ycenter,
+    const char *options)
 {
-    float    step = 1.0;
+    float step = 1.0;
+
     uint32_t naxes[2];
-    float    distance;
-    float   *dist;
-    float   *mean;
-    float   *rms;
-    long    *counts;
     long     i;
-    long     nb_step;
-    imageID  IDout;
+    float    ifloat, x;
     char     input[50];
     int      str_pos;
     float    perc;
-    float    ifloat, x;
 
     if(strstr(options, "-perc ") != NULL)
     {
-        str_pos = strstr(options, "-perc ") - options;
-        str_pos = str_pos + strlen("-perc ");
-        i       = 0;
-        while((options[i + str_pos] != ' ') &&
-                (options[i + str_pos] != '\n') && (options[i + str_pos] != '\0'))
+        str_pos =
+            strstr(options, "-perc ")
+            - options;
+        str_pos =
+            str_pos + strlen("-perc ");
+        i = 0;
+        while((options[i + str_pos]
+               != ' ')
+              && (options[i + str_pos]
+                  != '\n')
+              && (options[i + str_pos]
+                  != '\0'))
         {
-            input[i] = options[i + str_pos];
+            input[i] =
+                options[i + str_pos];
             i++;
         }
         input[i] = '\0';
         perc     = atof(input);
-        printf("percentile is %f\n", perc);
+        printf("percentile is %f\n",
+               perc);
     }
 
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-    nb_step  = naxes[0] / 2;
+    naxes[0] =
+        dcimg[ID].md[0].size[0];
+    naxes[1] =
+        dcimg[ID].md[0].size[1];
+    long nb_step = naxes[0] / 2;
 
-    dist = (float *) malloc(sizeof(float) * nb_step);
+    float *dist = (float *) malloc(
+        sizeof(float) * nb_step);
     if(dist == NULL)
     {
         C_ERRNO = errno;
@@ -159,7 +170,8 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         exit(0);
     }
 
-    mean = (float *) malloc(sizeof(float) * nb_step);
+    float *mean = (float *) malloc(
+        sizeof(float) * nb_step);
     if(mean == NULL)
     {
         C_ERRNO = errno;
@@ -167,7 +179,8 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         exit(0);
     }
 
-    rms = (float *) malloc(sizeof(float) * nb_step);
+    float *rms = (float *) malloc(
+        sizeof(float) * nb_step);
     if(rms == NULL)
     {
         C_ERRNO = errno;
@@ -175,7 +188,8 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         exit(0);
     }
 
-    counts = (long *) malloc(sizeof(long) * nb_step);
+    long *counts = (long *) malloc(
+        sizeof(long) * nb_step);
     if(counts == NULL)
     {
         C_ERRNO = errno;
@@ -191,77 +205,131 @@ IMAGE_BASIC_get_circasym_component_byID(imageID ID,
         counts[i] = 0;
     }
 
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    for(uint32_t jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(uint32_t ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step + 0.5);
+            float distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            i = (long)(
+                1.0 * distance
+                / step + 0.5);
             if(i < nb_step)
             {
                 dist[i] += distance;
-                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
-                          dcimg[ID].array.F[jj * naxes[0] + ii];
+                mean[i] +=
+                    dcimg[ID].array.F[
+                        jj * naxes[0]
+                        + ii];
+                rms[i] +=
+                    dcimg[ID].array.F[
+                        jj * naxes[0]
+                        + ii]
+                    * dcimg[ID].array.F[
+                          jj * naxes[0]
+                          + ii];
                 counts[i] += 1;
             }
         }
+    }
 
     for(i = 0; i < nb_step; i++)
     {
         dist[i] /= counts[i];
         mean[i] /= counts[i];
-        rms[i] = sqrt(rms[i] - 1.0 * counts[i] * mean[i] * mean[i]) /
-                 sqrt(counts[i]);
+        rms[i] = sqrt(
+            rms[i]
+            - 1.0 * counts[i]
+              * mean[i] * mean[i])
+            / sqrt(counts[i]);
     }
 
-    printf("%u %u\n", naxes[0], naxes[1]);
-    create_2Dimage_ID(ID_out_name, naxes[0], naxes[1], NULL);
-    IDout = image_ID(ID_out_name, dcimg, dcnimg);
-    for(uint32_t jj = 0; jj < naxes[1]; jj++)
-        for(uint32_t ii = 0; ii < naxes[0]; ii++)
+    printf("%u %u\n",
+           naxes[0], naxes[1]);
+
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            ID_out_name,
+            naxes[0], naxes[1]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(uint32_t jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(uint32_t ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(1.0 * distance / step);
-            ifloat   = 1.0 * distance / step;
-            x        = ifloat - i;
+            float distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            i = (long)(
+                1.0 * distance / step);
+            ifloat =
+                1.0 * distance / step;
+            x = ifloat - i;
 
             if((i + 1) < nb_step)
             {
-                dcimg[IDout].array.F[jj * naxes[0] + ii] =
-                    dcimg[ID].array.F[jj * naxes[0] + ii] -
-                    ((1.0 - x) * mean[i] + x * mean[i + 1]);
+                imgout.im->array.F[
+                    jj * naxes[0] + ii] =
+                    dcimg[ID].array.F[
+                        jj * naxes[0]
+                        + ii]
+                    - ((1.0 - x)
+                       * mean[i]
+                       + x
+                         * mean[i + 1]);
             }
         }
+    }
 
     free(counts);
     free(dist);
     free(mean);
     free(rms);
 
-    return (IDout);
+    return imgout.ID;
 }
 
-imageID IMAGE_BASIC_get_circasym_component(const char *__restrict ID_name,
-        const char *__restrict ID_out_name,
-        float       xcenter,
-        float       ycenter,
-        const char *options)
+/**
+ * Extract the non-circularly symmetric
+ * component of a 2D image (by name).
+ */
+imageID
+IMAGE_BASIC_get_circasym_component(
+    const char *__restrict ID_name,
+    const char *__restrict ID_out_name,
+    float       xcenter,
+    float       ycenter,
+    const char *options)
 {
-    imageID IDout;
-    imageID ID;
-
-    printf("get non-circular symmetric component from image %s\n", ID_name);
+    printf("get non-circular symmetric"
+           " component from image %s\n",
+           ID_name);
     fflush(stdout);
 
-    ID = image_ID(ID_name, dcimg, dcnimg);
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDout = IMAGE_BASIC_get_circasym_component_byID(ID,
+    return
+        IMAGE_BASIC_get_circasym_component_byID(
+            imgin.ID,
             ID_out_name,
             xcenter,
             ycenter,
             options);
-
-    return IDout;
 }
