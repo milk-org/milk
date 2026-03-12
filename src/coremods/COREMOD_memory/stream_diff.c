@@ -12,8 +12,6 @@
 #endif
 #include "fps.h"
 
-#include "create_image.h"
-#include "image_ID.h"
 #include "stream_sem.h"
 
 
@@ -76,112 +74,96 @@ static long long p_semtrig = 3;
 
 
 /* ================================================================
- * 4.  COMPUTATION LOGIC — forward decl
+ * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
+/**
+ * Compute difference between two 2D streams.
+ * Triggers on stream0.
+ */
 imageID COREMOD_MEMORY_streamDiff(
     const char *IDstream0_name,
     const char *IDstream1_name,
     const char *IDstreammask_name,
     const char *IDstreamout_name,
-    long        semtrig);
-/**
- * ## Purpose
- *
- * Compute difference between two 2D streams\n
- * Triggers on stream0\n
- *
- */
-imageID COREMOD_MEMORY_streamDiff(const char *IDstream0_name,
-                                  const char *IDstream1_name,
-                                  const char *IDstreammask_name,
-                                  const char *IDstreamout_name,
-                                  long        semtrig)
+    long        semtrig)
 {
-    imageID            ID0;
-    imageID            ID1;
-    imageID            IDout;
-    uint32_t           xsize;
-    uint32_t           ysize;
-    uint64_t           xysize;
-    uint32_t          *arraysize;
-    unsigned long long cnt;
-    imageID            IDmask; // optional
+    IMGID img0 = imgid_make_from_name(IDstream0_name);
+    resolveIMGID(&img0, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID0    = image_ID(IDstream0_name, dcimg, dcnimg);
-    ID1    = image_ID(IDstream1_name, dcimg, dcnimg);
-    IDmask = image_ID(IDstreammask_name, dcimg, dcnimg);
+    IMGID img1 = imgid_make_from_name(IDstream1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    xsize  = dcimg[ID0].md[0].size[0];
-    ysize  = dcimg[ID0].md[0].size[1];
-    xysize = xsize * ysize;
+    IMGID imgmask =
+        imgid_make_from_name(IDstreammask_name);
+    resolveIMGID(&imgmask, ERRMODE_NULL,
+                 dcimg, dcnimg);
 
-    arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(arraysize == NULL)
+    uint32_t xsize = img0.md->size[0];
+    uint32_t ysize = img0.md->size[1];
+    uint64_t xysize = xsize * ysize;
+
+    IMGID imgout =
+        imgid_make_from_name(IDstreamout_name);
+    resolveIMGID(&imgout, ERRMODE_NULL,
+                 dcimg, dcnimg);
+    if(imgout.ID == -1)
     {
-        PRINT_ERROR("malloc error");
-        abort();
-    }
-    arraysize[0] = xsize;
-    arraysize[1] = ysize;
-
-    IDout = image_ID(IDstreamout_name, dcimg, dcnimg);
-    if(IDout == -1)
-    {
-        create_image_ID(IDstreamout_name,
-                        2,
-                        arraysize,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDout);
+        imgout = stream_connect_create_2D(
+            IDstreamout_name,
+            xsize, ysize,
+            _DATATYPE_FLOAT);
     }
 
-    free(arraysize);
+    unsigned long long cnt = 0;
 
     while(1)
     {
-        // has new frame arrived ?
-        if(dcimg[ID0].md[0].sem == 0)
+        if(img0.md->sem == 0)
         {
-            while(cnt ==
-                    dcimg[ID0].md[0].cnt0) // test if new frame exists
+            while(cnt == img0.md->cnt0)
             {
                 usleep(5);
             }
-            cnt = dcimg[ID0].md[0].cnt0;
+            cnt = img0.md->cnt0;
         }
         else
         {
-            ImageStreamIO_semwait(dcimg+ID0, semtrig);
+            ImageStreamIO_semwait(
+                img0.im, semtrig);
         }
 
-        dcimg[IDout].md[0].write = 1;
-        if(IDmask == -1)
+        imgout.md->write = 1;
+        if(imgmask.ID == -1)
         {
-            for(uint64_t ii = 0; ii < xysize; ii++)
+            for(uint64_t ii = 0;
+                    ii < xysize; ii++)
             {
-                dcimg[IDout].array.F[ii] =
-                    dcimg[ID0].array.F[ii] - dcimg[ID1].array.F[ii];
+                imgout.im->array.F[ii] =
+                    img0.im->array.F[ii]
+                    - img1.im->array.F[ii];
             }
         }
         else
         {
-            for(uint64_t ii = 0; ii < xysize; ii++)
+            for(uint64_t ii = 0;
+                    ii < xysize; ii++)
             {
-                dcimg[IDout].array.F[ii] = (dcimg[ID0].array.F[ii] -
-                                                 dcimg[ID1].array.F[ii]) *
-                                                dcimg[IDmask].array.F[ii];
+                imgout.im->array.F[ii] =
+                    (img0.im->array.F[ii]
+                     - img1.im->array.F[ii])
+                    * imgmask.im->array.F[ii];
             }
         }
-        COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-        ;
-        dcimg[IDout].md[0].cnt0++;
-        dcimg[IDout].md[0].write = 0;
+        COREMOD_MEMORY_image_set_sempost_byID(
+            imgout.ID, -1);
+        imgout.md->cnt0++;
+        imgout.md->write = 0;
     }
 
-    return IDout;
+    return imgout.ID;
 }
 
 
