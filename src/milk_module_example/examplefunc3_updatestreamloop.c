@@ -66,7 +66,7 @@ void init_cmdsettings(void)
 
 
 // Wrapper function, used by all CLI calls
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

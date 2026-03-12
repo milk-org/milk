@@ -154,7 +154,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         //			printf("%18.16f  %+18.16f\n", xarray[ii], valarray[ii]);
         dcimg[IDin].array.F[ii]   = valarray[ii];
         dcimg[IDin0].array.F[ii]  = valarray[ii];
-        dcimg[IDmask].array.F[ii] = 1.0;
+        dcimg[IDmask].array.F[ii] = 1.0f;
     }
 
     NBmodes = MaxOrder;
@@ -281,7 +281,7 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
 }
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

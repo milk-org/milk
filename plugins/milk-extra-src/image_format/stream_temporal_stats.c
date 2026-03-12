@@ -267,7 +267,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
 BOILERPLATE
 */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

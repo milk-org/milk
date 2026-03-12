@@ -49,7 +49,7 @@ static int64_t *ex1mode;
       FPFLAG_DEFAULT_INPUT, "toggle1 conditional on toggle0")
 
 // Optional custom configuration setup
-static errno_t customCONFsetup()
+static MILK_COLD errno_t customCONFsetup()
 {
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
@@ -63,7 +63,7 @@ static errno_t customCONFsetup()
 }
 
 // Optional custom configuration checks
-static errno_t customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     if(dcfpsptr != NULL)
     {
@@ -179,7 +179,7 @@ static errno_t streamprocess(
 }
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

@@ -49,7 +49,7 @@ static int32_t outshared = 0;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -94,6 +94,7 @@ static errno_t compute_function()
     // build mapping table
     //
     uint64_t nbpix = 0;
+        MILK_IVDEP
     for(uint64_t ii = 0; ii < xsize*ysize; ii++)
     {
         int64_t pixindex = imgmap.im->array.SI32[ii];
@@ -110,6 +111,7 @@ static errno_t compute_function()
     uint64_t * __restrict map_inpixindex  = (uint64_t*) malloc(sizeof(uint64_t) * nbpix);
 
     nbpix = 0;
+        MILK_IVDEP
     for(uint64_t ii = 0; ii < xsize*ysize; ii++)
     {
         int64_t pixindex = imgmap.im->array.SI32[ii];

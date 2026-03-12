@@ -111,7 +111,7 @@ static errno_t example_compute_2Dimage_total(
  *
  * INSERT_STD_PROCINFO statements enable processinfo support
  */
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

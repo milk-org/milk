@@ -135,7 +135,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                 uint32_t ii1 = (uint32_t)(x * xsize1);
 
                 float pval =
-                    1.0 * dcimg[IDarray[kk]].array.F[jj * xsize + ii] -
+                    1.0f * dcimg[IDarray[kk]].array.F[jj * xsize + ii] -
                     biasvalue;
 
                 dcimg[IDimHDRc]
@@ -144,7 +144,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                 dcimg[IDimHDRc1]
                 .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += pval;
                 dcimg[IDimHDRc1w]
-                .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += 1.0;
+                .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += 1.0f;
             }
         }
     }
@@ -275,7 +275,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
         //float c1 = pow( 0.5*(1.0+cos(x*M_PI)), alpha1);
         //float c2 = 1.0-c1;
 
-        dcimg[IDlayer].array.F[ij1] = 1.0 * layer0;
+        dcimg[IDlayer].array.F[ij1] = 1.0f * layer0;
         dcimg[IDlayermin].array.F[ij1] =
             1.0 * layer0; // don't go below this layer
     }
@@ -297,7 +297,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                     pixline[ii1] =
                         0.3 * dcimg[IDlayer]
                         .array.F[jj1 * xsize1 + ii1 - 1] +
-                        0.4 * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
+                        0.4f * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
                         0.3 *
                         dcimg[IDlayer].array.F[jj1 * xsize1 + ii1 + 1];
                 }
@@ -315,7 +315,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                     pixcol[jj1] =
                         0.3 * dcimg[IDlayer]
                         .array.F[(jj1 - 1) * xsize1 + ii1] +
-                        0.4 * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
+                        0.4f * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
                         0.3 * dcimg[IDlayer]
                         .array.F[(jj1 + 1) * xsize1 + ii1];
                 }
@@ -424,7 +424,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             }
             double layercoeff1 = 1.0 / pow(alpha0, layerg);
 
-            //dcimg[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0-layercoeff) + pval1 * layercoeff);
+            //dcimg[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0f-layercoeff) + pval1 * layercoeff);
             dcimg[IDout].array.F[jj * xsize + ii] =
                 layercoeff1 * (pval0 * (1.0 - layercoeff) + pval1 * layercoeff);
         }
@@ -433,7 +433,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

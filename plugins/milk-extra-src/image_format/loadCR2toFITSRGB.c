@@ -85,7 +85,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     loadCR2toFITSRGB(
         p_cr2, p_r, p_g, p_b);

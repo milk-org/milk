@@ -105,7 +105,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     permut(p_imname);
     return RETURN_SUCCESS;

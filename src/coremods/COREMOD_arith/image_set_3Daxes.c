@@ -69,7 +69,7 @@ static uint32_t *set3d_size2    = NULL;
  * Only applies if s0*s1*s2 == nelement.
  * Zero values inherit the current axis size.
  */
-static errno_t fpsexec(IMAGE *inimg)
+static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
     if (!set3d_size0 || !set3d_size1
         || !set3d_size2)
@@ -111,7 +111,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(set3d_inimname);

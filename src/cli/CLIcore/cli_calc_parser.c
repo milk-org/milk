@@ -70,12 +70,12 @@ static val_t parse_primary(void);
  * Token stream helpers
  * -------------------------------------------------------- */
 
-static cli_token *cur(void)
+static inline cli_token *cur(void)
 {
     return &parse_tokens[parse_pos];
 }
 
-static cli_token *advance(void)
+static inline cli_token *advance(void)
 {
     cli_token *t = &parse_tokens[parse_pos];
     if (parse_pos < parse_ntok)
@@ -112,7 +112,7 @@ static void parse_errmsg(const char *msg)
  *   ^      : 3 (right-assoc)
  * -------------------------------------------------------- */
 
-static int get_prec(cli_token_type t)
+static inline int get_prec(cli_token_type t)
 {
     switch (t)
     {
@@ -129,7 +129,7 @@ static int get_prec(cli_token_type t)
     }
 }
 
-static int is_right_assoc(cli_token_type t)
+static inline int is_right_assoc(cli_token_type t)
 {
     return t == TOK_OP_CARET;
 }
@@ -145,7 +145,7 @@ static int is_right_assoc(cli_token_type t)
 /**
  * @brief Promote a val_t to double if it is long
  */
-static double to_double(val_t v)
+static inline double to_double(val_t v)
 {
     if (v.type == VAL_LONG)
     {
@@ -157,7 +157,7 @@ static double to_double(val_t v)
 /**
  * @brief Make a long result
  */
-static val_t mk_long(long v)
+static inline val_t mk_long(long v)
 {
     val_t r;
     r.type = VAL_LONG;
@@ -170,7 +170,7 @@ static val_t mk_long(long v)
 /**
  * @brief Make a double result
  */
-static val_t mk_double(double v)
+static inline val_t mk_double(double v)
 {
     val_t r;
     r.type = VAL_DOUBLE;
@@ -183,7 +183,7 @@ static val_t mk_double(double v)
 /**
  * @brief Make a string/image result
  */
-static val_t mk_string(const char *s)
+static inline val_t mk_string(const char *s)
 {
     val_t r;
     r.type = VAL_STRING;

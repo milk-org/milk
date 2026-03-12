@@ -32,7 +32,7 @@ int basic_naninf2zero(const char *ID_name)
         {
             if(!(fabs(dcimg[ID].array.F[jj * naxes[0] + ii]) < HUGE_VAL))
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
                 cnt++;
             }
         }

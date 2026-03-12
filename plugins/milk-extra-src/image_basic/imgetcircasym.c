@@ -83,7 +83,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMAGE_BASIC_get_circasym_component(
         p_in, p_out,

@@ -97,7 +97,7 @@ void init_cms_1(void)
     }
 }
 
-static errno_t compute_function_1()
+static MILK_HOT errno_t compute_function_1()
 {
     basic_add(p1_in1, p1_in2, p1_out,
               (long) p1_ox, (long) p1_oy);
@@ -190,7 +190,7 @@ void init_cms_2(void)
     }
 }
 
-static errno_t compute_function_2()
+static MILK_HOT errno_t compute_function_2()
 {
     basic_add3D(p2_in1, p2_in2, p2_out,
                 (long) p2_ox,

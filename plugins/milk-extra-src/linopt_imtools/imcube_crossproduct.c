@@ -119,7 +119,7 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
  * @return errno_t
  */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

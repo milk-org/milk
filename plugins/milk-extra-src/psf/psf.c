@@ -321,7 +321,7 @@ errno_t PSF_finddiskcent(const char *ID_name, float rad, float *result)
                 for(uint64_t ii = 0; ii < size * size; ii++)
                 {
                     v = dcimg[ID].array.F[ii];
-                    if(dcimg[IDd].array.F[ii] > 0.5)
+                    if(dcimg[IDd].array.F[ii] > 0.5f)
                     {
                         totin += v;
                     }
@@ -826,9 +826,9 @@ errno_t fast_center_PSF(const char *ID_name,
             for(uint32_t ii = (uint32_t) iimin; ii < (uint32_t) iimax; ii++)
             {
                 centerx +=
-                    1.0 * ii * (dcimg[ID].array.F[jj * naxes[0] + ii]);
+                    1.0f * ii * (dcimg[ID].array.F[jj * naxes[0] + ii]);
                 centery +=
-                    1.0 * jj * (dcimg[ID].array.F[jj * naxes[0] + ii]);
+                    1.0f * jj * (dcimg[ID].array.F[jj * naxes[0] + ii]);
                 total_fl += dcimg[ID].array.F[jj * naxes[0] + ii];
             }
 
@@ -1383,7 +1383,7 @@ extract_psf_photcent(const char *ID_name, const char *out_name, long size)
             }
             else
             {
-                dcimg[IDout].array.F[jj1 * size + ii1] = 0.0;
+                dcimg[IDout].array.F[jj1 * size + ii1] = 0.0f;
             }
         }
 
@@ -1605,9 +1605,9 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
             }
         for(ii = 0; ii < Csize; ii++)
             for(jj = 0; jj < Csize; jj++)
-                if(dcimg[ID].array.F[jj * Csize + ii] > peak * 1.001)
+                if(dcimg[ID].array.F[jj * Csize + ii] > peak * 1.001f)
                 {
-                    dcimg[ID].array.F[jj * Csize + ii] = 0.0;
+                    dcimg[ID].array.F[jj * Csize + ii] = 0.0f;
                 }
 
         fftzoom("tmpsr", "tmpsrz", fzoomfactor);

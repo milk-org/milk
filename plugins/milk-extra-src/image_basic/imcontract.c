@@ -88,7 +88,7 @@ void init_cms_1(void)
     }
 }
 
-static errno_t compute_function_1()
+static MILK_HOT errno_t compute_function_1()
 {
     basic_contract(pc1_in, pc1_out,
                    (int) pc1_bx,
@@ -175,7 +175,7 @@ void init_cms_2(void)
     }
 }
 
-static errno_t compute_function_2()
+static MILK_HOT errno_t compute_function_2()
 {
     basic_contract3D(pc2_in, pc2_out,
                      (int) pc2_bx,
