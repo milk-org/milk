@@ -57,6 +57,17 @@ non-GCC compilers.
   the data is `float` — do not mix precisions
   unnecessarily.
 
+## Math & Transcendentals
+
+- Avoid computing expensive scalar transcendentals 
+  (e.g. `sinf()`, `cosf()`, `expf()`) inside tight
+  SIMD or OpenMP inner loops if possible.
+- If a few distinct angles or phases are used repeatedly,
+  pre-compute these values during initialization into a
+  static or `MILK_ALIGNED` array (LUT) and replace the
+  expensive function calls with fast array lookups in
+  the hot path.
+
 ## Loop Vectorization
 
 - Use `#pragma omp for simd` (not bare
