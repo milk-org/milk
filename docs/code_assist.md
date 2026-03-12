@@ -48,6 +48,7 @@ requiring you to remember every checklist.
 | fpsexec conventions | [`fpsexec-conventions.md`](../.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
 | Help consistency | [`help-consistency.md`](../.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
 | Programmer's Guide | [`maintain-programmers-guide.md`](../.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
+| Performance practices | [`performance-practices.md`](../.agents/rules/performance-practices.md) | Guidelines for SIMD, pointer alignment, caching, and CPU pinning. |
 | Running commands | [`run-milk-commands.md`](../.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
 | Script documentation | [`script-docs.md`](../.agents/rules/script-docs.md) | Update `docs/scripts.md` and add `--help` when scripts change. |
 | README updates | [`readme-update.md`](../.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
