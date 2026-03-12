@@ -878,14 +878,29 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     if(OKim == 0)
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd[0].name);
-        create_image_ID(imgmd[0].name,
-                        imgmd[0].naxis,
-                        imgmd[0].size,
-                        imgmd[0].datatype,
-                        imgmd[0].shared,
-                        nbkw,
-                        0,
-                        &ID);
+        {
+            IMGID imgrcv =
+                imgid_make_from_name(
+                    imgmd[0].name);
+            imgrcv.mdt->naxis =
+                imgmd[0].naxis;
+            for(int a = 0;
+                a < imgmd[0].naxis; a++)
+            {
+                imgrcv.mdt->size[a] =
+                    imgmd[0].size[a];
+            }
+            imgrcv.mdt->datatype =
+                imgmd[0].datatype;
+            imgrcv.mdt->shared =
+                imgmd[0].shared;
+            imgrcv.mdt->NBkw = nbkw;
+            imgrcv.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgrcv);
+            ID = imgrcv.ID;
+        }
         printf("Created image stream %s - shared = %d\n",
                imgmd[0].name,
                imgmd[0].shared);
