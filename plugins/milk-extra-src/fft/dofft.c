@@ -1503,93 +1503,100 @@ imageID do2dffti(const char *__restrict in_name,
 
 /* real fft : real to complex */
 // supports single and double precisions
-imageID FFT_do2drfft(const char *__restrict in_name,
-                     const char *__restrict out_name,
-                     int dir)
+imageID FFT_do2drfft(
+    const char *__restrict in_name,
+    const char *__restrict out_name,
+    int dir)
 {
-    int      *naxes; // int format for fftw
-    uint32_t *naxesl;
-    uint32_t *naxestmp;
-
-    long    naxis;
-    imageID IDin;
-    imageID IDout;
-    imageID IDtmp;
+    int *naxes; /* int format for fftw */
 
     int        OK = 0;
     fftwf_plan plan;
     fftw_plan  plan_double;
     long       tmp1;
 
-    uint8_t datatype;
     uint8_t datatypeout;
 
-    IDin = image_ID(in_name, dcimg, dcnimg);
+    IMGID imgin =
+        imgid_make_from_name(in_name);
+    resolveIMGID(&imgin,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    datatype = dcimg[IDin].md[0].datatype;
-    naxis    = dcimg[IDin].md[0].naxis;
+    uint8_t datatype =
+        imgin.md->datatype;
+    long naxis = imgin.md->naxis;
 
-    naxes = (int *) malloc(naxis * sizeof(uint32_t));
+    naxes = (int *) malloc(
+        naxis * sizeof(uint32_t));
     if(naxes == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    naxesl = (uint32_t *) malloc(naxis * sizeof(uint32_t));
-    if(naxesl == NULL)
-    {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
-    }
-
-    naxestmp = (uint32_t *) malloc(naxis * sizeof(uint32_t));
-    if(naxestmp == NULL)
-    {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
-    }
-
+    uint32_t naxestmp[3];
     for(int i = 0; i < naxis; i++)
     {
-        naxes[i]    = (int) dcimg[IDin].md[0].size[i];
-        naxesl[i]   = (uint32_t) dcimg[IDin].md[0].size[i];
-        naxestmp[i] = dcimg[IDin].md[0].size[i];
+        naxes[i] =
+            (int) imgin.md->size[i];
+        naxestmp[i] =
+            imgin.md->size[i];
         if(i == 0)
         {
-            naxestmp[i] = dcimg[IDin].md[0].size[i] / 2 + 1;
+            naxestmp[i] =
+                imgin.md->size[i] / 2
+                + 1;
         }
     }
 
-    char ffttmpname[STRINGMAXLEN_IMGNAME];
-    WRITE_IMAGENAME(ffttmpname, "_ffttmp_%d", (int) getpid());
+    char ffttmpname[
+        STRINGMAXLEN_IMGNAME];
+    WRITE_IMAGENAME(ffttmpname,
+                    "_ffttmp_%d",
+                    (int) getpid());
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        datatypeout = _DATATYPE_COMPLEX_FLOAT;
+        datatypeout =
+            _DATATYPE_COMPLEX_FLOAT;
     }
     else
     {
-        datatypeout = _DATATYPE_COMPLEX_DOUBLE;
+        datatypeout =
+            _DATATYPE_COMPLEX_DOUBLE;
     }
 
-    create_image_ID(ffttmpname,
-                    naxis,
-                    naxestmp,
-                    datatypeout,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDtmp);
+    IMGID imgtmp =
+        imgid_make_from_name(ffttmpname);
+    imgtmp.mdt->naxis = naxis;
+    for(int i = 0; i < naxis; i++)
+    {
+        imgtmp.mdt->size[i] =
+            naxestmp[i];
+    }
+    imgtmp.mdt->datatype = datatypeout;
+    imgtmp.mdt->shared = dcshareddft;
+    imgtmp.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgtmp.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgtmp);
 
-    create_image_ID(out_name,
-                    naxis,
-                    naxesl,
-                    datatypeout,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
+    IMGID imgout =
+        imgid_make_from_name(out_name);
+    imgout.mdt->naxis = naxis;
+    for(int i = 0; i < naxis; i++)
+    {
+        imgout.mdt->size[i] =
+            imgin.md->size[i];
+    }
+    imgout.mdt->datatype = datatypeout;
+    imgout.mdt->shared = dcshareddft;
+    imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
     if(naxis == 2)
     {
@@ -1600,8 +1607,8 @@ imageID FFT_do2drfft(const char *__restrict in_name,
             plan = fftwf_plan_dft_r2c_2d(
                        (int) naxes[1],
                        (int) naxes[0],
-                       dcimg[IDin].array.F,
-                       (fftwf_complex *) dcimg[IDtmp].array.CF,
+                       imgin.im->array.F,
+                       (fftwf_complex *) imgtmp.im->array.CF,
                        FFTWOPTMODE);
             if(plan == NULL)
             {
@@ -1620,8 +1627,8 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                 plan = fftwf_plan_dft_r2c_2d(
                            naxes[1],
                            naxes[0],
-                           dcimg[IDin].array.F,
-                           (fftwf_complex *) dcimg[IDtmp].array.CF,
+                           imgin.im->array.F,
+                           (fftwf_complex *) imgtmp.im->array.CF,
                            FFTWOPTMODE);
                 copy_image_ID(ffttmpcpyname, in_name, 0);
                 delete_image_ID(ffttmpcpyname, DELETE_IMAGE_ERRMODE_WARNING);
@@ -1636,34 +1643,28 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                 for(uint32_t ii = 0; ii < (uint32_t)(naxes[0] / 2 + 1); ii++)
                     for(uint32_t jj = 0; jj < (uint32_t) naxes[1]; jj++)
                     {
-                        dcimg[IDout].array.CF[jj * naxes[0] + ii] =
-                            dcimg[IDtmp].array.CF[jj * naxestmp[0] + ii];
+                        imgout.im->array.CF[jj * naxes[0] + ii] =
+                            imgtmp.im->array.CF[jj * naxestmp[0] + ii];
                     }
 
                 for(uint32_t ii = 1; ii < (uint32_t)(naxes[0] / 2 + 1); ii++)
                 {
                     uint32_t jj = 0;
-                    dcimg[IDout]
-                    .array.CF[jj * naxes[0] + (naxes[0] - ii)]
+                    imgout.im->array.CF[jj * naxes[0] + (naxes[0] - ii)]
                     .re =
-                        dcimg[IDtmp].array.CF[jj * naxestmp[0] + ii].re;
-                    dcimg[IDout]
-                    .array.CF[jj * naxes[0] + (naxes[0] - ii)]
+                        imgtmp.im->array.CF[jj * naxestmp[0] + ii].re;
+                    imgout.im->array.CF[jj * naxes[0] + (naxes[0] - ii)]
                     .im =
-                        -dcimg[IDtmp].array.CF[jj * naxestmp[0] + ii].im;
+                        -imgtmp.im->array.CF[jj * naxestmp[0] + ii].im;
                     for(uint32_t jj = 1; jj < (uint32_t) naxes[1]; jj++)
                     {
-                        dcimg[IDout]
-                        .array.CF[jj * naxes[0] + (naxes[0] - ii)]
+                        imgout.im->array.CF[jj * naxes[0] + (naxes[0] - ii)]
                         .re =
-                            dcimg[IDtmp]
-                            .array.CF[(naxes[1] - jj) * naxestmp[0] + ii]
+                            imgtmp.im->array.CF[(naxes[1] - jj) * naxestmp[0] + ii]
                             .re;
-                        dcimg[IDout]
-                        .array.CF[jj * naxes[0] + (naxes[0] - ii)]
+                        imgout.im->array.CF[jj * naxes[0] + (naxes[0] - ii)]
                         .im =
-                            -dcimg[IDtmp]
-                            .array.CF[(naxes[1] - jj) * naxestmp[0] + ii]
+                            -imgtmp.im->array.CF[(naxes[1] - jj) * naxestmp[0] + ii]
                             .im;
                     }
                 }
@@ -1674,8 +1675,8 @@ imageID FFT_do2drfft(const char *__restrict in_name,
             plan_double = fftw_plan_dft_r2c_2d(
                               naxes[1],
                               naxes[0],
-                              dcimg[IDin].array.D,
-                              (fftw_complex *) dcimg[IDtmp].array.CD,
+                              imgin.im->array.D,
+                              (fftw_complex *) imgtmp.im->array.CD,
                               FFTWOPTMODE);
             if(plan_double == NULL)
             {
@@ -1694,8 +1695,8 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                 plan_double = fftw_plan_dft_r2c_2d(
                                   naxes[1],
                                   naxes[0],
-                                  dcimg[IDin].array.D,
-                                  (fftw_complex *) dcimg[IDtmp].array.CD,
+                                  imgin.im->array.D,
+                                  (fftw_complex *) imgtmp.im->array.CD,
                                   FFTWOPTMODE);
                 copy_image_ID(ffttmpcpyname, in_name, 0);
                 delete_image_ID(ffttmpcpyname, DELETE_IMAGE_ERRMODE_WARNING);
@@ -1710,34 +1711,28 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                 for(uint32_t ii = 0; ii < (uint32_t)(naxes[0] / 2 + 1); ii++)
                     for(uint32_t jj = 0; jj < (uint32_t) naxes[1]; jj++)
                     {
-                        dcimg[IDout].array.CD[jj * naxes[0] + ii] =
-                            dcimg[IDtmp].array.CD[jj * naxestmp[0] + ii];
+                        imgout.im->array.CD[jj * naxes[0] + ii] =
+                            imgtmp.im->array.CD[jj * naxestmp[0] + ii];
                     }
 
                 for(uint32_t ii = 1; ii < (uint32_t)(naxes[0] / 2 + 1); ii++)
                 {
                     uint32_t jj = 0;
-                    dcimg[IDout]
-                    .array.CD[jj * naxes[0] + (naxes[0] - ii)]
+                    imgout.im->array.CD[jj * naxes[0] + (naxes[0] - ii)]
                     .re =
-                        dcimg[IDtmp].array.CD[jj * naxestmp[0] + ii].re;
-                    dcimg[IDout]
-                    .array.CD[jj * naxes[0] + (naxes[0] - ii)]
+                        imgtmp.im->array.CD[jj * naxestmp[0] + ii].re;
+                    imgout.im->array.CD[jj * naxes[0] + (naxes[0] - ii)]
                     .im =
-                        -dcimg[IDtmp].array.CD[jj * naxestmp[0] + ii].im;
+                        -imgtmp.im->array.CD[jj * naxestmp[0] + ii].im;
                     for(uint32_t jj = 1; jj < (uint32_t) naxes[1]; jj++)
                     {
-                        dcimg[IDout]
-                        .array.CD[jj * naxes[0] + (naxes[0] - ii)]
+                        imgout.im->array.CD[jj * naxes[0] + (naxes[0] - ii)]
                         .re =
-                            dcimg[IDtmp]
-                            .array.CD[(naxes[1] - jj) * naxestmp[0] + ii]
+                            imgtmp.im->array.CD[(naxes[1] - jj) * naxestmp[0] + ii]
                             .re;
-                        dcimg[IDout]
-                        .array.CD[jj * naxes[0] + (naxes[0] - ii)]
+                        imgout.im->array.CD[jj * naxes[0] + (naxes[0] - ii)]
                         .im =
-                            -dcimg[IDtmp]
-                            .array.CD[(naxes[1] - jj) * naxestmp[0] + ii]
+                            -imgtmp.im->array.CD[(naxes[1] - jj) * naxestmp[0] + ii]
                             .im;
                     }
                 }
@@ -1760,11 +1755,11 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                        2,
                        naxes,
                        naxes[2],
-                       dcimg[IDin].array.F,
+                       imgin.im->array.F,
                        NULL,
                        1,
                        naxes[0] * naxes[1],
-                       (fftwf_complex *) dcimg[IDout].array.CF,
+                       (fftwf_complex *) imgout.im->array.CF,
                        NULL,
                        1,
                        naxes[0] * naxes[1],
@@ -1782,11 +1777,11 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                            2,
                            naxes,
                            naxes[2],
-                           dcimg[IDin].array.F,
+                           imgin.im->array.F,
                            NULL,
                            1,
                            naxes[0] * naxes[1],
-                           (fftwf_complex *) dcimg[IDout].array.CF,
+                           (fftwf_complex *) imgout.im->array.CF,
                            NULL,
                            1,
                            naxes[0] * naxes[1],
@@ -1812,19 +1807,15 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                     for(uint32_t jj = 0; jj < (uint32_t) naxes[1]; jj++)
                         for(uint32_t kk = 0; kk < (uint32_t) naxes[2]; kk++)
                         {
-                            dcimg[IDout]
-                            .array.CF[naxes[0] * naxes[1] * kk +
+                            imgout.im->array.CF[naxes[0] * naxes[1] * kk +
                                                jj * naxes[0] + ii] =
-                                          dcimg[IDtmp]
-                                          .array.CF[naxestmp[0] * naxestmp[1] * kk +
+                                          imgtmp.im->array.CF[naxestmp[0] * naxestmp[1] * kk +
                                                                 jj * naxestmp[0] + ii];
                             if(ii != 0)
                             {
-                                dcimg[IDout]
-                                .array.CF[naxes[0] * naxes[1] * kk +
+                                imgout.im->array.CF[naxes[0] * naxes[1] * kk +
                                                    jj * naxes[0] + (naxes[0] - ii)] =
-                                              dcimg[IDtmp]
-                                              .array
+                                              imgtmp.im->array
                                               .CF[naxestmp[0] * naxestmp[1] * kk +
                                                               jj * naxestmp[0] + ii];
                             }
@@ -1837,11 +1828,11 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                               2,
                               naxes,
                               naxes[2],
-                              dcimg[IDin].array.D,
+                              imgin.im->array.D,
                               NULL,
                               1,
                               naxes[0] * naxes[1],
-                              (fftw_complex *) dcimg[IDout].array.CD,
+                              (fftw_complex *) imgout.im->array.CD,
                               NULL,
                               1,
                               naxes[0] * naxes[1],
@@ -1860,11 +1851,11 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                                   2,
                                   naxes,
                                   naxes[2],
-                                  dcimg[IDin].array.D,
+                                  imgin.im->array.D,
                                   NULL,
                                   1,
                                   naxes[0] * naxes[1],
-                                  (fftw_complex *) dcimg[IDout].array.CD,
+                                  (fftw_complex *) imgout.im->array.CD,
                                   NULL,
                                   1,
                                   naxes[0] * naxes[1],
@@ -1890,19 +1881,15 @@ imageID FFT_do2drfft(const char *__restrict in_name,
                     for(uint32_t jj = 0; jj < (uint32_t) naxes[1]; jj++)
                         for(uint32_t kk = 0; kk < (uint32_t) naxes[2]; kk++)
                         {
-                            dcimg[IDout]
-                            .array.CD[naxes[0] * naxes[1] * kk +
+                            imgout.im->array.CD[naxes[0] * naxes[1] * kk +
                                                jj * naxes[0] + ii] =
-                                          dcimg[IDtmp]
-                                          .array.CD[naxestmp[0] * naxestmp[1] * kk +
+                                          imgtmp.im->array.CD[naxestmp[0] * naxestmp[1] * kk +
                                                                 jj * naxestmp[0] + ii];
                             if(ii != 0)
                             {
-                                dcimg[IDout]
-                                .array.CD[naxes[0] * naxes[1] * kk +
+                                imgout.im->array.CD[naxes[0] * naxes[1] * kk +
                                                    jj * naxes[0] + (naxes[0] - ii)] =
-                                              dcimg[IDtmp]
-                                              .array
+                                              imgtmp.im->array
                                               .CD[naxestmp[0] * naxestmp[1] * kk +
                                                               jj * naxestmp[0] + ii];
                             }
@@ -1916,13 +1903,12 @@ imageID FFT_do2drfft(const char *__restrict in_name,
         printf("Error : image dimension not appropriate for FFT\n");
     }
 
-    delete_image_ID(ffttmpname, DELETE_IMAGE_ERRMODE_WARNING);
+    delete_image_ID(ffttmpname,
+                    DELETE_IMAGE_ERRMODE_WARNING);
 
-    free(naxestmp);
-    free(naxesl);
     free(naxes);
 
-    return IDout;
+    return imgout.ID;
 }
 
 imageID do2drfft(const char *in_name, const char *out_name)
