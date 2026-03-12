@@ -361,179 +361,233 @@ int array_index(long size)
 /* 1d complex -> complex fft */
 // supports single and double precisions
 //
-imageID FFT_do1dfft(const char *__restrict in_name,
-                    const char *__restrict out_name,
-                    int dir)
+imageID FFT_do1dfft(
+    const char *__restrict in_name,
+    const char *__restrict out_name,
+    int dir)
 {
-    int           *naxes;
-    uint32_t      *naxesl;
-    long           naxis;
-    imageID        IDin, IDout;
-    long           i;
     int            OK = 0;
     fftwf_plan     plan;
     fftw_plan      plan_double;
-    long           jj;
     fftwf_complex *inptr, *outptr;
-    fftw_complex  *inptr_double, *outptr_double;
-    uint8_t        datatype;
+    fftw_complex  *inptr_double;
+    fftw_complex  *outptr_double;
 
-    IDin  = image_ID(in_name, dcimg, dcnimg);
-    naxis = dcimg[IDin].md[0].naxis;
+    IMGID imgin =
+        imgid_make_from_name(in_name);
+    resolveIMGID(&imgin,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    naxes = (int *) malloc(naxis * sizeof(int));
+    long naxis = imgin.md->naxis;
+    uint8_t datatype =
+        imgin.md->datatype;
+
+    int *naxes = (int *) malloc(
+        naxis * sizeof(int));
     if(naxes == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    naxesl = (uint32_t *) malloc(naxis * sizeof(uint32_t));
-    if(naxesl == NULL)
+    IMGID imgout =
+        imgid_make_from_name(out_name);
+    imgout.mdt->naxis = naxis;
+    for(long i = 0; i < naxis; i++)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
+        imgout.mdt->size[i] =
+            imgin.md->size[i];
+        naxes[i] =
+            (int) imgin.md->size[i];
     }
-
-    for(i = 0; i < naxis; i++)
-    {
-        naxesl[i] = dcimg[IDin].md[0].size[i];
-        naxes[i]  = (int) dcimg[IDin].md[0].size[i];
-    }
-    datatype = dcimg[IDin].md[0].datatype;
-    create_image_ID(out_name,
-                    naxis,
-                    naxesl,
-                    datatype,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
+    imgout.mdt->datatype = datatype;
+    imgout.mdt->shared = dcshareddft;
+    imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
     if(naxis == 1)
     {
         if(array_index(naxes[0]) != 100)
         {
             OK = 1;
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype
+               == _DATATYPE_COMPLEX_FLOAT)
             {
                 plan = fftwf_plan_dft_1d(
-                           naxes[0],
-                           (fftwf_complex *) dcimg[IDin].array.CF,
-                           (fftwf_complex *) dcimg[IDout].array.CF,
-                           dir,
-                           FFTWOPTMODE);
+                    naxes[0],
+                    (fftwf_complex *)
+                        imgin.im->array.CF,
+                    (fftwf_complex *)
+                        imgout.im->array.CF,
+                    dir, FFTWOPTMODE);
                 fftwf_execute(plan);
                 fftwf_destroy_plan(plan);
             }
             else
             {
-                plan_double = fftw_plan_dft_1d(
-                                  naxes[0],
-                                  (fftw_complex *) dcimg[IDin].array.CD,
-                                  (fftw_complex *) dcimg[IDout].array.CD,
-                                  dir,
-                                  FFTWOPTMODE);
+                plan_double =
+                    fftw_plan_dft_1d(
+                        naxes[0],
+                        (fftw_complex *)
+                            imgin.im
+                                ->array.CD,
+                        (fftw_complex *)
+                            imgout.im
+                                ->array.CD,
+                        dir, FFTWOPTMODE);
                 fftw_execute(plan_double);
-                fftw_destroy_plan(plan_double);
+                fftw_destroy_plan(
+                    plan_double);
             }
         }
         else
         {
             OK = 1;
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype
+               == _DATATYPE_COMPLEX_FLOAT)
             {
                 plan = fftwf_plan_dft_1d(
-                           naxes[0],
-                           (fftwf_complex *) dcimg[IDin].array.CF,
-                           (fftwf_complex *) dcimg[IDout].array.CF,
-                           dir,
-                           FFTWOPTMODE);
+                    naxes[0],
+                    (fftwf_complex *)
+                        imgin.im->array.CF,
+                    (fftwf_complex *)
+                        imgout.im->array.CF,
+                    dir, FFTWOPTMODE);
                 fftwf_execute(plan);
                 fftwf_destroy_plan(plan);
             }
             else
             {
-                plan_double = fftw_plan_dft_1d(
-                                  naxes[0],
-                                  (fftw_complex *) dcimg[IDin].array.CD,
-                                  (fftw_complex *) dcimg[IDout].array.CD,
-                                  dir,
-                                  FFTWOPTMODE);
+                plan_double =
+                    fftw_plan_dft_1d(
+                        naxes[0],
+                        (fftw_complex *)
+                            imgin.im
+                                ->array.CD,
+                        (fftw_complex *)
+                            imgout.im
+                                ->array.CD,
+                        dir, FFTWOPTMODE);
                 fftw_execute(plan_double);
-                fftw_destroy_plan(plan_double);
+                fftw_destroy_plan(
+                    plan_double);
             }
         }
     }
 
     if(naxis == 2)
     {
-        if((naxes[1] == 1) && (array_index(naxes[0]) != 100))
+        if((naxes[1] == 1)
+           && (array_index(naxes[0])
+               != 100))
         {
             OK = 1;
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype
+               == _DATATYPE_COMPLEX_FLOAT)
             {
-                inptr  = (fftwf_complex *) dcimg[IDin].array.CF;
-                outptr = (fftwf_complex *) dcimg[IDout].array.CF;
-                plan   = fftwf_plan_dft_1d(naxes[0],
-                                           inptr,
-                                           outptr,
-                                           dir,
-                                           FFTWOPTMODE);
+                inptr =
+                    (fftwf_complex *)
+                        imgin.im->array.CF;
+                outptr =
+                    (fftwf_complex *)
+                        imgout.im->array.CF;
+                plan =
+                    fftwf_plan_dft_1d(
+                        naxes[0],
+                        inptr, outptr,
+                        dir, FFTWOPTMODE);
                 fftwf_execute(plan);
                 fftwf_destroy_plan(plan);
             }
             else
             {
-                inptr_double  = (fftw_complex *) dcimg[IDin].array.CD;
-                outptr_double = (fftw_complex *) dcimg[IDout].array.CD;
-                plan_double   = fftw_plan_dft_1d(naxes[0],
-                                                 inptr_double,
-                                                 outptr_double,
-                                                 dir,
-                                                 FFTWOPTMODE);
+                inptr_double =
+                    (fftw_complex *)
+                        imgin.im->array.CD;
+                outptr_double =
+                    (fftw_complex *)
+                        imgout.im->array.CD;
+                plan_double =
+                    fftw_plan_dft_1d(
+                        naxes[0],
+                        inptr_double,
+                        outptr_double,
+                        dir, FFTWOPTMODE);
                 fftw_execute(plan_double);
-                fftw_destroy_plan(plan_double);
+                fftw_destroy_plan(
+                    plan_double);
             }
         }
         else
         {
             OK = 1;
-            if(datatype == _DATATYPE_COMPLEX_FLOAT)
+            if(datatype
+               == _DATATYPE_COMPLEX_FLOAT)
             {
-                inptr = 
-                    (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
+                inptr =
+                    (fftwf_complex *)
+                    malloc(
+                        sizeof(
+                            fftwf_complex)
+                        * naxes[0]);
                 if(inptr == NULL)
                 {
-                    PRINT_ERROR("malloc returns NULL pointer");
+                    PRINT_ERROR(
+                        "malloc returns"
+                        " NULL pointer");
                     abort();
                 }
 
-                outptr = 
-                    (fftwf_complex *) malloc(sizeof(fftwf_complex) * naxes[0]);
+                outptr =
+                    (fftwf_complex *)
+                    malloc(
+                        sizeof(
+                            fftwf_complex)
+                        * naxes[0]);
                 if(outptr == NULL)
                 {
-                    PRINT_ERROR("malloc returns NULL pointer");
+                    PRINT_ERROR(
+                        "malloc returns"
+                        " NULL pointer");
                     abort();
                 }
 
-                plan = fftwf_plan_dft_1d(naxes[0],
-                                         inptr,
-                                         outptr,
-                                         dir,
-                                         FFTWOPTMODE);
+                plan =
+                    fftwf_plan_dft_1d(
+                        naxes[0],
+                        inptr, outptr,
+                        dir, FFTWOPTMODE);
 
-                for(jj = 0; jj < naxes[1]; jj++)
+                for(long jj = 0;
+                    jj < naxes[1]; jj++)
                 {
-                    memcpy((char *) inptr,
-                           (char *) dcimg[IDin].array.CF +
-                           sizeof(fftwf_complex) * jj * naxes[0],
-                           sizeof(fftwf_complex) * naxes[0]);
+                    memcpy(
+                        (char *) inptr,
+                        (char *)
+                            imgin.im
+                                ->array.CF
+                        + sizeof(
+                              fftwf_complex)
+                          * jj * naxes[0],
+                        sizeof(
+                            fftwf_complex)
+                        * naxes[0]);
                     fftwf_execute(plan);
-                    memcpy((char *) dcimg[IDout].array.CF +
-                           sizeof(complex_float) * jj * naxes[0],
-                           outptr,
-                           sizeof(fftwf_complex) * naxes[0]);
+                    memcpy(
+                        (char *)
+                            imgout.im
+                                ->array.CF
+                        + sizeof(
+                              complex_float)
+                          * jj * naxes[0],
+                        outptr,
+                        sizeof(
+                            fftwf_complex)
+                        * naxes[0]);
                 }
                 fftwf_destroy_plan(plan);
                 free(inptr);
@@ -541,41 +595,68 @@ imageID FFT_do1dfft(const char *__restrict in_name,
             }
             else
             {
-                inptr_double = 
-                    (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
+                inptr_double =
+                    (fftw_complex *)
+                    malloc(
+                        sizeof(fftw_complex)
+                        * naxes[0]);
                 if(inptr_double == NULL)
                 {
-                    PRINT_ERROR("malloc returns NULL pointer");
+                    PRINT_ERROR(
+                        "malloc returns"
+                        " NULL pointer");
                     abort();
                 }
 
-                outptr_double = 
-                    (fftw_complex *) malloc(sizeof(fftw_complex) * naxes[0]);
+                outptr_double =
+                    (fftw_complex *)
+                    malloc(
+                        sizeof(fftw_complex)
+                        * naxes[0]);
                 if(outptr_double == NULL)
                 {
-                    PRINT_ERROR("malloc returns NULL pointer");
+                    PRINT_ERROR(
+                        "malloc returns"
+                        " NULL pointer");
                     abort();
                 }
 
-                plan_double = fftw_plan_dft_1d(naxes[0],
-                                               inptr_double,
-                                               outptr_double,
-                                               dir,
-                                               FFTWOPTMODE);
+                plan_double =
+                    fftw_plan_dft_1d(
+                        naxes[0],
+                        inptr_double,
+                        outptr_double,
+                        dir, FFTWOPTMODE);
 
-                for(jj = 0; jj < naxes[1]; jj++)
+                for(long jj = 0;
+                    jj < naxes[1]; jj++)
                 {
-                    memcpy((char *) inptr_double,
-                           (char *) dcimg[IDin].array.CD +
-                           sizeof(fftw_complex) * jj * naxes[0],
-                           sizeof(fftw_complex) * naxes[0]);
-                    fftw_execute(plan_double);
-                    memcpy((char *) dcimg[IDout].array.CD +
-                           sizeof(complex_double) * jj * naxes[0],
-                           outptr_double,
-                           sizeof(fftw_complex) * naxes[0]);
+                    memcpy(
+                        (char *)
+                            inptr_double,
+                        (char *)
+                            imgin.im
+                                ->array.CD
+                        + sizeof(
+                              fftw_complex)
+                          * jj * naxes[0],
+                        sizeof(fftw_complex)
+                        * naxes[0]);
+                    fftw_execute(
+                        plan_double);
+                    memcpy(
+                        (char *)
+                            imgout.im
+                                ->array.CD
+                        + sizeof(
+                              complex_double)
+                          * jj * naxes[0],
+                        outptr_double,
+                        sizeof(fftw_complex)
+                        * naxes[0]);
                 }
-                fftw_destroy_plan(plan_double);
+                fftw_destroy_plan(
+                    plan_double);
                 free(inptr_double);
                 free(outptr_double);
             }
@@ -584,12 +665,14 @@ imageID FFT_do1dfft(const char *__restrict in_name,
 
     if(OK == 0)
     {
-        printf("Error : image dimension not appropriate for FFT\n");
+        printf(
+            "Error : image dimension"
+            " not appropriate"
+            " for FFT\n");
     }
     free(naxes);
-    free(naxesl);
 
-    return (IDout);
+    return imgout.ID;
 }
 
 /* 1d real -> complex fft */
