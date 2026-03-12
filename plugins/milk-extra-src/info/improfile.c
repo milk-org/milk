@@ -114,6 +114,9 @@ CLIADDCMD_info__improfile()
     return RETURN_SUCCESS;
 }
 
+/**
+ * Compute radial profile of an image.
+ */
 errno_t profile(const char *ID_name,
                 const char *outfile,
                 double      xcenter,
@@ -121,66 +124,73 @@ errno_t profile(const char *ID_name,
                 double      step,
                 long        nb_step)
 {
-    imageID  ID;
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
     uint32_t naxes[2];
-    uint64_t nelements;
-    double   distance;
-    double  *dist;
-    double  *mean;
-    double  *rms;
-    long    *counts;
-    FILE    *fp;
-    long     i;
+    naxes[0]  = imgin.md->size[0];
+    naxes[1]  = imgin.md->size[1];
+    uint64_t nelements =
+        naxes[0] * naxes[1];
 
-    int *mask;
-    long IDmask; // if profmask exists
-
-    ID        = image_ID(ID_name, dcimg, dcnimg);
-    naxes[0]  = dcimg[ID].md[0].size[0];
-    naxes[1]  = dcimg[ID].md[0].size[1];
-    nelements = naxes[0] * naxes[1];
-
-    dist = (double *) malloc(nb_step * sizeof(double));
+    double *dist = (double *) malloc(
+        nb_step * sizeof(double));
     if(dist == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    mean = (double *) malloc(nb_step * sizeof(double));
+    double *mean = (double *) malloc(
+        nb_step * sizeof(double));
     if(mean == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    rms = (double *) malloc(nb_step * sizeof(double));
+    double *rms = (double *) malloc(
+        nb_step * sizeof(double));
     if(rms == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    counts = (long *) malloc(nb_step * sizeof(long));
+    long *counts = (long *) malloc(
+        nb_step * sizeof(long));
     if(counts == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    mask = (int *) malloc(sizeof(int) * nelements);
+    int *mask = (int *) malloc(
+        sizeof(int) * nelements);
     if(mask == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    IDmask = image_ID("profmask", dcimg, dcnimg);
-    if(IDmask != -1)
+    IMGID imgmask =
+        imgid_make_from_name("profmask");
+    resolveIMGID(&imgmask, ERRMODE_WARN,
+                 dcimg, dcnimg);
+    if(imgmask.ID != -1)
     {
-        for(unsigned long ii = 0; ii < nelements; ii++)
+        for(unsigned long ii = 0;
+            ii < nelements; ii++)
         {
-            if(dcimg[IDmask].array.F[ii] > 0.5)
+            if(imgmask.im->array.F[ii]
+               > 0.5)
             {
                 mask[ii] = 1;
             }
@@ -191,16 +201,15 @@ errno_t profile(const char *ID_name,
         }
     }
     else
-        for(unsigned long ii = 0; ii < nelements; ii++)
+    {
+        for(unsigned long ii = 0;
+            ii < nelements; ii++)
         {
             mask[ii] = 1;
         }
+    }
 
-    //  if( Debug )
-    // printf("Function profile. center = %f %f, step = %f, NBstep =
-    // %ld\n",xcenter,ycenter,step,nb_step);
-
-    for(i = 0; i < nb_step; i++)
+    for(long i = 0; i < nb_step; i++)
     {
         dist[i]   = 0.0;
         mean[i]   = 0.0;
@@ -208,60 +217,97 @@ errno_t profile(const char *ID_name,
         counts[i] = 0;
     }
 
+    FILE *fp;
     if((fp = fopen(outfile, "w")) == NULL)
     {
-        printf("error : can't open file %s\n", outfile);
+        printf("error : can't open "
+               "file %s\n", outfile);
     }
 
-    for(unsigned long jj = 0; jj < naxes[1]; jj++)
-        for(unsigned long ii = 0; ii < naxes[0]; ii++)
+    for(unsigned long jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(unsigned long ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long)(distance / step);
-            if((i < nb_step) && (mask[jj * naxes[0] + ii] == 1))
+            double distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            long i =
+                (long)(distance / step);
+            if((i < nb_step)
+               && (mask[jj * naxes[0]
+                        + ii] == 1))
             {
                 dist[i] += distance;
-                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
-                          dcimg[ID].array.F[jj * naxes[0] + ii];
+                mean[i] +=
+                    imgin.im->array.F[
+                        jj * naxes[0]
+                        + ii];
+                rms[i] +=
+                    imgin.im->array.F[
+                        jj * naxes[0]
+                        + ii]
+                    * imgin.im->array.F[
+                          jj * naxes[0]
+                          + ii];
                 counts[i] += 1;
             }
         }
+    }
 
-    for(i = 0; i < nb_step; i++)
+    for(long i = 0; i < nb_step; i++)
     {
         dist[i] /= counts[i];
         mean[i] /= counts[i];
         rms[i] = 0.0;
     }
 
-    for(unsigned long jj = 0; jj < naxes[1]; jj++)
-        for(unsigned long ii = 0; ii < naxes[0]; ii++)
+    for(unsigned long jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(unsigned long ii = 0;
+            ii < naxes[0]; ii++)
         {
-            distance = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                            (1.0 * jj - ycenter) * (1.0 * jj - ycenter));
-            i        = (long) distance / step;
-            if((i < nb_step) && (mask[jj * naxes[0] + ii] == 1))
+            double distance = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter));
+            long i =
+                (long) distance / step;
+            if((i < nb_step)
+               && (mask[jj * naxes[0]
+                        + ii] == 1))
             {
                 rms[i] +=
-                    (dcimg[ID].array.F[jj * naxes[0] + ii] - mean[i]) *
-                    (dcimg[ID].array.F[jj * naxes[0] + ii] - mean[i]);
-                //	  counts[i] += 1;
+                    (imgin.im->array.F[
+                         jj * naxes[0]
+                         + ii]
+                     - mean[i])
+                    * (imgin.im
+                           ->array.F[
+                               jj
+                               * naxes[0]
+                               + ii]
+                       - mean[i]);
             }
         }
+    }
 
-    for(i = 0; i < nb_step; i++)
+    for(long i = 0; i < nb_step; i++)
     {
         if(counts[i] > 0)
         {
-            //     dist[i] /= counts[i];
-            // mean[i] /= counts[i];
-            // rms[i] =
-            // sqrt(rms[i]-1.0*counts[i]*mean[i]*mean[i])/sqrt(counts[i]);
-            rms[i] = sqrt(rms[i] / counts[i]);
+            rms[i] = sqrt(
+                rms[i] / counts[i]);
             fprintf(fp,
-                    "%.18f %.18g %.18g %ld %ld\n",
+                    "%.18f %.18g "
+                    "%.18g %ld %ld\n",
                     dist[i],
                     mean[i],
                     rms[i],
@@ -281,68 +327,100 @@ errno_t profile(const char *ID_name,
     return RETURN_SUCCESS;
 }
 
-errno_t profile2im(const char   *profile_name,
-                   long          nbpoints,
-                   unsigned long size,
-                   double        xcenter,
-                   double        ycenter,
-                   double        radius,
-                   const char   *out)
+/**
+ * Construct a 2D image from a radial
+ * profile read from a text file.
+ */
+errno_t profile2im(
+    const char   *profile_name,
+    long          nbpoints,
+    unsigned long size,
+    double        xcenter,
+    double        ycenter,
+    double        radius,
+    const char   *out)
 {
     DEBUG_TRACE_FSTART();
 
-    FILE   *fp;
-    imageID ID;
-    double *profile_array;
-    long    i;
-    long    index;
-    double  tmp;
-    double  r, x;
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            out, size, size);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    FUNC_CHECK_RETURN(create_2Dimage_ID(out, size, size, &ID));
-
-    profile_array = (double *) malloc(sizeof(double) * nbpoints);
+    double *profile_array =
+        (double *) malloc(
+            sizeof(double) * nbpoints);
     if(profile_array == NULL)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
+        PRINT_ERROR(
+            "malloc returns NULL pointer");
         abort();
     }
 
-    if((fp = fopen(profile_name, "r")) == NULL)
+    FILE *fp;
+    if((fp = fopen(profile_name, "r"))
+       == NULL)
     {
-        printf("ERROR: cannot open profile file \"%s\"\n", profile_name);
+        printf("ERROR: cannot open "
+               "profile file \"%s\"\n",
+               profile_name);
         exit(0);
     }
-    for(i = 0; i < nbpoints; i++)
+    for(long i = 0; i < nbpoints; i++)
     {
-        if(fscanf(fp, "%ld %lf\n", &index, &tmp) != 2)
+        long   index;
+        double tmp;
+        if(fscanf(fp, "%ld %lf\n",
+                  &index, &tmp) != 2)
         {
-            printf("ERROR: fscanf, %s line %d\n", __FILE__, __LINE__);
+            printf("ERROR: fscanf, "
+                   "%s line %d\n",
+                   __FILE__, __LINE__);
             exit(0);
         }
         profile_array[i] = tmp;
     }
     fclose(fp);
 
-    for(unsigned long ii = 0; ii < size; ii++)
-        for(unsigned long jj = 0; jj < size; jj++)
+    for(unsigned long ii = 0;
+        ii < size; ii++)
+    {
+        for(unsigned long jj = 0;
+            jj < size; jj++)
         {
-            r = sqrt((1.0 * ii - xcenter) * (1.0 * ii - xcenter) +
-                     (1.0 * jj - ycenter) * (1.0 * jj - ycenter)) /
-                radius;
-            i = (long)(r * nbpoints);
-            x = r * nbpoints - i; // 0<x<1
+            double r = sqrt(
+                (1.0 * ii - xcenter)
+                * (1.0 * ii - xcenter)
+                + (1.0 * jj - ycenter)
+                  * (1.0 * jj
+                     - ycenter))
+                / radius;
+            long i = (long)(
+                r * nbpoints);
+            double x =
+                r * nbpoints - i;
 
             if(i + 1 < nbpoints)
             {
-                dcimg[ID].array.F[jj * size + ii] =
-                    (1.0 - x) * profile_array[i] + x * profile_array[i + 1];
+                imgout.im->array.F[
+                    jj * size + ii] =
+                    (1.0 - x)
+                    * profile_array[i]
+                    + x
+                      * profile_array[
+                            i + 1];
             }
             else if(i < nbpoints)
             {
-                dcimg[ID].array.F[jj * size + ii] = profile_array[i];
+                imgout.im->array.F[
+                    jj * size + ii] =
+                    profile_array[i];
             }
         }
+    }
 
     free(profile_array);
 
