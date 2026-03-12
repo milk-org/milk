@@ -101,7 +101,7 @@ errno_t mk_amph_from_complex_IMGID(
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint64_t ii = 0;
                  ii < nelement; ii++)
@@ -155,7 +155,7 @@ errno_t mk_amph_from_complex_IMGID(
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint64_t ii = 0;
                  ii < nelement; ii++)
