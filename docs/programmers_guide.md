@@ -331,7 +331,7 @@ Each module directory should have a `README.md` with:
 ---
 
 
-*(This guide is automatically updated by your coding agent using the /update-programmers-guide workflow)*
+*(This guide is automatically updated by your coding agent using the [/update-programmers-guide](../.agents/workflows/update-programmers-guide.md) workflow)*
 
 
 ---

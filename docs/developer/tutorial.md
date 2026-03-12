@@ -6,6 +6,7 @@ block. By the end of this guide, you will have a working
 module linked to the `milk` core frameworks.
 
 See also: [Programmer's Guide](../programmers_guide.md) ·
+[Code Assist Tools](../code_assist.md) ·
 [Adding Plugins](plugins.md) ·
 [FPS](../fps.md) ·
 [FPS Standalone Modes](../FPS_Standalone_CMD_Modes.md)

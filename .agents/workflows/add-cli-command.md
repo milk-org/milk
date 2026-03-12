@@ -19,7 +19,7 @@ Ask the user for:
 - **CLI keyword** (e.g., `arith.mynewcmd`)
 - **One-line description**
 - Whether the command uses **FPS** (if yes, use the
-  `/create-fpsexec` workflow instead for standalone
+  [`/create-fpsexec`](create-fpsexec.md) workflow instead for standalone
   support, or continue here for CLI-only FPS)
 - **Arguments**: names, types, descriptions
 
@@ -106,4 +106,4 @@ table describing the new file.
 
 ## 7. Compile and Verify
 
-Run the `/compile-test` workflow.
+Run the [`/compile-test`](compile-test.md) workflow.

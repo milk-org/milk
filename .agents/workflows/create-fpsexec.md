@@ -47,4 +47,4 @@ See also: [Developer Tutorial](docs/developer/tutorial.md) ·
    target_link_libraries(cacao-fpsexec-my-func PUBLIC milkstatistic)
    ```
 
-5. Notify the user that the boilerplate for the new V2 compute unit has been set up successfully. Instruct them to modify the `FPS_PARAMS` and `fpsexec()` computation logic in the generated C file as needed. Remind them they can use the `/compile-test` workflow afterwards to verify everything compiles.
+5. Notify the user that the boilerplate for the new V2 compute unit has been set up successfully. Instruct them to modify the `FPS_PARAMS` and `fpsexec()` computation logic in the generated C file as needed. Remind them they can use the [`/compile-test`](compile-test.md) workflow afterwards to verify everything compiles.
