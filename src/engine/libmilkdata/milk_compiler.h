@@ -201,4 +201,21 @@
 #endif
 
 
+/* ========================================
+ *  Alignment hints
+ * ======================================== */
+
+/**
+ * @brief Assert pointer is aligned
+ *
+ * Use on array pointers to allow GCC/Clang
+ * to generate aligned vector instructions (e.g. AVX512).
+ */
+#ifdef __GNUC__
+#define MILK_ASSUME_ALIGNED(ptr) __builtin_assume_aligned((ptr), 64)
+#else
+#define MILK_ASSUME_ALIGNED(ptr) (ptr)
+#endif
+
+
 #endif /* MILK_COMPILER_H */
