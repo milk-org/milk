@@ -16,105 +16,132 @@
 
 #include "imcontract.h"
 
-imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
-        const char *__restrict IDmask_name,
-        const char *__restrict IDout_name)
+/**
+ * Extrapolate values to unmasked pixels
+ * using nearest masked pixel.
+ */
+imageID basic_2Dextrapolate_nearestpixel(
+    const char *__restrict IDin_name,
+    const char *__restrict IDmask_name,
+    const char *__restrict IDout_name)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID IDin, IDmask, IDout;
-    long    ii, jj, ii1, jj1, k;
-    double  bdist, dist;
-    long    naxes[2];
+    IMGID imgin =
+        imgid_make_from_name(IDin_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    long *maskii = NULL;
-    long *maskjj = NULL;
-    long  NBmaskpts;
-
-    long IDmask1;
-
-    IDin   = image_ID(IDin_name, dcimg, dcnimg);
-    IDmask = image_ID(IDmask_name, dcimg, dcnimg);
+    IMGID imgmask =
+        imgid_make_from_name(IDmask_name);
+    resolveIMGID(&imgmask, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
     list_image_ID();
-    IDmask1 = image_ID("_mask1", dcimg, dcnimg);
-    if(IDmask1 != -1)
+    IMGID imgmask1 =
+        imgid_make_from_name("_mask1");
+    resolveIMGID(&imgmask1, ERRMODE_WARN,
+                 dcimg, dcnimg);
+    if(imgmask1.ID != -1)
     {
         printf("USING MASK\n");
     }
 
-    naxes[0] = dcimg[IDin].md[0].size[0];
-    naxes[1] = dcimg[IDin].md[0].size[1];
+    long naxes[2];
+    naxes[0] = imgin.md->size[0];
+    naxes[1] = imgin.md->size[1];
 
-    NBmaskpts = 0;
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
-            if(dcimg[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
+    long NBmaskpts = 0;
+    for(long ii = 0; ii < naxes[0]; ii++)
+        for(long jj = 0;
+            jj < naxes[1]; jj++)
+        {
+            if(imgmask.im->array.F[
+                   jj * naxes[0] + ii]
+               > 0.5)
             {
                 NBmaskpts++;
             }
+        }
 
-    maskii = (long *) malloc(sizeof(long) * NBmaskpts);
+    long *maskii = (long *) malloc(
+        sizeof(long) * NBmaskpts);
     if(maskii == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc error");
         exit(0);
     }
-    maskii[0] = 0; // avoids warning about unused maskii
+    maskii[0] = 0;
 
-    maskjj = (long *) malloc(sizeof(long) * NBmaskpts);
+    long *maskjj = (long *) malloc(
+        sizeof(long) * NBmaskpts);
     if(maskjj == NULL)
     {
         C_ERRNO = errno;
         PRINT_ERROR("malloc error");
         exit(0);
     }
-    maskjj[0] = 0; // avoids warning about unused maskjj
+    maskjj[0] = 0;
 
     NBmaskpts = 0;
-    for(ii = 0; ii < naxes[0]; ii++)
-        for(jj = 0; jj < naxes[1]; jj++)
-            if(dcimg[IDmask].array.F[jj * naxes[0] + ii] > 0.5)
+    for(long ii = 0; ii < naxes[0]; ii++)
+        for(long jj = 0;
+            jj < naxes[1]; jj++)
+        {
+            if(imgmask.im->array.F[
+                   jj * naxes[0] + ii]
+               > 0.5)
             {
                 maskii[NBmaskpts] = ii;
                 maskjj[NBmaskpts] = jj;
                 NBmaskpts++;
             }
+        }
 
-    create_2Dimage_ID(IDout_name, naxes[0], naxes[1], &IDout);
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            IDout_name,
+            naxes[0], naxes[1]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
     printf("imout = %s\n", IDout_name);
     printf("\n");
 
-    for(ii = 0; ii < naxes[0]; ii++)
+    for(long ii = 0; ii < naxes[0]; ii++)
     {
-        printf("\r%ld / %ld  ", ii, naxes[0]);
+        printf("\r%ld / %ld  ",
+               ii, naxes[0]);
         fflush(stdout);
 
-        for(jj = 0; jj < naxes[1]; jj++)
+        for(long jj = 0;
+            jj < naxes[1]; jj++)
         {
-            /*if(IDmask1==-1)
-                OKpix = 1;
-            else
-            {
-                if(dcimg[IDmask1].array.F[jj*naxes[1]+ii]>0.5)
-                    OKpix = 1;
-                else
-                    OKpix = 0;
-            }*/
-            bdist = (double)(naxes[0] + naxes[1]);
+            double bdist = (double)(
+                naxes[0] + naxes[1]);
             bdist = bdist * bdist;
-            for(k = 0; k < NBmaskpts; k++)
+            for(long k = 0;
+                k < NBmaskpts; k++)
             {
-                ii1 = maskii[k];
-                jj1 = maskjj[k];
-                dist =
-                    1.0 * ((ii1 - ii) * (ii1 - ii) + (jj1 - jj) * (jj1 - jj));
+                long ii1 = maskii[k];
+                long jj1 = maskjj[k];
+                double dist =
+                    1.0
+                    * ((ii1 - ii)
+                       * (ii1 - ii)
+                       + (jj1 - jj)
+                         * (jj1 - jj));
                 if(dist < bdist)
                 {
                     bdist = dist;
-                    dcimg[IDout].array.F[jj * naxes[0] + ii] =
-                        dcimg[IDin].array.F[jj1 * naxes[0] + ii1];
+                    imgout.im->array.F[
+                        jj * naxes[0]
+                        + ii] =
+                        imgin.im->array.F[
+                            jj1 * naxes[0]
+                            + ii1];
                 }
             }
         }
@@ -126,5 +153,5 @@ imageID basic_2Dextrapolate_nearestpixel(const char *__restrict IDin_name,
     free(maskjj);
 
     DEBUG_TRACE_FEXIT();
-    return (IDout);
+    return imgout.ID;
 }
