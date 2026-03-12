@@ -92,7 +92,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_UINT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -103,7 +103,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -114,7 +114,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -125,7 +125,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -137,7 +137,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -148,7 +148,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -159,7 +159,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -170,7 +170,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -182,7 +182,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -193,7 +193,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
@@ -279,7 +279,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_UINT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -291,7 +291,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -303,7 +303,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -315,7 +315,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -328,7 +328,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -340,7 +340,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -352,7 +352,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -364,7 +364,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -377,7 +377,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -389,7 +389,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -478,7 +478,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -491,7 +491,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -504,7 +504,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -517,7 +517,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -531,7 +531,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -544,7 +544,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -557,7 +557,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -570,7 +570,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -584,7 +584,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -597,7 +597,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -695,7 +695,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_UINT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -707,7 +707,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_UINT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -719,7 +719,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_UINT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -731,7 +731,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_UINT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -743,7 +743,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_INT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -754,7 +754,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_INT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -765,7 +765,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_INT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -776,7 +776,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_INT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -788,7 +788,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_FLOAT)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -799,7 +799,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
         if(datatype == _DATATYPE_DOUBLE)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -852,7 +852,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -863,7 +863,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -874,7 +874,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -885,7 +885,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -897,7 +897,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -908,7 +908,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -919,7 +919,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -930,7 +930,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -942,7 +942,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -954,7 +954,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
     if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -1022,7 +1022,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_UINT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1033,7 +1033,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_UINT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1044,7 +1044,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_UINT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1055,7 +1055,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_UINT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1067,7 +1067,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_INT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1078,7 +1078,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_INT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1089,7 +1089,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_INT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1100,7 +1100,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_INT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1112,7 +1112,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_FLOAT)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1124,7 +1124,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
         if(datatype == _DATATYPE_DOUBLE)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1173,7 +1173,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_UINT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1184,7 +1184,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_UINT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1195,7 +1195,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_UINT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1206,7 +1206,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_UINT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1218,7 +1218,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_INT8)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1229,7 +1229,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_INT16)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1240,7 +1240,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_INT32)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1251,7 +1251,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_INT64)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1263,7 +1263,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_FLOAT)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1274,7 +1274,7 @@ errno_t arith_image_function_1_1_inplace(const char *ID_name,
         if(datatype == _DATATYPE_DOUBLE)
         {
 #ifdef _OPENMP
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(ii = 0; ii < nelement; ii++)
             {
@@ -1437,7 +1437,7 @@ errno_t arith_image_function_2_1_IMGID(
                 float *in1ptr = inimg1->im->array.F;
                 float *in2ptr = inimg2->im->array.F;
 #ifdef _OPENMP
-                #pragma omp for
+                #pragma omp for simd
 #endif
                 for (uint64_t ii = 0; ii < nelement; ii++)
                 {
@@ -1450,7 +1450,7 @@ errno_t arith_image_function_2_1_IMGID(
                 double *in1ptr = inimg1->im->array.D;
                 double *in2ptr = inimg2->im->array.D;
 #ifdef _OPENMP
-                #pragma omp for
+                #pragma omp for simd
 #endif
                 for (uint64_t ii = 0; ii < nelement; ii++)
                 {
@@ -1461,7 +1461,7 @@ errno_t arith_image_function_2_1_IMGID(
             {
                 float *outptr = outimg->im->array.F;
 #ifdef _OPENMP
-                #pragma omp for
+                #pragma omp for simd
 #endif
                 for (uint64_t ii = 0; ii < nelement; ii++)
                 {
@@ -1478,7 +1478,7 @@ errno_t arith_image_function_2_1_IMGID(
             {
                 double *outptr = outimg->im->array.D;
 #ifdef _OPENMP
-                #pragma omp for
+                #pragma omp for simd
 #endif
                 for (uint64_t ii = 0; ii < nelement; ii++)
                 {
@@ -1648,7 +1648,7 @@ errno_t arith_image_function_2_1_inplace_byID(
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -1731,7 +1731,7 @@ errno_t arith_image_function_CF_CF__CF(
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(long ii = 0;
             ii < nelement; ii++)
@@ -1790,7 +1790,7 @@ errno_t arith_image_function_CD_CD__CD(
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(long ii = 0;
             ii < nelement; ii++)
@@ -1827,7 +1827,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 
     if (imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
     {
-        float *ptr = imgin->im->array.F;
+        float * restrict ptr = imgin->im->array.F;
         float *out = imgout->im->array.F;
 #ifdef _OPENMP
     #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
@@ -1839,7 +1839,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
     }
     else if (imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE)
     {
-        double *ptr = imgin->im->array.D;
+        double * restrict ptr = imgin->im->array.D;
         double *out = imgout->im->array.D;
 #ifdef _OPENMP
     #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
