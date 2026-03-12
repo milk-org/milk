@@ -8,7 +8,9 @@ See also: [Process Info](procinfo.md) ·
 [Streams](streams.md) ·
 [FPS](fps.md) ·
 [Debugging](debugging.md) ·
-[FAQ](faq.md)
+[FAQ](faq.md) ·
+[Code-Level Optimization Rules](../.agents/rules/performance-practices.md) ·
+[Code Assist Tools](code_assist.md)
 
 ---
 
