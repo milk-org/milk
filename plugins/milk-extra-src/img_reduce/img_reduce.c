@@ -1352,15 +1352,15 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
                     jj < ysizez / 2 + brad * zfactor + 1;
                     jj++)
             {
-                dcimg[IDcorrz].array.F[jj * xsizez + ii] -= vlim;
-                dcimg[IDcorrz].array.F[jj * xsizez + ii] /= (1.0f - vlim);
+                float val = dcimg[IDcorrz].array.F[jj * xsizez + ii];
+                val -= vlim;
+                val /= (1.0f - vlim);
 
-                if(dcimg[IDcorrz].array.F[jj * xsizez + ii] < 0.0f)
+                if(val < 0.0f)
                 {
-                    dcimg[IDcorrz].array.F[jj * xsizez + ii] = 0.0f;
+                    val = 0.0f;
                 }
-                dcimg[IDcorrz].array.F[jj * xsizez + ii] =
-                    pow(dcimg[IDcorrz].array.F[jj * xsizez + ii], 2.0f);
+                dcimg[IDcorrz].array.F[jj * xsizez + ii] = val * val;
             }
 
         totx = 0.0;
@@ -1375,8 +1375,8 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
             {
                 v = dcimg[IDcorrz].array.F[jj * xsizez + ii];
 
-                totx += 1.0 * (ii - xsizez / 2) * v;
-                toty += 1.0 * (jj - ysizez / 2) * v;
+                totx += 1.0f * (ii - xsizez * 0.5f) * v;
+                toty += 1.0f * (jj - ysizez * 0.5f) * v;
                 tot += v;
             }
         totx /= tot;

@@ -3358,7 +3358,7 @@ make_cluster(const char *ID_name, uint32_t l1, uint32_t l2, const char *options)
     {
         dist        = gauss();
         dist        = sqrt(sqrt(dist * dist));
-        dist        = pow(dist, concentration);
+        dist        = powf(dist, concentration);
         angle       = 2 * PI * ran1();
         uint32_t ii = (uint32_t)(naxes[0] / 2 + (cluster_size * naxes[0] / 2) *
                                  dist * cos(angle));
@@ -3429,7 +3429,7 @@ imageID make_galaxy(const char *ID_name,
                 cos(E_PA) * (jj - naxes[1] / 2);
             r = sqrt(aob * x * x + boa * y * y);
             dcimg[ID].array.F[jj * naxes[0] + ii] +=
-                E_L0 * pow(10.0, (-3.3307 * (pow((r / E_radius), 0.25) - 1.0)));
+                E_L0 * powf(10.0f, (-3.3307f * (powf((r / E_radius), 0.25f) - 1.0f)));
         }
 
     /* filling other half */
@@ -3455,7 +3455,7 @@ imageID make_galaxy(const char *ID_name,
         y = -sin(E_PA) * (ii - naxes[0] / 2) + cos(E_PA) * (jj - naxes[1] / 2);
         r = sqrt(aob * x * x + boa * y * y);
         dcimg[ID].array.F[jj * naxes[0] + ii] +=
-            E_L0 * pow(10.0, (-3.3307 * (pow((r / E_radius), 0.25) - 1.0)));
+            E_L0 * powf(10.0f, (-3.3307f * (powf((r / E_radius), 0.25f) - 1.0f)));
     }
 
     total = 2.0 * PI * S_L0 * S_radius * S_radius +
@@ -3618,11 +3618,11 @@ imageID gen_image_EZdisk(const char *ID_name,
             }
             else
             {
-                value = pow(r, -Index);
+                value = powf(r, -Index);
             }
             value /= cos(Incl);
 
-            value += pow(r0, -Index);
+            value += powf(r0, -Index);
             dcimg[ID].array.F[jj * size + ii] = value;
         }
 
@@ -3823,7 +3823,7 @@ imageID make_offsetHyperGaussian(
             else
             {
                 dcimg[ID].array.F[jj * size + ii] =
-                    1.0 - exp(-pow((dist - a) / b, n));
+                    1.0f - expf(-powf((dist - a) / b, n));
             }
         }
 
