@@ -338,10 +338,16 @@ endif()
 message("CMAKE_BUILD_TYPE : ${CMAKE_BUILD_TYPE}")
 
 
-
 # =======================================
 # COMPILE OPTIONS
 # =======================================
+
+# Vectorization diagnostics (development aid)
+option(VEC_REPORT
+    "Print GCC vectorization report" OFF)
+if(VEC_REPORT)
+  add_compile_options(-fopt-info-vec-missed)
+endif()
 
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
 

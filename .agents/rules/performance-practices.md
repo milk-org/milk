@@ -54,14 +54,20 @@ non-GCC compilers.
 
 ## Loop Vectorization
 
-- Place `MILK_IVDEP` before loops you **know**
-  have no loop-carried dependencies, to let GCC
-  vectorize even when it cannot prove safety.
+- Use `#pragma omp for simd` (not bare
+  `#pragma omp for`) on element-wise pixel
+  loops — combines threading + SIMD.
+- Place `MILK_IVDEP` before non-OMP loops you
+  **know** have no loop-carried dependencies.
+- Add `restrict` to local pixel pointer aliases:
+  `float * restrict ptr = img->array.F;`
 - Use `MILK_ALIGNED(32)` on stack arrays used
   in tight loops to enable AVX-width
   vectorization.
 - Use `MILK_PREFETCH(addr, rw, locality)` for
   sequential walks through large arrays.
+- Run `cmake .. -DVEC_REPORT=ON` to see which
+  loops GCC couldn't vectorize and why.
 
 ## What NOT to Do
 
