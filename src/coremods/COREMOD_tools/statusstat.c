@@ -113,101 +113,139 @@ CLIADDCMD_COREMOD_tools__statusstat()
 }
 #endif
 
-//
-// watch shared memory status image and perform timing statistics
-//
-imageID COREMOD_TOOLS_statusStat(const char *IDstat_name, long indexmax)
+/**
+ * Watch shared memory status image
+ * and perform timing statistics.
+ */
+imageID COREMOD_TOOLS_statusStat(
+    const char *IDstat_name,
+    long indexmax)
 {
-    imageID            IDout;
-    int                RT_priority = 91; //any number from 0-99
+    int RT_priority = 91;
     struct sched_param schedpar;
-    float              usec0 = 50.0;
-    float              usec1 = 150.0;
-    long long          k;
-    long long          NBkiter = 2000000000;
-    imageID            IDstat;
+    float usec0 = 50.0;
+    float usec1 = 150.0;
+    long long NBkiter = 2000000000;
 
-    unsigned short st;
+    IMGID imgstat =
+        imgid_make_from_name(
+            IDstat_name);
+    resolveIMGID(&imgstat,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    struct timespec t1;
-    struct timespec t2;
-    struct timespec tdiff;
-    double          tdisplay = 1.0; // interval
-    double          tdiffv1  = 0.0;
-    uint32_t       *sizearray;
+    IMGID imgout =
+        imgid_make_from_name(
+            "statout");
+    imgout.mdt->naxis = 2;
+    imgout.mdt->size[0] = indexmax;
+    imgout.mdt->size[1] = 1;
+    imgout.mdt->datatype =
+        _DATATYPE_INT64;
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    long cnttot;
-
-    IDstat = image_ID(IDstat_name, dcimg, dcnimg);
-
-    sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(sizearray == NULL)
+    for(unsigned short st = 0;
+        st < indexmax; st++)
     {
-        PRINT_ERROR("malloc returns NULL pointer");
-        abort();
+        imgout.im->array.SI64[st] = 0;
     }
 
-    sizearray[0] = indexmax;
-    sizearray[1] = 1;
-    create_image_ID("statout", 2, sizearray, _DATATYPE_INT64, 0, 0, 0, &IDout);
-    free(sizearray);
+    schedpar.sched_priority =
+        RT_priority;
+    sched_setscheduler(
+        0, SCHED_FIFO, &schedpar);
 
-    for(st = 0; st < indexmax; st++)
-    {
-        dcimg[IDout].array.SI64[st] = 0;
-    }
-
-    schedpar.sched_priority = RT_priority;
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-
-    printf("Measuring status distribution \n");
+    printf(
+        "Measuring status"
+        " distribution \n");
     fflush(stdout);
 
+    struct timespec t1;
     clock_gettime(CLOCK_MILK, &t1);
-    for(k = 0; k < NBkiter; k++)
-    {
-        double tdiffv;
+    double tdiffv1 = 0.0;
+    double tdisplay = 1.0;
 
-        usleep((long)(usec0 + usec1 * ((double) k / NBkiter)));
-        st = dcimg[IDstat].array.UI16[0];
+    for(long long k = 0;
+        k < NBkiter; k++)
+    {
+        usleep(
+            (long)(usec0
+                   + usec1
+                     * ((double) k
+                        / NBkiter)));
+        unsigned short st =
+            imgstat.im->array.UI16[0];
         if(st < indexmax)
         {
-            dcimg[IDout].array.SI64[st]++;
+            imgout.im
+                ->array.SI64[st]++;
         }
 
+        struct timespec t2;
         clock_gettime(CLOCK_MILK, &t2);
-        tdiff  = timespec_diff(t1, t2);
-        tdiffv = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+        struct timespec tdiff =
+            timespec_diff(t1, t2);
+        double tdiffv =
+            1.0 * tdiff.tv_sec
+            + 1.0e-9
+              * tdiff.tv_nsec;
 
         if(tdiffv > tdiffv1)
         {
             tdiffv1 += tdisplay;
             printf("\n");
-            printf("============== %10lld  %d  ==================\n", k, st);
+            printf(
+                "=============="
+                " %10lld  %d  "
+                "==================\n",
+                k, st);
             printf("\n");
-            cnttot = 0;
-            for(st = 0; st < indexmax; st++)
+            long cnttot = 0;
+            for(st = 0;
+                st < indexmax; st++)
             {
-                cnttot += dcimg[IDout].array.SI64[st];
+                cnttot +=
+                    imgout.im
+                        ->array
+                        .SI64[st];
             }
 
-            for(st = 0; st < indexmax; st++)
+            for(st = 0;
+                st < indexmax; st++)
             {
-                printf("STATUS  %5d    %20ld   %6.3f  \n",
-                       st,
-                       dcimg[IDout].array.SI64[st],
-                       100.0 * dcimg[IDout].array.SI64[st] / cnttot);
+                printf(
+                    "STATUS  %5d"
+                    "    %20ld"
+                    "   %6.3f  \n",
+                    st,
+                    imgout.im
+                        ->array
+                        .SI64[st],
+                    100.0
+                    * imgout.im
+                          ->array
+                          .SI64[st]
+                    / cnttot);
             }
         }
     }
 
     printf("\n");
-    for(st = 0; st < indexmax; st++)
+    for(unsigned short st = 0;
+        st < indexmax; st++)
     {
-        printf("STATUS  %5d    %10ld\n", st, dcimg[IDout].array.SI64[st]);
+        printf(
+            "STATUS  %5d"
+            "    %10ld\n",
+            st,
+            imgout.im
+                ->array.SI64[st]);
     }
 
     printf("\n");
 
-    return (IDout);
+    return imgout.ID;
 }

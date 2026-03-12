@@ -73,135 +73,166 @@ errno_t linopt_compute_SVDdecomp(
 {
     DEBUG_TRACE_FSTART();
 
-    imageID    IDin;
-    imageID    IDout;
-    imageID    IDcoeff;
-    imageID    ID_VTmatrix;
-    long       m;
-    long       n;
-    uint32_t  *arraysizetmp;
-
-    arraysizetmp =
-        (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if (arraysizetmp == NULL) {
-        FUNC_RETURN_FAILURE(
-            "malloc returns NULL pointer");
-    }
-
     printf("[SVD start]");
     fflush(stdout);
 
-    IDin = image_ID(IDin_name, dcimg, dcnimg);
-    n = dcimg[IDin].md[0].size[0]
-        * dcimg[IDin].md[0].size[1];
-    m = dcimg[IDin].md[0].size[2];
+    IMGID imgin =
+        imgid_make_from_name(
+            IDin_name);
+    resolveIMGID(&imgin,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
+    long n = imgin.md->size[0]
+             * imgin.md->size[1];
+    long m = imgin.md->size[2];
 
     /* Allocate work arrays */
     double *D =
-        calloc((size_t) n * m, sizeof(double));
+        calloc((size_t) n * m,
+               sizeof(double));
     double *DtD =
-        calloc((size_t) m * m, sizeof(double));
+        calloc((size_t) m * m,
+               sizeof(double));
     double *eval =
-        calloc((size_t) m, sizeof(double));
+        calloc((size_t) m,
+               sizeof(double));
 
-    /* Fill D column-major: D[ii + k*n] */
-    for (long k = 0; k < m; k++) {
-        for (long ii = 0; ii < n; ii++) {
+    /* Fill D column-major */
+    for(long k = 0; k < m; k++)
+    {
+        for(long ii = 0;
+            ii < n; ii++)
+        {
             D[ii + k * n] =
-                dcimg[IDin].array.F[k * n + ii];
+                imgin.im->array.F[
+                    k * n + ii];
         }
     }
 
     /* DtD = D^T * D  (m x m) */
-    cblas_dgemm(CblasColMajor,
-                CblasTrans, CblasNoTrans,
-                (int) m, (int) m, (int) n,
-                1.0, D, (int) n,
-                D, (int) n,
-                0.0, DtD, (int) m);
+    cblas_dgemm(
+        CblasColMajor,
+        CblasTrans, CblasNoTrans,
+        (int) m, (int) m, (int) n,
+        1.0, D, (int) n,
+        D, (int) n,
+        0.0, DtD, (int) m);
 
-    /* Eigenvalue decomposition: DtD overwritten
-     * with eigenvectors (columns) */
+    /* Eigenvalue decomposition */
     int info = LAPACKE_dsyev(
         LAPACK_COL_MAJOR, 'V', 'U',
         (int) m, DtD, (int) m, eval);
-    if (info != 0) {
-        printf("LAPACKE_dsyev failed: %d\n",
-               info);
+    if(info != 0)
+    {
+        printf(
+            "LAPACKE_dsyev failed: %d\n",
+            info);
     }
 
-    /* LAPACK returns eigenvalues in ascending
-     * order. Reverse to descending. */
-    /* Reverse eval */
-    for (long i = 0; i < m / 2; i++) {
+    /* Reverse to descending order */
+    for(long i = 0; i < m / 2; i++)
+    {
         double tmp = eval[i];
         eval[i] = eval[m - 1 - i];
         eval[m - 1 - i] = tmp;
     }
-    /* Reverse eigenvector columns */
-    for (long i = 0; i < m / 2; i++) {
-        for (long j = 0; j < m; j++) {
-            double tmp = DtD[j + i * m];
+    for(long i = 0; i < m / 2; i++)
+    {
+        for(long j = 0; j < m; j++)
+        {
+            double tmp =
+                DtD[j + i * m];
             DtD[j + i * m] =
-                DtD[j + (m - 1 - i) * m];
-            DtD[j + (m - 1 - i) * m] = tmp;
+                DtD[j
+                    + (m - 1 - i) * m];
+            DtD[j
+                + (m - 1 - i) * m] =
+                tmp;
         }
     }
 
     /* Write eigenvalues */
-    create_2Dimage_ID(
-        IDcoeff_name, m, 1, &IDcoeff);
-    for (long k = 0; k < m; k++) {
-        dcimg[IDcoeff].array.F[k] =
+    IMGID imgcoeff =
+        imgid_make_from_name_2D(
+            IDcoeff_name, m, 1);
+    imgcoeff.mdt->shared = 0;
+    imgcoeff.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgcoeff);
+
+    for(long k = 0; k < m; k++)
+    {
+        imgcoeff.im->array.F[k] =
             (float) eval[k];
     }
 
     /* Write rotation matrix VT */
-    arraysizetmp[0] = m;
-    arraysizetmp[1] = m;
-    ID_VTmatrix =
-        image_ID("SVD_VTm", dcimg, dcnimg);
-    if (ID_VTmatrix != -1) {
-        delete_image_ID(
-            "SVD_VTm",
-            DELETE_IMAGE_ERRMODE_WARNING);
-    }
-    create_image_ID("SVD_VTm", 2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0, 0, 0,
-                    &ID_VTmatrix);
-    for (long ii = 0; ii < m; ii++) {
-        for (long k = 0; k < m; k++) {
-            dcimg[ID_VTmatrix].array.F[
-                k * m + ii] =
-                (float) DtD[k + ii * m];
+    {
+        imageID oldVT =
+            image_ID("SVD_VTm",
+                     dcimg, dcnimg);
+        if(oldVT != -1)
+        {
+            delete_image_ID(
+                "SVD_VTm",
+                DELETE_IMAGE_ERRMODE_WARNING);
         }
     }
 
-    /* Compute SVD modes: out = VT^T * in */
-    FUNC_CHECK_RETURN(
-        create_3Dimage_ID(
-            IDout_name,
-            dcimg[IDin].md[0].size[0],
-            dcimg[IDin].md[0].size[1],
-            dcimg[IDin].md[0].size[2],
-            &IDout));
+    IMGID imgVT =
+        imgid_make_from_name_2D(
+            "SVD_VTm", m, m);
+    imgVT.mdt->shared = 0;
+    imgVT.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgVT);
 
-    for (long kk = 0; kk < m; kk++) {
-        for (long kk1 = 0; kk1 < m; kk1++) {
-            for (long ii = 0; ii < n; ii++) {
-                dcimg[IDout].array.F[
-                    kk * n + ii] +=
-                    dcimg[ID_VTmatrix].array.F[
-                        kk1 * m + kk]
-                    * dcimg[IDin].array.F[
-                        kk1 * n + ii];
+    for(long ii = 0; ii < m; ii++)
+    {
+        for(long k = 0; k < m; k++)
+        {
+            imgVT.im->array.F[
+                k * m + ii] =
+                (float) DtD[
+                    k + ii * m];
+        }
+    }
+
+    /* Compute SVD modes */
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            IDout_name,
+            imgin.md->size[0],
+            imgin.md->size[1],
+            imgin.md->size[2]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(long kk = 0; kk < m; kk++)
+    {
+        for(long kk1 = 0;
+            kk1 < m; kk1++)
+        {
+            for(long ii = 0;
+                ii < n; ii++)
+            {
+                imgout.im->array.F[
+                    kk * n + ii]
+                    += imgVT.im
+                           ->array.F[
+                               kk1 * m
+                               + kk]
+                       * imgin.im
+                             ->array.F[
+                                 kk1 * n
+                                 + ii];
             }
         }
     }
 
-    free(arraysizetmp);
     free(D);
     free(DtD);
     free(eval);
@@ -209,8 +240,9 @@ errno_t linopt_compute_SVDdecomp(
     printf("[SVD done]\n");
     fflush(stdout);
 
-    if (outID != NULL) {
-        *outID = IDout;
+    if(outID != NULL)
+    {
+        *outID = imgout.ID;
     }
 
     DEBUG_TRACE_FEXIT();
