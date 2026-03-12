@@ -23,7 +23,7 @@
 #define OMP_NELEMENT_LIMIT 100000
 #endif
 
-static double get_pixel_double(IMAGE *im, uint64_t index)
+static inline double get_pixel_double(IMAGE *im, uint64_t index)
 {
     switch(im->md[0].datatype)
     {
@@ -1693,47 +1693,53 @@ errno_t arith_image_function_CF_CF__CF(
     const char *ID_name1,
     const char *ID_name2,
     const char *ID_out,
-    complex_float(*pt2function)(complex_float, complex_float))
+    complex_float(*pt2function)(
+        complex_float, complex_float))
 {
-    imageID   ID1;
-    imageID   ID2;
-    imageID   IDout;
-    long      ii;
-    uint32_t *naxes = NULL;
-    long      nelement;
-    long      naxis;
-    uint8_t   datatype1; //, datatype2;
-    long      i;
+    IMGID img1 =
+        imgid_make_from_name(ID_name1);
+    resolveIMGID(&img1,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID1       = image_ID(ID_name1, dcimg, dcnimg);
-    ID2       = image_ID(ID_name2, dcimg, dcnimg);
-    datatype1 = dcimg[ID1].md[0].datatype;
-    //datatype2 = dcimg[ID2].md[0].datatype;
-    naxis = dcimg[ID1].md[0].naxis;
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL) { PRINT_ERROR("malloc() error"); exit(0); }
-    for(i = 0; i < naxis; i++) naxes[i] = dcimg[ID1].md[0].size[i];
+    IMGID img2 =
+        imgid_make_from_name(ID_name2);
+    resolveIMGID(&img2,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    create_image_ID(ID_out,
-                    naxis,
-                    naxes,
-                    datatype1,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
-    free(naxes);
-    nelement = dcimg[ID1].md[0].nelement;
+    IMGID imgout =
+        imgid_make_from_name(ID_out);
+    imgout.mdt->naxis = img1.md->naxis;
+    for(long i = 0;
+        i < img1.md->naxis; i++)
+    {
+        imgout.mdt->size[i] =
+            img1.md->size[i];
+    }
+    imgout.mdt->datatype =
+        img1.md->datatype;
+    imgout.mdt->shared = dcshareddft;
+    imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    long nelement =
+        img1.md->nelement;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
         #pragma omp for
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for(long ii = 0;
+            ii < nelement; ii++)
         {
-            dcimg[IDout].array.CF[ii] = pt2function(dcimg[ID1].array.CF[ii],
-                dcimg[ID2].array.CF[ii]);
+            imgout.im->array.CF[ii] =
+                pt2function(
+                    img1.im->array.CF[ii],
+                    img2.im->array.CF[ii]);
         }
 #ifdef _OPENMP
     }
@@ -1746,47 +1752,53 @@ errno_t arith_image_function_CD_CD__CD(
     const char *ID_name1,
     const char *ID_name2,
     const char *ID_out,
-    complex_double(*pt2function)(complex_double, complex_double))
+    complex_double(*pt2function)(
+        complex_double, complex_double))
 {
-    imageID   ID1;
-    imageID   ID2;
-    imageID   IDout;
-    long      ii;
-    uint32_t *naxes = NULL;
-    long      nelement;
-    long      naxis;
-    uint8_t   datatype1; //, datatype2;
-    long      i;
+    IMGID img1 =
+        imgid_make_from_name(ID_name1);
+    resolveIMGID(&img1,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID1       = image_ID(ID_name1, dcimg, dcnimg);
-    ID2       = image_ID(ID_name2, dcimg, dcnimg);
-    datatype1 = dcimg[ID1].md[0].datatype;
-    //datatype2 = dcimg[ID2].md[0].datatype;
-    naxis = dcimg[ID1].md[0].naxis;
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL) { PRINT_ERROR("malloc() error"); exit(0); }
-    for(i = 0; i < naxis; i++) naxes[i] = dcimg[ID1].md[0].size[i];
+    IMGID img2 =
+        imgid_make_from_name(ID_name2);
+    resolveIMGID(&img2,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    create_image_ID(ID_out,
-                    naxis,
-                    naxes,
-                    datatype1,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
-    free(naxes);
-    nelement = dcimg[ID1].md[0].nelement;
+    IMGID imgout =
+        imgid_make_from_name(ID_out);
+    imgout.mdt->naxis = img1.md->naxis;
+    for(long i = 0;
+        i < img1.md->naxis; i++)
+    {
+        imgout.mdt->size[i] =
+            img1.md->size[i];
+    }
+    imgout.mdt->datatype =
+        img1.md->datatype;
+    imgout.mdt->shared = dcshareddft;
+    imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    long nelement =
+        img1.md->nelement;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
         #pragma omp for
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for(long ii = 0;
+            ii < nelement; ii++)
         {
-            dcimg[IDout].array.CD[ii] = pt2function(dcimg[ID1].array.CD[ii],
-                dcimg[ID2].array.CD[ii]);
+            imgout.im->array.CD[ii] =
+                pt2function(
+                    img1.im->array.CD[ii],
+                    img2.im->array.CD[ii]);
         }
 #ifdef _OPENMP
     }
