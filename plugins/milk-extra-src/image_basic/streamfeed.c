@@ -75,7 +75,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMAGE_BASIC_streamfeed(
         p_in, p_stream, (float) p_freq);
@@ -220,7 +220,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     dcimg[IDs].md[0].write = 1;
     for(ii = 0; ii < xysize; ii++)
     {
-        dcimg[IDs].array.F[ii] = 0.0;
+        dcimg[IDs].array.F[ii] = 0.0f;
     }
     if(dcimg[IDs].md[0].sem > 0)
     {

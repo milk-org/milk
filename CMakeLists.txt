@@ -291,8 +291,28 @@ set(CMAKE_C_FLAGS_DEBUG     "-O0 -g -Wall -Wextra -std=gnu17 -Wno-sign-compare")
 
 # Set Release build flags
 # cmake -DCMAKE_BUILD_TYPE=Release
-set(CMAKE_C_FLAGS_RELEASE     "-Ofast -DNDEBUG -std=gnu17")
+set(CMAKE_C_FLAGS_RELEASE     "-Ofast -DNDEBUG -std=gnu17 -funroll-loops")
 
+
+# =======================================
+# PROFILE-GUIDED OPTIMIZATION (PGO)
+# =======================================
+# Usage:
+#   cmake -DUSE_PGO=GENERATE ..   # instrument
+#   cmake -DUSE_PGO=USE ..        # optimized build
+# See docs/pgo.md for the full workflow.
+set(USE_PGO "" CACHE STRING
+    "PGO mode: GENERATE or USE (empty = off)")
+if(USE_PGO STREQUAL "GENERATE")
+  message(STATUS "PGO: instrumentation build")
+  add_compile_options(-fprofile-generate)
+  add_link_options(-fprofile-generate)
+elseif(USE_PGO STREQUAL "USE")
+  message(STATUS "PGO: optimized build")
+  add_compile_options(-fprofile-use
+                      -fprofile-correction)
+  add_link_options(-fprofile-use)
+endif()
 
 # Set a default build type if none was specified
 set(default_build_type "Release")

@@ -97,7 +97,7 @@ static uint64_t streamave_comprms     = 0;
  * Uses heap-allocated double buffers for
  * accumulation to avoid overflow.
  */
-static errno_t fpsexec(
+static MILK_HOT errno_t fpsexec(
     IMAGE  *imgin,
     IMAGE  *imgoutave,
     IMAGE  *imgoutrms,
@@ -246,7 +246,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(

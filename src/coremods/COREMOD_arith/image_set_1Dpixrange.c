@@ -63,7 +63,7 @@ static uint32_t *setpix1d_maxindex = NULL;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static errno_t fpsexec(IMAGE *inimg)
+static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
     if (!setpix1d_pixval
         || !setpix1d_minindex
@@ -109,7 +109,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(

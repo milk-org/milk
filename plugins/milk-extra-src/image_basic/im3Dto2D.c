@@ -61,7 +61,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     image_basic_3Dto2D(p_in);
     return RETURN_SUCCESS;

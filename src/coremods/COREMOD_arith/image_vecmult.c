@@ -42,7 +42,7 @@ static uint32_t multaxis = 0;
       FPFLAG_DEFAULT_INPUT, "multiplication axis")
 
 
-static errno_t customCONFsetup()
+static MILK_COLD errno_t customCONFsetup()
 {
     if(dcfpsptr != NULL)
     {
@@ -57,7 +57,7 @@ static errno_t customCONFsetup()
     return RETURN_SUCCESS;
 }
 
-static errno_t customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     return RETURN_SUCCESS;
 }
@@ -143,7 +143,7 @@ errno_t image_vect_multiply(
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

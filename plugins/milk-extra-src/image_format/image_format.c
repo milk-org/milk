@@ -271,9 +271,9 @@ errno_t read_BMPimage(
             RedValue = *pChar;
 
             // ---------WRITE TO FILES ---------
-            dcimg[IDR].array.F[r * originalImage.cols + c] = 1.0 * RedValue;
-            dcimg[IDG].array.F[r * originalImage.cols + c] = 1.0 * GreenValue;
-            dcimg[IDB].array.F[r * originalImage.cols + c] = 1.0 * BlueValue;
+            dcimg[IDR].array.F[r * originalImage.cols + c] = 1.0f * RedValue;
+            dcimg[IDG].array.F[r * originalImage.cols + c] = 1.0f * GreenValue;
+            dcimg[IDB].array.F[r * originalImage.cols + c] = 1.0f * BlueValue;
         }
     }
 
@@ -489,7 +489,7 @@ imageID IMAGE_FORMAT_requantize(
             value = 2.0 / alpha * sqrt(gain) * (sqrt(gain * RON * RON + value) - sqrt(
                                                     gain) * RON);
         }
-        dcimg[IDout].array.F[ii] = value + 0.5;
+        dcimg[IDout].array.F[ii] = value + 0.5f;
     }
 
     return(IDout);

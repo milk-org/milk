@@ -89,7 +89,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     profile(p_in, p_out,
             p_xcenter, p_ycenter,

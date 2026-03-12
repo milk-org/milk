@@ -133,7 +133,7 @@ void init_cmdsettings(void)
  * calls the computation and updates the output stream
  * on each iteration.
  */
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(imsetzero_imname);

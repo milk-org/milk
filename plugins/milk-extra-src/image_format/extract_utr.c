@@ -308,7 +308,7 @@ static errno_t simple_desat_finalize(float *last_valid,
 BOILERPLATE
 */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

@@ -66,7 +66,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     test_fftspeed((int) p_nmax);
     return RETURN_SUCCESS;

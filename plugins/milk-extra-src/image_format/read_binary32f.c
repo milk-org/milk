@@ -76,7 +76,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMAGE_FORMAT_read_binary32f(
         p_fname,

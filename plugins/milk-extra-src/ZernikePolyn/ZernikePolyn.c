@@ -388,11 +388,11 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 {
                     if(coeffextend1 < 0)
                     {
-                        dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0;
+                        dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
                     }
                     else
                     {
-                        dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                        dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
                     }
                 }
             }
@@ -453,7 +453,7 @@ mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix)
             {
                 //r = sqrt((ii-SIZE/2)*(ii-SIZE/2)+(jj-SIZE/2)*(jj-SIZE/2))/rpix;
                 //    if(r<1.0)
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
     }
 
@@ -511,7 +511,7 @@ mk_zer_unbounded1(const char *ID_name, long SIZE, long zer_nb, float rpix)
         for(ii = 0; ii < SIZE; ii++)
             for(jj = 0; jj < SIZE; jj++)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
     }
 
@@ -574,11 +574,11 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
             tmp = r[jj * naxes[0] + ii];
             if(tmp < 1.0)
             {
-                dcimg[ID].array.F[jj * SIZE + ii] = 1.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 1.0f;
             }
             else
             {
-                dcimg[ID].array.F[jj * SIZE + ii] = 0.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
             }
         }
     sprintf(fname, "%s%ld", ID_name, j);
@@ -600,7 +600,7 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 }
                 else
                 {
-                    dcimg[ID].array.F[jj * SIZE + ii] = 0.0;
+                    dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
                 }
             }
 
@@ -668,11 +668,11 @@ mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rpix)
             tmp = r[jj * naxes[0] + ii];
             if(tmp < 1.0)
             {
-                dcimg[ID].array.F[jj * SIZE + ii] = 1.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 1.0f;
             }
             else
             {
-                dcimg[ID].array.F[jj * SIZE + ii] = 0.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
             }
         }
     for(j = 1; j < zer_nb; j++)
@@ -939,7 +939,7 @@ double fit_zer(const char *ID_name,
         make_disk("dtmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, 0.999 * radius);
 
     for(ii = 0; ii < SIZE * SIZE; ii++)
-        if(dcimg[IDdisk].array.F[ii] > 0.5)
+        if(dcimg[IDdisk].array.F[ii] > 0.5f)
         {
             disktot += 1.0;
         }
@@ -970,7 +970,7 @@ double fit_zer(const char *ID_name,
             }
             tmp = 0.0;
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(dcimg[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
                     tmp += dcimg[IDZ].array.F[ii] *
                            dcimg[ID].array.F[ii];
@@ -978,7 +978,7 @@ double fit_zer(const char *ID_name,
             value = tmp / disktot;
 
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(dcimg[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
                     dcimg[ID].array.F[ii] -=
                         value * dcimg[IDZ].array.F[ii];
@@ -986,7 +986,7 @@ double fit_zer(const char *ID_name,
             zvalue[i] += value;
             tmp = 0.0;
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(dcimg[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
                     tmp +=
                         dcimg[ID].array.F[ii] * dcimg[ID].array.F[ii];
@@ -1005,9 +1005,9 @@ double fit_zer(const char *ID_name,
 
     for(ii = 0; ii < SIZE * SIZE; ii++)
     {
-        if(dcimg[IDdisk].array.F[ii] < 0.5)
+        if(dcimg[IDdisk].array.F[ii] < 0.5f)
         {
-            dcimg[ID].array.F[ii] = 0.0;
+            dcimg[ID].array.F[ii] = 0.0f;
         }
     }
 
