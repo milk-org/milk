@@ -9,12 +9,17 @@ automatically via `milkDebugTools.h`) to give GCC
 optimization hints. All macros are no-ops on
 non-GCC compilers.
 
-## Pointer Qualification
+## Pointer Qualification & Alignment
 
 - Use `restrict` (or `MILK_RESTRICT`) on all
   non-aliased pixel/array data pointer parameters
   in compute-heavy functions. This allows GCC to
   vectorize loops over those pointers.
+- Use `MILK_ASSUME_ALIGNED(ptr)` to inform GCC
+  that a restricted pointer is aligned to a 64-byte
+  boundary, which forces the compiler to use 
+  faster, strictly aligned vector instructions
+  (e.g., AVX `vmovaps` vs `vmovups`).
 - **Not** required on `char*` parameters used as
   string names or file paths — the benefit is
   negligible and it hurts readability.
@@ -68,6 +73,15 @@ non-GCC compilers.
   sequential walks through large arrays.
 - Run `cmake .. -DVEC_REPORT=ON` to see which
   loops GCC couldn't vectorize and why.
+
+## CPU Core Pinning (Thread Affinity)
+
+- **Do NOT** manually call `sched_setaffinity` inside
+  custom modules.
+- The `milk` framework native `PROCESSINFO` 
+  architecture handles this automatically via the
+  `procinfo->CPUmask` attribute. Leverage this existing
+  system when binding streams to isolated processing cores.
 
 ## What NOT to Do
 
