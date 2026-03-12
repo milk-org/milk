@@ -31,23 +31,27 @@ $ make -j$(nproc) && sudo make install
 | 2 | *(run workload)* | — | Collects branch/call counts |
 | 3 | `-DUSE_PGO=USE` | `-fprofile-use -fprofile-correction` | Optimizes using collected data |
 
-## Per-Executable Optimization
+## Per-Executable Profile Isolation
 
-PGO profiles are inherently **per-executable**.
-Each standalone `milk-fpsexec-*` binary produces
-its own `.gcda` profile files (stored next to the
-corresponding `.o` files in the build tree).
+Each standalone `milk-fpsexec-*` and
+`cacao-fpsexec-*` binary gets its own profile
+subdirectory under `_build/pgo/`:
 
-This means:
+```
+_build/pgo/
+├── shared/                          ← shared libs
+├── milk-fpsexec-streamcopy/         ← streamcopy
+├── milk-fpsexec-linalg-SGEMM/       ← SGEMM
+├── cacao-fpsexec-cacaoloop-WFS/     ← WFS
+└── ...
+```
 
-- Running `milk-fpsexec-streamcopy` profiles
-  only `stream_copy.c` code paths.
-- Running `milk-fpsexec-linalg-SGEMM` profiles
-  only `SGEMM.c` code paths.
-- Each executable gets its own optimized branch
-  layout and inlining decisions.
+This isolation is automatic — the
+`milk_pgo_target()` CMake helper (called by
+`add_milk_standalone()` / `add_cacao_standalone()`)
+sets per-target `-fprofile-dir`.
 
-### Workflow for specific executables
+### Optimizing specific executables
 
 ```bash
 $ cd _build
@@ -59,27 +63,26 @@ $ make -j$(nproc) && sudo make install
 # Step 2 — Run ONLY the executables you want to
 #          optimize, with realistic workloads
 $ milk-fpsexec-streamcopy -n scopy01
-$ milk-fpsexec-linalg-SGEMM -n sgemm01
-$ # let them process enough frames to build
-$ # a representative profile, then stop
+$ # let it process several thousand frames, then ^C
+$ cacao-fpsexec-cacaoloop-WFS -n wfs01
+$ # exercise another workload
 
 # Step 3 — Rebuild with profiles
 $ cmake .. -DUSE_PGO=USE
 $ make -j$(nproc) && sudo make install
 ```
 
-Only the executables that were actually exercised
-in Step 2 receive meaningful PGO optimization.
-Others are compiled normally — GCC silently
-ignores missing profiles when
+Only the executables exercised in Step 2 receive
+PGO optimization. Others compile normally — GCC
+silently ignores missing profiles when
 `-fprofile-correction` is set.
 
 ### What gets profiled
 
-| Component | Profile source |
-|-----------|---------------|
-| Standalone `.c` | Profiled independently per executable |
-| Shared libraries (`libImageStreamIO`, `libmilkdata`, etc.) | Aggregated across all runs — optimized for the common case |
+| Component | Profile directory | Scope |
+|-----------|------------------|-------|
+| Standalone `.c` | `pgo/<exe-name>/` | Independent per executable |
+| Shared libraries | `pgo/shared/` | Aggregated across all runs |
 
 > [!TIP]
 > For the best results, run each fpsexec with a
@@ -90,8 +93,9 @@ ignores missing profiles when
 
 ## Notes
 
-- Profile data (`.gcda` files) is written to the
-  build directory alongside each `.o` file.
+- Profile data (`.gcda` files) is written to
+  `PGO_DIR` (default: `_build/pgo/`).
+  Override with `-DPGO_DIR=/path/to/profiles`.
 - `-fprofile-correction` handles minor mismatches
   from multi-threaded execution and missing
   profiles.

@@ -40,6 +40,30 @@ set(_MILK_STANDALONE_LIBS
 )
 
 
+# ── milk_pgo_target ─────────────────────────────
+#
+# Applies per-executable PGO profile directory.
+# Each standalone gets its own subdirectory under
+# PGO_DIR so profiles are fully isolated.
+#
+# Called internally by add_*_standalone().
+#
+function(milk_pgo_target EXE_NAME)
+    if(USE_PGO STREQUAL "GENERATE")
+        target_compile_options(${EXE_NAME} PRIVATE
+            -fprofile-generate=${PGO_DIR}/${EXE_NAME})
+        target_link_options(${EXE_NAME} PRIVATE
+            -fprofile-generate=${PGO_DIR}/${EXE_NAME})
+    elseif(USE_PGO STREQUAL "USE")
+        target_compile_options(${EXE_NAME} PRIVATE
+            -fprofile-use=${PGO_DIR}/${EXE_NAME}
+            -fprofile-correction)
+        target_link_options(${EXE_NAME} PRIVATE
+            -fprofile-use=${PGO_DIR}/${EXE_NAME})
+    endif()
+endfunction()
+
+
 # ── add_milk_standalone ─────────────────────────
 #
 # Creates a milk-fpsexec-<name> standalone binary.
@@ -58,6 +82,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
         PRIVATE ${PROJECT_SOURCE_DIR}/src)
     target_link_libraries(${EXE_NAME}
         PUBLIC ${_MILK_STANDALONE_LIBS})
+    milk_pgo_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -83,6 +108,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
         ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
     target_link_libraries(${EXE_NAME}
         PUBLIC ${_MILK_STANDALONE_LIBS})
+    milk_pgo_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
