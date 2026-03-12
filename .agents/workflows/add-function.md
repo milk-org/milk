@@ -6,7 +6,7 @@ description: Add a new function to an existing module
 
 Use this workflow when adding a single new function
 (FPS compute unit or plain function) to an existing
-module. This is lighter than `/add-new-module` but
+module. This is lighter than [`/add-new-module`](add-new-module.md) but
 ensures no steps are missed.
 
 ## 1. Gather Information
@@ -23,9 +23,9 @@ Ask the user for:
 
 | Type | Template | Workflow |
 |------|----------|----------|
-| FPS compute unit | `examplefunc_fps_cli_poc.c` | `/create-fpsexec` |
-| Stream processor | `examplefunc4_streamprocess.c` | `/add-stream-processor` |
-| Simple CLI cmd | See `/add-cli-command` | `/add-cli-command` |
+| FPS compute unit | `examplefunc_fps_cli_poc.c` | [`/create-fpsexec`](create-fpsexec.md) |
+| Stream processor | `examplefunc4_streamprocess.c` | [`/add-stream-processor`](add-stream-processor.md) |
+| Simple CLI cmd | See [`/add-cli-command`](add-cli-command.md) | [`/add-cli-command`](add-cli-command.md) |
 | Non-CLI function | `examplefunc1.c` | This workflow |
 
 For a non-CLI helper function (no CLI registration):
@@ -62,4 +62,4 @@ table:
 
 ## 6. Compile and Verify
 
-Run the `/compile-test` workflow.
+Run the [`/compile-test`](compile-test.md) workflow.
