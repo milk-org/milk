@@ -13,8 +13,8 @@
 typedef int errno_t;
 #endif
 
-#include <sys/file.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #ifdef USE_NCURSES
 #include <ncurses.h>
 #endif

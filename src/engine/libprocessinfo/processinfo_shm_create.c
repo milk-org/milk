@@ -3,7 +3,6 @@
  * @brief Processinfo shm create module
  */
 
-#include <sys/file.h>
 #include <sys/mman.h> // mmap()
 #include <sys/types.h>
 #include <sys/stat.h>

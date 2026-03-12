@@ -15,19 +15,16 @@ typedef int errno_t;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/file.h>
 #include <sys/stat.h>
 
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <time.h>
-#include <math.h>
 
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <ctype.h>
 #include <fcntl.h>
 #include <ncurses.h>
 #include <sys/mman.h>
@@ -37,7 +34,7 @@ typedef int errno_t;
 #include <locale.h>
 #include <wchar.h>
 
-#include <pthread.h>
+
 
 #include "timeutils.h"
 #include "quicksort.h"
@@ -298,7 +295,6 @@ static inline void *link_scan_shm(const char *name, size_t size) {
 }
 
 #include <sys/resource.h>
-#include <ctype.h>
 
 errno_t processinfo_CTRLscreen()
 {
