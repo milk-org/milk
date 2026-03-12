@@ -1419,9 +1419,9 @@ imageID make_disk(const char *ID_name,
       r = sqrt(((ii-x_center)*(ii-x_center)+(jj-y_center)*(jj-y_center)));
 
       if (r<radius)
-      dcimg[ID].array.F[jj*naxes[0]+ii] = 1.0;
+      dcimg[ID].array.F[jj*naxes[0]+ii] = 1.0f;
       else
-      dcimg[ID].array.F[jj*naxes[0]+ii] = 0.0;
+      dcimg[ID].array.F[jj*naxes[0]+ii] = 0.0f;
 
       if(((radius-r)*(radius-r))<1.5)
       {
@@ -1570,7 +1570,7 @@ imageID make_subpixdisk(const char *ID_name,
             r2    = xdiff * xdiff + ydiff * ydiff;
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1599,7 +1599,7 @@ imageID make_subpixdisk(const char *ID_name,
             r2    = xdiff * xdiff + ydiff * ydiff;
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1628,7 +1628,7 @@ imageID make_subpixdisk(const char *ID_name,
             r2    = xdiff * xdiff + ydiff * ydiff;
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1657,7 +1657,7 @@ imageID make_subpixdisk(const char *ID_name,
             r2    = xdiff * xdiff + ydiff * ydiff;
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1843,7 +1843,7 @@ imageID make_subpixdisk_perturb(const char *ID_name,
 
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1890,7 +1890,7 @@ imageID make_subpixdisk_perturb(const char *ID_name,
 
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1935,7 +1935,7 @@ imageID make_subpixdisk_perturb(const char *ID_name,
 
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -1979,7 +1979,7 @@ imageID make_subpixdisk_perturb(const char *ID_name,
 
             if(r2 < r2ref)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             if(fabs(sqrt(r2) - sqrt(r2ref)) < 1.5)
             {
@@ -2102,11 +2102,11 @@ imageID make_line(const char *IDname,
             if((xr > 0) && (xr < 1.0) && (yr < 0.5 * t / r0) &&
                     (yr > -0.5 * t / r0))
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
             else
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
             }
         }
 
@@ -2591,7 +2591,7 @@ imageID make_hexsegpupil(
     IDdisk = make_disk("_TMPdisk", size, size, size / 2, size / 2, radius);
     for(ii = 0; ii < size2; ii++)
     {
-        dcimg[IDdisk].array.F[ii] = 1.0 - dcimg[IDdisk].array.F[ii];
+        dcimg[IDdisk].array.F[ii] = 1.0f - dcimg[IDdisk].array.F[ii];
     }
 
     SEGcnt = 0;
@@ -2688,7 +2688,7 @@ imageID make_hexsegpupil(
                         for(ii = 0; ii < size2; ii++)
                         {
                             dcimg[ID].array.F[ii] +=
-                                1.0 * SEGcnt * dcimg[ID1].array.F[ii];
+                                1.0f * SEGcnt * dcimg[ID1].array.F[ii];
                         }
                     }
 
@@ -2793,7 +2793,7 @@ imageID make_hexsegpupil(
                         for(ii = 0; ii < size2; ii++)
                         {
                             dcimg[ID].array.F[ii] +=
-                                1.0 * SEGcnt * dcimg[ID1].array.F[ii];
+                                1.0f * SEGcnt * dcimg[ID1].array.F[ii];
                         }
 
                     if(PISTONerr == 1)
@@ -3209,7 +3209,7 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
                     if((r < 1.0) && (r > 0.3))
                     {
                         pup_ampl =
-                            1.0; //dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
+                            1.0f; //dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
                         pup_pha = x * TTx + y * TTy;
 
                         fluxtot += pup_ampl * pup_ampl;
@@ -3219,7 +3219,7 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
                     }
                     else
                     {
-                        dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0;
+                        dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
                         pup_ampl                                   = 0.0;
                     }
                 }
@@ -3818,7 +3818,7 @@ imageID make_offsetHyperGaussian(
             dist = sqrt(x * x + y * y);
             if(dist < a)
             {
-                dcimg[ID].array.F[jj * size + ii] = 0.0;
+                dcimg[ID].array.F[jj * size + ii] = 0.0f;
             }
             else
             {
@@ -3846,11 +3846,11 @@ make_cosapoedgePupil(uint32_t size, double a, double b, const char *IDname)
             dist = sqrt(x * x + y * y);
             if(dist < a)
             {
-                dcimg[ID].array.F[jj * size + ii] = 1.0;
+                dcimg[ID].array.F[jj * size + ii] = 1.0f;
             }
             else if(dist > b)
             {
-                dcimg[ID].array.F[jj * size + ii] = 0.0;
+                dcimg[ID].array.F[jj * size + ii] = 0.0f;
             }
             else
             {
@@ -3884,9 +3884,9 @@ imageID make_2Dgridpix(const char *IDname,
             j                                           = (long) y;
             u                                           = x - i;
             t                                           = y - j;
-            dcimg[ID].array.F[j * xsize + i]       = (1.0 - u) * (1.0 - t);
-            dcimg[ID].array.F[(j + 1) * xsize + i] = (1.0 - u) * t;
-            dcimg[ID].array.F[j * xsize + i + 1]   = u * (1.0 - t);
+            dcimg[ID].array.F[j * xsize + i]       = (1.0f - u) * (1.0f - t);
+            dcimg[ID].array.F[(j + 1) * xsize + i] = (1.0f - u) * t;
+            dcimg[ID].array.F[j * xsize + i + 1]   = u * (1.0f - t);
             dcimg[ID].array.F[(j + 1) * xsize + i + 1] = u * t;
         }
 
@@ -3956,7 +3956,7 @@ image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name)
             create_1Dimage_ID(IDout_name, xsize, &IDout);
             for(uint32_t ii = 0; ii < xsize; ii++)
             {
-                dcimg[IDout].array.F[ii] = 1.0 * ii;
+                dcimg[IDout].array.F[ii] = 1.0f * ii;
             }
         }
 
@@ -3974,14 +3974,14 @@ image_gen_im2coord(const char *IDin_name, uint8_t axis, const char *IDout_name)
                     for(uint32_t ii = 0; ii < xsize; ii++)
                         for(uint32_t jj = 0; jj < ysize; jj++)
                         {
-                            dcimg[IDout].array.F[jj * xsize + ii] = 1.0 * ii;
+                            dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * ii;
                         }
                     break;
                 case 1:
                     for(uint32_t ii = 0; ii < xsize; ii++)
                         for(uint32_t jj = 0; jj < ysize; jj++)
                         {
-                            dcimg[IDout].array.F[jj * xsize + ii] = 1.0 * jj;
+                            dcimg[IDout].array.F[jj * xsize + ii] = 1.0f * jj;
                         }
                     break;
                 default:

@@ -48,7 +48,7 @@ static char    *cubename;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     return images_to_cube(imgname, *nbframes, cubename);
 }

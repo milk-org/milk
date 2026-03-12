@@ -199,7 +199,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     arith_image_extract3D(
         p_inname, p_outname,

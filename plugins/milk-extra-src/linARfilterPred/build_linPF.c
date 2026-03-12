@@ -91,7 +91,7 @@ static int32_t * GPUdevice = NULL;
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -219,7 +219,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
@@ -280,7 +280,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;

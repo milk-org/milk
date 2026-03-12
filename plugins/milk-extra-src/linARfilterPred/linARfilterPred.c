@@ -1545,7 +1545,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         NBpixin = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
@@ -1607,7 +1607,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         NBpixout = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;
@@ -2573,7 +2573,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     {
         NBinmaskpix = 0;
         for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
-            if(dcimg[IDinmask].array.F[ii] > 0.5)
+            if(dcimg[IDinmask].array.F[ii] > 0.5f)
             {
                 NBinmaskpix++;
             }
@@ -2587,7 +2587,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
         NBinmaskpix = 0;
         for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
-            if(dcimg[IDinmask].array.F[ii] > 0.5)
+            if(dcimg[IDinmask].array.F[ii] > 0.5f)
             {
                 inmaskindex[NBinmaskpix] = ii;
                 NBinmaskpix++;
@@ -2601,7 +2601,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         create_2Dimage_ID("inmask", NBinmaskpix, 1, &IDinmask);
         for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
         {
-            dcimg[IDinmask].array.F[ii] = 1.0;
+            dcimg[IDinmask].array.F[ii] = 1.0f;
         }
 
         inmaskindex = (long *) malloc(sizeof(long) * NBinmaskpix);
@@ -2641,7 +2641,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         }
         NBoutmaskpix = 0;
         for(uint32_t ii = 0; ii < dcimg[IDoutmask].md[0].size[0]; ii++)
-            if(dcimg[IDoutmask].array.F[ii] > 0.5)
+            if(dcimg[IDoutmask].array.F[ii] > 0.5f)
             {
                 NBoutmaskpix++;
             }
@@ -2655,7 +2655,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
         NBoutmaskpix = 0;
         for(uint32_t ii = 0; ii < dcimg[IDoutmask].md[0].size[0]; ii++)
-            if(dcimg[IDoutmask].array.F[ii] > 0.5)
+            if(dcimg[IDoutmask].array.F[ii] > 0.5f)
             {
                 outmaskindex[NBoutmaskpix] = ii;
                 NBoutmaskpix++;
@@ -2834,7 +2834,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             dcimg[IDPFout].md[0].write = 1;
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                dcimg[IDPFout].array.F[mode] = 0.0;
+                dcimg[IDPFout].array.F[mode] = 0.0f;
                 for(uint32_t ii = 0; ii < NBmodeIN * NBPFstep; ii++)
                 {
                     dcimg[IDPFout].array.F[mode] +=

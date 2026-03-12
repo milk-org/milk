@@ -685,7 +685,7 @@ errno_t clean_bad_pix(const char *IDin_name, const char *IDbadpix_name)
         for(jj = 1; jj < ysize - 1; jj++)
             for(ii = 1; ii < xsize - 1; ii++)
             {
-                if(dcimg[IDbadpix].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDbadpix].array.F[jj * xsize + ii] > 0.5f)
                 {
                     sum_bpix = 0.0;
                     for(kk = 0; kk < zsize; kk++)
@@ -724,7 +724,7 @@ errno_t clean_bad_pix(const char *IDin_name, const char *IDbadpix_name)
                             .array.F[kk * xysize + jj * xsize + ii] =
                                 sum_pix[kk] / sum_bpix;
                         }
-                        dcimg[IDbadpix1].array.F[jj * xsize + ii] = 0.0;
+                        dcimg[IDbadpix1].array.F[jj * xsize + ii] = 0.0f;
                         fixed += 1;
                     }
                     else
@@ -814,7 +814,7 @@ long IMG_REDUCE_cleanbadpix_fast_precompute(const char *IDmask_name)
     k = 0;
     for(ii = 0; ii < xysize; ii++)
     {
-        if(dcimg[IDbadpix].array.F[ii] > 0.5)
+        if(dcimg[IDbadpix].array.F[ii] > 0.5f)
         {
             badpixclean_indexlist[k] = ii;
             k++;
@@ -852,7 +852,7 @@ long IMG_REDUCE_cleanbadpix_fast_precompute(const char *IDmask_name)
     for(ii = 0; ii < xsize; ii++)
         for(jj = 0; jj < ysize; jj++)
         {
-            if(dcimg[IDbadpix].array.F[jj * xsize + ii] > 0.5)
+            if(dcimg[IDbadpix].array.F[jj * xsize + ii] > 0.5f)
             {
                 // fill up array of nearby pixels
                 k       = 0;
@@ -867,7 +867,7 @@ long IMG_REDUCE_cleanbadpix_fast_precompute(const char *IDmask_name)
                             if((ii1 > -1) && (ii1 < xsize) && (jj1 > -1) &&
                                     (jj1 < ysize) &&
                                     (dcimg[IDbadpix]
-                                     .array.F[jj1 * xsize + ii1] < 0.5))
+                                     .array.F[jj1 * xsize + ii1] < 0.5f))
                             {
                                 if((ii1 != ii) || (jj1 != jj))
                                 {
@@ -1083,7 +1083,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
             for(k = 0; k < badpixclean_NBbadpix; k++)
             {
                 dcimg[IDout]
-                .array.F[kk * xysize + badpixclean_indexlist[k]] = 0.0;
+                .array.F[kk * xysize + badpixclean_indexlist[k]] = 0.0f;
             }
 
             for(k = 0; k < badpixclean_NBop; k++)
@@ -1353,14 +1353,14 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
                     jj++)
             {
                 dcimg[IDcorrz].array.F[jj * xsizez + ii] -= vlim;
-                dcimg[IDcorrz].array.F[jj * xsizez + ii] /= (1.0 - vlim);
+                dcimg[IDcorrz].array.F[jj * xsizez + ii] /= (1.0f - vlim);
 
-                if(dcimg[IDcorrz].array.F[jj * xsizez + ii] < 0.0)
+                if(dcimg[IDcorrz].array.F[jj * xsizez + ii] < 0.0f)
                 {
-                    dcimg[IDcorrz].array.F[jj * xsizez + ii] = 0.0;
+                    dcimg[IDcorrz].array.F[jj * xsizez + ii] = 0.0f;
                 }
                 dcimg[IDcorrz].array.F[jj * xsizez + ii] =
-                    pow(dcimg[IDcorrz].array.F[jj * xsizez + ii], 2.0);
+                    pow(dcimg[IDcorrz].array.F[jj * xsizez + ii], 2.0f);
             }
 
         totx = 0.0;
@@ -1665,15 +1665,15 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
             r = sqrt(x * x + y * y);
             if((x < 0.0) && (r > 15.0))
             {
-                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 1.0;
+                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 1.0f;
             }
             else
             {
-                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 0.0;
+                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 0.0f;
             }
             if((fabs(y) > 30.0) || (x < -30) || (y < 0.0))
             {
-                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 0.0;
+                dcimg[ID].array.F[jj1 * xsize1 + ii1] = 0.0f;
             }
         }
 
@@ -1685,7 +1685,7 @@ errno_t IMG_REDUCE_cubeprocess(const char *IDin_name)
     ID   = image_ID("cropPSF_corr", dcimg, dcnimg);
     kk1  = 0;
     kk2  = 500;
-    vmin = dcimg[ID].array.F[kk2 * zsize + kk1] * 2.0;
+    vmin = dcimg[ID].array.F[kk2 * zsize + kk1] * 2.0f;
     for(kk1 = 0; kk1 < zsize; kk1++)
         for(kk2 = kk1 + 100; kk2 < zsize; kk2++)
         {

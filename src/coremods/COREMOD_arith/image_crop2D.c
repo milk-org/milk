@@ -74,7 +74,7 @@ static uint32_t *cropysize   = NULL;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static errno_t fpsexec(
+static MILK_HOT errno_t fpsexec(
     IMAGE *input_image,
     IMAGE *output_image)
 {
@@ -160,7 +160,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID iin =
         imgid_make_from_name(cropinsname);

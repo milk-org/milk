@@ -602,7 +602,7 @@ errno_t stream_monitor_run(
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     // Wrapper for CLI mode
     return stream_monitor_run(inimname, *tbinflag, *cbbuffersize, 0, 0);

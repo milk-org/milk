@@ -47,7 +47,7 @@ static double current_max_val = 1.0;
 #define BASE_256_COLD 114
 #define BASE_256_JET 178
 
-static double get_pixel_value(IMAGE *img, int x, int y) {
+static inline double get_pixel_value(IMAGE *img, int x, int y) {
     long idx = y * img->md[0].size[0] + x;
     
     // Boundary check
@@ -71,7 +71,7 @@ static double get_pixel_value(IMAGE *img, int x, int y) {
 }
 
 // Convert normalized RGB to 256-color index (6x6x6 cube starts at 16)
-static int rgb_to_256(float r, float g, float b) {
+static inline int rgb_to_256(float r, float g, float b) {
     if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
     if (g < 0.0f) g = 0.0f; if (g > 1.0f) g = 1.0f;
     if (b < 0.0f) b = 0.0f; if (b > 1.0f) b = 1.0f;
@@ -87,7 +87,7 @@ static int rgb_to_256(float r, float g, float b) {
     return 16 + (ir * 36) + (ig * 6) + ib;
 }
 
-static void get_heat_color(float v, float *r, float *g, float *b) {
+static inline void get_heat_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
     if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
     
@@ -106,7 +106,7 @@ static void get_heat_color(float v, float *r, float *g, float *b) {
     }
 }
 
-static void get_cold_color(float v, float *r, float *g, float *b) {
+static inline void get_cold_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
     if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
 
@@ -123,7 +123,7 @@ static void get_cold_color(float v, float *r, float *g, float *b) {
     }
 }
 
-static void get_jet_color(float v, float *r, float *g, float *b) {
+static inline void get_jet_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
     if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
 
@@ -194,7 +194,7 @@ static void init_colormaps() {
 #endif
 }
 
-static int compare_doubles(const void *a, const void *b) {
+static inline int compare_doubles(const void *a, const void *b) {
     double arg1 = *(const double *)a;
     double arg2 = *(const double *)b;
     if (arg1 < arg2) return -1;

@@ -396,15 +396,15 @@ imageID basic_zoom2(
         {
             dcimg[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii)] =
                 dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] + (ii + naxes[1] / 4)];
-            dcimg[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii)] = 0.5 *
+            dcimg[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii)] = 0.5f *
                     (dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
                                             (ii + naxes[1] / 4)] + dcimg[ID].array.F[(jj + naxes[1] / 4 + 1) *
                                                     naxes[0] + (ii + naxes[1] / 4)]);
-            dcimg[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii + 1)] = 0.5 *
+            dcimg[ID_out].array.F[(2 * jj)*naxes_out[0] + (2 * ii + 1)] = 0.5f *
                     (dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
                                             (ii + naxes[1] / 4)] + dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
                                                     (ii + naxes[1] / 4 + 1)]);
-            dcimg[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii + 1)] = 0.25 *
+            dcimg[ID_out].array.F[(2 * jj + 1)*naxes_out[0] + (2 * ii + 1)] = 0.25f *
                     (dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
                                             (ii + naxes[1] / 4)] + dcimg[ID].array.F[(jj + naxes[1] / 4) * naxes[0] +
                                                     (ii + naxes[1] / 4 + 1)] + dcimg[ID].array.F[(jj + naxes[1] / 4 + 1) *
@@ -642,7 +642,7 @@ int basic_median(
             }
             else
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.5 * array[medianpt] + 0.5 *
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 0.5f * array[medianpt] + 0.5f *
                         array[medianpt + 1];
             }
         }
@@ -733,7 +733,7 @@ int basic_translate(
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 * M_PI /
+                dcimg[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0f * M_PI /
                         naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] *
                         (jj - naxes[1] / 2);
             }
@@ -780,7 +780,7 @@ int basic_translate(
         for(jj = 1; jj < naxes[1]; jj++)
             for(ii = 1; ii < naxes[0]; ii++)
             {
-                dcimg[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0 * M_PI /
+                dcimg[ID].array.F[jj * naxes[0] + ii] -= xtransl * 2.0f * M_PI /
                         naxes[0] * (ii - naxes[0] / 2) + ytransl * 2.0 * M_PI / naxes[1] *
                         (jj - naxes[1] / 2);
             }
@@ -1139,7 +1139,7 @@ imageID basic_cube_center(
                 }
                 else
                 {
-                    dcimg[IDout].array.F[index0 + jj * xsize + ii] = 0.0;
+                    dcimg[IDout].array.F[index0 + jj * xsize + ii] = 0.0f;
                 }
             }
     }
