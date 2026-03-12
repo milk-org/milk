@@ -57,69 +57,104 @@ static char outimname[
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-errno_t linopt_imtools_image_construct(const char *IDmodes_name,
-                                       const char *IDcoeff_name,
-                                       const char *ID_name,
-                                       imageID    *outID)
+/**
+ * Construct an image as linear sum of
+ * modes weighted by coefficients.
+ */
+errno_t linopt_imtools_image_construct(
+    const char *IDmodes_name,
+    const char *IDcoeff_name,
+    const char *ID_name,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    imageID IDmodes;
-    imageID IDcoeff;
-    uint8_t datatype;
+    IMGID imgmodes =
+        imgid_make_from_name(
+            IDmodes_name);
+    resolveIMGID(&imgmodes,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDmodes  = image_ID(IDmodes_name, dcimg, dcnimg);
-    datatype = dcimg[IDmodes].md[0].datatype;
-
-    uint32_t xsize = dcimg[IDmodes].md[0].size[0];
-    uint32_t ysize = dcimg[IDmodes].md[0].size[1];
-    uint32_t zsize = dcimg[IDmodes].md[0].size[2];
-
+    uint8_t  datatype =
+        imgmodes.md->datatype;
+    uint32_t xsize =
+        imgmodes.md->size[0];
+    uint32_t ysize =
+        imgmodes.md->size[1];
+    uint32_t zsize =
+        imgmodes.md->size[2];
     uint64_t sizexy = xsize;
     sizexy *= ysize;
 
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            ID_name, xsize, ysize);
+    imgout.mdt->shared = 0;
+    imgout.mdt->datatype = datatype;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    IMGID imgcoeff =
+        imgid_make_from_name(
+            IDcoeff_name);
+    resolveIMGID(&imgcoeff,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
     if(datatype == _DATATYPE_FLOAT)
     {
-        FUNC_CHECK_RETURN(create_2Dimage_ID(ID_name, xsize, ysize, &ID));
+        memset(
+            imgout.im->array.F,
+            0,
+            sizeof(float)
+            * imgout.md->nelement);
+        for(uint32_t kk = 0;
+            kk < zsize; kk++)
+        {
+            for(uint64_t ii = 0;
+                ii < sizexy; ii++)
+            {
+                imgout.im->array.F[ii]
+                    += imgcoeff.im
+                           ->array.F[kk]
+                       * imgmodes.im
+                             ->array.F[
+                                 kk
+                                 * sizexy
+                                 + ii];
+            }
+        }
     }
     else
     {
-        FUNC_CHECK_RETURN(create_2Dimage_ID_double(ID_name, xsize, ysize, &ID));
-    }
-
-    IDcoeff = image_ID(IDcoeff_name, dcimg, dcnimg);
-
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        memset(dcimg[ID].array.F,
-               0,
-               sizeof(float) * dcimg[ID].md[0].nelement);
-        for(uint32_t kk = 0; kk < zsize; kk++)
-            for(uint64_t ii = 0; ii < sizexy; ii++)
+        memset(
+            imgout.im->array.D,
+            0,
+            sizeof(double)
+            * imgout.md->nelement);
+        for(uint32_t kk = 0;
+            kk < zsize; kk++)
+        {
+            for(uint64_t ii = 0;
+                ii < sizexy; ii++)
             {
-                dcimg[ID].array.F[ii] +=
-                    dcimg[IDcoeff].array.F[kk] *
-                    dcimg[IDmodes].array.F[kk * sizexy + ii];
+                imgout.im->array.D[ii]
+                    += imgcoeff.im
+                           ->array.D[kk]
+                       * imgmodes.im
+                             ->array.D[
+                                 kk
+                                 * sizexy
+                                 + ii];
             }
-    }
-    else
-    {
-        memset(dcimg[ID].array.D,
-               0,
-               sizeof(double) * dcimg[ID].md[0].nelement);
-        for(uint32_t kk = 0; kk < zsize; kk++)
-            for(uint64_t ii = 0; ii < sizexy; ii++)
-            {
-                dcimg[ID].array.D[ii] +=
-                    dcimg[IDcoeff].array.D[kk] *
-                    dcimg[IDmodes].array.D[kk * sizexy + ii];
-            }
+        }
     }
 
     if(outID != NULL)
     {
-        *outID = ID;
+        *outID = imgout.ID;
     }
 
     DEBUG_TRACE_FEXIT();

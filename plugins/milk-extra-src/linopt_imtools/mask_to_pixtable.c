@@ -52,80 +52,85 @@ static char * outpixmimname = NULL;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-//   Maps image to array of pixel values using mask
-// to decompose image into modes:
-// STEP 1: create index and mult tables (linopt_imtools_mask_to_pixtable)
-//
-
-errno_t linopt_imtools_mask_to_pixtable(const char *IDmask_name,
-                                        const char *IDpixindex_name,
-                                        const char *IDpixmult_name,
-                                        long       *outNBpix)
+/**
+ * Create pixel index and multiplier tables
+ * from mask image for vectorized operations.
+ */
+errno_t linopt_imtools_mask_to_pixtable(
+    const char *IDmask_name,
+    const char *IDpixindex_name,
+    const char *IDpixmult_name,
+    long       *outNBpix)
 {
     DEBUG_TRACE_FSTART();
 
-    long      NBpix;
-    imageID   ID;
-    long      size;
-    float     eps = 1.0e-8;
-    long      k;
-    uint32_t *sizearray;
-    imageID   IDpixindex, IDpixmult;
+    float eps = 1.0e-8;
 
-    ID = image_ID(IDmask_name, dcimg, dcnimg);
+    IMGID imgmask =
+        imgid_make_from_name(
+            IDmask_name);
+    resolveIMGID(&imgmask,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    size = dcimg[ID].md[0].nelement;
+    long size = imgmask.md->nelement;
 
-    NBpix = 0;
+    long NBpix = 0;
     for(long ii = 0; ii < size; ii++)
-        if(dcimg[ID].array.F[ii] > eps)
+    {
+        if(imgmask.im->array.F[ii]
+           > eps)
         {
             NBpix++;
         }
-
-    sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-    if(sizearray == NULL)
-    {
-        FUNC_RETURN_FAILURE("malloc returns NULL pointer");
     }
-    sizearray[0] = NBpix;
-    sizearray[1] = 1;
 
-    FUNC_CHECK_RETURN(create_image_ID(IDpixindex_name,
-                                      2,
-                                      sizearray,
-                                      _DATATYPE_INT64,
-                                      0,
-                                      0,
-                                      0,
-                                      &IDpixindex));
+    /* Create INT64 index table */
+    IMGID imgpixi =
+        imgid_make_from_name(
+            IDpixindex_name);
+    imgpixi.mdt->naxis = 2;
+    imgpixi.mdt->size[0] = NBpix;
+    imgpixi.mdt->size[1] = 1;
+    imgpixi.mdt->datatype =
+        _DATATYPE_INT64;
+    imgpixi.mdt->shared = 0;
+    imgpixi.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgpixi);
 
-    FUNC_CHECK_RETURN(create_image_ID(IDpixmult_name,
-                                      2,
-                                      sizearray,
-                                      _DATATYPE_FLOAT,
-                                      0,
-                                      0,
-                                      0,
-                                      &IDpixmult));
-    free(sizearray);
+    /* Create FLOAT multiplier table */
+    IMGID imgpixm =
+        imgid_make_from_name(
+            IDpixmult_name);
+    imgpixm.mdt->naxis = 2;
+    imgpixm.mdt->size[0] = NBpix;
+    imgpixm.mdt->size[1] = 1;
+    imgpixm.mdt->datatype =
+        _DATATYPE_FLOAT;
+    imgpixm.mdt->shared = 0;
+    imgpixm.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgpixm);
 
-    k = 0;
+    long k = 0;
     for(long ii = 0; ii < size; ii++)
-        if(dcimg[ID].array.F[ii] > eps)
+    {
+        if(imgmask.im->array.F[ii]
+           > eps)
         {
-            dcimg[IDpixindex].array.SI64[k] = ii;
-            dcimg[IDpixmult].array.F[k]     = dcimg[ID].array.F[ii];
+            imgpixi.im->array.SI64[k] =
+                ii;
+            imgpixm.im->array.F[k] =
+                imgmask.im->array.F[ii];
             k++;
         }
-
-    //  printf("%ld active pixels in mask %s\n", NBpix, IDmask_name);
+    }
 
     if(outNBpix != NULL)
     {
         *outNBpix = NBpix;
     }
-
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
