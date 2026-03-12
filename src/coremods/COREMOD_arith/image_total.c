@@ -40,9 +40,9 @@ double arith_image_total_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float *ptr = imgin->im->array.F;
+        float * restrict ptr = imgin->im->array.F;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -51,9 +51,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        double *ptr = imgin->im->array.D;
+        double * restrict ptr = imgin->im->array.D;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -62,9 +62,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t *ptr = imgin->im->array.UI8;
+        uint8_t * restrict ptr = imgin->im->array.UI8;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -73,9 +73,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t *ptr = imgin->im->array.UI16;
+        uint16_t * restrict ptr = imgin->im->array.UI16;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -84,9 +84,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t *ptr = imgin->im->array.UI32;
+        uint32_t * restrict ptr = imgin->im->array.UI32;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -95,9 +95,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t *ptr = imgin->im->array.UI64;
+        uint64_t * restrict ptr = imgin->im->array.UI64;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -106,9 +106,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        int8_t *ptr = imgin->im->array.SI8;
+        int8_t * restrict ptr = imgin->im->array.SI8;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -117,9 +117,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        int16_t *ptr = imgin->im->array.SI16;
+        int16_t * restrict ptr = imgin->im->array.SI16;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -128,9 +128,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        int32_t *ptr = imgin->im->array.SI32;
+        int32_t * restrict ptr = imgin->im->array.SI32;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -139,9 +139,9 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        int64_t *ptr = imgin->im->array.SI64;
+        int64_t * restrict ptr = imgin->im->array.SI64;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -190,9 +190,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float *ptr = imgin->im->array.F;
+        float * restrict ptr = imgin->im->array.F;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -201,9 +201,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        double *ptr = imgin->im->array.D;
+        double * restrict ptr = imgin->im->array.D;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -212,9 +212,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t *ptr = imgin->im->array.UI8;
+        uint8_t * restrict ptr = imgin->im->array.UI8;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -223,9 +223,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t *ptr = imgin->im->array.UI16;
+        uint16_t * restrict ptr = imgin->im->array.UI16;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -234,9 +234,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t *ptr = imgin->im->array.UI32;
+        uint32_t * restrict ptr = imgin->im->array.UI32;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -245,9 +245,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t *ptr = imgin->im->array.UI64;
+        uint64_t * restrict ptr = imgin->im->array.UI64;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -256,9 +256,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        int8_t *ptr = imgin->im->array.SI8;
+        int8_t * restrict ptr = imgin->im->array.SI8;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -267,9 +267,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        int16_t *ptr = imgin->im->array.SI16;
+        int16_t * restrict ptr = imgin->im->array.SI16;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -278,9 +278,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        int32_t *ptr = imgin->im->array.SI32;
+        int32_t * restrict ptr = imgin->im->array.SI32;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -289,9 +289,9 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        int64_t *ptr = imgin->im->array.SI64;
+        int64_t * restrict ptr = imgin->im->array.SI64;
 #ifdef _OPENMP
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {

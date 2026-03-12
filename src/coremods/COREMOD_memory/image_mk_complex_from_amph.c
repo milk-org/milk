@@ -127,7 +127,7 @@ errno_t mk_complex_from_amph_IMGID(
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint32_t kk = 0;
                  kk < zsize; kk++)
@@ -178,7 +178,7 @@ errno_t mk_complex_from_amph_IMGID(
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint32_t kk = 0;
                  kk < zsize; kk++)
@@ -229,7 +229,7 @@ errno_t mk_complex_from_amph_IMGID(
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint32_t kk = 0;
                  kk < zsize; kk++)
@@ -280,7 +280,7 @@ errno_t mk_complex_from_amph_IMGID(
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
         {
-            #pragma omp for
+            #pragma omp for simd
 #endif
             for(uint32_t kk = 0;
                  kk < zsize; kk++)

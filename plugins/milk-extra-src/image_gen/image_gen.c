@@ -2210,7 +2210,7 @@ imageID make_hexagon(const char *IDname,
 #ifdef HAVE_LIBGOMP
     #pragma omp parallel default(shared) private(ii, jj, value, x, y, r)
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
 
         for(jj = jjmin; jj < jjmax; jj++)

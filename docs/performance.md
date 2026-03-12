@@ -129,6 +129,18 @@ $ echo 1024 | sudo tee \
     /proc/sys/vm/nr_hugepages
 ```
 
+To enable huge pages for `ImageStreamIO` shared
+memory streams ≥ 2 MB:
+
+```bash
+$ export MILK_SHM_HUGETLB=1
+```
+
+When set, `ImageStreamIO_createIm_gpu()` uses
+`MAP_HUGETLB` for its `mmap()` call. If huge
+pages are unavailable, it falls back to normal
+pages automatically.
+
 ---
 
 ## 5. GPU Acceleration (CUDA)
@@ -178,13 +190,16 @@ See also: [Valkey Integration](valkey.md)
 ## 7. Quick Checklist
 
 | Item | Command / Config |
-|------|-----------------|
+|------|--------------------|
 | Check loop Hz | `milk-procinfo-list` |
 | Semaphore benchmark | `milk-semloopspeed` |
 | Pin to core 4 | `taskset -c 4 <cmd>` |
 | RT priority 49 | `sudo chrt -f 49 <cmd>` |
 | Increase `/dev/shm` | `mount -o remount,size=16G /dev/shm` |
+| Huge pages for streams | `export MILK_SHM_HUGETLB=1` |
 | Enable CUDA | `cmake .. -DUSE_CUDA=ON` |
+| Vec missed report | `cmake .. -DVEC_REPORT=ON` |
+| PGO build | `cmake .. -DUSE_PGO=GENERATE` |
 | Valkey low-latency | `sysctl -w net.ipv4.tcp_nodelay=1` |
 
 ---

@@ -263,7 +263,7 @@ errno_t fft_DFT(const char *IDin_name,
     printf("Using openMP %d", omp_get_max_threads());
     #pragma omp parallel
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
 
         for(uint32_t pixiiout = 0; pixiiout < NBpixact_iiout; pixiiout++)
@@ -297,7 +297,7 @@ errno_t fft_DFT(const char *IDin_name,
 #ifdef _OPENMP
     #pragma omp parallel
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint32_t pixjjout = 0; pixjjout < NBpixact_jjout; pixjjout++)
         {
@@ -338,7 +338,7 @@ errno_t fft_DFT(const char *IDin_name,
             fflush(stdout);
         }
 
-        #pragma omp for
+        #pragma omp for simd
 #endif
 
         for(uint32_t kout = 0; kout < NBptsout; kout++)
