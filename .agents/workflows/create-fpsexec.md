@@ -4,6 +4,10 @@ description: Create a new fpsexec standalone executable based on V2 compute unit
 
 This workflow automates the creation of a new fpsexec compute unit standalone executable. It handles copying the standard V2 template, renaming key fields, and configuring the module's CMakeLists.txt to build the executable.
 
+See also: [Developer Tutorial](docs/developer/tutorial.md) ·
+[Adding Plugins](docs/developer/plugins.md) ·
+[Template Source Code](docs/developer/TemplateSourceCode.md)
+
 1. Ask the user for the following required information if they haven't provided it yet:
    - Target directory (e.g., `~/src/milk/src/COREMOD_arith`)
    - C filename for the new unit (e.g., `my_new_op.c`)

@@ -19,5 +19,19 @@ cd /home/oguyon/src/milk/_build && cmake --build . -- -j$(nproc)
 2. If the build **fails**, read the compiler errors, fix them, and re-run
    step 1 until the build succeeds.
 
-3. After a successful build, report the result to the user (number of
-   warnings, if any).
+3. After a successful build, run the test suite:
+
+```bash
+cd /home/oguyon/src/milk/_build && ctest --output-on-failure
+```
+
+4. If any tests fail, investigate and fix.
+
+5. Report the result to the user:
+   - Number of compiler warnings (if any)
+   - Test results (pass/fail count)
+   - If a new standalone executable was added,
+     verify it appears in `milk-fpsexec-list` output:
+     ```bash
+     milk-fpsexec-list | grep <new-exe-name>
+     ```
