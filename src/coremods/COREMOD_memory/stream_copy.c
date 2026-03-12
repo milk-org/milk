@@ -110,16 +110,11 @@ static MILK_HOT errno_t compute_function()
             const float * MILK_RESTRICT in =
                 MILK_ASSUME_ALIGNED(
                     imgin.im->array.F);
-            uint64_t nelem =
-                byte_copy_size / sizeof(float);
 
-            #pragma omp parallel for simd \
-                if (nelem > 20000)
-            for (uint64_t i = 0;
-                 i < nelem; i++)
-            {
-                out[i] = in[i];
-            }
+            __builtin_memcpy(
+                out,
+                in,
+                byte_copy_size);
         }
         else if (imgin.im->md->datatype
                  == _DATATYPE_UINT16)
@@ -130,16 +125,11 @@ static MILK_HOT errno_t compute_function()
             const uint16_t * MILK_RESTRICT in =
                 MILK_ASSUME_ALIGNED(
                     imgin.im->array.UI16);
-            uint64_t nelem =
-                byte_copy_size
-                / sizeof(uint16_t);
 
-            MILK_IVDEP
-            for (uint64_t i = 0;
-                 i < nelem; i++)
-            {
-                out[i] = in[i];
-            }
+            __builtin_memcpy(
+                out,
+                in,
+                byte_copy_size);
         }
         else
         {

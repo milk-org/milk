@@ -13,7 +13,7 @@ non-GCC compilers.
 
 - Use `restrict` (or `MILK_RESTRICT`) on all
   non-aliased pixel/array data pointer parameters
-  in compute-heavy functions. This allows GCC to
+  in `compute_function` signatures and compute-heavy helper functions. This allows GCC to
   vectorize loops over those pointers.
 - Use `MILK_ASSUME_ALIGNED(ptr)` to inform GCC
   that a restricted pointer is aligned to a 64-byte
@@ -100,6 +100,10 @@ non-GCC compilers.
 - Hoist invariant FPS parameter dereferences
   (`*ptr`) into local variables before the
   inner loop to avoid repeated pointer chasing.
+
+## Struct Copying & Data Movement
+
+- Replace manual struct copies or small array copies in hot paths with `__builtin_memcpy(dest, src, size)`. This allows GCC to emit optimal inline move instructions instead of calling libc `memcpy` or generating sub-optimal loop code.
 
 ## Datatype Dispatch
 
