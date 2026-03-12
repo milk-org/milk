@@ -70,38 +70,53 @@ FPS_V2_SECTION5(FPS_PARAMS)
 //
 //
 //
-errno_t linopt_imtools_vec_to_2DImage(const char *IDvec_name,
-                                      const char *IDpixindex_name,
-                                      const char *IDpixmult_name,
-                                      const char *ID_name,
-                                      long        xsize,
-                                      long        ysize,
-                                      imageID    *outID)
+errno_t linopt_imtools_vec_to_2DImage(
+    const char *IDvec_name,
+    const char *IDpixindex_name,
+    const char *IDpixmult_name,
+    const char *ID_name,
+    long        xsize,
+    long        ysize,
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    imageID IDvec;
-    long    k;
-    imageID IDpixindex, IDpixmult;
-    long    NBpix;
+    IMGID imgvec =
+        imgid_make_from_name(IDvec_name);
+    resolveIMGID(&imgvec, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDvec      = image_ID(IDvec_name, dcimg, dcnimg);
-    IDpixindex = image_ID(IDpixindex_name, dcimg, dcnimg);
-    IDpixmult  = image_ID(IDpixmult_name, dcimg, dcnimg);
-    NBpix      = dcimg[IDpixindex].md[0].nelement;
+    IMGID imgpixi =
+        imgid_make_from_name(IDpixindex_name);
+    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    FUNC_CHECK_RETURN(create_2Dimage_ID(ID_name, xsize, ysize, &ID));
+    IMGID imgpixm =
+        imgid_make_from_name(IDpixmult_name);
+    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    for(k = 0; k < NBpix; k++)
+    long NBpix = imgpixi.md->nelement;
+
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            ID_name, xsize, ysize);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(long k = 0; k < NBpix; k++)
     {
-        dcimg[ID].array.F[dcimg[IDpixindex].array.SI64[k]] =
-            dcimg[IDvec].array.F[k] / dcimg[IDpixmult].array.F[k];
+        imgout.im->array.F[
+            imgpixi.im->array.SI64[k]] =
+            imgvec.im->array.F[k]
+            / imgpixm.im->array.F[k];
     }
 
     if(outID != NULL)
     {
-        *outID = ID;
+        *outID = imgout.ID;
     }
 
     DEBUG_TRACE_FEXIT();

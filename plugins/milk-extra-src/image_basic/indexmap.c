@@ -99,168 +99,231 @@ CLIADDCMD_image_basic__indexmap()
     return RETURN_SUCCESS;
 }
 
-imageID image_basic_indexmap(const char *__restrict ID_index_name,
-                             const char *__restrict ID_values_name,
-                             const char *__restrict IDout_name)
+/**
+ * Map values from one image to another
+ * using an index map.
+ */
+imageID image_basic_indexmap(
+    const char *__restrict ID_index_name,
+    const char *__restrict ID_values_name,
+    const char *__restrict IDout_name)
 {
-    imageID IDindex, IDvalues;
-    imageID IDout;
-    long    xsize, ysize, xysize;
-    long    val_xsize, val_ysize, val_xysize;
-    uint8_t datatype;
-    uint8_t val_datatype;
-    long    ii, i;
+    IMGID imgidx =
+        imgid_make_from_name(ID_index_name);
+    resolveIMGID(&imgidx, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDindex  = image_ID(ID_index_name, dcimg, dcnimg);
-    IDvalues = image_ID(ID_values_name, dcimg, dcnimg);
+    IMGID imgval =
+        imgid_make_from_name(
+            ID_values_name);
+    resolveIMGID(&imgval, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    xsize    = dcimg[IDindex].md[0].size[0];
-    ysize    = dcimg[IDindex].md[0].size[1];
-    xysize   = xsize * ysize;
-    datatype = dcimg[IDindex].md[0].datatype;
+    long xsize  = imgidx.md->size[0];
+    long ysize  = imgidx.md->size[1];
+    long xysize = xsize * ysize;
+    uint8_t datatype = imgidx.md->datatype;
 
-    val_xsize    = dcimg[IDvalues].md[0].size[0];
-    val_ysize    = dcimg[IDvalues].md[0].size[1];
-    val_xysize   = val_xsize * val_ysize;
-    val_datatype = dcimg[IDindex].md[0].datatype;
+    long val_xsize  = imgval.md->size[0];
+    long val_ysize  = imgval.md->size[1];
+    long val_xysize = val_xsize * val_ysize;
 
-    create_2Dimage_ID(IDout_name, xsize, ysize, &IDout);
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            IDout_name, xsize, ysize);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    if(val_datatype == _DATATYPE_FLOAT)
+    if(datatype == _DATATYPE_FLOAT)
     {
-        for(ii = 0; ii < xysize; ii++)
+        for(long ii = 0; ii < xysize; ii++)
         {
-            i = (long)(dcimg[IDindex].array.F[ii] + 0.1);
+            long i = (long)(
+                imgidx.im->array.F[ii]
+                + 0.1);
             if((i > -1) && (i < val_xysize))
             {
-                dcimg[IDout].array.F[ii] = dcimg[IDvalues].array.F[i];
+                imgout.im->array.F[ii] =
+                    imgval.im->array.F[i];
             }
         }
     }
     else
     {
-        float *arrayf = (float *) malloc(sizeof(float) * val_xysize);
+        float *arrayf = (float *) malloc(
+            sizeof(float) * val_xysize);
         if(arrayf == NULL)
         {
-            PRINT_ERROR("malloc returns NULL pointer");
+            PRINT_ERROR(
+                "malloc returns NULL "
+                "pointer");
             abort();
         }
 
-        for(i = 0; i < val_xysize; i++)
+        for(long i = 0;
+            i < val_xysize; i++)
         {
-            arrayf[i] = (float) dcimg[IDvalues].array.D[i];
+            arrayf[i] = (float)
+                imgval.im->array.D[i];
         }
 
         switch(datatype)
         {
-
-            case _DATATYPE_DOUBLE:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_DOUBLE:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)(
+                    imgidx.im->array.D[ii]
+                    + 0.1);
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long)(dcimg[IDindex].array.D[ii] + 0.1);
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_UINT8:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_UINT8:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.UI8[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.UI8[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_INT8:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_INT8:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.SI8[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.SI8[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_UINT16:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_UINT16:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.UI16[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.UI16[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_INT16:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_INT16:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.SI16[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.SI16[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_UINT32:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_UINT32:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.UI32[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.UI32[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_INT32:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_INT32:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.SI32[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.SI32[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_UINT64:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_UINT64:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.UI64[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.UI64[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            case _DATATYPE_INT64:
-                for(ii = 0; ii < xysize; ii++)
+        case _DATATYPE_INT64:
+            for(long ii = 0;
+                ii < xysize; ii++)
+            {
+                long i = (long)
+                    imgidx.im->array.SI64[
+                        ii];
+                if((i > -1)
+                    && (i < val_xysize))
                 {
-                    i = (long) dcimg[IDindex].array.SI64[ii];
-                    if((i > -1) && (i < val_xysize))
-                    {
-                        dcimg[IDout].array.F[ii] = arrayf[i];
-                    }
+                    imgout.im->array.F[ii]
+                        = arrayf[i];
                 }
-                break;
+            }
+            break;
 
-            default:
-                printf("ERROR: datatype not supported\n");
-                free(arrayf);
-                return EXIT_FAILURE;
-                break;
+        default:
+            printf("ERROR: datatype not "
+                   "supported\n");
+            free(arrayf);
+            return EXIT_FAILURE;
+            break;
         }
         free(arrayf);
     }
 
-    return (IDout);
+    return imgout.ID;
 }
