@@ -5,7 +5,7 @@
  *
  */
 
-#include <assert.h>
+
 #include <math.h>
 
 #ifdef MILK_NO_CLI

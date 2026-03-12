@@ -11,7 +11,6 @@
 #endif
 #include <regex.h>
 
-#include <assert.h>
 #include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
