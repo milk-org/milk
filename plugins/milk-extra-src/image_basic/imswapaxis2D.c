@@ -91,43 +91,53 @@ CLIADDCMD_image_basic__imswapaxis2D()
     return RETURN_SUCCESS;
 }
 
-imageID image_basic_SwapAxis2D_byID(imageID IDin,
-                                    const char *__restrict IDout_name)
+/**
+ * Swap axes of a 2D image (transpose).
+ */
+imageID image_basic_SwapAxis2D_byID(
+    imageID IDin,
+    const char *__restrict IDout_name)
 {
-    imageID IDout = -1;
-
     if(dcimg[IDin].md[0].naxis != 2)
     {
-        printf("ERROR: image needs to have 2 axis\n");
-    }
-    else
-    {
-        create_2Dimage_ID(IDout_name,
-                          dcimg[IDin].md[0].size[1],
-                          dcimg[IDin].md[0].size[0],
-                          &IDout);
-
-        for(uint32_t ii = 0; ii < dcimg[IDin].md[0].size[0]; ii++)
-            for(uint32_t jj = 0; jj < dcimg[IDin].md[0].size[1]; jj++)
-            {
-                dcimg[IDout]
-                .array.F[ii * dcimg[IDin].md[0].size[1] + jj] =
-                    dcimg[IDin]
-                    .array.F[jj * dcimg[IDin].md[0].size[0] + ii];
-            }
+        printf("ERROR: image needs "
+               "to have 2 axis\n");
+        return -1;
     }
 
-    return IDout;
+    uint32_t xsize = dcimg[IDin].md[0].size[0];
+    uint32_t ysize = dcimg[IDin].md[0].size[1];
+
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            IDout_name, ysize, xsize);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(uint32_t ii = 0; ii < xsize; ii++)
+        for(uint32_t jj = 0;
+            jj < ysize; jj++)
+        {
+            imgout.im->array.F[
+                ii * ysize + jj] =
+                dcimg[IDin].array.F[
+                    jj * xsize + ii];
+        }
+
+    return imgout.ID;
 }
 
-imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
-                               const char *__restrict IDout_name)
+imageID image_basic_SwapAxis2D(
+    const char *__restrict IDin_name,
+    const char *__restrict IDout_name)
 {
-    imageID IDin;
-    imageID IDout = -1;
+    IMGID imgin =
+        imgid_make_from_name(IDin_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    IDin = image_ID(IDin_name, dcimg, dcnimg);
-    image_basic_SwapAxis2D_byID(IDin, IDout_name);
-
-    return IDout;
+    return image_basic_SwapAxis2D_byID(
+        imgin.ID, IDout_name);
 }
