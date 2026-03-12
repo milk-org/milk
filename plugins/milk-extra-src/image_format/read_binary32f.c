@@ -113,9 +113,6 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
     FILE         *fp;
     float        *buffer;
     unsigned long fileLen;
-    long          i, ii, jj;
-    imageID       ID;
-    //long v1;
 
     //Open file
     if((fp = fopen(fname, "rb")) == NULL)
@@ -145,18 +142,26 @@ imageID IMAGE_FORMAT_read_binary32f(const char *__restrict fname,
     }
     fclose(fp);
 
-    FUNC_CHECK_RETURN(create_2Dimage_ID(IDname, xsize, ysize, &ID));
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            IDname, xsize, ysize);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    i = 0;
-    for(jj = 0; jj < ysize; jj++)
-        for(ii = 0; ii < xsize; ii++)
+    long i = 0;
+    for(long jj = 0; jj < ysize; jj++)
+        for(long ii = 0; ii < xsize; ii++)
         {
-            dcimg[ID].array.F[jj * xsize + ii] = buffer[i];
+            imgout.im->array.F[
+                jj * xsize + ii] =
+                buffer[i];
             i++;
         }
 
     free(buffer);
 
     DEBUG_TRACE_FEXIT();
-    return ID;
+    return imgout.ID;
 }
