@@ -220,18 +220,24 @@ static errno_t compute_function()
 
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref = -1;
-    IMGID imginref = imgid_make_from_name(inrefsname);
-    resolveIMGID(&imginref, ERRMODE_WARN, dcimg, dcnimg);
+    IMGID imginref = imgid_make_from_name(
+        inrefsname);
+    resolveIMGID(&imginref,
+                 ERRMODE_WARN,
+                 dcimg, dcnimg);
     if(imginref.ID == -1)
     {
-        create_2Dimage_ID("_tmprefin",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          &IDinref);
-        for(uint64_t ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-        {
-            dcimg[IDinref].array.F[ii] = 0.0;
-        }
+        IMGID imgref =
+            imgid_make_from_name_2D(
+                "_tmprefin",
+                imgin.md->size[0],
+                imgin.md->size[1]);
+        imgref.mdt->shared = 0;
+        imgref.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgref);
+        /* calloc zeros the array */
+        IDinref = imgref.ID;
     }
     else
     {
@@ -298,24 +304,50 @@ static errno_t compute_function()
                NBmodes);
         fflush(stdout);
 
-        create_3Dimage_ID("_tmpmodes",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          NBmodes,
-                          &IDmodes);
+        IMGID imgtmp =
+            imgid_make_from_name_3D(
+                "_tmpmodes",
+                imgin.md->size[0],
+                imgin.md->size[1],
+                NBmodes);
+        imgtmp.mdt->shared = 0;
+        imgtmp.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgtmp);
+        IDmodes = imgtmp.ID;
 
-        for(uint32_t ii = 0; ii < imgin.md->size[0]; ii++)
-            for(uint32_t jj = 0; jj < imgin.md->size[1]; jj++)
+        for(uint32_t ii = 0;
+            ii < imgin.md->size[0]; ii++)
+        {
+            for(uint32_t jj = 0;
+                jj < imgin.md->size[1];
+                jj++)
             {
-                for(long kk = 0; kk < NBmodes; kk++)
+                for(long kk = 0;
+                    kk < NBmodes; kk++)
                 {
-                    dcimg[IDmodes]
-                    .array.F[kk * imgin.md->size[0] * imgin.md->size[1] +
-                                jj * imgin.md->size[0] + ii] =
-                                 imgmodes.im->array
-                                 .F[NBmodes * (jj * imgin.md->size[0] + ii) + kk];
+                    imgtmp.im->array.F[
+                        kk
+                        * imgin.md
+                              ->size[0]
+                        * imgin.md
+                              ->size[1]
+                        + jj
+                          * imgin.md
+                                ->size[0]
+                        + ii]
+                        = imgmodes.im
+                              ->array.F[
+                                  NBmodes
+                                  * (jj
+                                     * imgin
+                                       .md
+                                       ->size[0]
+                                     + ii)
+                                  + kk];
                 }
             }
+        }
 
         // save_fits("_tmpmodes", "_test_tmpmodes.fits");
     }
