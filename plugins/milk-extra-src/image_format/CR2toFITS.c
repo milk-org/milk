@@ -77,7 +77,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     CR2toFITS(p_in, p_out);
     return RETURN_SUCCESS;

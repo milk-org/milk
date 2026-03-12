@@ -54,7 +54,10 @@ imageID image_ID(const char *name, IMAGE *imagearray, long NB_images)
 }
 
 /* ID number corresponding to a name */
-imageID image_ID_noaccessupdate(const char *name, IMAGE *imagearray, long NB_images)
+MILK_PURE imageID image_ID_noaccessupdate(
+    const char *name,
+    IMAGE *imagearray,
+    long NB_images)
 {
     DEBUG_TRACE_FSTART();
 

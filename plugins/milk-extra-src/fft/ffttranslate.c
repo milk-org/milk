@@ -93,7 +93,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     fft_image_translate(
         p_in, p_out,

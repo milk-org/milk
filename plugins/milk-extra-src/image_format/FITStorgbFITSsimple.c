@@ -94,7 +94,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
             create_2Dimage_ID("bias", Xsize, Ysize, &IDbias);
             for(ii = 0; ii < Xsize * Ysize; ii++)
             {
-                dcimg[IDbias].array.F[ii] = 0.0;
+                dcimg[IDbias].array.F[ii] = 0.0f;
             }
         }
 
@@ -105,7 +105,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
             create_2Dimage_ID("dark", Xsize, Ysize, &IDdark);
             for(ii = 0; ii < Xsize * Ysize; ii++)
             {
-                dcimg[IDdark].array.F[ii] = 0.0;
+                dcimg[IDdark].array.F[ii] = 0.0f;
             }
         }
 
@@ -116,7 +116,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
             create_2Dimage_ID("badpix", Xsize, Ysize, &IDbadpix);
             for(ii = 0; ii < Xsize * Ysize; ii++)
             {
-                dcimg[IDbadpix].array.F[ii] = 0.0;
+                dcimg[IDbadpix].array.F[ii] = 0.0f;
             }
         }
 
@@ -130,7 +130,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
             create_2Dimage_ID("flat", Xsize, Ysize, &IDflat);
             for(ii = 0; ii < Xsize * Ysize; ii++)
             {
-                dcimg[IDflat].array.F[ii] = 1.0;
+                dcimg[IDflat].array.F[ii] = 1.0f;
             }
             //      arith_image_cstadd_inplace("flat",1.0);
         }
@@ -196,7 +196,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                 if(v1 > 4.0 * v2 + 500.0)
                 {
                     dcimg[ID].array.F[jj * Xsize + ii] = v2;
-                    //		dcimg[IDbp].array.F[jj*Xsize+ii] = 1.0;
+                    //		dcimg[IDbp].array.F[jj*Xsize+ii] = 1.0f;
                     cnt++;
                 }
             }
@@ -279,7 +279,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[ID].array.F[jj2 * Xsize + ii2] /
                             dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                         dcimg[ID01c].array.F[jj2 * Xsize + ii2] =
-                            1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                            1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                         ii2 = ii + 1;
                         jj2 = jj + 1;
@@ -287,7 +287,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[ID].array.F[jj2 * Xsize + ii2] /
                             dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                         dcimg[ID11c].array.F[jj2 * Xsize + ii2] =
-                            1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                            1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                         ii2 = ii;
                         jj2 = jj;
@@ -295,7 +295,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[ID].array.F[jj2 * Xsize + ii2] /
                             dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                         dcimg[ID00c].array.F[jj2 * Xsize + ii2] =
-                            1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                            1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                         ii2 = ii + 1;
                         jj2 = jj;
@@ -303,13 +303,13 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[ID].array.F[jj2 * Xsize + ii2] /
                             dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                         dcimg[ID10c].array.F[jj2 * Xsize + ii2] =
-                            1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                            1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
                     }
 
                 for(ii = 0; ii < Xsize; ii++)
                     for(jj = 0; jj < Ysize; jj++)
                     {
-                        if(dcimg[IDrc].array.F[jj * Xsize + ii] < 0.5)
+                        if(dcimg[IDrc].array.F[jj * Xsize + ii] < 0.5f)
                         {
                             v  = 0.0;
                             vc = 0.0;
@@ -339,7 +339,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[IDr].array.F[jj * Xsize + ii] = v / vc;
                         }
 
-                        if(dcimg[IDgc].array.F[jj * Xsize + ii] < 0.5)
+                        if(dcimg[IDgc].array.F[jj * Xsize + ii] < 0.5f)
                         {
                             v  = 0.0;
                             vc = 0.0;
@@ -369,7 +369,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                             dcimg[IDg].array.F[jj * Xsize + ii] = v / vc;
                         }
 
-                        if(dcimg[IDbc].array.F[jj * Xsize + ii] < 0.5)
+                        if(dcimg[IDbc].array.F[jj * Xsize + ii] < 0.5f)
                         {
                             v  = 0.0;
                             vc = 0.0;
@@ -648,7 +648,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                         dcimg[ID].array.F[jj2 * Xsize + ii2] /
                         dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                     dcimg[ID01c].array.F[jj1 * Xsize / 2 + ii1] +=
-                        1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                        1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                     ii2 = ii + 1;
                     jj2 = jj + 1;
@@ -656,7 +656,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                         dcimg[ID].array.F[jj2 * Xsize + ii2] /
                         dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                     dcimg[ID11c].array.F[jj1 * Xsize / 2 + ii1] +=
-                        1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                        1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                     ii2 = ii;
                     jj2 = jj;
@@ -664,7 +664,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                         dcimg[ID].array.F[jj2 * Xsize + ii2] /
                         dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                     dcimg[ID00c].array.F[jj1 * Xsize / 2 + ii1] +=
-                        1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                        1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                     ii2 = ii + 1;
                     jj2 = jj;
@@ -672,7 +672,7 @@ errno_t convert_rawbayerFITStorgbFITS_simple(const char *__restrict ID_name,
                         dcimg[ID].array.F[jj2 * Xsize + ii2] /
                         dcimg[IDflat].array.F[jj2 * Xsize + ii2];
                     dcimg[ID10c].array.F[jj1 * Xsize / 2 + ii1] +=
-                        1.0 - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
+                        1.0f - dcimg[IDbp].array.F[jj2 * Xsize + ii2];
 
                     dcimg[IDr].array.F[jj1 * Xsize / 2 + ii1] /=
                         dcimg[IDrc].array.F[jj1 * Xsize / 2 + ii1] + eps;

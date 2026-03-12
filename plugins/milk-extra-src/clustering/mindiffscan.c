@@ -91,7 +91,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     {
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(dcimg[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5f)
             {
                 fluxpixcnt++;
             }
@@ -101,7 +101,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
         fluxpixcnt = 0;
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(dcimg[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5f)
             {
                 fluxpix[fluxpixcnt] = ii;
                 fluxpixcnt++;
@@ -118,7 +118,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            dcimg[IDmask].array.F[ii] = 1.0;
+            dcimg[IDmask].array.F[ii] = 1.0f;
         }
     }
     else
@@ -416,7 +416,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

@@ -70,7 +70,7 @@ static uint32_t *immerge_mergeaxis = NULL;
  * Creates output stream if needed and copies
  * data from both inputs into it.
  */
-static errno_t fpsexec(
+static MILK_HOT errno_t fpsexec(
     IMGID *id0,
     IMGID *id1,
     IMGID *idout)
@@ -171,7 +171,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID id0 = imgid_make_from_name(
         immerge_inimname0);

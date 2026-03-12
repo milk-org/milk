@@ -289,7 +289,7 @@ static int proc_comp(const void *a, const void *b) {
     return res;
 }
 
-static void *link_scan_shm(const char *name, size_t size) {
+static inline void *link_scan_shm(const char *name, size_t size) {
     int fd = open(name, O_RDWR);
     if (fd == -1) return MAP_FAILED;
     void *ptr = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);

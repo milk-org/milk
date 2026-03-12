@@ -111,7 +111,7 @@ static uint64_t * twait = NULL;
 
 FPS_V2_SECTION5(FPS_PARAMS)
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -209,7 +209,7 @@ static errno_t compute_function()
     {
         INNORMMODE = 0;
         create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-        dcimg[IDintot].array.F[0] = 1.0;
+        dcimg[IDintot].array.F[0] = 1.0f;
     }
     else
     {

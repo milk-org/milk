@@ -611,7 +611,7 @@ linopt_compute_SVDpseudoInverse(
 }
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

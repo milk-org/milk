@@ -59,7 +59,7 @@ static uint32_t *setcol_colindex = NULL;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static errno_t fpsexec(IMAGE *inimg)
+static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
     if (!setcol_pixval || !setcol_colindex) {
         return RETURN_FAILURE;
@@ -101,7 +101,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(setcol_inimname);

@@ -379,7 +379,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     //TEST
     //for(ii=0;ii<N;ii++)
-    //dcimg[ID_Rmatrix].array.F[ii*M+ii] += 1.0;
+    //dcimg[ID_Rmatrix].array.F[ii*M+ii] += 1.0f;
 
     if(VERBOSE_LINALGEBRA_magma_compute_SVDpseudoInverse == 1)
     {

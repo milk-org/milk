@@ -225,7 +225,7 @@ errno_t save_fits(
  * 4.  FPS COMPUTE KERNEL
  * ============================================================= */
 
-static errno_t fpsexec(IMAGE *imgin)
+static MILK_HOT errno_t fpsexec(IMAGE *imgin)
 {
     if (!savefits_outfname
         || !savefits_outbitpix)
@@ -292,7 +292,7 @@ void init_cmdsettings(void)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(

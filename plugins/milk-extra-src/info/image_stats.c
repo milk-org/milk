@@ -67,7 +67,7 @@ void init_cms_1(void)
     }
 }
 
-static errno_t compute_function_1()
+static MILK_HOT errno_t compute_function_1()
 {
     info_image_stats(p1_in, "");
     return RETURN_SUCCESS;
@@ -134,7 +134,7 @@ void init_cms_2(void)
     }
 }
 
-static errno_t compute_function_2()
+static MILK_HOT errno_t compute_function_2()
 {
     info_image_stats(p2_in, "fileout");
     return RETURN_SUCCESS;
@@ -327,7 +327,7 @@ errno_t info_image_stats(const char *ID_name, const char *options)
                         "element %ld is NAN -> replacing by "
                         "0\n",
                         ii);
-                    dcimg[ID].array.F[ii] = 0.0;
+                    dcimg[ID].array.F[ii] = 0.0f;
                 }
                 tot += dcimg[ID].array.F[ii];
                 rms += dcimg[ID].array.F[ii] * dcimg[ID].array.F[ii];

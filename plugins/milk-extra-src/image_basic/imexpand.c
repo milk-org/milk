@@ -88,7 +88,7 @@ void init_cms_1(void)
     }
 }
 
-static errno_t compute_function_1()
+static MILK_HOT errno_t compute_function_1()
 {
     basic_expand(pe1_in, pe1_out,
                  (int) pe1_fx,
@@ -175,7 +175,7 @@ void init_cms_2(void)
     }
 }
 
-static errno_t compute_function_2()
+static MILK_HOT errno_t compute_function_2()
 {
     basic_expand3D(pe2_in, pe2_out,
                    (int) pe2_fx,

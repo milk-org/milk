@@ -72,7 +72,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     info_cubestats(p_cube, p_mask, p_out);
     return RETURN_SUCCESS;
@@ -146,7 +146,7 @@ imageID info_cubestats(const char *ID_name,
         tot2 = 0.0;
         for(unsigned long ii = 0; ii < xysize; ii++)
         {
-            if(dcimg[IDm].array.F[ii] > 0.5)
+            if(dcimg[IDm].array.F[ii] > 0.5f)
             {
                 val = dcimg[ID].array.F[kk * xysize + ii];
                 if(init == 0)
@@ -196,7 +196,7 @@ imageID info_cubestats(const char *ID_name,
                 valxp = 0.0;
                 for(unsigned long ii = 0; ii < xysize; ii++)
                 {
-                    if(dcimg[IDm].array.F[ii] > 0.5)
+                    if(dcimg[IDm].array.F[ii] > 0.5f)
                     {
                         v1 = dcimg[ID].array.F[k1 * xysize + ii];
                         v2 = dcimg[ID].array.F[k2 * xysize + ii];

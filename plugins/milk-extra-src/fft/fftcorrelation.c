@@ -89,7 +89,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     fft_correlation(p_in1, p_in2, p_out);
     return RETURN_SUCCESS;

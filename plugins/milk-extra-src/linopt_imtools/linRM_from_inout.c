@@ -139,14 +139,14 @@ errno_t linopt_compute_linRM_from_inout(
                 if(dcimg[IDin].array.F[spl * xsizein * ysizein + ii] >
                         0.5)
                 {
-                    dcimg[IDinmask].array.F[ii] = 1.0;
+                    dcimg[IDinmask].array.F[ii] = 1.0f;
                 }
     }
 
     // create pokeM
     NBact = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(dcimg[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5f)
         {
             NBact++;
         }
@@ -161,7 +161,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     act = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(dcimg[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5f)
         {
             inpixarray[act] = ii;
             act++;
@@ -261,7 +261,7 @@ errno_t linopt_compute_linRM_from_inout(
         for(ii_out = 0; ii_out < xsizeout; ii_out++)
             for(jj_out = 0; jj_out < ysizeout; jj_out++)
             {
-                dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0;
+                dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0f;
             }
 
         for(ii_in = 0; ii_in < xsizein; ii_in++)
@@ -314,7 +314,7 @@ errno_t linopt_compute_linRM_from_inout(
 
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

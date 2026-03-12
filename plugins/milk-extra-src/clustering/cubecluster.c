@@ -204,7 +204,7 @@ static errno_t imcube_makecluster_core(IMAGE *im, const char *__restrict outdnam
     IMAGE immask; 
     if(ImageStreamIO_read_sharedmem_image_toIMAGE("maskim", &immask) != 0) {
         ImageStreamIO_createIm(&immask, "maskim", 2, (uint32_t[]){xsize, ysize}, _DATATYPE_FLOAT, 1, 10, 0);
-        for(uint64_t ii = 0; ii < xysize; ii++) immask.array.F[ii] = 1.0;
+        for(uint64_t ii = 0; ii < xysize; ii++) immask.array.F[ii] = 1.0f;
     }
     float maskeps = 1.0e-5; long CF_npix = 0;
     for(uint64_t ii = 0; ii < xysize; ii++) if(immask.array.F[ii] > maskeps) CF_npix++;
@@ -278,7 +278,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID img =
         imgid_make_from_name(farg_inimname);

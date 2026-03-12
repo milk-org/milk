@@ -66,7 +66,7 @@ static double p_value = 0.0;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

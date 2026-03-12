@@ -86,7 +86,7 @@ errno_t image_keyword_addL(IMGID img, char *kwname, long kwval, char *comment)
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     image_keyword_addL(imgid_make_from_name(inimname), kwname, *kwval, comment);
     return RETURN_SUCCESS;
