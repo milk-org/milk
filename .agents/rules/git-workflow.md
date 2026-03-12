@@ -9,7 +9,7 @@ request. Never commit directly to `framework-dev`
 (or `main`).
 
 **CRITICAL BRANCHING RULE:**
-- You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for both `milk` and `cacao`.
+- You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for `milk`, `cacao`, and `ImageStreamIO`.
 - You must **ONLY** push to and merge into `framework-dev` or feature branches derived from `framework-dev`.
 
 ## Required Steps
