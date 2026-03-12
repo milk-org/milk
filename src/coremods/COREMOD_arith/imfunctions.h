@@ -34,6 +34,7 @@ errno_t arith_image_pow_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *img
 errno_t arith_image_fmod_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_minv_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 errno_t arith_image_maxv_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 
 errno_t arith_image_acos_optimized_IMGID(IMGID *imgin, IMGID *imgout);
 errno_t arith_image_asin_optimized_IMGID(IMGID *imgin, IMGID *imgout);

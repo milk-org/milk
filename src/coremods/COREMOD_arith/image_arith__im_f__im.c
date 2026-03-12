@@ -107,7 +107,7 @@ int arith_image_cstdiv1(const char *ID_name, double f1, const char *ID_out)
 
 int arith_image_cstpow_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ppow);
+    return arith_image_cstpow_optimized_IMGID(imgin, f1, imgout);
 }
 
 int arith_image_cstpow(const char *ID_name, double f1, const char *ID_out)

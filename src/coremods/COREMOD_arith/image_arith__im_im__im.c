@@ -22,7 +22,7 @@
 
 int arith_image_fmod_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pfmod);
+    return arith_image_fmod_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_fmod(const char *ID1_name,
@@ -55,7 +55,7 @@ int arith_image_fmod(const char *ID1_name,
 
 int arith_image_pow_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ppow);
+    return arith_image_pow_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_pow(const char *ID1_name,
@@ -220,7 +220,7 @@ int arith_image_div(const char *ID1_name,
 
 int arith_image_minv_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pminv);
+    return arith_image_minv_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_minv(const char *ID1_name,
@@ -253,7 +253,7 @@ int arith_image_minv(const char *ID1_name,
 
 int arith_image_maxv_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pmaxv);
+    return arith_image_maxv_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_maxv(const char *ID1_name,
