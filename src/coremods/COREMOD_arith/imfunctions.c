@@ -2099,7 +2099,67 @@ ARITH_CST_OPTIMIZED_FUNCTION(sub, -)
 ARITH_CST_OPTIMIZED_FUNCTION(mult, *)
 ARITH_CST_OPTIMIZED_FUNCTION(div, /)
 
-#define ARITH_OPTIMIZED_FUNCTION_CALL(name, funcname) \
+errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+{
+    DEBUG_TRACE_FSTART();
+    if (imgin->im == NULL) { return RETURN_FAILURE; }
+    if(imgout->im == NULL) imgid_copy(imgin, imgout);
+    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); }
+    else { ImageStreamIO_closeIm(imgout->im); }
+    imgid_mkimage(imgout);
+    uint64_t nelement = imgout->md->nelement;
+    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
+    {
+        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.F);
+        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F);
+        float cf1 = (float)f1;
+        if (f1 == 0.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = 1.0f;
+        } else if (f1 == 1.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = p1[i];
+        } else if (f1 == 0.5) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = sqrtf(p1[i]);
+        } else if (f1 == 2.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] * p1[i];
+        } else {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = powf(p1[i], cf1);
+        }
+    }
+    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE)
+    {
+        double * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.D);
+        double * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D);
+        if (f1 == 0.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = 1.0;
+        } else if (f1 == 1.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = p1[i];
+        } else if (f1 == 0.5) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = sqrt(p1[i]);
+        } else if (f1 == 2.0) {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] * p1[i];
+        } else {
+            _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
+            for(uint64_t i=0; i<nelement; i++) po[i] = pow(p1[i], f1);
+        }
+    }
+    else
+    {
+        arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ppow);
+    }
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+#define ARITH_OPTIMIZED_FUNCTION_CALL(name, funcname, funcname_f) \
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
 { \
     DEBUG_TRACE_FSTART(); \
@@ -2115,7 +2175,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
         float * MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F); \
         float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
         _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
-        for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i], (double)p2[i]); \
+        for(uint64_t i=0; i<nelement; i++) po[i] = funcname_f(p1[i], p2[i]); \
     } \
     else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
@@ -2133,7 +2193,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
     return RETURN_SUCCESS; \
 }
 
-ARITH_OPTIMIZED_FUNCTION_CALL(pow, pow)
-ARITH_OPTIMIZED_FUNCTION_CALL(fmod, fmod)
-ARITH_OPTIMIZED_FUNCTION_CALL(minv, fmin)
-ARITH_OPTIMIZED_FUNCTION_CALL(maxv, fmax)
+ARITH_OPTIMIZED_FUNCTION_CALL(pow, pow, powf)
+ARITH_OPTIMIZED_FUNCTION_CALL(fmod, fmod, fmodf)
+ARITH_OPTIMIZED_FUNCTION_CALL(minv, fmin, fminf)
+ARITH_OPTIMIZED_FUNCTION_CALL(maxv, fmax, fmaxf)
