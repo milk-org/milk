@@ -67,6 +67,39 @@ non-GCC compilers.
   static or `MILK_ALIGNED` array (LUT) and replace the
   expensive function calls with fast array lookups in
   the hot path.
+- **Specialize `pow()`**: when the exponent is known
+  at setup time, dispatch to a fast path:
+  - exponent 1.0 → linear (no call)
+  - exponent 0.5 → `sqrtf(x)`
+  - exponent 2.0 → `x * x`
+  - other → `powf(x, exp)` (not `pow()`)
+- Use `powf()` instead of `pow()` for float data
+  — `pow()` promotes to double and returns double.
+
+## Memory Allocation
+
+- **Never `malloc`/`free` inside a per-frame
+  compute loop.** Move allocations into the
+  initialization phase (e.g., `dmcomb_init()`,
+  stored in a state struct) and reuse buffers
+  across iterations.
+- Use `calloc()` for zero-initialized state
+  structs to avoid uninitialized-memory bugs.
+- Prefer stack allocation (`MILK_ALIGNED(32)`)
+  for small, fixed-size arrays used in tight
+  loops.
+
+## Typed Fast-Paths
+
+- When a stream-processing loop handles the
+  common case (`_DATATYPE_FLOAT` or
+  `_DATATYPE_UINT16`), add a typed fast-path
+  with `MILK_RESTRICT` + `MILK_ASSUME_ALIGNED`
+  on the pointer aliases. Fall through to
+  `memcpy` for other types.
+- Hoist invariant FPS parameter dereferences
+  (`*ptr`) into local variables before the
+  inner loop to avoid repeated pointer chasing.
 
 ## Loop Vectorization
 
