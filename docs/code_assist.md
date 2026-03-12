@@ -46,7 +46,7 @@ requiring you to remember every checklist.
 | Compile after edit | [`compile-after-edit.md`](../.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
 | Documentation standards | [`documentation-standards.md`](../.agents/rules/documentation-standards.md) | Markdown formatting, shell prompts, link checking. |
 | fpsexec conventions | [`fpsexec-conventions.md`](../.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
-| Git workflow | [`git-workflow.md`](../.agents/rules/git-workflow.md) | All changes via PRs from feature branches into `framework-dev`. |
+| Git workflow | [`git-workflow.md`](../.agents/rules/git-workflow.md) | All changes via PRs from feature branches into `framework-dev`. NO pushes to `dev`. |
 | Help consistency | [`help-consistency.md`](../.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
 | Programmer's Guide | [`maintain-programmers-guide.md`](../.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
 | Performance practices | [`performance-practices.md`](../.agents/rules/performance-practices.md) | SIMD, BLAS, pointer alignment, type dispatch, memory allocation, CPU pinning. |
