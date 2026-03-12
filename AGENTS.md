@@ -192,9 +192,11 @@ and enforced. Know what they require:
 | `code-style-guide.md` | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes |
 | `compile-after-edit.md` | Always compile-test after C/CMake changes |
 | `documentation-standards.md` | Consistent markdown, shell prompts, link checking |
+| `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao` |
 | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` support |
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
+| `performance-practices.md` | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning |
 | `readme-update.md` | Update module README when files change |
 | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux guidance |
 | `script-docs.md` | Update `docs/scripts.md` when scripts change |
