@@ -1095,14 +1095,25 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     }
     sizearray[0] = NBmodes1;
 
-    create_image_ID(IDout_name,
-                    naxis,
-                    sizearray,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = naxis;
+        for(uint8_t a = 0; a < naxis;
+            a++)
+        {
+            imgout_tmp.mdt->size[a] =
+                sizearray[a];
+        }
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
 
     xsize = dcimg[IDin].md[0].size[0];
     if(naxis > 1)
@@ -1180,7 +1191,24 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name,
 
     imsizeout[0] = xsizeout;
     imsizeout[1] = ysizeout;
-    create_image_ID(IDout_name, 2, imsizeout, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            imsizeout[0];
+        imgout_tmp.mdt->size[1] =
+            imsizeout[1];
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
     free(imsizeout);
 
     long step;
@@ -1358,7 +1386,23 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     }
     imsize[0] = 4;
     imsize[1] = 1;
-    create_image_ID(imname, 2, imsize, _DATATYPE_FLOAT, 1, 0, 0, &IDPFparam);
+    {
+        IMGID imgparam =
+            imgid_make_from_name(imname);
+        imgparam.mdt->naxis = 2;
+        imgparam.mdt->size[0] =
+            imsize[0];
+        imgparam.mdt->size[1] =
+            imsize[1];
+        imgparam.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgparam.mdt->shared = 1;
+        imgparam.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgparam);
+        IDPFparam = imgparam.ID;
+    }
     free(imsize);
 
     if((IDPFparam = image_ID(imname, dcimg, dcnimg)) != -1)
@@ -1881,22 +1925,47 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 imsizearray[1] = NBpixout;
                 sprintf(IDoutPF_name_raw, "%s_raw", IDoutPF_name);
 
-                create_image_ID(IDoutPF_name,
-                                2,
-                                imsizearray,
-                                _DATATYPE_FLOAT,
-                                1,
-                                1,
-                                0,
-                                &IDoutPF2D);
-                create_image_ID(IDoutPF_name_raw,
-                                2,
-                                imsizearray,
-                                _DATATYPE_FLOAT,
-                                1,
-                                1,
-                                0,
-                                &IDoutPF2Draw);
+                {
+                    IMGID imgpf =
+                        imgid_make_from_name(
+                            IDoutPF_name);
+                    imgpf.mdt->naxis = 2;
+                    imgpf.mdt->size[0] =
+                        imsizearray[0];
+                    imgpf.mdt->size[1] =
+                        imsizearray[1];
+                    imgpf.mdt->datatype =
+                        _DATATYPE_FLOAT;
+                    imgpf.mdt->shared = 1;
+                    imgpf.mdt->NBkw = 1;
+                    imgpf.im =
+                        (IMAGE *) calloc(
+                            1,
+                            sizeof(IMAGE));
+                    imgid_mkimage(&imgpf);
+                    IDoutPF2D = imgpf.ID;
+                }
+                {
+                    IMGID imgpfr =
+                        imgid_make_from_name(
+                            IDoutPF_name_raw);
+                    imgpfr.mdt->naxis = 2;
+                    imgpfr.mdt->size[0] =
+                        imsizearray[0];
+                    imgpfr.mdt->size[1] =
+                        imsizearray[1];
+                    imgpfr.mdt->datatype =
+                        _DATATYPE_FLOAT;
+                    imgpfr.mdt->shared = 1;
+                    imgpfr.mdt->NBkw = 1;
+                    imgpfr.im =
+                        (IMAGE *) calloc(
+                            1,
+                            sizeof(IMAGE));
+                    imgid_mkimage(&imgpfr);
+                    IDoutPF2Draw =
+                        imgpfr.ID;
+                }
                 free(imsizearray);
                 COREMOD_MEMORY_image_set_semflush(IDoutPF_name, -1);
                 COREMOD_MEMORY_image_set_semflush(IDoutPF_name_raw, -1);
@@ -2127,14 +2196,25 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
 
     imsizearray[0] = NBpix_out;
     imsizearray[1] = 1;
-    create_image_ID(IDout_name,
-                    2,
-                    imsizearray,
-                    _DATATYPE_FLOAT,
-                    1,
-                    1,
-                    0,
-                    &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            imsizearray[0];
+        imgout_tmp.mdt->size[1] =
+            imsizearray[1];
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.mdt->NBkw = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
     free(imsizearray);
     COREMOD_MEMORY_image_set_semflush(IDout_name, -1);
     printf("Done\n");
@@ -2360,14 +2440,24 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
                (long) sizearray[0],
                (long) sizearray[1]);
         fflush(stdout);
-        create_image_ID(IDPFM_name,
-                        naxis,
-                        sizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDPFM);
+        {
+            IMGID imgpfm =
+                imgid_make_from_name(
+                    IDPFM_name);
+            imgpfm.mdt->naxis = naxis;
+            imgpfm.mdt->size[0] =
+                sizearray[0];
+            imgpfm.mdt->size[1] =
+                sizearray[1];
+            imgpfm.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfm.mdt->shared = 1;
+            imgpfm.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfm);
+            IDPFM = imgpfm.ID;
+        }
     }
     free(sizearray);
 
@@ -2596,14 +2686,24 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     if(IDPFout == -1)
     {
-        create_image_ID(IDPFout_name,
-                        naxis,
-                        sizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDPFout);
+        {
+            IMGID imgpfout =
+                imgid_make_from_name(
+                    IDPFout_name);
+            imgpfout.mdt->naxis = naxis;
+            imgpfout.mdt->size[0] =
+                sizearray[0];
+            imgpfout.mdt->size[1] =
+                sizearray[1];
+            imgpfout.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfout.mdt->shared = 1;
+            imgpfout.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfout);
+            IDPFout = imgpfout.ID;
+        }
     }
     free(sizearray);
 
