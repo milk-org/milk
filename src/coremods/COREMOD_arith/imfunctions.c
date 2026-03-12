@@ -102,7 +102,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.UI8[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT16)
+    else if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -113,7 +113,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.UI16[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT32)
+    else if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -124,7 +124,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.UI32[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT64)
+    else if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -135,8 +135,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.UI64[ii]));
         }
     }
-
-    if(datatype == _DATATYPE_INT8)
+    else if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -147,7 +146,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.SI8[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT16)
+    else if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -158,7 +157,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.SI16[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT32)
+    else if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -169,7 +168,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.SI32[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT64)
+    else if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -180,8 +179,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                                           (double)(imgin->im->array.SI64[ii]));
         }
     }
-
-    if(datatype == _DATATYPE_FLOAT)
+    else if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -192,7 +190,7 @@ errno_t arith_image_function_im_im__d_d_IMGID(
                 (float) pt2function((double)(imgin->im->array.F[ii]));
         }
     }
-    if(datatype == _DATATYPE_DOUBLE)
+    else if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -290,7 +288,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                     v0);
         }
     }
-    if(datatype == _DATATYPE_UINT16)
+    else if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -302,7 +300,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-    if(datatype == _DATATYPE_UINT32)
+    else if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -314,7 +312,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-    if(datatype == _DATATYPE_UINT64)
+    else if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -326,8 +324,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-
-    if(datatype == _DATATYPE_INT8)
+    else if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -339,7 +336,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                     v0);
         }
     }
-    if(datatype == _DATATYPE_INT16)
+    else if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -351,7 +348,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-    if(datatype == _DATATYPE_INT32)
+    else if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -363,7 +360,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-    if(datatype == _DATATYPE_INT64)
+    else if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -375,8 +372,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                           v0);
         }
     }
-
-    if(datatype == _DATATYPE_FLOAT)
+    else if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -388,7 +384,7 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
                                     v0);
         }
     }
-    if(datatype == _DATATYPE_DOUBLE)
+    else if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -490,7 +486,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                     v1);
         }
     }
-    if(datatype == _DATATYPE_UINT16)
+    else if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -503,7 +499,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-    if(datatype == _DATATYPE_UINT32)
+    else if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -516,7 +512,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-    if(datatype == _DATATYPE_UINT64)
+    else if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -529,8 +525,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-
-    if(datatype == _DATATYPE_INT8)
+    else if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -543,7 +538,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                     v1);
         }
     }
-    if(datatype == _DATATYPE_INT16)
+    else if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -556,7 +551,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-    if(datatype == _DATATYPE_INT32)
+    else if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -569,7 +564,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-    if(datatype == _DATATYPE_INT64)
+    else if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -582,8 +577,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                           v1);
         }
     }
-
-    if(datatype == _DATATYPE_FLOAT)
+    else if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -596,7 +590,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
                                     v1);
         }
     }
-    if(datatype == _DATATYPE_DOUBLE)
+    else if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -705,8 +699,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI8[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_UINT16)
+        else if(datatype == _DATATYPE_UINT16)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -717,8 +710,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI16[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_UINT32)
+        else if(datatype == _DATATYPE_UINT32)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -729,8 +721,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI32[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_UINT64)
+        else if(datatype == _DATATYPE_UINT64)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -741,8 +732,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI64[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_INT8)
+        else if(datatype == _DATATYPE_INT8)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -753,7 +743,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI8[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT16)
+        else if(datatype == _DATATYPE_INT16)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -764,7 +754,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI16[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT32)
+        else if(datatype == _DATATYPE_INT32)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -775,7 +765,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI32[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT64)
+        else if(datatype == _DATATYPE_INT64)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -786,8 +776,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI64[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_FLOAT)
+        else if(datatype == _DATATYPE_FLOAT)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -798,7 +787,7 @@ errno_t arith_image_function_1_1_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.F[ii]));
             }
         }
-        if(datatype == _DATATYPE_DOUBLE)
+        else if(datatype == _DATATYPE_DOUBLE)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -862,7 +851,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.UI8[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT16)
+    else if(datatype == _DATATYPE_UINT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -873,7 +862,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.UI16[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT32)
+    else if(datatype == _DATATYPE_UINT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -884,7 +873,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.UI32[ii]));
         }
     }
-    if(datatype == _DATATYPE_UINT64)
+    else if(datatype == _DATATYPE_UINT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -895,8 +884,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.UI64[ii]));
         }
     }
-
-    if(datatype == _DATATYPE_INT8)
+    else if(datatype == _DATATYPE_INT8)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -907,7 +895,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.SI8[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT16)
+    else if(datatype == _DATATYPE_INT16)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -918,7 +906,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.SI16[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT32)
+    else if(datatype == _DATATYPE_INT32)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -929,7 +917,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.SI32[ii]));
         }
     }
-    if(datatype == _DATATYPE_INT64)
+    else if(datatype == _DATATYPE_INT64)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -940,8 +928,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.SI64[ii]));
         }
     }
-
-    if(datatype == _DATATYPE_FLOAT)
+    else if(datatype == _DATATYPE_FLOAT)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -952,8 +939,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                 pt2function((double)(imgin->im->array.F[ii]));
         }
     }
-
-    if(datatype == _DATATYPE_DOUBLE)
+    else if(datatype == _DATATYPE_DOUBLE)
     {
 #ifdef _OPENMP
         #pragma omp for simd
@@ -1032,7 +1018,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI8[ii]));
             }
         }
-        if(datatype == _DATATYPE_UINT16)
+        else if(datatype == _DATATYPE_UINT16)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1043,7 +1029,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI16[ii]));
             }
         }
-        if(datatype == _DATATYPE_UINT32)
+        else if(datatype == _DATATYPE_UINT32)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1054,7 +1040,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI32[ii]));
             }
         }
-        if(datatype == _DATATYPE_UINT64)
+        else if(datatype == _DATATYPE_UINT64)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1065,8 +1051,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.UI64[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_INT8)
+        else if(datatype == _DATATYPE_INT8)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1077,7 +1062,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI8[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT16)
+        else if(datatype == _DATATYPE_INT16)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1088,7 +1073,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI16[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT32)
+        else if(datatype == _DATATYPE_INT32)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1099,7 +1084,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI32[ii]));
             }
         }
-        if(datatype == _DATATYPE_INT64)
+        else if(datatype == _DATATYPE_INT64)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1110,8 +1095,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.SI64[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_FLOAT)
+        else if(datatype == _DATATYPE_FLOAT)
         {
 #ifdef _OPENMP
             #pragma omp for simd
@@ -1122,8 +1106,7 @@ errno_t arith_image_function_1_1_inplace_byID(imageID ID,
                     pt2function((double)(dcimg[ID].array.F[ii]));
             }
         }
-
-        if(datatype == _DATATYPE_DOUBLE)
+        else if(datatype == _DATATYPE_DOUBLE)
         {
 #ifdef _OPENMP
             #pragma omp for simd
