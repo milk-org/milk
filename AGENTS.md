@@ -196,6 +196,7 @@ and enforced. Know what they require:
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
 | `readme-update.md` | Update module README when files change |
+| `run-milk-commands.md` | Environment setup, SHM cleanup, tmux guidance |
 | `script-docs.md` | Update `docs/scripts.md` when scripts change |
 
 ---
@@ -210,6 +211,9 @@ listed task types:
 | `/compile-test` | After any C or CMake edit |
 | `/create-fpsexec` | Scaffolding a new standalone executable |
 | `/add-new-module` | Creating a new plugin module from scratch |
+| `/add-function` | Adding a function to an existing module |
+| `/add-stream-processor` | Creating a stream processing loop |
+| `/add-cli-command` | Adding a CLI command to a module |
 | `/update-programmers-guide` | After architectural changes |
 | `/audit-help-consistency` | After editing help text anywhere |
 | `/check-type-consistency` | Auditing data type handling in switch blocks |
