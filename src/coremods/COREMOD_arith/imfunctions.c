@@ -15,6 +15,8 @@
 #include "milkDebugTools.h"
 #endif
 
+#include "libmilkdata/milk_compiler.h"
+
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "mathfuncs.h"
 
@@ -1996,9 +1998,9 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
-        float *p1 = imgin->im->array.F; \
-        float *po = imgout->im->array.F; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.F); \
+        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i]); \
     } \
     else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
@@ -2045,18 +2047,18 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
-        float *p1 = imgin1->im->array.F; \
-        float *p2 = imgin2->im->array.F; \
-        float *po = imgout->im->array.F; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F); \
+        float * MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F); \
+        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op p2[i]; \
     } \
     else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
-        double *p1 = imgin1->im->array.D; \
-        double *p2 = imgin2->im->array.D; \
-        double *po = imgout->im->array.D; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        double * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D); \
+        double * MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D); \
+        double * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op p2[i]; \
     } \
     else \
@@ -2084,10 +2086,10 @@ errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *
     uint64_t nelement = imgout->md->nelement; \
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
-        float *p1 = imgin->im->array.F; \
-        float *po = imgout->im->array.F; \
+        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.F); \
+        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
         float cf1 = (float)f1; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op cf1; \
     } \
     else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
@@ -2122,18 +2124,18 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
-        float *p1 = imgin1->im->array.F; \
-        float *p2 = imgin2->im->array.F; \
-        float *po = imgout->im->array.F; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F); \
+        float * MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F); \
+        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i], (double)p2[i]); \
     } \
     else if(imgin1->md->datatype == _DATATYPE_DOUBLE && imgin2->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
     { \
-        double *p1 = imgin1->im->array.D; \
-        double *p2 = imgin2->im->array.D; \
-        double *po = imgout->im->array.D; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        double * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D); \
+        double * MILK_RESTRICT p2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D); \
+        double * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.D); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = funcname(p1[i], p2[i]); \
     } \
     else \
