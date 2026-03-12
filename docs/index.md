@@ -18,6 +18,7 @@ If you are new to the `milk` environment, follow these steps:
 
 For a deep dive into how `milk` components interact at a system level, these documents explain the underlying structures.
 
+- [**Software Architecture**](architecture.md): Top-level hierarchical overview of the system design, subsystems, and data flow.
 - [**Programmer's Guide**](programmers_guide.md): The best starting point to understand the overall architecture, C API, and CMake setup.
 - [**Dependency Graph**](dependency_graph.md): Visual map of module dependencies.
 - [**FPS Standalone and CMD Modes**](FPS_Standalone_CMD_Modes.md): Execution context details for `milk-fpsexec-*` binaries.
