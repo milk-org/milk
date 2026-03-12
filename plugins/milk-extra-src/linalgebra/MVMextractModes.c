@@ -608,34 +608,46 @@ static errno_t compute_function()
             }
         }
 
-        sizearraytmp[0] = TRACEsize;
-        sizearraytmp[1] = NBmodes;
-        IDtrace = image_ID(traceim_name, dcimg, dcnimg);
+        IMGID imgtrace =
+            imgid_make_from_name(
+                traceim_name);
+        resolveIMGID(&imgtrace,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         int imOK = 1;
-        if(IDtrace == -1)
+        if(imgtrace.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((dcimg[IDtrace].md[0].size[0] != TRACEsize) ||
-                    (dcimg[IDtrace].md[0].size[1] != NBmodes))
+            if((imgtrace.md->size[0]
+                    != TRACEsize) ||
+                (imgtrace.md->size[1]
+                    != NBmodes))
             {
                 imOK = 0;
-                delete_image_ID(traceim_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    traceim_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(traceim_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDtrace);
+            imgtrace.mdt->naxis = 2;
+            imgtrace.mdt->size[0] =
+                TRACEsize;
+            imgtrace.mdt->size[1] =
+                NBmodes;
+            imgtrace.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgtrace.mdt->shared = 1;
+            imgtrace.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgtrace);
         }
+        IDtrace = imgtrace.ID;
         free(sizearraytmp);
     }
 
@@ -667,32 +679,46 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name, dcimg, dcnimg);
+        IMGID imgprocave =
+            imgid_make_from_name(
+                process_ave_name);
+        resolveIMGID(&imgprocave,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         int imOK = 1;
-        if(IDprocave == -1)
+        if(imgprocave.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((dcimg[IDprocave].md[0].size[0] != NBmodes) ||
-                    (dcimg[IDprocave].md[0].size[1] != NBaveSTEP))
+            if((imgprocave.md->size[0]
+                    != NBmodes) ||
+                (imgprocave.md->size[1]
+                    != NBaveSTEP))
             {
                 imOK = 0;
-                delete_image_ID(process_ave_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    process_ave_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(process_ave_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDprocave);
+            imgprocave.mdt->naxis = 2;
+            imgprocave.mdt->size[0] =
+                NBmodes;
+            imgprocave.mdt->size[1] =
+                NBaveSTEP;
+            imgprocave.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgprocave.mdt->shared = 1;
+            imgprocave.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgprocave);
         }
+        IDprocave = imgprocave.ID;
         free(sizearraytmp);
 
         sizearraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
@@ -716,32 +742,46 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms = image_ID(process_rms_name, dcimg, dcnimg);
+        IMGID imgprocrms =
+            imgid_make_from_name(
+                process_rms_name);
+        resolveIMGID(&imgprocrms,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         imOK = 1;
-        if(IDprocrms == -1)
+        if(imgprocrms.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((dcimg[IDprocrms].md->size[0] != NBmodes) ||
-                    (dcimg[IDprocrms].md->size[1] != NBaveSTEP))
+            if((imgprocrms.md->size[0]
+                    != NBmodes) ||
+                (imgprocrms.md->size[1]
+                    != NBaveSTEP))
             {
                 imOK = 0;
-                delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    process_rms_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(process_rms_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDprocrms);
+            imgprocrms.mdt->naxis = 2;
+            imgprocrms.mdt->size[0] =
+                NBmodes;
+            imgprocrms.mdt->size[1] =
+                NBaveSTEP;
+            imgprocrms.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgprocrms.mdt->shared = 1;
+            imgprocrms.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgprocrms);
         }
+        IDprocrms = imgprocrms.ID;
         free(sizearraytmp);
     }
 
