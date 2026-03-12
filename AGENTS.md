@@ -194,7 +194,7 @@ and enforced. Know what they require:
 | `documentation-standards.md` | Consistent markdown, shell prompts, link checking |
 | `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao` |
 | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` support |
-| `git-workflow.md` | All changes via PRs from feature branches into `framework-dev` |
+| `git-workflow.md` | All changes via PRs from feature branches into `framework-dev`. NO pushes to `dev`. |
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
 | `performance-practices.md` | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning |
