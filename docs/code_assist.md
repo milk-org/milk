@@ -21,6 +21,17 @@ assistant — the rule and workflow files document
 the conventions, checklists, and cross-references
 that every contributor should know.
 
+## Getting Started
+
+New to adding capabilities? Start with these:
+
+1. [Developer Tutorial](developer/tutorial.md) —
+   write your first module end-to-end.
+2. [Adding Plugins](developer/plugins.md) — CMake
+   setup, dual-mode headers, `_compute` variants.
+3. [Template Source Code](developer/TemplateSourceCode.md)
+   — which template file to copy for each use case.
+
 ## Agent Rules
 
 Rules fire **automatically** when a task touches
@@ -37,6 +48,7 @@ requiring you to remember every checklist.
 | fpsexec conventions | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` requirement. |
 | Help consistency | `help-consistency.md` | Cross-check all sibling help sources when editing help content. |
 | Programmer's Guide | `maintain-programmers-guide.md` | Update `docs/programmers_guide.md` on architectural changes. |
+| Running commands | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux session management. |
 | Script documentation | `script-docs.md` | Update `docs/scripts.md` and add `--help` when scripts change. |
 | README updates | `readme-update.md` | Update module README when source files are added/removed. |
 | Workspace layout | `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
@@ -51,9 +63,12 @@ step-by-step checklists for common tasks.
 |---------|------|--------------|
 | `/compile-test` | `compile-test.md` | Incremental build from `_build/`, report errors. |
 | `/create-fpsexec` | `create-fpsexec.md` | Scaffold a new V2 fpsexec standalone executable. |
+| `/add-new-module` | `add-new-module.md` | Scaffold a new plugin module (README, CMake, boilerplate). |
+| `/add-function` | `add-function.md` | Add a function to an existing module (dispatches to sub-workflows). |
+| `/add-stream-processor` | `add-stream-processor.md` | Scaffold a stream processing loop compute unit. |
+| `/add-cli-command` | `add-cli-command.md` | Add a CLI command to an existing module. |
 | `/update-programmers-guide` | `update-programmers-guide.md` | Scan recent commits and refresh `docs/programmers_guide.md`. |
 | `/audit-help-consistency` | `audit-help-consistency.md` | Cross-check all help sources for drift or contradictions. |
-| `/add-new-module` | `add-new-module.md` | Scaffold a new plugin module (README, CMake, boilerplate). |
 | `/update-scripts-docs` | `update-scripts-docs.md` | Sync `docs/scripts.md` after script changes. |
 | `/check-type-consistency` | `check-type-consistency.md` | Audit `switch` blocks for incomplete type handling. |
 
