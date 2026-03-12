@@ -64,9 +64,9 @@ static double * radfactorlimval = NULL;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-//
-// make cosine radial modes
-//
+/**
+ * Make basis of cosine radial modes.
+ */
 errno_t linopt_imtools_makeCosRadModes(
     const char *ID_name,
     long        size,
@@ -77,53 +77,80 @@ errno_t linopt_imtools_makeCosRadModes(
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    long    size2;
-    imageID IDr;
-    FILE   *fp;
+    long size2 = size * size;
 
-    size2 = size * size;
-    create_2Dimage_ID("linopt_tmpr", size, size, &IDr);
+    IMGID imgr =
+        imgid_make_from_name_2D(
+            "linopt_tmpr", size, size);
+    imgr.mdt->shared = 0;
+    imgr.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgr);
 
-    fp = fopen("ModesExpr_CosRad.txt", "w");
-    fprintf(fp, "# unit for r = %f pix\n", radius);
+    FILE *fp =
+        fopen("ModesExpr_CosRad.txt", "w");
+    fprintf(fp,
+            "# unit for r = %f pix\n",
+            radius);
     fprintf(fp, "\n");
     for(long k = 0; k < kmax; k++)
     {
-        fprintf(fp, "%5ld   cos(r*M_PI*%ld)\n", k, k);
+        fprintf(fp,
+                "%5ld   cos(r*M_PI*%ld)\n",
+                k, k);
     }
-
     fclose(fp);
 
     for(long ii = 0; ii < size; ii++)
     {
-        float x = (1.0 * ii - 0.5 * size) / radius;
-        for(long jj = 0; jj < size; jj++)
+        float x =
+            (1.0 * ii - 0.5 * size)
+            / radius;
+        for(long jj = 0;
+            jj < size; jj++)
         {
-            float y = (1.0 * jj - 0.5 * size) / radius;
-            float r = sqrt(x * x + y * y);
-            dcimg[IDr].array.F[jj * size + ii] = r;
+            float y =
+                (1.0 * jj - 0.5 * size)
+                / radius;
+            float r =
+                sqrt(x * x + y * y);
+            imgr.im->array.F[
+                jj * size + ii] = r;
         }
     }
 
-    FUNC_CHECK_RETURN(create_3Dimage_ID(ID_name, size, size, kmax, &ID));
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            ID_name, size, size, kmax);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
     for(long k = 0; k < kmax; k++)
-        for(long ii = 0; ii < size2; ii++)
+    {
+        for(long ii = 0;
+            ii < size2; ii++)
         {
-            float r = dcimg[IDr].array.F[ii];
+            float r =
+                imgr.im->array.F[ii];
             if(r < radfactlim)
             {
-                dcimg[ID].array.F[k * size2 + ii] = cos(r * M_PI * k);
+                imgout.im->array.F[
+                    k * size2 + ii] =
+                    cos(r * M_PI * k);
             }
         }
+    }
 
     FUNC_CHECK_RETURN(
-        delete_image_ID("linopt_tmpr", DELETE_IMAGE_ERRMODE_WARNING));
+        delete_image_ID(
+            "linopt_tmpr",
+            DELETE_IMAGE_ERRMODE_WARNING));
 
     if(outID != NULL)
     {
-        *outID = ID;
+        *outID = imgout.ID;
     }
 
     DEBUG_TRACE_FEXIT();
