@@ -264,104 +264,126 @@ errno_t load_fits_IMGID(
     /* bitpix = -32  TFLOAT */
     if(bitpix == -32)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_FLOAT,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
 
         {
             int status = 0;
-            fits_read_img(fptr,
-                          data_type_code(bitpix),
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          dcimg[imgout->ID].array.F,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr,
+                data_type_code(bitpix),
+                fpixel,
+                nelements,
+                &nulval,
+                imgout->im->array.F,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
     }
 
     /* bitpix = -64  TDOUBLE */
     if(bitpix == -64)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_DOUBLE,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_DOUBLE;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
 
         {
             int status = 0;
-            fits_read_img(fptr,
-                          data_type_code(bitpix),
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          dcimg[imgout->ID].array.D,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr,
+                data_type_code(bitpix),
+                fpixel,
+                nelements,
+                &nulval,
+                imgout->im->array.D,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
     }
 
     /* bitpix = 16   TSHORT */
     if(bitpix == 16)
     {
-        // ID = create_image_ID(ID_name, naxis, naxes, Dtype, dcshareddft, data.NBKEWORD_DFT);
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_UINT16,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_UINT16;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
 
-        //           fits_read_img(fptr, 20, fpixel, nelements, &nulval, sarray, &anynul, &FITSIO_status);
         {
             int status = 0;
-            fits_read_img(fptr,
-                          20,
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          dcimg[imgout->ID].array.UI16,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr, 20,
+                fpixel,
+                nelements,
+                &nulval,
+                imgout->im->array.UI16,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
     }
 
     /* bitpix = 32   TLONG */
     if(bitpix == 32)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_INT32,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
-        larray = (long *) malloc(sizeof(long) * nelements);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_INT32;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
+
+        larray = (long *) malloc(
+            sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -369,24 +391,28 @@ errno_t load_fits_IMGID(
         }
         {
             int status = 0;
-            fits_read_img(fptr,
-                          data_type_code(bitpix),
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          larray,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr,
+                data_type_code(bitpix),
+                fpixel,
+                nelements,
+                &nulval,
+                larray,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
 
         bzero = 0.0;
-        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0;
+            ii < (uint_fast64_t) nelements;
+            ii++)
         {
-            dcimg[imgout->ID].array.SI32[ii] = larray[ii] * bscale + bzero;
+            imgout->im->array.SI32[ii] =
+                larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -395,15 +421,22 @@ errno_t load_fits_IMGID(
     /* bitpix = 64   TLONG  */
     if(bitpix == 64)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_INT64,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
-        larray = (long *) malloc(sizeof(long) * nelements);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_INT64;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
+
+        larray = (long *) malloc(
+            sizeof(long) * nelements);
         if(larray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -412,24 +445,28 @@ errno_t load_fits_IMGID(
 
         {
             int status = 0;
-            fits_read_img(fptr,
-                          data_type_code(bitpix),
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          larray,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr,
+                data_type_code(bitpix),
+                fpixel,
+                nelements,
+                &nulval,
+                larray,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
 
         bzero = 0.0;
-        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0;
+            ii < (uint_fast64_t) nelements;
+            ii++)
         {
-            dcimg[imgout->ID].array.SI64[ii] = larray[ii] * bscale + bzero;
+            imgout->im->array.SI64[ii] =
+                larray[ii] * bscale + bzero;
         }
         free(larray);
         larray = NULL;
@@ -438,16 +475,23 @@ errno_t load_fits_IMGID(
     /* bitpix = 8   TBYTE */
     if(bitpix == 8)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        naxes,
-                        _DATATYPE_FLOAT,
-                        dcshareddft,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
-        barray = (unsigned char *) malloc(sizeof(unsigned char) * naxes[1] *
-                                          naxes[0]);
+        imgout->mdt->naxis = naxis;
+        for(long i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] = naxes[i];
+        }
+        imgout->mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout->mdt->shared = dcshareddft;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
+
+        barray = (unsigned char *) malloc(
+            sizeof(unsigned char)
+            * naxes[1] * naxes[0]);
         if(barray == NULL)
         {
             PRINT_ERROR("malloc error");
@@ -456,29 +500,32 @@ errno_t load_fits_IMGID(
 
         {
             int status = 0;
-            fits_read_img(fptr,
-                          data_type_code(bitpix),
-                          fpixel,
-                          nelements,
-                          &nulval,
-                          barray,
-                          &anynul,
-                          &status);
-            FITSIO_CHECK_ERROR(status,
-                               errmode,
-                               "fits_read_img bitpix=%d",
-                               bitpix);
+            fits_read_img(
+                fptr,
+                data_type_code(bitpix),
+                fpixel,
+                nelements,
+                &nulval,
+                barray,
+                &anynul,
+                &status);
+            FITSIO_CHECK_ERROR(
+                status, errmode,
+                "fits_read_img bitpix=%d",
+                bitpix);
         }
 
-        for(uint_fast64_t ii = 0; ii < (uint_fast64_t) nelements; ii++)
+        for(uint_fast64_t ii = 0;
+            ii < (uint_fast64_t) nelements;
+            ii++)
         {
-            dcimg[imgout->ID].array.F[ii] = (1.0 * barray[ii] * bscale + bzero);
+            imgout->im->array.F[ii] =
+                (1.0 * barray[ii]
+                 * bscale + bzero);
         }
         free(barray);
         barray = NULL;
     }
-
-    resolveIMGID(imgout, errmode, dcimg, dcnimg);
 
 // keywords to ignore
     char *keywordignore[] = {"BITPIX",
