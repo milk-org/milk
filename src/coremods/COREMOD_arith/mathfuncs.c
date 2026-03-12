@@ -217,21 +217,12 @@ complex_double CPmult_CD_CD(complex_double a, complex_double b)
 complex_double CPdiv_CD_CD(complex_double a, complex_double b)
 {
     complex_double v;
-    double         amp, pha;
-    double         are, aim, bre, bim;
+    double         den;
 
-    are = a.re;
-    aim = a.im;
-    bre = b.re;
-    bim = b.im;
-
-    amp = sqrt(are * are + aim * aim);
-    amp /= sqrt(bre * bre + bim * bim);
-    pha = atan2(aim, are);
-    pha -= atan2(bim, bre);
-
-    v.re = (double)(amp * cos(pha));
-    v.im = (double)(amp * sin(pha));
+    den = b.re * b.re + b.im * b.im;
+    
+    v.re = (a.re * b.re + a.im * b.im) / den;
+    v.im = (a.im * b.re - a.re * b.im) / den;
 
     return (v);
 }
@@ -263,21 +254,12 @@ complex_float CPmult_CF_CF(complex_float a, complex_float b)
 complex_float CPdiv_CF_CF(complex_float a, complex_float b)
 {
     complex_float v;
-    float         amp, pha;
-    float         are, aim, bre, bim;
+    float         den;
 
-    are = a.re;
-    aim = a.im;
-    bre = b.re;
-    bim = b.im;
+    den = b.re * b.re + b.im * b.im;
 
-    amp = sqrt(are * are + aim * aim);
-    amp /= sqrt(bre * bre + bim * bim);
-    pha = atan2(aim, are);
-    pha -= atan2(bim, bre);
-
-    v.re = (float)(amp * cos(pha));
-    v.im = (float)(amp * sin(pha));
+    v.re = (a.re * b.re + a.im * b.im) / den;
+    v.im = (a.im * b.re - a.re * b.im) / den;
 
     return (v);
 }
