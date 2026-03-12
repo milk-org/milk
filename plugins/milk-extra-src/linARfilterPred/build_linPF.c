@@ -373,25 +373,50 @@ static errno_t compute_function()
 
         imsizearray[0] = NBpixin * (*PForder);
         imsizearray[1] = NBpixout;
-        char IDoutPF_name_raw[STRINGMAXLEN_IMGNAME];
-        WRITE_IMAGENAME(IDoutPF_name_raw, "%s_raw", outPFname);
+        char IDoutPF_name_raw[
+            STRINGMAXLEN_IMGNAME];
+        WRITE_IMAGENAME(
+            IDoutPF_name_raw,
+            "%s_raw", outPFname);
 
-        create_image_ID(outPFname,
-                        2,
-                        imsizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        1,
-                        0,
-                        &IDoutPF2D);
-        create_image_ID(IDoutPF_name_raw,
-                        2,
-                        imsizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        1,
-                        0,
-                        &IDoutPF2Draw);
+        {
+            IMGID imgpf =
+                imgid_make_from_name(
+                    outPFname);
+            imgpf.mdt->naxis = 2;
+            imgpf.mdt->size[0] =
+                imsizearray[0];
+            imgpf.mdt->size[1] =
+                imsizearray[1];
+            imgpf.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpf.mdt->shared = 1;
+            imgpf.mdt->NBkw = 1;
+            imgpf.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpf);
+            IDoutPF2D = imgpf.ID;
+        }
+        {
+            IMGID imgpfraw =
+                imgid_make_from_name(
+                    IDoutPF_name_raw);
+            imgpfraw.mdt->naxis = 2;
+            imgpfraw.mdt->size[0] =
+                imsizearray[0];
+            imgpfraw.mdt->size[1] =
+                imsizearray[1];
+            imgpfraw.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfraw.mdt->shared = 1;
+            imgpfraw.mdt->NBkw = 1;
+            imgpfraw.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfraw);
+            IDoutPF2Draw = imgpfraw.ID;
+        }
         free(imsizearray);
         COREMOD_MEMORY_image_set_semflush(outPFname, -1);
         COREMOD_MEMORY_image_set_semflush(IDoutPF_name_raw, -1);

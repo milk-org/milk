@@ -990,25 +990,46 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
         fflush(stdout);
         if(streamMode == 1)
         {
-            create_image_ID(IDoutname,
-                            naxis,
-                            sizearray,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDout);
+            IMGID imgout_tmp =
+                imgid_make_from_name(
+                    IDoutname);
+            imgout_tmp.mdt->naxis =
+                naxis;
+            for(long i = 0; i < naxis;
+                i++)
+            {
+                imgout_tmp.mdt->size[i]
+                    = sizearray[i];
+            }
+            imgout_tmp.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgout_tmp.mdt->shared = 1;
+            imgout_tmp.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgout_tmp);
+            IDout = imgout_tmp.ID;
         }
         else
         {
-            create_image_ID(IDoutname,
-                            naxis,
-                            sizearray,
-                            _DATATYPE_FLOAT,
-                            0,
-                            0,
-                            0,
-                            &IDout);
+            IMGID imgout_tmp =
+                imgid_make_from_name(
+                    IDoutname);
+            imgout_tmp.mdt->naxis =
+                naxis;
+            for(long i = 0; i < naxis;
+                i++)
+            {
+                imgout_tmp.mdt->size[i]
+                    = sizearray[i];
+            }
+            imgout_tmp.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgout_tmp.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgout_tmp);
+            IDout = imgout_tmp.ID;
         }
     }
     if(streamMode == 1)
@@ -1197,23 +1218,44 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
         }
         else
         {
-            imsizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
+            imsizearray = (uint32_t *)
+                malloc(
+                    sizeof(uint32_t) * 2);
             if(imsizearray == NULL)
             {
-                PRINT_ERROR("malloc returns NULL pointer");
+                PRINT_ERROR(
+                    "malloc returns "
+                    "NULL pointer");
                 abort();
             }
 
             imsizearray[0] = xsize;
             imsizearray[1] = ysize;
-            create_image_ID(IDout_name,
-                            2,
-                            imsizearray,
-                            _DATATYPE_FLOAT,
-                            1,
-                            1,
-                            0,
-                            &IDout);
+            {
+                IMGID imgout_tmp =
+                    imgid_make_from_name(
+                        IDout_name);
+                imgout_tmp.mdt->naxis =
+                    2;
+                imgout_tmp.mdt->size[0]
+                    = xsize;
+                imgout_tmp.mdt->size[1]
+                    = ysize;
+                imgout_tmp.mdt
+                    ->datatype =
+                    _DATATYPE_FLOAT;
+                imgout_tmp.mdt->shared
+                    = 1;
+                imgout_tmp.mdt->NBkw
+                    = 1;
+                imgout_tmp.im =
+                    (IMAGE *) calloc(
+                        1,
+                        sizeof(IMAGE));
+                imgid_mkimage(
+                    &imgout_tmp);
+                IDout = imgout_tmp.ID;
+            }
             free(imsizearray);
         }
     }
