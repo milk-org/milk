@@ -57,14 +57,16 @@ static char * outvecname = NULL;
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-//
-//
-//
-errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
-                                    const char *__restrict IDpixindex_name,
-                                    const char *__restrict IDpixmult_name,
-                                    const char *__restrict IDvec_name,
-                                    imageID *outID)
+/**
+ * Remap image to vector using pixel
+ * index and multiplier tables.
+ */
+errno_t linopt_imtools_image_to_vec(
+    const char *__restrict ID_name,
+    const char *__restrict IDpixindex_name,
+    const char *__restrict IDpixmult_name,
+    const char *__restrict IDvec_name,
+    imageID *outID)
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s %s %s %s",
@@ -73,87 +75,150 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
                      IDpixmult_name,
                      IDvec_name);
 
-    imageID ID;
-    imageID IDpixindex, IDpixmult;
-    imageID IDvec;
-    long    NBpix;
-    long    naxisin;
-    long    sizexy;
-    uint8_t datatype;
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
+    long    naxisin =
+        imgin.md->naxis;
+    uint8_t datatype =
+        imgin.md->datatype;
 
-    ID = image_ID(ID_name, dcimg, dcnimg);
+    IMGID imgpixi =
+        imgid_make_from_name(
+            IDpixindex_name);
+    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    naxisin  = dcimg[ID].md[0].naxis;
-    datatype = dcimg[ID].md[0].datatype;
+    IMGID imgpixm =
+        imgid_make_from_name(
+            IDpixmult_name);
+    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
+    long NBpix =
+        imgpixi.md->nelement;
 
-    IDpixindex = image_ID(IDpixindex_name, dcimg, dcnimg);
-    IDpixmult  = image_ID(IDpixmult_name, dcimg, dcnimg);
-    NBpix      = dcimg[IDpixindex].md[0].nelement;
-
+    IMGID imgvec;
 
     if(naxisin < 3)
     {
-        FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name, NBpix, 1, &IDvec));
+        imgvec =
+            imgid_make_from_name_2D(
+                IDvec_name, NBpix, 1);
+        imgvec.mdt->shared = 0;
+        imgvec.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgvec);
+
         for(long k = 0; k < NBpix; k++)
         {
-            dcimg[IDvec].array.F[k] =
-                dcimg[IDpixmult].array.F[k] *
-                dcimg[ID].array.F[dcimg[IDpixindex].array.SI64[k]];
+            imgvec.im->array.F[k] =
+                imgpixm.im->array.F[k]
+                * imgin.im->array.F[
+                      imgpixi.im
+                          ->array
+                          .SI64[k]];
         }
     }
     else
     {
-        sizexy = dcimg[ID].md[0].size[0] * dcimg[ID].md[0].size[1];
+        long sizexy =
+            imgin.md->size[0]
+            * imgin.md->size[1];
+
         if(datatype == _DATATYPE_FLOAT)
         {
-            FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
-                                                NBpix,
-                                                dcimg[ID].md[0].size[2],
-                                                &IDvec));
+            imgvec =
+                imgid_make_from_name_2D(
+                    IDvec_name,
+                    NBpix,
+                    imgin.md->size[2]);
+            imgvec.mdt->shared = 0;
+            imgvec.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgvec);
 
-            for(uint32_t kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
-                for(long k = 0; k < NBpix; k++)
+            for(uint32_t kk = 0;
+                kk < imgin.md->size[2];
+                kk++)
+            {
+                for(long k = 0;
+                    k < NBpix; k++)
                 {
-                    dcimg[IDvec].array.F[kk * NBpix + k] =
-                        dcimg[IDpixmult].array.F[k] *
-                        dcimg[ID]
-                        .array.F[kk * sizexy +
-                                    dcimg[IDpixindex].array.SI64[k]];
+                    imgvec.im->array.F[
+                        kk * NBpix + k] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.F[
+                                  kk
+                                  * sizexy
+                                  + imgpixi
+                                        .im
+                                        ->array
+                                        .SI64
+                                            [k]];
                 }
+            }
         }
-        if(datatype == _DATATYPE_COMPLEX_FLOAT)
+        if(datatype
+           == _DATATYPE_COMPLEX_FLOAT)
         {
-            FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
-                                                NBpix * 2,
-                                                dcimg[ID].md[0].size[2],
-                                                &IDvec));
+            imgvec =
+                imgid_make_from_name_2D(
+                    IDvec_name,
+                    NBpix * 2,
+                    imgin.md->size[2]);
+            imgvec.mdt->shared = 0;
+            imgvec.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgvec);
 
-            for(uint32_t kk = 0; kk < dcimg[ID].md[0].size[2]; kk++)
-                for(long k = 0; k < NBpix; k++)
+            for(uint32_t kk = 0;
+                kk < imgin.md->size[2];
+                kk++)
+            {
+                for(long k = 0;
+                    k < NBpix; k++)
                 {
-                    dcimg[IDvec].array.F[kk * NBpix * 2 + 2 * k] =
-                        dcimg[IDpixmult].array.F[k] *
-                        dcimg[ID]
-                        .array
-                        .CF[kk * sizexy +
-                               dcimg[IDpixindex].array.SI64[k]]
-                        .re;
-                    dcimg[IDvec].array.F[kk * NBpix * 2 + 2 * k + 1] =
-                        dcimg[IDpixmult].array.F[k] *
-                        dcimg[ID]
-                        .array
-                        .CF[kk * sizexy +
-                               dcimg[IDpixindex].array.SI64[k]]
-                        .im;
+                    long idx =
+                        imgpixi.im
+                            ->array
+                            .SI64[k];
+                    imgvec.im->array.F[
+                        kk * NBpix * 2
+                        + 2 * k] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.CF[
+                                  kk
+                                  * sizexy
+                                  + idx]
+                              .re;
+                    imgvec.im->array.F[
+                        kk * NBpix * 2
+                        + 2 * k + 1] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.CF[
+                                  kk
+                                  * sizexy
+                                  + idx]
+                              .im;
                 }
+            }
         }
     }
 
     if(outID != NULL)
     {
-        *outID = IDvec;
+        *outID = imgvec.ID;
     }
 
     DEBUG_TRACE_FEXIT();
