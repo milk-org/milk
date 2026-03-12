@@ -41,7 +41,6 @@
 #include "delete_sharedmem_image.h"
 
 #include "fps_ID.h"
-#include "fps_create.h"
 #include "fps_list.h"
 
 #include "im3D_to_stream2D.h"
@@ -140,7 +139,6 @@ static errno_t init_module_CLI()
 
     // FPS
     CLIADDCMD_COREMOD_memory__fps_list();
-    //fps_create_addCLIcmd();
 
     // TYPE CONVERSIONS TO AND FROM COMPLEX
     CLIADDCMD_COREMOD__mk_complex_from_reim();

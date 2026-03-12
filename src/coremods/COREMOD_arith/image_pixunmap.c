@@ -10,6 +10,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pixunmap",
@@ -171,118 +172,46 @@ static errno_t compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
+/*
+ * Accumulate + average mapped pixels.
+ * OACC = output accessor (F or D)
+ * IACC = input accessor
+ */
+#define UNMAP_CASE_(DT, IACC, CT, OACC)             \
+    case DT:                                         \
+        for(uint64_t pixi=0; pixi<nbpix; pixi++)     \
+        {                                            \
+            imgout.im->array.OACC[                   \
+                map_1Dpixindex[pixi]] +=              \
+                imgin.im->array.IACC[                \
+                    map_2Dpixindex[pixi]];           \
+        }                                            \
+        for(uint32_t ii=0; ii<x1Dsize; ii++)         \
+        {                                            \
+            imgout.im->array.OACC[ii] /=             \
+                map_pixcnt[ii];                      \
+        }                                            \
+        break;
+
         switch ( imgin.md->datatype)
         {
-        case _DATATYPE_FLOAT:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.F[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_DOUBLE:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.D[map_1Dpixindex[pixi]] += imgin.im->array.D[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.D[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_INT8:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.SI8[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT8:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.UI8[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_INT16:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.SI16[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT16:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.UI16[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_INT32:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.SI32[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT32:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_1Dpixindex[pixi]] += imgin.im->array.UI32[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.F[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_INT64:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.D[map_1Dpixindex[pixi]] += imgin.im->array.SI64[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.D[ii] /= map_pixcnt[ii];
-            }
-            break;
-
-        case _DATATYPE_UINT64:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.D[map_1Dpixindex[pixi]] += imgin.im->array.UI64[map_2Dpixindex[pixi]];
-            }
-            for(uint32_t ii=0; ii<x1Dsize; ii++)
-            {
-                imgout.im->array.D[ii] /= map_pixcnt[ii];
-            }
+        /* types that accumulate into float */
+        UNMAP_CASE_(_DATATYPE_FLOAT,  F,    float,    F)
+        UNMAP_CASE_(_DATATYPE_INT8,   SI8,  int8_t,   F)
+        UNMAP_CASE_(_DATATYPE_UINT8,  UI8,  uint8_t,  F)
+        UNMAP_CASE_(_DATATYPE_INT16,  SI16, int16_t,  F)
+        UNMAP_CASE_(_DATATYPE_UINT16, UI16, uint16_t, F)
+        UNMAP_CASE_(_DATATYPE_INT32,  SI32, int32_t,  F)
+        UNMAP_CASE_(_DATATYPE_UINT32, UI32, uint32_t, F)
+        /* types that accumulate into double */
+        UNMAP_CASE_(_DATATYPE_DOUBLE, D,    double,   D)
+        UNMAP_CASE_(_DATATYPE_INT64,  SI64, int64_t,  D)
+        UNMAP_CASE_(_DATATYPE_UINT64, UI64, uint64_t, D)
+        default:
+            PRINT_ERROR("unsupported datatype");
             break;
         }
+#undef UNMAP_CASE_
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
