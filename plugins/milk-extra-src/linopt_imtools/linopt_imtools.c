@@ -130,36 +130,39 @@ static errno_t init_module_CLI()
 /* =============================================================================================== */
 /* =============================================================================================== */
 
-// r0pix is r=1 in pixel unit
-
-imageID linopt_imtools_make1Dpolynomials(const char *IDout_name,
-        long        NBpts,
-        long        MaxOrder,
-        float       r0pix)
+/**
+ * Create 1D polynomial basis functions.
+ */
+imageID linopt_imtools_make1Dpolynomials(
+    const char *IDout_name,
+    long        NBpts,
+    long        MaxOrder,
+    float       r0pix)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID IDout;
-    long    xsize, ysize, zsize;
-    long    ii, kk;
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            IDout_name,
+            NBpts, 1, MaxOrder);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    xsize = NBpts;
-    ysize = 1;
-    zsize = MaxOrder;
-
-    FUNC_CHECK_RETURN(
-        create_3Dimage_ID(IDout_name, xsize, ysize, zsize, &IDout));
-
-    for(kk = 0; kk < zsize; kk++)
+    for(long kk = 0; kk < MaxOrder; kk++)
     {
-        for(ii = 0; ii < xsize; ii++)
+        for(long ii = 0; ii < NBpts; ii++)
         {
-            float r                                    = 1.0 * ii / r0pix;
-            dcimg[IDout].array.F[kk * xsize + ii] = pow(r, 1.0 * kk);
+            float r =
+                1.0 * ii / r0pix;
+            imgout.im->array.F[
+                kk * NBpts + ii] =
+                pow(r, 1.0 * kk);
         }
     }
 
     DEBUG_TRACE_FEXIT();
-    return IDout;
+    return imgout.ID;
 }
 
