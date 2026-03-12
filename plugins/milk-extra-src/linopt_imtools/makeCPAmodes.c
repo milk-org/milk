@@ -491,7 +491,7 @@ errno_t linopt_imtools_makeCPAmodes(
         {
             // mode 0 (piston) included
 
-            dcimg[IDfreq].array.F[0] = 0.0;
+            dcimg[IDfreq].array.F[0] = 0.0f;
             for(uint32_t ii = 0; ii < sizexy; ii++)
             {
                 float r = imgr.im->array.F[ii];
@@ -607,7 +607,7 @@ errno_t linopt_imtools_makeCPAmodes(
 }
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

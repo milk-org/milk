@@ -506,11 +506,11 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
             double amp2 = re * re + im * im;
             if(amp2 > eps)
             {
-                dcimg[IDpupin_mask].array.F[ii] = 1.0;
+                dcimg[IDpupin_mask].array.F[ii] = 1.0f;
             }
             else
             {
-                dcimg[IDpupin_mask].array.F[ii] = 0.0;
+                dcimg[IDpupin_mask].array.F[ii] = 0.0f;
             }
         }
         //
@@ -519,9 +519,9 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         if(ID_DFTmask00 != -1)
             for(uint64_t ii = 0; ii < xsize * ysize; ii++)
             {
-                if(dcimg[ID_DFTmask00].array.F[ii] > 0.5)
+                if(dcimg[ID_DFTmask00].array.F[ii] > 0.5f)
                 {
-                    dcimg[IDpupin_mask].array.F[ii] = 1.0;
+                    dcimg[IDpupin_mask].array.F[ii] = 1.0f;
                 }
             }
 
@@ -540,11 +540,11 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
             double amp2 = re * re + im * im;
             if(amp2 > eps)
             {
-                dcimg[IDfpmz_mask].array.F[ii] = 1.0;
+                dcimg[IDfpmz_mask].array.F[ii] = 1.0f;
             }
             else
             {
-                dcimg[IDfpmz_mask].array.F[ii] = 0.0;
+                dcimg[IDfpmz_mask].array.F[ii] = 0.0f;
             }
         }
 
@@ -679,7 +679,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
          y = 1.0*jj-ysize/2;
          r = sqrt(x*x+y*y);
          if(r<150.0)
-         dcimg[IDpupin_mask].array.F[jj*xsize+ii] = 1.0;
+         dcimg[IDpupin_mask].array.F[jj*xsize+ii] = 1.0f;
          }*/
 
         FUNC_CHECK_RETURN(fft_DFT("_foc0",
@@ -774,11 +774,11 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
         double amp2 = re * re + im * im;
         if(amp2 > eps)
         {
-            dcimg[IDpupin_mask].array.F[ii] = 1.0;
+            dcimg[IDpupin_mask].array.F[ii] = 1.0f;
         }
         else
         {
-            dcimg[IDpupin_mask].array.F[ii] = 0.0;
+            dcimg[IDpupin_mask].array.F[ii] = 0.0f;
         }
     }
     //  save_fl_fits("_DFTpupmask", "_DFTpupmask.fits");
@@ -786,9 +786,9 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
     if(ID_DFTmask00 != -1)
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(dcimg[ID_DFTmask00].array.F[ii] > 0.5)
+            if(dcimg[ID_DFTmask00].array.F[ii] > 0.5f)
             {
-                dcimg[IDpupin_mask].array.F[ii] = 1.0;
+                dcimg[IDpupin_mask].array.F[ii] = 1.0f;
             }
         }
 
@@ -802,11 +802,11 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
         double amp = fabs(dcimg[IDfpmz].array.F[ii]);
         if(amp > eps)
         {
-            dcimg[IDfpmz_mask].array.F[ii] = 1.0;
+            dcimg[IDfpmz_mask].array.F[ii] = 1.0f;
         }
         else
         {
-            dcimg[IDfpmz_mask].array.F[ii] = 0.0;
+            dcimg[IDfpmz_mask].array.F[ii] = 0.0f;
         }
     }
 

@@ -335,7 +335,7 @@ static char
  * (auto-synced from FPS) and performs the compute
  * unit's work.
  */
-static errno_t fpsexec()
+static MILK_HOT errno_t fpsexec()
 {
     printf("\n[COMPUTATION] All FPS parameter types:\n");
     printf("  INT32              = %d\n", param_int32);
@@ -398,7 +398,7 @@ static errno_t fpsexec()
  *     p_onoff is ON.
  *  2. Range clamp — keep p_float32 within [0, 100].
  */
-static errno_t customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     static long confcheck_cnt = 0;
     confcheck_cnt++;
@@ -578,7 +578,7 @@ void init_cmdsettings(void)
  * compute_function() to get proper processinfo
  * tracking.
  */
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 

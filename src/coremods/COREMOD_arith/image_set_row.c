@@ -66,7 +66,7 @@ static uint32_t *setrow_rowindex = NULL;
  *
  * Supports FLOAT and DOUBLE datatypes.
  */
-static errno_t fpsexec(IMAGE *inimg)
+static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
     if (!setrow_pixval || !setrow_rowindex) {
         return RETURN_FAILURE;
@@ -107,7 +107,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER (processinfo loop support)
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in =
         imgid_make_from_name(setrow_inimname);

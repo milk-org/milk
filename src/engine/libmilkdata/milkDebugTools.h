@@ -15,6 +15,8 @@
 #include <time.h>
 #include <stdint.h>
 
+#include "milk_compiler.h"
+
 // define (custom) types for function return value
 
 #ifndef __STDC_LIB_EXT1__

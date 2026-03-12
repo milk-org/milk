@@ -76,7 +76,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMAGE_BASIC_streamrecord(
         p_stream, (long) p_nframes, p_out);

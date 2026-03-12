@@ -89,7 +89,7 @@ static const builtin_func builtins[] =
  * Identifiers may contain alphanumerics and the
  * characters _ . $ : ?
  */
-static int is_ident_char(int c)
+static inline int is_ident_char(int c)
 {
     return isalnum(c)
         || c == '_'
@@ -102,7 +102,7 @@ static int is_ident_char(int c)
 /**
  * @brief Check if character can start an identifier
  */
-static int is_ident_start(int c)
+static inline int is_ident_start(int c)
 {
     return isalpha(c) || c == '?' || c == '.';
 }

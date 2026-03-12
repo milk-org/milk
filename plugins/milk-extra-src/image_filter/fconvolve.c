@@ -84,7 +84,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     fconvolve(fconv_in, fconv_ke, fconv_out);
     return RETURN_SUCCESS;
@@ -301,7 +301,7 @@ imageID fconvolveblock(const char *__restrict name_in,
 
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        dcimg[IDcnt].array.F[ii] = 0.0;
+        dcimg[IDcnt].array.F[ii] = 0.0f;
     }
 
     for(ii0 = 0; ii0 < xsize - overlap; ii0 += blocksize - overlap)
@@ -318,7 +318,7 @@ imageID fconvolveblock(const char *__restrict name_in,
                     }
                     else
                     {
-                        dcimg[IDtmp].array.F[jj * blocksize + ii] = 0.0;
+                        dcimg[IDtmp].array.F[jj * blocksize + ii] = 0.0f;
                     }
                 }
             fconvolve("tmpblock", name_ke, "tmpblockc");

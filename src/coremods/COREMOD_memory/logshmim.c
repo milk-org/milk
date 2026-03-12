@@ -44,8 +44,7 @@
 
 #include "shmimlog_types.h"
 
-#define likely(x)   __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
+/* LIKELY/UNLIKELY macros from milk_compiler.h */
 
 static long tret = 0;
 
@@ -157,7 +156,7 @@ static uint32_t writerRTprio  = 0;
  * 4.  CUSTOM CONF SETUP / CHECK
  * ============================================================= */
 
-static errno_t customCONFsetup()
+static MILK_COLD errno_t customCONFsetup()
 {
     if(dcfpsptr != NULL)
     {
@@ -203,7 +202,7 @@ static errno_t customCONFsetup()
     return RETURN_SUCCESS;
 }
 
-static errno_t customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
     return RETURN_SUCCESS;
 }
@@ -461,7 +460,7 @@ static void *save_telemetry_fits_function(
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

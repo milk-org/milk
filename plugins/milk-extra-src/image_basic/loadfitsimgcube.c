@@ -69,7 +69,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     load_fitsimages_cube(p_pat, p_out);
     return RETURN_SUCCESS;

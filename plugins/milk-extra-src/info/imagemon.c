@@ -80,7 +80,7 @@ errno_t info_image_monitor(const char *ID_name, float frequ);
 errno_t printstatus(imageID ID);
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

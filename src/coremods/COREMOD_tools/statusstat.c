@@ -84,7 +84,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     COREMOD_TOOLS_statusStat(
         p_imname, p_nbstep);

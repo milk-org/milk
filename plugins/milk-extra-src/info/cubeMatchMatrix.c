@@ -67,7 +67,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     info_cubeMatchMatrix(p_in, p_out);
     return RETURN_SUCCESS;
@@ -198,7 +198,7 @@ imageID info_cubeMatchMatrix(const char *IDin_name, const char *IDout_name)
                 printf("ERROR: %ld %ld  %ld / %u\n", kk1, kk2, ii, ksize);
                 exit(0);
             }
-            if(((double) dcimg[IDout].array.F[kk2 * zsize + kk1] > 1.0) &&
+            if(((double) dcimg[IDout].array.F[kk2 * zsize + kk1] > 1.0f) &&
                     (kk2 - kk1 > kdiffmin) && (kk2 - kk1 < kdiffmax))
             {
                 array_matchV[ii] =

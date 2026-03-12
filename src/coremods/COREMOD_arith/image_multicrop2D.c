@@ -142,7 +142,7 @@ static uint32_t *multicrop_wcropypos[
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static errno_t fpsexec(
+static MILK_HOT errno_t fpsexec(
     IMAGE *imgin,
     IMAGE *imgout)
 {
@@ -265,7 +265,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     IMGID in = imgid_make_from_name(
         multicrop_insname);

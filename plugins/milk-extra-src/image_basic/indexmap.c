@@ -75,7 +75,7 @@ void init_cms(void)
     }
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     image_basic_indexmap(p_idx, p_val,
                          p_out);

@@ -142,7 +142,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
     for(ii = 0; ii < size * size; ii++)
     {
         dcimg[IDres].array.F[ii] = dcimg[ID].array.F[ii];
-        dcimg[IDfit].array.F[ii] = 0.0;
+        dcimg[IDfit].array.F[ii] = 0.0f;
     }
     for(iter = 0; iter < NBiter; iter++)
     {
@@ -158,7 +158,7 @@ int filter_fit2Dcossin(const char *__restrict IDname, float radius)
         for(ii = 0; ii < size; ii += step)
             for(jj = 0; jj < size; jj += step)
             {
-                dcimg[IDfit].array.F[jj * size + ii] = 0.0;
+                dcimg[IDfit].array.F[jj * size + ii] = 0.0f;
             }
         for(i1 = 0; i1 < NBfrequ1D; i1++)
             for(j1 = 0; j1 < 2 * NBfrequ1D - 1; j1++)

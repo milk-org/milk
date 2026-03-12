@@ -11,3 +11,4 @@ trigger: always_on
 - Document briefly the function purpose in the .h file
 - Enable and enforce compiler warnings (`-Wall`, `-Wextra`) during development to catch missing declarations early. Treat them as errors (`-Werror`) in CI/CD.
 - Make sure every `.c` file strictly includes the exact headers it relies on, rather than implicitly relying on another header to include them (e.g. relying on `CLIcore.h` to provide `math.h` or `stdlib.h`).
+- Use `restrict` on pointer parameters to pixel/array data in compute-heavy functions where pointers are guaranteed non-aliasing. See `performance-practices.md` for full performance guidelines.
