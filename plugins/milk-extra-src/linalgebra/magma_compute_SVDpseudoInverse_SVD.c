@@ -281,14 +281,23 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     arraysizetmp[0] = m;
     arraysizetmp[1] = m;
 
-    create_image_ID(ID_VTmatrix_name,
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &ID_VTmatrix);
+    {
+        IMGID imgvt =
+            imgid_make_from_name(
+                ID_VTmatrix_name);
+        imgvt.mdt->naxis = 2;
+        imgvt.mdt->size[0] =
+            arraysizetmp[0];
+        imgvt.mdt->size[1] =
+            arraysizetmp[1];
+        imgvt.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgvt.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgvt);
+        ID_VTmatrix = imgvt.ID;
+    }
 
     if(datatype == _DATATYPE_FLOAT)
     {
@@ -321,14 +330,25 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
         arraysizetmp[1] = m;
     }
 
-    create_image_ID(ID_Cmatrix_name,
-                    dcimg[ID_Rmatrix].md[0].naxis,
-                    arraysizetmp,
-                    datatype,
-                    0,
-                    0,
-                    0,
-                    &ID_Cmatrix);
+    {
+        IMGID imgcm =
+            imgid_make_from_name(
+                ID_Cmatrix_name);
+        imgcm.mdt->naxis =
+            dcimg[ID_Rmatrix].md[0].naxis;
+        for(int a = 0;
+            a < imgcm.mdt->naxis; a++)
+        {
+            imgcm.mdt->size[a] =
+                arraysizetmp[a];
+        }
+        imgcm.mdt->datatype = datatype;
+        imgcm.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgcm);
+        ID_Cmatrix = imgcm.ID;
+    }
 
     // compute pseudo-inverse
     // M+ = V Sig^-1 UT

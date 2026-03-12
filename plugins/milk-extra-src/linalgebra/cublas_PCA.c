@@ -260,14 +260,26 @@ static imageID image_PCAdecomp(
     imPCAsize[1] = img->md->size[1];
     imPCAsize[2] = lmax;
     imageID outPCAID;
-    create_image_ID("imPCA",
-                    3,
-                    imPCAsize,
-                    _DATATYPE_DOUBLE,
-                    0,
-                    10,
-                    0,
-                    &outPCAID);
+    {
+        IMGID imgpca =
+            imgid_make_from_name(
+                "imPCA");
+        imgpca.mdt->naxis = 3;
+        imgpca.mdt->size[0] =
+            imPCAsize[0];
+        imgpca.mdt->size[1] =
+            imPCAsize[1];
+        imgpca.mdt->size[2] =
+            imPCAsize[2];
+        imgpca.mdt->datatype =
+            _DATATYPE_DOUBLE;
+        imgpca.mdt->NBkw = 10;
+        imgpca.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgpca);
+        outPCAID = imgpca.ID;
+    }
     for(uint32_t jj = 0; jj < lmax; jj++)
     {
         for(uint32_t ii = 0; ii < (uint32_t) n; ii++)
@@ -451,7 +463,7 @@ static imageID image_PCAdecomp(
     return (img->ID);
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 

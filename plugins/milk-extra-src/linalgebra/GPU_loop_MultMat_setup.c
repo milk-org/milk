@@ -232,20 +232,25 @@ errno_t GPU_loop_MultMat_setup(int         index,
 
         if((gpumatmultconf[index].IDout = image_ID(IDoutdmmodes_name, dcimg, dcnimg)) == -1)
         {
-            uint32_t *sizearraytmp;
-
-            sizearraytmp    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
-            sizearraytmp[0] = gpumatmultconf[index].M;
-            sizearraytmp[1] = 1;
-            create_image_ID(IDoutdmmodes_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            10,
-                            0,
-                            &(gpumatmultconf[index].IDout));
-            free(sizearraytmp);
+            {
+                IMGID imgout =
+                    imgid_make_from_name(
+                        IDoutdmmodes_name);
+                imgout.mdt->naxis = 2;
+                imgout.mdt->size[0] =
+                    gpumatmultconf[index].M;
+                imgout.mdt->size[1] = 1;
+                imgout.mdt->datatype =
+                    _DATATYPE_FLOAT;
+                imgout.mdt->shared = 1;
+                imgout.mdt->NBkw = 10;
+                imgout.im =
+                    (IMAGE *) calloc(
+                        1, sizeof(IMAGE));
+                imgid_mkimage(&imgout);
+                gpumatmultconf[index]
+                    .IDout = imgout.ID;
+            }
         }
         else
         {
