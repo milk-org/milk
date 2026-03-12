@@ -25,7 +25,7 @@ pipeline throughput.
 Benchmark the fundamental IPC latency:
 
 ```bash
-$ milk-semloopspeed
+$ milk-semloopspeed 10000
 ```
 
 Typical values on modern hardware:
@@ -192,7 +192,7 @@ See also: [Valkey Integration](valkey.md)
 | Item | Command / Config |
 |------|--------------------|
 | Check loop Hz | `milk-procinfo-list` |
-| Semaphore benchmark | `milk-semloopspeed` |
+| Semaphore benchmark | `milk-semloopspeed 10000` |
 | Pin to core 4 | `taskset -c 4 <cmd>` |
 | RT priority 49 | `sudo chrt -f 49 <cmd>` |
 | Increase `/dev/shm` | `mount -o remount,size=16G /dev/shm` |
