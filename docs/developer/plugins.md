@@ -6,6 +6,7 @@ This guide outlines exactly how to create, structure, and
 link a custom plugin.
 
 See also: [Programmer's Guide](../programmers_guide.md) ·
+[Code Assist Tools](../code_assist.md) ·
 [Developer Tutorial](tutorial.md) ·
 [Build Tiers](../install/build_tiers.md) ·
 [Loading Modules](LoadingModules.md)

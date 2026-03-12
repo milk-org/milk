@@ -40,18 +40,18 @@ requiring you to remember every checklist.
 
 | Rule | File | What it enforces |
 |------|------|------------------|
-| Architecture principles | `architecture-principles.md` | Minimize cross-module deps; consult `dependency_graph.md` before adding new ones. |
-| CMake conventions | `cmake-conventions.md` | Use `PUBLIC`/`INTERFACE` properties; each module owns its headers. |
-| Code style | `code-style-guide.md` | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
-| Compile after edit | `compile-after-edit.md` | Always run `/compile-test` after modifying C/CMake. |
-| Documentation standards | `documentation-standards.md` | Markdown formatting, shell prompts, link checking. |
-| fpsexec conventions | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` requirement. |
-| Help consistency | `help-consistency.md` | Cross-check all sibling help sources when editing help content. |
-| Programmer's Guide | `maintain-programmers-guide.md` | Update `docs/programmers_guide.md` on architectural changes. |
-| Running commands | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux session management. |
-| Script documentation | `script-docs.md` | Update `docs/scripts.md` and add `--help` when scripts change. |
-| README updates | `readme-update.md` | Update module README when source files are added/removed. |
-| Workspace layout | `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
+| Architecture principles | [`architecture-principles.md`](../.agents/rules/architecture-principles.md) | Minimize cross-module deps; consult `dependency_graph.md` before adding new ones. |
+| CMake conventions | [`cmake-conventions.md`](../.agents/rules/cmake-conventions.md) | Use `PUBLIC`/`INTERFACE` properties; each module owns its headers. |
+| Code style | [`code-style-guide.md`](../.agents/rules/code-style-guide.md) | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
+| Compile after edit | [`compile-after-edit.md`](../.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
+| Documentation standards | [`documentation-standards.md`](../.agents/rules/documentation-standards.md) | Markdown formatting, shell prompts, link checking. |
+| fpsexec conventions | [`fpsexec-conventions.md`](../.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
+| Help consistency | [`help-consistency.md`](../.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
+| Programmer's Guide | [`maintain-programmers-guide.md`](../.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
+| Running commands | [`run-milk-commands.md`](../.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
+| Script documentation | [`script-docs.md`](../.agents/rules/script-docs.md) | Update `docs/scripts.md` and add `--help` when scripts change. |
+| README updates | [`readme-update.md`](../.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
+| Workspace layout | [`files-directories.md`](../.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
 
 ## Workflows
 
@@ -61,16 +61,16 @@ step-by-step checklists for common tasks.
 
 | Command | File | What it does |
 |---------|------|--------------|
-| `/compile-test` | `compile-test.md` | Incremental build from `_build/`, report errors. |
-| `/create-fpsexec` | `create-fpsexec.md` | Scaffold a new V2 fpsexec standalone executable. |
-| `/add-new-module` | `add-new-module.md` | Scaffold a new plugin module (README, CMake, boilerplate). |
-| `/add-function` | `add-function.md` | Add a function to an existing module (dispatches to sub-workflows). |
-| `/add-stream-processor` | `add-stream-processor.md` | Scaffold a stream processing loop compute unit. |
-| `/add-cli-command` | `add-cli-command.md` | Add a CLI command to an existing module. |
-| `/update-programmers-guide` | `update-programmers-guide.md` | Scan recent commits and refresh `docs/programmers_guide.md`. |
-| `/audit-help-consistency` | `audit-help-consistency.md` | Cross-check all help sources for drift or contradictions. |
-| `/update-scripts-docs` | `update-scripts-docs.md` | Sync `docs/scripts.md` after script changes. |
-| `/check-type-consistency` | `check-type-consistency.md` | Audit `switch` blocks for incomplete type handling. |
+| `/compile-test` | [`compile-test.md`](../.agents/workflows/compile-test.md) | Incremental build from `_build/`, report errors. |
+| `/create-fpsexec` | [`create-fpsexec.md`](../.agents/workflows/create-fpsexec.md) | Scaffold a new V2 fpsexec standalone executable. |
+| `/add-new-module` | [`add-new-module.md`](../.agents/workflows/add-new-module.md) | Scaffold a new plugin module (README, CMake, boilerplate). |
+| `/add-function` | [`add-function.md`](../.agents/workflows/add-function.md) | Add a function to an existing module (dispatches to sub-workflows). |
+| `/add-stream-processor` | [`add-stream-processor.md`](../.agents/workflows/add-stream-processor.md) | Scaffold a stream processing loop compute unit. |
+| `/add-cli-command` | [`add-cli-command.md`](../.agents/workflows/add-cli-command.md) | Add a CLI command to an existing module. |
+| `/update-programmers-guide` | [`update-programmers-guide.md`](../.agents/workflows/update-programmers-guide.md) | Scan recent commits and refresh `docs/programmers_guide.md`. |
+| `/audit-help-consistency` | [`audit-help-consistency.md`](../.agents/workflows/audit-help-consistency.md) | Cross-check all help sources for drift or contradictions. |
+| `/update-scripts-docs` | [`update-scripts-docs.md`](../.agents/workflows/update-scripts-docs.md) | Sync `docs/scripts.md` after script changes. |
+| `/check-type-consistency` | [`check-type-consistency.md`](../.agents/workflows/check-type-consistency.md) | Audit `switch` blocks for incomplete type handling. |
 
 ## Adding New Rules or Workflows
 
