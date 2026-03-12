@@ -1934,7 +1934,7 @@ imageID do2drffti(const char *in_name, const char *out_name)
  * 4b. Standalone-friendly FFT step
  * ============================================================= */
 
-static void fpsexec(
+static void MILK_HOT fpsexec(
     IMAGE *imgin,
     IMAGE *imgout,
     int dir)
