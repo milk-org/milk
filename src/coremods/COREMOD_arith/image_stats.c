@@ -58,7 +58,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         float * restrict ptr = imgin->im->array.F;
         float value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -76,7 +76,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         double * restrict ptr = imgin->im->array.D;
         double value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -94,7 +94,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         uint8_t * restrict ptr = imgin->im->array.UI8;
         uint8_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -112,7 +112,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         uint16_t * restrict ptr = imgin->im->array.UI16;
         uint16_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -130,7 +130,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         uint32_t * restrict ptr = imgin->im->array.UI32;
         uint32_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -148,7 +148,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         uint64_t * restrict ptr = imgin->im->array.UI64;
         uint64_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -166,7 +166,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         int8_t * restrict ptr = imgin->im->array.SI8;
         int8_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -184,7 +184,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         int16_t * restrict ptr = imgin->im->array.SI16;
         int16_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -202,7 +202,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         int32_t * restrict ptr = imgin->im->array.SI32;
         int32_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -220,7 +220,7 @@ double arith_image_min_IMGID(IMGID *imgin)
         int64_t * restrict ptr = imgin->im->array.SI64;
         int64_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(min:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -263,7 +263,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         float * restrict ptr = imgin->im->array.F;
         float value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -281,7 +281,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         double * restrict ptr = imgin->im->array.D;
         double value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -299,7 +299,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         uint8_t * restrict ptr = imgin->im->array.UI8;
         uint8_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -317,7 +317,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         uint16_t * restrict ptr = imgin->im->array.UI16;
         uint16_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -335,7 +335,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         uint32_t * restrict ptr = imgin->im->array.UI32;
         uint32_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -353,7 +353,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         uint64_t * restrict ptr = imgin->im->array.UI64;
         uint64_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -371,7 +371,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         int8_t * restrict ptr = imgin->im->array.SI8;
         int8_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -389,7 +389,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         int16_t * restrict ptr = imgin->im->array.SI16;
         int16_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -407,7 +407,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         int32_t * restrict ptr = imgin->im->array.SI32;
         int32_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
@@ -425,7 +425,7 @@ double arith_image_max_IMGID(IMGID *imgin)
         int64_t * restrict ptr = imgin->im->array.SI64;
         int64_t value = ptr[0];
 #ifdef _OPENMP
-        #pragma omp parallel for reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
+        #pragma omp parallel for simd reduction(max:value) if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(uint64_t ii = 0; ii < nelement; ii++)
         {
