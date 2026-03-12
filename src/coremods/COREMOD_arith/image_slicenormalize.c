@@ -13,6 +13,7 @@
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "slicenorm",
@@ -176,39 +177,22 @@ errno_t image_slicenormalize(
 
                 double valm; // masked value
 
+#define MASKMUL_(DT, ACC, CT)             \
+    case DT:                               \
+        valm = maskimg.im->array.F[pixim]  \
+            * inimg.im->array.ACC[pixi];   \
+        break;
+
                 switch(inimg.md->datatype)
                 {
-                    case _DATATYPE_UINT8 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI8[pixi];
-                        break;
-                    case _DATATYPE_INT8 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI8[pixi];
-                        break;
-                    case _DATATYPE_UINT16 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI16[pixi];
-                        break;
-                    case _DATATYPE_INT16 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI16[pixi];
-                        break;
-                    case _DATATYPE_UINT32 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI32[pixi];
-                        break;
-                    case _DATATYPE_INT32 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI32[pixi];
-                        break;
-                    case _DATATYPE_UINT64 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.UI64[pixi];
-                        break;
-                    case _DATATYPE_INT64 :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.SI64[pixi];
-                        break;
-                    case _DATATYPE_FLOAT :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.F[pixi];
-                        break;
-                    case _DATATYPE_DOUBLE :
-                        valm = maskimg.im->array.F[pixim] * inimg.im->array.D[pixi];
-                        break;
+                    FOREACH_REAL_DATATYPE(MASKMUL_)
+                default:
+                    valm = 0.0;
+                    PRINT_ERROR(
+                        "unsupported datatype");
+                    break;
                 }
+#undef MASKMUL_
                 normarray[pixcoord[sliceaxis]] += valm * valm;
                 avarray[pixcoord[sliceaxis]] += valm;
                 maskcntarray[pixcoord[sliceaxis]] += maskimg.im->array.F[pixim];
@@ -251,53 +235,22 @@ errno_t image_slicenormalize(
                 pixi += jj * sizescan[0];
                 pixi += ii;
 
+#define NORMDIV_(DT, ACC, CT)                       \
+    case DT:                                         \
+        outimg->im->array.F[pixi] =                  \
+            (1.0 * inimg.im->array.ACC[pixi]) /      \
+            normarray[pixcoord[sliceaxis]];           \
+        break;
+
                 switch(inimg.md->datatype)
                 {
-                    // REMOVED FROM DEF BEHAVIOR: no mean sub.
-                    // case _DATATYPE_UINT8 :
-                    //     outimg->im->array.F[pixi] = (1.0*inimg.im->array.UI8[pixi] - avarray[pixcoord[sliceaxis]]) / normarray[pixcoord[sliceaxis]];
-                    //     break;
-                    case _DATATYPE_UINT8 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI8[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_INT8 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI8[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_UINT16 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI16[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_INT16 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI16[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_UINT32 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI32[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_INT32 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI32[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_UINT64 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.UI64[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_INT64 :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.SI64[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_FLOAT :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.F[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
-                    case _DATATYPE_DOUBLE :
-                        outimg->im->array.F[pixi] = (1.0 * inimg.im->array.D[pixi]) /
-                                                    normarray[pixcoord[sliceaxis]];
-                        break;
+                    FOREACH_REAL_DATATYPE(NORMDIV_)
+                default:
+                    PRINT_ERROR(
+                        "unsupported datatype");
+                    break;
                 }
+#undef NORMDIV_
             }
         }
     }
