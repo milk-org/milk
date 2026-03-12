@@ -88,76 +88,87 @@ FPS_MAIN_STANDALONE_V2(
 // Compute code
 // ==========================================
 
-errno_t images_to_cube(const char *restrict img_name,
-                       long nbframes,
-                       const char *restrict cube_name)
+errno_t images_to_cube(
+    const char *restrict img_name,
+    long nbframes,
+    const char *restrict cube_name)
 {
     DEBUG_TRACE_FSTART();
-    imageID  ID;
-    imageID  ID1;
-    long     frame;
-    uint32_t naxes[2];
-    uint32_t xsize, ysize;
-    char     imname[STRINGMAXLEN_IMGNAME];
+    char imname[STRINGMAXLEN_IMGNAME];
 
-    frame = 0;
+    long frame = 0;
+    CREATE_IMAGENAME(imname, "%s%05ld",
+                     img_name, frame);
 
-    CREATE_IMAGENAME(imname, "%s%05ld", img_name, frame);
+    IMGID img1 =
+        imgid_make_from_name(imname);
+    resolveIMGID(&img1, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID1 = image_ID(imname, dcimg, dcnimg);
-    if(ID1 == -1)
-    {
-        PRINT_ERROR("Image \"%s\" does not exist", imname);
-        exit(0);
-    }
-    naxes[0] = dcimg[ID1].md[0].size[0];
-    naxes[1] = dcimg[ID1].md[0].size[1];
-    xsize    = naxes[0];
-    ysize    = naxes[1];
+    uint32_t xsize = img1.md->size[0];
+    uint32_t ysize = img1.md->size[1];
 
-    printf("SIZE = %ld %ld %ld\n",
-           (long) naxes[0],
-           (long) naxes[1],
-           (long) nbframes);
+    printf("SIZE = %u %u %ld\n",
+           xsize, ysize, nbframes);
     fflush(stdout);
 
-    FUNC_CHECK_RETURN(
-        create_3Dimage_ID(cube_name, naxes[0], naxes[1], nbframes, &ID));
+    IMGID imgcube =
+        imgid_make_from_name_3D(
+            cube_name,
+            xsize, ysize, nbframes);
+    imgcube.mdt->shared = 0;
+    imgcube.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgcube);
 
-    for(uint32_t ii = 0; ii < naxes[0]; ii++)
-        for(uint32_t jj = 0; jj < naxes[1]; jj++)
+    for(uint32_t ii = 0; ii < xsize; ii++)
+        for(uint32_t jj = 0; jj < ysize; jj++)
         {
-            dcimg[ID]
-            .array.F[frame * naxes[0] * naxes[1] + (jj * naxes[0] + ii)] =
-                dcimg[ID1].array.F[jj * naxes[0] + ii];
+            imgcube.im->array.F[
+                jj * xsize + ii] =
+                img1.im->array.F[
+                    jj * xsize + ii];
         }
 
     for(frame = 1; frame < nbframes; frame++)
     {
-        WRITE_IMAGENAME(imname, "%s%05ld", img_name, frame);
-        printf("Adding image %s -> %ld/%ld ... ", img_name, frame, nbframes);
+        WRITE_IMAGENAME(imname, "%s%05ld",
+                        img_name, frame);
+        printf("Adding image %s -> %ld/%ld.."
+               " ", img_name, frame,
+               nbframes);
         fflush(stdout);
 
-        ID1 = image_ID(imname, dcimg, dcnimg);
-        if(ID1 == -1)
+        img1 = imgid_make_from_name(imname);
+        resolveIMGID(&img1, ERRMODE_NULL,
+                     dcimg, dcnimg);
+        if(img1.ID == -1)
         {
-            PRINT_ERROR("Image \"%s\" does not exist - skipping", imname);
+            PRINT_ERROR(
+                "Image \"%s\" does not "
+                "exist - skipping",
+                imname);
         }
         else
         {
-            naxes[0] = dcimg[ID1].md[0].size[0];
-            naxes[1] = dcimg[ID1].md[0].size[1];
-            if((xsize != naxes[0]) || (ysize != naxes[1]))
+            if((xsize != img1.md->size[0])
+                || (ysize
+                    != img1.md->size[1]))
             {
-                PRINT_ERROR("Image has wrong size");
+                PRINT_ERROR(
+                    "Image has wrong size");
                 exit(0);
             }
-            for(uint32_t ii = 0; ii < naxes[0]; ii++)
-                for(uint32_t jj = 0; jj < naxes[1]; jj++)
+            for(uint32_t ii = 0;
+                ii < xsize; ii++)
+                for(uint32_t jj = 0;
+                    jj < ysize; jj++)
                 {
-                    dcimg[ID].array.F[frame * naxes[0] * naxes[1] +
-                                           (jj * naxes[0] + ii)] =
-                                               dcimg[ID1].array.F[jj * naxes[0] + ii];
+                    imgcube.im->array.F[
+                        frame * xsize * ysize
+                        + jj * xsize + ii] =
+                        img1.im->array.F[
+                            jj * xsize + ii];
                 }
         }
         printf("Done\n");

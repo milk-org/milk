@@ -53,51 +53,54 @@ static char inname[FUNCTION_PARAMETER_STRMAXLEN]
 imageID break_cube(
     const char *restrict ID_name)
 {
-    imageID  ID;
-    uint32_t naxes[3];
-    char     framename[STRINGMAXLEN_IMGNAME];
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID       = image_ID(
-        ID_name, dcimg, dcnimg);
-    naxes[0] = dcimg[ID].md[0].size[0];
-    naxes[1] = dcimg[ID].md[0].size[1];
-    naxes[2] = dcimg[ID].md[0].size[2];
+    uint32_t xsize = imgin.md->size[0];
+    uint32_t ysize = imgin.md->size[1];
+    uint32_t nz    = imgin.md->size[2];
 
-    for(uint32_t kk = 0; kk < naxes[2]; kk++)
+    for(uint32_t kk = 0; kk < nz; kk++)
     {
-        long ID1;
-
+        char framename[STRINGMAXLEN_IMGNAME];
         CREATE_IMAGENAME(framename,
                          "%s_%5u",
                          ID_name, kk);
-
         for(long i = 0;
-            i < (long) strlen(framename); i++)
+            i < (long) strlen(framename);
+            i++)
         {
             if(framename[i] == ' ')
             {
                 framename[i] = '0';
             }
         }
-        create_2Dimage_ID(framename,
-                          naxes[0], naxes[1],
-                          &ID1);
-        for(uint32_t ii = 0;
-            ii < naxes[0]; ii++)
+
+        IMGID imgfr =
+            imgid_make_from_name_2D(
+                framename, xsize, ysize);
+        imgfr.mdt->shared = 0;
+        imgfr.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgfr);
+
+        for(uint32_t ii = 0; ii < xsize; ii++)
         {
             for(uint32_t jj = 0;
-                jj < naxes[1]; jj++)
+                jj < ysize; jj++)
             {
-                dcimg[ID1].array.F[
-                    jj * naxes[0] + ii] =
-                    dcimg[ID].array.F[
-                        kk * naxes[0] * naxes[1]
-                        + jj * naxes[0] + ii];
+                imgfr.im->array.F[
+                    jj * xsize + ii] =
+                    imgin.im->array.F[
+                        kk * xsize * ysize
+                        + jj * xsize + ii];
             }
         }
     }
 
-    return ID;
+    return imgin.ID;
 }
 
 
