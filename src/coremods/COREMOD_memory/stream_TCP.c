@@ -1092,14 +1092,30 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     {
         printf("IMAGE %s HAS TO BE CREATED\n", imgmd->name);
         fflush(stdout);
-        create_image_ID(imgmd->name,
-                        imgmd->naxis,
-                        imgmd->size,
-                        imgmd->datatype,
-                        imgmd->shared,
-                        imgmd->NBkw,
-                        0,
-                        &ID);
+        {
+            IMGID imgrcv =
+                imgid_make_from_name(
+                    imgmd->name);
+            imgrcv.mdt->naxis =
+                imgmd->naxis;
+            for(int a = 0;
+                a < imgmd->naxis; a++)
+            {
+                imgrcv.mdt->size[a] =
+                    imgmd->size[a];
+            }
+            imgrcv.mdt->datatype =
+                imgmd->datatype;
+            imgrcv.mdt->shared =
+                imgmd->shared;
+            imgrcv.mdt->NBkw =
+                imgmd->NBkw;
+            imgrcv.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgrcv);
+            ID = imgrcv.ID;
+        }
         printf("Created image stream %s - shared = %d\n",
                imgmd->name,
                imgmd->shared);
