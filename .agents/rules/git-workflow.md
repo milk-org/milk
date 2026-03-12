@@ -8,6 +8,10 @@ All code changes **must** go through a pull
 request. Never commit directly to `framework-dev`
 (or `main`).
 
+**CRITICAL BRANCHING RULE:**
+- You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for both `milk` and `cacao`.
+- You must **ONLY** push to and merge into `framework-dev` or feature branches derived from `framework-dev`.
+
 ## Required Steps
 
 1. **Create a feature branch** from `framework-dev`:
