@@ -7,7 +7,6 @@
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <sched.h>
 
 #ifdef MILK_NO_CLI
