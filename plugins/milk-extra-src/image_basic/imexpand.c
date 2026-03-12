@@ -219,104 +219,160 @@ CLIADDCMD_image_basic__imexpand()
     return RETURN_SUCCESS;
 }
 
-/* expand image by factor n1 along x axis and n2 along y axis */
-imageID
-basic_expand(const char *ID_name, const char *ID_name_out, int n1, int n2)
+/**
+ * Expand image by factor n1 along x and
+ * n2 along y (nearest-neighbour).
+ */
+imageID basic_expand(
+    const char *ID_name,
+    const char *ID_name_out,
+    int n1, int n2)
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    imageID ID_out; /* ID for the output image */
-    long    ii, jj;
-    long    naxes[2], naxes_out[2];
-    int     i, j;
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID = image_ID(ID_name, dcimg, dcnimg);
-
-    naxes[0]     = dcimg[ID].md[0].size[0];
-    naxes[1]     = dcimg[ID].md[0].size[1];
+    long naxes[2];
+    naxes[0] = imgin.md->size[0];
+    naxes[1] = imgin.md->size[1];
+    long naxes_out[2];
     naxes_out[0] = naxes[0] * n1;
     naxes_out[1] = naxes[1] * n2;
 
-    FUNC_CHECK_RETURN(
-        create_2Dimage_ID(ID_name_out, naxes_out[0], naxes_out[1], &ID_out));
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            ID_name_out,
+            naxes_out[0],
+            naxes_out[1]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
-    for(jj = 0; jj < naxes[1]; jj++)
-        for(ii = 0; ii < naxes[0]; ii++)
-            for(i = 0; i < n1; i++)
-                for(j = 0; j < n2; j++)
+    for(long jj = 0;
+        jj < naxes[1]; jj++)
+    {
+        for(long ii = 0;
+            ii < naxes[0]; ii++)
+        {
+            for(int i = 0; i < n1; i++)
+            {
+                for(int j = 0;
+                    j < n2; j++)
                 {
-                    dcimg[ID_out]
-                    .array.F[(jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                        dcimg[ID].array.F[jj * naxes[0] + ii];
+                    imgout.im->array.F[
+                        (jj * n2 + j)
+                        * naxes_out[0]
+                        + ii * n1 + i] =
+                        imgin.im
+                            ->array.F[
+                                jj
+                                * naxes[0]
+                                + ii];
                 }
+            }
+        }
+    }
 
     DEBUG_TRACE_FEXIT();
-    return (ID_out);
+    return imgout.ID;
 }
 
-/* expand image by factor n1 along x axis and n2 along y axis */
+/**
+ * Expand 3D image by factors n1, n2, n3
+ * along x, y, z (nearest-neighbour).
+ */
 imageID basic_expand3D(
-    const char *ID_name, const char *ID_name_out, int n1, int n2, int n3)
+    const char *ID_name,
+    const char *ID_name_out,
+    int n1, int n2, int n3)
 {
-    imageID ID;
-    imageID ID_out; /* ID for the output image */
-    long    ii, jj, kk;
-    long    naxes[3], naxes_out[3];
-    int     i, j, k;
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID = image_ID(ID_name, dcimg, dcnimg);
+    long naxes[3];
+    naxes[0] = imgin.md->size[0];
+    naxes[1] = (imgin.md->naxis > 1)
+                   ? imgin.md->size[1]
+                   : 1;
+    naxes[2] = (imgin.md->naxis == 3)
+                   ? imgin.md->size[2]
+                   : 1;
 
-    naxes[0] = dcimg[ID].md[0].size[0];
-    if(dcimg[ID].md[0].naxis > 1)
-    {
-        naxes[1] = dcimg[ID].md[0].size[1];
-    }
-    else
-    {
-        naxes[1] = 1;
-    }
-    if(dcimg[ID].md[0].naxis == 3)
-    {
-        naxes[2] = dcimg[ID].md[0].size[2];
-    }
-    else
-    {
-        naxes[2] = 1;
-    }
+    long naxes_out[3];
     naxes_out[0] = naxes[0] * n1;
     naxes_out[1] = naxes[1] * n2;
     naxes_out[2] = naxes[2] * n3;
 
-    printf(" %ld %ld %ld -> %ld %ld %ld\n",
-           naxes[0],
-           naxes[1],
-           naxes[2],
-           naxes_out[0],
-           naxes_out[1],
+    printf(" %ld %ld %ld"
+           " -> %ld %ld %ld\n",
+           naxes[0], naxes[1], naxes[2],
+           naxes_out[0], naxes_out[1],
            naxes_out[2]);
 
-    create_3Dimage_ID(ID_name_out,
-                      naxes_out[0],
-                      naxes_out[1],
-                      naxes_out[2],
-                      &ID_out);
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            ID_name_out,
+            naxes_out[0],
+            naxes_out[1],
+            naxes_out[2]);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
     list_image_ID();
 
-    for(kk = 0; kk < naxes[2]; kk++)
-        for(jj = 0; jj < naxes[1]; jj++)
-            for(ii = 0; ii < naxes[0]; ii++)
-                for(i = 0; i < n1; i++)
-                    for(j = 0; j < n2; j++)
-                        for(k = 0; k < n3; k++)
+    for(long kk = 0;
+        kk < naxes[2]; kk++)
+    {
+        for(long jj = 0;
+            jj < naxes[1]; jj++)
+        {
+            for(long ii = 0;
+                ii < naxes[0]; ii++)
+            {
+                for(int i = 0;
+                    i < n1; i++)
+                {
+                    for(int j = 0;
+                        j < n2; j++)
+                    {
+                        for(int k = 0;
+                            k < n3; k++)
                         {
-                            dcimg[ID_out]
-                            .array
-                            .F[(kk * n3 + k) * naxes_out[0] * naxes_out[1] +
-                                             (jj * n2 + j) * naxes_out[0] + ii * n1 + i] =
-                                   dcimg[ID]
-                                   .array.F[kk * naxes[0] * naxes[1] +
-                                               jj * naxes[0] + ii];
+                            imgout.im
+                                ->array
+                                .F[
+                                (kk * n3
+                                 + k)
+                                * naxes_out[0]
+                                * naxes_out[1]
+                                + (jj * n2
+                                   + j)
+                                  * naxes_out[0]
+                                + ii * n1
+                                + i] =
+                                imgin.im
+                                    ->array
+                                    .F[
+                                    kk
+                                    * naxes[0]
+                                    * naxes[1]
+                                    + jj
+                                      * naxes[0]
+                                    + ii];
                         }
-    return (ID_out);
+                    }
+                }
+            }
+        }
+    }
+
+    return imgout.ID;
 }
