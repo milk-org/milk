@@ -17,7 +17,6 @@
 #endif
 
 #include <malloc.h>
-#include <pthread.h>
 #include <stddef.h> // offsetof()
 #include <stdint.h>
 #include <stdio.h>

@@ -3,7 +3,6 @@
  * @brief Processinfo shm link module
  */
 
-#include <sys/file.h>
 #include <sys/mman.h> // mmap()
 #include <sys/stat.h>
 #include <fcntl.h>

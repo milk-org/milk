@@ -7,7 +7,6 @@
  *
  */
 
-#include <math.h>
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
