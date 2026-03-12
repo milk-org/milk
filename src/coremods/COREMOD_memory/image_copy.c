@@ -306,15 +306,19 @@ imageID copy_image_ID_IMGID(
 
     if(imgout->ID == -1)
     {
-        create_image_ID(imgout->name,
-                        naxis,
-                        size,
-                        datatype,
-                        shared,
-                        NB_KEYWNODE_MAX,
-                        0,
-                        &imgout->ID);
-        resolveIMGID(imgout, ERRMODE_ABORT, dcimg, dcnimg);
+        imgout->mdt->naxis = naxis;
+        for(uint32_t i = 0; i < naxis; i++)
+        {
+            imgout->mdt->size[i] =
+                size[i];
+        }
+        imgout->mdt->datatype = datatype;
+        imgout->mdt->shared = shared;
+        imgout->mdt->NBkw =
+            NB_KEYWNODE_MAX;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
     }
 
     imgout->md[0].write = 1;
@@ -431,15 +435,17 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
     if(imgout->ID == -1)
     {
-        create_image_ID(imgout->name,
-            naxis,
-            size,
-            datatype,
-            1,
-            0,
-            0,
-            &imgout->ID);
-        resolveIMGID(imgout, ERRMODE_ABORT, dcimg, dcnimg);
+        imgout->mdt->naxis = naxis;
+        for(uint32_t k = 0; k < naxis; k++)
+        {
+            imgout->mdt->size[k] =
+                size[k];
+        }
+        imgout->mdt->datatype = datatype;
+        imgout->mdt->shared = 1;
+        imgout->im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(imgout);
     }
 
     imgout->md[0].write = 1;
