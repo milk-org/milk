@@ -276,8 +276,6 @@ imageID arith_image_crop(const char *ID_name,
                          long        cropdim)
 {
     long      naxis;
-    imageID   IDin;
-    imageID   IDout;
     long      i;
     uint32_t *naxes    = NULL;
     uint32_t *naxesout = NULL;
@@ -292,51 +290,63 @@ imageID arith_image_crop(const char *ID_name,
         end_c[i]   = 0;
     }
 
-    IDin = image_ID(ID_name, dcimg, dcnimg);
-    if(IDin == -1)
-    {
-        PRINT_ERROR("Missing input image = %s", ID_name);
-        list_image_ID();
-        exit(0);
-    }
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    naxis = dcimg[IDin].md[0].naxis;
+    naxis = imgin.md->naxis;
     if(naxis < 1)
     {
         PRINT_ERROR("naxis < 1");
         exit(0);
     }
-    naxes = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    naxes = (uint32_t *) malloc(
+        sizeof(uint32_t) * naxis);
     if(naxes == NULL)
     {
-        PRINT_ERROR("malloc() error, naxis = %ld", naxis);
+        PRINT_ERROR(
+            "malloc() error,"
+            " naxis = %ld", naxis);
         exit(0);
     }
 
-    naxesout = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
+    naxesout = (uint32_t *) malloc(
+        sizeof(uint32_t) * naxis);
     if(naxesout == NULL)
     {
         PRINT_ERROR("malloc() error");
         exit(0);
     }
 
-    datatype = dcimg[IDin].md[0].datatype;
+    datatype = imgin.md->datatype;
 
     naxes[0]    = 0;
     naxesout[0] = 0;
     for(i = 0; i < naxis; i++)
     {
-        naxes[i]    = dcimg[IDin].md[0].size[i];
-        naxesout[i] = end[i] - start[i];
+        naxes[i] =
+            imgin.md->size[i];
+        naxesout[i] =
+            end[i] - start[i];
     }
-    create_image_ID(ID_out,
-                    naxis,
-                    naxesout,
-                    datatype,
-                    dcshareddft,
-                    NB_KEYWNODE_MAX,
-                    0,
-                    &IDout);
+
+    IMGID imgout =
+        imgid_make_from_name(ID_out);
+    imgout.mdt->naxis = naxis;
+    for(i = 0; i < naxis; i++)
+    {
+        imgout.mdt->size[i] =
+            naxesout[i];
+    }
+    imgout.mdt->datatype = datatype;
+    imgout.mdt->shared = dcshareddft;
+    imgout.mdt->NBkw = NB_KEYWNODE_MAX;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+    imageID IDout = imgout.ID;
 
     start_c[0] = start[0];
     if(start_c[0] < 0)
@@ -396,100 +406,100 @@ imageID arith_image_crop(const char *ID_name,
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.F[ii - start[0]] =
-                    dcimg[IDin].array.F[ii];
+                imgout.im->array.F[ii - start[0]] =
+                    imgin.im->array.F[ii];
             }
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.D[ii - start[0]] =
-                    dcimg[IDin].array.D[ii];
+                imgout.im->array.D[ii - start[0]] =
+                    imgin.im->array.D[ii];
             }
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.CF[ii - start[0]].re =
-                    dcimg[IDin].array.CF[ii].re;
-                dcimg[IDout].array.CF[ii - start[0]].im =
-                    dcimg[IDin].array.CF[ii].im;
+                imgout.im->array.CF[ii - start[0]].re =
+                    imgin.im->array.CF[ii].re;
+                imgout.im->array.CF[ii - start[0]].im =
+                    imgin.im->array.CF[ii].im;
             }
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.CD[ii - start[0]].re =
-                    dcimg[IDin].array.CD[ii].re;
-                dcimg[IDout].array.CD[ii - start[0]].im =
-                    dcimg[IDin].array.CD[ii].im;
+                imgout.im->array.CD[ii - start[0]].re =
+                    imgin.im->array.CD[ii].re;
+                imgout.im->array.CD[ii - start[0]].im =
+                    imgin.im->array.CD[ii].im;
             }
         }
         else if(datatype == _DATATYPE_UINT8)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.UI8[ii - start[0]] =
-                    dcimg[IDin].array.UI8[ii];
+                imgout.im->array.UI8[ii - start[0]] =
+                    imgin.im->array.UI8[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT16)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.UI16[ii - start[0]] =
-                    dcimg[IDin].array.UI16[ii];
+                imgout.im->array.UI16[ii - start[0]] =
+                    imgin.im->array.UI16[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT32)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.UI32[ii - start[0]] =
-                    dcimg[IDin].array.UI32[ii];
+                imgout.im->array.UI32[ii - start[0]] =
+                    imgin.im->array.UI32[ii];
             }
         }
         else if(datatype == _DATATYPE_UINT64)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.UI64[ii - start[0]] =
-                    dcimg[IDin].array.UI64[ii];
+                imgout.im->array.UI64[ii - start[0]] =
+                    imgin.im->array.UI64[ii];
             }
         }
         else if(datatype == _DATATYPE_INT8)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.SI8[ii - start[0]] =
-                    dcimg[IDin].array.SI8[ii];
+                imgout.im->array.SI8[ii - start[0]] =
+                    imgin.im->array.SI8[ii];
             }
         }
         else if(datatype == _DATATYPE_INT16)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.SI16[ii - start[0]] =
-                    dcimg[IDin].array.SI16[ii];
+                imgout.im->array.SI16[ii - start[0]] =
+                    imgin.im->array.SI16[ii];
             }
         }
         else if(datatype == _DATATYPE_INT32)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.SI32[ii - start[0]] =
-                    dcimg[IDin].array.SI32[ii];
+                imgout.im->array.SI32[ii - start[0]] =
+                    imgin.im->array.SI32[ii];
             }
         }
         else if(datatype == _DATATYPE_INT64)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
             {
-                dcimg[IDout].array.SI64[ii - start[0]] =
-                    dcimg[IDin].array.SI64[ii];
+                imgout.im->array.SI64[ii - start[0]] =
+                    imgin.im->array.SI64[ii];
             }
         }
         else
@@ -504,31 +514,29 @@ imageID arith_image_crop(const char *ID_name,
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.F[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.F[(jj - start[1]) * naxesout[0] +
                                               (ii - start[0])] =
-                                                  dcimg[IDin].array.F[jj * naxes[0] + ii];
+                                                  imgin.im->array.F[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_DOUBLE)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.D[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.D[(jj - start[1]) * naxesout[0] +
                                               (ii - start[0])] =
-                                                  dcimg[IDin].array.D[jj * naxes[0] + ii];
+                                                  imgin.im->array.D[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_COMPLEX_FLOAT)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                 {
-                    dcimg[IDout]
-                    .array
+                    imgout.im->array
                     .CF[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .re = dcimg[IDin].array.CF[jj * naxes[0] + ii].re;
-                    dcimg[IDout]
-                    .array
+                    .re = imgin.im->array.CF[jj * naxes[0] + ii].re;
+                    imgout.im->array
                     .CF[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .im = dcimg[IDin].array.CF[jj * naxes[0] + ii].im;
+                    .im = imgin.im->array.CF[jj * naxes[0] + ii].im;
                 }
         }
         else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
@@ -536,79 +544,77 @@ imageID arith_image_crop(const char *ID_name,
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                 {
-                    dcimg[IDout]
-                    .array
+                    imgout.im->array
                     .CD[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .re = dcimg[IDin].array.CD[jj * naxes[0] + ii].re;
-                    dcimg[IDout]
-                    .array
+                    .re = imgin.im->array.CD[jj * naxes[0] + ii].re;
+                    imgout.im->array
                     .CD[(jj - start[1]) * naxesout[0] + (ii - start[0])]
-                    .im = dcimg[IDin].array.CD[jj * naxes[0] + ii].im;
+                    .im = imgin.im->array.CD[jj * naxes[0] + ii].im;
                 }
         }
         else if(datatype == _DATATYPE_UINT8)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.UI8[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.UI8[(jj - start[1]) * naxesout[0] +
                                                 (ii - start[0])] =
-                                                    dcimg[IDin].array.UI8[jj * naxes[0] + ii];
+                                                    imgin.im->array.UI8[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT16)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.UI16[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.UI16[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.UI16[jj * naxes[0] + ii];
+                                                     imgin.im->array.UI16[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT32)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.UI32[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.UI32[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.UI32[jj * naxes[0] + ii];
+                                                     imgin.im->array.UI32[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_UINT64)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.UI64[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.UI64[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.UI64[jj * naxes[0] + ii];
+                                                     imgin.im->array.UI64[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT8)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.SI8[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.SI8[(jj - start[1]) * naxesout[0] +
                                                 (ii - start[0])] =
-                                                    dcimg[IDin].array.SI8[jj * naxes[0] + ii];
+                                                    imgin.im->array.SI8[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT16)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.SI16[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.SI16[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.SI16[jj * naxes[0] + ii];
+                                                     imgin.im->array.SI16[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT32)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.SI32[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.SI32[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.SI32[jj * naxes[0] + ii];
+                                                     imgin.im->array.SI32[jj * naxes[0] + ii];
         }
         else if(datatype == _DATATYPE_INT64)
         {
             for(uint32_t ii = start_c[0]; ii < end_c[0]; ii++)
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
-                    dcimg[IDout].array.SI64[(jj - start[1]) * naxesout[0] +
+                    imgout.im->array.SI64[(jj - start[1]) * naxesout[0] +
                                                  (ii - start[0])] =
-                                                     dcimg[IDin].array.SI64[jj * naxes[0] + ii];
+                                                     imgin.im->array.SI64[jj * naxes[0] + ii];
         }
         else
         {
@@ -625,10 +631,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.F
+                        imgout.im->array.F
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin].array.F[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.F[kk * naxes[0] * naxes[1] +
                                                       jj * naxes[0] + ii];
                     }
         }
@@ -638,10 +644,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.D
+                        imgout.im->array.D
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin].array.D[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.D[kk * naxes[0] * naxes[1] +
                                                       jj * naxes[0] + ii];
                     }
         }
@@ -651,21 +657,17 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout]
-                        .array
+                        imgout.im->array
                         .CF[(kk - start[2]) * naxesout[0] * naxesout[1] +
                                             (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .re = dcimg[IDin]
-                              .array
+                        .re = imgin.im->array
                               .CF[kk * naxes[0] * naxes[1] +
                                      jj * naxes[0] + ii]
                               .re;
-                        dcimg[IDout]
-                        .array
+                        imgout.im->array
                         .CF[(kk - start[2]) * naxesout[0] * naxesout[1] +
                                             (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .im = dcimg[IDin]
-                              .array
+                        .im = imgin.im->array
                               .CF[kk * naxes[0] * naxes[1] +
                                      jj * naxes[0] + ii]
                               .im;
@@ -677,21 +679,17 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout]
-                        .array
+                        imgout.im->array
                         .CD[(kk - start[2]) * naxesout[0] * naxesout[1] +
                                             (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .re = dcimg[IDin]
-                              .array
+                        .re = imgin.im->array
                               .CD[kk * naxes[0] * naxes[1] +
                                      jj * naxes[0] + ii]
                               .re;
-                        dcimg[IDout]
-                        .array
+                        imgout.im->array
                         .CD[(kk - start[2]) * naxesout[0] * naxesout[1] +
                                             (jj - start[1]) * naxesout[0] + (ii - start[0])]
-                        .im = dcimg[IDin]
-                              .array
+                        .im = imgin.im->array
                               .CD[kk * naxes[0] * naxes[1] +
                                      jj * naxes[0] + ii]
                               .im;
@@ -703,11 +701,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.UI8
+                        imgout.im->array.UI8
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.UI8[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.UI8[kk * naxes[0] * naxes[1] +
                                            jj * naxes[0] + ii];
                     }
         }
@@ -717,11 +714,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.UI16
+                        imgout.im->array.UI16
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.UI16[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.UI16[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -731,11 +727,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.UI32
+                        imgout.im->array.UI32
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.UI32[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.UI32[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -745,11 +740,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.UI64
+                        imgout.im->array.UI64
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.UI64[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.UI64[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -759,11 +753,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.SI8
+                        imgout.im->array.SI8
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.SI8[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.SI8[kk * naxes[0] * naxes[1] +
                                            jj * naxes[0] + ii];
                     }
         }
@@ -773,11 +766,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.SI16
+                        imgout.im->array.SI16
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.SI16[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.SI16[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -787,11 +779,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.SI32
+                        imgout.im->array.SI32
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.SI32[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.SI32[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -801,11 +792,10 @@ imageID arith_image_crop(const char *ID_name,
                 for(uint32_t jj = start_c[1]; jj < end_c[1]; jj++)
                     for(uint32_t kk = start_c[2]; kk < end_c[2]; kk++)
                     {
-                        dcimg[IDout].array.SI64
+                        imgout.im->array.SI64
                         [(kk - start[2]) * naxesout[0] * naxesout[1] +
                                          (jj - start[1]) * naxesout[0] + (ii - start[0])] =
-                             dcimg[IDin]
-                             .array.SI64[kk * naxes[0] * naxes[1] +
+                             imgin.im->array.SI64[kk * naxes[0] * naxes[1] +
                                             jj * naxes[0] + ii];
                     }
         }
@@ -822,31 +812,36 @@ imageID arith_image_crop(const char *ID_name,
     return IDout;
 }
 
-imageID arith_image_extract2D(const char *in_name,
-                              const char *out_name,
-                              long        size_x,
-                              long        size_y,
-                              long        xstart,
-                              long        ystart)
+imageID arith_image_extract2D(
+    const char *in_name,
+    const char *out_name,
+    long        size_x,
+    long        size_y,
+    long        xstart,
+    long        ystart)
 {
     long        *start = NULL;
     long        *end   = NULL;
-    int          naxis;
-    imageID      ID;
     imageID      IDout;
     uint_fast8_t k;
 
-    ID    = image_ID(in_name, dcimg, dcnimg);
-    naxis = dcimg[ID].md[0].naxis;
+    IMGID img =
+        imgid_make_from_name(in_name);
+    resolveIMGID(&img,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
+    int naxis = img.md->naxis;
 
-    start = (long *) malloc(sizeof(long) * naxis);
+    start = (long *) malloc(
+        sizeof(long) * naxis);
     if(start == NULL)
     {
         PRINT_ERROR("malloc() error");
         exit(0);
     }
 
-    end = (long *) malloc(sizeof(long) * naxis);
+    end = (long *) malloc(
+        sizeof(long) * naxis);
     if(end == NULL)
     {
         PRINT_ERROR("malloc() error");
@@ -856,14 +851,16 @@ imageID arith_image_extract2D(const char *in_name,
     for(k = 0; k < naxis; k++)
     {
         start[k] = 0;
-        end[k]   = dcimg[ID].md[0].size[k];
+        end[k]   = img.md->size[k];
     }
 
     start[0] = xstart;
     start[1] = ystart;
     end[0]   = xstart + size_x;
     end[1]   = ystart + size_y;
-    IDout    = arith_image_crop(in_name, out_name, start, end, naxis);
+    IDout = arith_image_crop(
+        in_name, out_name,
+        start, end, naxis);
 
     free(start);
     free(end);
