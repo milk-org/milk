@@ -10,6 +10,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "libmilkdata/pixel_dispatch.h"
 
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "pixremap",
@@ -125,78 +126,25 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
+#define REMAP_CASE_(DT, ACC, CT)                    \
+    case DT:                                         \
+        for(uint64_t pixi=0; pixi<nbpix; pixi++)     \
+        {                                            \
+            imgout.im->array.ACC[                    \
+                map_outpixindex[pixi]] =             \
+                imgin.im->array.ACC[                 \
+                    map_inpixindex[pixi]];           \
+        }                                            \
+        break;
+
         switch ( imgin.md->datatype)
         {
-        case _DATATYPE_FLOAT:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.F[map_outpixindex[pixi]] = imgin.im->array.F[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_DOUBLE:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.D[map_outpixindex[pixi]] = imgin.im->array.D[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_INT8:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.SI8[map_outpixindex[pixi]] = imgin.im->array.SI8[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_UINT8:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.UI8[map_outpixindex[pixi]] = imgin.im->array.UI8[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_INT16:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.SI16[map_outpixindex[pixi]] = imgin.im->array.SI16[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_UINT16:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.UI16[map_outpixindex[pixi]] = imgin.im->array.UI16[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_INT32:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.SI32[map_outpixindex[pixi]] = imgin.im->array.SI32[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_UINT32:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.UI32[map_outpixindex[pixi]] = imgin.im->array.UI32[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_INT64:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.SI64[map_outpixindex[pixi]] = imgin.im->array.SI64[map_inpixindex[pixi]];
-            }
-            break;
-
-        case _DATATYPE_UINT64:
-            for(uint64_t pixi=0; pixi<nbpix; pixi++)
-            {
-                imgout.im->array.UI64[map_outpixindex[pixi]] = imgin.im->array.UI64[map_inpixindex[pixi]];
-            }
+            FOREACH_REAL_DATATYPE(REMAP_CASE_)
+        default:
+            PRINT_ERROR("unsupported datatype");
             break;
         }
+#undef REMAP_CASE_
 
         processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
