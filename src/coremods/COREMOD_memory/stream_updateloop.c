@@ -582,10 +582,26 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     datatype = dcimg[IDin[0]].md[0].datatype;
 
-    IDout = image_ID(IDoutname, dcimg, dcnimg);
+    IDout = image_ID(
+        IDoutname, dcimg, dcnimg);
     if(IDout == -1)
     {
-        create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDoutname);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            arraysize[0];
+        imgout_tmp.mdt->size[1] =
+            arraysize[1];
+        imgout_tmp.mdt->datatype =
+            datatype;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
     }
 
     cubeindex = 0;
@@ -804,10 +820,26 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     datatype = dcimg[IDin].md[0].datatype;
 
-    IDout = image_ID(IDoutname, dcimg, dcnimg);
+    IDout = image_ID(
+        IDoutname, dcimg, dcnimg);
     if(IDout == -1)
     {
-        create_image_ID(IDoutname, 2, arraysize, datatype, 1, 0, 0, &IDout);
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDoutname);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            arraysize[0];
+        imgout_tmp.mdt->size[1] =
+            arraysize[1];
+        imgout_tmp.mdt->datatype =
+            datatype;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
     }
 
     ptr0s     = (char *) dcimg[IDin].array.raw;

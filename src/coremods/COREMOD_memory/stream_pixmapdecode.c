@@ -255,14 +255,26 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     sizearray[0] = xsizeim;
     sizearray[1] = ysizeim;
-    create_image_ID(IDout_name,
-                    2,
-                    sizearray,
-                    dcimg[IDin].md->datatype,
-                    1,
-                    dcimg[IDin].md->NBkw,
-                    0,
-                    &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            xsizeim;
+        imgout_tmp.mdt->size[1] =
+            ysizeim;
+        imgout_tmp.mdt->datatype =
+            dcimg[IDin].md->datatype;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.mdt->NBkw =
+            dcimg[IDin].md->NBkw;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
 
     // Copy the keywords over from IDin to IDout
     int NBkw = dcimg[IDin].md[0].NBkw;
@@ -338,14 +350,21 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
     if(reverse == 0)  // Only for legacy mode
     {
-        create_image_ID("outpixsl",
-                        2,
-                        sizearray,
-                        _DATATYPE_UINT16,
-                        0,
-                        0,
-                        0,
-                        &IDout_pixslice);
+        IMGID imgpixsl =
+            imgid_make_from_name(
+                "outpixsl");
+        imgpixsl.mdt->naxis = 2;
+        imgpixsl.mdt->size[0] =
+            sizearray[0];
+        imgpixsl.mdt->size[1] =
+            sizearray[1];
+        imgpixsl.mdt->datatype =
+            _DATATYPE_UINT16;
+        imgpixsl.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgpixsl);
+        IDout_pixslice = imgpixsl.ID;
 
         for(slice = 0; slice < NBslice; slice++)
         {
