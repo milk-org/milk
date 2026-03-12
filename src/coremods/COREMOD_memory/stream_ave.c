@@ -108,95 +108,53 @@ static MILK_HOT errno_t fpsexec(
         imgin->md[0].size[0]
         * imgin->md[0].size[1];
 
-    if (streamave_cntindex == 0) {
-        for (uint64_t i = 0;
-             i < xysize; i++)
-        {
-            double v = 0;
-            switch (imgin->md[0].datatype)
-            {
-            case _DATATYPE_UINT8:
-                v = imgin->array.UI8[i];
-                break;
-            case _DATATYPE_INT8:
-                v = imgin->array.SI8[i];
-                break;
-            case _DATATYPE_UINT16:
-                v = imgin->array.UI16[i];
-                break;
-            case _DATATYPE_INT16:
-                v = imgin->array.SI16[i];
-                break;
-            case _DATATYPE_UINT32:
-                v = imgin->array.UI32[i];
-                break;
-            case _DATATYPE_INT32:
-                v = imgin->array.SI32[i];
-                break;
-            case _DATATYPE_UINT64:
-                v = imgin->array.UI64[i];
-                break;
-            case _DATATYPE_INT64:
-                v = imgin->array.SI64[i];
-                break;
-            case _DATATYPE_FLOAT:
-                v = imgin->array.F[i];
-                break;
-            case _DATATYPE_DOUBLE:
-                v = imgin->array.D[i];
-                break;
-            }
-            imdataarray[i] = v;
-            if (streamave_comprms) {
-                imdataarrayPOW[i] =
-                    v * v;
-            }
-        }
-    } else {
-        for (uint64_t i = 0;
-             i < xysize; i++)
-        {
-            double v = 0;
-            switch (imgin->md[0].datatype)
-            {
-            case _DATATYPE_UINT8:
-                v = imgin->array.UI8[i];
-                break;
-            case _DATATYPE_INT8:
-                v = imgin->array.SI8[i];
-                break;
-            case _DATATYPE_UINT16:
-                v = imgin->array.UI16[i];
-                break;
-            case _DATATYPE_INT16:
-                v = imgin->array.SI16[i];
-                break;
-            case _DATATYPE_UINT32:
-                v = imgin->array.UI32[i];
-                break;
-            case _DATATYPE_INT32:
-                v = imgin->array.SI32[i];
-                break;
-            case _DATATYPE_UINT64:
-                v = imgin->array.UI64[i];
-                break;
-            case _DATATYPE_INT64:
-                v = imgin->array.SI64[i];
-                break;
-            case _DATATYPE_FLOAT:
-                v = imgin->array.F[i];
-                break;
-            case _DATATYPE_DOUBLE:
-                v = imgin->array.D[i];
-                break;
-            }
-            imdataarray[i] += v;
-            if (streamave_comprms) {
-                imdataarrayPOW[i] +=
-                    v * v;
-            }
-        }
+    #define STREAM_AVE_LOOP(VTYPE, ARRAY_MEMBER) \
+    { \
+        const VTYPE * MILK_RESTRICT in = MILK_ASSUME_ALIGNED(imgin->array.ARRAY_MEMBER); \
+        if (streamave_cntindex == 0) { \
+            for (uint64_t i = 0; i < xysize; i++) { \
+                MILK_PREFETCH(&in[i + 8], 0, 0); \
+                double v = (double)in[i]; \
+                imdataarray[i] = v; \
+                if (streamave_comprms) { \
+                    imdataarrayPOW[i] = v * v; \
+                } \
+            } \
+        } else { \
+            for (uint64_t i = 0; i < xysize; i++) { \
+                MILK_PREFETCH(&in[i + 8], 0, 0); \
+                double v = (double)in[i]; \
+                imdataarray[i] += v; \
+                if (streamave_comprms) { \
+                    imdataarrayPOW[i] += v * v; \
+                } \
+            } \
+        } \
     }
+
+    if (imgin->md[0].datatype == _DATATYPE_FLOAT) {
+        STREAM_AVE_LOOP(float, F);
+    } else if (imgin->md[0].datatype == _DATATYPE_UINT16) {
+        STREAM_AVE_LOOP(uint16_t, UI16);
+    } else if (imgin->md[0].datatype == _DATATYPE_UINT8) {
+        STREAM_AVE_LOOP(uint8_t, UI8);
+    } else if (imgin->md[0].datatype == _DATATYPE_INT8) {
+        STREAM_AVE_LOOP(int8_t, SI8);
+    } else if (imgin->md[0].datatype == _DATATYPE_INT16) {
+        STREAM_AVE_LOOP(int16_t, SI16);
+    } else if (imgin->md[0].datatype == _DATATYPE_UINT32) {
+        STREAM_AVE_LOOP(uint32_t, UI32);
+    } else if (imgin->md[0].datatype == _DATATYPE_INT32) {
+        STREAM_AVE_LOOP(int32_t, SI32);
+    } else if (imgin->md[0].datatype == _DATATYPE_UINT64) {
+        STREAM_AVE_LOOP(uint64_t, UI64);
+    } else if (imgin->md[0].datatype == _DATATYPE_INT64) {
+        STREAM_AVE_LOOP(int64_t, SI64);
+    } else if (imgin->md[0].datatype == _DATATYPE_DOUBLE) {
+        STREAM_AVE_LOOP(double, D);
+    }
+
+    #undef STREAM_AVE_LOOP
 
     (streamave_cntindex)++;
 
