@@ -36,6 +36,20 @@ as the template. Update:
 - `initModule()` function with the correct
   `CLIADDCMD_` calls (initially empty)
 
+### Dual-Mode Header Pattern
+
+All source files in the module must use the
+conditional include pattern so they compile both
+as shared library and standalone executable:
+```c
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
+```
+
 ## 4. Public Header
 
 Use `src/milk_module_example/milk_module_example.h`
@@ -55,6 +69,22 @@ Key elements:
 - `install(TARGETS ...)` for the library
 - `install(FILES ... DESTINATION include/<module>)`
   for headers
+
+### `_compute` Library Variant
+
+If the module will have standalone executables,
+**also** create a `_compute` variant:
+```cmake
+set(LIBNAME_COMPUTE ${LIBNAME}_compute)
+add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
+target_compile_definitions(
+    ${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
+target_link_libraries(
+    ${LIBNAME_COMPUTE} PRIVATE milkdata ImageStreamIO)
+```
+Standalone executables must **never** link `CLIcore`.
+The `_compute` variant is compiled with `MILK_NO_CLI`
+and links only engine libraries.
 
 ## 6. README.md
 
