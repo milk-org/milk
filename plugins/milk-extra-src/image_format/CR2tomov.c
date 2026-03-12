@@ -835,11 +835,11 @@ errno_t CR2tomov()
 
 
                               if(dcimg[IDr].array.F[ii]>NLCONV_OFFSET)
-                        	dcimg[IDrp].array.F[ii] = pow((dcimg[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                        	dcimg[IDrp].array.F[ii] = powf((dcimg[IDr].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
                               if(dcimg[IDg].array.F[ii]>NLCONV_OFFSET)
-                        	dcimg[IDgp].array.F[ii] = pow((dcimg[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                        	dcimg[IDgp].array.F[ii] = powf((dcimg[IDg].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
                               if(dcimg[IDb].array.F[ii]>NLCONV_OFFSET)
-                        	dcimg[IDbp].array.F[ii] = pow((dcimg[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
+                        	dcimg[IDbp].array.F[ii] = powf((dcimg[IDb].array.F[ii]-NLCONV_OFFSET)*NLCONV_FACT,NLCONV_POW);
                             }
                           make_gauss("kerg",xsize,ysize,NLCONV_SIGMA,1.0);
                           tot = arith_image_total("kerg");
@@ -902,9 +902,9 @@ errno_t CR2tomov()
                                 vb = 1.0;
                             }
 
-                            vr = 255.0 * pow(vr, ALPHA);
-                            vg = 255.0 * pow(vg, ALPHA);
-                            vb = 255.0 * pow(vb, ALPHA);
+                            vr = 255.0f * powf(vr, ALPHA);
+                            vg = 255.0f * powf(vg, ALPHA);
+                            vb = 255.0f * powf(vb, ALPHA);
 
                             dcimg[IDr].array.F[ii] = vr;
                             dcimg[IDg].array.F[ii] = vg;
