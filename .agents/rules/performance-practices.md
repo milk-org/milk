@@ -101,6 +101,26 @@ non-GCC compilers.
   (`*ptr`) into local variables before the
   inner loop to avoid repeated pointer chasing.
 
+## Datatype Dispatch
+
+- Use `else if` (not bare `if`) chains for
+  datatype dispatch. Bare `if` checks every
+  type even after a match — `else if` skips
+  ~9 redundant comparisons. Applies to all
+  `imfunctions.c`-style per-type loops.
+
+## BLAS for Matrix Operations
+
+- **Never** hand-write matrix-vector or
+  matrix-matrix multiply loops. Use
+  `cblas_sgemv()` / `cblas_sgemm()` from
+  MKL or OpenBLAS (already linked via CMake).
+- Provide a plain-C fallback with `restrict`
+  + `#pragma omp simd` for non-BLAS builds.
+- Remove `printf()` from CPU fallback
+  functions — IO in hot paths is fatal to
+  latency.
+
 ## Loop Vectorization
 
 - Use `#pragma omp for simd` (not bare
@@ -138,3 +158,9 @@ non-GCC compilers.
 - Do not place `printf()`, `fprintf()`, or
   `fflush()` in compute hot paths. Guard
   diagnostic output with `if (VERBOSE > 0)`.
+- Do not write naive loops for matrix
+  operations when BLAS is available — the
+  performance difference is orders of
+  magnitude.
+- Do not use standalone `if` for datatype
+  dispatch — always use `else if` chains.
