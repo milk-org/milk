@@ -101,17 +101,43 @@ static MILK_HOT errno_t compute_function()
             imgin.im,
             processinfo->triggersem);
 
-        if (imgin.im->md->datatype == _DATATYPE_FLOAT)
+        if (imgin.im->md->datatype
+            == _DATATYPE_FLOAT)
         {
-            float       * MILK_RESTRICT out = MILK_ASSUME_ALIGNED(imgout.im->array.F);
-            const float * MILK_RESTRICT in  = MILK_ASSUME_ALIGNED(imgin.im->array.F);
-            uint64_t nfloats = byte_copy_size / sizeof(float);
+            float * MILK_RESTRICT out =
+                MILK_ASSUME_ALIGNED(
+                    imgout.im->array.F);
+            const float * MILK_RESTRICT in =
+                MILK_ASSUME_ALIGNED(
+                    imgin.im->array.F);
+            uint64_t nelem =
+                byte_copy_size / sizeof(float);
 
-            #pragma omp parallel for simd if (nfloats > 20000)
-            for (uint64_t i = 0; i < nfloats; i++)
+            #pragma omp parallel for simd \
+                if (nelem > 20000)
+            for (uint64_t i = 0;
+                 i < nelem; i++)
             {
-                MILK_PREFETCH(&in[i + 32],  0, 0); // read prefetch
-                MILK_PREFETCH(&out[i + 32], 1, 0); // write prefetch
+                out[i] = in[i];
+            }
+        }
+        else if (imgin.im->md->datatype
+                 == _DATATYPE_UINT16)
+        {
+            uint16_t * MILK_RESTRICT out =
+                MILK_ASSUME_ALIGNED(
+                    imgout.im->array.UI16);
+            const uint16_t * MILK_RESTRICT in =
+                MILK_ASSUME_ALIGNED(
+                    imgin.im->array.UI16);
+            uint64_t nelem =
+                byte_copy_size
+                / sizeof(uint16_t);
+
+            MILK_IVDEP
+            for (uint64_t i = 0;
+                 i < nelem; i++)
+            {
                 out[i] = in[i];
             }
         }
