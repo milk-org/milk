@@ -41,3 +41,6 @@ $ make -j$(nproc) && sudo make install
   significant code changes.
 - To disable PGO, omit the `-DUSE_PGO` flag
   (or set it to empty).
+
+---
+← [Documentation Index](index.md)
