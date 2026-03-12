@@ -102,12 +102,12 @@ appropriate parent `CMakeLists.txt`:
 
 ## 8. Compile and Verify
 
-Run the `/compile-test` workflow to verify the new
+Run the [`/compile-test`](compile-test.md) workflow to verify the new
 module compiles and links correctly.
 
 ## 9. Notify
 
 Tell the user the module boilerplate is ready and
 remind them to add compute functions using the
-`/create-fpsexec` workflow or by following the
+[`/create-fpsexec`](create-fpsexec.md) workflow or by following the
 `milk_module_example` templates.

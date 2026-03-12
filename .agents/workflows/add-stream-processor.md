@@ -100,7 +100,7 @@ Add the call to the module's `initModule()`.
 
 ## 9. Compile and Verify
 
-Run the `/compile-test` workflow.
+Run the [`/compile-test`](compile-test.md) workflow.
 
 ## 10. Notify
 
