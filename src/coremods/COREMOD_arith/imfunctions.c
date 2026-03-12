@@ -104,13 +104,15 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     }
     else if(datatype == _DATATYPE_UINT16)
     {
+        uint16_t * MILK_RESTRICT out_ptr = MILK_ASSUME_ALIGNED(imgout->im->array.UI16);
+        const uint16_t * MILK_RESTRICT in_ptr = MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
             imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI16[ii]));
+                                          (double)(in_ptr[ii]));
         }
     }
     else if(datatype == _DATATYPE_UINT32)
@@ -181,13 +183,15 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     }
     else if(datatype == _DATATYPE_FLOAT)
     {
+        float * MILK_RESTRICT out_ptr = MILK_ASSUME_ALIGNED(imgout->im->array.F);
+        const float * MILK_RESTRICT in_ptr = MILK_ASSUME_ALIGNED(imgin->im->array.F);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
         for(uint_fast64_t ii = 0; ii < nelement; ii++)
         {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.F[ii]));
+            out_ptr[ii] =
+                (float) pt2function((double)(in_ptr[ii]));
         }
     }
     else if(datatype == _DATATYPE_DOUBLE)
