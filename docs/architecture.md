@@ -40,20 +40,20 @@ shared-memory subsystems:
 ```mermaid
 graph TD
     subgraph "/dev/shm  —  Shared Memory"
-        STREAMS["ImageStreamIO\n*.im.shm\n─────────\nZero-copy tensors\n(images, cubes)"]
-        FPS["FPS\nfps.*.shm\n─────────\nParameters, state,\ncommands"]
-        PINFO["processinfo\nproc.*.shm\n─────────\nHeartbeat, loop Hz,\nerror flags"]
+        STREAMS["ImageStreamIO<br/>*.im.shm<br/>─────────<br/>Zero-copy tensors<br/>(images, cubes)"]
+        FPS["FPS<br/>fps.*.shm<br/>─────────<br/>Parameters, state,<br/>commands"]
+        PINFO["processinfo<br/>proc.*.shm<br/>─────────<br/>Heartbeat, loop Hz,<br/>error flags"]
     end
 
-    CU1["Compute Unit A"] -- "read/write\nframes" --> STREAMS
-    CU2["Compute Unit B"] -- "read/write\nframes" --> STREAMS
+    CU1["Compute Unit A"] -- "read/write<br/>frames" --> STREAMS
+    CU2["Compute Unit B"] -- "read/write<br/>frames" --> STREAMS
     CU1 -- "sync params" --> FPS
     CU2 -- "sync params" --> FPS
     CU1 -- "heartbeat" --> PINFO
     CU2 -- "heartbeat" --> PINFO
 
     CLI["milk-cli"] -- "commands" --> FPS
-    TUI["milk-fpsCTRL\n(TUI dashboard)"] -- "monitor/edit" --> FPS
+    TUI["milk-fpsCTRL<br/>(TUI dashboard)"] -- "monitor/edit" --> FPS
     TUI -- "status" --> PINFO
     SCTRL["milk-streamCTRL"] -- "inspect" --> STREAMS
 
@@ -282,8 +282,8 @@ image processing, and optimization.
 ```mermaid
 graph TD
     subgraph "milk core"
-        ENGINE["Engine\n(ImageStreamIO, FPS,\nprocinfo, milkdata)"]
-        COREMODS["Core Modules\n(arith, memory,\ntools, iofits)"]
+        ENGINE["Engine<br/>(ImageStreamIO, FPS,<br/>procinfo, milkdata)"]
+        COREMODS["Core Modules<br/>(arith, memory,<br/>tools, iofits)"]
         CLI["CLIcore"]
     end
 
@@ -292,7 +292,7 @@ graph TD
         LINALG["linalgebra"]
         IMGPROC["image_*"]
         STAT["statistic"]
-        OTHER["info, ZernikePolyn,\nlinopt, kdtree, …"]
+        OTHER["info, ZernikePolyn,<br/>linopt, kdtree, …"]
     end
 
     subgraph "cacao (AO)"
