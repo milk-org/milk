@@ -16,7 +16,6 @@ set(SOURCEFILES
     delete_image.c
     delete_sharedmem_image.c
     delete_variable.c
-    fps_create.c
     fps_ID.c
     fps_list.c
     im3D_to_stream2D.c
@@ -74,7 +73,6 @@ set(INCLUDEFILES
     delete_image.h
     delete_sharedmem_image.h
     delete_variable.h
-    fps_create.h
     fps_ID.h
     fps_list.h
     im3D_to_stream2D.h
