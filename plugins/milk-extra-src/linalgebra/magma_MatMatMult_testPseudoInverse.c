@@ -217,14 +217,23 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     arraysizetmp[0] = N;
     arraysizetmp[1] = N;
-    create_image_ID(IDmatOut_name,
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &IDmatOut);
+    {
+        IMGID imgout =
+            imgid_make_from_name(
+                IDmatOut_name);
+        imgout.mdt->naxis = 2;
+        imgout.mdt->size[0] =
+            arraysizetmp[0];
+        imgout.mdt->size[1] =
+            arraysizetmp[1];
+        imgout.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout);
+        IDmatOut = imgout.ID;
+    }
 
     for(ii = 0; ii < N * N; ii++)
     {
