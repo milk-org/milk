@@ -29,6 +29,7 @@ EXCEPTIONS=(
     milk-fpsexec-fft-pup2foc
     milk-fpsexec-imgfmt-combineHDR
     milk-fpsexec-info-imagemon
+    milk-fpsexec-linalg-PCAmatch
     milk-fpsexec-linalg-SVD
     milk-fpsexec-linopt-lin1Dfit
     milk-fpsexec-linopt-linRM

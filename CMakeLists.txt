@@ -57,6 +57,8 @@ option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
 option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
 option(USE_READLINE "Enable readline support"          ON)
 option(USE_GSL      "Enable GSL for plugins"           ON)
+option(USE_STATIC_LTO
+    "Static-link standalone exes for full LTO" OFF)
 
 # Enforce dependency chain:
 # USE_CLI requires USE_COREMODS
@@ -327,6 +329,23 @@ elseif(USE_PGO STREQUAL "USE")
       -fprofile-use=${PGO_DIR}/shared)
 endif()
 
+# =======================================
+# STATIC LTO FOR STANDALONE EXECUTABLES
+# =======================================
+# When USE_STATIC_LTO is ON, standalone fpsexec
+# executables link static archives (.a) of all
+# milk libraries so that the LTO linker has full
+# cross-module visibility.
+#
+# Usage:
+#   cmake .. -DUSE_STATIC_LTO=ON
+#
+if(USE_STATIC_LTO)
+  message(STATUS "STATIC_LTO: standalones will"
+    " link static archives for full LTO")
+  add_link_options(-flto=auto)
+endif()
+
 
 # Set a default build type if none was specified
 set(default_build_type "Release")
@@ -353,8 +372,11 @@ add_compile_options($<$<COMPILE_LANGUAGE:C>:-march=native>)
 
 # link-time optimizer
 add_compile_options($<$<COMPILE_LANGUAGE:C>:-flto=auto>)
-add_compile_options($<$<COMPILE_LANGUAGE:C>:-fwhole-program>)
-#add_compile_options(-fwhole-program)
+# NOTE: -fwhole-program is applied only to standalone
+# executables (via MilkStandalone.cmake) where main()
+# is the sole entry point.  Applying it globally would
+# cause GCC to discard exported symbols from shared
+# libraries.
 # NOTE: -fstack-usage is incompatible with link-time optimizer
 #add_compile_options(-fstack-usage)
 
