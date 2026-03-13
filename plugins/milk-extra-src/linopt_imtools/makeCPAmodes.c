@@ -416,12 +416,13 @@ errno_t linopt_imtools_makeCPAmodes(
             }
             else if(frequency > fpowerlaw_maxf)
             {
-                fampl = pow(fpowerlaw_maxf / fpowerlaw_minf,  fpowerlaw);
+                fampl = powf(fpowerlaw_maxf / fpowerlaw_minf,
+                             fpowerlaw);
             }
             else
             {
                 float f1 = frequency / fpowerlaw_minf;
-                fampl = pow(f1, fpowerlaw);
+                fampl = powf(f1, fpowerlaw);
             }
 
 
@@ -525,12 +526,13 @@ errno_t linopt_imtools_makeCPAmodes(
         }
         else if(frequency > fpowerlaw_maxf)
         {
-            fampl = pow(fpowerlaw_maxf / fpowerlaw_minf,  fpowerlaw);
+            fampl = powf(fpowerlaw_maxf / fpowerlaw_minf,
+                         fpowerlaw);
         }
         else
         {
             float f1 = frequency / fpowerlaw_minf;
-            fampl = pow(f1, fpowerlaw);
+            fampl = powf(f1, fpowerlaw);
         }
 
         for(uint32_t ii = 0; ii < sizexy; ii++)

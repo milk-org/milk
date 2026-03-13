@@ -1819,7 +1819,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
         float * restrict ptr = imgin->im->array.F;
         float *out = imgout->im->array.F;
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -1831,7 +1831,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
         double * restrict ptr = imgin->im->array.D;
         double *out = imgout->im->array.D;
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -1841,7 +1841,7 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
     else
     {
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
         for(ii = 0; ii < nelement; ii++)
         {
@@ -1879,7 +1879,7 @@ int arith_image_function_1f_1_inplace_byID(long ID, double f1, double (*pt2funct
 {
     long ii; uint_fast64_t nelement = dcimg[ID].md[0].nelement;
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
     for(ii = 0; ii < nelement; ii++)
     {
@@ -1914,7 +1914,7 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
 
     uint_fast64_t nelement = imgin->md->nelement;
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
     for(ii = 0; ii < nelement; ii++)
     {
@@ -1955,7 +1955,7 @@ int arith_image_function_1ff_1_inplace_byID(long ID, double f1, double f2, doubl
 {
     long ii; uint_fast64_t nelement = dcimg[ID].md[0].nelement;
 #ifdef _OPENMP
-    #pragma omp parallel for if (nelement > OMP_NELEMENT_LIMIT)
+    #pragma omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)
 #endif
     for(ii = 0; ii < nelement; ii++)
     {
@@ -2148,7 +2148,7 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
             for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] * p1[i];
         } else {
             _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
-            for(uint64_t i=0; i<nelement; i++) po[i] = pow(p1[i], f1);
+            for(uint64_t i=0; i<nelement; i++) po[i] = powf(p1[i], (float)f1);
         }
     }
     else
