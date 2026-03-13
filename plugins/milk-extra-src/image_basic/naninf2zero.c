@@ -30,7 +30,7 @@ int basic_naninf2zero(const char *ID_name)
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            if(!(fabs(dcimg[ID].array.F[jj * naxes[0] + ii]) < HUGE_VAL))
+            if(!(fabsf(dcimg[ID].array.F[jj * naxes[0] + ii]) < HUGE_VAL))
             {
                 dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
                 cnt++;
