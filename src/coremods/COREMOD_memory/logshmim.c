@@ -621,8 +621,11 @@ static MILK_HOT errno_t compute_function()
                 dcfpsptr, ".nextcube");
     }
 
-    printf("Start loop\n");
-    fflush(stdout);
+    if(VERBOSE > 0)
+    {
+        printf("Start loop\n");
+        fflush(stdout);
+    }
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
@@ -630,8 +633,11 @@ static MILK_HOT errno_t compute_function()
         if(processinfo->triggerstatus
             == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT)
         {
-            printf("------------ TIMEOUT\n");
-            fflush(stdout);
+            if(VERBOSE > 0)
+            {
+                printf("------------ TIMEOUT\n");
+                fflush(stdout);
+            }
         }
         else
         {
@@ -693,8 +699,11 @@ static MILK_HOT errno_t compute_function()
                                 "%02d:%02d",
                                 uttimeStart->tm_hour,
                                 uttimeStart->tm_min);
-                        printf("hrmin: %s\n",
-                               hrminstring);
+                        if(VERBOSE > 0)
+                        {
+                            printf("hrmin: %s\n",
+                                   hrminstring);
+                        }
 
                         struct timespec
                             timenowStart;
@@ -744,11 +753,14 @@ static MILK_HOT errno_t compute_function()
                                 ASCIITIMEffilename);
                         }
 
-                        printf(
-                            "========================="
-                            " CONSTRUCT FILE NAMES"
-                            " =========================\n");
-                        fflush(stdout);
+                        if(VERBOSE > 0)
+                        {
+                            printf(
+                                "========================="
+                                " CONSTRUCT FILE NAMES"
+                                " =========================\n");
+                            fflush(stdout);
+                        }
                     }
 
                     {
@@ -887,14 +899,17 @@ static MILK_HOT errno_t compute_function()
         {
             if(frameindex > 0)
             {
-                printf(
-                    "SAVING %5ld FRAMES"
-                    " of BUFFER %d to"
-                    " FILE %s\n",
-                    (long) frameindex,
-                    buffindex,
-                    FITSffilename);
-                fflush(stdout);
+                if(VERBOSE > 0)
+                {
+                    printf(
+                        "SAVING %5ld FRAMES"
+                        " of BUFFER %d to"
+                        " FILE %s\n",
+                        (long) frameindex,
+                        buffindex,
+                        FITSffilename);
+                    fflush(stdout);
+                }
 
                 if(buffindex == 0)
                 {
@@ -1044,12 +1059,15 @@ static MILK_HOT errno_t compute_function()
                         }
                         savetime =
                             tmsg->timespan;
-                        printf(
-                            "\n **************"
-                            " MISSED  %ld"
-                            " frames\n",
-                            inimg.md->cnt0
-                            - cnt0start);
+                        if(VERBOSE > 0)
+                        {
+                            printf(
+                                "\n **************"
+                                " MISSED  %ld"
+                                " frames\n",
+                                inimg.md->cnt0
+                                - cnt0start);
+                        }
                     }
 
                     tmsg->writerRTprio =
