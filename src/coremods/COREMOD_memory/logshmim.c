@@ -841,7 +841,8 @@ static MILK_HOT errno_t compute_function()
                             + framesize
                             * frameindex;
 
-                        memcpy((void *) ptr1,
+                        __builtin_memcpy(
+                               (void *) ptr1,
                                (void *) ptr0,
                                framesize);
                     }
@@ -913,14 +914,16 @@ static MILK_HOT errno_t compute_function()
 
                 if(buffindex == 0)
                 {
-                    memcpy(imgbuff0.im->kw,
+                    __builtin_memcpy(
+                           imgbuff0.im->kw,
                            inimg.im->kw,
                            sizeof(IMAGE_KEYWORD)
                            * inimg.md->NBkw);
                 }
                 else
                 {
-                    memcpy(imgbuff1.im->kw,
+                    __builtin_memcpy(
+                           imgbuff1.im->kw,
                            inimg.im->kw,
                            sizeof(IMAGE_KEYWORD)
                            * inimg.md->NBkw);

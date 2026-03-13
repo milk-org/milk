@@ -171,7 +171,7 @@ static errno_t streamprocess(
 
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        outimg->im->array.F[ii] = sqrt(inimg->im->array.F[ii]);
+        outimg->im->array.F[ii] = sqrtf(inimg->im->array.F[ii]);
     }
 
     DEBUG_TRACE_FEXIT();
