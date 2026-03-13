@@ -53,21 +53,132 @@ libImageStreamIO.a  ────────┤   (full visibility)
 libCOREMODmemory_compute.a ─┘
 ```
 
-### 1.2. Benefits
+### 1.2. Why Static Linking Is Faster
 
-- **Cross-library inlining**: Hot functions in
-  `ImageStreamIO` (semaphore post, stream access)
-  can be inlined into your compute function
-- **Dead-code elimination**: Unreachable library
-  code is stripped from the binary
-- **Interprocedural constant propagation**: GCC
-  optimizes across function boundaries that were
-  previously opaque `.so` barriers
-- **Reduced dynamic linking overhead**: No PLT
-  (Procedure Linkage Table) indirection for
-  library calls
+Statically linked executables eliminate several
+layers of runtime overhead present in dynamically
+linked binaries:
 
-### 1.3. Usage
+**PLT/GOT elimination.** Every call to a shared
+library function goes through the Procedure Linkage
+Table (PLT) and Global Offset Table (GOT) — an
+indirect jump that the CPU branch predictor cannot
+fully resolve. In a tight real-time loop calling
+`ImageStreamIO_sempost()` or `fps_to_local()` at
+tens of kHz, these indirect jumps add measurable
+latency. Static linking replaces them with direct
+calls or inlined code.
+
+**No dynamic loader overhead.** At startup, `ld.so`
+must resolve all symbol relocations, map `.so`
+pages, and apply RELRO protections. Standalone
+executables with 14 shared libraries pay this cost
+on every launch. A statically linked binary is
+ready to execute immediately — important for rapid
+fault recovery in production AO loops.
+
+**Improved branch prediction.** Direct calls from
+static linking have fixed target addresses known at
+link time. The CPU's branch target buffer (BTB) can
+predict these perfectly after the first execution,
+whereas PLT stubs pollute the BTB with indirect
+entries.
+
+### 1.3. How LTO Keeps Static Binaries Small
+
+A naïve static link pulls in **every** object file
+from each `.a` archive — even functions the
+executable never calls. This would bloat binaries
+unacceptably. LTO solves this:
+
+**Dead-code elimination.** With `-flto=auto`, GCC
+sees the entire program (executable + all static
+archives) as a single optimization unit. It traces
+all reachable call paths from `main()` and
+**discards every function, variable, and data
+structure that is not reachable**. Entire
+translation units that are unused vanish from the
+final binary.
+
+**Cross-module inlining + elimination.** LTO first
+inlines small hot functions across library
+boundaries (e.g., `ImageStreamIO_sempost()` into
+your compute loop). After inlining, the original
+library function may have zero remaining callers —
+LTO then eliminates it entirely. The net effect:
+the binary contains **only the machine code that
+actually executes**, inlined at the call sites where
+it's needed.
+
+**Measured example:**
+
+| Binary | Dynamic | Static+LTO | Ratio |
+|--------|---------|-----------|-------|
+| `arith-crop2D` | 52 KB (.so deps: ~2.4 MB) | 173 KB (self-contained) | 3.3× larger on disk |
+
+The static binary is 3.3× larger than the dynamic
+stub, but **far smaller than the total code footprint
+of 14 shared libraries** (2.4 MB mapped in
+aggregate). LTO stripped the vast majority of
+library code that `crop2D` never calls.
+
+### 1.4. Why Small Binaries Run Faster
+
+Modern CPUs execute code from the **instruction
+cache** (L1i), typically 32–64 KB. When the
+executable's hot path fits in icache, the CPU never
+stalls waiting for instruction fetches from L2/L3:
+
+```
+┌──────────────────────────────────────┐
+│ L1 Instruction Cache (32-64 KB)      │
+│                                      │
+│  Dynamic link:                       │
+│  fpsexec code + PLT stubs            │
+│  + scattered .so code pages          │
+│  → icache thrashing, frequent misses │
+│                                      │
+│  Static LTO:                         │
+│  fpsexec code + inlined hot paths    │
+│  → compact, sequential, cache-warm   │
+└──────────────────────────────────────┘
+```
+
+**Dynamic linking scatters hot code.** The compute
+function lives in the executable, but
+`sem_post()` is in `libpthread.so`,
+`ImageStreamIO_sempost()` is in
+`libImageStreamIO.so`, and `fps_to_local()` is in
+`libmilkfps.so`. Each call jumps to a different
+memory region, evicting other hot code from icache.
+
+**Static LTO consolidates hot code.** After
+inlining, the compute function, semaphore
+operations, and FPS parameter access are all
+compiled into a single contiguous code region. The
+CPU's instruction prefetcher can stream this code
+sequentially, and the entire hot loop fits in L1i.
+
+> [!IMPORTANT]
+> For real-time AO loops running at 1–10 kHz,
+> icache pressure is the dominant performance
+> bottleneck after algorithmic optimization.
+> Reducing the hot-path footprint from scattered
+> `.so` pages to a compact inlined binary is one
+> of the most impactful optimizations available.
+
+### 1.5. Summary: Static LTO Benefits
+
+| Benefit | Mechanism | Impact |
+|---------|----------|--------|
+| No PLT indirection | Direct calls replace GOT lookups | Lower per-call latency |
+| Cross-library inlining | GCC inlines across `.a` boundaries | Eliminates call overhead entirely |
+| Dead-code elimination | Unreachable code removed at link | Smaller binary, less icache pressure |
+| Constant propagation | GCC propagates constants across modules | Simpler generated code |
+| Compact hot path | Inlined code is sequential in memory | L1i cache stays warm |
+| Zero startup overhead | No `ld.so` symbol resolution | Faster process launch |
+
+### 1.6. Usage
 
 ```bash
 $ mkdir _build_lto && cd _build_lto
@@ -80,7 +191,7 @@ $ make -j$(nproc) && sudo make install
 > executables. Shared libraries and the `milk-cli`
 > binary are unchanged.
 
-### 1.4. Verifying Static Linking
+### 1.7. Verifying Static Linking
 
 Check that a standalone has minimal dynamic
 dependencies:
