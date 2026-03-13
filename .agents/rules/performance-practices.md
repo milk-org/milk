@@ -77,6 +77,10 @@ non-GCC compilers.
   - other → `powf(x, exp)` (not `pow()`)
 - Use `powf()` instead of `pow()` for float data
   — `pow()` promotes to double and returns double.
+- **Integer power-of-2**: never call `pow(2, n)`
+  for integer `n` — use `1 << n` instead.
+  `pow()` is a floating-point transcendental; the
+  bit-shift is exact and orders of magnitude faster.
 
 ## Memory Allocation
 
@@ -105,7 +109,23 @@ non-GCC compilers.
 
 ## Struct Copying & Data Movement
 
-- Replace manual struct copies or small array copies in hot paths with `__builtin_memcpy(dest, src, size)`. This allows GCC to emit optimal inline move instructions instead of calling libc `memcpy` or generating sub-optimal loop code.
+- Replace manual struct copies or small array copies
+  in hot paths with `__builtin_memcpy(dest, src,
+  size)`. This allows GCC to emit optimal inline
+  move instructions instead of calling libc `memcpy`
+  or generating sub-optimal loop code.
+- In stream-copy fallback paths that handle any
+  datatype, copy via `.raw` (not `.F` or other typed
+  union members) and use `__builtin_memcpy`:
+  ```c
+  __builtin_memcpy(
+      imgout.im->array.raw,
+      imgin.im->array.raw,
+      byte_copy_size);
+  ```
+  Accessing `.F` for non-float streams is a latent
+  type-aliasing correctness bug in addition to being
+  a missed optimization opportunity.
 
 ## Datatype Dispatch
 
