@@ -57,6 +57,10 @@ non-GCC compilers.
 - Keep inner-loop arithmetic in `float` when
   the data is `float` — do not mix precisions
   unnecessarily.
+- Use `sqrtf()` not `sqrt()` for float data;
+  `fabsf()` not `fabs()`; `floorf()` not `floor()`;
+  `ceilf()` not `ceil()`. Each double variant
+  promotes its argument and returns double.
 
 ## Math & Transcendentals
 
