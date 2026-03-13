@@ -171,8 +171,20 @@ errno_t linopt_compute_1Dfit(const char *fnamein,
         {
             for(uint_fast32_t ii = 0; ii < NBpt; ii++)
             {
-                dcimg[IDmodes].array.F[m * NBpt + ii] =
-                    pow(xarray[ii], 1.0 * m);
+                float v;
+                if(m == 0)
+                {
+                    v = 1.0f;
+                }
+                else if(m == 1)
+                {
+                    v = xarray[ii];
+                }
+                else
+                {
+                    v = powf(xarray[ii], (float)m);
+                }
+                dcimg[IDmodes].array.F[m * NBpt + ii] = v;
             }
         }
         break;

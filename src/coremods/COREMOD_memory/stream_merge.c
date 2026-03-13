@@ -162,7 +162,7 @@ static MILK_HOT errno_t compute_function()
         img_out.md->write = TRUE;
         for(int kk = 0; kk < n_input; kk++)
         {
-            memcpy(
+            __builtin_memcpy(
                 img_out.im->array.raw
                 + offset_bytes[kk],
                 img_in_arr[kk].im->array.raw,

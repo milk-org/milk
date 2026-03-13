@@ -133,9 +133,9 @@ static MILK_HOT errno_t compute_function()
         }
         else
         {
-            memcpy(
-                imgout.im->array.F,
-                imgin.im->array.F,
+            __builtin_memcpy(
+                imgout.im->array.raw,
+                imgin.im->array.raw,
                 byte_copy_size);
         }
 

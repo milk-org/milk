@@ -718,8 +718,8 @@ int basic_translate(
     n0 = (int)((log10(naxes[0]) / log10(2)) + 0.01);
     n1 = (int)((log10(naxes[0]) / log10(2)) + 0.01);
 
-    if((n0 == n1) && (naxes[0] == (int) pow(2, n0))
-            && (naxes[1] == (int) pow(2, n1)))
+    if((n0 == n1) && (naxes[0] == (1 << n0))
+            && (naxes[1] == (1 << n1)))
     {
         create_2Dimage_ID("zero_tmp", naxes[0], naxes[1]);
         pupfft(ID_name, "zero_tmp", "out_transl_re_tmp", "out_transl_im_tmp", "-reim");
@@ -761,7 +761,7 @@ int basic_translate(
         basic_add(ID_name, ID_name, "tmp1t", naxes[0], 0);
         basic_add("tmp1t", "tmp1t", "tmp2t", 0, naxes[1]);
         delete_image_ID("tmp1t");
-        basic_extract("tmp2t", "tmp3t", pow(2, n0 + 1), pow(2, n1 + 1), 0, 0);
+        basic_extract("tmp2t", "tmp3t", (1 << (n0 + 1)), (1 << (n1 + 1)), 0, 0);
         delete_image_ID("tmp2t");
         ID = image_ID("tmp3t", dcimg, dcnimg);
         naxes[0] = dcimg[ID].md[0].size[0];
