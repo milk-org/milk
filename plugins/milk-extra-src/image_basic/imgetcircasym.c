@@ -211,7 +211,7 @@ IMAGE_BASIC_get_circasym_component_byID(
         for(uint32_t ii = 0;
             ii < naxes[0]; ii++)
         {
-            float distance = sqrt(
+            float distance = sqrtf(
                 (1.0 * ii - xcenter)
                 * (1.0 * ii - xcenter)
                 + (1.0 * jj - ycenter)
