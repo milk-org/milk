@@ -141,7 +141,7 @@ endif()
 
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
-install(FILES fps.h fps_internal.h fps_globals.h fps_cli_binding.h fps_cli_function.h fps_cli_function_registry.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
+install(FILES fps.h fps_types.h fps_internal.h fps_globals.h fps_cli_binding.h fps_cli_function.h fps_cli_function_registry.h ../libprocessinfo/timeutils.h DESTINATION include/libfps)
 
 if(USE_NCURSES AND USE_CLI)
 # ==========================================
