@@ -25,7 +25,7 @@ For a deep dive into how `milk` components interact at a system level, these doc
 - [**Process Info (`procinfo`)**](procinfo.md): Telemetry, heartbeat monitoring, and profiling.
 - [**Debugging**](debugging.md): GDB, procinfo diagnostics, tmux log inspection, common failure patterns.
 - [**Performance Tuning**](performance.md): CPU pinning, RT scheduling, shared memory, GPU acceleration.
-- [**Profile-Guided Optimization (PGO)**](pgo.md): Build with runtime profiles for 10–30% speedup.
+- [**PGO & LTO Optimization**](pgo.md): Profile-guided optimization + static LTO for 15–40% speedup.
 
 ## 🛠️ Developer Guides
 
