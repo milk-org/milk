@@ -10,7 +10,8 @@
 
 #include "../cmdsettings.h"
 
-#include "fps.h"
+#include "fps_types.h"
+#include "milkDebugTools.h"
 
 // testing argument type for command line interface
 // CLI ARGS consist of two 16-bit fields
@@ -40,6 +41,12 @@
 
 // image/stream types
 #define CLIARG_STREAM FPTYPE_STREAMNAME // stream
+
+// Convenience fpflag defaults for CLICMDARGDEF initializers
+#define CLIARG_VISIBLE_DEFAULT FPFLAG_DEFAULT_INPUT
+#define CLIARG_HIDDEN_DEFAULT \
+    (FPFLAG_DEFAULT_INPUT & ~FPFLAG_VISIBLE)
+#define CLIARG_OUTPUT_DEFAULT  FPFLAG_DEFAULT_OUTPUT
 
 
 #define STRINGMAXLEN_FPSCLIARG_TAG       100

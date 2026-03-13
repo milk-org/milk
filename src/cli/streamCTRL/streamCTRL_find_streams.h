@@ -6,6 +6,8 @@
 #ifndef _STREAMCTRL_FINDSTREAMS_H
 #define _STREAMCTRL_FINDSTREAMS_H
 
+#include "streamCTRL_TUI.h"
+
 
 int find_streams(
     STREAMINFO *streaminfo,
