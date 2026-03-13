@@ -1994,7 +1994,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
     { \
         double *p1 = imgin->im->array.D; \
         double *po = imgout->im->array.D; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = funcname(p1[i]); \
     } \
     else \
@@ -2083,7 +2083,7 @@ errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *
     { \
         double *p1 = imgin->im->array.D; \
         double *po = imgout->im->array.D; \
-        _Pragma("omp parallel for if (nelement > OMP_NELEMENT_LIMIT)") \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
         for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] op f1; \
     } \
     else \

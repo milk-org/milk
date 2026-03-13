@@ -171,7 +171,7 @@ errno_t linopt_imtools_makeCPAmodes(
         for(uint32_t jj = 0; jj < sizey; jj++)
         {
             float y = (1.0 * jj - ycenter) / radius;
-            float r = sqrt(x * x + y * y);
+            float r = sqrtf(x * x + y * y);
             imgx.im->array.F[jj * sizex + ii] = x;
             imgy.im->array.F[jj * sizex + ii] = y;
             imgr.im->array.F[jj * sizex + ii] = r;
@@ -253,7 +253,7 @@ errno_t linopt_imtools_makeCPAmodes(
                     float dx = x0 - maskx[mpix];
                     float dy = y0 - masky[mpix];
                     float dr2 = dx * dx + dy * dy;
-                    float dr = sqrt(dr2);
+                    float dr = sqrtf(dr2);
 
                     if(dr < imgpixdist.im->array.F[ii0])
                     {
@@ -279,7 +279,7 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                float CPAr = sqrtf(CPAx * CPAx + CPAy * CPAy);
                 if(CPAr > 0.001) // excluding piston from array
                 {
                     if((CPAr > rCPAmin) && (CPAr < rCPAmax))
@@ -335,7 +335,7 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                float CPAr = sqrtf(CPAx * CPAx + CPAy * CPAy);
                 if(CPAr > 0.001) // excluding piston from array
                 {
                     if((CPAr > rCPAmin) && (CPAr < rCPAmax))
@@ -406,7 +406,7 @@ errno_t linopt_imtools_makeCPAmodes(
         {
             float CPAx = CPAxarray[k1];
             float CPAy = CPAyarray[k1];
-            float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
+            float frequency = sqrtf(CPAx * CPAx + CPAy * CPAy);
 
 
             float fampl = 1.0;
@@ -517,7 +517,7 @@ errno_t linopt_imtools_makeCPAmodes(
         float CPAy = CPAyarray[k1];
         DEBUG_TRACEPOINT("    %ld %f %f", k1, CPAx, CPAy);
 
-        float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
+        float frequency = sqrtf(CPAx * CPAx + CPAy * CPAy);
 
         float fampl = 1.0;
         if(frequency < fpowerlaw_minf)
@@ -550,7 +550,7 @@ errno_t linopt_imtools_makeCPAmodes(
                 if(MASKext == 1)
                 {
                     float pdist = imgpixdist.im->array.F[ii];
-                    float afact0 = 1.0 + extroffset - pdist * sqrt(CPAx * CPAx + CPAy * CPAy) *
+                    float afact0 = 1.0 + extroffset - pdist * sqrtf(CPAx * CPAx + CPAy * CPAy) *
                                    M_PI / extrfactor;
                     if(afact0 > 1.0)
                     {
