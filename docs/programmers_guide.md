@@ -171,12 +171,34 @@ Compute unit source files use conditional includes to support both CLI and stand
 </details>
 
 <details>
-<summary><b>Library Link Patterns</b></summary>
+<summary><b>Library Link Patterns — Dual Architecture</b></summary>
 
-Standalone executables link **`_compute` variants** of COREMOD libraries (no CLI code).
-By default, they do **not** link their module's shared library (`${LIBNAME}`), avoiding
-a transitive dependency on CLIcore. If a standalone needs module-lib symbols, add
-`target_link_libraries(... PUBLIC ${LIBNAME})` explicitly.
+The build system maintains two library variants
+for each module:
+
+| Variant | Suffix | Compiled with | Linked by |
+|---------|--------|--------------|----------|
+| Full | `.so` | *(default)* | `milk-cli`, module `.so` | 
+| Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones |
+
+`_compute` variants contain pure computation code
+with no CLI registration. This keeps standalones
+free of CLIcore dependencies.
+
+When `USE_STATIC_LTO=ON`, a third variant is
+built — static archives (`.a`) of the same
+compute-only code:
+
+| Variant | File | Purpose |
+|---------|------|---------|
+| Dynamic compute | `_compute.so` | Default fpsexec link |
+| Static compute | `_compute.a` | LTO-optimized fpsexec link |
+
+With static archives, GCC's LTO can inline and
+optimize across all library boundaries. See
+[PGO & LTO](pgo.md) for details.
+
+**CMake standalone helpers:**
 
 | CMake function | Links | Use for |
 |----------------|-------|---------|
@@ -186,7 +208,8 @@ a transitive dependency on CLIcore. If a standalone needs module-lib symbols, ad
 
 **💡 Tip:** Use `_compute` variants of libraries
 (e.g. `milkstatistic_compute`) when linking standalone
-executables. The `_compute` variants never pull in CLIcore.
+executables. The `_compute` variants never pull in
+CLIcore.
 
 </details>
 

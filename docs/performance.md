@@ -202,6 +202,8 @@ See also: [Valkey Integration](valkey.md)
 | Enable CUDA | `cmake .. -DUSE_CUDA=ON` |
 | Vec missed report | `cmake .. -DVEC_REPORT=ON` |
 | PGO build | `cmake .. -DUSE_PGO=GENERATE` |
+| Static LTO build | `cmake .. -DUSE_STATIC_LTO=ON` |
+| PGO + Static LTO | `-DUSE_PGO=USE -DUSE_STATIC_LTO=ON` |
 | Valkey low-latency | `sysctl -w net.ipv4.tcp_nodelay=1` |
 
 ---

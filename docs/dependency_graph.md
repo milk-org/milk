@@ -473,6 +473,10 @@ code (`MILK_NO_CLI`). Standalone executables do **not** link
 `${LIBNAME}` by default. Currently **76 of 90** standalones
 are CLIcore-free.
 
+When `USE_STATIC_LTO=ON`, static archive (`.a`) variants
+of these libraries are built and linked instead, enabling
+cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
+
 </details>
 
 ---
