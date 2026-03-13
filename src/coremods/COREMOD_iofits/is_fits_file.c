@@ -7,6 +7,8 @@
  * @file    is_fits_file.c
  */
 
+#include <string.h>
+
 #include "COREMOD_iofits_common.h"
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"

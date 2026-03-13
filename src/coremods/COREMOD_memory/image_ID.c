@@ -3,6 +3,8 @@
  * @brief   find image ID(s) from name
  */
 
+#include <string.h>
+
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
 #else

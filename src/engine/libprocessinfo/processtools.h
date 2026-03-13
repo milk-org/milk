@@ -19,12 +19,8 @@
 
 #include <sched.h>
 #include <semaphore.h>
-#include <signal.h>
-#include <stdint.h> 
-#include <stdio.h>
-#include <stdlib.h>
+#include <stdint.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "processinfo.h"
 #include "processtools_trigger.h"

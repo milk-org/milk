@@ -23,17 +23,10 @@
 #else /* full CLI mode */
 
 
-#include <errno.h>
-#include <sched.h>
-#include <semaphore.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "config.h"
 
@@ -46,7 +39,7 @@
 #include <fps.h>
 #include <processtools.h>
 #include "timeutils.h"
-#include "streamCTRL/streamCTRL_TUI.h"
+
 
 #include "CLIcore_checkargs.h"
 #include "CLIcore_help.h"
