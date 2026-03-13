@@ -48,6 +48,7 @@ non-GCC compilers.
 - Use `MILK_FLATTEN` on small wrapper functions
   that dispatch to several helpers. Avoid on
   large functions (icache bloat).
+- **Inline Small Helpers**: Refactor small, heavily-called inner-loop operations (like single-pixel evaluators) into `static inline` functions to completely eliminate call overhead.
 
 ## Float vs Double
 
@@ -62,6 +63,7 @@ non-GCC compilers.
 - Avoid computing expensive scalar transcendentals 
   (e.g. `sinf()`, `cosf()`, `expf()`) inside tight
   SIMD or OpenMP inner loops if possible.
+- **Complex Math**: Replace polar coordinate conversions (`sqrt()` + `atan2()`) with direct algebraic alternatives (e.g., conjugate multiplication for complex division) to eliminate transcendental overhead in tight loops.
 - If a few distinct angles or phases are used repeatedly,
   pre-compute these values during initialization into a
   static or `MILK_ALIGNED` array (LUT) and replace the
@@ -150,6 +152,10 @@ non-GCC compilers.
   architecture handles this automatically via the
   `procinfo->CPUmask` attribute. Leverage this existing
   system when binding streams to isolated processing cores.
+
+## IPC & Synchronization
+
+- **Semaphores**: Avoid recursive lock/unlock/post operations on semaphores within high-frequency IPC loops. Batch post operations or iterate across reader arrays natively to minimize kernel context switches.
 
 ## What NOT to Do
 
