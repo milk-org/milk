@@ -70,8 +70,8 @@ static void imrotate_step(
 {
     uint32_t nx = imgin->md[0].size[0];
     uint32_t ny = imgin->md[0].size[1];
-    float c = cos(angle);
-    float s = sin(angle);
+    float c = cosf(angle);
+    float s = sinf(angle);
     for (uint32_t jj = 0; jj < ny; jj++) {
         for (uint32_t ii = 0;
              ii < nx; ii++)

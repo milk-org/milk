@@ -329,7 +329,7 @@ errno_t compute_SVD(
 
             memcpy(ptr1, ptr0, sizeof(float)*Ndim);
 
-            imgS->im->array.F[k] = sqrt(d[Ndim - k - 1]);
+            imgS->im->array.F[k] = sqrtf(d[Ndim - k - 1]);
         }
 
 

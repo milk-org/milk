@@ -116,7 +116,7 @@ int PIDcollectSystemInfo(PROCESSINFODISP *pinfodisp, int mode)
                 
                 // 1s averaged CPU usage using Exponential Moving Average
                 float tau = 1.0;
-                float alpha = 1.0 - exp(-dt / tau);
+                float alpha = 1.0f - expf(-dt / tau);
                 pinfodisp->subprocCPUloadarray_timeaveraged[0] = (1.0 - alpha) * pinfodisp->subprocCPUloadarray_timeaveraged[0] + alpha * instantaneous_cpu;
 
                 pid_track[slot].prev_total_time = total_time;
