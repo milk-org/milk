@@ -2838,7 +2838,7 @@ imageID make_hexsegpupil(
             for(ii = 0; ii < size; ii++)
                 for(jj = 0; jj < size; jj++)
                 {
-                    if(fabs(dcimg[ID].array.F[jj * size + ii] -
+                    if(fabsf(dcimg[ID].array.F[jj * size + ii] -
                             (seg + 1.0)) < 0.01)
                     {
                         dcimg[IDif].array.F[kk * size2 + jj * size + ii] =
@@ -2857,7 +2857,7 @@ imageID make_hexsegpupil(
             for(ii = 0; ii < size; ii++)
                 for(jj = 0; jj < size; jj++)
                 {
-                    if(fabs(dcimg[ID].array.F[jj * size + ii] -
+                    if(fabsf(dcimg[ID].array.F[jj * size + ii] -
                             (seg + 1.0)) < 0.01)
                     {
                         vx = 1.0 * ii - xc;
@@ -3158,8 +3158,8 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
         {
             float x     = 1.0 * (1.0 * ii - 0.5 * naxes[0]) / puprad;
             float y     = 1.0 * (1.0 * jj - 0.5 * naxes[1]) / puprad;
-            float r0    = sqrt(x * x + y * y);
-            float TEM00 = exp(-r0 * r0);
+            float r0    = sqrtf(x * x + y * y);
+            float TEM00 = expf(-r0 * r0);
 
             fluxtot += TEM00 * TEM00;
             dcimg[IDtem00].array.F[jj * naxes[0] + ii] = TEM00;
@@ -3199,7 +3199,7 @@ imageID make_FiberCouplingOverlap(const char *ID_name)
                     float dx = x - xcent;
                     float dy = y - ycent;
 
-                    float r = sqrt(dx * dx + dy * dy);
+                    float r = sqrtf(dx * dx + dy * dy);
 
                     float TEM00 =
                         dcimg[IDtem00].array.F[jj0 * naxes[0] + ii0];
@@ -3448,7 +3448,7 @@ imageID make_galaxy(const char *ID_name,
         x   = cos(S_PA) * (ii - naxes[0] / 2) + sin(S_PA) * (jj - naxes[1] / 2);
         y = -sin(S_PA) * (ii - naxes[0] / 2) + cos(S_PA) * (jj - naxes[1] / 2);
         r = sqrt(aob * x * x + boa * y * y);
-        dcimg[ID].array.F[jj * naxes[0] + ii] = S_L0 * exp(-r / S_radius);
+        dcimg[ID].array.F[jj * naxes[0] + ii] = S_L0 * expf(-r / S_radius);
         aob                                        = 1.0 / (1.0 - E_ell);
         boa                                        = 1.0 - E_ell;
         x = cos(E_PA) * (ii - naxes[0] / 2) + sin(E_PA) * (jj - naxes[1] / 2);
