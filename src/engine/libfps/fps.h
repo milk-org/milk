@@ -40,25 +40,17 @@ uint16_t function_parameter_FPCONFexit(
 uint16_t function_parameter_RUNexit(
     FUNCTION_PARAMETER_STRUCT *fps);
 
-#include "fps_add_entry.h"
-#include "fps_SetParamCLIindex.h"
-#include "fps_print_info.h"
-#include "fps_checkparameter.h"
-#include "fps_connect.h"
-#include "fps_connectExternalFPS.h"
-#include "fps_disconnect.h"
+/* Core FPS operations (connect, params, entries) */
+#include "fps_core.h"
+
+/* Additional API sub-headers */
 #include "fps_execFPScmd.h"
 #include "fps_GetFileName.h"
 #include "fps_getFPSargs.h"
-#include "fps_GetParamIndex.h"
-#include "fps_GetTypeString.h"
 #include "fps_load.h"
 #include "fps_loadstream.h"
 #include "fps_outlog.h"
-#include "fps_paramvalue.h"
 // #include "fps_printlist.h" // Removed
-#include "fps_PrintParameterInfo.h"
-#include "fps_printparameter_valuestring.h"
 #include "fps_save2disk.h"
 #include "fps_scan.h"
 #include "fps_shmdirname.h"

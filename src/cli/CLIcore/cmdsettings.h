@@ -7,6 +7,11 @@
 #ifndef CMDSETTINGS_H
 #define CMDSETTINGS_H
 
+#include <stdint.h>
+#include <time.h>
+#include <sched.h>
+#include "ImageStreamIO/ImageStruct.h"
+
 // command supports FPS mode
 #define CLICMDFLAG_FPS 0x00000001
 
