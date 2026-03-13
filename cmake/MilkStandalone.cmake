@@ -39,6 +39,32 @@ set(_MILK_STANDALONE_LIBS
     -Wl,--allow-shlib-undefined
 )
 
+# Static link set for full LTO optimization
+# Used when USE_STATIC_LTO=ON.  Static archives
+# give the LTO linker full cross-module visibility.
+#
+# --start-group / --end-group resolves circular
+# references between the archives (e.g. COREMOD
+# functions calling FPS functions and vice versa).
+if(USE_STATIC_LTO)
+  set(_MILK_STANDALONE_STATIC_LIBS
+      -Wl,--start-group
+      milkCOREMODmemory_compute_static
+      milkCOREMODtools_compute_static
+      milkCOREMODarith_compute_static
+      milkCOREMODiofits_compute_static
+      milkfpsStandalone_static
+      milkfps_static
+      milkdata_static
+      milkprocessinfo_static
+      ImageStreamIO_static
+      -Wl,--end-group
+      ${CFITSIO_LIBRARIES}
+      m rt pthread
+      -Wl,--allow-shlib-undefined
+  )
+endif()
+
 
 # ── milk_pgo_target ─────────────────────────────
 #
@@ -64,6 +90,23 @@ function(milk_pgo_target EXE_NAME)
 endfunction()
 
 
+# ── milk_lto_target ─────────────────────────────
+#
+# Applies LTO-specific link options to a standalone
+# executable.  -flto=auto is passed to the linker
+# so it processes LTO IR in the static archives.
+#
+# Only applied when USE_STATIC_LTO is ON.
+# Called internally by add_*_standalone().
+#
+function(milk_lto_target EXE_NAME)
+    if(USE_STATIC_LTO)
+        target_link_options(${EXE_NAME} PRIVATE
+            -flto=auto)
+    endif()
+endfunction()
+
+
 # ── add_milk_standalone ─────────────────────────
 #
 # Creates a milk-fpsexec-<name> standalone binary.
@@ -78,11 +121,28 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
         "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME}
         PRIVATE FPS_STANDALONE)
+    if(USE_STATIC_LTO)
+        # fps_standalone_data.c provides stub symbols
+        # that clash with real implementations in the
+        # static archives.  Compiling it with
+        # MILK_NO_CLI skips those stubs.
+        set_source_files_properties(
+            "${FPS_STANDALONE_DATA_SRC}"
+            TARGET_DIRECTORY ${EXE_NAME}
+            PROPERTIES COMPILE_DEFINITIONS
+                "FPS_STANDALONE_SKIP_STUBS")
+    endif()
     target_include_directories(${EXE_NAME}
         PRIVATE ${PROJECT_SOURCE_DIR}/src)
-    target_link_libraries(${EXE_NAME}
-        PUBLIC ${_MILK_STANDALONE_LIBS})
+    if(USE_STATIC_LTO)
+        target_link_libraries(${EXE_NAME}
+            PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
+    else()
+        target_link_libraries(${EXE_NAME}
+            PUBLIC ${_MILK_STANDALONE_LIBS})
+    endif()
     milk_pgo_target(${EXE_NAME})
+    milk_lto_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -102,13 +162,26 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
         "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME}
         PRIVATE FPS_STANDALONE)
+    if(USE_STATIC_LTO)
+        set_source_files_properties(
+            "${FPS_STANDALONE_DATA_SRC}"
+            TARGET_DIRECTORY ${EXE_NAME}
+            PROPERTIES COMPILE_DEFINITIONS
+                "FPS_STANDALONE_SKIP_STUBS")
+    endif()
     target_include_directories(${EXE_NAME}
         PRIVATE
         ${PROJECT_SOURCE_DIR}/src
         ${PROJECT_SOURCE_DIR}/plugins/milk-extra-src)
-    target_link_libraries(${EXE_NAME}
-        PUBLIC ${_MILK_STANDALONE_LIBS})
+    if(USE_STATIC_LTO)
+        target_link_libraries(${EXE_NAME}
+            PUBLIC ${_MILK_STANDALONE_STATIC_LIBS})
+    else()
+        target_link_libraries(${EXE_NAME}
+            PUBLIC ${_MILK_STANDALONE_LIBS})
+    endif()
     milk_pgo_target(${EXE_NAME})
+    milk_lto_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 

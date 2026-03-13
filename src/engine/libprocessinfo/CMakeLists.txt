@@ -64,6 +64,24 @@ set(SOURCES
     target_link_libraries(milkprocessinfo PUBLIC ImageStreamIO milkdata rt pthread m)
         
     install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
+
+# Static archive for standalone LTO builds
+if(USE_STATIC_LTO)
+  add_library(milkprocessinfo_static STATIC ${SOURCES})
+  set_target_properties(milkprocessinfo_static
+      PROPERTIES OUTPUT_NAME milkprocessinfo)
+  target_include_directories(milkprocessinfo_static
+      PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+      $<INSTALL_INTERFACE:include>)
+endif()
     
 # Add milk-procinfo-help executable
 add_executable(milk-procinfo-help milk-procinfo-help.c)
