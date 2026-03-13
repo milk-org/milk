@@ -11,15 +11,9 @@
 #ifndef MILKDATA_H
 #define MILKDATA_H
 
-#include <errno.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "milkDebugTools.h"
 
