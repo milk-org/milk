@@ -201,3 +201,9 @@ non-GCC compilers.
   magnitude.
 - Do not use standalone `if` for datatype
   dispatch — always use `else if` chains.
+- Do not place `printf()` or `fflush()` inside
+  `#pragma omp parallel` regions. In a parallel
+  region all threads execute the call,
+  causing N simultaneous kernel writes.
+  Guard with `if(VERBOSE > 0)` and/or
+  `#pragma omp master`.
