@@ -167,6 +167,8 @@ install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 add_milk_standalone(linalg-gramschmidt GramSchmidt.c)
 add_milk_standalone(linalg-MVMextract MVMextractModes.c)
 add_milk_standalone(linalg-PCAmatch PCAmatch.c)
+target_link_libraries(milk-fpsexec-linalg-PCAmatch
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-Qexpand Qexpand.c)
 add_milk_standalone(linalg-SGEMM SGEMM.c)
 target_link_libraries(milk-fpsexec-linalg-SGEMM PUBLIC ${LIBNAME})
