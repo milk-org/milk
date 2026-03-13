@@ -168,6 +168,9 @@ non-GCC compilers.
 - Do not place `printf()`, `fprintf()`, or
   `fflush()` in compute hot paths. Guard
   diagnostic output with `if (VERBOSE > 0)`.
+  Even rare events (timeouts, frame saves) should
+  be guarded — the branch predictor will treat
+  them as free when VERBOSE is 0.
 - Do not write naive loops for matrix
   operations when BLAS is available — the
   performance difference is orders of
