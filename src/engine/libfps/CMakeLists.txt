@@ -95,6 +95,41 @@ target_include_directories(milkfpsStandalone PUBLIC
 target_link_libraries(milkfpsStandalone PUBLIC ${LIBNAME} milkdata)
 install(TARGETS milkfpsStandalone EXPORT milkTargets DESTINATION lib)
 
+# Static archives for standalone LTO builds
+if(USE_STATIC_LTO)
+  add_library(${LIBNAME}_static STATIC ${SOURCEFILES})
+  set_target_properties(${LIBNAME}_static
+      PROPERTIES OUTPUT_NAME ${LIBNAME})
+  target_include_directories(${LIBNAME}_static PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+      $<INSTALL_INTERFACE:include>)
+
+  add_library(milkfpsStandalone_static STATIC
+      ${SOURCEFILES_STANDALONE})
+  set_target_properties(milkfpsStandalone_static
+      PROPERTIES OUTPUT_NAME milkfpsStandalone)
+  target_compile_definitions(milkfpsStandalone_static
+      PRIVATE FPS_STANDALONE)
+  target_include_directories(milkfpsStandalone_static
+      PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+      $<INSTALL_INTERFACE:include>)
+endif()
+
 # ==========================================
 # milkfpsCLI — CLI-dependent FPS framework
 # Links to both milkfps and CLIcore.

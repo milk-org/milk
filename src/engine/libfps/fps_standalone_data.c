@@ -30,8 +30,14 @@
  */
 DATA __attribute__((used)) data;
 
-/* CLIPID is normally provided by CLIcore.c;\n * standalone builds need their own storage.\n * When MILK_NO_CLI is defined, CLIcore_standalone.h\n * provides this as a static variable.\n */
-#ifndef MILK_NO_CLI
+/* CLIPID is normally provided by CLIcore.c;
+ * standalone builds need their own storage.
+ *
+ * Skip when FPS_STANDALONE_SKIP_STUBS is set
+ * (static LTO builds get CLIPID from the
+ * processinfo static archive).
+ */
+#ifndef FPS_STANDALONE_SKIP_STUBS
 pid_t CLIPID;
 #endif
 
@@ -44,7 +50,7 @@ pid_t CLIPID;
  * provides these as static inline stubs, so we skip them here.
  */
 
-#ifndef MILK_NO_CLI
+#ifndef FPS_STANDALONE_SKIP_STUBS
 errno_t RegisterModule(
     const char *restrict FileName,
     const char *restrict PackageName,
@@ -94,4 +100,4 @@ imageID image_ID(
     }
     return -1;
 }
-#endif /* !MILK_NO_CLI */
+#endif /* !FPS_STANDALONE_SKIP_STUBS */
