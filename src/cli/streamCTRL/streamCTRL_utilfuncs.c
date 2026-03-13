@@ -2,6 +2,7 @@
 
 
 #include "CLIcore.h"
+#include "streamCTRL_TUI.h"
 
 
 /**

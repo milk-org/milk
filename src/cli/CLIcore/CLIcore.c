@@ -62,6 +62,7 @@
 
 
 #include "CLIcore.h"
+#include "streamCTRL/streamCTRL_TUI.h"
 
 //#include "initmodules.h"
 
