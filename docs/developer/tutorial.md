@@ -54,6 +54,7 @@ The Function Parameter Structure (FPS) is the standard way milk exposes configur
 Let's look at a basic FPS setup in `my_first_module_fps.c`. You need an info struct, a parameter mapping, and an execution loop.
 
 ### A. Define the Application Info
+
 Every `fpsexec` program needs an ID string, a command key, and a short description:
 
 ```c
@@ -67,6 +68,7 @@ FPS_APP_INFO FPS_app_info = {
 ```
 
 ### B. Map Parameters
+
 Use the `FPS_PARAMS` X-Macro to define the configuration parameters you want to expose:
 
 ```c
@@ -85,6 +87,7 @@ static float   param_gain = 0.5f;
 ```
 
 ### C. Implement the Compute Function
+
 This is the core compute function. It is called after parameters are synced from FPS shared memory.
 
 ```c
@@ -101,6 +104,7 @@ static errno_t fpsexec(void) {
 ```
 
 ### D. The Main Entry Point
+
 The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create, exec, confstart, runstart, etc.):
 
 ```c

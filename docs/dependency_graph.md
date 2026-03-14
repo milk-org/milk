@@ -19,7 +19,7 @@
 | 🟡 Gold | Executables |
 | `-.->` dashed arrow | Conditional link |
 
----
+***
 
 ## 1. Core Stack
 
@@ -118,7 +118,7 @@ graph TD
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
 
----
+***
 
 ## 2. Plugins & Cacao
 
@@ -219,7 +219,7 @@ graph TD
     classDef cacao fill:#d35400,stroke:#a00,color:#fff
 ```
 
----
+***
 
 ## 3. Standalone Build (USE_CLI=OFF)
 
@@ -307,7 +307,7 @@ graph TD
     classDef exe fill:#b7950b,stroke:#a80,color:#000
 ```
 
----
+***
 
 ## 4. Build Tiers at a Glance
 
@@ -318,7 +318,7 @@ graph TD
 | **Core + FITS** | `-DUSE_CLI=OFF` | Core + COREMOD_iofits |
 | **Full** | *(defaults)* | Core + FITS + CLI + all plugins |
 
-```
+```text
 cfitsio (headers only, optional)
   ╌╌ ImageStreamIO                    ← Engine
        └─ milkprocessinfo
@@ -333,7 +333,7 @@ COREMOD_tools ─┘
 COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 ```
 
----
+***
 
 ## 5. Detailed Dependency Tables
 
@@ -479,5 +479,5 @@ cross-module Link-Time Optimization. See [PGO & LTO](pgo.md).
 
 </details>
 
----
+***
 ← [Documentation Index](index.md)

@@ -1,4 +1,4 @@
-# Loading, Creating Additional Modules 
+# Loading, Creating Additional Modules
 
 > [!NOTE]
 > This file: `docs/developer/LoadingModules.md`
@@ -8,21 +8,21 @@
 
 
 
----
+***
 
 Users can create additional modules, and following a few milk-specific conventions, link their functions to the milk CLI. Additional modules can be added to the existing build process or compiled separately and then loaded at runtime.
 
 
 
----
+***
 
 
-# 1. Overview 
+## 1. Overview
 
 
 milk is oganized in modules, each compiled as a shared object and loaded at runtime.
 
-## 1.1. Compiling 
+## 1.1. Compiling
 
 While milk comes with its own set of modules, others can be added at runtime. Modules that conform to milk specifications can be downloaded and added by following these steps:
 
@@ -43,7 +43,7 @@ While milk comes with its own set of modules, others can be added at runtime. Mo
 	$ sudo make install
 
 
-## 1.2. Runtime linking 
+## 1.2. Runtime linking
 
 Note that the commands above will compile the module into a shared object, but it will not be loaded by default at runtime. There are 4 options to load the module into the milk executable, detailed in the following section. For example, the new module may be loaded within the milk command line interface as follows:
 
@@ -57,7 +57,7 @@ Note that the commands above will compile the module into a shared object, but i
 	milk-cli > m?
 
 
-## 1.3. A simple example 
+## 1.3. A simple example
 
 milk includes an example module, which is not compiled or linked by default, to demonstrate how to write and add modules.
 
@@ -102,21 +102,21 @@ Lets run it :
 
 
 
----
+***
 
 
 
-# 2. Linking Modules to CLI
+## 2. Linking Modules to CLI
 
 
-## 2.1. Automatic linking from `./lib/` directory 
+## 2.1. Automatic linking from `./lib/` directory
 
 Any shared object in the `./lib/` subdirectory of source code will be loaded upon startup.
 
 
 
 
-## 2.2. Linking module from within CLI with soload 
+## 2.2. Linking module from within CLI with soload
 
 Pre-compiled modules can be linked with the `soload` command within the CLI:
 
@@ -131,7 +131,7 @@ Provided that the module follows milk conventions, linking the module will add t
 
 
 
-## 2.3. Linking module from within CLI with mload 
+## 2.3. Linking module from within CLI with mload
 
 By default, modules shared objects are installed in `/usr/local/lib`, and are named `lib<ModuleName>.so`. With these assumptions satisfied, modules can be linked from within the CLI with the `mload` command:
 
@@ -147,7 +147,7 @@ Module functions are called from the command line interface prompt:
 
 
 
-## 2.4. Using environment variable `CLI_ADD_LIBS` to link shared objects 
+## 2.4. Using environment variable `CLI_ADD_LIBS` to link shared objects
 
 Upon startup, milk will read the CLI_ADD_LIBS environment variable to link shared objects. For example:
 
@@ -162,25 +162,25 @@ will link modules `MyFirstModule` and `MySecondModule`.
 
 
 
----
+***
 
 
-# 3. Writing and Compiling Modules 
+## 3. Writing and Compiling Modules
 
 
 
-## 3.1. Principles 
+## 3.1. Principles
 
 Modules that are always loaded upon startup are registered in the module's `initlib_<modulename>` function, which is called automatically when the shared object is loaded. Additional modules may be loaded using the C `dlopen()` command. The library should include a function `initlib_<modulename>` to be executed when the module is loaded. This function should register functions to the command line interface, as done for all other modules that are part of the distribution.
 
-\see http://www.linux-mag.com/id/1028/ for instructions to create shared libraries that can be loaded as modules.
-\see https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html
+\see <http://www.linux-mag.com/id/1028/> for instructions to create shared libraries that can be loaded as modules.
+\see <https://www.gnu.org/software/automake/manual/html_node/Libtool-Convenience-Libraries.html>
 
 
 
 
 
-## 3.2. Adding modules to the main package compilation 
+## 3.2. Adding modules to the main package compilation
 
 The preferred way to add modules is to have them within the main source code directory alongside default modules, following the same conventions and locations as the default modules. A new module should then have the following files in the `./src/<ModuleName>/` directory:
 
@@ -200,7 +200,7 @@ will compile modules `WFpropagate` and `OpticsMaterials` in addition to default 
 
 
 
-## 3.3. Automatic loading 
+## 3.3. Automatic loading
 
 Several options are available to have the additional module(s) automatically loaded every time:
 
@@ -220,7 +220,7 @@ For example:
 
 
 
-## 3.4. Adding new module to github 
+## 3.4. Adding new module to github
 
 We assume here that you have created a module and you would like to push it to the main github package org (we assume here milk-org).
 
@@ -240,7 +240,7 @@ We assume here that you have created a module and you would like to push it to t
 
 
 
-# 4. Custom modules 
+## 4. Custom modules
 
 
 Additional custom modules may also be compiled independently from the main compile process. This is not the preferred option, and there is a performance hit, as the benefits of link-time optimization will be lost.
@@ -263,7 +263,7 @@ Alternatively, you can load it from the CLI at anytime:
 
 
 
----
+***
 
----
+***
 ← [Documentation Index](../index.md)
