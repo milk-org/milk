@@ -13,7 +13,7 @@
  *
  * ## Other files of interest
  * Each module should include :
- * - souce code (.c file)
+ * - source code (.c file)
  * - header file (.h file)
  *
  * ## Change log
@@ -363,7 +363,7 @@ int templatemodule_examplefunc01(const char *namein,
 
     schedpar.sched_priority = RT_priority;
 
-    /// ## Set up priviledges
+    /// ## Set up privileges
 
     iretval = seteuid(euid_called); //This goes up to maximum privileges
     if(retval != 0)
