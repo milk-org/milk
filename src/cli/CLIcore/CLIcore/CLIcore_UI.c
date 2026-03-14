@@ -1314,6 +1314,238 @@ static void cli_highlight_redisplay(void)
 #endif /* USE_READLINE */
 
 
+/*
+ * ============================================================
+ *  Persistent History (~/.milk_history)
+ * ============================================================
+ */
+
+#define MILK_HISTORY_MAXLINES 1000
+
+void cli_history_load(void)
+{
+#ifdef USE_READLINE
+    char hpath[STRINGMAXLEN_FULLFILENAME];
+    snprintf(hpath,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_history",
+             getenv("HOME"));
+    read_history(hpath);
+#endif
+}
+
+void cli_history_save(void)
+{
+#ifdef USE_READLINE
+    char hpath[STRINGMAXLEN_FULLFILENAME];
+    snprintf(hpath,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_history",
+             getenv("HOME"));
+    write_history(hpath);
+    history_truncate_file(hpath,
+                          MILK_HISTORY_MAXLINES);
+#endif
+}
+
+
+/*
+ * ============================================================
+ *  History Expansion (!! and !$)
+ * ============================================================
+ *
+ * Called at the very start of CLI_execute_line(),
+ * before alias expansion.
+ *
+ * !!    → replace with last executed command
+ * !$    → replace with last argument of previous cmd
+ * !<prefix> → last command starting with <prefix>
+ */
+
+static void cli_history_expand(void)
+{
+#ifdef USE_READLINE
+    char *line = data.CLIcmdline;
+
+    /* Quick check: must start with '!' */
+    if(line[0] != '!')
+    {
+        return;
+    }
+
+    /* !! — replay last command */
+    if(line[1] == '!')
+    {
+        HIST_ENTRY *prev = history_get(
+            history_length);
+        if(prev != NULL)
+        {
+            char suffix[STRINGMAXLEN_CLICMDLINE];
+            suffix[0] = '\0';
+            if(line[2] != '\0')
+            {
+                strncpy(suffix, line + 2,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                suffix[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+            }
+            snprintf(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "%s%s",
+                     prev->line, suffix);
+            printf(">> %s\n", data.CLIcmdline);
+        }
+        return;
+    }
+
+    /* !$ — last argument of previous command */
+    if(line[1] == '$')
+    {
+        if(data.last_argument[0] != '\0')
+        {
+            char rest[STRINGMAXLEN_CLICMDLINE];
+            strncpy(rest, line + 2,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+            rest[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            snprintf(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "%s%s",
+                     data.last_argument, rest);
+            printf(">> %s\n", data.CLIcmdline);
+        }
+        return;
+    }
+
+    /* !<prefix> — last command starting with it */
+    {
+        const char *prefix = line + 1;
+        size_t plen = strlen(prefix);
+        /* Trim trailing spaces from prefix */
+        while(plen > 0
+                && prefix[plen - 1] == ' ')
+        {
+            plen--;
+        }
+        if(plen == 0)
+        {
+            return;
+        }
+        HIST_ENTRY **hist = history_list();
+        if(hist == NULL)
+        {
+            return;
+        }
+        int hlen = history_length;
+        for(int i = hlen - 1; i >= 0; i--)
+        {
+            if(strncmp(hist[i]->line,
+                       prefix, plen) == 0)
+            {
+                strncpy(data.CLIcmdline,
+                        hist[i]->line,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+                printf(">> %s\n",
+                       data.CLIcmdline);
+                return;
+            }
+        }
+        printf("!%.*s: event not found\n",
+               (int) plen, prefix);
+        data.CLIcmdline[0] = '\0';
+    }
+#endif
+}
+
+
+/**
+ * @brief Save last argument after command execution
+ */
+static void cli_save_last_argument(void)
+{
+    if(data.cmdNBarg > 1)
+    {
+        long last = data.cmdNBarg - 1;
+        strncpy(data.last_argument,
+                data.cmdargtoken[last].val.string,
+                sizeof(data.last_argument) - 1);
+        data.last_argument[
+            sizeof(data.last_argument) - 1]
+            = '\0';
+    }
+}
+
+
+/*
+ * ============================================================
+ *  Source Command — execute a milk script file
+ * ============================================================
+ */
+
+errno_t cli_source(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: source <filename>\n");
+        return RETURN_FAILURE;
+    }
+    const char *fname =
+        data.cmdargtoken[1].val.string;
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL)
+    {
+        printf("source: cannot open '%s'\n",
+               fname);
+        return RETURN_FAILURE;
+    }
+    char line[STRINGMAXLEN_CLICMDLINE];
+    int lineno = 0;
+    while(fgets(line, STRINGMAXLEN_CLICMDLINE,
+                fp) != NULL)
+    {
+        lineno++;
+        {
+            size_t len = strlen(line);
+            if(len > 0
+                    && line[len - 1] == '\n')
+            {
+                line[len - 1] = '\0';
+            }
+        }
+        const char *p = line;
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if(*p == '\0' || *p == '#')
+        {
+            continue;
+        }
+        strncpy(data.CLIcmdline, line,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        errno_t ret = CLI_execute_line();
+        if(ret != RETURN_SUCCESS)
+        {
+            printf(
+                "\033[31m[source:%s:%d] "
+                "error\033[0m\n",
+                fname, lineno);
+        }
+    }
+    fclose(fp);
+    return RETURN_SUCCESS;
+}
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -1327,6 +1559,15 @@ errno_t CLI_execute_line()
     struct timespec *thetime =
         (struct timespec *) malloc(sizeof(struct timespec));
     char calctmpimname[STRINGMAXLEN_IMGNAME];
+
+    /* Expand history (!! and !$) first */
+    cli_history_expand();
+    if(data.CLIcmdline[0] == '\0')
+    {
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
 
     /* Expand aliases before anything else */
     cli_alias_expand();
@@ -1686,6 +1927,7 @@ errno_t CLI_execute_line()
                     .callcount++;
                 data.CMDerrstatus =
                     data.cmd[data.cmdindex].fp();
+                cli_save_last_argument();
 
                 if(data.CMDerrstatus != RETURN_SUCCESS)
                 {

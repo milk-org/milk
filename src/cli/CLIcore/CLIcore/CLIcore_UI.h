@@ -51,4 +51,11 @@ errno_t cli_cmdstats(void);
 errno_t cli_syntax_highlight_toggle(void);
 #endif
 
+/* Persistent history */
+void cli_history_load(void);
+void cli_history_save(void);
+
+/* Script execution */
+errno_t cli_source(void);
+
 #endif

@@ -145,6 +145,7 @@ errno_t exitCLI()
         printf("Closing PID %ld (prompt process)\n", (long) getpid());
     }
     //    exit(0);
+    cli_history_save();
     data.CLIloopON = 0; // stop CLI loop
 
     return RETURN_SUCCESS;
@@ -508,6 +509,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // Load startup script (~/.milkrc)
     cli_milkrc_load();
+
+    // Load persistent command history
+    cli_history_load();
 
     // set shared memory directory
     setSHMdir();
@@ -1198,6 +1202,14 @@ void runCLI_cmd_init()
         "synhl off",
         "cli_syntax_highlight_toggle()");
 #endif
+
+    RegisterCLIcommand("source",
+                       __FILE__,
+                       cli_source,
+                       "execute a milk script file",
+                       "<filename>",
+                       "source myscript.milk",
+                       "cli_source()");
 
     //  init_modules();
 
