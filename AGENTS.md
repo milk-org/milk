@@ -70,6 +70,7 @@ milk/
 │   └── cacao-src/ → ~/src/cacao   ← AO loop control (symlink)
 ├── .agents/
 │   ├── rules/                     ← Always-on agent guardrails
+│   ├── skills/                    ← Specialized instruction sets
 │   └── workflows/                 ← On-demand task templates
 └── docs/                          ← Documentation
 ```
@@ -204,7 +205,13 @@ and enforced. Know what they require:
 
 ---
 
-## 7. Workflows (On-Demand)
+## 7. Skills
+
+Skills are specialized instruction sets located in `.agents/skills/`. Each skill provides the agent with deep context, helper scripts, and rules for a specific technical domain. Agents consult these automatically when domain-specific tasks require extended capabilities.
+
+---
+
+## 8. Workflows (On-Demand)
 
 Invoke these as slash commands when working on the
 listed task types:
@@ -224,7 +231,7 @@ listed task types:
 
 ---
 
-## 8. Build System Quick Reference
+## 9. Build System Quick Reference
 
 ### Build tiers
 
@@ -254,7 +261,7 @@ add_cacao_standalone_plugins(myname myname.c fft imagegen)
 
 ---
 
-## 9. cacao (Adaptive Optics Plugin)
+## 10. cacao (Adaptive Optics Plugin)
 
 `cacao` source lives at `plugins/cacao-src/`, which is a
 symlink to `~/src/cacao`. When editing cacao modules,
@@ -266,7 +273,7 @@ milk modules, but use `add_cacao_standalone()` or
 
 ---
 
-## 10. Compile-Time Guards
+## 11. Compile-Time Guards
 
 | Macro | Set By | Effect |
 |-------|--------|--------|
@@ -278,7 +285,7 @@ milk modules, but use `add_cacao_standalone()` or
 
 ---
 
-## 11. Coding Style Summary
+## 12. Coding Style Summary
 
 - **Line length**: ≤ 80 characters
 - **Style**: Linux kernel C coding style

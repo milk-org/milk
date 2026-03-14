@@ -9,7 +9,7 @@ See also: [Process Info](procinfo.md) ·
 [FPS](fps.md) ·
 [Debugging](debugging.md) ·
 [FAQ](faq.md) ·
-[Code-Level Optimization Rules](../.agents/rules/performance-practices.md) ·
+[Code-Level Optimization Rules](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/performance-practices.md) ·
 [Code Assist Tools](code_assist.md)
 
 ---
