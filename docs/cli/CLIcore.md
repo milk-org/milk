@@ -209,16 +209,16 @@ filename and line number are printed in red.
 echo "Starting image processing..."
 
 # Create a 100x100 image named 'myimg'
-creaim myimg 100 100
+mem.mk2Dim myimg 100 100
 
 # Perform some basic arithmetic
 im1=myimg+5.0
 
 # Save to FITS using an environment variable
-save_fl im1 ${HOME}/im1_test.fits
+iofits.saveFITS im1 ${HOME}/im1_test.fits
 
 # Print current images in memory
-listim
+mem.listim
 ```
 
 ## 15. Command Timing
