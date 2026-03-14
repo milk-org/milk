@@ -750,6 +750,7 @@ errno_t CLI_execute_line()
  * Consumed by accept_suggestion when Right Arrow is pressed.
  */
 static char *pending_suggestion = NULL;
+static int   pending_replace_len = 0;
 
 /**
  * @brief Accept the inline suggestion on Right Arrow
@@ -768,9 +769,18 @@ static int accept_suggestion(
 
     if(pending_suggestion && rl_point == rl_end)
     {
+        if(pending_replace_len > 0
+            && rl_end >= pending_replace_len)
+        {
+            int del_start =
+                rl_end - pending_replace_len;
+            rl_delete_text(del_start, rl_end);
+            rl_point = del_start;
+        }
         rl_insert_text(pending_suggestion);
         free(pending_suggestion);
         pending_suggestion = NULL;
+        pending_replace_len = 0;
         rl_redisplay();
         return 0;
     }
@@ -782,13 +792,19 @@ static int accept_suggestion(
 /**
  * @brief Store the suggestion suffix for Right Arrow
  */
-static void set_pending_suggestion(const char *suffix)
+static void set_pending_suggestion(
+    const char *text,
+    int replace_len
+)
 {
     free(pending_suggestion);
     pending_suggestion = NULL;
-    if(suffix && strlen(suffix) > 0)
+    pending_replace_len = 0;
+    if(text && strlen(text) > 0)
     {
-        pending_suggestion = dupstr((char *) suffix);
+        pending_suggestion =
+            dupstr((char *) text);
+        pending_replace_len = replace_len;
     }
 }
 
@@ -1171,7 +1187,7 @@ static void CLI_redisplay(void)
     rl_redisplay_function = CLI_redisplay;
 
     /* Clear any stale suggestion */
-    set_pending_suggestion(NULL);
+    set_pending_suggestion(NULL, 0);
 
     if(data.autocomplete == 0)
     {
@@ -1229,7 +1245,7 @@ static void CLI_redisplay(void)
                         printf("\033[%dD", n);
                         fflush(stdout);
                         set_pending_suggestion(
-                            suffix);
+                            suffix, 0);
                     }
                     update_hint_area();
                     return;
@@ -1317,7 +1333,8 @@ static void CLI_redisplay(void)
             if(n > 0)
             {
                 total_ghost += n;
-                set_pending_suggestion(suffix);
+                set_pending_suggestion(
+                    suffix, 0);
             }
         }
         else if(data.autocomplete_fuzzy)
@@ -1330,6 +1347,9 @@ static void CLI_redisplay(void)
                         fzbuf,
                         budget);
             total_ghost += n;
+            set_pending_suggestion(
+                match,
+                (int) strlen(text));
         }
         free(match);
     }
