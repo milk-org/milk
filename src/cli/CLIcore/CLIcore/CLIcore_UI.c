@@ -2140,6 +2140,91 @@ static void cli_session_log_cmd(
 
 /*
  * ============================================================
+ *  Command Substitution
+ * ============================================================
+ *
+ * Replace $(cmd) and `cmd` in the command line with
+ * the standard output of the command execution.
+ */
+
+static void cli_expand_cmdsub(
+    char *line,
+    int   maxlen
+)
+{
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+
+    while(line[i] != '\0' && opos < maxlen - 1)
+    {
+        int is_dollar_paren = (line[i] == '$' && line[i + 1] == '(');
+        int is_backtick = (line[i] == '`');
+
+        if(is_dollar_paren || is_backtick)
+        {
+            char cmd[512];
+            int clen = 0;
+            
+            if (is_dollar_paren)
+            {
+                i += 2; /* Skip $( */
+                while(line[i] != '\0' && line[i] != ')' && clen < 511)
+                {
+                    cmd[clen++] = line[i++];
+                }
+                if (line[i] == ')') i++; /* Skip ) */
+            }
+            else /* is_backtick */
+            {
+                i++; /* Skip ` */
+                while(line[i] != '\0' && line[i] != '`' && clen < 511)
+                {
+                    cmd[clen++] = line[i++];
+                }
+                if (line[i] == '`') i++; /* Skip ` */
+            }
+            cmd[clen] = '\0';
+
+            /* Execute command and read output */
+            if (clen > 0)
+            {
+                FILE *fp = popen(cmd, "r");
+                if (fp != NULL)
+                {
+                    char buf[1024];
+                    size_t read_bytes = fread(buf, 1, sizeof(buf) - 1, fp);
+                    buf[read_bytes] = '\0';
+                    pclose(fp);
+
+                    /* Strip trailing newlines */
+                    while(read_bytes > 0 && (buf[read_bytes - 1] == '\n' || buf[read_bytes - 1] == '\r'))
+                    {
+                        buf[--read_bytes] = '\0';
+                    }
+
+                    /* Copy to output */
+                    int vallen = (int) read_bytes;
+                    int avail = maxlen - 1 - opos;
+                    int copylen = vallen < avail ? vallen : avail;
+                    memcpy(out + opos, buf, (size_t) copylen);
+                    opos += copylen;
+                }
+            }
+        }
+        else
+        {
+            out[opos++] = line[i++];
+        }
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+
+/*
+ * ============================================================
  *  Environment Variable Expansion
  * ============================================================
  *
@@ -2216,6 +2301,45 @@ static void cli_expand_env(
     out[opos] = '\0';
     strncpy(line, out, (size_t) maxlen);
     line[maxlen - 1] = '\0';
+}
+
+/*
+ * ============================================================
+ *  Built-in cd / pwd
+ * ============================================================
+ */
+
+errno_t cli_cd(void)
+{
+    const char *dir = getenv("HOME");
+    if(data.cmdNBarg >= 2)
+    {
+        dir = data.cmdargtoken[1].val.string;
+    }
+    if(dir != NULL)
+    {
+        if(chdir(dir) != 0)
+        {
+            printf("cd: %s: %s\n", dir, strerror(errno));
+            return RETURN_FAILURE;
+        }
+    }
+    return RETURN_SUCCESS;
+}
+
+errno_t cli_pwd(void)
+{
+    char cwd[1024];
+    if(getcwd(cwd, sizeof(cwd)) != NULL)
+    {
+        printf("%s\n", cwd);
+        return RETURN_SUCCESS;
+    }
+    else
+    {
+        perror("pwd");
+        return RETURN_FAILURE;
+    }
 }
 
 
@@ -2358,6 +2482,9 @@ errno_t CLI_execute_line()
 
     /* Expand aliases before anything else */
     cli_alias_expand();
+
+    /* Expand command substitution */
+    cli_expand_cmdsub(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
     /* Expand environment variables ($VAR) */
     cli_expand_env(data.CLIcmdline,

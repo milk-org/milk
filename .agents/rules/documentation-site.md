@@ -45,10 +45,13 @@ The site uses top-level navigation tabs defined in the
    under `nav:`.
 3. Also add the page to `docs/index.md` in the appropriate
    section.
-4. Use `<details markdown="1">` (not bare `<details>`) for
+4. Add YAML frontmatter at the very top of the `.md` file
+   with `tags: [topic1, topic2]` categorizing the content
+   so that it appears in `docs/tags.md`.
+5. Use `<details markdown="1">` (not bare `<details>`) for
    any collapsible sections — the `md_in_html` extension
    requires the `markdown="1"` attribute.
-5. Run the `/update-docs-site` workflow to test locally.
+6. Run the `/update-docs-site` workflow to test locally.
 
 ## Deployment Pipeline
 
@@ -68,6 +71,7 @@ used in any docs page:
 
 - **Admonitions**: `!!! note`, `!!! warning`, etc.
 - **Details**: `??? note "Title"` or `<details markdown="1">`
+- **Tags**: `tags: [topic]` YAML frontmatter
 - **Mermaid diagrams**: ` ```mermaid ` code blocks
 - **Code highlighting**: with line numbers and copy button
 - **Content tabs**: `=== "Tab 1"` / `=== "Tab 2"` syntax

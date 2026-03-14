@@ -79,4 +79,8 @@ errno_t cli_history_show(void);
 /* Fuzzy history search */
 errno_t cli_searchhist(void);
 
+/* Built-in cd and pwd */
+errno_t cli_cd(void);
+errno_t cli_pwd(void);
+
 #endif
