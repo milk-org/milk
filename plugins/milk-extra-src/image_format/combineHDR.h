@@ -1,3 +1,8 @@
+/**
+ * @file combineHDR.h
+ * @brief Combinehdr module
+ */
+
 #ifndef IMAGE_FORMAT_COMBINEHDR_H
 #define IMAGE_FORMAT_COMBINEHDR_H
 

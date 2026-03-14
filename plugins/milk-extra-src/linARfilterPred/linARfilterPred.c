@@ -46,8 +46,8 @@
 
 #include <time.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -85,270 +85,669 @@ INIT_MODULE_LIB(linARfilterPred)
 /* ================================================================== */
 /* ================================================================== */
 
-errno_t LINARFILTERPRED_LoadASCIIfiles_cli()
-{
-    if(CLI_checkarg(1, 1) + CLI_checkarg(2, 1) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 5) ==
-            0)
-    {
-        LINARFILTERPRED_LoadASCIIfiles(data.cmdargtoken[1].val.numf,
-                                       data.cmdargtoken[2].val.numf,
-                                       data.cmdargtoken[3].val.numl,
-                                       data.cmdargtoken[4].val.numl,
-                                       data.cmdargtoken[5].val.string);
+/* ===== Command: pfloadascii ===== */
+long LINARFILTERPRED_LoadASCIIfiles(
+    double tstart, double dt,
+    long NBpt, long NBfr,
+    const char *IDoutname);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static double la_tstart = 200.0;
+static double la_dt = 0.001;
+static int64_t la_nbpt = 10000;
+static int64_t la_nbfr = 4;
+static char la_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "pfin";
+static FPS_APP_INFO FPS_app_info_la = {
+    .fps_name = "pfloadascii",
+    .cmdkey   = "pfloadascii",
+    .description =
+        "load ascii files to PF input"
+};
+#define FPS_PARAMS_LA(X) \
+    X(".tstart", &la_tstart, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "tstart") \
+    X(".dt", &la_dt, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "dt") \
+    X(".nbpt", &la_nbpt, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb points") \
+    X(".nbfr", &la_nbfr, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb frames") \
+    X(".out_name", la_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+
+#include "fps.h"
+
+static FPS_CLI_BINDING la_b[] = {
+    FPS_PARAMS_LA(FPS_X_BINDING) };
+static const int la_nb =
+    sizeof(la_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_LA(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS la_cms = {0};
+static __attribute__((constructor))
+void init_la(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_la.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_la.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &la_cms;
+}
+static errno_t la_compute(void) {
+    LINARFILTERPRED_LoadASCIIfiles(
+        la_tstart, la_dt,
+        (long)la_nbpt, (long)la_nbfr, la_out);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_la, farg, &CLIcmddata,
+        la_b, la_nb, la_compute);
 }
 
-errno_t LINARFILTERPRED_SelectBlock_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        LINARFILTERPRED_SelectBlock(data.cmdargtoken[1].val.string,
-                                    data.cmdargtoken[2].val.string,
-                                    data.cmdargtoken[3].val.numl,
-                                    data.cmdargtoken[4].val.string);
+/* ===== Command: mselblock ===== */
+imageID LINARFILTERPRED_SelectBlock(
+    const char *IDin_name,
+    const char *IDblknb_name,
+    long blkNB,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char sb_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modevals";
+static char sb_bm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "blockmap";
+static int64_t sb_blk = 23;
+static char sb_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "blk23modevals";
+static FPS_APP_INFO FPS_app_info_sb = {
+    .fps_name = "mselblock",
+    .cmdkey   = "mselblock",
+    .description =
+        "select modes belonging to block"
+};
+#define FPS_PARAMS_SB(X) \
+    X(".in_name", sb_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input modes") \
+    X(".bm_name", sb_bm, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "block map") \
+    X(".blk", &sb_blk, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "block number") \
+    X(".out_name", sb_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING sb_b[] = {
+    FPS_PARAMS_SB(FPS_X_BINDING) };
+static const int sb_nb =
+    sizeof(sb_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF sb_farg[] = {
+    FPS_PARAMS_SB(FPS_X_FARG) };
+static CLICMDDATA sb_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS sb_cms = {0};
+static __attribute__((constructor))
+void init_sb(void) {
+    strncpy(sb_d.key,
+        FPS_app_info_sb.cmdkey,
+        sizeof(sb_d.key)-1);
+    strncpy(sb_d.description,
+        FPS_app_info_sb.description,
+        sizeof(sb_d.description)-1);
+    sb_d.nbarg =
+        sizeof(sb_farg)/sizeof(CLICMDARGDEF);
+    sb_d.funcfpscliarg = sb_farg;
+    sb_d.flags = CLICMDFLAG_FPS;
+    if(!sb_d.cmdsettings)
+        sb_d.cmdsettings = &sb_cms;
+}
+static errno_t sb_compute(void) {
+    LINARFILTERPRED_SelectBlock(
+        sb_in, sb_bm, (long)sb_blk, sb_out);
+    return RETURN_SUCCESS;
+}
+static errno_t sb_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_sb, sb_farg, &sb_d,
+        sb_b, sb_nb, sb_compute);
 }
 
-errno_t linARfilterPred_repeat_shift_X_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
-    {
-        linARfilterPred_repeat_shift_X(data.cmdargtoken[1].val.string,
-                                       data.cmdargtoken[2].val.numl,
-                                       data.cmdargtoken[3].val.string);
+/* ===== Command: imrepshiftx ===== */
+imageID linARfilterPred_repeat_shift_X(
+    const char *IDin_name,
+    long NBstep,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char rs_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static int64_t rs_nb = 5;
+static char rs_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
+static FPS_APP_INFO FPS_app_info_rs = {
+    .fps_name = "imrepshiftx",
+    .cmdkey   = "imrepshiftx",
+    .description =
+        "repeat and shift image along X"
+};
+#define FPS_PARAMS_RS(X) \
+    X(".in_name", rs_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input") \
+    X(".nbstep", &rs_nb, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb steps") \
+    X(".out_name", rs_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING rs_b[] = {
+    FPS_PARAMS_RS(FPS_X_BINDING) };
+static const int rs_nbb =
+    sizeof(rs_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rs_farg[] = {
+    FPS_PARAMS_RS(FPS_X_FARG) };
+static CLICMDDATA rs_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS rs_cms = {0};
+static __attribute__((constructor))
+void init_rs(void) {
+    strncpy(rs_d.key,
+        FPS_app_info_rs.cmdkey,
+        sizeof(rs_d.key)-1);
+    strncpy(rs_d.description,
+        FPS_app_info_rs.description,
+        sizeof(rs_d.description)-1);
+    rs_d.nbarg =
+        sizeof(rs_farg)/sizeof(CLICMDARGDEF);
+    rs_d.funcfpscliarg = rs_farg;
+    rs_d.flags = CLICMDFLAG_FPS;
+    if(!rs_d.cmdsettings)
+        rs_d.cmdsettings = &rs_cms;
+}
+static errno_t rs_compute(void) {
+    linARfilterPred_repeat_shift_X(
+        rs_in, (long)rs_nb, rs_out);
+    return RETURN_SUCCESS;
+}
+static errno_t rs_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rs, rs_farg, &rs_d,
+        rs_b, rs_nbb, rs_compute);
 }
 
-errno_t LINARFILTERPRED_Build_LinPredictor_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 1) + CLI_checkarg(5, 1) + CLI_checkarg(6, 3) +
-            CLI_checkarg(7, 2) + CLI_checkarg(8, 1) + CLI_checkarg(9, 2) ==
-            0)
-    {
-        LINARFILTERPRED_Build_LinPredictor(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.numl,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.numf,
-                                           data.cmdargtoken[5].val.numf,
-                                           data.cmdargtoken[6].val.string,
-                                           1,
-                                           data.cmdargtoken[7].val.numl,
-                                           data.cmdargtoken[8].val.numf,
-                                           data.cmdargtoken[9].val.numl);
+/* ===== Command: mkARpfilt ===== */
+imageID LINARFILTERPRED_Build_LinPredictor(
+    const char *IDin_name,
+    long PForder, float PFlag,
+    double SVDeps, double RegLambda,
+    const char *IDoutPF_name,
+    int outMode, int LOOPmode,
+    float LOOPgain, int testmode);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char mk_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "indata";
+static int64_t mk_ord = 5;
+static double mk_lag = 2.4;
+static double mk_svd = 0.0001;
+static double mk_reg = 0.0;
+static char mk_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static int64_t mk_loop = 0;
+static double mk_gain = 0.1;
+static int64_t mk_test = 1;
+static FPS_APP_INFO FPS_app_info_mk = {
+    .fps_name = "mkARpfilt",
+    .cmdkey   = "mkARpfilt",
+    .description =
+        "make linear AR filter"
+};
+#define FPS_PARAMS_MK(X) \
+    X(".in_name", mk_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input data") \
+    X(".pforder", &mk_ord, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF order") \
+    X(".pflag", &mk_lag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF lag") \
+    X(".svdeps", &mk_svd, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "SVD eps") \
+    X(".reglambda", &mk_reg, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "reg param") \
+    X(".out_name", mk_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output PF") \
+    X(".loopmode", &mk_loop, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop mode") \
+    X(".loopgain", &mk_gain, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop gain") \
+    X(".testmode", &mk_test, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "test mode")
+static FPS_CLI_BINDING mk_b[] = {
+    FPS_PARAMS_MK(FPS_X_BINDING) };
+static const int mk_nbb =
+    sizeof(mk_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF mk_farg[] = {
+    FPS_PARAMS_MK(FPS_X_FARG) };
+static CLICMDDATA mk_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS mk_cms = {0};
+static __attribute__((constructor))
+void init_mk(void) {
+    strncpy(mk_d.key,
+        FPS_app_info_mk.cmdkey,
+        sizeof(mk_d.key)-1);
+    strncpy(mk_d.description,
+        FPS_app_info_mk.description,
+        sizeof(mk_d.description)-1);
+    mk_d.nbarg =
+        sizeof(mk_farg)/sizeof(CLICMDARGDEF);
+    mk_d.funcfpscliarg = mk_farg;
+    mk_d.flags = CLICMDFLAG_FPS;
+    if(!mk_d.cmdsettings)
+        mk_d.cmdsettings = &mk_cms;
+}
+static errno_t mk_compute(void) {
+    LINARFILTERPRED_Build_LinPredictor(
+        mk_in, (long)mk_ord,
+        (float)mk_lag, mk_svd, mk_reg,
+        mk_out, 1,
+        (int)mk_loop,
+        (float)mk_gain, (int)mk_test);
+    return RETURN_SUCCESS;
+}
+static errno_t mk_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_mk, mk_farg, &mk_d,
+        mk_b, mk_nbb, mk_compute);
 }
 
-errno_t LINARFILTERPRED_Apply_LinPredictor_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        LINARFILTERPRED_Apply_LinPredictor(data.cmdargtoken[1].val.string,
-                                           data.cmdargtoken[2].val.string,
-                                           data.cmdargtoken[3].val.numf,
-                                           data.cmdargtoken[4].val.string);
+/* ===== Command: applyARpfilt ===== */
+long LINARFILTERPRED_Apply_LinPredictor(
+    const char *IDfilt_name,
+    const char *IDin_name,
+    float PFlag,
+    const char *IDout_name);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char ap_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "indata";
+static char ap_filt[FUNCTION_PARAMETER_STRMAXLEN]
+    = "Pfilt";
+static double ap_lag = 2.4;
+static char ap_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static FPS_APP_INFO FPS_app_info_ap = {
+    .fps_name = "applyARpfilt",
+    .cmdkey   = "applyARpfilt",
+    .description =
+        "apply linear AR filter"
+};
+#define FPS_PARAMS_AP(X) \
+    X(".in_name", ap_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input data") \
+    X(".filt_name", ap_filt, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "predictor") \
+    X(".pflag", &ap_lag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF lag") \
+    X(".out_name", ap_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+static FPS_CLI_BINDING ap_b[] = {
+    FPS_PARAMS_AP(FPS_X_BINDING) };
+static const int ap_nbb =
+    sizeof(ap_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF ap_farg[] = {
+    FPS_PARAMS_AP(FPS_X_FARG) };
+static CLICMDDATA ap_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS ap_cms = {0};
+static __attribute__((constructor))
+void init_ap(void) {
+    strncpy(ap_d.key,
+        FPS_app_info_ap.cmdkey,
+        sizeof(ap_d.key)-1);
+    strncpy(ap_d.description,
+        FPS_app_info_ap.description,
+        sizeof(ap_d.description)-1);
+    ap_d.nbarg =
+        sizeof(ap_farg)/sizeof(CLICMDARGDEF);
+    ap_d.funcfpscliarg = ap_farg;
+    ap_d.flags = CLICMDFLAG_FPS;
+    if(!ap_d.cmdsettings)
+        ap_d.cmdsettings = &ap_cms;
+}
+static errno_t ap_compute(void) {
+    LINARFILTERPRED_Apply_LinPredictor(
+        ap_in, ap_filt,
+        (float)ap_lag, ap_out);
+    return RETURN_SUCCESS;
+}
+static errno_t ap_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_ap, ap_farg, &ap_d,
+        ap_b, ap_nbb, ap_compute);
 }
 
-errno_t LINARFILTERPRED_ScanGain_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 1) + CLI_checkarg(3, 1) == 0)
-    {
-        LINARFILTERPRED_ScanGain(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numf,
-                                 data.cmdargtoken[3].val.numf);
+/* ===== Command: mscangain ===== */
+float LINARFILTERPRED_ScanGain(
+    char *IDin_name,
+    float multfact,
+    float framelag);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char sg_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "olwfsmeas";
+static double sg_mf = 0.98;
+static double sg_fl = 2.65;
+static FPS_APP_INFO FPS_app_info_sg = {
+    .fps_name = "mscangain",
+    .cmdkey   = "mscangain",
+    .description = "scan gain"
+};
+#define FPS_PARAMS_SG(X) \
+    X(".in_name", sg_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "mode vals") \
+    X(".multfact", &sg_mf, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "mult factor") \
+    X(".framelag", &sg_fl, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "frame lag")
+static FPS_CLI_BINDING sg_b[] = {
+    FPS_PARAMS_SG(FPS_X_BINDING) };
+static const int sg_nbb =
+    sizeof(sg_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF sg_farg[] = {
+    FPS_PARAMS_SG(FPS_X_FARG) };
+static CLICMDDATA sg_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS sg_cms = {0};
+static __attribute__((constructor))
+void init_sg(void) {
+    strncpy(sg_d.key,
+        FPS_app_info_sg.cmdkey,
+        sizeof(sg_d.key)-1);
+    strncpy(sg_d.description,
+        FPS_app_info_sg.description,
+        sizeof(sg_d.description)-1);
+    sg_d.nbarg =
+        sizeof(sg_farg)/sizeof(CLICMDARGDEF);
+    sg_d.funcfpscliarg = sg_farg;
+    sg_d.flags = CLICMDFLAG_FPS;
+    if(!sg_d.cmdsettings)
+        sg_d.cmdsettings = &sg_cms;
+}
+static errno_t sg_compute(void) {
+    LINARFILTERPRED_ScanGain(
+        sg_in, (float)sg_mf, (float)sg_fl);
+    return RETURN_SUCCESS;
+}
+static errno_t sg_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_sg, sg_farg, &sg_d,
+        sg_b, sg_nbb, sg_compute);
 }
 
-errno_t LINARFILTERPRED_PF_updatePFmatrix_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 5) + CLI_checkarg(3, 1) == 0)
-    {
-        LINARFILTERPRED_PF_updatePFmatrix(data.cmdargtoken[1].val.string,
-                                          data.cmdargtoken[2].val.string,
-                                          data.cmdargtoken[3].val.numf);
+/* ===== Command: linARPFMupdate ===== */
+long LINARFILTERPRED_PF_updatePFmatrix(
+    const char *IDPF_name,
+    const char *IDPFM_name,
+    float alpha);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char pu_pf[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPF";
+static char pu_pfm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "PFMat";
+static double pu_alpha = 0.1;
+static FPS_APP_INFO FPS_app_info_pu = {
+    .fps_name = "linARPFMupdate",
+    .cmdkey   = "linARPFMupdate",
+    .description =
+        "update predictive filter matrix"
+};
+#define FPS_PARAMS_PU(X) \
+    X(".pf_name", pu_pf, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "3D predictor") \
+    X(".pfm_name", pu_pfm, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "2D matrix") \
+    X(".alpha", &pu_alpha, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "update coeff")
+static FPS_CLI_BINDING pu_b[] = {
+    FPS_PARAMS_PU(FPS_X_BINDING) };
+static const int pu_nbb =
+    sizeof(pu_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF pu_farg[] = {
+    FPS_PARAMS_PU(FPS_X_FARG) };
+static CLICMDDATA pu_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS pu_cms = {0};
+static __attribute__((constructor))
+void init_pu(void) {
+    strncpy(pu_d.key,
+        FPS_app_info_pu.cmdkey,
+        sizeof(pu_d.key)-1);
+    strncpy(pu_d.description,
+        FPS_app_info_pu.description,
+        sizeof(pu_d.description)-1);
+    pu_d.nbarg =
+        sizeof(pu_farg)/sizeof(CLICMDARGDEF);
+    pu_d.funcfpscliarg = pu_farg;
+    pu_d.flags = CLICMDFLAG_FPS;
+    if(!pu_d.cmdsettings)
+        pu_d.cmdsettings = &pu_cms;
+}
+static errno_t pu_compute(void) {
+    LINARFILTERPRED_PF_updatePFmatrix(
+        pu_pf, pu_pfm, (float)pu_alpha);
+    return RETURN_SUCCESS;
+}
+static errno_t pu_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_pu, pu_farg, &pu_d,
+        pu_b, pu_nbb, pu_compute);
 }
 
-errno_t LINARFILTERPRED_PF_RealTimeApply_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) + CLI_checkarg(5, 2) + CLI_checkarg(6, 5) +
-            CLI_checkarg(7, 2) + CLI_checkarg(8, 2) + CLI_checkarg(9, 2) +
-            CLI_checkarg(10, 2) + CLI_checkarg(11, 1) + CLI_checkarg(12, 2) ==
-            0)
-    {
-        LINARFILTERPRED_PF_RealTimeApply(data.cmdargtoken[1].val.string,
-                                         data.cmdargtoken[2].val.numl,
-                                         data.cmdargtoken[3].val.numl,
-                                         data.cmdargtoken[4].val.string,
-                                         data.cmdargtoken[5].val.numl,
-                                         data.cmdargtoken[6].val.string,
-                                         data.cmdargtoken[7].val.numl,
-                                         data.cmdargtoken[8].val.numl,
-                                         data.cmdargtoken[9].val.numl,
-                                         data.cmdargtoken[10].val.numl,
-                                         data.cmdargtoken[11].val.numf,
-                                         data.cmdargtoken[12].val.numl);
+/* ===== Command: linARapplyRT ===== */
+long LINARFILTERPRED_PF_RealTimeApply(
+    const char *IDmodevalOL_name,
+    long IndexOffset, int semtrig,
+    const char *IDPFM_name,
+    long NBPFstep,
+    const char *IDPFout_name,
+    int nbGPU, long loop,
+    long NBiter, int SAVEMODE,
+    float tlag, long PFindex);
 
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char rt_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modevalOL";
+static int64_t rt_off = 0;
+static int64_t rt_sem = 2;
+static char rt_pfm[FUNCTION_PARAMETER_STRMAXLEN]
+    = "PFmat";
+static int64_t rt_ord = 5;
+static char rt_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outPFmodeval";
+static int64_t rt_gpu = 0;
+static int64_t rt_loop = 0;
+static int64_t rt_nbit = 0;
+static int64_t rt_save = 0;
+static double rt_tlag = 1.8;
+static int64_t rt_pfi = 0;
+static FPS_APP_INFO FPS_app_info_rt = {
+    .fps_name = "linARapplyRT",
+    .cmdkey   = "linARapplyRT",
+    .description =
+        "RT apply predictive filter"
+};
+#define FPS_PARAMS_RT(X) \
+    X(".in_name", rt_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "OL coeffs") \
+    X(".offset", &rt_off, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "index off") \
+    X(".semtrig", &rt_sem, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "sem trig") \
+    X(".pfm_name", rt_pfm, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF matrix") \
+    X(".pforder", &rt_ord, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "filter order") \
+    X(".out_name", rt_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".nbgpu", &rt_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb GPUs") \
+    X(".loop", &rt_loop, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "loop flag") \
+    X(".nbiter", &rt_nbit, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "nb iter") \
+    X(".savemode", &rt_save, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "save mode") \
+    X(".tlag", &rt_tlag, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "time lag") \
+    X(".pfindex", &rt_pfi, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "PF index")
+static FPS_CLI_BINDING rt_b[] = {
+    FPS_PARAMS_RT(FPS_X_BINDING) };
+static const int rt_nbb =
+    sizeof(rt_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rt_farg[] = {
+    FPS_PARAMS_RT(FPS_X_FARG) };
+static CLICMDDATA rt_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS rt_cms = {0};
+static __attribute__((constructor))
+void init_rt(void) {
+    strncpy(rt_d.key,
+        FPS_app_info_rt.cmdkey,
+        sizeof(rt_d.key)-1);
+    strncpy(rt_d.description,
+        FPS_app_info_rt.description,
+        sizeof(rt_d.description)-1);
+    rt_d.nbarg =
+        sizeof(rt_farg)/sizeof(CLICMDARGDEF);
+    rt_d.funcfpscliarg = rt_farg;
+    rt_d.flags = CLICMDFLAG_FPS;
+    if(!rt_d.cmdsettings)
+        rt_d.cmdsettings = &rt_cms;
 }
+static errno_t rt_compute(void) {
+    LINARFILTERPRED_PF_RealTimeApply(
+        rt_in, (long)rt_off, (int)rt_sem,
+        rt_pfm, (long)rt_ord, rt_out,
+        (int)rt_gpu, (long)rt_loop,
+        (long)rt_nbit, (int)rt_save,
+        (float)rt_tlag, (long)rt_pfi);
+    return RETURN_SUCCESS;
+}
+static errno_t rt_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rt, rt_farg, &rt_d,
+        rt_b, rt_nbb, rt_compute);
+}
+
+/* ===== Module init ===== */
 
 static errno_t init_module_CLI()
 {
-    RegisterCLIcommand(
-        "pfloadascii",
-        __FILE__,
-        LINARFILTERPRED_LoadASCIIfiles_cli,
-        "load ascii files to PF input",
-        "<tstart> <dt> <NBpt> <NBfr> <output>",
-        "pfloadascii 200.0 0.001 10000 4 pfin",
-        "long LINARFILTERPRED_LoadASCIIfiles(double tstart, double dt, long "
-        "NBpt, long NBfr, const char *IDoutname)");
-
-    RegisterCLIcommand(
-        "mselblock",
-        __FILE__,
-        LINARFILTERPRED_SelectBlock_cli,
-        "select modes belonging to a block",
-        "<input mode values> <block map> <selected block> <output>",
-        "mselblock modevals blockmap 23 blk23modevals",
-        "long LINARFILTERPRED_SelectBlock(const char *IDin_name, const char "
-        "*IDblknb_name, long blkNB, "
-        "const char *IDout_name)");
-
-    RegisterCLIcommand("imrepshiftx",
-                       __FILE__,
-                       linARfilterPred_repeat_shift_X_cli,
-                       "repeat and shift image, extend along X axis",
-                       "<input image> <NBstep> <output image>",
-                       "imrepshiftx imin 5 imout",
-                       "long linARfilterPred_repeat_shift_X(const char "
-                       "*IDin_name, long NBstep, const char *IDout_name)");
-
-    RegisterCLIcommand(
-        "mkARpfilt",
-        __FILE__,
-        LINARFILTERPRED_Build_LinPredictor_cli,
-        "Make linear auto-regressive filter",
-        "<input data> <PForder> <PFlag> <SVDeps> <regularization param> "
-        "<output filters> <LOOPmode> <LOOPgain> "
-        "<testmode>",
-        "mkARpfilt indata 5 2.4 0.0001 0.0 outPF 0 0.1 1",
-        "int LINARFILTERPRED_Build_LinPredictor(const char *IDin_name, long "
-        "PForder, float PFlag, double SVDeps, "
-        "double RegLambda, const char *IDoutPF, int outMode, int LOOPmode, "
-        "float LOOPgain, int testmode)");
-
-    /*  strcpy(data.cmd[data.NBcmd].key,"applyPfiltRT");
-      strcpy(data.cmd[data.NBcmd].module,__FILE__);
-      data.cmd[data.NBcmd].fp = LINARFILTERPRED_Apply_LinPredictor_RT_cli;
-      strcpy(data.cmd[data.NBcmd].info,"Apply real-time linear predictive filter");
-      strcpy(data.cmd[data.NBcmd].syntax,"<input data> <predictor filter> <output>");
-      strcpy(data.cmd[data.NBcmd].example,"applyPfiltRT indata Pfilt outPF");
-      strcpy(data.cmd[data.NBcmd].Ccall,"long LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name, const char *IDin_name, const char *IDout_name)");
-      data.NBcmd++;
-    */
-
-    RegisterCLIcommand("applyARpfilt",
-                       __FILE__,
-                       LINARFILTERPRED_Apply_LinPredictor_cli,
-                       "Apply linear auto-regressive filter",
-                       "<input data> <predictor> <PFlag> <prediction>",
-                       "applyARpfilt indata Pfilt 2.4 outPF",
-                       "long LINARFILTERPRED_Apply_LinPredictor(const char "
-                       "*IDfilt_name, const char *IDin_name, float "
-                       "PFlag, const char *IDout_name)");
-
-    RegisterCLIcommand(
-        "mscangain",
-        __FILE__,
-        LINARFILTERPRED_ScanGain_cli,
-        "scan gain",
-        "<input mode values> <multiplicative factor (leak)> <latency [frame]>",
-        "mscangain olwfsmeas 0.98 2.65",
-        "LINARFILTERPRED_ScanGain(char* IDin_name, float multfact, float "
-        "framelag)");
-
-    RegisterCLIcommand("linARPFMupdate",
-                       __FILE__,
-                       LINARFILTERPRED_PF_updatePFmatrix_cli,
-                       "update predictive filter matrix",
-                       "<input 3D predictor> <output 2D matrix> <update coeff>",
-                       "linARPFMupdate outPF PFMat 0.1",
-                       "long LINARFILTERPRED_PF_updatePFmatrix(const char "
-                       "*IDPF_name, const char *IDPFM_name, float alpha)");
-
-    RegisterCLIcommand(
-        "linARapplyRT",
-        __FILE__,
-        LINARFILTERPRED_PF_RealTimeApply_cli,
-        "Real-time apply predictive filter",
-        "<input open loop coeffs stream> <offset index> <trigger semaphore "
-        "index> <2D predictive "
-        "matrix> <filter order> <output stream> <nbGPU> <loop> <NBiter> "
-        "<savemode> <timelag> <PFindex>",
-        "linARapplyRT modevalOL 0 2 PFmat 5 outPFmodeval 0 0 0 0 1.8 0",
-        "long LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalOL_name, "
-        "long IndexOffset, int "
-        "semtrig, const char *IDPFM_name, long NBPFstep, const char "
-        "*IDPFout_name, int nbGPU, long "
-        "loop, long NBiter, int SAVEMODE, float tlag, long PFindex)");
-
-
-
+    {
+        safe_fps_fill_farg_examples(
+            farg, la_b, la_nb);
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            sb_farg, sb_b, sb_nb);
+        int cmdi = RegisterCLIcmd(
+            sb_d, sb_CLIfunc);
+        sb_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            rs_farg, rs_b, rs_nbb);
+        int cmdi = RegisterCLIcmd(
+            rs_d, rs_CLIfunc);
+        rs_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            mk_farg, mk_b, mk_nbb);
+        int cmdi = RegisterCLIcmd(
+            mk_d, mk_CLIfunc);
+        mk_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            ap_farg, ap_b, ap_nbb);
+        int cmdi = RegisterCLIcmd(
+            ap_d, ap_CLIfunc);
+        ap_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            sg_farg, sg_b, sg_nbb);
+        int cmdi = RegisterCLIcmd(
+            sg_d, sg_CLIfunc);
+        sg_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            pu_farg, pu_b, pu_nbb);
+        int cmdi = RegisterCLIcmd(
+            pu_d, pu_CLIfunc);
+        pu_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            rt_farg, rt_b, rt_nbb);
+        int cmdi = RegisterCLIcmd(
+            rt_d, rt_CLIfunc);
+        rt_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     CLIADDCMD_LinARfilterPred__build_linPF();
     CLIADDCMD_LinARfilterPred__applyPF();
@@ -606,7 +1005,7 @@ long LINARFILTERPRED_LoadASCIIfiles(
                                    HPgain * ((1.0 - alpha) * var0[fcnt][vcnt] +
                                              alpha * var1[fcnt][vcnt]);
 
-                data.image[IDout[kkfr]].array.F[kkpt * nbvar + ii] =
+                dcimg[IDout[kkfr]].array.F[kkpt * nbvar + ii] =
                     (1.0 - alpha) * var0[fcnt][vcnt] +
                     alpha * var1[fcnt][vcnt] - varC[fcnt][vcnt];
                 ii++;
@@ -657,27 +1056,27 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     printf("Selecting block %ld ...\n", blkNB);
     fflush(stdout);
 
-    IDin    = image_ID(IDin_name);
-    IDblknb = image_ID(IDblknb_name);
-    naxis   = data.image[IDin].md[0].naxis;
-    mmax    = data.image[IDblknb].md[0].size[0];
+    IDin    = image_ID(IDin_name, dcimg, dcnimg);
+    IDblknb = image_ID(IDblknb_name, dcimg, dcnimg);
+    naxis   = dcimg[IDin].md[0].naxis;
+    mmax    = dcimg[IDblknb].md[0].size[0];
 
-    if(data.image[IDin].md[0].size[0] != data.image[IDblknb].md[0].size[0])
+    if(dcimg[IDin].md[0].size[0] != dcimg[IDblknb].md[0].size[0])
     {
         printf(
             "WARNING: block index file and telemetry have different sizes\n");
         fflush(stdout);
-        mmax = data.image[IDin].md[0].size[0];
-        if(data.image[IDblknb].md[0].size[0] < mmax)
+        mmax = dcimg[IDin].md[0].size[0];
+        if(dcimg[IDblknb].md[0].size[0] < mmax)
         {
-            mmax = data.image[IDblknb].md[0].size[0];
+            mmax = dcimg[IDblknb].md[0].size[0];
         }
     }
 
     NBmodes1 = 0;
     for(m = 0; m < mmax; m++)
     {
-        if(data.image[IDblknb].array.UI16[m] == blkNB)
+        if(dcimg[IDblknb].array.UI16[m] == blkNB)
         {
             NBmodes1++;
         }
@@ -692,23 +1091,34 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
 
     for(uint8_t axis = 0; axis < naxis; axis++)
     {
-        sizearray[axis] = data.image[IDin].md[0].size[axis];
+        sizearray[axis] = dcimg[IDin].md[0].size[axis];
     }
     sizearray[0] = NBmodes1;
 
-    create_image_ID(IDout_name,
-                    naxis,
-                    sizearray,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = naxis;
+        for(uint8_t a = 0; a < naxis;
+            a++)
+        {
+            imgout_tmp.mdt->size[a] =
+                sizearray[a];
+        }
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
 
-    xsize = data.image[IDin].md[0].size[0];
+    xsize = dcimg[IDin].md[0].size[0];
     if(naxis > 1)
     {
-        ysize = data.image[IDin].md[0].size[1];
+        ysize = dcimg[IDin].md[0].size[1];
     }
     else
     {
@@ -716,7 +1126,7 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     }
     if(naxis > 2)
     {
-        zsize = data.image[IDin].md[0].size[2];
+        zsize = dcimg[IDin].md[0].size[2];
     }
     else
     {
@@ -728,12 +1138,12 @@ imageID LINARFILTERPRED_SelectBlock(const char *IDin_name,
     for(uint32_t jj = 0; jj < ysize; jj++)
         for(uint32_t kk = 0; kk < zsize; kk++)
             for(uint32_t ii = 0; ii < mmax; ii++)
-                if(data.image[IDblknb].array.UI16[ii] == blkNB)
+                if(dcimg[IDblknb].array.UI16[ii] == blkNB)
                 {
                     //printf("%ld / %ld   cnt = %8ld / %ld\n", ii, xsize, cnt, NBmodes1*ysize*zsize);
                     //fflush(stdout);
-                    data.image[IDout].array.F[cnt] =
-                        data.image[IDin]
+                    dcimg[IDout].array.F[cnt] =
+                        dcimg[IDin]
                         .array.F[kk * xsize * ysize + jj * ysize + ii];
                     cnt++;
                 }
@@ -766,9 +1176,9 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name,
 
     uint32_t *imsizeout;
 
-    IDin     = image_ID(IDin_name);
-    xsize    = data.image[IDin].md[0].size[0];
-    ysize    = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(IDin_name, dcimg, dcnimg);
+    xsize    = dcimg[IDin].md[0].size[0];
+    ysize    = dcimg[IDin].md[0].size[1];
     xsizeout = xsize * NBstep;
     ysizeout = ysize - NBstep;
 
@@ -781,7 +1191,24 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name,
 
     imsizeout[0] = xsizeout;
     imsizeout[1] = ysizeout;
-    create_image_ID(IDout_name, 2, imsizeout, _DATATYPE_FLOAT, 1, 0, 0, &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            imsizeout[0];
+        imgout_tmp.mdt->size[1] =
+            imsizeout[1];
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
     free(imsizeout);
 
     long step;
@@ -791,9 +1218,9 @@ imageID linARfilterPred_repeat_shift_X(const char *IDin_name,
         {
             for(uint32_t jjout = 0; jjout < ysize - NBstep; jjout++)
             {
-                data.image[IDout]
+                dcimg[IDout]
                 .array.F[jjout * xsizeout + step * xsize + ii] =
-                    data.image[IDin]
+                    dcimg[IDin]
                     .array.F[(jjout + NBstep - step - 1) * xsize + ii];
             }
         }
@@ -925,21 +1352,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     long IDv;
     if((IDv = variable_ID("_SVD_PSINV")) != -1)
     {
-        PSINV_MODE = (int)(data.variable[IDv].value.f + 0.1);
+        PSINV_MODE = (int)(dcvar[IDv].value.f + 0.1);
         printf("PSINV_MODE = %d\n", PSINV_MODE);
     }
 
     float PSINV_s = 1.0e-6;
     if((IDv = variable_ID("_SVD_s")) != -1)
     {
-        PSINV_s = data.variable[IDv].value.f;
+        PSINV_s = dcvar[IDv].value.f;
         printf("PSINV_s = %f\n", PSINV_s);
     }
 
     float PSINV_tol = 1.0;
     if((IDv = variable_ID("_SVD_tol")) != -1)
     {
-        PSINV_tol = data.variable[IDv].value.f;
+        PSINV_tol = dcvar[IDv].value.f;
         printf("PSINV_tol = %f\n", PSINV_tol);
     }
 
@@ -959,16 +1386,32 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     }
     imsize[0] = 4;
     imsize[1] = 1;
-    create_image_ID(imname, 2, imsize, _DATATYPE_FLOAT, 1, 0, 0, &IDPFparam);
+    {
+        IMGID imgparam =
+            imgid_make_from_name(imname);
+        imgparam.mdt->naxis = 2;
+        imgparam.mdt->size[0] =
+            imsize[0];
+        imgparam.mdt->size[1] =
+            imsize[1];
+        imgparam.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgparam.mdt->shared = 1;
+        imgparam.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgparam);
+        IDPFparam = imgparam.ID;
+    }
     free(imsize);
 
-    if((IDPFparam = image_ID(imname)) != -1)
+    if((IDPFparam = image_ID(imname, dcimg, dcnimg)) != -1)
     {
         ExternalPFparam                  = 1;
-        data.image[IDPFparam].array.F[0] = PFlag;
-        data.image[IDPFparam].array.F[1] = SVDeps;
-        data.image[IDPFparam].array.F[2] = RegLambda;
-        data.image[IDPFparam].array.F[3] = LOOPgain;
+        dcimg[IDPFparam].array.F[0] = PFlag;
+        dcimg[IDPFparam].array.F[1] = SVDeps;
+        dcimg[IDPFparam].array.F[2] = RegLambda;
+        dcimg[IDPFparam].array.F[3] = LOOPgain;
     }
     else
     {
@@ -998,43 +1441,43 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// subset of the telemetry variables to be considered.
 
     /// ### Read input telemetry image IDin_name to measure xsize, ysize and number of samples
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
 
-    switch(data.image[IDin].md[0].naxis)
+    switch(dcimg[IDin].md[0].naxis)
     {
 
         case 2:
             /// If 2D image:
             /// - xysize <- size[0] is number of variables
             /// - nbspl <- size[1] is number of samples
-            nbspl = data.image[IDin].md[0].size[1];
-            xsize = data.image[IDin].md[0].size[0];
+            nbspl = dcimg[IDin].md[0].size[1];
+            xsize = dcimg[IDin].md[0].size[0];
             ysize = 1;
             // copy of image to avoid input change during computation
             create_2Dimage_ID("PFin_cp",
-                              data.image[IDin].md[0].size[0],
-                              data.image[IDin].md[0].size[1],
+                              dcimg[IDin].md[0].size[0],
+                              dcimg[IDin].md[0].size[1],
                               &IDincp);
             inNBelem =
-                data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1];
+                dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1];
             break;
 
         case 3:
             /// If 3D image
             /// - xysize <- size[0] * size[1] is number of variables
             /// - nbspl <- size[2] is number of samples
-            nbspl = data.image[IDin].md[0].size[2];
-            xsize = data.image[IDin].md[0].size[0];
-            ysize = data.image[IDin].md[0].size[1];
+            nbspl = dcimg[IDin].md[0].size[2];
+            xsize = dcimg[IDin].md[0].size[0];
+            ysize = dcimg[IDin].md[0].size[1];
             create_3Dimage_ID("PFin_copy",
-                              data.image[IDin].md[0].size[0],
-                              data.image[IDin].md[0].size[1],
-                              data.image[IDin].md[0].size[2],
+                              dcimg[IDin].md[0].size[0],
+                              dcimg[IDin].md[0].size[1],
+                              dcimg[IDin].md[0].size[2],
                               &IDincp);
 
-            inNBelem = data.image[IDin].md[0].size[0] *
-                       data.image[IDin].md[0].size[1] *
-                       data.image[IDin].md[0].size[2];
+            inNBelem = dcimg[IDin].md[0].size[0] *
+                       dcimg[IDin].md[0].size[1] *
+                       dcimg[IDin].md[0].size[2];
             break;
 
         default:
@@ -1083,7 +1526,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// Otherwise, all variables are active\n
     /// The number of active input variables is stored in NBpixin.
 
-    IDinmask = image_ID("inmask");
+    IDinmask = image_ID("inmask", dcimg, dcnimg);
     if(IDinmask == -1)
     {
         NBpixin = 0; //xsize*ysize;
@@ -1102,7 +1545,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         NBpixin = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDinmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
@@ -1145,7 +1588,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         abort();
     }
 
-    IDoutmask = image_ID("outmask");
+    IDoutmask = image_ID("outmask", dcimg, dcnimg);
     if(IDoutmask == -1)
     {
         NBpixout = 0; //xsize*ysize;
@@ -1164,7 +1607,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         NBpixout = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDoutmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;
@@ -1178,7 +1621,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// array sizes depend on its value.
     if(ExternalPFparam == 1)
     {
-        PFlag_run = data.image[IDPFparam].array.F[0];
+        PFlag_run = dcimg[IDPFparam].array.F[0];
     }
     else
     {
@@ -1221,7 +1664,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         create_2Dimage_ID("PFmatD", NBmvec + mvecsize, mvecsize, &IDmatA);
     }
 
-    IDmatA = image_ID("PFmatD");
+    IDmatA = image_ID("PFmatD", dcimg, dcnimg);
 
     /// Data matrix conventions :
     /// - each column (ii = cst) is a measurement
@@ -1256,10 +1699,10 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         /// *STEP: Read parameters from external image (optional)*\n
         if(ExternalPFparam == 1)
         {
-            PFlag_run     = data.image[IDPFparam].array.F[0];
-            SVDeps_run    = data.image[IDPFparam].array.F[1];
-            RegLambda_run = data.image[IDPFparam].array.F[2];
-            LOOPgain_run  = data.image[IDPFparam].array.F[3];
+            PFlag_run     = dcimg[IDPFparam].array.F[0];
+            SVDeps_run    = dcimg[IDPFparam].array.F[1];
+            RegLambda_run = dcimg[IDPFparam].array.F[2];
+            LOOPgain_run  = dcimg[IDPFparam].array.F[3];
         }
         else
         {
@@ -1273,7 +1716,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             "=========== LOOP ITERATION %6ld ======= [ExternalPFparam = %d ]\n",
             iter,
             ExternalPFparam);
-        printf(" parameters read from %s\n", data.image[IDPFparam].md[0].name);
+        printf(" parameters read from %s\n", dcimg[IDPFparam].md[0].name);
         printf("  PFlag     = %20f      ", PFlag_run);
         printf("  SVDeps    = %20f\n", SVDeps_run);
         printf("  RegLambda = %20f      ", RegLambda_run);
@@ -1292,16 +1735,16 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         clock_gettime(CLOCK_MILK, &t0);
         if(LOOPmode == 1)
         {
-            ImageStreamIO_semwait(data.image+IDin, semtrig);
+            ImageStreamIO_semwait(dcimg+IDin, semtrig);
         }
 
         /// *STEP: Copy IDin to IDincp*
         ///
         /// Necessary as input may be continuously changing between consecutive loop iterations.
         ///
-        IDincp = image_ID("PFin_copy");
-        memcpy(data.image[IDincp].array.F,
-               data.image[IDin].array.F,
+        IDincp = image_ID("PFin_copy", dcimg, dcnimg);
+        memcpy(dcimg[IDincp].array.F,
+               dcimg[IDin].array.F,
                sizeof(float) * inNBelem);
 
         //save_fits("PFin_copy", "test_PFin_copy.fits");
@@ -1318,7 +1761,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 for(m = 0; m < nbspl; m++)
                 {
                     ave_inarray[pix] +=
-                        data.image[IDincp]
+                        dcimg[IDincp]
                         .array.F[m * xysize + pixarray_xy[pix]];
                 }
                 ave_inarray[pix] /= nbspl;
@@ -1341,9 +1784,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             for(pix = 0; pix < NBpixin; pix++)
                 for(dt = 0; dt < PForder; dt++)
                 {
-                    data.image[IDmatA]
+                    dcimg[IDmatA]
                     .array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
-                        data.image[IDincp]
+                        dcimg[IDincp]
                         .array.F[(k0 - dt) * xysize + pixarray_xy[pix]] -
                         ave_inarray[pix];
                 }
@@ -1362,7 +1805,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             for(m = 0; m < mvecsize; m++)
             {
                 //m1 = NBmvec + m;
-                data.image[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
+                dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
                     RegLambda_run;
             }
         }
@@ -1391,12 +1834,12 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 k0 = m + PForder - 1;
                 k0 += (long) PFlag_run;
 
-                data.image[IDfm].array.F[PFpix * NBmvec + m] =
+                dcimg[IDfm].array.F[PFpix * NBmvec + m] =
                     (1.0 - alpha) *
-                    data.image[IDincp]
+                    dcimg[IDincp]
                     .array.F[(k0) * xysize + outpixarray_xy[PFpix]] +
                     alpha *
-                    data.image[IDincp]
+                    dcimg[IDincp]
                     .array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
             }
         save_fits("PFfmdat", "PFfmdat.fits");
@@ -1437,7 +1880,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             save_fits("PF_VTmat", "PF_VTmat.fits");
             save_fits("PFmatC", "PFmatC.fits");
         }
-        IDmatC = image_ID("PFmatC");
+        IDmatC = image_ID("PFmatC", dcimg, dcnimg);
 
         ///
         /// ### Assemble Predictive Filter
@@ -1482,33 +1925,58 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 imsizearray[1] = NBpixout;
                 sprintf(IDoutPF_name_raw, "%s_raw", IDoutPF_name);
 
-                create_image_ID(IDoutPF_name,
-                                2,
-                                imsizearray,
-                                _DATATYPE_FLOAT,
-                                1,
-                                1,
-                                0,
-                                &IDoutPF2D);
-                create_image_ID(IDoutPF_name_raw,
-                                2,
-                                imsizearray,
-                                _DATATYPE_FLOAT,
-                                1,
-                                1,
-                                0,
-                                &IDoutPF2Draw);
+                {
+                    IMGID imgpf =
+                        imgid_make_from_name(
+                            IDoutPF_name);
+                    imgpf.mdt->naxis = 2;
+                    imgpf.mdt->size[0] =
+                        imsizearray[0];
+                    imgpf.mdt->size[1] =
+                        imsizearray[1];
+                    imgpf.mdt->datatype =
+                        _DATATYPE_FLOAT;
+                    imgpf.mdt->shared = 1;
+                    imgpf.mdt->NBkw = 1;
+                    imgpf.im =
+                        (IMAGE *) calloc(
+                            1,
+                            sizeof(IMAGE));
+                    imgid_mkimage(&imgpf);
+                    IDoutPF2D = imgpf.ID;
+                }
+                {
+                    IMGID imgpfr =
+                        imgid_make_from_name(
+                            IDoutPF_name_raw);
+                    imgpfr.mdt->naxis = 2;
+                    imgpfr.mdt->size[0] =
+                        imsizearray[0];
+                    imgpfr.mdt->size[1] =
+                        imsizearray[1];
+                    imgpfr.mdt->datatype =
+                        _DATATYPE_FLOAT;
+                    imgpfr.mdt->shared = 1;
+                    imgpfr.mdt->NBkw = 1;
+                    imgpfr.im =
+                        (IMAGE *) calloc(
+                            1,
+                            sizeof(IMAGE));
+                    imgid_mkimage(&imgpfr);
+                    IDoutPF2Draw =
+                        imgpfr.ID;
+                }
                 free(imsizearray);
                 COREMOD_MEMORY_image_set_semflush(IDoutPF_name, -1);
                 COREMOD_MEMORY_image_set_semflush(IDoutPF_name_raw, -1);
             }
             else
             {
-                IDoutPF2D = image_ID(IDoutPF_name);
+                IDoutPF2D = image_ID(IDoutPF_name, dcimg, dcnimg);
             }
         }
 
-        IDoutmask = image_ID("outmask");
+        IDoutmask = image_ID("outmask", dcimg, dcnimg);
 
         printf("===========================================================\n");
         printf("ASSEMBLING OUTPUT\n");
@@ -1519,7 +1987,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
         printf("  PForder  = %ld\n", PForder);
         printf("===========================================================\n");
 
-        long IDoutPF2Dn = image_ID("psinvPFmat");
+        long IDoutPF2Dn = image_ID("psinvPFmat", dcimg, dcnimg);
         if(IDoutPF2Dn == -1)
         {
             printf("------------------- CPU computing PF matrix\n");
@@ -1542,11 +2010,11 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                         ind1 = (NBpixin * dt + pix) * NBmvec1;
                         for(m = 0; m < NBmvec; m++)
                         {
-                            val += data.image[IDmatC].array.F[ind1 + m] *
-                                   data.image[IDfm].array.F[PFpix * NBmvec + m];
+                            val += dcimg[IDmatC].array.F[ind1 + m] *
+                                   dcimg[IDfm].array.F[PFpix * NBmvec + m];
                         }
 
-                        data.image[IDoutPF2Dn]
+                        dcimg[IDoutPF2Dn]
                         .array.F[PFpix * (PForder * NBpixin) +
                                        dt * NBpixin + pix] = val;
                     }
@@ -1561,21 +2029,21 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
         if(LOOPmode == 1)
         {
-            data.image[IDoutPF2Draw].md[0].write = 1;
-            memcpy(data.image[IDoutPF2Draw].array.F,
-                   data.image[IDoutPF2Dn].array.F,
+            dcimg[IDoutPF2Draw].md[0].write = 1;
+            memcpy(dcimg[IDoutPF2Draw].array.F,
+                   dcimg[IDoutPF2Dn].array.F,
                    sizeof(float) * NBpixout * NBpixin * PForder);
             COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
-            data.image[IDoutPF2Draw].md[0].cnt0++;
-            data.image[IDoutPF2Draw].md[0].write = 0;
+            dcimg[IDoutPF2Draw].md[0].cnt0++;
+            dcimg[IDoutPF2Draw].md[0].write = 0;
         }
 
         // Mix current PF with last one
-        data.image[IDoutPF2D].md[0].write = 1;
+        dcimg[IDoutPF2D].md[0].write = 1;
         if(LOOPmode == 0)
         {
-            memcpy(data.image[IDoutPF2D].array.F,
-                   data.image[IDoutPF2Dn].array.F,
+            memcpy(dcimg[IDoutPF2D].array.F,
+                   dcimg[IDoutPF2Dn].array.F,
                    sizeof(float) * NBpixout * NBpixin * PForder);
             save_fits(IDoutPF_name, "_outPF.fits");
         }
@@ -1587,13 +2055,13 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 for(pix = 0; pix < NBpixin; pix++)
                     for(dt = 0; dt < PForder; dt++)
                     {
-                        val0 = data.image[IDoutPF2D]
+                        val0 = dcimg[IDoutPF2D]
                                .array.F[PFpix * (PForder * NBpixin) +
                                               dt * NBpixin + pix]; // Previous
-                        val = data.image[IDoutPF2Dn]
+                        val = dcimg[IDoutPF2Dn]
                               .array.F[PFpix * (PForder * NBpixin) +
                                              dt * NBpixin + pix]; // New
-                        data.image[IDoutPF2D]
+                        dcimg[IDoutPF2D]
                         .array.F[PFpix * (PForder * NBpixin) +
                                        dt * NBpixin + pix] =
                                      (1.0 - gain) * val0 + gain * val;
@@ -1602,8 +2070,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             fflush(stdout);
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
-        data.image[IDoutPF2D].md[0].cnt0++;
-        data.image[IDoutPF2D].md[0].write = 0;
+        dcimg[IDoutPF2D].md[0].cnt0++;
+        dcimg[IDoutPF2D].md[0].write = 0;
 
         if(testmode == 2)
         {
@@ -1620,10 +2088,10 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
                 for(PFpix = 0; PFpix < NBpixout; PFpix++)
                     for(dt = 0; dt < PForder; dt++)
                     {
-                        val = data.image[IDoutPF2D]
+                        val = dcimg[IDoutPF2D]
                               .array.F[PFpix * (PForder * NBpixin) +
                                              dt * NBpixin + pix];
-                        data.image[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
+                        dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
                                                       NBpixin * PFpix + pix] =
                                                           val;
                     }
@@ -1699,16 +2167,16 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
     //    long jj; // output index
     //    long kk; // time step index
 
-    IDfilt = image_ID(IDfilt_name);
-    IDin   = image_ID(IDin_name);
+    IDfilt = image_ID(IDfilt_name, dcimg, dcnimg);
+    IDin   = image_ID(IDin_name, dcimg, dcnimg);
 
-    PForder   = data.image[IDfilt].md[0].size[2];
-    NBpix_in  = data.image[IDfilt].md[0].size[0];
-    NBpix_out = data.image[IDfilt].md[0].size[1];
+    PForder   = dcimg[IDfilt].md[0].size[2];
+    NBpix_in  = dcimg[IDfilt].md[0].size[0];
+    NBpix_out = dcimg[IDfilt].md[0].size[1];
 
     list_image_ID();
 
-    if(data.image[IDin].md[0].size[0] * data.image[IDin].md[0].size[1] !=
+    if(dcimg[IDin].md[0].size[0] * dcimg[IDin].md[0].size[1] !=
             NBpix_in)
     {
         printf(
@@ -1728,14 +2196,25 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
 
     imsizearray[0] = NBpix_out;
     imsizearray[1] = 1;
-    create_image_ID(IDout_name,
-                    2,
-                    imsizearray,
-                    _DATATYPE_FLOAT,
-                    1,
-                    1,
-                    0,
-                    &IDout);
+    {
+        IMGID imgout_tmp =
+            imgid_make_from_name(
+                IDout_name);
+        imgout_tmp.mdt->naxis = 2;
+        imgout_tmp.mdt->size[0] =
+            imsizearray[0];
+        imgout_tmp.mdt->size[1] =
+            imsizearray[1];
+        imgout_tmp.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout_tmp.mdt->shared = 1;
+        imgout_tmp.mdt->NBkw = 1;
+        imgout_tmp.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout_tmp);
+        IDout = imgout_tmp.ID;
+    }
     free(imsizearray);
     COREMOD_MEMORY_image_set_semflush(IDout_name, -1);
     printf("Done\n");
@@ -1755,7 +2234,7 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
         abort();
     }
 
-    while(ImageStreamIO_semtrywait(data.image+IDin, semtrig) == 0)
+    while(ImageStreamIO_semtrywait(dcimg+IDin, semtrig) == 0)
     {
     }
     while(1)
@@ -1779,35 +2258,35 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
                 for(uint32_t kk = 1; kk < PForder; kk++)
                 {
                     outarray[jj] +=
-                        data.image[IDfilt].array.F[kk * NBpix_in * NBpix_out +
+                        dcimg[IDfilt].array.F[kk * NBpix_in * NBpix_out +
                                                    jj * NBpix_in + ii] *
                         inarray[kk * NBpix_in + ii];
                 }
 
-        ImageStreamIO_semwait(data.image+IDin, semtrig);
+        ImageStreamIO_semwait(dcimg+IDin, semtrig);
 
         // write new input in inarray vector
         for(uint32_t ii = 0; ii < NBpix_in; ii++)
         {
-            inarray[ii] = data.image[IDin].array.F[ii];
+            inarray[ii] = dcimg[IDin].array.F[ii];
         }
 
         // multiply input by prediction matrix
         for(uint32_t jj = 0; jj < NBpix_out; jj++)
             for(uint32_t ii = 0; ii < NBpix_in; ii++)
             {
-                outarray[jj] += data.image[IDfilt].array.F[jj * NBpix_in + ii] *
+                outarray[jj] += dcimg[IDfilt].array.F[jj * NBpix_in + ii] *
                                 inarray[ii];
             }
 
-        data.image[IDout].md[0].write = 1;
+        dcimg[IDout].md[0].write = 1;
         for(uint32_t jj = 0; jj < NBpix_out; jj++)
         {
-            data.image[IDout].array.F[jj] = outarray[jj];
+            dcimg[IDout].array.F[jj] = outarray[jj];
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-        data.image[IDout].md[0].cnt0++;
-        data.image[IDout].md[0].write = 0;
+        dcimg[IDout].md[0].cnt0++;
+        dcimg[IDout].md[0].write = 0;
     }
 
     free(inarray);
@@ -1846,24 +2325,24 @@ imageID LINARFILTERPRED_Apply_LinPredictor(const char *IDfilt_name,
 
     imageID IDoutf;
 
-    IDin   = image_ID(IDin_name);
-    IDfilt = image_ID(IDfilt_name);
+    IDin   = image_ID(IDin_name, dcimg, dcnimg);
+    IDfilt = image_ID(IDfilt_name, dcimg, dcnimg);
 
-    switch(data.image[IDin].md[0].naxis)
+    switch(dcimg[IDin].md[0].naxis)
     {
 
         case 2:
-            nbspl = data.image[IDin].md[0].size[1];
-            xsize = data.image[IDin].md[0].size[0];
+            nbspl = dcimg[IDin].md[0].size[1];
+            xsize = dcimg[IDin].md[0].size[0];
             ysize = 1;
             create_2Dimage_ID(IDout_name, xsize, nbspl, &IDout);
             create_2Dimage_ID("outf", xsize, nbspl, &IDoutf);
             break;
 
         case 3:
-            nbspl = data.image[IDin].md[0].size[2];
-            xsize = data.image[IDin].md[0].size[0];
-            ysize = data.image[IDin].md[0].size[1];
+            nbspl = dcimg[IDin].md[0].size[2];
+            xsize = dcimg[IDin].md[0].size[0];
+            ysize = dcimg[IDin].md[0].size[1];
             create_3Dimage_ID(IDout_name, xsize, ysize, nbspl, &IDout);
             create_3Dimage_ID("outf", xsize, ysize, nbspl, &IDoutf);
             break;
@@ -1874,10 +2353,10 @@ imageID LINARFILTERPRED_Apply_LinPredictor(const char *IDfilt_name,
     }
     xysize = xsize * ysize;
 
-    PForder = data.image[IDfilt].md[0].size[2];
+    PForder = dcimg[IDfilt].md[0].size[2];
 
-    if((data.image[IDfilt].md[0].size[0] != xysize) ||
-            (data.image[IDfilt].md[0].size[1] != xysize))
+    if((dcimg[IDfilt].md[0].size[0] != xysize) ||
+            (dcimg[IDfilt].md[0].size[1] != xysize))
     {
         printf("ERROR: filter \"%s\" size is incorrect\n", IDfilt_name);
         exit(0);
@@ -1896,23 +2375,23 @@ imageID LINARFILTERPRED_Apply_LinPredictor(const char *IDfilt_name,
                 for(uint32_t ii = 0; ii < xsize * ysize;
                         ii++) // input variable
                 {
-                    valp += data.image[IDfilt].array.F[xysize * xysize * step +
+                    valp += dcimg[IDfilt].array.F[xysize * xysize * step +
                                                        iip * xysize + ii] *
-                            data.image[IDin].array.F[(kk - step) * xysize + ii];
+                            dcimg[IDin].array.F[(kk - step) * xysize + ii];
                 }
             }
-            data.image[IDout].array.F[kk * xysize + iip] = valp;
+            dcimg[IDout].array.F[kk * xysize + iip] = valp;
 
             valf = 0.0;
             if(kk + PFlag + 1 < nbspl)
             {
                 valf =
                     (1.0 - alpha) *
-                    data.image[IDin].array.F[(kk + PFlagl) * xysize + iip] +
-                    alpha * data.image[IDin]
+                    dcimg[IDin].array.F[(kk + PFlagl) * xysize + iip] +
+                    alpha * dcimg[IDin]
                     .array.F[(kk + PFlagl + 1) * xysize + iip];
             }
-            data.image[IDoutf].array.F[kk * xysize + iip] = valf;
+            dcimg[IDoutf].array.F[kk * xysize + iip] = valf;
         }
     }
 
@@ -1935,11 +2414,11 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
     uint8_t   naxis;
 
     // IDPF should be square
-    IDPF    = image_ID(IDPF_name);
-    NBmode  = data.image[IDPF].md[0].size[0];
+    IDPF    = image_ID(IDPF_name, dcimg, dcnimg);
+    NBmode  = dcimg[IDPF].md[0].size[0];
     NBmode2 = NBmode * NBmode;
-    assert(data.image[IDPF].md[0].size[0] == data.image[IDPF].md[0].size[1]);
-    NBtstep = data.image[IDPF].md[0].size[2];
+    assert(dcimg[IDPF].md[0].size[0] == dcimg[IDPF].md[0].size[1]);
+    NBtstep = dcimg[IDPF].md[0].size[2];
 
     sizearray = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(sizearray == NULL)
@@ -1952,7 +2431,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
     sizearray[1] = NBmode;
     naxis        = 2;
 
-    IDPFM = image_ID(IDPFM_name);
+    IDPFM = image_ID(IDPFM_name, dcimg, dcnimg);
 
     if(IDPFM == -1)
     {
@@ -1961,33 +2440,43 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
                (long) sizearray[0],
                (long) sizearray[1]);
         fflush(stdout);
-        create_image_ID(IDPFM_name,
-                        naxis,
-                        sizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDPFM);
+        {
+            IMGID imgpfm =
+                imgid_make_from_name(
+                    IDPFM_name);
+            imgpfm.mdt->naxis = naxis;
+            imgpfm.mdt->size[0] =
+                sizearray[0];
+            imgpfm.mdt->size[1] =
+                sizearray[1];
+            imgpfm.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfm.mdt->shared = 1;
+            imgpfm.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfm);
+            IDPFM = imgpfm.ID;
+        }
     }
     free(sizearray);
 
-    data.image[IDPFM].md[0].write = 1;
+    dcimg[IDPFM].md[0].write = 1;
     for(outmode = 0; outmode < NBmode; outmode++)
     {
         for(tstep = 0; tstep < NBtstep; tstep++)
             for(inmode = 0; inmode < NBmode; inmode++)
-                data.image[IDPFM].array.F[outmode * (NBmode * NBtstep) +
+                dcimg[IDPFM].array.F[outmode * (NBmode * NBtstep) +
                                           tstep * NBmode + inmode] =
                                               (1.0 - alpha) *
-                                              data.image[IDPFM].array.F[outmode * (NBmode * NBtstep) +
+                                              dcimg[IDPFM].array.F[outmode * (NBmode * NBtstep) +
                                                       tstep * NBmode + inmode] +
-                                              alpha * data.image[IDPF].array.F[tstep * NBmode2 +
+                                              alpha * dcimg[IDPF].array.F[tstep * NBmode2 +
                                                       outmode * NBmode + inmode];
     }
     COREMOD_MEMORY_image_set_sempost_byID(IDPFM, -1);
-    data.image[IDPFM].md[0].write = 0;
-    data.image[IDPFM].md[0].cnt0++;
+    dcimg[IDPFM].md[0].write = 0;
+    dcimg[IDPFM].md[0].cnt0++;
 
     return IDPFM;
 }
@@ -2070,21 +2559,21 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     long IDmasterout;
     char imname[200];
 
-    IDmodevalIN = image_ID(IDmodevalIN_name);
-    NBmodeIN0   = data.image[IDmodevalIN].md[0].size[0];
+    IDmodevalIN = image_ID(IDmodevalIN_name, dcimg, dcnimg);
+    NBmodeIN0   = dcimg[IDmodevalIN].md[0].size[0];
 
-    IDPFM     = image_ID(IDPFM_name);
-    NBmodeOUT = data.image[IDPFM].md[0].size[1];
+    IDPFM     = image_ID(IDPFM_name, dcimg, dcnimg);
+    NBmodeOUT = dcimg[IDPFM].md[0].size[1];
 
     sprintf(imname, "aol%ld_modevalPF", loop);
-    IDmasterout = image_ID(imname);
+    IDmasterout = image_ID(imname, dcimg, dcnimg);
 
-    IDinmask = image_ID("inmask");
+    IDinmask = image_ID("inmask", dcimg, dcnimg);
     if(IDinmask != -1)
     {
         NBinmaskpix = 0;
-        for(uint32_t ii = 0; ii < data.image[IDinmask].md[0].size[0]; ii++)
-            if(data.image[IDinmask].array.F[ii] > 0.5)
+        for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
+            if(dcimg[IDinmask].array.F[ii] > 0.5f)
             {
                 NBinmaskpix++;
             }
@@ -2097,8 +2586,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         }
 
         NBinmaskpix = 0;
-        for(uint32_t ii = 0; ii < data.image[IDinmask].md[0].size[0]; ii++)
-            if(data.image[IDinmask].array.F[ii] > 0.5)
+        for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
+            if(dcimg[IDinmask].array.F[ii] > 0.5f)
             {
                 inmaskindex[NBinmaskpix] = ii;
                 NBinmaskpix++;
@@ -2110,9 +2599,9 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         NBinmaskpix = NBmodeIN0;
         printf("no input mask -> assuming NBinmaskpix = %ld\n", NBinmaskpix);
         create_2Dimage_ID("inmask", NBinmaskpix, 1, &IDinmask);
-        for(uint32_t ii = 0; ii < data.image[IDinmask].md[0].size[0]; ii++)
+        for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
         {
-            data.image[IDinmask].array.F[ii] = 1.0;
+            dcimg[IDinmask].array.F[ii] = 1.0f;
         }
 
         inmaskindex = (long *) malloc(sizeof(long) * NBinmaskpix);
@@ -2122,14 +2611,14 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             abort();
         }
 
-        for(uint32_t ii = 0; ii < data.image[IDinmask].md[0].size[0]; ii++)
+        for(uint32_t ii = 0; ii < dcimg[IDinmask].md[0].size[0]; ii++)
         {
             inmaskindex[NBinmaskpix] = ii;
         }
     }
     NBmodeIN = NBinmaskpix;
 
-    NBPFstep = data.image[IDPFM].md[0].size[0] / NBmodeIN;
+    NBPFstep = dcimg[IDPFM].md[0].size[0] / NBmodeIN;
 
     printf("Number of input modes         = %ld\n", NBmodeIN0);
     printf("Number of active input modes  = %ld\n", NBmodeIN);
@@ -2144,15 +2633,15 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     if((SAVEMODE > 0) || (IDmasterout != -1))
     {
-        IDoutmask = image_ID("outmask");
+        IDoutmask = image_ID("outmask", dcimg, dcnimg);
         if(IDoutmask == -1)
         {
             printf("ERROR: outmask image required\n");
             exit(0);
         }
         NBoutmaskpix = 0;
-        for(uint32_t ii = 0; ii < data.image[IDoutmask].md[0].size[0]; ii++)
-            if(data.image[IDoutmask].array.F[ii] > 0.5)
+        for(uint32_t ii = 0; ii < dcimg[IDoutmask].md[0].size[0]; ii++)
+            if(dcimg[IDoutmask].array.F[ii] > 0.5f)
             {
                 NBoutmaskpix++;
             }
@@ -2165,8 +2654,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         }
 
         NBoutmaskpix = 0;
-        for(uint32_t ii = 0; ii < data.image[IDoutmask].md[0].size[0]; ii++)
-            if(data.image[IDoutmask].array.F[ii] > 0.5)
+        for(uint32_t ii = 0; ii < dcimg[IDoutmask].md[0].size[0]; ii++)
+            if(dcimg[IDoutmask].array.F[ii] > 0.5f)
             {
                 outmaskindex[NBoutmaskpix] = ii;
                 NBoutmaskpix++;
@@ -2193,18 +2682,28 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     sizearray[0] = NBmodeOUT;
     sizearray[1] = 1;
     naxis        = 2;
-    IDPFout      = image_ID(IDPFout_name);
+    IDPFout      = image_ID(IDPFout_name, dcimg, dcnimg);
 
     if(IDPFout == -1)
     {
-        create_image_ID(IDPFout_name,
-                        naxis,
-                        sizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        0,
-                        0,
-                        &IDPFout);
+        {
+            IMGID imgpfout =
+                imgid_make_from_name(
+                    IDPFout_name);
+            imgpfout.mdt->naxis = naxis;
+            imgpfout.mdt->size[0] =
+                sizearray[0];
+            imgpfout.mdt->size[1] =
+                sizearray[1];
+            imgpfout.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfout.mdt->shared = 1;
+            imgpfout.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfout);
+            IDPFout = imgpfout.ID;
+        }
     }
     free(sizearray);
 
@@ -2273,22 +2772,22 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
     printf("Running on semaphore trigger %d of image %s\n",
            semtrig,
-           data.image[IDmodevalIN].md[0].name);
+           dcimg[IDmodevalIN].md[0].name);
 
     while(iter != NBiter)
     {
         //	printf("iter %5ld / %5ld", iter, NBiter);
         //	fflush(stdout);
 
-        ImageStreamIO_semwait(data.image+IDmodevalIN, semtrig);
+        ImageStreamIO_semwait(dcimg+IDmodevalIN, semtrig);
         //	printf("\n");
         //	fflush(stdout);
 
         // fill in buffer
         for(mode = 0; mode < NBmodeIN; mode++)
         {
-            data.image[IDINbuff].array.F[mode] =
-                data.image[IDmodevalIN]
+            dcimg[IDINbuff].array.F[mode] =
+                dcimg[IDmodevalIN]
                 .array.F[IndexOffset + inmaskindex[mode]];
         }
 
@@ -2332,22 +2831,22 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         else // if using CPU
         {
             // compute output : matrix vector mult with a CPU-based loop
-            data.image[IDPFout].md[0].write = 1;
+            dcimg[IDPFout].md[0].write = 1;
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                data.image[IDPFout].array.F[mode] = 0.0;
+                dcimg[IDPFout].array.F[mode] = 0.0f;
                 for(uint32_t ii = 0; ii < NBmodeIN * NBPFstep; ii++)
                 {
-                    data.image[IDPFout].array.F[mode] +=
-                        data.image[IDINbuff].array.F[ii] *
-                        data.image[IDPFM]
+                    dcimg[IDPFout].array.F[mode] +=
+                        dcimg[IDINbuff].array.F[ii] *
+                        dcimg[IDPFM]
                         .array
-                        .F[mode * data.image[IDPFM].md[0].size[0] + ii];
+                        .F[mode * dcimg[IDPFM].md[0].size[0] + ii];
                 }
             }
             COREMOD_MEMORY_image_set_sempost_byID(IDPFout, -1);
-            data.image[IDPFout].md[0].write = 0;
-            data.image[IDPFout].md[0].cnt0++;
+            dcimg[IDPFout].md[0].write = 0;
+            dcimg[IDPFout].md[0].cnt0++;
         }
 
         if(iter == 0)
@@ -2372,22 +2871,22 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             timesec = 1.0 * timenow.tv_sec + 1.0e-9 * timenow.tv_nsec;
 
             kk = 0;
-            data.image[IDsave].array.F[iter * (1 + NBmodeIN0 + NBmodeOUT)] =
+            dcimg[IDsave].array.F[iter * (1 + NBmodeIN0 + NBmodeOUT)] =
                 (float)(timesec - timesec0);
-            //printf(" [%f] ", data.image[IDsave].array.F[iter*(1+NBmodeIN0+NBmodeOUT)]);
+            //printf(" [%f] ", dcimg[IDsave].array.F[iter*(1+NBmodeIN0+NBmodeOUT)]);
             kk++;
             for(mode = 0; mode < NBmodeIN0; mode++)
             {
-                data.image[IDsave]
+                dcimg[IDsave]
                 .array.F[iter * (1 + NBmodeIN0 + NBmodeOUT) + kk] =
-                    data.image[IDmodevalIN].array.F[IndexOffset + mode];
+                    dcimg[IDmodevalIN].array.F[IndexOffset + mode];
                 kk++;
             }
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                data.image[IDsave]
+                dcimg[IDsave]
                 .array.F[iter * (1 + NBmodeIN0 + NBmodeOUT) + kk] =
-                    data.image[IDPFout].array.F[mode];
+                    dcimg[IDPFout].array.F[mode];
                 kk++;
             }
             //	printf(" done\n");
@@ -2400,14 +2899,14 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
             for(mode = 0; mode < NBmodeIN0; mode++)
             {
-                data.image[IDsave].array.F[iter * NBmodeIN0 + mode] =
-                    data.image[IDmodevalIN].array.F[IndexOffset + mode];
+                dcimg[IDsave].array.F[iter * NBmodeIN0 + mode] =
+                    dcimg[IDmodevalIN].array.F[IndexOffset + mode];
             }
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                data.image[IDsave]
+                dcimg[IDsave]
                 .array.F[iter * NBmodeIN0 + outmaskindex[mode]] =
-                    data.image[IDPFout].array.F[mode];
+                    dcimg[IDPFout].array.F[mode];
             }
             //	printf(" done\n");
             //	fflush(stdout);
@@ -2415,15 +2914,15 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
         if(IDmasterout != -1)
         {
-            data.image[IDmasterout].md[0].write = 1;
+            dcimg[IDmasterout].md[0].write = 1;
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                data.image[IDmasterout].array.F[outmaskindex[mode]] =
-                    data.image[IDPFout].array.F[mode];
+                dcimg[IDmasterout].array.F[outmaskindex[mode]] =
+                    dcimg[IDPFout].array.F[mode];
             }
             COREMOD_MEMORY_image_set_sempost_byID(IDmasterout, -1);
-            data.image[IDmasterout].md[0].write = 0;
-            data.image[IDmasterout].md[0].cnt0++;
+            dcimg[IDmasterout].md[0].write = 0;
+            dcimg[IDmasterout].md[0].cnt0++;
         }
 
         iter++;
@@ -2436,8 +2935,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
                 // tstep-1 -> tstep
                 for(mode = 0; mode < NBmodeIN; mode++)
                 {
-                    data.image[IDINbuff].array.F[NBmodeIN * tstep + mode] =
-                        data.image[IDINbuff]
+                    dcimg[IDINbuff].array.F[NBmodeIN * tstep + mode] =
+                        dcimg[IDINbuff]
                         .array.F[NBmodeIN * (tstep - 1) + mode];
                 }
             }
@@ -2469,7 +2968,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             {
                 fprintf(fpout,
                         "%10f ",
-                        data.image[IDsave]
+                        dcimg[IDsave]
                         .array.F[iter * (1 + NBmodeIN0 + NBmodeOUT) + kk]);
             }
 
@@ -2483,10 +2982,10 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
             {
                 if(ii0 > -1)
                 {
-                    val0 = data.image[IDsave]
+                    val0 = dcimg[IDsave]
                            .array.F[ii0 * (1 + NBmodeIN0 + NBmodeOUT) + 1 +
                                         NBmodeIN0 + mode];
-                    val1 = data.image[IDsave]
+                    val1 = dcimg[IDsave]
                            .array.F[ii1 * (1 + NBmodeIN0 + NBmodeOUT) + 1 +
                                         NBmodeIN0 + mode];
                 }
@@ -2514,13 +3013,13 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
-                val0 = data.image[IDmodevalIN]
+                val0 = dcimg[IDmodevalIN]
                        .array.F[kk0 * NBmodeIN0 + outmaskindex[mode]];
-                val1 = data.image[IDmodevalIN]
+                val1 = dcimg[IDmodevalIN]
                        .array.F[kk1 * NBmodeIN0 + outmaskindex[mode]];
                 val = tlagalpha * val0 + (1.0 - tlagalpha) * val1;
 
-                data.image[IDsave]
+                dcimg[IDsave]
                 .array.F[kk * NBmodeIN0 + outmaskindex[mode]] = val;
             }
         }
@@ -2597,13 +3096,13 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         exit(0);
     }
 
-    IDin  = image_ID(IDin_name);
-    naxis = data.image[IDin].md[0].naxis;
+    IDin  = image_ID(IDin_name, dcimg, dcnimg);
+    naxis = dcimg[IDin].md[0].naxis;
 
     nbvar = 1;
     for(axis = 0; axis < naxis - 1; axis++)
     {
-        nbvar *= data.image[IDin].md[0].size[axis];
+        nbvar *= dcimg[IDin].md[0].size[axis];
     }
 
     errval = (double *) malloc(sizeof(double) * nbvar);
@@ -2613,7 +3112,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         abort();
     }
 
-    nbstep = data.image[IDin].md[0].size[naxis - 1];
+    nbstep = dcimg[IDin].md[0].size[naxis - 1];
 
     framelag0 = (long) framelag;
     framelag1 = framelag0 + 1;
@@ -2627,7 +3126,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         for(ii = 0; ii < nbvar; ii++)
             for(step = 0; step < nbstep; step++)
             {
-                data.image[IDin].array.F[step * nbvar + ii] =
+                dcimg[IDin].array.F[step * nbvar + ii] =
                     1.0 * sin(2.0 * M_PI * step / TESTperiod);
             }
     }
@@ -2688,12 +3187,12 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
                 actval = (1.0 - alpha) * actval_array[step0] +
                          alpha * actval_array[step1];
                 mval = ((1.0 - alpha) *
-                        data.image[IDin].array.F[step0 * nbvar + ii] +
-                        alpha * data.image[IDin].array.F[step1 * nbvar + ii]) -
+                        dcimg[IDin].array.F[step0 * nbvar + ii] +
+                        alpha * dcimg[IDin].array.F[step1 * nbvar + ii]) -
                        actval;
                 actval_array[step] =
                     multfact * (actval_array[step - 1] + gain * mval);
-                tmpv = data.image[IDin].array.F[step * nbvar + ii] -
+                tmpv = dcimg[IDin].array.F[step * nbvar + ii] -
                        actval_array[step];
                 errval[ii] += tmpv * tmpv;
                 cnt++;

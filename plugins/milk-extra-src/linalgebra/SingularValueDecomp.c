@@ -5,16 +5,13 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "SingularValueDecomp.h"
 #include "SGEMM.h"
-
-
-
 
 
 // CPU mode: Use MKL if available
@@ -33,199 +30,48 @@
 #endif
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static char *inM;
-static long  fpi_inM;
-
-static char *outU;
-static long  fpi_outU;
-
-static char *outS;
-static long  fpi_outS;
-
-static char *outV;
-static long  fpi_outV;
-
-// if V is 3D, set Vdim0 to its size[0]
-// otherwise leave at 0
-static uint32_t *Vdim0;
-static long   fpi_Vdim0;
-
-
-static float *svdlim;
-static long   fpi_svdlim;
-
-static uint32_t *maxNBmode;
-static long   fpi_maxNBmode;
-
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-static uint64_t *compmode;
-static long     fpi_compmode;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // input
-        CLIARG_IMG,
-        ".inM",
-        "input matrix",
-        "inM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inM,
-        &fpi_inM
-    },
-    {
-        // output U
-        CLIARG_STR,
-        ".outU",
-        "output U",
-        "outU",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outU,
-        &fpi_outU
-    },
-    {
-        CLIARG_STR,
-        ".outS",
-        "output ingular values",
-        "outS",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outS,
-        &fpi_outS
-    },
-    {
-        // output V
-        CLIARG_STR,
-        ".outV",
-        "output V",
-        "outV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outV,
-        &fpi_outV
-    },
-    {
-        CLIARG_UINT32,
-        ".Vdim0",
-        "first dimension of V if 3D, 0 if 2D",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &Vdim0,
-        &fpi_Vdim0
-    },
-    {
-        // Singular Value Decomposition limit
-        CLIARG_FLOAT32,
-        ".svdlim",
-        "SVD limit",
-        "0.01",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &svdlim,
-        &fpi_svdlim
-    },
-    {
-        CLIARG_UINT32,
-        ".maxNBmode",
-        "Maximum number of modes",
-        "10000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &maxNBmode,
-        &fpi_maxNBmode
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    },
-    {
-        // optional computations
-        CLIARG_UINT64,
-        ".compmode",
-        "flag: optional computations and checks",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &compmode,
-        &fpi_compmode
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "compSVD",
+    .cmdkey      = "compSVD",
+    .description = "compute SVD"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_inM].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-    }
-
-    return RETURN_SUCCESS;
-}
-
+static char * inM = NULL;
+static char * outU = NULL;
+static char * outS = NULL;
+static char * outV = NULL;
+static uint32_t * Vdim0 = NULL;
+static float * svdlim = NULL;
+static uint32_t * maxNBmode = NULL;
+static int32_t * GPUdevice = NULL;
+static uint64_t * compmode = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "compSVD", "compute SVD", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    printf("CPU or GPU. Set .GPIdevice to -1 for CPU\n");
-
-    printf("Optional computations and checks specified by bitmask flag .compmode :\n");
-    printf("bit dec  description\n");
-    printf(" 0    1  Skip big matrix (U or V) computation\n");
-    printf(" 1    2  Compute pseudo-inverse, using svdlim for regularization\n");
-    printf("         Inverse stored as image psinv\n");
-    printf("         Only supported for tall input matrix\n");
-    printf(" 2    4  Check pseudo-inverse: compute input x psinv product\n");
-    printf("         result stored as image psinvcheck\n");
-    printf("         Only supported for tall input matrix\n");
-    printf(" 3    8  Reconstruct original image\n");
-    printf("\n");
-    printf("Example: compmode=6 will compute psinv and check it\n");
-    printf("\n");
-    printf("To run PCA on a sequence of images, input should be 3D cube of images\n");
-    printf("datacube U contains principal components\n");
-    printf("vextor outev are eigenvalues (magnitude) of each component\n");
-    printf("datacube V is decoding matrix\n");
-
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".outS", &outS, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output ingular values")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /**
  * @brief Compute SVD of indimM x indimN matrix
@@ -258,11 +104,10 @@ errno_t compute_SVD(
 
     // check if images already exist
     //
-    resolveIMGID(&imgin, ERRMODE_ABORT);
-    resolveIMGID(imgU, ERRMODE_NULL);
-    resolveIMGID(imgS, ERRMODE_NULL);
-    resolveIMGID(imgV, ERRMODE_NULL);
-
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgU, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(imgS, ERRMODE_NULL, dcimg, dcnimg);
+    resolveIMGID(imgV, ERRMODE_NULL, dcimg, dcnimg);
 
 
     // input dimensions
@@ -299,7 +144,6 @@ errno_t compute_SVD(
 
     // Orient matrix such that it is tall (M > N)
     //
-
 
 
     enum matrix_shape {inMshape_tall, inMshape_wide} mshape;
@@ -357,20 +201,11 @@ errno_t compute_SVD(
     // create eigenvalues array if needed
     if(imgS->ID == -1)
     {
-        imgS->naxis   = 2;
-        imgS->size[0] = Ndim;
-        imgS->size[1] = 1;
+        imgS->mdt->naxis   = 2;
+        imgS->mdt->size[0] = Ndim;
+        imgS->mdt->size[1] = 1;
         createimagefromIMGID(imgS);
     }
-
-
-
-
-
-
-
-
-
 
 
     IMGID imgATA;
@@ -388,8 +223,6 @@ errno_t compute_SVD(
         strcpy(imgATA.name, "ATA");
         computeSGEMM(imgin, imgin, &imgATA, TranspA, TranspB, GPUdev);
     }
-
-
 
 
     // singular vectors array, small dimension
@@ -440,7 +273,6 @@ errno_t compute_SVD(
         printf("KEEPING %ld MODES\n", NBmode);
 
 
-
         if(mshape == inMshape_tall)
         {
             imgmNsvec = imgV;
@@ -449,16 +281,16 @@ errno_t compute_SVD(
             {
                 if(Vdim0 == 0)
                 {
-                    imgV->naxis = 2;
-                    imgV->size[0] = inNdim;
-                    imgV->size[1] = NBmode; //inNdim;
+                    imgV->mdt->naxis = 2;
+                    imgV->mdt->size[0] = inNdim;
+                    imgV->mdt->size[1] = NBmode; //inNdim;
                 }
                 else
                 {
-                    imgV->naxis = 3;
-                    imgV->size[0] = Vdim0;
-                    imgV->size[1] = inNdim / Vdim0;
-                    imgV->size[2] = NBmode; //inNdim;
+                    imgV->mdt->naxis = 3;
+                    imgV->mdt->size[0] = Vdim0;
+                    imgV->mdt->size[1] = inNdim / Vdim0;
+                    imgV->mdt->size[2] = NBmode; //inNdim;
                 }
                 createimagefromIMGID(imgV);
             }
@@ -469,17 +301,17 @@ errno_t compute_SVD(
 
             if(imgU->ID == -1)
             {
-                imgU->naxis = imgin.md->naxis;
+                imgU->mdt->naxis = imgin.md->naxis;
                 if(imgin.md->naxis == 3)
                 {
-                    imgU->size[0] = inMdim0;
-                    imgU->size[1] = inMdim1;
-                    imgU->size[2] = NBmode; //inMdim;
+                    imgU->mdt->size[0] = inMdim0;
+                    imgU->mdt->size[1] = inMdim1;
+                    imgU->mdt->size[2] = NBmode; //inMdim;
                 }
                 else
                 {
-                    imgU->size[0] = inMdim;
-                    imgU->size[1] = NBmode; //inMdim;
+                    imgU->mdt->size[0] = inMdim;
+                    imgU->mdt->size[1] = NBmode; //inMdim;
                 }
                 createimagefromIMGID(imgU);
                 printf("[%d] imgU Created ==============================\n", __LINE__);
@@ -497,18 +329,17 @@ errno_t compute_SVD(
 
             memcpy(ptr1, ptr0, sizeof(float)*Ndim);
 
-            imgS->im->array.F[k] = sqrt(d[Ndim - k - 1]);
+            imgS->im->array.F[k] = sqrtf(d[Ndim - k - 1]);
         }
-
 
 
         // store singular values
         delete_image_ID("SV", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgSV = mkIMGID_from_name("SV");
-        imgSV.naxis = 2;
-        imgSV.datatype = _DATATYPE_FLOAT;
-        imgSV.size[0] = NBmode;
-        imgSV.size[1] = 1;
+        IMGID imgSV = imgid_make_from_name("SV");
+        imgSV.mdt->naxis = 2;
+        imgSV.mdt->datatype = _DATATYPE_FLOAT;
+        imgSV.mdt->size[0] = NBmode;
+        imgSV.mdt->size[1] = 1;
         createimagefromIMGID(&imgSV);
         for(int k = 0; k < NBmode; k++)
         {
@@ -519,11 +350,11 @@ errno_t compute_SVD(
 
         // store inv of singular values
         delete_image_ID("SVinv", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgSVinv = mkIMGID_from_name("SVinv");
-        imgSVinv.naxis = 2;
-        imgSVinv.datatype = _DATATYPE_FLOAT;
-        imgSVinv.size[0] = NBmode;
-        imgSVinv.size[1] = 1;
+        IMGID imgSVinv = imgid_make_from_name("SVinv");
+        imgSVinv.mdt->naxis = 2;
+        imgSVinv.mdt->datatype = _DATATYPE_FLOAT;
+        imgSVinv.mdt->size[0] = NBmode;
+        imgSVinv.mdt->size[1] = 1;
         createimagefromIMGID(&imgSVinv);
         for(int k = 0; k < NBmode; k++)
         {
@@ -543,17 +374,12 @@ errno_t compute_SVD(
         free(d);
         free(e);
         free(t);
+        imgid_free(&imgSV);
+        imgid_free(&imgSVinv);
 
         // imgmNsvec is matV if inMshape_tall, matU if inMshape_wide
     }
     delete_image(&imgATA, DELETE_IMAGE_ERRMODE_EXIT);
-
-
-
-
-
-
-
 
 
     if(!(compSVDmode & COMPSVD_SKIP_BIGMAT))
@@ -612,20 +438,19 @@ errno_t compute_SVD(
         printf("LIMIT = %g  - Keeping %ld / %u modes\n", SVlimit, SVkeptcnt, Ndim);
 
 
-
         // Compute pseudo-inverse
         //
         if((compSVDmode & COMPSVD_COMP_PSINV))
         {
             // assumes tall matrix
             //
-            IMGID imgmNsvec1 = mkIMGID_from_name("matNtemp");
+            IMGID imgmNsvec1 = imgid_make_from_name("matNtemp");
             if(imgmNsvec1.ID == -1)
             {
-                imgmNsvec1.naxis = 2;
+                imgmNsvec1.mdt->naxis = 2;
 
-                imgmNsvec1.size[0] = Ndim;
-                imgmNsvec1.size[1] = NBmode;
+                imgmNsvec1.mdt->size[0] = Ndim;
+                imgmNsvec1.mdt->size[1] = NBmode;
 
                 createimagefromIMGID(&imgmNsvec1);
             }
@@ -650,7 +475,6 @@ errno_t compute_SVD(
             }
 
 
-
             IMGID imgpsinv;
             {
                 int TranspA = 0;
@@ -660,6 +484,7 @@ errno_t compute_SVD(
 
                 delete_image(&imgmNsvec1, DELETE_IMAGE_ERRMODE_EXIT);
             }
+            imgid_free(&imgmNsvec1);
 
 
             // Check inverse
@@ -667,12 +492,13 @@ errno_t compute_SVD(
             if((compSVDmode & COMPSVD_COMP_CHECKPSINV))
             {
 
-                IMGID imgpsinvcheck = mkIMGID_from_name("psinvcheck");
+                IMGID imgpsinvcheck = imgid_make_from_name("psinvcheck");
                 if(mshape == inMshape_tall)
                 {
                     // inNdim < inMdim
                     computeSGEMM(imgpsinv, imgin, &imgpsinvcheck, 0, 0, GPUdev);
                 }
+                imgid_free(&imgpsinvcheck);
             }
         }
 
@@ -685,22 +511,22 @@ errno_t compute_SVD(
     {
         // un-normalized modes
         delete_image_ID(SVDunmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgunmodes = mkIMGID_from_name(SVDunmodesname);
-        imgunmodes.naxis = imgU->md->naxis;
-        imgunmodes.datatype = imgU->md->datatype;
-        imgunmodes.size[0] = imgU->md->size[0];
-        imgunmodes.size[1] = imgU->md->size[1];
-        imgunmodes.size[2] = imgU->md->size[2];
+        IMGID imgunmodes = imgid_make_from_name(SVDunmodesname);
+        imgunmodes.mdt->naxis = imgU->md->naxis;
+        imgunmodes.mdt->datatype = imgU->md->datatype;
+        imgunmodes.mdt->size[0] = imgU->md->size[0];
+        imgunmodes.mdt->size[1] = imgU->md->size[1];
+        imgunmodes.mdt->size[2] = imgU->md->size[2];
         createimagefromIMGID(&imgunmodes);
 
-        int lastaxis = imgunmodes.naxis - 1;
-        long framesize = imgunmodes.size[0];
+        int lastaxis = imgunmodes.mdt->naxis - 1;
+        long framesize = imgunmodes.mdt->size[0];
         if(lastaxis == 2)
         {
-            framesize *= imgunmodes.size[1];
+            framesize *= imgunmodes.mdt->size[1];
         }
 
-        for(int kk = 0; kk < imgunmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgunmodes.mdt->size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
             for(long ii = 0; ii < framesize; ii++)
@@ -711,8 +537,10 @@ errno_t compute_SVD(
         }
 
         delete_image_ID("SVDinrec", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        IMGID iminrec = imgid_make_from_name("SVDinrec");
         computeSGEMM(imgunmodes, *imgV, &iminrec, 0, 1, GPUdev);
+        imgid_free(&imgunmodes);
+        imgid_free(&iminrec);
     }
 
 
@@ -723,22 +551,22 @@ errno_t compute_SVD(
     {
         // un-normalized modes
         delete_image_ID(SVDvnmodesname, DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgvnmodes = mkIMGID_from_name(SVDvnmodesname);
-        imgvnmodes.naxis = imgV->md->naxis;
-        imgvnmodes.datatype = imgV->md->datatype;
-        imgvnmodes.size[0] = imgV->md->size[0];
-        imgvnmodes.size[1] = imgV->md->size[1];
-        imgvnmodes.size[2] = imgV->md->size[2];
+        IMGID imgvnmodes = imgid_make_from_name(SVDvnmodesname);
+        imgvnmodes.mdt->naxis = imgV->md->naxis;
+        imgvnmodes.mdt->datatype = imgV->md->datatype;
+        imgvnmodes.mdt->size[0] = imgV->md->size[0];
+        imgvnmodes.mdt->size[1] = imgV->md->size[1];
+        imgvnmodes.mdt->size[2] = imgV->md->size[2];
         createimagefromIMGID(&imgvnmodes);
 
-        int lastaxis = imgvnmodes.naxis - 1;
-        long framesize = imgvnmodes.size[0];
+        int lastaxis = imgvnmodes.mdt->naxis - 1;
+        long framesize = imgvnmodes.mdt->size[0];
         if(lastaxis == 2)
         {
-            framesize *= imgvnmodes.size[1];
+            framesize *= imgvnmodes.mdt->size[1];
         }
 
-        for(int kk = 0; kk < imgvnmodes.size[lastaxis]; kk++)
+        for(int kk = 0; kk < imgvnmodes.mdt->size[lastaxis]; kk++)
         {
             float mfact = imgS->im->array.F[kk];
             //printf("mfact %4d = %f\n", kk, mfact);
@@ -749,10 +577,10 @@ errno_t compute_SVD(
             }
         }
 
-        //IMGID iminrec = mkIMGID_from_name("SVDinrec");
+        //IMGID iminrec = imgid_make_from_name("SVDinrec");
         //computeSGEMM(imgvnmodes, imgV, &iminrec, 0, 1, GPUdev);
+        imgid_free(&imgvnmodes);
     }
-
 
 
     DEBUG_TRACE_FEXIT();
@@ -760,24 +588,17 @@ errno_t compute_SVD(
 }
 
 
-
-
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM = mkIMGID_from_name(inM);
-    resolveIMGID(&imginM, ERRMODE_ABORT);
+    IMGID imginM = imgid_make_from_name(inM);
+    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
 
 
-
-    IMGID imgU  = mkIMGID_from_name(outU);
-    IMGID imgS  = mkIMGID_from_name(outS);
-    IMGID imgV  = mkIMGID_from_name(outV);
+    IMGID imgU  = imgid_make_from_name(outU);
+    IMGID imgS  = imgid_make_from_name(outS);
+    IMGID imgV  = imgid_make_from_name(outV);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
@@ -788,26 +609,48 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&imginM);
+    imgid_free(&imgU);
+    imgid_free(&imgS);
+    imgid_free(&imgV);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__compSVD()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

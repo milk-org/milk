@@ -1,68 +1,71 @@
+/**
+ * @file linRM_from_inout.c
+ * @brief Linrm from inout module
+ */
+
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/savefits.h"
 
 #include "compute_SVDpseudoInverse.h"
 #include "linalgebra/magma_compute_SVDpseudoInverse.h"
 
-// Local variables pointers
-static char *inputimname;
-static char *inmaskname;
-static char *mrespimname;
-static char *outRMimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".inimname",
-        "input image",
-        "im",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inputimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inmaskname",
-        "mask image",
-        "mask",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmaskname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".mrespimname",
-        "measured response images",
-        "mresp",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &mrespimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outRM",
-        "output RM image",
-        "ourRM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outRMimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "lincRMiter",
+    .cmdkey      = "lincRMiter",
+    .description = "estimate response matrix from input and output"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "lincRMiter",
-    "estimate response matrix from input and output",
-    CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char inputimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char inmaskname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char mrespimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char outRMimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inimname", inputimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".inmaskname", inmaskname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "mask image") \
+    X(".mrespimname", mrespimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "measured response images") \
+    X(".outRM", outRMimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output RM image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 //
 // solve for response matrix given a series of input and output
@@ -114,36 +117,36 @@ errno_t linopt_compute_linRM_from_inout(
     //ngpu = 0;
     setenv("CUDA_VISIBLE_DEVICES", "3,4", 1);
 
-    IDin  = image_ID(IDinput_name);
-    IDout = image_ID(IDoutput_name);
-    IDRM  = image_ID(IDRM_name);
+    IDin  = image_ID(IDinput_name, dcimg, dcnimg);
+    IDout = image_ID(IDoutput_name, dcimg, dcnimg);
+    IDRM  = image_ID(IDRM_name, dcimg, dcnimg);
 
-    insize   = data.image[IDin].md[0].size[2];
-    xsizeout = data.image[IDRM].md[0].size[0];
-    ysizeout = data.image[IDRM].md[0].size[1];
-    xsizein  = data.image[IDin].md[0].size[0];
-    ysizein  = data.image[IDin].md[0].size[1];
+    insize   = dcimg[IDin].md[0].size[2];
+    xsizeout = dcimg[IDRM].md[0].size[0];
+    ysizeout = dcimg[IDRM].md[0].size[1];
+    xsizein  = dcimg[IDin].md[0].size[0];
+    ysizein  = dcimg[IDin].md[0].size[1];
 
     if(autoMask_MODE == 0)
     {
-        IDinmask = image_ID(IDinmask_name);
+        IDinmask = image_ID(IDinmask_name, dcimg, dcnimg);
     }
     else
     {
         create_2Dimage_ID("_RMmask", xsizein, ysizein, &IDinmask);
         for(spl = 0; spl < insize; spl++)
             for(ii = 0; ii < xsizein * ysizein; ii++)
-                if(data.image[IDin].array.F[spl * xsizein * ysizein + ii] >
+                if(dcimg[IDin].array.F[spl * xsizein * ysizein + ii] >
                         0.5)
                 {
-                    data.image[IDinmask].array.F[ii] = 1.0;
+                    dcimg[IDinmask].array.F[ii] = 1.0f;
                 }
     }
 
     // create pokeM
     NBact = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(data.image[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5f)
         {
             NBact++;
         }
@@ -158,7 +161,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     act = 0;
     for(ii = 0; ii < xsizein * ysizein; ii++)
-        if(data.image[IDinmask].array.F[ii] > 0.5)
+        if(dcimg[IDinmask].array.F[ii] > 0.5f)
         {
             inpixarray[act] = ii;
             act++;
@@ -184,8 +187,8 @@ errno_t linopt_compute_linRM_from_inout(
     for(spl = 0; spl < insize; spl++)
         for(act = 0; act < NBact; act++)
         {
-            data.image[IDpokeM].array.F[NBact * spl + act] =
-                data.image[IDin]
+            dcimg[IDpokeM].array.F[NBact * spl + act] =
+                dcimg[IDin]
                 .array.F[spl * xsizein * ysizein + inpixarray[act]];
         }
     save_fits("pokeM", "_test_pokeM.fits");
@@ -213,7 +216,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     list_image_ID();
     save_fits("pokeMinv", "pokeMinv.fits");
-    IDpinv = image_ID("pokeMinv");
+    IDpinv = image_ID("pokeMinv", dcimg, dcnimg);
 
     // multiply measurements by pokeMinv
     create_3Dimage_ID("_respmat",
@@ -227,10 +230,10 @@ errno_t linopt_compute_linRM_from_inout(
         for(kk = 0; kk < insize; kk++)
             for(ii = 0; ii < xsizeout * ysizeout; ii++)
             {
-                data.image[ID_rm]
+                dcimg[ID_rm]
                 .array.F[inpixarray[act] * xsizeout * ysizeout + ii] +=
-                    data.image[IDout].array.F[kk * xsizeout * ysizeout + ii] *
-                    data.image[IDpinv].array.F[kk * NBact + act];
+                    dcimg[IDout].array.F[kk * xsizeout * ysizeout + ii] *
+                    dcimg[IDpinv].array.F[kk * NBact + act];
             }
     }
     save_fits("_respmat", "_test_RM.fits");
@@ -238,7 +241,7 @@ errno_t linopt_compute_linRM_from_inout(
 
     // COMPUTE SOLUTION QUALITY
 
-    IDRM = image_ID("_respmat");
+    IDRM = image_ID("_respmat", dcimg, dcnimg);
 
     create_2Dimage_ID("_tmplicli", xsizeout, ysizeout, &IDtmp);
     create_3Dimage_ID("testout", xsizeout, ysizeout, insize, &IDout1);
@@ -258,7 +261,7 @@ errno_t linopt_compute_linRM_from_inout(
         for(ii_out = 0; ii_out < xsizeout; ii_out++)
             for(jj_out = 0; jj_out < ysizeout; jj_out++)
             {
-                data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0;
+                dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] = 0.0f;
             }
 
         for(ii_in = 0; ii_in < xsizein; ii_in++)
@@ -269,10 +272,10 @@ errno_t linopt_compute_linRM_from_inout(
                 for(ii_out = 0; ii_out < xsizeout; ii_out++)
                     for(jj_out = 0; jj_out < ysizeout; jj_out++)
                     {
-                        data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] +=
-                            data.image[IDin].array.F[kk * xsizein * ysizein +
+                        dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] +=
+                            dcimg[IDin].array.F[kk * xsizein * ysizein +
                                                      jj_in * xsizein + ii_in] *
-                            data.image[IDRM]
+                            dcimg[IDRM]
                             .array.F[(jj_in * xsizein + ii_in) * xsizeout *
                                                                ysizeout +
                                                                jj_out * xsizeout + ii_out];
@@ -281,13 +284,13 @@ errno_t linopt_compute_linRM_from_inout(
         for(ii_out = 0; ii_out < xsizeout; ii_out++)
             for(jj_out = 0; jj_out < ysizeout; jj_out++)
             {
-                tmpv1 = data.image[IDtmp].array.F[jj_out * xsizeout + ii_out] -
-                        data.image[IDout].array.F[kk * xsizeout * ysizeout +
+                tmpv1 = dcimg[IDtmp].array.F[jj_out * xsizeout + ii_out] -
+                        dcimg[IDout].array.F[kk * xsizeout * ysizeout +
                                                   jj_out * xsizeout + ii_out];
                 fitval += tmpv1 * tmpv1;
-                data.image[IDout1].array.F[kk * xsizeout * ysizeout +
+                dcimg[IDout1].array.F[kk * xsizeout * ysizeout +
                                            jj_out * xsizeout + ii_out] =
-                                               tmpv1; //data.image[IDtmp].array.F[jj_out*xsizeout+ii_out];
+                                               tmpv1; //dcimg[IDtmp].array.F[jj_out*xsizeout+ii_out];
             }
     }
     printf("\n");
@@ -309,12 +312,9 @@ errno_t linopt_compute_linRM_from_inout(
     return RETURN_SUCCESS;
 }
 
-static char *inputimname;
-static char *inmaskname;
-static char *mrespimname;
-static char *outRMimname;
 
-static errno_t compute_function()
+
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -332,12 +332,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__linRM_from_inout()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

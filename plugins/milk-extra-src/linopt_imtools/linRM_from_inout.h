@@ -1,3 +1,8 @@
+/**
+ * @file linRM_from_inout.h
+ * @brief Linrm from inout module
+ */
+
 #ifndef LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 #define LINOPT_IMTOOLS__LINRM_FROM_INOUT_H
 

@@ -1,7 +1,17 @@
-/** @file cubecollapse.h
+/**
+ * @file    cubecollapse.h
+ * @brief   Collapse a cube along z axis.
  */
 
-errno_t __attribute__((cold)) cubecollapse_addCLIcmd();
+#ifndef IMAGE_BASIC_CUBECOLLAPSE_H
+#define IMAGE_BASIC_CUBECOLLAPSE_H
 
-imageID cube_collapse(const char *__restrict ID_in_name,
-                      const char *__restrict ID_out_name);
+errno_t __attribute__((cold))
+CLIADDCMD_image_basic__cubecollapse();
+
+imageID cube_collapse(
+    const char *ID_in_name,
+    const char *ID_out_name
+);
+
+#endif

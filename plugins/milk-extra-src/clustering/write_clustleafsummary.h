@@ -1,3 +1,8 @@
+/**
+ * @file write_clustleafsummary.h
+ * @brief Write clustleafsummary module
+ */
+
 #ifndef CLUSTERING_WRITECLUSTLEAFSUMMARY
 #define CLUSTERING_WRITECLUSTLEAFSUMMARY
 

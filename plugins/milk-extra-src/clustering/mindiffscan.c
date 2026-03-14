@@ -1,62 +1,62 @@
+/**
+ * @file mindiffscan.c
+ * @brief Mindiffscan module
+ */
+
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
-static char     *farg_inimname;
-static char     *farg_outdname;
-static uint32_t *farg_kNNsize;
 
-// List of arguments to function
-//
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image cube",
-        "imc1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &farg_inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outdname",
-        "output directory name",
-        "outd",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &farg_outdname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".kNNsize",
-        "number of samples in cluster",
-        "20",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &farg_kNNsize,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mindiffscan",
+    .cmdkey      = "mindiffscan",
+    .description =
+        "scan image cube for similar pairs"
 };
 
-// CLI function initialization data
-static CLICMDDATA CLIcmddata =
-{
-    "mindiffscan",                       // keyword to call function in CLI
-    "scan image cube for similar pairs", // description of what the function does
-    CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    printf("find nearest neighbors\n");
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+static char     *farg_inimname = NULL;
+static char     *farg_outdname = NULL;
+static uint32_t *farg_kNNsize  = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &farg_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube") \
+    X(".outdname", &farg_outdname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output directory name") \
+    X(".kNNsize", &farg_kNNsize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of samples in cluster")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
 
 static errno_t
 imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
@@ -65,7 +65,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s", outdname);
 
-    resolveIMGID(&img, ERRMODE_ABORT);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     uint32_t xsize = img.md->size[0];
     uint32_t ysize = img.md->size[1];
@@ -85,13 +85,13 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
     // FLUX MINIMIZATION MODE: ACTIVE PIXELS
     long    fluxpixcnt = 0;
-    imageID IDmaskflux = image_ID("maskfluxim");
+    imageID IDmaskflux = image_ID("maskfluxim", dcimg, dcnimg);
     long   *fluxpix    = NULL;
     if(IDmaskflux != -1)
     {
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(data.image[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5f)
             {
                 fluxpixcnt++;
             }
@@ -101,7 +101,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
         fluxpixcnt = 0;
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(data.image[IDmaskflux].array.F[ii] > 0.5)
+            if(dcimg[IDmaskflux].array.F[ii] > 0.5f)
             {
                 fluxpix[fluxpixcnt] = ii;
                 fluxpixcnt++;
@@ -110,7 +110,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     }
 
     // looking for selection mask image
-    imageID IDmask = image_ID("maskim");
+    imageID IDmask = image_ID("maskim", dcimg, dcnimg);
     if(IDmask == -1)
     {
         printf("Creating default mask image %ld pixel\n", xysize);
@@ -118,7 +118,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            data.image[IDmask].array.F[ii] = 1.0;
+            dcimg[IDmask].array.F[ii] = 1.0f;
         }
     }
     else
@@ -131,7 +131,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     long  pixcnt  = 0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        if(data.image[IDmask].array.F[ii] > maskeps)
+        if(dcimg[IDmask].array.F[ii] > maskeps)
         {
             pixcnt++;
         }
@@ -153,10 +153,10 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     long inpixindex = 0;
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        if(data.image[IDmask].array.F[ii] > maskeps)
+        if(dcimg[IDmask].array.F[ii] > maskeps)
         {
             pixmap[inpixindex]  = ii;
-            pixgain[inpixindex] = data.image[IDmask].array.F[ii];
+            pixgain[inpixindex] = dcimg[IDmask].array.F[ii];
             inpixindex++;
         }
     }
@@ -169,7 +169,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     {
         for(long ii = 0; ii < npix; ii++)
         {
-            data.image[IDc].array.F[zi * npix + ii] =
+            dcimg[IDc].array.F[zi * npix + ii] =
                 pixgain[ii] * img.im->array.F[zi * xysize + pixmap[ii]];
         }
     }
@@ -177,7 +177,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     save_fl_fits("mindiffscan_imc", "mindiffscan_imc.fits");
 
     // looking for distmat image
-    imageID IDdmat = image_ID("distmat");
+    imageID IDdmat = image_ID("distmat", dcimg, dcnimg);
     if(IDdmat == -1)
     {
         printf("Computing distmat");
@@ -197,8 +197,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 long double dist2 = 0.0;
                 for(long ii = 0; ii < npix; ii++)
                 {
-                    float v0 = data.image[IDc].array.F[zi0 * npix + ii];
-                    float v1 = data.image[IDc].array.F[zi1 * npix + ii];
+                    float v0 = dcimg[IDc].array.F[zi0 * npix + ii];
+                    float v1 = dcimg[IDc].array.F[zi1 * npix + ii];
                     float dv = v0 - v1;
                     dist2 += dv * dv;
                 }
@@ -212,8 +212,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                     zi1p = zsize - zi1p - 1;
                 }
 
-                //data.image[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
-                data.image[IDdmat].array.F[zi0p * zsize + zi1p] = (float) dist2;
+                //dcimg[IDdmat].array.F[zi0p*zsize + zi1p] = (float) dist2;
+                dcimg[IDdmat].array.F[zi0p * zsize + zi1p] = (float) dist2;
 
                 diffcnt++;
             }
@@ -283,7 +283,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 }
 
                 distarray[cnt] =
-                    data.image[IDdmat].array.F[zi0p * zsize + zi1p];
+                    dcimg[IDdmat].array.F[zi0p * zsize + zi1p];
                 iarray[cnt] = zi1;
                 cnt++;
             }
@@ -307,7 +307,7 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
             {
                 for(long ii = 0; ii < fluxpixcnt; ii++)
                 {
-                    fluxtot += data.image[img.ID]
+                    fluxtot += dcimg[img.ID]
                                .array.F[xysize * iarray[k] + fluxpix[ii]];
                 }
             }
@@ -389,8 +389,8 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
                 distarray_zbest[k]);
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            data.image[IDbc].array.F[k * xysize + ii] =
-                data.image[img.ID].array.F[xysize * iarray_zbest[k] + ii];
+            dcimg[IDbc].array.F[k * xysize + ii] =
+                dcimg[img.ID].array.F[xysize * iarray_zbest[k] + ii];
         }
     }
     fclose(fpb);
@@ -412,32 +412,56 @@ imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
     return RETURN_SUCCESS;
 }
 
-// Wrapper function, used by all CLI calls
-// Defines how local variables are fed to computation code
-// Always local to this translation unit
-static errno_t compute_function()
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    imcube_mindiffscan(mkIMGID_from_name(farg_inimname),
-                       farg_outdname,
-                       *farg_kNNsize);
+    imcube_mindiffscan(
+        imgid_make_from_name(farg_inimname),
+        farg_outdname,
+        *farg_kNNsize);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-/** @brief Register CLI command
-*
-* Adds function to list of CLI commands.
-* Called by main module initialization function init_module_CLI().
-*/
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_clustering__imcube_mindiffscan()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

@@ -1,6 +1,30 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c4af619a4a63406b8bd1cf3b50fddc32)](https://www.codacy.com/gh/milk-org/info?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/info&amp;utm_campaign=Badge_Grade)
+# Module: info
 
+Image information, statistics, and stream monitoring.
 
-# Module info {#page_module_info}
+## Source Files
 
-Images information
+| File | Description |
+|------|-------------|
+| `cubeMatchMatrix.c` | Compute pairwise slice-difference matrix |
+| `cubestats.c` | Per-slice statistics of image cube |
+| `image_stats.c` | Basic image statistics (mean, RMS, min, max) |
+| `imagemon.c` | Interactive image monitor |
+| `improfile.c` | Radial profile of image |
+| `kbdhit.c` | Non-blocking keyboard hit detection |
+| `percentile.c` | Compute image percentiles |
+| `print_header.c` | Print image/stream header info |
+| `stream_monproc.c` | Multi-level time-binned stream monitor with histogram |
+| `streamtiming_stats.c` | Stream timing jitter statistics |
+| `timediff.c` | Compute timestamp differences |
+
+## Standalone Executables
+
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-info-imagemon` | `imagemon.c` | Interactive image monitor |
+| `milk-fpsexec-info-strmonproc` | `stream_monproc.c` | Multi-level time-binned stream monitor |
+
+## Dependencies
+
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

@@ -1,7 +1,12 @@
+/**
+ * @file cublas_linalgebratest.c
+ * @brief Cublas linalgebratest module
+ */
+
 /** @file linalgebratest.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -15,48 +20,80 @@
 // Forward declaration(s)
 // ==========================================
 
-errno_t GPUcomp_test(__attribute__((unused)) long NBact,
-                     long                         NBmodes,
-                     long                         WFSsize,
-                     long                         GPUcnt);
+errno_t GPUcomp_test(
+    __attribute__((unused)) long NBact,
+    long NBmodes, long WFSsize,
+    long GPUcnt);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: linalgebratest
 // ==========================================
 
-static errno_t LINALGEBRA_test_cli()
-{
-    if(CLI_checkarg(1, 2) + CLI_checkarg(2, 2) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) ==
-            0)
-    {
-        GPUcomp_test(data.cmdargtoken[1].val.numl,
-                     data.cmdargtoken[2].val.numl,
-                     data.cmdargtoken[3].val.numl,
-                     data.cmdargtoken[4].val.numl);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_ERROR;
-    }
+static int64_t lt_nact = 1000;
+static int64_t lt_nmod = 20;
+static int64_t lt_wsz = 1000;
+static int64_t lt_gpu = 1;
+static FPS_APP_INFO FPS_app_info_lt = {
+    .fps_name = "linalgebratest",
+    .cmdkey   = "linalgebratest",
+    .description = "test CUDA comp"
+};
+#define FPS_PARAMS_LT(X) \
+    X(".nbact", &lt_nact, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB act") \
+    X(".nbmodes", &lt_nmod, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB modes") \
+    X(".wfssize", &lt_wsz, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB pixels") \
+    X(".gpucnt", &lt_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "NB GPU")
+#include "fps.h"
+static FPS_CLI_BINDING lt_b[] = {
+    FPS_PARAMS_LT(FPS_X_BINDING) };
+static const int lt_nb =
+    sizeof(lt_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_LT(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS lt_cms = {0};
+static __attribute__((constructor))
+void init_lt(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_lt.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_lt.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &lt_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t lt_compute(void) {
+    GPUcomp_test((long)lt_nact,
+        (long)lt_nmod, (long)lt_wsz,
+        (long)lt_gpu);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_lt, farg,
+        &CLIcmddata,
+        lt_b, lt_nb, lt_compute);
+}
 
 errno_t linalgebratest_addCLIcmd()
 {
-    RegisterCLIcommand("linalgebratest",
-                       __FILE__,
-                       LINALGEBRA_test_cli,
-                       "test CUDA comp",
-                       "<NB actuators [long]> <NB modes [long]> <NB pixels "
-                       "[long]> <NB GPU [long]>",
-                       "linalgebratest 1000 20 1000 1",
-                       "int GPUcomp_test(long NBact, long NBmodes, long "
-                       "WFSsize, long GPUcnt)");
+    safe_fps_fill_farg_examples(
+        farg, lt_b, lt_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }
@@ -94,20 +131,20 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
 
     // CHECK RESULT
     /*   arraysizetmp = (long*) malloc(sizeof(long)*3);
-       ID_R = image_ID("Rmat");
-       ID_C = image_ID("Cmat");
+       ID_R = image_ID("Rmat", dcimg, dcnimg);
+       ID_C = image_ID("Cmat", dcimg, dcnimg);
 
-       if(data.image[ID_R].md[0].naxis==3)
+       if(dcimg[ID_R].md[0].naxis==3)
        {
-           m = data.image[ID_R].md[0].size[0]*data.image[ID_R].md[0].size[1];
-           n = data.image[ID_R].md[0].size[2];
+           m = dcimg[ID_R].md[0].size[0]*dcimg[ID_R].md[0].size[1];
+           n = dcimg[ID_R].md[0].size[2];
            printf("3D image -> %ld %ld\n", m, n);
            fflush(stdout);
        }
        else
        {
-           m = data.image[ID_R].md[0].size[0];
-           n = data.image[ID_R].md[0].size[1];
+           m = dcimg[ID_R].md[0].size[0];
+           n = dcimg[ID_R].md[0].size[1];
            printf("2D image -> %ld %ld\n", m, n);
            fflush(stdout);
        }
@@ -122,8 +159,8 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
                {
                    val = 0.0;
                    for(k=0;k<m;k++)
-                       val += data.image[ID_C].array.F[ii*m+k] * data.image[ID_R].array.F[jj*m+k];
-                   data.image[ID].array.F[jj*n+ii] = val;
+                       val += dcimg[ID_C].array.F[ii*m+k] * dcimg[ID_R].array.F[jj*m+k];
+                   dcimg[ID].array.F[jj*n+ii] = val;
                }
        save_fits("SVDcheck", "SVDcheck.fits");
 
@@ -143,43 +180,72 @@ errno_t GPUcomp_test(__attribute__((unused)) long NBact,
     cmsize[0] = WFSsize;
     cmsize[1] = WFSsize;
     cmsize[2] = NBmodes;
-    create_image_ID("cudatestcm",
-                    3,
-                    cmsize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_contrM);
+    {
+        IMGID img_cm =
+            imgid_make_from_name(
+                "cudatestcm");
+        img_cm.mdt->naxis = 3;
+        img_cm.mdt->size[0] = cmsize[0];
+        img_cm.mdt->size[1] = cmsize[1];
+        img_cm.mdt->size[2] = cmsize[2];
+        img_cm.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_cm.mdt->shared = 1;
+        img_cm.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_cm);
+        ID_contrM = img_cm.ID;
+    }
 
     wfssize    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     wfssize[0] = WFSsize;
     wfssize[1] = WFSsize;
-    create_image_ID("cudatestwfs",
-                    2,
-                    wfssize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_WFS);
+    {
+        IMGID img_wfs =
+            imgid_make_from_name(
+                "cudatestwfs");
+        img_wfs.mdt->naxis = 2;
+        img_wfs.mdt->size[0] =
+            wfssize[0];
+        img_wfs.mdt->size[1] =
+            wfssize[1];
+        img_wfs.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_wfs.mdt->shared = 1;
+        img_wfs.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_wfs);
+        ID_WFS = img_wfs.ID;
+    }
 
     cmdmodessize    = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     cmdmodessize[0] = NBmodes;
     cmdmodessize[1] = 1;
-    create_image_ID("cudatestcmd",
-                    2,
-                    cmdmodessize,
-                    _DATATYPE_FLOAT,
-                    1,
-                    0,
-                    0,
-                    &ID_cmd_modes);
+    {
+        IMGID img_cmd =
+            imgid_make_from_name(
+                "cudatestcmd");
+        img_cmd.mdt->naxis = 2;
+        img_cmd.mdt->size[0] =
+            cmdmodessize[0];
+        img_cmd.mdt->size[1] =
+            cmdmodessize[1];
+        img_cmd.mdt->datatype =
+            _DATATYPE_FLOAT;
+        img_cmd.mdt->shared = 1;
+        img_cmd.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&img_cmd);
+        ID_cmd_modes = img_cmd.ID;
+    }
 
     GPU_loop_MultMat_setup(0,
-                           data.image[ID_contrM].name,
-                           data.image[ID_WFS].name,
-                           data.image[ID_cmd_modes].name,
+                           dcimg[ID_contrM].name,
+                           dcimg[ID_WFS].name,
+                           dcimg[ID_cmd_modes].name,
                            GPUcnt,
                            GPUdevices,
                            0,

@@ -1,9 +1,16 @@
-/** @file ffttranslate.c
+/**
+ * @file ffttranslate.c
+ * @brief Translate image using FFT
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -11,56 +18,108 @@
 #include "dofft.h"
 #include "permut.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
+// Forward declaration
 int fft_image_translate(const char *ID_name,
                         const char *ID_out,
                         double      xtransl,
                         double      ytransl);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  V2 PARAMS
+ * ======================================= */
 
-errno_t fft_image_translate_cli()
+static char p_in[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_out[
+    FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
+static double p_xtransl = 2.3;
+static double p_ytransl = -2.1;
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "transl",
+    .cmdkey      = "transl",
+    .description =
+        "translate image via FFT"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".xtransl", &p_xtransl, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x translation") \
+    X(".ytransl", &p_ytransl, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y translation")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_STR_NOT_IMG) +
-            CLI_checkarg(3, CLIARG_FLOAT64) + CLI_checkarg(4, CLIARG_FLOAT64) ==
-            0)
-    {
-        fft_image_translate(data.cmdargtoken[1].val.string,
-                            data.cmdargtoken[2].val.string,
-                            data.cmdargtoken[3].val.numf,
-                            data.cmdargtoken[4].val.numf);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t ffttranslate_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
-
-    RegisterCLIcommand("transl",
-                       __FILE__,
-                       fft_image_translate_cli,
-                       "translate image",
-                       "<imagein> <imageout> <xtransl> <ytransl>",
-                       "transl im1 im2 2.3 -2.1",
-                       "int fft_image_translate(const char *ID_name, const "
-                       "char *ID_out, double xtransl, double ytransl)");
-
+    fft_image_translate(
+        p_in, p_out,
+        p_xtransl, p_ytransl);
     return RETURN_SUCCESS;
 }
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_milkfft__ffttranslate()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
 
 /*^-----------------------------------------------------------------------------
 |
@@ -77,9 +136,9 @@ int fft_image_translate(const char *ID_name,
     long naxes[2];
     //  int n0,n1;
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     //  fprintf( stdout, "[arith_image_translate %ld %ld %ld     %f %f]\n", ID, naxes[0], naxes[1], xtransl, ytransl);
 

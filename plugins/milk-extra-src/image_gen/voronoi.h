@@ -1,3 +1,8 @@
+/**
+ * @file voronoi.h
+ * @brief Voronoi module
+ */
+
 
 #ifndef IMAGE_GEN_VORONOI_H
 #define IMAGE_GEN_VORONOI_H

@@ -1,75 +1,72 @@
+/**
+ * @file makeCosRadModes.c
+ * @brief Makecosradmodes module
+ */
+
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
-// Local variables pointers
-static char   *outimname;
-static long   *sizeout;
-static long   *kmaxval;
-static double *radiusval;
-static double *radfactorlimval;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "outim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".size",
-        "size",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &sizeout,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".kmax",
-        "k max",
-        "100",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &kmaxval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".radius",
-        "radius [pix]",
-        "160.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &radiusval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".rfactlim",
-        "radius factor limit",
-        "2.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &radfactorlimval,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkcosrmodes",
+    .cmdkey      = "mkcosrmodes",
+    .description = "make basis of cosine radial modes"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "mkcosrmodes", "make basis of cosine radial modes", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-//
-// make cosine radial modes
-//
+static char   * outimname = NULL;
+static long   * sizeout = NULL;
+static long   * kmaxval = NULL;
+static double * radiusval = NULL;
+static double * radfactorlimval = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".size", &sizeout, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "size") \
+    X(".kmax", &kmaxval, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "k max") \
+    X(".radius", &radiusval, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius [pix]") \
+    X(".rfactlim", &radfactorlimval, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius factor limit")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+/**
+ * Make basis of cosine radial modes.
+ */
 errno_t linopt_imtools_makeCosRadModes(
     const char *ID_name,
     long        size,
@@ -80,60 +77,87 @@ errno_t linopt_imtools_makeCosRadModes(
 {
     DEBUG_TRACE_FSTART();
 
-    imageID ID;
-    long    size2;
-    imageID IDr;
-    FILE   *fp;
+    long size2 = size * size;
 
-    size2 = size * size;
-    create_2Dimage_ID("linopt_tmpr", size, size, &IDr);
+    IMGID imgr =
+        imgid_make_from_name_2D(
+            "linopt_tmpr", size, size);
+    imgr.mdt->shared = 0;
+    imgr.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgr);
 
-    fp = fopen("ModesExpr_CosRad.txt", "w");
-    fprintf(fp, "# unit for r = %f pix\n", radius);
+    FILE *fp =
+        fopen("ModesExpr_CosRad.txt", "w");
+    fprintf(fp,
+            "# unit for r = %f pix\n",
+            radius);
     fprintf(fp, "\n");
     for(long k = 0; k < kmax; k++)
     {
-        fprintf(fp, "%5ld   cos(r*M_PI*%ld)\n", k, k);
+        fprintf(fp,
+                "%5ld   cos(r*M_PI*%ld)\n",
+                k, k);
     }
-
     fclose(fp);
 
     for(long ii = 0; ii < size; ii++)
     {
-        float x = (1.0 * ii - 0.5 * size) / radius;
-        for(long jj = 0; jj < size; jj++)
+        float x =
+            (1.0 * ii - 0.5 * size)
+            / radius;
+        for(long jj = 0;
+            jj < size; jj++)
         {
-            float y = (1.0 * jj - 0.5 * size) / radius;
-            float r = sqrt(x * x + y * y);
-            data.image[IDr].array.F[jj * size + ii] = r;
+            float y =
+                (1.0 * jj - 0.5 * size)
+                / radius;
+            float r =
+                sqrt(x * x + y * y);
+            imgr.im->array.F[
+                jj * size + ii] = r;
         }
     }
 
-    FUNC_CHECK_RETURN(create_3Dimage_ID(ID_name, size, size, kmax, &ID));
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            ID_name, size, size, kmax);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
 
     for(long k = 0; k < kmax; k++)
-        for(long ii = 0; ii < size2; ii++)
+    {
+        for(long ii = 0;
+            ii < size2; ii++)
         {
-            float r = data.image[IDr].array.F[ii];
+            float r =
+                imgr.im->array.F[ii];
             if(r < radfactlim)
             {
-                data.image[ID].array.F[k * size2 + ii] = cos(r * M_PI * k);
+                imgout.im->array.F[
+                    k * size2 + ii] =
+                    cos(r * M_PI * k);
             }
         }
+    }
 
     FUNC_CHECK_RETURN(
-        delete_image_ID("linopt_tmpr", DELETE_IMAGE_ERRMODE_WARNING));
+        delete_image_ID(
+            "linopt_tmpr",
+            DELETE_IMAGE_ERRMODE_WARNING));
 
     if(outID != NULL)
     {
-        *outID = ID;
+        *outID = imgout.ID;
     }
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -152,12 +176,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__makeCosRadModes()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

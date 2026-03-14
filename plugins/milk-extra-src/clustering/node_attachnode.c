@@ -1,4 +1,9 @@
-#include "CommandLineInterface/CLIcore.h"
+/**
+ * @file node_attachnode.c
+ * @brief attach node CFindex to CFindexupnode
+ */
+
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include "addCF_to_CF.h"

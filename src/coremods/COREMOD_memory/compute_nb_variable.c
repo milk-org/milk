@@ -1,0 +1,29 @@
+/**
+ * @file compute_nb_variable.c
+ * @brief Compute nb variable module
+ */
+
+/**
+ * @file    compute_nb_variable.c
+ */
+
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "libmilkdata/milkdata.h"
+#endif
+
+long compute_nb_variable()
+{
+    long NBvar = 0;
+
+    for(variableID i = 0; i < dcnvar; i++)
+    {
+        if(dcvar[i].used == 1)
+        {
+            NBvar += 1;
+        }
+    }
+
+    return NBvar;
+}

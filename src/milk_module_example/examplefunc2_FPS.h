@@ -1,3 +1,8 @@
+/**
+ * @file examplefunc2_FPS.h
+ * @brief Examplefunc2 fps module
+ */
+
 #ifndef MILK_MODULE_EXAMPLE_FUNC2_H
 #define MILK_MODULE_EXAMPLE_FUNC2_H
 

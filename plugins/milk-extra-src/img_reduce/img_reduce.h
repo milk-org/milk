@@ -1,3 +1,8 @@
+/**
+ * @file img_reduce.h
+ * @brief Img reduce module
+ */
+
 #ifndef _IMGREDUCE_H
 #define _IMGREDUCE_H
 

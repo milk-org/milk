@@ -1,68 +1,72 @@
-#include "CommandLineInterface/CLIcore.h"
+/**
+ * @file image_to_vec.c
+ * @brief Image to vec module
+ */
 
-// Local variables pointers
-static char *inimname;
-static char *inpixiname;
-static char *inpixmultname;
-static char *outvecname;
+#include "CLIcore.h"
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".inim",
-        "input image",
-        "im",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inpixi",
-        "input pixel index image",
-        "pixi",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inpixiname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".inpixmult",
-        "input pixel mult image",
-        "pixmult",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inpixmultname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outvec",
-        "output vector image",
-        "vecim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outvecname,
-        NULL
-    }
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "im2vec",
+    .cmdkey      = "im2vec",
+    .description = "remap image to vector"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "im2vec", "remap image to vector", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-//
-//
-//
-errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
-                                    const char *__restrict IDpixindex_name,
-                                    const char *__restrict IDpixmult_name,
-                                    const char *__restrict IDvec_name,
-                                    imageID *outID)
+static char * inimname = NULL;
+static char * inpixiname = NULL;
+static char * inpixmultname = NULL;
+static char * outvecname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".inpixi", &inpixiname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input pixel index image") \
+    X(".inpixmult", &inpixmultname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input pixel mult image") \
+    X(".outvec", &outvecname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output vector image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+/**
+ * Remap image to vector using pixel
+ * index and multiplier tables.
+ */
+errno_t linopt_imtools_image_to_vec(
+    const char *__restrict ID_name,
+    const char *__restrict IDpixindex_name,
+    const char *__restrict IDpixmult_name,
+    const char *__restrict IDvec_name,
+    imageID *outID)
 {
     DEBUG_TRACE_FSTART();
     DEBUG_TRACEPOINT("FARG %s %s %s %s",
@@ -71,87 +75,150 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
                      IDpixmult_name,
                      IDvec_name);
 
-    imageID ID;
-    imageID IDpixindex, IDpixmult;
-    imageID IDvec;
-    long    NBpix;
-    long    naxisin;
-    long    sizexy;
-    uint8_t datatype;
+    IMGID imgin =
+        imgid_make_from_name(ID_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
+    long    naxisin =
+        imgin.md->naxis;
+    uint8_t datatype =
+        imgin.md->datatype;
 
-    ID = image_ID(ID_name);
+    IMGID imgpixi =
+        imgid_make_from_name(
+            IDpixindex_name);
+    resolveIMGID(&imgpixi, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    naxisin  = data.image[ID].md[0].naxis;
-    datatype = data.image[ID].md[0].datatype;
+    IMGID imgpixm =
+        imgid_make_from_name(
+            IDpixmult_name);
+    resolveIMGID(&imgpixm, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
+    long NBpix =
+        imgpixi.md->nelement;
 
-    IDpixindex = image_ID(IDpixindex_name);
-    IDpixmult  = image_ID(IDpixmult_name);
-    NBpix      = data.image[IDpixindex].md[0].nelement;
-
+    IMGID imgvec;
 
     if(naxisin < 3)
     {
-        FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name, NBpix, 1, &IDvec));
+        imgvec =
+            imgid_make_from_name_2D(
+                IDvec_name, NBpix, 1);
+        imgvec.mdt->shared = 0;
+        imgvec.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgvec);
+
         for(long k = 0; k < NBpix; k++)
         {
-            data.image[IDvec].array.F[k] =
-                data.image[IDpixmult].array.F[k] *
-                data.image[ID].array.F[data.image[IDpixindex].array.SI64[k]];
+            imgvec.im->array.F[k] =
+                imgpixm.im->array.F[k]
+                * imgin.im->array.F[
+                      imgpixi.im
+                          ->array
+                          .SI64[k]];
         }
     }
     else
     {
-        sizexy = data.image[ID].md[0].size[0] * data.image[ID].md[0].size[1];
+        long sizexy =
+            imgin.md->size[0]
+            * imgin.md->size[1];
+
         if(datatype == _DATATYPE_FLOAT)
         {
-            FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
-                                                NBpix,
-                                                data.image[ID].md[0].size[2],
-                                                &IDvec));
+            imgvec =
+                imgid_make_from_name_2D(
+                    IDvec_name,
+                    NBpix,
+                    imgin.md->size[2]);
+            imgvec.mdt->shared = 0;
+            imgvec.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgvec);
 
-            for(uint32_t kk = 0; kk < data.image[ID].md[0].size[2]; kk++)
-                for(long k = 0; k < NBpix; k++)
+            for(uint32_t kk = 0;
+                kk < imgin.md->size[2];
+                kk++)
+            {
+                for(long k = 0;
+                    k < NBpix; k++)
                 {
-                    data.image[IDvec].array.F[kk * NBpix + k] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
-                        .array.F[kk * sizexy +
-                                    data.image[IDpixindex].array.SI64[k]];
+                    imgvec.im->array.F[
+                        kk * NBpix + k] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.F[
+                                  kk
+                                  * sizexy
+                                  + imgpixi
+                                        .im
+                                        ->array
+                                        .SI64
+                                            [k]];
                 }
+            }
         }
-        if(datatype == _DATATYPE_COMPLEX_FLOAT)
+        if(datatype
+           == _DATATYPE_COMPLEX_FLOAT)
         {
-            FUNC_CHECK_RETURN(create_2Dimage_ID(IDvec_name,
-                                                NBpix * 2,
-                                                data.image[ID].md[0].size[2],
-                                                &IDvec));
+            imgvec =
+                imgid_make_from_name_2D(
+                    IDvec_name,
+                    NBpix * 2,
+                    imgin.md->size[2]);
+            imgvec.mdt->shared = 0;
+            imgvec.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgvec);
 
-            for(uint32_t kk = 0; kk < data.image[ID].md[0].size[2]; kk++)
-                for(long k = 0; k < NBpix; k++)
+            for(uint32_t kk = 0;
+                kk < imgin.md->size[2];
+                kk++)
+            {
+                for(long k = 0;
+                    k < NBpix; k++)
                 {
-                    data.image[IDvec].array.F[kk * NBpix * 2 + 2 * k] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
-                        .array
-                        .CF[kk * sizexy +
-                               data.image[IDpixindex].array.SI64[k]]
-                        .re;
-                    data.image[IDvec].array.F[kk * NBpix * 2 + 2 * k + 1] =
-                        data.image[IDpixmult].array.F[k] *
-                        data.image[ID]
-                        .array
-                        .CF[kk * sizexy +
-                               data.image[IDpixindex].array.SI64[k]]
-                        .im;
+                    long idx =
+                        imgpixi.im
+                            ->array
+                            .SI64[k];
+                    imgvec.im->array.F[
+                        kk * NBpix * 2
+                        + 2 * k] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.CF[
+                                  kk
+                                  * sizexy
+                                  + idx]
+                              .re;
+                    imgvec.im->array.F[
+                        kk * NBpix * 2
+                        + 2 * k + 1] =
+                        imgpixm.im
+                            ->array.F[k]
+                        * imgin.im
+                              ->array.CF[
+                                  kk
+                                  * sizexy
+                                  + idx]
+                              .im;
                 }
+            }
         }
     }
 
     if(outID != NULL)
     {
-        *outID = IDvec;
+        *outID = imgvec.ID;
     }
 
     DEBUG_TRACE_FEXIT();
@@ -159,9 +226,7 @@ errno_t linopt_imtools_image_to_vec(const char *__restrict ID_name,
 }
 
 
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -179,12 +244,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__image_to_vec()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

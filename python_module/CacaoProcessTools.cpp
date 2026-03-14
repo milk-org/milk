@@ -123,7 +123,11 @@ PYBIND11_MODULE(CacaoProcessTools, m)
     m.def("fparamCTRL",
           &functionparameter_CTRLscreen,
           R"pbdoc(Open the function parameter monitor
-)pbdoc");
+)pbdoc",
+          py::arg("mode"),
+          py::arg("fpsnamemask"),
+          py::arg("fpsCTRLfifoname"),
+          py::arg("timeout_sec") = 0.0);
 
     py::enum_<FPS_status>(m, "FPS_status")
         .value("CONF", FPS_status::CONF)

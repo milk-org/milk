@@ -164,7 +164,7 @@ static errno_t FPSRUNfunction()
      * Pre-loop testing, anything that would prevent loop from starting should issue message\n
      * Set processloopOK to 0 if tests fail.
      */
-    imageID IDin = image_ID(fps_IDin_name);
+    imageID IDin = image_ID(fps_IDin_name, data.image, data.NB_MAX_IMAGE);
 
     /** ### Specify input trigger
      *
@@ -203,7 +203,8 @@ static errno_t FPSRUNfunction()
     DEBUG_TRACEPOINT("Starting loop iteration");
 
     DEBUG_TRACEPOINT("Update stream \"%s\" %ld", fps_IDin_name, IDin);
-    processinfo_update_output_stream(processinfo, IDin);
+    //processinfo_update_output_stream(processinfo, IDin);
+    processinfo_update_output_stream(processinfo, &data.image[IDin], NULL);
     /** ### END LOOP
      *
      * Equivalent non-macro code:

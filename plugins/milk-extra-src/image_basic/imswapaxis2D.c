@@ -1,91 +1,143 @@
-/** @file imswapaxis2D.c
+/**
+ * @file imswapaxis2D.c
+ * @brief Swap axis of a 2D image
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID image_basic_SwapAxis2D(
+    const char *__restrict IDin_name,
+    const char *__restrict IDout_name);
 
-imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
-                               const char *__restrict IDout_name);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im2";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imswapaxis2D",
+    .cmdkey      = "imswapaxis2D",
+    .description =
+        "swap axis of a 2D image"
+};
 
-static errno_t image_basic_SwapAxis2D_cli() // swap axis of a 2D image
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) == 0)
-    {
-        image_basic_SwapAxis2D(data.cmdargtoken[1].val.string,
-                               data.cmdargtoken[2].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) imswapaxis2D_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
-
-    RegisterCLIcommand("imswapaxis2D",
-                       __FILE__,
-                       image_basic_SwapAxis2D_cli,
-                       "Swap axis of a 2D image",
-                       "<input image> <output image>",
-                       "imswapaxis2D im1 im2",
-                       "long image_basic_SwapAxis2D(const char *IDin_name, "
-                       "const char *IDout_name)");
-
+    image_basic_SwapAxis2D(p_in, p_out);
     return RETURN_SUCCESS;
 }
 
-imageID image_basic_SwapAxis2D_byID(imageID IDin,
-                                    const char *__restrict IDout_name)
+static errno_t CLIfunction(void)
 {
-    imageID IDout = -1;
-
-    if(data.image[IDin].md[0].naxis != 2)
-    {
-        printf("ERROR: image needs to have 2 axis\n");
-    }
-    else
-    {
-        create_2Dimage_ID(IDout_name,
-                          data.image[IDin].md[0].size[1],
-                          data.image[IDin].md[0].size[0],
-                          &IDout);
-
-        for(uint32_t ii = 0; ii < data.image[IDin].md[0].size[0]; ii++)
-            for(uint32_t jj = 0; jj < data.image[IDin].md[0].size[1]; jj++)
-            {
-                data.image[IDout]
-                .array.F[ii * data.image[IDin].md[0].size[1] + jj] =
-                    data.image[IDin]
-                    .array.F[jj * data.image[IDin].md[0].size[0] + ii];
-            }
-    }
-
-    return IDout;
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
 }
 
-imageID image_basic_SwapAxis2D(const char *__restrict IDin_name,
-                               const char *__restrict IDout_name)
+errno_t
+CLIADDCMD_image_basic__imswapaxis2D()
 {
-    imageID IDin;
-    imageID IDout = -1;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
 
-    IDin = image_ID(IDin_name);
-    image_basic_SwapAxis2D_byID(IDin, IDout_name);
+/**
+ * Swap axes of a 2D image (transpose).
+ */
+imageID image_basic_SwapAxis2D_byID(
+    imageID IDin,
+    const char *__restrict IDout_name)
+{
+    if(dcimg[IDin].md[0].naxis != 2)
+    {
+        printf("ERROR: image needs "
+               "to have 2 axis\n");
+        return -1;
+    }
 
-    return IDout;
+    uint32_t xsize = dcimg[IDin].md[0].size[0];
+    uint32_t ysize = dcimg[IDin].md[0].size[1];
+
+    IMGID imgout =
+        imgid_make_from_name_2D(
+            IDout_name, ysize, xsize);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    for(uint32_t ii = 0; ii < xsize; ii++)
+        for(uint32_t jj = 0;
+            jj < ysize; jj++)
+        {
+            imgout.im->array.F[
+                ii * ysize + jj] =
+                dcimg[IDin].array.F[
+                    jj * xsize + ii];
+        }
+
+    return imgout.ID;
+}
+
+imageID image_basic_SwapAxis2D(
+    const char *__restrict IDin_name,
+    const char *__restrict IDout_name)
+{
+    IMGID imgin =
+        imgid_make_from_name(IDin_name);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
+    return image_basic_SwapAxis2D_byID(
+        imgin.ID, IDout_name);
 }

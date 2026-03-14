@@ -1,3 +1,8 @@
+/**
+ * @file clustering_defs.h
+ * @brief are CF positions fixed or dynamic
+ */
+
 #ifndef CLUSTERING_DEFS_H
 #define CLUSTERING_DEFS_H
 

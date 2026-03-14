@@ -1,3 +1,8 @@
+/**
+ * @file image_format.h
+ * @brief Image format module
+ */
+
 #ifndef _IMAGEFORMATMODULE_H
 #define _IMAGEFORMATMODULE_H
 

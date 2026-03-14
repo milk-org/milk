@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file ModalRemap.c
  *
@@ -7,109 +8,62 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inM;
-static long  fpi_inM;
-
-static char *inU0;
-static long  fpi_inU0;
-
-static char *inU1;
-static long  fpi_inU1;
-
-static char *outM;
-static long  fpi_outM;
-
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".inM",
-        "input image",
-        "inM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inM,
-        &fpi_inM
-    },
-    {
-        CLIARG_IMG,
-        ".inU0",
-        "input space mode",
-        "inU0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inU0,
-        &fpi_inU0
-    },
-    {
-        CLIARG_IMG,
-        ".inU1",
-        "output space mode",
-        "inU1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inU1,
-        &fpi_inU1
-    },
-    {
-        CLIARG_STR,
-        ".outM",
-        "output M",
-        "outM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outM,
-        &fpi_outM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "Mremap",
+    .cmdkey      = "Mremap",
+    .description = "use modal mapping for linear transformation"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inM = NULL;
+static char * inU0 = NULL;
+static char * inU1 = NULL;
+static char * outM = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "Mremap", "use modal mapping for linear transformation", CLICMD_FIELDS_DEFAULTS
-};
+#define FPS_PARAMS(X) \
+    X(".inM", &inM, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".inU0", &inU0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input space mode") \
+    X(".inU1", &inU1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output space mode") \
+    X(".outM", &outM, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output M")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static errno_t help_function()
-{
-    printf("Use modal mapping for transformation\n");
-    printf("Modal mapping is between input basis U0 and output basis U1\n");
-    printf("First, decompose input M0 as coefficients of basis U0\n");
-    printf("These coefficients are then re-expanded according to basis U1\n");
-
-    return RETURN_SUCCESS;
-}
-
-
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /**
  * @brief Remap input M0 in space U0 to output M1 in space U1
@@ -139,7 +93,7 @@ errno_t ModalRemap(
 
     list_image_ID();
 
-    IMGID imgC0  = mkIMGID_from_name("coeffM0");
+    IMGID imgC0  = imgid_make_from_name("coeffM0");
     printf("Decompose %s %s -> %s\n", imgU0.name, imgM0.name, imgC0.name);
     fflush(stdout);
     // Decompose inM according to U0
@@ -152,11 +106,10 @@ errno_t ModalRemap(
     computeSGEMM(imgU1, imgC0, imgM1, 0, 0, GPUdev);
 
 
-
     // evaluate fit quality
     {
-        IMGID imgM1comp = mkIMGID_from_name("imsig");
-        resolveIMGID(&imgM1comp, ERRMODE_NULL);
+        IMGID imgM1comp = imgid_make_from_name("imsig");
+        resolveIMGID(&imgM1comp, ERRMODE_NULL, dcimg, dcnimg);
 
         FILE *fp = fopen("modalremap.log", "w");
         fprintf(fp, "# col1   frame index\n");
@@ -167,7 +120,7 @@ errno_t ModalRemap(
 
 
         // Expand back to original space
-        IMGID imgM0m  = mkIMGID_from_name("imM0m");
+        IMGID imgM0m  = imgid_make_from_name("imM0m");
         computeSGEMM(imgU0, imgC0, &imgM0m, 0, 0, GPUdev);
 
         // compute residual for each frame, and total
@@ -259,25 +212,21 @@ errno_t ModalRemap(
 }
 
 
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM0 = mkIMGID_from_name(inM);
-    resolveIMGID(&imginM0, ERRMODE_ABORT);
+    IMGID imginM0 = imgid_make_from_name(inM);
+    resolveIMGID(&imginM0, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imginU0 = mkIMGID_from_name(inU0);
-    resolveIMGID(&imginU0, ERRMODE_ABORT);
+    IMGID imginU0 = imgid_make_from_name(inU0);
+    resolveIMGID(&imginU0, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imginU1 = mkIMGID_from_name(inU1);
-    resolveIMGID(&imginU1, ERRMODE_ABORT);
+    IMGID imginU1 = imgid_make_from_name(inU1);
+    resolveIMGID(&imginU1, ERRMODE_ABORT, dcimg, dcnimg);
 
 
-    IMGID imgoutM1  = mkIMGID_from_name(outM);
+    IMGID imgoutM1  = imgid_make_from_name(outM);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -287,11 +236,10 @@ static errno_t compute_function()
     {
 
         ModalRemap(imginM0, imginU0, imginU1, &imgoutM1, *GPUdevice);
-        processinfo_update_output_stream(processinfo, imgoutM1.ID);
+        processinfo_update_output_stream(processinfo, imgoutM1.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
-
 
 
     DEBUG_TRACE_FEXIT();
@@ -299,14 +247,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-
-INSERT_STD_FPSCLIfunctions
-
-
-errno_t CLIADDCMD_linalgebra__ModalRemap()
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
-    INSERT_STD_CLIREGISTERFUNC
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_linalgebra__ModalRemap()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

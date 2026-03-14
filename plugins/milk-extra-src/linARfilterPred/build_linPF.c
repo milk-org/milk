@@ -1,5 +1,10 @@
 /**
  * @file build_linPF.c
+ * @brief Build linpf module
+ */
+
+/**
+ * @file build_linPF.c
  *
  *
  */
@@ -8,10 +13,9 @@
 #include <math.h>
 #include <time.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
-
 
 
 // Use MKL if available
@@ -43,177 +47,51 @@
 #endif
 */
 
-static char *inname;
 
-static uint32_t *PForder;
-static long      fpi_PForder;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static float *PFlatency;
-static long   fpi_PFlatency;
-
-static double *SVDeps;
-static long    fpi_SVDeps;
-
-static double *reglambda;
-static long    fpi_reglambda;
-
-static char *outPFname;
-
-static float *loopgain;
-static long   fpi_loopgain;
-
-static uint64_t *out3Dwrite;
-static long      fpi_out3Dwrite;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // input telemetry
-        CLIARG_STREAM,
-        ".inname",
-        "input telemetry",
-        "indata",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inname,
-        NULL
-    },
-    {
-        // temporal order of filter: number of time steps in state
-        CLIARG_UINT32,
-        ".PForder",
-        "predictive filter order",
-        "10",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &PForder,
-        &fpi_PForder
-    },
-    {
-        // latency: how far ahead to predict
-        CLIARG_FLOAT32,
-        ".PFlatency",
-        "time latency [frame]",
-        "2.7",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &PFlatency,
-        &fpi_PFlatency
-    },
-    {
-        // SVD limit
-        CLIARG_FLOAT64,
-        ".SVDeps",
-        "SVD cutoff",
-        "0.001",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &SVDeps,
-        &fpi_SVDeps
-    },
-    {
-        // Regularization
-        CLIARG_FLOAT64,
-        ".reglambda",
-        "regularization coefficient",
-        "0.001",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &reglambda,
-        &fpi_reglambda
-    },
-    {
-        CLIARG_STR,
-        ".outPFname",
-        "output filter",
-        "outPF",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outPFname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".loopgain",
-        "loop gain",
-        "0.2",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &loopgain,
-        &fpi_loopgain
-    },
-    {
-        CLIARG_ONOFF,
-        ".out3Dfilt",
-        "write output 3D filter",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &out3Dwrite,
-        &fpi_out3Dwrite
-    },
-    {
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkPF",
+    .cmdkey      = "mkPF",
+    .description = "make linear predictive filter"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inname = NULL;
+static uint32_t * PForder = NULL;
+static float * PFlatency = NULL;
+static double * SVDeps = NULL;
+static double * reglambda = NULL;
+static char * outPFname = NULL;
+static float * loopgain = NULL;
+static uint64_t * out3Dwrite = NULL;
+static int32_t * GPUdevice = NULL;
 
 
-// Optional custom configuration setup. comptbuff
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_PFlatency].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_SVDeps].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_reglambda].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_loopgain].fpflag |= FPFLAG_WRITERUN;
-        data.fpsptr->parray[fpi_out3Dwrite].fpflag |= FPFLAG_WRITERUN;
-    }
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
-
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkPF", "make linear predictive filter", CLICMD_FIELDS_DEFAULTS
-};
+#define FPS_PARAMS(X) \
+    X(".outPFname", &outPFname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output filter")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+FPS_V2_SECTION5(FPS_PARAMS)
 
-// detailed help
-static errno_t help_function()
-{
-
-
-    return RETURN_SUCCESS;
-}
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -223,10 +101,8 @@ static errno_t compute_function()
 
     // connect to input telemetry
     //
-    IMGID imgin = mkIMGID_from_name(inname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
-
-
+    IMGID imgin = imgid_make_from_name(inname);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     /// ## Selecting input values
@@ -326,7 +202,7 @@ static errno_t compute_function()
     /// Otherwise, all variables are active\n
     /// The number of active input variables is stored in NBpixin.
 
-    imageID IDinmask = image_ID("inmask");
+    imageID IDinmask = image_ID("inmask", dcimg, dcnimg);
     long    NBpixin  = 0;
     if(IDinmask == -1)
     {
@@ -343,7 +219,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDinmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDinmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     pixarray_x[NBpixin]  = ii;
                     pixarray_y[NBpixin]  = jj;
@@ -352,7 +228,6 @@ static errno_t compute_function()
                 }
     }
     printf("NBpixin = %ld\n", NBpixin);
-
 
 
     /// ## Selecting Output Variables
@@ -388,7 +263,7 @@ static errno_t compute_function()
         abort();
     }
 
-    imageID IDoutmask = image_ID("outmask");
+    imageID IDoutmask = image_ID("outmask", dcimg, dcnimg);
     long    NBpixout  = 0;
     if(IDoutmask == -1)
     {
@@ -405,7 +280,7 @@ static errno_t compute_function()
     {
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
-                if(data.image[IDoutmask].array.F[jj * xsize + ii] > 0.5)
+                if(dcimg[IDoutmask].array.F[jj * xsize + ii] > 0.5f)
                 {
                     outpixarray_x[NBpixout]  = ii;
                     outpixarray_y[NBpixout]  = jj;
@@ -413,8 +288,6 @@ static errno_t compute_function()
                     NBpixout++;
                 }
     }
-
-
 
 
     /// ## Build Empty Data Matrix
@@ -456,7 +329,6 @@ static errno_t compute_function()
     }
 
 
-
     /// Data matrix conventions :
     /// - each column (ii = cst) is a measurement
     /// - m index is measurement
@@ -471,8 +343,6 @@ static errno_t compute_function()
     printf("xysize = %ld\n", xysize);
     printf("IDin = %ld\n\n", imgin.ID);
     list_image_ID();
-
-
 
 
     // Allocate future measured data matrix
@@ -503,37 +373,58 @@ static errno_t compute_function()
 
         imsizearray[0] = NBpixin * (*PForder);
         imsizearray[1] = NBpixout;
-        char IDoutPF_name_raw[STRINGMAXLEN_IMGNAME];
-        WRITE_IMAGENAME(IDoutPF_name_raw, "%s_raw", outPFname);
+        char IDoutPF_name_raw[
+            STRINGMAXLEN_IMGNAME];
+        WRITE_IMAGENAME(
+            IDoutPF_name_raw,
+            "%s_raw", outPFname);
 
-        create_image_ID(outPFname,
-                        2,
-                        imsizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        1,
-                        0,
-                        &IDoutPF2D);
-        create_image_ID(IDoutPF_name_raw,
-                        2,
-                        imsizearray,
-                        _DATATYPE_FLOAT,
-                        1,
-                        1,
-                        0,
-                        &IDoutPF2Draw);
+        {
+            IMGID imgpf =
+                imgid_make_from_name(
+                    outPFname);
+            imgpf.mdt->naxis = 2;
+            imgpf.mdt->size[0] =
+                imsizearray[0];
+            imgpf.mdt->size[1] =
+                imsizearray[1];
+            imgpf.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpf.mdt->shared = 1;
+            imgpf.mdt->NBkw = 1;
+            imgpf.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpf);
+            IDoutPF2D = imgpf.ID;
+        }
+        {
+            IMGID imgpfraw =
+                imgid_make_from_name(
+                    IDoutPF_name_raw);
+            imgpfraw.mdt->naxis = 2;
+            imgpfraw.mdt->size[0] =
+                imsizearray[0];
+            imgpfraw.mdt->size[1] =
+                imsizearray[1];
+            imgpfraw.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgpfraw.mdt->shared = 1;
+            imgpfraw.mdt->NBkw = 1;
+            imgpfraw.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgpfraw);
+            IDoutPF2Draw = imgpfraw.ID;
+        }
         free(imsizearray);
         COREMOD_MEMORY_image_set_semflush(outPFname, -1);
         COREMOD_MEMORY_image_set_semflush(IDoutPF_name_raw, -1);
     }
 
 
-
-
     struct timespec t0;
     struct timespec t1;
-
-
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -551,8 +442,8 @@ static errno_t compute_function()
     ///
     /// Necessary as input may be continuously changing between consecutive loop iterations.
     ///
-    IDincp = image_ID("PFin_copy");
-    memcpy(data.image[IDincp].array.F,
+    IDincp = image_ID("PFin_copy", dcimg, dcnimg);
+    memcpy(dcimg[IDincp].array.F,
            imgin.im->array.F,
            sizeof(float) * inNBelem);
 
@@ -575,7 +466,7 @@ static errno_t compute_function()
             for(uint32_t m = 0; m < nbspl; m++)
             {
                 ave_inarray[pix] +=
-                    data.image[IDincp].array.F[m * xysize + pixarray_xy[pix]];
+                    dcimg[IDincp].array.F[m * xysize + pixarray_xy[pix]];
             }
             ave_inarray[pix] /= nbspl;
         }
@@ -589,7 +480,6 @@ static errno_t compute_function()
     }
 
 
-
     /// *STEP: Fill up data matrix PFmatD from input telemetry*
     ///
     for(long m = 0; m < NBmvec1; m++)
@@ -598,13 +488,12 @@ static errno_t compute_function()
         for(long pix = 0; pix < NBpixin; pix++)
             for(long dt = 0; dt < *PForder; dt++)
             {
-                data.image[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
-                    data.image[IDincp]
+                dcimg[IDmatA].array.F[(NBpixin * dt + pix) * NBmvec1 + m] =
+                    dcimg[IDincp]
                     .array.F[(k0 - dt) * xysize + pixarray_xy[pix]] -
                     ave_inarray[pix];
             }
     }
-
 
 
     /// *STEP: Write regularization coefficients (optional)*
@@ -614,12 +503,10 @@ static errno_t compute_function()
         for(long m = 0; m < mvecsize; m++)
         {
             //m1 = NBmvec + m;
-            data.image[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
+            dcimg[IDmatA].array.F[(m) *NBmvec1 + (NBmvec + m)] =
                 *reglambda;
         }
     }
-
-
 
 
     /// ### Compute pseudo-inverse of PFmatD
@@ -635,15 +522,14 @@ static errno_t compute_function()
             long k0 = m + *PForder - 1;
             k0 += (long) * PFlatency;
 
-            data.image[IDfm].array.F[PFpix * NBmvec + m] =
+            dcimg[IDfm].array.F[PFpix * NBmvec + m] =
                 (1.0 - alpha) *
-                data.image[IDincp]
+                dcimg[IDincp]
                 .array.F[(k0) * xysize + outpixarray_xy[PFpix]] +
-                alpha * data.image[IDincp]
+                alpha * dcimg[IDincp]
                 .array.F[(k0 + 1) * xysize + outpixarray_xy[PFpix]];
         }
     //save_fits("PFfmdat", "PFfmdat.fits");
-
 
 
     {
@@ -668,16 +554,11 @@ static errno_t compute_function()
     }
 
 
-
-
-
-
     {
         // input PFmatD is stored as 2D array
         //
-        IMGID imgin = mkIMGID_from_name("PFmatD");
-        resolveIMGID(&imgin, ERRMODE_ABORT);
-
+        IMGID imgin = imgid_make_from_name("PFmatD");
+        resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
 
         printf("Number of samples         : %d\n", imgin.md->size[0]);
@@ -688,15 +569,15 @@ static errno_t compute_function()
 
         // eigenvectors array
         delete_image_ID("eigenvec", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgevec = mkIMGID_from_name("eigenvec");
+        IMGID imgevec = imgid_make_from_name("eigenvec");
 
         // eigenvalues array
         delete_image_ID("eigenval", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgeval = mkIMGID_from_name("eigenval");
+        IMGID imgeval = imgid_make_from_name("eigenval");
 
         // eigenvalues array
         delete_image_ID("matU", DELETE_IMAGE_ERRMODE_IGNORE);
-        IMGID imgU = mkIMGID_from_name("matU");
+        IMGID imgU = imgid_make_from_name("matU");
 
 
         int GPUdev = 0;
@@ -736,15 +617,7 @@ static errno_t compute_function()
     }
 
 
-
-
-
-
-
-
-
-
-    imageID IDmatC = image_ID("psinv");
+    imageID IDmatC = image_ID("psinv", dcimg, dcnimg);
 
     ///
     /// ### Assemble Predictive Filter
@@ -756,11 +629,7 @@ static errno_t compute_function()
     }
 
 
-
-
-
-
-    imageID IDoutPF2Dn = image_ID("psinvPFmat");
+    imageID IDoutPF2Dn = image_ID("psinvPFmat", dcimg, dcnimg);
     if(IDoutPF2Dn == -1)
     {
         printf("------------------- CPU computing PF matrix\n");
@@ -775,14 +644,14 @@ static errno_t compute_function()
 
         // transpost of matC for speed
         float *matCtrans = (float *) malloc(sizeof(float) *
-                                            data.image[IDmatC].md->nelement);
+                                            dcimg[IDmatC].md->nelement);
 
-        for(long ii = 0; ii < data.image[IDmatC].md->size[0]; ii++)
+        for(long ii = 0; ii < dcimg[IDmatC].md->size[0]; ii++)
         {
-            for(long jj = 0; jj < data.image[IDmatC].md->size[1]; jj++)
+            for(long jj = 0; jj < dcimg[IDmatC].md->size[1]; jj++)
             {
-                matCtrans[ii * data.image[IDmatC].md->size[1] + jj] =
-                    data.image[IDmatC].array.F[jj * data.image[IDmatC].md->size[0] + ii];
+                matCtrans[ii * dcimg[IDmatC].md->size[1] + jj] =
+                    dcimg[IDmatC].array.F[jj * dcimg[IDmatC].md->size[0] + ii];
             }
         }
 
@@ -803,12 +672,12 @@ static errno_t compute_function()
                         long ind2t =  ind1 * NBmvec + m;
 
                         val += matCtrans[ind2t] *
-                               data.image[IDfm].array.F[PFpix * NBmvec + m];
+                               dcimg[IDfm].array.F[PFpix * NBmvec + m];
                     }
 
                     // output index
                     long oindex = PFpix * (PForderval * NBpixin) + ind1;
-                    data.image[IDoutPF2Dn].array.F[oindex] += val;
+                    dcimg[IDoutPF2Dn].array.F[oindex] += val;
 
                 }
             }
@@ -824,19 +693,18 @@ static errno_t compute_function()
     printf("DONE\n");
 
 //printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
-    data.image[IDoutPF2Draw].md[0].write = 1;
-    memcpy(data.image[IDoutPF2Draw].array.F,
-           data.image[IDoutPF2Dn].array.F,
+    dcimg[IDoutPF2Draw].md[0].write = 1;
+    memcpy(dcimg[IDoutPF2Draw].array.F,
+           dcimg[IDoutPF2Dn].array.F,
            sizeof(float) * NBpixout * NBpixin * *PForder);
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
-    data.image[IDoutPF2Draw].md[0].cnt0++;
-    data.image[IDoutPF2Draw].md[0].write = 0;
-
+    dcimg[IDoutPF2Draw].md[0].cnt0++;
+    dcimg[IDoutPF2Draw].md[0].write = 0;
 
 
 //printf("IDoutPF2D = %ld\n", IDoutPF2D);
 // Mix current PF with last one
-    data.image[IDoutPF2D].md[0].write = 1;
+    dcimg[IDoutPF2D].md[0].write = 1;
 
 
 // on first iteration, set loopgain to 1 to initalize content
@@ -855,13 +723,13 @@ static errno_t compute_function()
         for(long pix = 0; pix < NBpixin; pix++)
             for(long dt = 0; dt < *PForder; dt++)
             {
-                float val0 = data.image[IDoutPF2D]
+                float val0 = dcimg[IDoutPF2D]
                              .array.F[PFpix * (*PForder * NBpixin) +
                                             dt * NBpixin + pix]; // Previous
-                float val = data.image[IDoutPF2Dn]
+                float val = dcimg[IDoutPF2Dn]
                             .array.F[PFpix * (*PForder * NBpixin) +
                                            dt * NBpixin + pix]; // New
-                data.image[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) +
+                dcimg[IDoutPF2D].array.F[PFpix * (*PForder * NBpixin) +
                                               dt * NBpixin + pix] =
                                                   (1.0 - *loopgain) * val0 + *loopgain * val;
             }
@@ -872,8 +740,8 @@ static errno_t compute_function()
 
 
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
-    data.image[IDoutPF2D].md[0].cnt0++;
-    data.image[IDoutPF2D].md[0].write = 0;
+    dcimg[IDoutPF2D].md[0].cnt0++;
+    dcimg[IDoutPF2D].md[0].write = 0;
 
     if(*out3Dwrite == 1)
     {
@@ -886,10 +754,10 @@ static errno_t compute_function()
             for(long PFpix = 0; PFpix < NBpixout; PFpix++)
                 for(long dt = 0; dt < *PForder; dt++)
                 {
-                    float val = data.image[IDoutPF2D]
+                    float val = dcimg[IDoutPF2D]
                                 .array.F[PFpix * (*PForder * NBpixin) +
                                                dt * NBpixin + pix];
-                    data.image[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
+                    dcimg[IDoutPF3D].array.F[NBpixout * NBpixin * dt +
                                                   NBpixin * PFpix + pix] = val;
                 }
         save_fits("outPF3D", "_outPF3D.fits");
@@ -915,7 +783,6 @@ static errno_t compute_function()
            texec / tloop);
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     free(pixarray_x);
@@ -931,20 +798,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_LinARfilterPred__build_linPF()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

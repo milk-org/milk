@@ -1,3 +1,8 @@
+/**
+ * @file pup2foc.h
+ * @brief Pup2foc module
+ */
+
 /** @file pupfft.h
  */
 
