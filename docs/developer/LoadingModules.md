@@ -156,7 +156,7 @@ Upon startup, milk will read the CLI_ADD_LIBS environment variable to link share
 will link modules `MyFirstModule` and `MySecondModule`.
 
 > [!NOTE]
-> Shared object names can be separated by space, semicolumn, or comma.
+> Shared object names can be separated by space, semicolon, or comma.
 
 
 
