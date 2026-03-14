@@ -28,4 +28,13 @@ void CLI_configure_readline();
 void CLI_setup_hint_area(void);
 void CLI_cleanup_scroll_region(void);
 
+/* Command aliases */
+void    cli_alias_load(void);
+errno_t cli_alias_add(void);
+errno_t cli_alias_remove(void);
+errno_t cli_alias_list(void);
+
+/* Watch command */
+errno_t cli_watch(void);
+
 #endif
