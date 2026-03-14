@@ -1289,15 +1289,22 @@ static void cli_highlight_redisplay(void)
     }
 
     /*
-     * Save cursor, move to the first word's
-     * column, overwrite with color, restore.
+     * After rl_redisplay(), cursor is at rl_point.
+     * Move back to the first word, overwrite with
+     * color, then restore cursor position.
+     * Use cursor-relative movement (not absolute
+     * column) to avoid prompt-width errors from
+     * invisible escape sequences in the prompt.
      */
-    const char *prompt = rl_display_prompt
-        ? rl_display_prompt : "";
-    int pcol = (int) strlen(prompt) + ws;
-
     fprintf(rl_outstream, "\0337");  /* save */
-    fprintf(rl_outstream, "\r\033[%dC", pcol);
+    {
+        int back = rl_point - ws;
+        if(back > 0)
+        {
+            fprintf(rl_outstream,
+                    "\033[%dD", back);
+        }
+    }
     fprintf(rl_outstream, "%s%s\033[0m",
             col, firstword);
     fprintf(rl_outstream, "\0338");  /* restore */
