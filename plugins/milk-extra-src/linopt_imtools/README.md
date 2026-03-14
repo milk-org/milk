@@ -37,4 +37,5 @@ Image linear decomposition and optimization tools.
 | `milk-fpsexec-linopt-vec2Dimg` | `vec_to_2Dimage.c` | Reshape vector to 2D image |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

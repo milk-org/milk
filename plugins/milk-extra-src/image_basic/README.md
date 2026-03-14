@@ -35,4 +35,5 @@ Frequently used image functions
 | `milk-fpsexec-imgbasic-resizeim` | `imresize.c` | Resize 2D image |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

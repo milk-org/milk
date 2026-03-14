@@ -51,4 +51,32 @@ errno_t cli_cmdstats(void);
 errno_t cli_syntax_highlight_toggle(void);
 #endif
 
+/* Persistent history */
+void cli_history_load(void);
+void cli_history_save(void);
+
+/* Script execution */
+errno_t cli_source(void);
+
+/* Configurable prompt */
+errno_t cli_setprompt(void);
+void cli_build_prompt(
+    const char *fmt,
+    char       *out,
+    int         maxlen
+);
+
+/* Command bookmarks */
+errno_t cli_bookmark(void);
+void cli_bookmark_load(void);
+
+/* Session logging */
+errno_t cli_sessionlog(void);
+
+/* History display */
+errno_t cli_history_show(void);
+
+/* Fuzzy history search */
+errno_t cli_searchhist(void);
+
 #endif

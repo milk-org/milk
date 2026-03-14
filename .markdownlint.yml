@@ -30,3 +30,6 @@ MD026: false
 
 # Allow multiple blank lines (used for visual separation)
 MD012: false
+
+# Disable table column style checking (produces ~470 false positives)
+MD060: false

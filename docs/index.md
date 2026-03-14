@@ -1,6 +1,6 @@
 # Milk Documentation
 
-Welcome to the `milk` documentation! 
+Welcome to the `milk` documentation!
 
 `milk` provides a high-performance framework and tools for image processing and analysis, particularly suited for building real-time execution pipelines (such as Adaptive Optics loops) out of small modular units. The framework provides zero-copy tensor passing and instant parameter synchronization.
 
@@ -59,5 +59,5 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 ***
 *Can't find what you're looking for? Check the [Automatically Generated Document Index](Markdown_Index.md) for all plugin READMEs.*
 
----
+***
 ← [Documentation Index](index.md)

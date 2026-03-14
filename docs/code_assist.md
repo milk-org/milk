@@ -10,7 +10,7 @@ The `milk` project includes **agent rules** and
 (Gemini, Copilot, etc.) to follow project
 conventions automatically. They live under:
 
-```
+```text
 .agents/
 ├── rules/        # Always-on guardrails
 └── workflows/    # On-demand task templates
@@ -82,9 +82,9 @@ Create a new `.md` file in `.agents/rules/` with
 YAML frontmatter:
 
 ```yaml
----
+***
 description: Short description of what this rule does
----
+***
 ```
 
 Then write the trigger conditions and required
@@ -96,14 +96,14 @@ Create a new `.md` file in `.agents/workflows/`
 with YAML frontmatter:
 
 ```yaml
----
+***
 description: Short description of the workflow
----
+***
 ```
 
 Then write numbered steps below the frontmatter.
 Use `// turbo-all` at the top of the steps section
 if every command should auto-run without confirmation.
 
----
+***
 ← [Documentation Index](index.md)

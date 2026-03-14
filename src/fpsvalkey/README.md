@@ -2,7 +2,7 @@
 
 Bidirectional real-time sync of [milk](https://github.com/milk-org/milk) FPS (Function Parameter Structure) parameters to a [Valkey](https://valkey.io/) key-value store, enabling parameter sharing and remote control across multiple computers.
 
----
+***
 
 ## Table of Contents
 
@@ -17,7 +17,7 @@ Bidirectional real-time sync of [milk](https://github.com/milk-org/milk) FPS (Fu
 - [Troubleshooting](#troubleshooting)
 - [API Reference](#api-reference)
 
----
+***
 
 ## Overview
 
@@ -39,7 +39,7 @@ This enables a real-time, low-latency bridge between FPS instances on different 
 - **Auto-reconnect** — the command connection recovers from transient Valkey failures.
 - **Standalone build** — not compiled by default; independent CMake project.
 
----
+***
 
 ## Prerequisites
 
@@ -55,9 +55,10 @@ sudo make install
 ```
 
 Verify:
+
 ```bash
 pkg-config --cflags --libs milk
-# Should output include/lib paths
+## Should output include/lib paths
 ```
 
 ### 2. Valkey Server
@@ -65,13 +66,13 @@ pkg-config --cflags --libs milk
 Install one of:
 
 ```bash
-# Ubuntu 24.04+
+## Ubuntu 24.04+
 sudo apt install valkey-server
 
-# Or Redis (wire-compatible)
+## Or Redis (wire-compatible)
 sudo apt install redis-server
 
-# Or from source
+## Or from source
 git clone https://github.com/valkey-io/valkey.git
 cd valkey && make -j$(nproc) && sudo make install
 ```
@@ -89,12 +90,13 @@ sudo ldconfig
 ```
 
 Verify:
+
 ```bash
 pkg-config --cflags --libs valkey
-# Should output: -I/usr/local/include -L/usr/local/lib -lvalkey
+## Should output: -I/usr/local/include -L/usr/local/lib -lvalkey
 ```
 
----
+***
 
 ## Building
 
@@ -134,20 +136,20 @@ sudo make install
 
 Installs `milk-fps-valkey` to `CMAKE_INSTALL_PREFIX/bin`.
 
----
+***
 
 ## Usage
 
 ### Basic (single host)
 
 ```bash
-# Start Valkey server
+## Start Valkey server
 valkey-server --port 6379 &
 
-# Start an FPS process
+## Start an FPS process
 milk-fpsclitest ..confstart
 
-# Start syncing all FPS instances to Valkey
+## Start syncing all FPS instances to Valkey
 milk-fps-valkey
 ```
 
@@ -164,13 +166,13 @@ milk-fps-valkey
 ### Examples
 
 ```bash
-# Sync only FPS names matching "dmcomb"
+## Sync only FPS names matching "dmcomb"
 milk-fps-valkey "dmcomb.*"
 
-# Use remote Valkey server, faster polling
+## Use remote Valkey server, faster polling
 milk-fps-valkey -V 192.168.1.100 -P 6379 -i 0.05
 
-# Sync all FPS to a specific Valkey instance
+## Sync all FPS to a specific Valkey instance
 milk-fps-valkey -V valkey.cluster.local
 ```
 
@@ -179,22 +181,22 @@ milk-fps-valkey -V valkey.cluster.local
 On each computer:
 
 ```bash
-# Host A (IP: 192.168.1.10)
+## Host A (IP: 192.168.1.10)
 milk-fps-valkey -V 192.168.1.100
 
-# Host B (IP: 192.168.1.20)
+## Host B (IP: 192.168.1.20)
 milk-fps-valkey -V 192.168.1.100
 ```
 
 Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter changes on host A appear on host B within milliseconds, and vice versa.
 
----
+***
 
 ## Architecture
 
 ### Components
 
-```
+```text
 ┌─────────────────────────────────────────────┐
 │              milk-fps-valkey                 │
 │                                             │
@@ -264,7 +266,7 @@ Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter chang
 | FPS deleted | `SREM fps_list:<host> <name>`, `DEL fps:<host>:<name>` |
 | Tracker shutdown | Subscriber thread stopped, connections freed |
 
----
+***
 
 ## Valkey Key Schema
 
@@ -283,7 +285,8 @@ Both hosts connect to the same Valkey server at `192.168.1.100`. Parameter chang
 | `_lastsync` | String | Last metadata sync (UTC ISO-8601) |
 
 Example:
-```
+
+```text
 HGETALL fps:rtc1:dmcomb-00
  1) ".delayus"
  2) "200"
@@ -313,7 +316,7 @@ HGETALL fps:rtc1:dmcomb-00
 
 Contains the names of all active FPS instances on that host.
 
-```
+```text
 SMEMBERS fps_list:rtc1
 1) "dmcomb-00"
 2) "acquireWFS-00"
@@ -327,11 +330,12 @@ SMEMBERS fps_list:rtc1
 **Message format**: `<hostname> <fpsname> <keyword> <value> <typename>`
 
 Example:
-```
+
+```text
 PUBLISH fps_update:dmcomb-00 "rtc1 dmcomb-00 .delayus 200 UINT32"
 ```
 
----
+***
 
 ## Pub/Sub Protocol
 
@@ -341,7 +345,7 @@ The Pub/Sub protocol enables low-latency propagation of parameter changes withou
 
 Fields are space-separated:
 
-```
+```text
 <source_hostname> <fpsname> <keyword> <value> <typename>
 ```
 
@@ -358,10 +362,10 @@ Fields are space-separated:
 You can subscribe to FPS changes from any Valkey client:
 
 ```bash
-# Watch all FPS changes
+## Watch all FPS changes
 valkey-cli PSUBSCRIBE "fps_update:*"
 
-# Watch a specific FPS
+## Watch a specific FPS
 valkey-cli SUBSCRIBE "fps_update:dmcomb-00"
 ```
 
@@ -370,36 +374,36 @@ valkey-cli SUBSCRIBE "fps_update:dmcomb-00"
 You can set FPS parameters remotely using `valkey-cli`:
 
 ```bash
-# This will be received by milk-fps-valkey on all hosts
+## This will be received by milk-fps-valkey on all hosts
 valkey-cli PUBLISH fps_update:dmcomb-00 \
   "remote-host dmcomb-00 .delayus 500 UINT32"
 ```
 
 Note: the `source_hostname` field should be different from the target host's hostname to avoid echo filtering.
 
----
+***
 
 ## Configuration Examples
 
 ### Single-Host Development
 
 ```bash
-# Terminal 1: Start Valkey
+## Terminal 1: Start Valkey
 valkey-server
 
-# Terminal 2: Start FPS
+## Terminal 2: Start FPS
 milk -e "exfpscli ..confstart"
 
-# Terminal 3: Sync to Valkey
+## Terminal 3: Sync to Valkey
 milk-fps-valkey -i 0.5
 
-# Terminal 4: Monitor in Valkey
+## Terminal 4: Monitor in Valkey
 valkey-cli PSUBSCRIBE "fps_update:*"
 ```
 
 ### Two-Host AO System
 
-```
+```text
    ┌──────────┐          ┌──────────────┐          ┌──────────┐
    │  RTC Host │◄────────►│ Valkey Server │◄────────►│ GUI Host │
    │  (rtc1)   │          │ (192.168.1.1) │          │  (gui1)  │
@@ -407,26 +411,29 @@ valkey-cli PSUBSCRIBE "fps_update:*"
 ```
 
 On the RTC host:
+
 ```bash
 milk-fps-valkey -V 192.168.1.1
 ```
 
 On the GUI host:
+
 ```bash
 milk-fps-valkey -V 192.168.1.1
 ```
 
 Changes made on either host propagate to the other in real time.
 
----
+***
 
 ## Troubleshooting
 
 ### Connection Issues
 
-```
+```text
 [fpsvalkey] cmd connect failed: Connection refused
 ```
+
 → Valkey server is not running or wrong host/port. Start with `valkey-server` or check firewall.
 
 ### No Parameters Syncing
@@ -444,16 +451,18 @@ Changes made on either host propagate to the other in real time.
 ### Build Errors
 
 **`Package valkey was not found`**:
+
 ```bash
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ```
 
 **`Could not find a package configuration file provided by "milk"`**:
+
 ```bash
 cmake .. -DCMAKE_PREFIX_PATH=/usr/local/milk-1.03.00
 ```
 
----
+***
 
 ## API Reference
 
@@ -491,7 +500,7 @@ The C API is available for integration into other tools:
 | `FPSNAME` | FPS name | `dmcomb-00` |
 | *other string types* | UTF-8 string | — |
 
----
+***
 
 ## Files
 

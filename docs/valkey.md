@@ -8,7 +8,7 @@ See also: [FPS](fps.md) ·
 [Performance Tuning](performance.md) ·
 [Programmer's Guide](programmers_guide.md)
 
----
+***
 
 ## Overview
 
@@ -25,7 +25,7 @@ This enables:
   (Python, Node.js, CLI) can read/write FPS
   parameters.
 
-```
+```text
   Host A                 Valkey Server              Host B
   ┌──────────┐          ┌──────────────┐          ┌──────────┐
   │ FPS SHM  │◄────────►│  fps:hostA:* │◄────────►│ FPS SHM  │
@@ -35,7 +35,7 @@ This enables:
   └──────────┘          └──────────────┘          └──────────┘
 ```
 
----
+***
 
 ## Quick Start
 
@@ -66,14 +66,14 @@ All local FPS parameters are now mirrored to Valkey.
 On each host, point to the same Valkey server:
 
 ```bash
-# Host A
+## Host A
 $ milk-fps-valkey -V 192.168.1.100
 
-# Host B
+## Host B
 $ milk-fps-valkey -V 192.168.1.100
 ```
 
----
+***
 
 ## Key Features
 
@@ -85,7 +85,7 @@ $ milk-fps-valkey -V 192.168.1.100
 | Auto-reconnect | Recovers from Valkey restarts |
 | Regex filtering | Sync only matching FPS names |
 
----
+***
 
 ## Common Options
 
@@ -100,7 +100,7 @@ $ milk-fps-valkey [OPTIONS] [regex_pattern]
 | `-i, --interval` | `0.1` | Poll interval (seconds) |
 | `-h, --help` | — | Show help |
 
----
+***
 
 ## Detailed Documentation
 
@@ -110,7 +110,7 @@ comprehensive README:
 
 → [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 
----
+***
 
 ## Building
 
@@ -129,5 +129,5 @@ See
 [`src/fpsvalkey/README.md`](../src/fpsvalkey/README.md)
 for detailed build instructions and prerequisites.
 
----
+***
 ← [Documentation Index](index.md)

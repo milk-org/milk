@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #include <termios.h>
 
 #ifdef USE_READLINE
@@ -27,6 +28,7 @@
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
 #define CLICOMPLETIONMODE_FILES    3
+#define CLICOMPLETIONMODE_FPSPARAMS 4
 
 // COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
@@ -53,6 +55,48 @@ void rl_cb_linehandler(char *linein)
 
     // copy input into data.CLIcmdline
     strcpy(data.CLIcmdline, linein);
+
+    /* Handle backslash line continuation:
+     * temporarily switch to blocking readline
+     * to read additional lines */
+    {
+        size_t len = strlen(data.CLIcmdline);
+        while(len > 0
+                && data.CLIcmdline[len - 1]
+                == '\\')
+        {
+            data.CLIcmdline[len - 1] = ' ';
+            /* Remove callback handler to avoid
+             * interference, use direct readline
+             * for continuation */
+            rl_callback_handler_remove();
+            char *cont = readline("> ");
+            /* Re-install with dummy prompt;
+             * the main loop will re-install
+             * with the proper prompt after this
+             * handler returns */
+            rl_callback_handler_install(
+                "",
+                (rl_vcpfunc_t *)
+                &rl_cb_linehandler);
+            if(cont == NULL)
+            {
+                break;
+            }
+            int avail =
+                STRINGMAXLEN_CLICMDLINE
+                - (int) strlen(data.CLIcmdline)
+                - 1;
+            if(avail > 0)
+            {
+                strncat(data.CLIcmdline, cont,
+                        (size_t) avail);
+            }
+            free(cont);
+            len = strlen(data.CLIcmdline);
+        }
+    }
+
     CLI_execute_line();
 
     free(linein);
@@ -361,6 +405,64 @@ retry_fuzzy:
         }
     }
 
+    if(data.CLImatchMode == CLICOMPLETIONMODE_FPSPARAMS)
+    {
+        /*
+         * FPS parameter name completion.
+         * Scan /dev/shm for fps.* entries,
+         * strip "fps." prefix and ".shm"
+         * suffix, offer as completions.
+         */
+        static DIR *fps_dirp = NULL;
+
+        if(!state)
+        {
+            if(fps_dirp != NULL)
+            {
+                closedir(fps_dirp);
+                fps_dirp = NULL;
+            }
+            fps_dirp = opendir("/dev/shm");
+        }
+
+        if(fps_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(fps_dirp))
+                    != NULL)
+            {
+                /* Only fps.*.shm entries */
+                if(strncmp(ent->d_name,
+                           "fps.", 4) != 0)
+                {
+                    continue;
+                }
+                /* Strip "fps." prefix */
+                char fpsname[256];
+                strncpy(fpsname,
+                        ent->d_name + 4,
+                        sizeof(fpsname) - 1);
+                fpsname[
+                    sizeof(fpsname) - 1]
+                    = '\0';
+                /* Strip ".shm" suffix */
+                char *dot = strstr(
+                    fpsname, ".shm");
+                if(dot != NULL)
+                {
+                    *dot = '\0';
+                }
+                if(strncmp(fpsname, text,
+                           len) == 0)
+                {
+                    return dupstr(fpsname);
+                }
+            }
+            closedir(fps_dirp);
+            fps_dirp = NULL;
+        }
+    }
+
     /* Fuzzy fallback: if prefix pass found nothing,
      * restart with substring matching */
     if(generator_fuzzy_pass == 0 &&
@@ -486,6 +588,11 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
                         {
                             matched_file = 1;
                         }
+                        if(atype == CLIARG_FPSNAME)
+                        {
+                            data.CLImatchMode =
+                                CLICOMPLETIONMODE_FPSPARAMS;
+                        }
                         break;
                     }
                     cli_ai++;
@@ -501,7 +608,8 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
                 rl_completion_append_character
                     = '\0';
             }
-            else
+            else if(data.CLImatchMode
+                    != CLICOMPLETIONMODE_FPSPARAMS)
             {
                 data.CLImatchMode =
                     CLICOMPLETIONMODE_IMAGES;
@@ -1314,6 +1422,917 @@ static void cli_highlight_redisplay(void)
 #endif /* USE_READLINE */
 
 
+/*
+ * ============================================================
+ *  Persistent History (~/.milk_history)
+ * ============================================================
+ */
+
+#define MILK_HISTORY_MAXLINES 1000
+
+void cli_history_load(void)
+{
+#ifdef USE_READLINE
+    char hpath[STRINGMAXLEN_FULLFILENAME];
+    snprintf(hpath,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_history",
+             getenv("HOME"));
+    read_history(hpath);
+#endif
+}
+
+void cli_history_save(void)
+{
+#ifdef USE_READLINE
+    char hpath[STRINGMAXLEN_FULLFILENAME];
+    snprintf(hpath,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_history",
+             getenv("HOME"));
+    write_history(hpath);
+    history_truncate_file(hpath,
+                          MILK_HISTORY_MAXLINES);
+#endif
+}
+
+
+/*
+ * ============================================================
+ *  History Expansion (!! and !$)
+ * ============================================================
+ *
+ * Called at the very start of CLI_execute_line(),
+ * before alias expansion.
+ *
+ * !!    → replace with last executed command
+ * !$    → replace with last argument of previous cmd
+ * !<prefix> → last command starting with <prefix>
+ */
+
+static void cli_history_expand(void)
+{
+#ifdef USE_READLINE
+    char *line = data.CLIcmdline;
+
+    /* Quick check: must start with '!' */
+    if(line[0] != '!')
+    {
+        return;
+    }
+
+    /* !! — replay last command */
+    if(line[1] == '!')
+    {
+        HIST_ENTRY *prev = history_get(
+            history_length);
+        if(prev != NULL)
+        {
+            char suffix[STRINGMAXLEN_CLICMDLINE];
+            suffix[0] = '\0';
+            if(line[2] != '\0')
+            {
+                strncpy(suffix, line + 2,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                suffix[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+            }
+            snprintf(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "%s%s",
+                     prev->line, suffix);
+            printf(">> %s\n", data.CLIcmdline);
+        }
+        return;
+    }
+
+    /* !$ — last argument of previous command */
+    if(line[1] == '$')
+    {
+        if(data.last_argument[0] != '\0')
+        {
+            char rest[STRINGMAXLEN_CLICMDLINE];
+            strncpy(rest, line + 2,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+            rest[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            snprintf(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "%s%s",
+                     data.last_argument, rest);
+            printf(">> %s\n", data.CLIcmdline);
+        }
+        return;
+    }
+
+    /* !<prefix> — last command starting with it */
+    {
+        const char *prefix = line + 1;
+        size_t plen = strlen(prefix);
+        /* Trim trailing spaces from prefix */
+        while(plen > 0
+                && prefix[plen - 1] == ' ')
+        {
+            plen--;
+        }
+        if(plen == 0)
+        {
+            return;
+        }
+        HIST_ENTRY **hist = history_list();
+        if(hist == NULL)
+        {
+            return;
+        }
+        int hlen = history_length;
+        for(int i = hlen - 1; i >= 0; i--)
+        {
+            if(strncmp(hist[i]->line,
+                       prefix, plen) == 0)
+            {
+                strncpy(data.CLIcmdline,
+                        hist[i]->line,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+                printf(">> %s\n",
+                       data.CLIcmdline);
+                return;
+            }
+        }
+        printf("!%.*s: event not found\n",
+               (int) plen, prefix);
+        data.CLIcmdline[0] = '\0';
+    }
+#endif
+}
+
+
+/**
+ * @brief Save last argument after command execution
+ */
+static void cli_save_last_argument(void)
+{
+    if(data.cmdNBarg > 1)
+    {
+        long last = data.cmdNBarg - 1;
+        strncpy(data.last_argument,
+                data.cmdargtoken[last].val.string,
+                sizeof(data.last_argument) - 1);
+        data.last_argument[
+            sizeof(data.last_argument) - 1]
+            = '\0';
+    }
+}
+
+
+/*
+ * ============================================================
+ *  Source Command — execute a milk script file
+ * ============================================================
+ */
+
+errno_t cli_source(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: source <filename>\n");
+        return RETURN_FAILURE;
+    }
+    const char *fname =
+        data.cmdargtoken[1].val.string;
+    FILE *fp = fopen(fname, "r");
+    if(fp == NULL)
+    {
+        printf("source: cannot open '%s'\n",
+               fname);
+        return RETURN_FAILURE;
+    }
+    char line[STRINGMAXLEN_CLICMDLINE];
+    int lineno = 0;
+    while(fgets(line, STRINGMAXLEN_CLICMDLINE,
+                fp) != NULL)
+    {
+        lineno++;
+        {
+            size_t len = strlen(line);
+            if(len > 0
+                    && line[len - 1] == '\n')
+            {
+                line[len - 1] = '\0';
+            }
+        }
+        const char *p = line;
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if(*p == '\0' || *p == '#')
+        {
+            continue;
+        }
+        strncpy(data.CLIcmdline, line,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        errno_t ret = CLI_execute_line();
+        if(ret != RETURN_SUCCESS)
+        {
+            printf(
+                "\033[31m[source:%s:%d] "
+                "error\033[0m\n",
+                fname, lineno);
+        }
+    }
+    fclose(fp);
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Configurable Prompt — setprompt command
+ * ============================================================
+ *
+ * Format tokens:
+ *   %h = hostname
+ *   %u = username
+ *   %d = cwd basename
+ *   %t = HH:MM:SS
+ *   %n = CLI process name (data.processname)
+ */
+
+/** prompt_format stored in data struct is TBD;
+ *  for now use a file-scope buffer. */
+static char cli_prompt_format[200] = "";
+
+/**
+ * @brief Build prompt string from format tokens
+ */
+void cli_build_prompt(
+    const char *fmt,
+    char       *out,
+    int         maxlen
+)
+{
+    int pos = 0;
+    for(int i = 0; fmt[i] != '\0'
+            && pos < maxlen - 1; i++)
+    {
+        if(fmt[i] == '%' && fmt[i + 1] != '\0')
+        {
+            i++;
+            switch(fmt[i])
+            {
+            case 'h':
+            {
+                char hn[64];
+                gethostname(hn, sizeof(hn));
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", hn);
+                break;
+            }
+            case 'u':
+            {
+                const char *u = getenv("USER");
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", u ? u : "?");
+                break;
+            }
+            case 'd':
+            {
+                char cwd[256];
+                if(getcwd(cwd, sizeof(cwd)))
+                {
+                    char *base = strrchr(cwd,
+                                         '/');
+                    pos += snprintf(out + pos,
+                        (size_t)(maxlen - pos),
+                        "%s",
+                        base ? base + 1 : cwd);
+                }
+                break;
+            }
+            case 't':
+            {
+                time_t now = time(NULL);
+                struct tm *tm = localtime(&now);
+                pos += (int) strftime(
+                    out + pos,
+                    (size_t)(maxlen - pos),
+                    "%H:%M:%S", tm);
+                break;
+            }
+            case 'n':
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", data.processname);
+                break;
+            default:
+                if(pos < maxlen - 2)
+                {
+                    out[pos++] = '%';
+                    out[pos++] = fmt[i];
+                }
+                break;
+            }
+        }
+        else
+        {
+            out[pos++] = fmt[i];
+        }
+    }
+    out[pos] = '\0';
+}
+
+errno_t cli_setprompt(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        if(cli_prompt_format[0] != '\0')
+        {
+            printf("Current prompt format: "
+                   "'%s'\n",
+                   cli_prompt_format);
+        }
+        else
+        {
+            printf("Using default prompt\n");
+        }
+        printf("Tokens: %%h=host %%u=user "
+               "%%d=dir %%t=time %%n=name\n");
+        return RETURN_SUCCESS;
+    }
+    strncpy(cli_prompt_format,
+            data.cmdargtoken[1].val.string,
+            sizeof(cli_prompt_format) - 1);
+    cli_prompt_format[
+        sizeof(cli_prompt_format) - 1] = '\0';
+    printf("Prompt set to: '%s'\n",
+           cli_prompt_format);
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Command Bookmarks
+ * ============================================================
+ */
+
+#define BOOKMARK_MAX       64
+#define BOOKMARK_NAMELEN   64
+#define BOOKMARK_CMDLEN   512
+
+struct bookmark_entry
+{
+    char name[BOOKMARK_NAMELEN];
+    char cmd[BOOKMARK_CMDLEN];
+};
+
+static struct bookmark_entry
+    bookmarks[BOOKMARK_MAX];
+static int bookmark_count = 0;
+
+/**
+ * @brief Load bookmarks from ~/.milk_bookmarks
+ */
+void cli_bookmark_load(void)
+{
+    char path[STRINGMAXLEN_FULLFILENAME];
+    snprintf(path,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_bookmarks",
+             getenv("HOME"));
+    FILE *fp = fopen(path, "r");
+    if(fp == NULL)
+    {
+        return;
+    }
+    bookmark_count = 0;
+    char line[1024];
+    while(fgets(line, (int) sizeof(line), fp)
+            && bookmark_count < BOOKMARK_MAX)
+    {
+        size_t len = strlen(line);
+        if(len > 0 && line[len - 1] == '\n')
+        {
+            line[len - 1] = '\0';
+        }
+        char *tab = strchr(line, '\t');
+        if(tab == NULL)
+        {
+            continue;
+        }
+        *tab = '\0';
+        strncpy(
+            bookmarks[bookmark_count].name,
+            line,
+            BOOKMARK_NAMELEN - 1);
+        bookmarks[bookmark_count].name[
+            BOOKMARK_NAMELEN - 1] = '\0';
+        strncpy(
+            bookmarks[bookmark_count].cmd,
+            tab + 1,
+            BOOKMARK_CMDLEN - 1);
+        bookmarks[bookmark_count].cmd[
+            BOOKMARK_CMDLEN - 1] = '\0';
+        bookmark_count++;
+    }
+    fclose(fp);
+}
+
+/**
+ * @brief Save bookmarks to ~/.milk_bookmarks
+ */
+static void cli_bookmark_save(void)
+{
+    char path[STRINGMAXLEN_FULLFILENAME];
+    snprintf(path,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_bookmarks",
+             getenv("HOME"));
+    FILE *fp = fopen(path, "w");
+    if(fp == NULL)
+    {
+        return;
+    }
+    for(int i = 0; i < bookmark_count; i++)
+    {
+        fprintf(fp, "%s\t%s\n",
+                bookmarks[i].name,
+                bookmarks[i].cmd);
+    }
+    fclose(fp);
+}
+
+errno_t cli_bookmark(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage:\n"
+               "  bookmark save <name> "
+               "\"cmd1 ; cmd2\"\n"
+               "  bookmark run  <name>\n"
+               "  bookmark list\n"
+               "  bookmark rm   <name>\n");
+        return RETURN_SUCCESS;
+    }
+    const char *action =
+        data.cmdargtoken[1].val.string;
+
+    if(strcmp(action, "list") == 0)
+    {
+        if(bookmark_count == 0)
+        {
+            printf("No bookmarks saved\n");
+        }
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            printf("  \033[1m%-16s\033[0m %s\n",
+                   bookmarks[i].name,
+                   bookmarks[i].cmd);
+        }
+        return RETURN_SUCCESS;
+    }
+
+    if(strcmp(action, "save") == 0)
+    {
+        if(data.cmdNBarg < 4)
+        {
+            printf("Usage: bookmark save "
+                   "<name> \"cmd\"\n");
+            return RETURN_FAILURE;
+        }
+        if(bookmark_count >= BOOKMARK_MAX)
+        {
+            printf("Bookmark limit reached\n");
+            return RETURN_FAILURE;
+        }
+        strncpy(
+            bookmarks[bookmark_count].name,
+            data.cmdargtoken[2].val.string,
+            BOOKMARK_NAMELEN - 1);
+        bookmarks[bookmark_count].name[
+            BOOKMARK_NAMELEN - 1] = '\0';
+        /* Join remaining args as command */
+        {
+            char cmd[BOOKMARK_CMDLEN] = "";
+            for(long a = 3;
+                    a < data.cmdNBarg; a++)
+            {
+                if(a > 3)
+                {
+                    strncat(cmd, " ",
+                        BOOKMARK_CMDLEN
+                        - strlen(cmd) - 1);
+                }
+                strncat(cmd,
+                    data.cmdargtoken[a]
+                        .val.string,
+                    BOOKMARK_CMDLEN
+                    - strlen(cmd) - 1);
+            }
+            strncpy(
+                bookmarks[bookmark_count].cmd,
+                cmd, BOOKMARK_CMDLEN - 1);
+            bookmarks[bookmark_count].cmd[
+                BOOKMARK_CMDLEN - 1] = '\0';
+        }
+        bookmark_count++;
+        cli_bookmark_save();
+        printf("Bookmark '%s' saved\n",
+               data.cmdargtoken[2].val.string);
+        return RETURN_SUCCESS;
+    }
+
+    if(strcmp(action, "run") == 0)
+    {
+        if(data.cmdNBarg < 3)
+        {
+            printf("Usage: bookmark run "
+                   "<name>\n");
+            return RETURN_FAILURE;
+        }
+        const char *name =
+            data.cmdargtoken[2].val.string;
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            if(strcmp(bookmarks[i].name,
+                     name) == 0)
+            {
+                strncpy(data.CLIcmdline,
+                        bookmarks[i].cmd,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+                return CLI_execute_line();
+            }
+        }
+        printf("Bookmark '%s' not found\n",
+               name);
+        return RETURN_FAILURE;
+    }
+
+    if(strcmp(action, "rm") == 0)
+    {
+        if(data.cmdNBarg < 3)
+        {
+            printf("Usage: bookmark rm "
+                   "<name>\n");
+            return RETURN_FAILURE;
+        }
+        const char *name =
+            data.cmdargtoken[2].val.string;
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            if(strcmp(bookmarks[i].name,
+                     name) == 0)
+            {
+                for(int j = i;
+                        j < bookmark_count - 1;
+                        j++)
+                {
+                    bookmarks[j] =
+                        bookmarks[j + 1];
+                }
+                bookmark_count--;
+                cli_bookmark_save();
+                printf("Bookmark '%s' "
+                       "removed\n", name);
+                return RETURN_SUCCESS;
+            }
+        }
+        printf("Bookmark '%s' not found\n",
+               name);
+        return RETURN_FAILURE;
+    }
+
+    printf("Unknown bookmark action '%s'\n",
+           action);
+    return RETURN_FAILURE;
+}
+
+
+/*
+ * ============================================================
+ *  Session Logging
+ * ============================================================
+ */
+
+static FILE *session_log_fp = NULL;
+static struct timespec session_log_t0;
+
+errno_t cli_sessionlog(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: sessionlog "
+               "[on|off|<filename>]\n");
+        printf("Status: %s\n",
+               session_log_fp ? "ON" : "OFF");
+        return RETURN_SUCCESS;
+    }
+    const char *arg =
+        data.cmdargtoken[1].val.string;
+
+    if(strcmp(arg, "off") == 0)
+    {
+        if(session_log_fp)
+        {
+            fclose(session_log_fp);
+            session_log_fp = NULL;
+            printf("Session logging stopped\n");
+        }
+        return RETURN_SUCCESS;
+    }
+
+    /* Close previous if open */
+    if(session_log_fp)
+    {
+        fclose(session_log_fp);
+        session_log_fp = NULL;
+    }
+
+    char logpath[STRINGMAXLEN_FULLFILENAME];
+    if(strcmp(arg, "on") == 0)
+    {
+        snprintf(logpath,
+                 STRINGMAXLEN_FULLFILENAME,
+                 "%s/.milk_session.log",
+                 getenv("HOME"));
+    }
+    else
+    {
+        strncpy(logpath, arg,
+                STRINGMAXLEN_FULLFILENAME - 1);
+        logpath[
+            STRINGMAXLEN_FULLFILENAME - 1]
+            = '\0';
+    }
+
+    session_log_fp = fopen(logpath, "a");
+    if(session_log_fp == NULL)
+    {
+        printf("Cannot open '%s'\n", logpath);
+        return RETURN_FAILURE;
+    }
+    clock_gettime(CLOCK_MONOTONIC,
+                  &session_log_t0);
+    printf("Session logging to '%s'\n", logpath);
+
+    /* Write session start marker */
+    {
+        time_t now = time(NULL);
+        char tbuf[64];
+        strftime(tbuf, sizeof(tbuf),
+                 "%Y-%m-%dT%H:%M:%S",
+                 localtime(&now));
+        fprintf(session_log_fp,
+                "# Session started %s\n", tbuf);
+        fflush(session_log_fp);
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Log a command to session log if active
+ */
+static void cli_session_log_cmd(
+    const char *cmd
+)
+{
+    if(session_log_fp == NULL)
+    {
+        return;
+    }
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double elapsed_ms =
+        (double)(now.tv_sec
+                 - session_log_t0.tv_sec)
+        * 1000.0
+        + (double)(now.tv_nsec
+                   - session_log_t0.tv_nsec)
+        / 1.0e6;
+    {
+        time_t t = time(NULL);
+        char tbuf[64];
+        strftime(tbuf, sizeof(tbuf),
+                 "%Y-%m-%dT%H:%M:%S",
+                 localtime(&t));
+        fprintf(session_log_fp,
+                "[%s] [%10.1f ms] %s\n",
+                tbuf, elapsed_ms, cmd);
+        fflush(session_log_fp);
+    }
+}
+
+
+/*
+ * ============================================================
+ *  Environment Variable Expansion
+ * ============================================================
+ *
+ * Replace $VAR and ${VAR} in the command line with
+ * the value from getenv().
+ */
+
+/**
+ * @brief Expand $VAR and ${VAR} in place
+ */
+static void cli_expand_env(
+    char *line,
+    int   maxlen
+)
+{
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+
+    while(line[i] != '\0'
+            && opos < maxlen - 1)
+    {
+        if(line[i] == '$')
+        {
+            i++;
+            int  braced = 0;
+            if(line[i] == '{')
+            {
+                braced = 1;
+                i++;
+            }
+            char varname[256];
+            int  vlen = 0;
+            while(line[i] != '\0'
+                    && vlen < 255)
+            {
+                if(braced && line[i] == '}')
+                {
+                    i++;
+                    break;
+                }
+                if(!braced
+                        && !(
+                            (line[i] >= 'A'
+                             && line[i] <= 'Z')
+                            || (line[i] >= 'a'
+                                && line[i] <= 'z')
+                            || (line[i] >= '0'
+                                && line[i] <= '9')
+                            || line[i] == '_'))
+                {
+                    break;
+                }
+                varname[vlen++] = line[i++];
+            }
+            varname[vlen] = '\0';
+            const char *val = getenv(varname);
+            if(val != NULL)
+            {
+                int vallen = (int) strlen(val);
+                int avail = maxlen - 1 - opos;
+                int clen = vallen < avail
+                           ? vallen : avail;
+                memcpy(out + opos, val,
+                       (size_t) clen);
+                opos += clen;
+            }
+        }
+        else
+        {
+            out[opos++] = line[i++];
+        }
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+
+/*
+ * ============================================================
+ *  History <N> Command
+ * ============================================================
+ */
+
+errno_t cli_history_show(void)
+{
+#ifdef USE_READLINE
+    int n = 20;  /* default */
+    if(data.cmdNBarg >= 2)
+    {
+        n = atoi(
+            data.cmdargtoken[1].val.string);
+        if(n <= 0)
+        {
+            n = 20;
+        }
+    }
+
+    HIST_ENTRY **hlist = history_list();
+    if(hlist == NULL)
+    {
+        printf("No history\n");
+        return RETURN_SUCCESS;
+    }
+
+    int total = history_length;
+    int start = total - n;
+    if(start < 0)
+    {
+        start = 0;
+    }
+    for(int i = start; i < total; i++)
+    {
+        printf(" %4d  %s\n",
+               i + 1, hlist[i]->line);
+    }
+#else
+    printf("Readline not available\n");
+#endif
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Fuzzy History Search (searchhist)
+ * ============================================================
+ *
+ * Search history for entries containing a
+ * substring. Shows all matches with index.
+ */
+
+errno_t cli_searchhist(void)
+{
+#ifdef USE_READLINE
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: searchhist <pattern>\n");
+        return RETURN_SUCCESS;
+    }
+    const char *pattern =
+        data.cmdargtoken[1].val.string;
+
+    HIST_ENTRY **hlist = history_list();
+    if(hlist == NULL)
+    {
+        printf("No history\n");
+        return RETURN_SUCCESS;
+    }
+
+    int total = history_length;
+    int found = 0;
+    for(int i = 0; i < total; i++)
+    {
+        if(strcasestr(hlist[i]->line,
+                      pattern) != NULL)
+        {
+            /* Highlight matching substring */
+            const char *pos =
+                strcasestr(hlist[i]->line,
+                           pattern);
+            int pre = (int)(pos
+                            - hlist[i]->line);
+            int plen = (int) strlen(pattern);
+            printf(" %4d  %.*s"
+                   "\033[1;33m%.*s\033[0m"
+                   "%s\n",
+                   i + 1,
+                   pre, hlist[i]->line,
+                   plen, pos,
+                   pos + plen);
+            found++;
+        }
+    }
+    if(found == 0)
+    {
+        printf("No history entries match"
+               " '%s'\n", pattern);
+    }
+    else
+    {
+        printf("(%d match%s)\n",
+               found,
+               found == 1 ? "" : "es");
+    }
+#else
+    printf("Readline not available\n");
+#endif
+    return RETURN_SUCCESS;
+}
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -1328,45 +2347,142 @@ errno_t CLI_execute_line()
         (struct timespec *) malloc(sizeof(struct timespec));
     char calctmpimname[STRINGMAXLEN_IMGNAME];
 
+    /* Expand history (!! and !$) first */
+    cli_history_expand();
+    if(data.CLIcmdline[0] == '\0')
+    {
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
+
     /* Expand aliases before anything else */
     cli_alias_expand();
 
+    /* Expand environment variables ($VAR) */
+    cli_expand_env(data.CLIcmdline,
+                   STRINGMAXLEN_CLICMDLINE);
+
+    /* Log command to session log if active */
+    cli_session_log_cmd(data.CLIcmdline);
+
     /*
-     * ---- Semicolon chaining ----
+     * ---- Command chaining: ; && || ----
+     *
+     * Scan for the first unquoted chaining
+     * operator and split there.
      */
     {
-        char *semi = strchr(data.CLIcmdline, ';');
-        if(semi != NULL)
+        char fullline[STRINGMAXLEN_CLICMDLINE];
+        strncpy(fullline, data.CLIcmdline,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        fullline[
+            STRINGMAXLEN_CLICMDLINE - 1]
+            = '\0';
+
+        /* Find first chaining operator */
+        int  chain_type = 0;
+        /* 1=;  2=&&  3=||  */
+        int  chain_off = -1;
+        int  chain_len = 0;
+        for(int ci = 0; fullline[ci] != '\0';
+                ci++)
         {
-            char fullline[STRINGMAXLEN_CLICMDLINE];
-            strncpy(fullline, data.CLIcmdline,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            fullline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
-            size_t off =
-                (size_t)(semi - data.CLIcmdline);
-            fullline[off] = '\0';
+            /* Skip quoted strings */
+            if(fullline[ci] == '"')
+            {
+                ci++;
+                while(fullline[ci] != '\0'
+                        && fullline[ci] != '"')
+                {
+                    ci++;
+                }
+                if(fullline[ci] == '\0')
+                {
+                    break;
+                }
+                continue;
+            }
+            if(fullline[ci] == ';')
+            {
+                chain_type = 1;
+                chain_off = ci;
+                chain_len = 1;
+                break;
+            }
+            if(fullline[ci] == '&'
+                    && fullline[ci + 1] == '&')
+            {
+                chain_type = 2;
+                chain_off = ci;
+                chain_len = 2;
+                break;
+            }
+            if(fullline[ci] == '|'
+                    && fullline[ci + 1] == '|')
+            {
+                chain_type = 3;
+                chain_off = ci;
+                chain_len = 2;
+                break;
+            }
+        }
+
+        if(chain_off >= 0)
+        {
+            /* Extract first part */
+            fullline[chain_off] = '\0';
             strncpy(data.CLIcmdline, fullline,
                     STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[
                 STRINGMAXLEN_CLICMDLINE - 1]
                 = '\0';
-            CLI_execute_line();
-            const char *rest = fullline + off + 1;
-            while(*rest == ' ' || *rest == '\t')
+
+            /* Execute first part */
+            errno_t ret1 = CLI_execute_line();
+
+            /* Determine whether to run rest */
+            int run_rest = 0;
+            if(chain_type == 1)
             {
-                rest++;
+                run_rest = 1; /* ; always */
             }
-            if(*rest != '\0')
+            else if(chain_type == 2)
             {
-                strncpy(data.CLIcmdline, rest,
+                /* && only on success */
+                run_rest =
+                    (ret1 == RETURN_SUCCESS)
+                    ? 1 : 0;
+            }
+            else if(chain_type == 3)
+            {
+                /* || only on failure */
+                run_rest =
+                    (ret1 != RETURN_SUCCESS)
+                    ? 1 : 0;
+            }
+
+            if(run_rest)
+            {
+                const char *rest =
+                    fullline + chain_off
+                    + chain_len;
+                while(*rest == ' '
+                        || *rest == '\t')
+                {
+                    rest++;
+                }
+                if(*rest != '\0')
+                {
+                    strncpy(data.CLIcmdline,
+                            rest,
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1);
+                    data.CLIcmdline[
                         STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                data.CLIcmdline[
-                    STRINGMAXLEN_CLICMDLINE - 1]
-                    = '\0';
-                CLI_execute_line();
+                        - 1] = '\0';
+                    CLI_execute_line();
+                }
             }
             free(thetime);
             DEBUG_TRACE_FEXIT();
@@ -1686,6 +2802,7 @@ errno_t CLI_execute_line()
                     .callcount++;
                 data.CMDerrstatus =
                     data.cmd[data.cmdindex].fp();
+                cli_save_last_argument();
 
                 if(data.CMDerrstatus != RETURN_SUCCESS)
                 {
