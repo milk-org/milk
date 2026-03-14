@@ -1,3 +1,9 @@
+---
+tags:
+  - cli
+  - interactive
+---
+
 # Command Line Interface Syntax
 
 The interactive CLI is provided by the `milk-cli` executable
