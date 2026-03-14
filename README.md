@@ -1,5 +1,5 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-
+[![Documentation](https://img.shields.io/badge/docs-milk--org.github.io-blue?logo=readthedocs)](https://milk-org.github.io/milk/)
 
 Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.svg)](https://github.com/milk-org/milk/tree/master)
 
@@ -25,6 +25,7 @@ Code metrics (dev branch) :
 
 milk-core for **milk** package
 
+> **📖 [Documentation](https://milk-org.github.io/milk/)** · **📚 [API Reference](https://milk-org.github.io/milk/api/html/)** · **🚀 [Getting Started](https://milk-org.github.io/milk/install/compile/)**
 
 ### _Looking for something else?_
 [CACAO Github repository](https://www.github.com/cacao-org/cacao) | [CACAO Documentation](https://cacao-org.github.io/docs/)
