@@ -1,3 +1,10 @@
+---
+tags:
+  - processinfo
+  - telemetry
+  - profiling
+---
+
 # Process Info (`procinfo`)
 
 The `procinfo` (Process Information) system is a critical
