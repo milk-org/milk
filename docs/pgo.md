@@ -1,5 +1,6 @@
 # Profile-Guided Optimization (PGO) & Link-Time
-# Optimization (LTO)
+
+## Optimization (LTO)
 
 The `milk` build system supports two complementary
 compiler optimization techniques for `fpsexec`
@@ -18,7 +19,7 @@ standalone executables:
 > to GCC, and PGO then trains the optimizer with
 > real branch/call data across that larger scope.
 
----
+***
 
 ## 1. Link-Time Optimization (LTO)
 
@@ -35,7 +36,7 @@ Without static LTO, standalone executables link
 shared libraries (`.so`), which are opaque — the
 linker cannot see inside them:
 
-```
+```text
 fpsexec.c  →  fpsexec.o  →  fpsexec
                              ↓ (dynamic)
               libmilkfps.so  ← opaque to LTO
@@ -46,7 +47,7 @@ With static LTO (`USE_STATIC_LTO=ON`), the same
 libraries are linked as static archives (`.a`).
 GCC can now inline across all library boundaries:
 
-```
+```text
 fpsexec.c  →  fpsexec.o  ──┐
 libmilkfps.a  ──────────────┼→  LTO link  →  fpsexec
 libImageStreamIO.a  ────────┤   (full visibility)
@@ -129,7 +130,7 @@ cache** (L1i), typically 32–64 KB. When the
 executable's hot path fits in icache, the CPU never
 stalls waiting for instruction fetches from L2/L3:
 
-```
+```text
 ┌──────────────────────────────────────┐
 │ L1 Instruction Cache (32-64 KB)      │
 │                                      │
@@ -198,11 +199,11 @@ dependencies:
 
 ```bash
 $ ldd /usr/local/bin/milk-fpsexec-arith-crop2D
-# Default:  14 shared libs (milkfps.so, ImageStreamIO.so, ...)
-# Static LTO:  3 deps (libc, ld-linux, vdso)
+## Default:  14 shared libs (milkfps.so, ImageStreamIO.so, ...)
+## Static LTO:  3 deps (libc, ld-linux, vdso)
 ```
 
----
+***
 
 ## 2. Profile-Guided Optimization (PGO)
 
@@ -216,15 +217,15 @@ branch-heavy real-time loops.
 ```bash
 $ cd _build
 
-# Step 1 — Instrument
+## Step 1 — Instrument
 $ cmake .. -DUSE_PGO=GENERATE
 $ make -j$(nproc) && sudo make install
 
-# Step 2 — Run representative workloads
+## Step 2 — Run representative workloads
 $ milk-fpsexec-streamcopy -n scopy01
 $ # ... exercise your typical AO loop patterns
 
-# Step 3 — Rebuild with profiles
+## Step 3 — Rebuild with profiles
 $ cmake .. -DUSE_PGO=USE
 $ make -j$(nproc) && sudo make install
 ```
@@ -242,7 +243,7 @@ $ make -j$(nproc) && sudo make install
 Each standalone binary gets its own profile
 subdirectory under `_build/pgo/`:
 
-```
+```text
 _build/pgo/
 ├── shared/                          ← shared libs
 ├── milk-fpsexec-streamcopy/         ← streamcopy
@@ -261,18 +262,18 @@ sets per-target `-fprofile-dir`.
 ```bash
 $ cd _build
 
-# Step 1 — Build everything with instrumentation
+## Step 1 — Build everything with instrumentation
 $ cmake .. -DUSE_PGO=GENERATE
 $ make -j$(nproc) && sudo make install
 
-# Step 2 — Run ONLY the executables you want to
-#          optimize, with realistic workloads
+## Step 2 — Run ONLY the executables you want to
+##          optimize, with realistic workloads
 $ milk-fpsexec-streamcopy -n scopy01
 $ # let it process several thousand frames, then ^C
 $ cacao-fpsexec-cacaoloop-WFS -n wfs01
 $ # exercise another workload
 
-# Step 3 — Rebuild with profiles
+## Step 3 — Rebuild with profiles
 $ cmake .. -DUSE_PGO=USE
 $ make -j$(nproc) && sudo make install
 ```
@@ -294,7 +295,7 @@ silently ignores missing profiles when
 > loop rate. The more representative the
 > training run, the better the optimization.
 
----
+***
 
 ## 3. Combined PGO + Static LTO
 
@@ -305,15 +306,15 @@ profile-guided optimizer, amplifying both effects:
 ```bash
 $ mkdir _build_opt && cd _build_opt
 
-# Step 1 — Instrument with static LTO
+## Step 1 — Instrument with static LTO
 $ cmake .. -DUSE_PGO=GENERATE -DUSE_STATIC_LTO=ON
 $ make -j$(nproc) && sudo make install
 
-# Step 2 — Run representative workloads
+## Step 2 — Run representative workloads
 $ cacao-fpsexec-dmcomb -n dmcomb01
 $ # exercise your production AO loop
 
-# Step 3 — Rebuild with profiles + LTO
+## Step 3 — Rebuild with profiles + LTO
 $ cmake .. -DUSE_PGO=USE -DUSE_STATIC_LTO=ON
 $ make -j$(nproc) && sudo make install
 ```
@@ -352,7 +353,7 @@ code paths that span `fpsexec.c` →
 of a real-time loop becomes a single optimization
 unit.
 
----
+***
 
 ## 4. Dual Library Architecture
 
@@ -362,7 +363,7 @@ and standalone fpsexec executables:
 
 ### 4.1. Shared Libraries (`.so`) — for CLI
 
-```
+```text
 libmilkfps.so
 libCOREMODmemory.so
 libCOREMODarith.so
@@ -376,9 +377,10 @@ libCOREMODarith.so
   hot-loading
 
 ### 4.2. Compute Libraries (`_compute.so`) — for
+
 Standalones
 
-```
+```text
 libCOREMODmemory_compute.so
 libCOREMODarith_compute.so
 ...
@@ -394,7 +396,7 @@ libCOREMODarith_compute.so
 When `USE_STATIC_LTO=ON`, a third variant is
 built for each library:
 
-```
+```text
 libImageStreamIO.a
 libmilkfps.a
 libmilkfpsStandalone.a
@@ -415,7 +417,7 @@ libCOREMODiofits_compute.a
 
 ### 4.4. Architecture Diagram
 
-```
+```text
 ┌─────────────────────────────────────┐
 │           milk-cli                  │
 │  (interactive shell, module loader) │
@@ -445,7 +447,7 @@ libCOREMODiofits_compute.a
     └────────────────────────────────┘
 ```
 
----
+***
 
 ## 5. CMake Build Options Summary
 
@@ -458,21 +460,21 @@ libCOREMODiofits_compute.a
 Build configurations:
 
 ```bash
-# Default (dynamic, LTO within modules)
+## Default (dynamic, LTO within modules)
 $ cmake ..
 
-# Static LTO only
+## Static LTO only
 $ cmake .. -DUSE_STATIC_LTO=ON
 
-# PGO only
+## PGO only
 $ cmake .. -DUSE_PGO=GENERATE   # step 1
 $ cmake .. -DUSE_PGO=USE        # step 3
 
-# Maximum optimization
+## Maximum optimization
 $ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
 ```
 
----
+***
 
 ## 6. Notes
 
@@ -491,5 +493,5 @@ $ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
 - Build time with static LTO is longer due to
   whole-program optimization at link time.
 
----
+***
 ← [Documentation Index](index.md)

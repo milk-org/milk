@@ -83,6 +83,7 @@ See [Build Tiers](build_tiers.md) for details.
 <summary><b>Package installation commands</b></summary>
 
 **Ubuntu / Debian:**
+
 ```bash
 $ sudo apt-get install \
     libcfitsio-dev libreadline-dev libncurses5-dev \
@@ -90,6 +91,7 @@ $ sudo apt-get install \
 ```
 
 **CentOS / RHEL / Fedora:**
+
 ```bash
 $ sudo yum install \
     cfitsio-devel readline-devel ncurses-devel \
