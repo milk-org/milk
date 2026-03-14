@@ -754,16 +754,24 @@ errno_t help_command(
         if(!strcmp(cmdkey, data.cmd[cmdi].key))
         {
             printf("\n");
-            printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
+            printf(COLORCMD "%s" COLORRESET
+                   " in %s [%s]\n"
+                   "\t" COLORINFO
                    "%s\n" COLORRESET,
                    data.cmd[cmdi].key,
                    data.cmd[cmdi].module,
-                   data.module[data.cmd[cmdi].moduleindex].shortname,
+                   data.module[
+                       data.cmd[cmdi]
+                       .moduleindex]
+                   .shortname,
                    data.cmd[cmdi].info);
 
-            //printf("syntax     :    %s\n", data.cmd[cmdi].syntax);
-            printf("\texample> %s\n", data.cmd[cmdi].example);
-            printf("\tsrc: %s\n", data.cmd[cmdi].srcfile);
+            printf("\t\033[33mexample>\033[0m"
+                   " \033[1m%s\033[0m\n",
+                   data.cmd[cmdi].example);
+            printf("\t\033[2msrc: %s\033[0m"
+                   "\n",
+                   data.cmd[cmdi].srcfile);
 
             int FPSsupport = checkFlag64(data.cmd[cmdi].cmdsettings.flags,
                                          CLICMDFLAG_FPS,

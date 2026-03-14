@@ -73,4 +73,10 @@ void cli_bookmark_load(void);
 /* Session logging */
 errno_t cli_sessionlog(void);
 
+/* History display */
+errno_t cli_history_show(void);
+
+/* Fuzzy history search */
+errno_t cli_searchhist(void);
+
 #endif
