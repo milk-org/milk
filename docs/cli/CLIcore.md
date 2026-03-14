@@ -202,6 +202,25 @@ milk-cli > source myscript.milk  # run commands from file
 Blank lines and `#` comments are skipped. On error, the
 filename and line number are printed in red.
 
+**Example `myscript.milk`:**
+
+```bash
+# This is a sample milk script
+echo "Starting image processing..."
+
+# Create a 100x100 image named 'myimg'
+creaim myimg 100 100
+
+# Perform some basic arithmetic
+im1=myimg+5.0
+
+# Save to FITS using an environment variable
+save_fl im1 ${HOME}/im1_test.fits
+
+# Print current images in memory
+listim
+```
+
 ## 15. Command Timing
 
 ```text
@@ -253,7 +272,7 @@ milk-cli > iofits.saveFITS im1 $OUTDIR/result.fits
 ## 20. Backslash Line Continuation
 
 End a line with `\` to continue on the next line. The
-prompt changes to `> ` for continuation lines:
+prompt changes to `>` for continuation lines:
 
 ```text
 milk-cli > arith.imfunc \
