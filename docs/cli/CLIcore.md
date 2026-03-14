@@ -312,5 +312,51 @@ Press any key to stop.
 milk-cli > im1=sqrt(im+2.0)       # arithmetic on images
 ```
 
+## 20. Environment Variable Expansion
+
+`$VAR` and `${VAR}` are expanded before execution:
+
+```text
+milk-cli > iofits.loadfits ${HOME}/data/im.fits im1
+```
+
+## 21. Conditional Chaining
+
+In addition to `;` (unconditional), use `&&` and `||`:
+
+```text
+milk-cli > cmd1 && cmd2        # run cmd2 only if cmd1 succeeds
+milk-cli > cmd1 || cmd2        # run cmd2 only if cmd1 fails
+```
+
+## 22. Backslash Line Continuation
+
+End a line with `\` to continue on the next line:
+
+```text
+milk-cli > arith.imfunc \
+>   im1 im2 outim
+```
+
+## 23. History
+
+```text
+milk-cli > history          # show last 20 commands
+milk-cli > history 50       # show last 50 commands
+```
+
+Readline's built-in `Ctrl+R` does interactive reverse
+search through history.
+
+## 24. Fuzzy History Search
+
+```text
+milk-cli > searchhist listim
+```
+
+Finds all history entries containing "listim" (case-
+insensitive) and highlights the matching substring in
+yellow.
+
 ---
 ← [Documentation Index](../index.md)

@@ -1241,6 +1241,24 @@ void runCLI_cmd_init()
         "sessionlog on",
         "cli_sessionlog()");
 
+    RegisterCLIcommand(
+        "history",
+        __FILE__,
+        cli_history_show,
+        "show recent command history",
+        "[<N>]",
+        "history 50",
+        "cli_history_show()");
+
+    RegisterCLIcommand(
+        "searchhist",
+        __FILE__,
+        cli_searchhist,
+        "search history for pattern",
+        "<pattern>",
+        "searchhist listim",
+        "cli_searchhist()");
+
     //  init_modules();
 
     if(dcquiet == 0)
