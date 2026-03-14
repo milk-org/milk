@@ -1,5 +1,10 @@
+/**
+ * @file ctree_memallocate.c
+ * @brief Ctree memallocate module
+ */
 
-#include "CommandLineInterface/CLIcore.h"
+
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include "CFmeminit.h"

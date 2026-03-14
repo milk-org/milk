@@ -1,3 +1,8 @@
+/**
+ * @file cublas_Coeff2Map_Loop.c
+ * @brief Cublas coeff2map loop module
+ */
+
 /** @file Coeff2Map_Loop.c
  */
 
@@ -7,7 +12,7 @@
 
 #include <cublas_v2.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -17,90 +22,168 @@ extern int cuda_deviceCount;
 // Forward declaration(s)
 // ==========================================
 
-errno_t LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name,
-                                  const char *IDcoeff_name,
-                                  int         GPUindex,
-                                  const char *IDoutmap_name,
-                                  int         offsetmode,
-                                  const char *IDoffset_name);
+errno_t LINALGEBRA_Coeff2Map_Loop(
+    const char *IDmodes_name,
+    const char *IDcoeff_name,
+    int GPUindex,
+    const char *IDoutmap_name,
+    int offsetmode,
+    const char *IDoffset_name);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI commands
 // ==========================================
 
-static errno_t LINALGEBRA_Coeff2Map_Loop_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) ==
-            0)
-    {
-        LINALGEBRA_Coeff2Map_Loop(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.numl,
-                                  data.cmdargtoken[4].val.string,
-                                  0,
-                                  " ");
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+/* ===== Command: cudacoeff2map ===== */
+static char cm_m[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modes";
+static char cm_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "coeff";
+static int64_t cm_gpu = 4;
+static char cm_o[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outmap";
+static FPS_APP_INFO FPS_app_info_cm = {
+    .fps_name = "cudacoeff2map",
+    .cmdkey   = "cudacoeff2map",
+    .description =
+        "CUDA multiply vector by modes"
+};
+#define FPS_PARAMS_CM(X) \
+    X(".modes", cm_m, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "modes") \
+    X(".coeff", cm_c, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "coeff") \
+    X(".gpuindex", &cm_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "GPU index") \
+    X(".outmap", cm_o, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "output map")
+#include "fps.h"
+static FPS_CLI_BINDING cm_b[] = {
+    FPS_PARAMS_CM(FPS_X_BINDING) };
+static const int cm_nb =
+    sizeof(cm_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF cm_farg[] = {
+    FPS_PARAMS_CM(FPS_X_FARG) };
+static CLICMDDATA cm_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS cm_cms = {0};
+static __attribute__((constructor))
+void init_cm(void) {
+    strncpy(cm_d.key,
+        FPS_app_info_cm.cmdkey,
+        sizeof(cm_d.key)-1);
+    strncpy(cm_d.description,
+        FPS_app_info_cm.description,
+        sizeof(cm_d.description)-1);
+    cm_d.nbarg =
+        sizeof(cm_farg)/sizeof(CLICMDARGDEF);
+    cm_d.funcfpscliarg = cm_farg;
+    cm_d.flags = CLICMDFLAG_FPS;
+    if(!cm_d.cmdsettings)
+        cm_d.cmdsettings = &cm_cms;
+}
+static errno_t cm_compute(void) {
+    LINALGEBRA_Coeff2Map_Loop(
+        cm_m, cm_c, (int)cm_gpu,
+        cm_o, 0, " ");
+    return RETURN_SUCCESS;
+}
+static errno_t cm_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_cm, cm_farg, &cm_d,
+        cm_b, cm_nb, cm_compute);
 }
 
-static errno_t LINALGEBRA_Coeff2Map_offset_Loop_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 4) + CLI_checkarg(5, 4) ==
-            0)
-    {
-        LINALGEBRA_Coeff2Map_Loop(data.cmdargtoken[1].val.string,
-                                  data.cmdargtoken[2].val.string,
-                                  data.cmdargtoken[3].val.numl,
-                                  data.cmdargtoken[4].val.string,
-                                  1,
-                                  data.cmdargtoken[5].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+/* ===== Command: cudacoeffo2map ===== */
+static char co_m[FUNCTION_PARAMETER_STRMAXLEN]
+    = "modes";
+static char co_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "coeff";
+static int64_t co_gpu = 4;
+static char co_o[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outmap";
+static char co_off[FUNCTION_PARAMETER_STRMAXLEN]
+    = "offsetim";
+static FPS_APP_INFO FPS_app_info_co = {
+    .fps_name = "cudacoeffo2map",
+    .cmdkey   = "cudacoeffo2map",
+    .description =
+        "CUDA coeff2map with offset"
+};
+#define FPS_PARAMS_CO(X) \
+    X(".modes", co_m, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "modes") \
+    X(".coeff", co_c, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "coeff") \
+    X(".gpuindex", &co_gpu, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "GPU index") \
+    X(".outmap", co_o, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".offset", co_off, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "offset")
+static FPS_CLI_BINDING co_b[] = {
+    FPS_PARAMS_CO(FPS_X_BINDING) };
+static const int co_nb =
+    sizeof(co_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF co_farg[] = {
+    FPS_PARAMS_CO(FPS_X_FARG) };
+static CLICMDDATA co_d = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS co_cms = {0};
+static __attribute__((constructor))
+void init_co(void) {
+    strncpy(co_d.key,
+        FPS_app_info_co.cmdkey,
+        sizeof(co_d.key)-1);
+    strncpy(co_d.description,
+        FPS_app_info_co.description,
+        sizeof(co_d.description)-1);
+    co_d.nbarg =
+        sizeof(co_farg)/sizeof(CLICMDARGDEF);
+    co_d.funcfpscliarg = co_farg;
+    co_d.flags = CLICMDFLAG_FPS;
+    if(!co_d.cmdsettings)
+        co_d.cmdsettings = &co_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t co_compute(void) {
+    LINALGEBRA_Coeff2Map_Loop(
+        co_m, co_c, (int)co_gpu,
+        co_o, 1, co_off);
+    return RETURN_SUCCESS;
+}
+static errno_t co_CLIfunc(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_co, co_farg, &co_d,
+        co_b, co_nb, co_compute);
+}
 
 errno_t Coeff2Map_Loop_addCLIcmd()
 {
-
-    RegisterCLIcommand(
-        "cudacoeff2map",
-        __FILE__,
-        LINALGEBRA_Coeff2Map_Loop_cli,
-        "CUDA multiply vector by modes",
-        "<modes> <coeffs vector> <GPU index [long]> <output map>",
-        "cudacoeff2map modes coeff 4 outmap",
-        "int LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name, const char "
-        "*IDcoeff_name, int GPUindex, "
-        "const char *IDoutmap_name, int offsetmode, const char "
-        "*IDoffset_name)");
-
-    RegisterCLIcommand(
-        "cudacoeffo2map",
-        __FILE__,
-        LINALGEBRA_Coeff2Map_offset_Loop_cli,
-        "CUDA multiply vector by modes and add offset",
-        "<modes> <coeffs vector> <GPU index [long]> <output "
-        "map> <offset image>",
-        "cudacoeffo2map modes coeff 4 outmap offsetim",
-        "int LINALGEBRA_Coeff2Map_Loop(const char *IDmodes_name, "
-        "const char *IDcoeff_name, int GPUindex, "
-        "const char *IDoutmap_name, int offsetmode, const char "
-        "*IDoffset_name)");
+    {
+        safe_fps_fill_farg_examples(
+            cm_farg, cm_b, cm_nb);
+        int cmdi = RegisterCLIcmd(
+            cm_d, cm_CLIfunc);
+        cm_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+    {
+        safe_fps_fill_farg_examples(
+            co_farg, co_b, co_nb);
+        int cmdi = RegisterCLIcmd(
+            co_d, co_CLIfunc);
+        co_d.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
@@ -152,7 +235,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     if(offsetmode == 1)
     {
         beta     = 1.0;
-        IDoffset = image_ID(IDoffset_name);
+        IDoffset = image_ID(IDoffset_name, dcimg, dcnimg);
 
         if(IDoffset == -1)
         {
@@ -161,7 +244,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         }
     }
 
-    IDoutmap = image_ID(IDoutmap_name);
+    IDoutmap = image_ID(IDoutmap_name, dcimg, dcnimg);
     if(IDoutmap == -1)
     {
         printf("ERROR: missing output stream\n");
@@ -232,23 +315,23 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
 
     // load modes to GPU
 
-    IDcoeff = image_ID(IDcoeff_name);
+    IDcoeff = image_ID(IDcoeff_name, dcimg, dcnimg);
     NBmodes = 1;
-    for(uint8_t k = 0; k < data.image[IDcoeff].md[0].naxis; k++)
+    for(uint8_t k = 0; k < dcimg[IDcoeff].md[0].naxis; k++)
     {
-        NBmodes *= data.image[IDcoeff].md[0].size[k];
+        NBmodes *= dcimg[IDcoeff].md[0].size[k];
     }
 
-    IDmodes = image_ID(IDmodes_name);
+    IDmodes = image_ID(IDmodes_name, dcimg, dcnimg);
     uint64_t mdim;
-    if(data.image[IDmodes].md[0].naxis == 3)
+    if(dcimg[IDmodes].md[0].naxis == 3)
     {
-        mdim = data.image[IDmodes].md[0].size[0] *
-               data.image[IDmodes].md[0].size[1];
+        mdim = dcimg[IDmodes].md[0].size[0] *
+               dcimg[IDmodes].md[0].size[1];
     }
     else
     {
-        mdim = data.image[IDmodes].md[0].size[0];
+        mdim = dcimg[IDmodes].md[0].size[0];
     }
 
     printf("Allocating d_modes. Size = %lu x %ld, total = %ld\n",
@@ -269,7 +352,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     fflush(stdout);
     list_image_ID();
     cudaStat = cudaMemcpy(d_modes,
-                          data.image[IDmodes].array.F,
+                          dcimg[IDmodes].array.F,
                           sizeof(float) * mdim * NBmodes,
                           cudaMemcpyHostToDevice);
     if(cudaStat != cudaSuccess)
@@ -308,42 +391,42 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
         exit(EXIT_FAILURE);
     }
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -358,9 +441,9 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
     while(loopOK == 1)
     {
 
-        if(data.image[IDcoeff].md[0].sem == 0)
+        if(dcimg[IDcoeff].md[0].sem == 0)
         {
-            while(data.image[IDcoeff].md[0].cnt0 ==
+            while(dcimg[IDcoeff].md[0].cnt0 ==
                     cnt) // test if new frame exists
             {
                 struct timespec treq, trem;
@@ -368,7 +451,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                 treq.tv_nsec = 5000;
                 nanosleep(&treq, &trem);
             }
-            cnt  = data.image[IDcoeff].md[0].cnt0;
+            cnt  = dcimg[IDcoeff].md[0].cnt0;
             semr = 0;
         }
         else
@@ -380,20 +463,20 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
                 exit(EXIT_FAILURE);
             }
             ts.tv_sec += 1;
-            semr = ImageStreamIO_semtimedwait(data.image + IDcoeff, 3, &ts);
+            semr = ImageStreamIO_semtimedwait(dcimg + IDcoeff, 3, &ts);
 
             if(iter == 0)
             {
                 //  printf("driving semaphore to zero ... ");
                 // fflush(stdout);
-                semval = ImageStreamIO_semvalue(data.image + IDcoeff, 2);
+                semval = ImageStreamIO_semvalue(dcimg + IDcoeff, 2);
                 for(scnt = 0; scnt < semval; scnt++)
                 {
                     printf("WARNING %s %d  : sem_trywait on semptr2\n",
                            __FILE__,
                            __LINE__);
                     fflush(stdout);
-                    ImageStreamIO_semtrywait(data.image + IDcoeff, 2);
+                    ImageStreamIO_semtrywait(dcimg + IDcoeff, 2);
                 }
                 // printf("done\n");
                 // fflush(stdout);
@@ -407,7 +490,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
 
             // send vector back to GPU
             cudaStat = cudaMemcpy(d_coeff,
-                                  data.image[IDcoeff].array.F,
+                                  dcimg[IDcoeff].array.F,
                                   sizeof(float) * NBmodes,
                                   cudaMemcpyHostToDevice);
             if(cudaStat != cudaSuccess)
@@ -421,7 +504,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             if(offsetmode == 1)
             {
                 cudaStat = cudaMemcpy(d_outmap,
-                                      data.image[IDoffset].array.F,
+                                      dcimg[IDoffset].array.F,
                                       sizeof(float) * mdim,
                                       cudaMemcpyHostToDevice);
                 if(cudaStat != cudaSuccess)
@@ -484,29 +567,29 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             }
 
             // copy result
-            data.image[IDoutmap].md[0].write = 1;
-            cudaStat = cudaMemcpy(data.image[IDoutmap].array.F,
+            dcimg[IDoutmap].md[0].write = 1;
+            cudaStat = cudaMemcpy(dcimg[IDoutmap].array.F,
                                   d_outmap,
                                   sizeof(float) * mdim,
                                   cudaMemcpyDeviceToHost);
-            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 0);
+            semval = ImageStreamIO_semvalue(dcimg + IDoutmap, 0);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDoutmap, 0);
+                ImageStreamIO_sempost(dcimg + IDoutmap, 0);
             }
-            semval = ImageStreamIO_semvalue(data.image + IDoutmap, 1);
+            semval = ImageStreamIO_semvalue(dcimg + IDoutmap, 1);
             if(semval < SEMAPHORE_MAXVAL)
             {
-                ImageStreamIO_sempost(data.image + IDoutmap, 1);
+                ImageStreamIO_sempost(dcimg + IDoutmap, 1);
             }
-            data.image[IDoutmap].md[0].cnt0++;
-            data.image[IDoutmap].md[0].write = 0;
+            dcimg[IDoutmap].md[0].cnt0++;
+            dcimg[IDoutmap].md[0].write = 0;
         }
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }

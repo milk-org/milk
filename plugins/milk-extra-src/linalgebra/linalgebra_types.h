@@ -1,3 +1,8 @@
+/**
+ * @file linalgebra_types.h
+ * @brief Linalgebra types module
+ */
+
 #ifndef _LINALGEBRA_TYPES_H
 #define _LINALGEBRA_TYPES_H
 
@@ -8,7 +13,7 @@
 #include <cuda_runtime_api.h>
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #ifdef HAVE_MAGMA
 

@@ -1,72 +1,176 @@
-/** @file image_stats.c
+/**
+ * @file image_stats.c
+ * @brief Image statistics
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
 
+// Forward declaration
+errno_t info_image_stats(
+    const char *ID_name,
+    const char *options);
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+/* =========================================
+ *  Command 1: imstats
+ * ======================================= */
 
-errno_t info_image_stats(const char *ID_name, const char *options);
+static char p1_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info_1 = {
+    .fps_name    = "imstats",
+    .cmdkey      = "imstats",
+    .description = "image stats"
+};
 
-static errno_t info_image_stats_cli()
+#define FPS_PARAMS_1(X) \
+    X(".in_name", p1_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+static FPS_CLI_BINDING my_bindings_1[] = {
+    FPS_PARAMS_1(FPS_X_BINDING)
+};
+static const int nb_bindings_1 =
+    sizeof(my_bindings_1) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_1[] = {
+    FPS_PARAMS_1(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_1 = {
+    "", "", __FILE__,
+    sizeof(farg_1) / sizeof(CLICMDARGDEF),
+    farg_1, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_1 = {0};
+
+static __attribute__((constructor))
+void init_cms_1(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        info_image_stats(data.cmdargtoken[1].val.string, "");
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata_1.key,
+            FPS_app_info_1.cmdkey,
+            sizeof(CLIcmddata_1.key) - 1);
+    strncpy(CLIcmddata_1.description,
+            FPS_app_info_1.description,
+            sizeof(CLIcmddata_1.description)
+            - 1);
+    if (CLIcmddata_1.cmdsettings == NULL) {
+        CLIcmddata_1.cmdsettings = &cms_1;
     }
 }
 
-static errno_t info_image_statsf_cli()
+static MILK_HOT errno_t compute_function_1()
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        info_image_stats(data.cmdargtoken[1].val.string, "fileout");
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    info_image_stats(p1_in, "");
+    return RETURN_SUCCESS;
+}
+
+static errno_t CLIfunction_1(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_1, farg_1,
+        &CLIcmddata_1,
+        my_bindings_1, nb_bindings_1,
+        compute_function_1);
+}
+
+/* =========================================
+ *  Command 2: imstatsf
+ * ======================================= */
+
+static char p2_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
+
+static FPS_APP_INFO FPS_app_info_2 = {
+    .fps_name    = "imstatsf",
+    .cmdkey      = "imstatsf",
+    .description =
+        "image stats with file output"
+};
+
+#define FPS_PARAMS_2(X) \
+    X(".in_name", p2_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+static FPS_CLI_BINDING my_bindings_2[] = {
+    FPS_PARAMS_2(FPS_X_BINDING)
+};
+static const int nb_bindings_2 =
+    sizeof(my_bindings_2) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_2[] = {
+    FPS_PARAMS_2(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata_2 = {
+    "", "", __FILE__,
+    sizeof(farg_2) / sizeof(CLICMDARGDEF),
+    farg_2, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
+};
+static CMDSETTINGS cms_2 = {0};
+
+static __attribute__((constructor))
+void init_cms_2(void)
+{
+    strncpy(CLIcmddata_2.key,
+            FPS_app_info_2.cmdkey,
+            sizeof(CLIcmddata_2.key) - 1);
+    strncpy(CLIcmddata_2.description,
+            FPS_app_info_2.description,
+            sizeof(CLIcmddata_2.description)
+            - 1);
+    if (CLIcmddata_2.cmdsettings == NULL) {
+        CLIcmddata_2.cmdsettings = &cms_2;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t image_stats_addCLIcmd()
+static MILK_HOT errno_t compute_function_2()
 {
-    RegisterCLIcommand("imstats",
-                       __FILE__,
-                       info_image_stats_cli,
-                       "image stats",
-                       "<image>",
-                       "imgstats im1",
-                       "int info_image_stats(const char *ID_name, \"\")");
+    info_image_stats(p2_in, "fileout");
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand(
-        "imstatsf",
-        __FILE__,
-        info_image_statsf_cli,
-        "image stats with file output",
-        "<image>",
-        "imgstatsf im1",
-        "int info_image_stats(const char *ID_name, \"fileout\")");
+static errno_t CLIfunction_2(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_2, farg_2,
+        &CLIcmddata_2,
+        my_bindings_2, nb_bindings_2,
+        compute_function_2);
+}
+
+errno_t
+CLIADDCMD_info__image_stats()
+{
+    safe_fps_fill_farg_examples(
+        farg_1, my_bindings_1,
+        nb_bindings_1);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_1, CLIfunction_1);
+        CLIcmddata_1.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
+
+    safe_fps_fill_farg_examples(
+        farg_2, my_bindings_2,
+        nb_bindings_2);
+    {
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata_2, CLIfunction_2);
+        CLIcmddata_2.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     return RETURN_SUCCESS;
 }
@@ -101,34 +205,34 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         fp = fopen("imstat.info.txt", "w");
     }
 
-    ID = image_ID_noaccessupdate(ID_name);
+    ID = image_ID_noaccessupdate(ID_name, dcimg, dcnimg);
     if(ID != -1)
     {
-        nelements = data.image[ID].md[0].nelement;
+        nelements = dcimg[ID].md[0].nelement;
 
-        datatype = data.image[ID].md[0].datatype;
+        datatype = dcimg[ID].md[0].datatype;
         tmp_long =
-            data.image[ID].md[0].nelement * ImageStreamIO_typesize(datatype);
+            dcimg[ID].md[0].nelement * ImageStreamIO_typesize(datatype);
         printf("\n");
         printf("Image size (->imsize0...):     [");
-        printf("% ld", (long) data.image[ID].md[0].size[0]);
+        printf("% ld", (long) dcimg[ID].md[0].size[0]);
 
         unsigned long j = 0;
         sprintf(vname, "imsize%ld", j);
 
-        create_variable_ID(vname, 1.0 * data.image[ID].md[0].size[j]);
-        for(j = 1; j < data.image[ID].md[0].naxis; j++)
+        create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
+        for(j = 1; j < dcimg[ID].md[0].naxis; j++)
         {
-            printf(" %ld", (long) data.image[ID].md[0].size[j]);
+            printf(" %ld", (long) dcimg[ID].md[0].size[j]);
             sprintf(vname, "imsize%ld", j);
-            create_variable_ID(vname, 1.0 * data.image[ID].md[0].size[j]);
+            create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
         }
         printf(" ]\n");
 
         printf("write = %d   cnt0 = %ld   cnt1 = %ld\n",
-               data.image[ID].md[0].write,
-               data.image[ID].md[0].cnt0,
-               data.image[ID].md[0].cnt1);
+               dcimg[ID].md[0].write,
+               dcimg[ID].md[0].cnt0,
+               dcimg[ID].md[0].cnt1);
 
         switch(datatype)
         {
@@ -187,26 +291,26 @@ errno_t info_image_stats(const char *ID_name, const char *options)
 
         printf("type:            %s\n", type);
         printf("Memory size:     %ld Kb\n", (long) tmp_long / 1024);
-        //      printf("Created:         %f\n", data.image[ID].creation_time);
-        //      printf("Last access:     %f\n", data.image[ID].last_access);
+        //      printf("Created:         %f\n", dcimg[ID].creation_time);
+        //      printf("Last access:     %f\n", dcimg[ID].last_access);
 
         if(datatype == _DATATYPE_FLOAT)
         {
-            min = data.image[ID].array.F[0];
-            max = data.image[ID].array.F[0];
+            min = dcimg[ID].array.F[0];
+            max = dcimg[ID].array.F[0];
 
             iimin = 0;
             iimax = 0;
             for(unsigned long ii = 0; ii < nelements; ii++)
             {
-                if(min > data.image[ID].array.F[ii])
+                if(min > dcimg[ID].array.F[ii])
                 {
-                    min   = data.image[ID].array.F[ii];
+                    min   = dcimg[ID].array.F[ii];
                     iimin = ii;
                 }
-                if(max < data.image[ID].array.F[ii])
+                if(max < dcimg[ID].array.F[ii])
                 {
-                    max   = data.image[ID].array.F[ii];
+                    max   = dcimg[ID].array.F[ii];
                     iimax = ii;
                 }
             }
@@ -217,17 +321,17 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             rms = 0.0;
             for(unsigned long ii = 0; ii < nelements; ii++)
             {
-                if(isnan(data.image[ID].array.F[ii]) != 0)
+                if(isnan(dcimg[ID].array.F[ii]) != 0)
                 {
                     printf(
                         "element %ld is NAN -> replacing by "
                         "0\n",
                         ii);
-                    data.image[ID].array.F[ii] = 0.0;
+                    dcimg[ID].array.F[ii] = 0.0f;
                 }
-                tot += data.image[ID].array.F[ii];
-                rms += data.image[ID].array.F[ii] * data.image[ID].array.F[ii];
-                array[ii] = data.image[ID].array.F[ii];
+                tot += dcimg[ID].array.F[ii];
+                rms += dcimg[ID].array.F[ii] * dcimg[ID].array.F[ii];
+                array[ii] = dcimg[ID].array.F[ii];
             }
             rms = sqrt(rms);
 
@@ -291,23 +395,23 @@ errno_t info_image_stats(const char *ID_name, const char *options)
             }
             create_variable_ID("vmean", tot / nelements);
 
-            if(data.image[ID].md[0].naxis == 2)
+            if(dcimg[ID].md[0].naxis == 2)
             {
                 xtot = 0.0;
                 ytot = 0.0;
-                for(unsigned long ii = 0; ii < data.image[ID].md[0].size[0];
+                for(unsigned long ii = 0; ii < dcimg[ID].md[0].size[0];
                         ii++)
                     for(unsigned long jj = 0;
-                            jj < data.image[ID].md[0].size[1];
+                            jj < dcimg[ID].md[0].size[1];
                             jj++)
                     {
-                        xtot += data.image[ID]
+                        xtot += dcimg[ID]
                                 .array
-                                .F[jj * data.image[ID].md[0].size[0] + ii] *
+                                .F[jj * dcimg[ID].md[0].size[0] + ii] *
                                 ii;
-                        ytot += data.image[ID]
+                        ytot += dcimg[ID]
                                 .array
-                                .F[jj * data.image[ID].md[0].size[0] + ii] *
+                                .F[jj * dcimg[ID].md[0].size[0] + ii] *
                                 jj;
                     }
                 vbx = xtot / tot;

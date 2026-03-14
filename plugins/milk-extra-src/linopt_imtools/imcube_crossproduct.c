@@ -8,77 +8,58 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
-
-// Local variables pointers
-
-static char *inimc0;
-static long  fpi_inimc0;
-
-static char *inimc1;
-static long  fpi_inimc1;
-
-static char *inimmask;
-static long  fpi_inimmask;
-
-static char *imout;
-static long  fpi_imout;
+#include "CLIcore.h"
 
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".imcube0",
-        "input image cube 0",
-        "imc0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimc0,
-        &fpi_inimc0
-    },
-    {
-        CLIARG_IMG,
-        ".imcube1",
-        "input image cube 1",
-        "imc1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimc1,
-        &fpi_inimc1
-    },
-    {
-        CLIARG_IMG,
-        ".immask",
-        "pixel mask",
-        "immask",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimmask,
-        &fpi_inimmask
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output matrix",
-        "outm",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imout,
-        &fpi_imout
-    }
-};
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "imcubeXprod", "cross product of two image cubes", CLICMD_FIELDS_DEFAULTS
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imcubeXprod",
+    .cmdkey      = "imcubeXprod",
+    .description = "cross product of two image cubes"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inimc0 = NULL;
+static char * inimc1 = NULL;
+static char * inimmask = NULL;
+static char * imout = NULL;
 
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".imcube0", &inimc0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube 0") \
+    X(".imcube1", &inimc1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube 1") \
+    X(".immask", &inimmask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "pixel mask") \
+    X(".outim", &imout, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output matrix")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+FPS_V2_SECTION5(FPS_PARAMS)
 
 static errno_t imcube_crossproduct(IMGID imgcube0,
                                    IMGID imgcube1,
@@ -87,18 +68,18 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgcube0, ERRMODE_ABORT);
-    resolveIMGID(&imgcube1, ERRMODE_ABORT);
-    resolveIMGID(&imgmask, ERRMODE_ABORT);
+    resolveIMGID(&imgcube0, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgcube1, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgmask, ERRMODE_ABORT, dcimg, dcnimg);
 
-    uint32_t xsize  = imgcube0.size[0];
-    uint32_t ysize  = imgcube0.size[1];
-    uint32_t zsize0 = imgcube0.size[2];
-    uint32_t zsize1 = imgcube1.size[2];
+    uint32_t xsize  = imgcube0.md->size[0];
+    uint32_t ysize  = imgcube0.md->size[1];
+    uint32_t zsize0 = imgcube0.md->size[2];
+    uint32_t zsize1 = imgcube1.md->size[2];
 
     uint64_t xysize = xsize * ysize;
 
-    IMGID imgout = makeIMGID_2D(imoutname, zsize0, zsize1);
+    IMGID imgout = imgid_make_from_name_2D(imoutname, zsize0, zsize1);
     createimagefromIMGID(&imgout);
 
     // compute mask sum
@@ -124,12 +105,11 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
             imgout.im->array.F[kk1 * zsize0 + kk0] = tmpv / masksum;
         }
     }
+    imgid_free(&imgout);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
-
-
 
 
 /**
@@ -139,15 +119,15 @@ static errno_t imcube_crossproduct(IMGID imgcube0,
  * @return errno_t
  */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     // connect to input mode values array and get number of modes
     //
-    IMGID imginc0 = mkIMGID_from_name(inimc0);
-    IMGID imginc1 = mkIMGID_from_name(inimc1);
-    IMGID imgmask = mkIMGID_from_name(inimmask);
+    IMGID imginc0 = imgid_make_from_name(inimc0);
+    IMGID imginc1 = imgid_make_from_name(inimc1);
+    IMGID imgmask = imgid_make_from_name(inimmask);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
@@ -155,22 +135,47 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&imginc0);
+    imgid_free(&imginc1);
+    imgid_free(&imgmask);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linopt_imtools__imcube_crossproduct()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

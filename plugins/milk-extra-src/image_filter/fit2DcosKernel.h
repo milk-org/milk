@@ -1,3 +1,8 @@
+/**
+ * @file fit2DcosKernel.h
+ * @brief Fit2dcoskernel module
+ */
+
 /** @file fit2DcosKernel.h
  */
 

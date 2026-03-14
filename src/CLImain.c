@@ -1,3 +1,8 @@
+/**
+ * @file CLImain.c
+ * @brief Climain module
+ */
+
 #include "milk_config.h"
 
 #include <assert.h>
@@ -8,7 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <CommandLineInterface/CLIcore.h>
+#include "CLIcore.h"
 
 #include "CLIcore/CLIcore_UI.h"
 
@@ -29,39 +34,39 @@ int main(int argc, char *argv[])
     }
     else
     {
-        strncpy(AppName, "milk", STRINGMAXLEN_APPNAME - 1);
+        strncpy(AppName, "milk-cli", STRINGMAXLEN_APPNAME - 1);
     }
 
     if(getenv("MILK_QUIET"))
     {
-        data.quiet = 1;
+        dcquiet = 1;
     }
     else
     {
-        data.quiet = 0;
+        dcquiet = 0;
     }
 
     if(getenv("MILK_ERROREXIT"))
     {
-        data.errorexit = 1;
+        dcerrorexit = 1;
     }
     else
     {
-        data.errorexit = 0;
+        dcerrorexit = 0;
     }
 
-    // Allocate data.testpointarray
+    // Allocate dctestptarr
 #ifndef NDEBUG
     printf("        [ENABLED]  Code test point tracing\n");
     // allocate circular buffer memory
-    data.testpointarray     = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) *
+    dctestptarr     = (CODETESTPOINT *) malloc(sizeof(CODETESTPOINT) *
                               CODETESTPOINTARRAY_NBCNT);
-    data.testpointarrayinit = 1;
+    dctestptinit = 1;
     // initialize loop counter
     // loop counter increments when reaching end of circular buffer
-    data.testpointloopcnt = 0;
+    dctestptlcnt = 0;
     // set current entry index to zero
-    data.testpointcnt = 0;
+    dctestptcnt = 0;
 #endif
 
     char versionstring[STRINGMAXLEN_VERSIONSTRING];
@@ -73,37 +78,37 @@ int main(int argc, char *argv[])
              VERSION_PATCH,
              VERSION_OPTION);
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
         printf(STYLE_BOLD);
-        printf("\n        milk  v %s\n", versionstring);
+        printf("\n        milk-cli  v %s\n", versionstring);
 #ifndef NDEBUG
         printf(
             "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
             "===\n");
 #endif
         printf(STYLE_NO_BOLD);
-        if(data.errorexit == 1)
+        if(dcerrorexit == 1)
         {
             printf("        EXIT-ON-ERROR mode\n");
         }
     }
 
-    strcpy(data.package_name, PACKAGE_NAME);
+    strcpy(dcpkgname, PACKAGE_NAME);
 
-    data.package_version_major = VERSION_MAJOR;
-    data.package_version_minor = VERSION_MINOR;
-    data.package_version_patch = VERSION_PATCH;
+    dcpkgmajor = VERSION_MAJOR;
+    dcpkgminor = VERSION_MINOR;
+    dcpkgpatch = VERSION_PATCH;
 
-    strcpy(data.package_version, versionstring);
+    strcpy(dcpkgver, versionstring);
 
-    strcpy(data.sourcedir, SOURCEDIR);
-    strcpy(data.configdir, CONFIGDIR);
-    strcpy(data.installdir, INSTALLDIR);
+    strcpy(dcsourcedir, SOURCEDIR);
+    strcpy(dcconfigdir, CONFIGDIR);
+    strcpy(dcinstalldir, INSTALLDIR);
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
-        //printf("        %s version %s\n", data.package_name, data.package_version);
+        //printf("        %s version %s\n", dcpkgname, dcpkgver);
 #ifdef IMAGESTRUCT_VERSION
         printf("        ImageStreamIO v %s\n", IMAGESTRUCT_VERSION);
 #endif
@@ -114,15 +119,15 @@ int main(int argc, char *argv[])
     }
 
     // default exit code
-    data.exitcode = RETURN_SUCCESS;
+    dcexitcode = RETURN_SUCCESS;
 
     runCLI(argc, argv, AppName);
 
     //errno_t CLIretval = RETURN_SUCCESS;
 
-    if(data.quiet == 0)
+    if(dcquiet == 0)
     {
-        printf("EXIT CODE %d\n", data.exitcode);
+        printf("EXIT CODE %d\n", dcexitcode);
     }
     else
     {
@@ -140,9 +145,9 @@ int main(int argc, char *argv[])
     }
     printf("De-allocating test circular buffer\n");
     fflush(stdout);
-    data.testpointarrayinit = 0;
-    free(data.testpointarray);
+    dctestptinit = 0;
+    free(dctestptarr);
 #endif
 
-    return data.exitcode;
+    return dcexitcode;
 }

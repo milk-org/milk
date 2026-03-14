@@ -8,7 +8,7 @@ MSextdescr="Merge list of images.
 
 source milk-script-std-config
 
-RequiredCommands=(milk)
+RequiredCommands=(milk-cli)
 RequiredFiles=()
 RequiredDirs=()
 
@@ -67,6 +67,6 @@ echo "listim" >> $SF
 echo "saveFITS mergedim \"${outFITSfile}\"" >> $SF
 echo "exitCLI" >> $SF
 
-MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
+MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}
 
 rm ${SF}

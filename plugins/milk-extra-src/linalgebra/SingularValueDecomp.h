@@ -1,3 +1,8 @@
+/**
+ * @file SingularValueDecomp.h
+ * @brief Singularvaluedecomp module
+ */
+
 #ifndef LINALGEBRA_COMPSVD_H
 #define LINALGEBRA_COMPSVD_H
 

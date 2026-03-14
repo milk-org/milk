@@ -1,70 +1,69 @@
+/**
+ * @file combineHDR.c
+ * @brief Combinehdr module
+ */
+
 /** @file combineHDR.c
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "image_filter/image_filter.h"
 
-// Local variables pointers
-static char   *flistname;
-static double *satlevel;
-static double *biaslevel;
-static char   *outimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".flistname",
-        "file list name",
-        "HDRfilelist.txt",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &flistname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".satlevel",
-        "Saturation level",
-        "satval",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &satlevel,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".biaslevel",
-        "Bias level",
-        "biasval",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &biaslevel,
-        NULL
-    },
-    {
-        CLIARG_STR_NOT_IMG,
-        ".outimname",
-        "output image",
-        "outim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "combineHDR",
+    .cmdkey      = "combineHDR",
+    .description = "combine HDR image"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "combineHDR", "combine HDR image", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    printf("combine HDR image\n");
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+static char   * flistname = NULL;
+static double * satlevel = NULL;
+static double * biaslevel = NULL;
+static char   * outimname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".flistname", &flistname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "file list name") \
+    X(".satlevel", &satlevel, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Saturation level") \
+    X(".biaslevel", &biaslevel, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Bias level") \
+    X(".outimname", &outimname, \
+      FPTYPE_STRING_NOT_STREAM, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 errno_t combine_HDR_image(const char *__restrict flistname,
                           float satvalue,
@@ -104,8 +103,8 @@ errno_t combine_HDR_image(const char *__restrict flistname,
 
     printf("PARAMS : %20f %20f\n", biasvalue, 1.0 * satvalue);
 
-    uint32_t xsize = data.image[IDarray[0]].md->size[0];
-    uint32_t ysize = data.image[IDarray[0]].md->size[1];
+    uint32_t xsize = dcimg[IDarray[0]].md->size[0];
+    uint32_t ysize = dcimg[IDarray[0]].md->size[1];
     uint32_t zsize = NB_HDRindex;
 
     int      binstep = 5;
@@ -136,16 +135,16 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                 uint32_t ii1 = (uint32_t)(x * xsize1);
 
                 float pval =
-                    1.0 * data.image[IDarray[kk]].array.F[jj * xsize + ii] -
+                    1.0f * dcimg[IDarray[kk]].array.F[jj * xsize + ii] -
                     biasvalue;
 
-                data.image[IDimHDRc]
+                dcimg[IDimHDRc]
                 .array.F[kk * xsize * ysize + jj * xsize + ii] = pval;
 
-                data.image[IDimHDRc1]
+                dcimg[IDimHDRc1]
                 .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += pval;
-                data.image[IDimHDRc1w]
-                .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += 1.0;
+                dcimg[IDimHDRc1w]
+                .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] += 1.0f;
             }
         }
     }
@@ -156,9 +155,9 @@ errno_t combine_HDR_image(const char *__restrict flistname,
         {
             for(uint32_t ii1 = 0; ii1 < xsize1; ii1++)
             {
-                data.image[IDimHDRc1]
+                dcimg[IDimHDRc1]
                 .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1] /=
-                    data.image[IDimHDRc1w]
+                    dcimg[IDimHDRc1w]
                     .array.F[kk * xsize1 * ysize1 + jj1 * xsize1 + ii1];
             }
         }
@@ -182,19 +181,19 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                     for(uint32_t ii1 = 1; ii1 < xsize1 - 1; ii1++)
                     {
                         pixline[ii1] =
-                            0.3 * data.image[IDimHDRc1]
+                            0.3 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         jj1 * xsize1 + ii1 - 1] +
-                            0.4 * data.image[IDimHDRc1]
+                            0.4 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         jj1 * xsize1 + ii1] +
-                            0.3 * data.image[IDimHDRc1]
+                            0.3 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         jj1 * xsize1 + ii1 + 1];
                     }
                     for(uint32_t ii1 = 1; ii1 < xsize1 - 1; ii1++)
                     {
-                        data.image[IDimHDRc1].array.F[kk * xsize1 * ysize1 +
+                        dcimg[IDimHDRc1].array.F[kk * xsize1 * ysize1 +
                                                       jj1 * xsize1 + ii1] =
                                                           pixline[ii1];
                     }
@@ -205,19 +204,19 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                     for(uint32_t jj1 = 1; jj1 < ysize1 - 1; jj1++)
                     {
                         pixcol[jj1] =
-                            0.3 * data.image[IDimHDRc1]
+                            0.3 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         (jj1 - 1) * xsize1 + ii1] +
-                            0.4 * data.image[IDimHDRc1]
+                            0.4 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         jj1 * xsize1 + ii1] +
-                            0.3 * data.image[IDimHDRc1]
+                            0.3 * dcimg[IDimHDRc1]
                             .array.F[kk * xsize1 * ysize1 +
                                         (jj1 + 1) * xsize1 + ii1];
                     }
                     for(uint32_t jj1 = 1; jj1 < ysize1 - 1; jj1++)
                     {
-                        data.image[IDimHDRc1].array.F[kk * xsize1 * ysize1 +
+                        dcimg[IDimHDRc1].array.F[kk * xsize1 * ysize1 +
                                                       jj1 * xsize1 + ii1] =
                                                           pixcol[jj1];
                     }
@@ -247,7 +246,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
         uint32_t layer1 = 0;
         uint32_t kk     = 0;
         while((kk < zsize) &&
-                (data.image[IDimHDRc1].array.F[kk * xsize1 * ysize1 + ij1] >
+                (dcimg[IDimHDRc1].array.F[kk * xsize1 * ysize1 + ij1] >
                  satvalue))
         {
             layer0 = kk;
@@ -261,23 +260,23 @@ errno_t combine_HDR_image(const char *__restrict flistname,
         }
 
         float valmax =
-            data.image[IDimHDRc1].array.F[layer0 * xsize1 * ysize1 + ij1];
+            dcimg[IDimHDRc1].array.F[layer0 * xsize1 * ysize1 + ij1];
         if((valmax > satvalue) && (layer1 < zsize - 1))
         {
             // increment layers
             layer0++;
             layer1++;
             valmax =
-                data.image[IDimHDRc1].array.F[layer0 * xsize1 * ysize1 + ij1];
+                dcimg[IDimHDRc1].array.F[layer0 * xsize1 * ysize1 + ij1];
         }
-        //float valmin = data.image[IDimHDRc1].array.F[layer1*xsize1*ysize1+ij1];
+        //float valmin = dcimg[IDimHDRc1].array.F[layer1*xsize1*ysize1+ij1];
 
         //float x = valmax/satvalue;
         //float c1 = pow( 0.5*(1.0+cos(x*M_PI)), alpha1);
         //float c2 = 1.0-c1;
 
-        data.image[IDlayer].array.F[ij1] = 1.0 * layer0;
-        data.image[IDlayermin].array.F[ij1] =
+        dcimg[IDlayer].array.F[ij1] = 1.0f * layer0;
+        dcimg[IDlayermin].array.F[ij1] =
             1.0 * layer0; // don't go below this layer
     }
 
@@ -296,15 +295,15 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                 for(uint32_t ii1 = 1; ii1 < xsize1 - 1; ii1++)
                 {
                     pixline[ii1] =
-                        0.3 * data.image[IDlayer]
+                        0.3 * dcimg[IDlayer]
                         .array.F[jj1 * xsize1 + ii1 - 1] +
-                        0.4 * data.image[IDlayer].array.F[jj1 * xsize1 + ii1] +
+                        0.4f * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
                         0.3 *
-                        data.image[IDlayer].array.F[jj1 * xsize1 + ii1 + 1];
+                        dcimg[IDlayer].array.F[jj1 * xsize1 + ii1 + 1];
                 }
                 for(uint32_t ii1 = 1; ii1 < xsize1 - 1; ii1++)
                 {
-                    data.image[IDlayer].array.F[jj1 * xsize1 + ii1] =
+                    dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] =
                         pixline[ii1];
                 }
             }
@@ -314,15 +313,15 @@ errno_t combine_HDR_image(const char *__restrict flistname,
                 for(uint32_t jj1 = 1; jj1 < ysize1 - 1; jj1++)
                 {
                     pixcol[jj1] =
-                        0.3 * data.image[IDlayer]
+                        0.3 * dcimg[IDlayer]
                         .array.F[(jj1 - 1) * xsize1 + ii1] +
-                        0.4 * data.image[IDlayer].array.F[jj1 * xsize1 + ii1] +
-                        0.3 * data.image[IDlayer]
+                        0.4f * dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] +
+                        0.3 * dcimg[IDlayer]
                         .array.F[(jj1 + 1) * xsize1 + ii1];
                 }
                 for(uint32_t jj1 = 1; jj1 < ysize1 - 1; jj1++)
                 {
-                    data.image[IDlayer].array.F[jj1 * xsize1 + ii1] =
+                    dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] =
                         pixcol[jj1];
                 }
             }
@@ -331,11 +330,11 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             {
                 for(uint32_t jj1 = 1; jj1 < ysize1 - 1; jj1++)
                 {
-                    if(data.image[IDlayer].array.F[jj1 * xsize1 + ii1] <
-                            data.image[IDlayermin].array.F[jj1 * xsize1 + ii1])
+                    if(dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] <
+                            dcimg[IDlayermin].array.F[jj1 * xsize1 + ii1])
                     {
-                        data.image[IDlayer].array.F[jj1 * xsize1 + ii1] =
-                            data.image[IDlayermin].array.F[jj1 * xsize1 + ii1];
+                        dcimg[IDlayer].array.F[jj1 * xsize1 + ii1] =
+                            dcimg[IDlayermin].array.F[jj1 * xsize1 + ii1];
                     }
                 }
             }
@@ -348,7 +347,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
     }
 
     gauss_filter("imlayer", "imlayerg", 50.0, 150);
-    imageID IDlayerg = image_ID("imlayerg");
+    imageID IDlayerg = image_ID("imlayerg", dcimg, dcnimg);
 
     // construct HDR image
     imageID IDout;
@@ -375,12 +374,12 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             float ii1frac = x * xsize1 - ii1;
 
             // get layer
-            float layer00 = data.image[IDlayer].array.F[jj1 * xsize1 + ii1];
-            float layer10 = data.image[IDlayer].array.F[jj1 * xsize1 + ii1 + 1];
+            float layer00 = dcimg[IDlayer].array.F[jj1 * xsize1 + ii1];
+            float layer10 = dcimg[IDlayer].array.F[jj1 * xsize1 + ii1 + 1];
             float layer01 =
-                data.image[IDlayer].array.F[(jj1 + 1) * xsize1 + ii1];
+                dcimg[IDlayer].array.F[(jj1 + 1) * xsize1 + ii1];
             float layer11 =
-                data.image[IDlayer].array.F[(jj1 + 1) * xsize1 + ii1 + 1];
+                dcimg[IDlayer].array.F[(jj1 + 1) * xsize1 + ii1 + 1];
 
             float layer = layer00 * (1.0 - ii1frac) * (1.0 - jj1frac) +
                           layer01 * (1.0 - ii1frac) * jj1frac +
@@ -396,11 +395,11 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             float layercoeff = layer - 1.0 * layer0;
 
             float pval0 =
-                data.image[IDimHDRc]
+                dcimg[IDimHDRc]
                 .array.F[layer0 * xsize * ysize + jj * xsize + ii] /
                 etimearray[layer0];
             float pval1 =
-                data.image[IDimHDRc]
+                dcimg[IDimHDRc]
                 .array.F[layer1 * xsize * ysize + jj * xsize + ii] /
                 etimearray[layer1];
 
@@ -418,15 +417,15 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             double x1 = 1.0 / pow( 1.0 + 1.0/pow(layer/alpha0,alpha1), 1.0/alpha1);
             double layercoeff1 = 1.0 / ( 1.0 + alpha3*pow(6.0, alpha4*x1) );
             */
-            double layerg = data.image[IDlayerg].array.F[jj1 * xsize1 + ii1];
+            double layerg = dcimg[IDlayerg].array.F[jj1 * xsize1 + ii1];
             if(layerg > 3.0)
             {
                 layerg = 3.0;
             }
             double layercoeff1 = 1.0 / pow(alpha0, layerg);
 
-            //data.image[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0-layercoeff) + pval1 * layercoeff);
-            data.image[IDout].array.F[jj * xsize + ii] =
+            //dcimg[IDout].array.F[jj*xsize+ii] = (pval0 * (1.0f-layercoeff) + pval1 * layercoeff);
+            dcimg[IDout].array.F[jj * xsize + ii] =
                 layercoeff1 * (pval0 * (1.0 - layercoeff) + pval1 * layercoeff);
         }
     }
@@ -434,7 +433,7 @@ errno_t combine_HDR_image(const char *__restrict flistname,
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -450,12 +449,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__combineHDR()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

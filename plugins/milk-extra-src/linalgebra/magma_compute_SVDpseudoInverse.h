@@ -1,3 +1,8 @@
+/**
+ * @file magma_compute_SVDpseudoInverse.h
+ * @brief Magma compute svdpseudoinverse module
+ */
+
 /** @file magma_compute_SVDpseudoInverse.h
  */
 

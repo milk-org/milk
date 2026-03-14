@@ -1,3 +1,8 @@
+/**
+ * @file leafnode_attachleaf.h
+ * @brief Leafnode attachleaf module
+ */
+
 #ifndef CLUSTERING__LEAFNODE_ATTACHLEAF_H
 #define CLUSTERING__LEAFNODE_ATTACHLEAF_H
 

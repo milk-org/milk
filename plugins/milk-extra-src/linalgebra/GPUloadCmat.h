@@ -1,3 +1,8 @@
+/**
+ * @file GPUloadCmat.h
+ * @brief Gpuloadcmat module
+ */
+
 /** @file GPUloadCmat.h
  */
 

@@ -1,3 +1,8 @@
+/**
+ * @file info.h
+ * @brief Info module
+ */
+
 #if !defined(INFO_H)
 #define INFO_H
 

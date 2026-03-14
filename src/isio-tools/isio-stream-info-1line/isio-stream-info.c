@@ -1,3 +1,8 @@
+/**
+ * @file isio-stream-info.c
+ * @brief Isio stream info module
+ */
+
 /*
  * Open stream(s), print basic info within single line
  *
@@ -13,7 +18,6 @@
 
 
 #include "ImageStreamIO/ImageStreamIO.h"
-
 
 
 int main(int argc, char *argv[])
@@ -34,7 +38,6 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-
 
 
     for(int i = 1; i < argc; i++)

@@ -38,7 +38,7 @@ milk-procCTRL
 source milk-script-std-config
 
 FPSlistfilename="fpslist.txt"
-EXECNAME="milk"
+EXECNAME="milk-cli"
 FPSINDEX="NULL"
 TESTMODE=0
 LOGMODE=0

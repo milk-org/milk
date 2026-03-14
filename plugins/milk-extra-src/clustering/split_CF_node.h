@@ -1,3 +1,8 @@
+/**
+ * @file split_CF_node.h
+ * @brief Split cf node module
+ */
+
 #ifndef CLUSTERING__SPLIT_CF_NODE_H
 #define CLUSTERING__SPLIT_CF_NODE_H
 

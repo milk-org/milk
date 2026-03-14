@@ -1,40 +1,89 @@
 /**
  * @file init_fftwplan.c
+ * @brief Initialize FFTW plans
  */
 
 #include <fftw3.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "wisdom.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-
+// Forward declaration
 errno_t init_fftw_plans0();
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+/* =========================================
+ *  V2 PARAMS (no params)
+ * ======================================= */
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "initfft",
+    .cmdkey      = "initfft",
+    .description = "init FFTW"
+};
 
-errno_t init_fftwplan_addCLIcmd()
+#define FPS_PARAMS(X)
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+    {NULL, NULL, 0, 0, 0, NULL}
+};
+static const int nb_bindings = 0;
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
+    }
+}
 
-    RegisterCLIcommand("initfft",
-                       __FILE__,
-                       init_fftw_plans0,
-                       "init FFTW",
-                       "no argument",
-                       "initfft",
-                       "int init_fftw_plans0()");
-
+static MILK_HOT errno_t compute_function()
+{
+    init_fftw_plans0();
     return RETURN_SUCCESS;
 }
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_milkfft__init_fftwplan()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
 
 errno_t init_fftw_plans(int mode)
 {
