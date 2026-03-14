@@ -67,7 +67,7 @@ The CLI reads commands from `cmdfile.txt` if it exists,
 executing them top-to-bottom and removing each line as it
 is read.
 
-<details>
+<details markdown="1">
 <summary><b>Help Commands</b></summary>
 
 ```text
@@ -84,7 +84,7 @@ milk-cli > h? <str>                # search commands by string
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Important Commands</b></summary>
 
 ```text
@@ -100,7 +100,7 @@ milk-cli > creaim <im> <xs> <ys>   # create 2D image
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>FITS Files I/O</b></summary>
 
 FITSIO is used for FITS file I/O. See also `COREMOD_memory`
@@ -129,7 +129,7 @@ milk-cli > save_fl im1 im1.fits.gz      # save compressed
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Integration with Standard Linux Tools</b></summary>
 
 ### Using `cmdfile.txt` to drive milk-cli
