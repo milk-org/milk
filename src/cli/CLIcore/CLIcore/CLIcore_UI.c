@@ -55,6 +55,48 @@ void rl_cb_linehandler(char *linein)
 
     // copy input into data.CLIcmdline
     strcpy(data.CLIcmdline, linein);
+
+    /* Handle backslash line continuation:
+     * temporarily switch to blocking readline
+     * to read additional lines */
+    {
+        size_t len = strlen(data.CLIcmdline);
+        while(len > 0
+                && data.CLIcmdline[len - 1]
+                == '\\')
+        {
+            data.CLIcmdline[len - 1] = ' ';
+            /* Remove callback handler to avoid
+             * interference, use direct readline
+             * for continuation */
+            rl_callback_handler_remove();
+            char *cont = readline("> ");
+            /* Re-install with dummy prompt;
+             * the main loop will re-install
+             * with the proper prompt after this
+             * handler returns */
+            rl_callback_handler_install(
+                "",
+                (rl_vcpfunc_t *)
+                &rl_cb_linehandler);
+            if(cont == NULL)
+            {
+                break;
+            }
+            int avail =
+                STRINGMAXLEN_CLICMDLINE
+                - (int) strlen(data.CLIcmdline)
+                - 1;
+            if(avail > 0)
+            {
+                strncat(data.CLIcmdline, cont,
+                        (size_t) avail);
+            }
+            free(cont);
+            len = strlen(data.CLIcmdline);
+        }
+    }
+
     CLI_execute_line();
 
     free(linein);
@@ -2096,6 +2138,201 @@ static void cli_session_log_cmd(
 }
 
 
+/*
+ * ============================================================
+ *  Environment Variable Expansion
+ * ============================================================
+ *
+ * Replace $VAR and ${VAR} in the command line with
+ * the value from getenv().
+ */
+
+/**
+ * @brief Expand $VAR and ${VAR} in place
+ */
+static void cli_expand_env(
+    char *line,
+    int   maxlen
+)
+{
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+
+    while(line[i] != '\0'
+            && opos < maxlen - 1)
+    {
+        if(line[i] == '$')
+        {
+            i++;
+            int  braced = 0;
+            if(line[i] == '{')
+            {
+                braced = 1;
+                i++;
+            }
+            char varname[256];
+            int  vlen = 0;
+            while(line[i] != '\0'
+                    && vlen < 255)
+            {
+                if(braced && line[i] == '}')
+                {
+                    i++;
+                    break;
+                }
+                if(!braced
+                        && !(
+                            (line[i] >= 'A'
+                             && line[i] <= 'Z')
+                            || (line[i] >= 'a'
+                                && line[i] <= 'z')
+                            || (line[i] >= '0'
+                                && line[i] <= '9')
+                            || line[i] == '_'))
+                {
+                    break;
+                }
+                varname[vlen++] = line[i++];
+            }
+            varname[vlen] = '\0';
+            const char *val = getenv(varname);
+            if(val != NULL)
+            {
+                int vallen = (int) strlen(val);
+                int avail = maxlen - 1 - opos;
+                int clen = vallen < avail
+                           ? vallen : avail;
+                memcpy(out + opos, val,
+                       (size_t) clen);
+                opos += clen;
+            }
+        }
+        else
+        {
+            out[opos++] = line[i++];
+        }
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+
+/*
+ * ============================================================
+ *  History <N> Command
+ * ============================================================
+ */
+
+errno_t cli_history_show(void)
+{
+#ifdef USE_READLINE
+    int n = 20;  /* default */
+    if(data.cmdNBarg >= 2)
+    {
+        n = atoi(
+            data.cmdargtoken[1].val.string);
+        if(n <= 0)
+        {
+            n = 20;
+        }
+    }
+
+    HIST_ENTRY **hlist = history_list();
+    if(hlist == NULL)
+    {
+        printf("No history\n");
+        return RETURN_SUCCESS;
+    }
+
+    int total = history_length;
+    int start = total - n;
+    if(start < 0)
+    {
+        start = 0;
+    }
+    for(int i = start; i < total; i++)
+    {
+        printf(" %4d  %s\n",
+               i + 1, hlist[i]->line);
+    }
+#else
+    printf("Readline not available\n");
+#endif
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Fuzzy History Search (searchhist)
+ * ============================================================
+ *
+ * Search history for entries containing a
+ * substring. Shows all matches with index.
+ */
+
+errno_t cli_searchhist(void)
+{
+#ifdef USE_READLINE
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: searchhist <pattern>\n");
+        return RETURN_SUCCESS;
+    }
+    const char *pattern =
+        data.cmdargtoken[1].val.string;
+
+    HIST_ENTRY **hlist = history_list();
+    if(hlist == NULL)
+    {
+        printf("No history\n");
+        return RETURN_SUCCESS;
+    }
+
+    int total = history_length;
+    int found = 0;
+    for(int i = 0; i < total; i++)
+    {
+        if(strcasestr(hlist[i]->line,
+                      pattern) != NULL)
+        {
+            /* Highlight matching substring */
+            const char *pos =
+                strcasestr(hlist[i]->line,
+                           pattern);
+            int pre = (int)(pos
+                            - hlist[i]->line);
+            int plen = (int) strlen(pattern);
+            printf(" %4d  %.*s"
+                   "\033[1;33m%.*s\033[0m"
+                   "%s\n",
+                   i + 1,
+                   pre, hlist[i]->line,
+                   plen, pos,
+                   pos + plen);
+            found++;
+        }
+    }
+    if(found == 0)
+    {
+        printf("No history entries match"
+               " '%s'\n", pattern);
+    }
+    else
+    {
+        printf("(%d match%s)\n",
+               found,
+               found == 1 ? "" : "es");
+    }
+#else
+    printf("Readline not available\n");
+#endif
+    return RETURN_SUCCESS;
+}
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -2122,45 +2359,130 @@ errno_t CLI_execute_line()
     /* Expand aliases before anything else */
     cli_alias_expand();
 
+    /* Expand environment variables ($VAR) */
+    cli_expand_env(data.CLIcmdline,
+                   STRINGMAXLEN_CLICMDLINE);
+
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
 
     /*
-     * ---- Semicolon chaining ----
+     * ---- Command chaining: ; && || ----
+     *
+     * Scan for the first unquoted chaining
+     * operator and split there.
      */
     {
-        char *semi = strchr(data.CLIcmdline, ';');
-        if(semi != NULL)
+        char fullline[STRINGMAXLEN_CLICMDLINE];
+        strncpy(fullline, data.CLIcmdline,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        fullline[
+            STRINGMAXLEN_CLICMDLINE - 1]
+            = '\0';
+
+        /* Find first chaining operator */
+        int  chain_type = 0;
+        /* 1=;  2=&&  3=||  */
+        int  chain_off = -1;
+        int  chain_len = 0;
+        for(int ci = 0; fullline[ci] != '\0';
+                ci++)
         {
-            char fullline[STRINGMAXLEN_CLICMDLINE];
-            strncpy(fullline, data.CLIcmdline,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            fullline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
-            size_t off =
-                (size_t)(semi - data.CLIcmdline);
-            fullline[off] = '\0';
+            /* Skip quoted strings */
+            if(fullline[ci] == '"')
+            {
+                ci++;
+                while(fullline[ci] != '\0'
+                        && fullline[ci] != '"')
+                {
+                    ci++;
+                }
+                if(fullline[ci] == '\0')
+                {
+                    break;
+                }
+                continue;
+            }
+            if(fullline[ci] == ';')
+            {
+                chain_type = 1;
+                chain_off = ci;
+                chain_len = 1;
+                break;
+            }
+            if(fullline[ci] == '&'
+                    && fullline[ci + 1] == '&')
+            {
+                chain_type = 2;
+                chain_off = ci;
+                chain_len = 2;
+                break;
+            }
+            if(fullline[ci] == '|'
+                    && fullline[ci + 1] == '|')
+            {
+                chain_type = 3;
+                chain_off = ci;
+                chain_len = 2;
+                break;
+            }
+        }
+
+        if(chain_off >= 0)
+        {
+            /* Extract first part */
+            fullline[chain_off] = '\0';
             strncpy(data.CLIcmdline, fullline,
                     STRINGMAXLEN_CLICMDLINE - 1);
             data.CLIcmdline[
                 STRINGMAXLEN_CLICMDLINE - 1]
                 = '\0';
-            CLI_execute_line();
-            const char *rest = fullline + off + 1;
-            while(*rest == ' ' || *rest == '\t')
+
+            /* Execute first part */
+            errno_t ret1 = CLI_execute_line();
+
+            /* Determine whether to run rest */
+            int run_rest = 0;
+            if(chain_type == 1)
             {
-                rest++;
+                run_rest = 1; /* ; always */
             }
-            if(*rest != '\0')
+            else if(chain_type == 2)
             {
-                strncpy(data.CLIcmdline, rest,
+                /* && only on success */
+                run_rest =
+                    (ret1 == RETURN_SUCCESS)
+                    ? 1 : 0;
+            }
+            else if(chain_type == 3)
+            {
+                /* || only on failure */
+                run_rest =
+                    (ret1 != RETURN_SUCCESS)
+                    ? 1 : 0;
+            }
+
+            if(run_rest)
+            {
+                const char *rest =
+                    fullline + chain_off
+                    + chain_len;
+                while(*rest == ' '
+                        || *rest == '\t')
+                {
+                    rest++;
+                }
+                if(*rest != '\0')
+                {
+                    strncpy(data.CLIcmdline,
+                            rest,
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1);
+                    data.CLIcmdline[
                         STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                data.CLIcmdline[
-                    STRINGMAXLEN_CLICMDLINE - 1]
-                    = '\0';
-                CLI_execute_line();
+                        - 1] = '\0';
+                    CLI_execute_line();
+                }
             }
             free(thetime);
             DEBUG_TRACE_FEXIT();
