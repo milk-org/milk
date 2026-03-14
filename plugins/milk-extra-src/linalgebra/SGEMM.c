@@ -5,14 +5,12 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 
 #include "SGEMM.h"
-
-
 
 
 #ifdef HAVE_CUDA
@@ -41,104 +39,53 @@
 #endif
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inmatA;
-static long  fpi_inmatA;
-
-static char *inmatB;
-static long  fpi_inmatB;
-
-static uint64_t *transpA;
-static long      fpi_transpA;
-
-static uint64_t *transpB;
-static long      fpi_transpB;
-
-static char *outM;
-static long  fpi_outM;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".matA",
-        "input matrix A",
-        "matA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatA,
-        &fpi_inmatA
-    },
-    {
-        CLIARG_IMG,
-        ".matB",
-        "input matrix B",
-        "matA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatB,
-        &fpi_inmatB
-    },
-    {
-        CLIARG_ONOFF,
-        ".transpA",
-        "transpose A",
-        "OFF",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &transpA,
-        &fpi_transpA
-    },
-    {
-        CLIARG_ONOFF,
-        ".transpB",
-        "transpose B",
-        "OFF",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &transpB,
-        &fpi_transpB
-    },
-    {
-        CLIARG_STR,
-        ".outM",
-        "output matrix",
-        "out",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outM,
-        &fpi_outM
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "sgemm",
+    .cmdkey      = "sgemm",
+    .description = "matrix-matrix multiply"
 };
 
 
-static CLICMDDATA CLIcmddata =
-{
-    "sgemm", "matrix-matrix multiply", CLICMD_FIELDS_DEFAULTS
-};
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// detailed help
-static errno_t help_function()
-{
-    printf("CPU or GPU matrix-matrix multiplication\n");
-    printf("Single precision only\n");
-
-    return RETURN_SUCCESS;
-}
+static char * inmatA = NULL;
+static char * inmatB = NULL;
+static uint64_t * transpA = NULL;
+static uint64_t * transpB = NULL;
+static char * outM = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".matA", &inmatA, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix A") \
+    X(".matB", &inmatB, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix B") \
+    X(".outM", &outM, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output matrix")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /**
  * @brief Computes the single-precision general matrix multiplication (SGEMM) of two matrices.
@@ -309,7 +256,6 @@ errno_t computeSGEMM(
            inB_Ndim, inB_Ndim0, inB_Ndim1);
 
 
-
     // Create output
     //
     int outMdim = Mdim;
@@ -317,27 +263,26 @@ errno_t computeSGEMM(
     if(Mdim1_active == 0)
     {
         // 2D output
-        outimg->naxis = 2;
-        outimg->size[0] = outMdim;
-        outimg->size[1] = outNdim;
-        outimg->size[2] = 1;
+        outimg->mdt->naxis = 2;
+        outimg->mdt->size[0] = outMdim;
+        outimg->mdt->size[1] = outNdim;
+        outimg->mdt->size[2] = 1;
 
     }
     else
     {
         // 3D output
-        outimg->naxis = 3;
-        outimg->size[0] = Mdim0;
-        outimg->size[1] = Mdim1;
-        outimg->size[2] = outNdim;
+        outimg->mdt->naxis = 3;
+        outimg->mdt->size[0] = Mdim0;
+        outimg->mdt->size[1] = Mdim1;
+        outimg->mdt->size[2] = outNdim;
     }
 
-    printf("OUTPUT  M %d   N %d  (%d %d %d)\n", outMdim, outNdim, outimg->size[0],
-           outimg->size[1], outimg->size[2]);
+    printf("OUTPUT  M %d   N %d  (%d %d %d)\n", outMdim, outNdim, outimg->mdt->size[0],
+           outimg->mdt->size[1], outimg->mdt->size[2]);
 
-    outimg->datatype = _DATATYPE_FLOAT;
+    outimg->mdt->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(outimg);
-
 
 
     float *imarrayA;
@@ -505,18 +450,6 @@ errno_t computeSGEMM(
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     if((GPUdev >= 0) && (GPUdev <= 99))
     {
 #ifdef HAVE_CUDA
@@ -540,7 +473,6 @@ errno_t computeSGEMM(
                 return EXIT_FAILURE;
             }
         }
-
 
 
         {
@@ -578,10 +510,6 @@ errno_t computeSGEMM(
                 return EXIT_FAILURE;
             }
         }
-
-
-
-
 
 
         float *d_outmat;
@@ -702,27 +630,22 @@ errno_t computeSGEMM(
 }
 
 
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     // input
 
-    IMGID imginA = mkIMGID_from_name(inmatA);
-    resolveIMGID(&imginA, ERRMODE_ABORT);
+    IMGID imginA = imgid_make_from_name(inmatA);
+    resolveIMGID(&imginA, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imginB = mkIMGID_from_name(inmatB);
-    resolveIMGID(&imginB, ERRMODE_ABORT);
-
+    IMGID imginB = imgid_make_from_name(inmatB);
+    resolveIMGID(&imginB, ERRMODE_ABORT, dcimg, dcnimg);
 
 
     // output
 
-    IMGID imgM  = mkIMGID_from_name(outM);
+    IMGID imgM  = imgid_make_from_name(outM);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -738,28 +661,47 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginA);
+    imgid_free(&imginB);
+    imgid_free(&imgM);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__SGEMM()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

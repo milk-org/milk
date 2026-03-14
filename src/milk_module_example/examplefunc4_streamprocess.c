@@ -8,109 +8,48 @@
 
 #include <math.h> // for sqrt()
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
+#include "fps.h"
 
-//static int cmdindex;
-
-// required for create_2Dimage_ID()
-//#include "COREMOD_memory/COREMOD_memory.h"
-
-// required for timespec_diff()
-//#include "COREMOD_tools/COREMOD_tools.h"
-
-// required for timespec_diff
-//#include "CommandLineInterface/timeutils.h"
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streamprocess",
+    .cmdkey      = "streamprocess",
+    .description = "process input stream to output stream"
+};
 
 // Local variables pointers
 
 static char *inimname;
-
 static char *outimname;
-// Alternative way: static LOCVAR_OUTIMG2D outim;
-
 
 static uint32_t *cntindex;
-static long      fpi_cntindex = -1;
-
 static uint32_t *cntindexmax;
-static long      fpi_cntindexmax = -1;
 
 static int64_t *ex0mode;
-static long     fpi_ex0mode = -1;
-
 static int64_t *ex1mode;
-static long     fpi_ex1mode = -1;
 
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    // Note: an alternative way to specify an output image is FARG_OUTIM2D(outim)
-    {
-        CLIARG_UINT32,
-        ".cntindex",
-        "counter index",
-        "5",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindex,
-        &fpi_cntindex
-    },
-    {
-        CLIARG_UINT32,
-        ".cntindexmax",
-        "counter index max value",
-        "100",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &cntindexmax,
-        &fpi_cntindexmax
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.ex0mode",
-        "toggle0",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &ex0mode,
-        &fpi_ex0mode
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.ex1mode",
-        "toggle1 conditional on toggle0",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &ex1mode,
-        &fpi_ex1mode
-    }
-};
+#define FPS_PARAMS(X) \
+    X(".in_name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input image") \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output image") \
+    X(".cntindex", &cntindex, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "counter index") \
+    X(".cntindexmax", &cntindexmax, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, "counter index max value") \
+    X(".option.ex0mode", &ex0mode, \
+      FPTYPE_ONOFF, 1, \
+      FPFLAG_DEFAULT_INPUT, "toggle0") \
+    X(".option.ex1mode", &ex1mode, \
+      FPTYPE_ONOFF, 1, \
+      FPFLAG_DEFAULT_INPUT, "toggle1 conditional on toggle0")
 
 // Optional custom configuration setup
-// Runs once at conf startup
-//
-// To use this function, set :
-// CLIcmddata.FPS_customCONFsetup = customCONFsetup
-// when registering function
-// (see end of this file)
-//
-static errno_t customCONFsetup()
+static MILK_COLD errno_t customCONFsetup()
 {
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
@@ -124,33 +63,26 @@ static errno_t customCONFsetup()
 }
 
 // Optional custom configuration checks
-// Runs at every configuration check loop iteration
-//
-// To use this function, set :
-// CLIcmddata.FPS_customCONFcheck = customCONFcheck
-// when registering function
-// (see end of this file)
-//
-static errno_t customCONFcheck()
+static MILK_COLD errno_t customCONFcheck()
 {
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        // Here we set the FPS entries properties
+        long fpi_ex0mode = functionparameter_GetParamIndex(dcfpsptr, ".option.ex0mode");
+        long fpi_ex1mode = functionparameter_GetParamIndex(dcfpsptr, ".option.ex1mode");
 
-        if(data.fpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // if ex0mode is in ON state
+        if (fpi_ex0mode >= 0 && fpi_ex1mode >= 0)
         {
-            // Then activate ex1mode argument
-            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
-            data.fpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
-
-            // Commonly use flags include:
-            // FPFLAG_WRITECONF : Allow parameter to be written/changed while conf process is running
-            // FPFLAG_RUNCONF   : Allow parameter to be written/changed while run process is running
-        }
-        else // OFF state
-        {
-            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
-            data.fpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
+            if(dcfpsptr->parray[fpi_ex0mode].fpflag & FPFLAG_ONOFF)  // if ex0mode is in ON state
+            {
+                // Then activate ex1mode argument
+                dcfpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_USED;
+                dcfpsptr->parray[fpi_ex1mode].fpflag |= FPFLAG_VISIBLE;
+            }
+            else // OFF state
+            {
+                dcfpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_USED;
+                dcfpsptr->parray[fpi_ex1mode].fpflag &= ~FPFLAG_VISIBLE;
+            }
         }
 
         // increment counter at every configuration check
@@ -166,20 +98,42 @@ static errno_t customCONFcheck()
     return RETURN_SUCCESS;
 }
 
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
 
-static CLICMDDATA CLIcmddata =
-{
-    "streamprocess",
-    "process input stream to output stream",
+static const int nb_bindings =
+    sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+
+#ifdef FPS_STANDALONE
+CLICMDDATA CLIcmddata = {
+#else
+static CLICMDDATA CLIcmddata = {
+#endif
+    "",
+    "",
     CLICMD_FIELDS_DEFAULTS
 };
 
+static CMDSETTINGS default_cmdsettings = {0};
 
-
-// detailed help
-static errno_t help_function()
+static __attribute__((constructor))
+void init_cmdsettings(void)
 {
-    return RETURN_SUCCESS;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description) - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings =
+            &default_cmdsettings;
+    }
 }
 
 
@@ -203,26 +157,11 @@ static errno_t streamprocess(
 
     // resolve image
     // This function call has low overhead, as it will acknowledge existing image
-    resolveIMGID(inimg, ERRMODE_ABORT);
+    resolveIMGID(inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
-    uint32_t xsize  = inimg->size[0];
-    uint32_t ysize  = inimg->size[1];
+    uint32_t xsize  = inimg->mdt->size[0];
+    uint32_t ysize  = inimg->mdt->size[1];
     uint64_t xysize = xsize * ysize;
-
-
-    // Create output image if needed.
-    // Delaying creation of the image until here is necessary if the image size or type needs
-    // to be determined within this function.
-    //
-    // We have called copyIMGID in compute_function(), so outimg metadata is already filled up.
-    // Otherwise, we would edit these lines:
-    // outimg->naxis = 2;
-    // outimg->size[0] = xsize;
-    // outimg->size[1] = ysize;
-    // outimg->datatype = _DATATYPE_FLOAT;
-    // outimg->shared = inimg->shared;
-    // outimg->NBkw = inimg->NBkw;
-    // outimg->CBsize = 0;
 
     // Create image if not already done.
     // Otherwise, just proceed
@@ -232,7 +171,7 @@ static errno_t streamprocess(
 
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        outimg->im->array.F[ii] = sqrt(inimg->im->array.F[ii]);
+        outimg->im->array.F[ii] = sqrtf(inimg->im->array.F[ii]);
     }
 
     DEBUG_TRACE_FEXIT();
@@ -240,28 +179,25 @@ static errno_t streamprocess(
 }
 
 
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
 
     // Check if image is in memory
     // First, create an IMGIG with the image name
-    IMGID inimg = mkIMGID_from_name(inimname);
+    IMGID inimg = imgid_make_from_name(inimname);
     // Then resolve it (connect it to an image in memory if possible)
-    resolveIMGID(&inimg, ERRMODE_ABORT);
+    // Once the image is resolved, this function will execute very quickly, only checking if resolved
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Create output image/stream.
     // Here we only fill in the name.
     // The image itself will be created in the compute function.
-    IMGID outimg = mkIMGID_from_name(outimname);
+    IMGID outimg = imgid_make_from_name(outimname);
 
     // If we are sure we want outimg to be the same format (size, type etc) as inimg, we can use:
-    copyIMGID(&inimg, &outimg);
-
-    // Alternate way: FARG_OUTIM2DCREATE(outim, outimg, _DATATYPE_FLOAT);
+    imgid_copy(&inimg, &outimg);
 
 
     printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
@@ -274,39 +210,40 @@ static errno_t compute_function()
         // procinfo is accessible here
     }
 
-    // If custom initialization with access to procinfo is not required
-    // then replace
-    // INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
-    // INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
-    // With :
-    // INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
 
         streamprocess(&inimg, &outimg);
 
-        // stream is updated here, and not in the function called above, so that
-        // the above function can be chained with others
-        processinfo_update_output_stream(processinfo, outimg.ID);
+        processinfo_update_output_stream(processinfo, outimg.im, inimg.im);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    imgid_free(&inimg);
+    imgid_free(&outimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
-
-INSERT_STD_FPSCLIfunctions_DynamicSize
-
-
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
 // Register function in CLI
 errno_t
 CLIADDCMD_milk_module_example__streamprocess()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
     CLIcmddata.FPS_customCONFsetup = customCONFsetup;
     CLIcmddata.FPS_customCONFcheck = customCONFcheck;
 
@@ -314,3 +251,12 @@ CLIADDCMD_milk_module_example__streamprocess()
 
     return RETURN_SUCCESS;
 }
+#endif
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2_CONFCHECK(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function,
+    customCONFcheck)
+#endif

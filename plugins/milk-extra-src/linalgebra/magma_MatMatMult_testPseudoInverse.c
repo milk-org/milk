@@ -11,7 +11,7 @@
 extern int           INIT_MAGMA;
 extern magma_queue_t magmaqueue;
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -21,46 +21,78 @@ extern magma_queue_t magmaqueue;
 // Forward declaration(s)
 // ==========================================
 
-long LINALGEBRA_MatMatMult_testPseudoInverse(const char *IDmatA_name,
-        const char *IDmatAinv_name,
-        const char *IDmatOut_name);
+long LINALGEBRA_MatMatMult_testPseudoInverse(
+    const char *IDmatA_name,
+    const char *IDmatAinv_name,
+    const char *IDmatOut_name);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: cudatestpsinv
 // ==========================================
 
-static errno_t LINALGEBRA_MatMatMult_testPseudoInverse_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
-    {
-        LINALGEBRA_MatMatMult_testPseudoInverse(data.cmdargtoken[1].val.string,
-                                                data.cmdargtoken[2].val.string,
-                                                data.cmdargtoken[3].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char tp_a[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matA";
+static char tp_ai[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matAinv";
+static char tp_o[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matOut";
+static FPS_APP_INFO FPS_app_info_tp = {
+    .fps_name = "cudatestpsinv",
+    .cmdkey   = "cudatestpsinv",
+    .description = "test pseudo inverse"
+};
+#define FPS_PARAMS_TP(X) \
+    X(".matA", tp_a, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "matA") \
+    X(".matAinv", tp_ai, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "matAinv") \
+    X(".out_name", tp_o, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output")
+#include "fps.h"
+static FPS_CLI_BINDING tp_b[] = {
+    FPS_PARAMS_TP(FPS_X_BINDING) };
+static const int tp_nb =
+    sizeof(tp_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_TP(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS tp_cms = {0};
+static __attribute__((constructor))
+void init_tp(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_tp.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_tp.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &tp_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t tp_compute(void) {
+    LINALGEBRA_MatMatMult_testPseudoInverse(
+        tp_a, tp_ai, tp_o);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_tp, farg,
+        &CLIcmddata,
+        tp_b, tp_nb, tp_compute);
+}
 
 errno_t MatMatMult_testPseudoInverse_addCLIcmd()
 {
-
-    RegisterCLIcommand("cudatestpsinv",
-                       __FILE__,
-                       LINALGEBRA_MatMatMult_testPseudoInverse_cli,
-                       "test pseudo inverse",
-                       "<matA> <matAinv> <matOut>",
-                       "cudatestpsinv matA matAinv matOut",
-                       "long LINALGEBRA_MatMatMult_testPseudoInverse(const char "
-                       "*IDmatA_name, const char "
-                       "*IDmatAinv_name, const char *IDmatOut_name)");
+    safe_fps_fill_farg_examples(
+        farg, tp_b, tp_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }
@@ -117,20 +149,20 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
 
-    IDmatA    = image_ID(IDmatA_name);
-    IDmatAinv = image_ID(IDmatAinv_name);
+    IDmatA    = image_ID(IDmatA_name, dcimg, dcnimg);
+    IDmatAinv = image_ID(IDmatAinv_name, dcimg, dcnimg);
 
-    if(data.image[IDmatA].md[0].naxis == 3)
+    if(dcimg[IDmatA].md[0].naxis == 3)
     {
         /// each column (N=cst) of A is a z=cst slice of image Rmatrix
-        M = data.image[IDmatA].md[0].size[0] * data.image[IDmatA].md[0].size[1];
-        N = data.image[IDmatA].md[0].size[2];
+        M = dcimg[IDmatA].md[0].size[0] * dcimg[IDmatA].md[0].size[1];
+        N = dcimg[IDmatA].md[0].size[2];
     }
     else
     {
         /// each column (N=cst) of A is a line (y=cst) of Rmatrix (90 deg rotation)
-        M = data.image[IDmatA].md[0].size[0];
-        N = data.image[IDmatA].md[0].size[1];
+        M = dcimg[IDmatA].md[0].size[0];
+        N = dcimg[IDmatA].md[0].size[1];
     }
 
     /// Initialize MAGAM if needed
@@ -155,14 +187,14 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
     /// load matA in h_A -> d_A
     for(ii = 0; ii < M * N; ii++)
     {
-        magmaf_h_A[ii] = data.image[IDmatA].array.F[ii];
+        magmaf_h_A[ii] = dcimg[IDmatA].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_A, M, magmaf_d_A, M, magmaqueue);
 
     /// load matAinv in h_Ainv -> d_Ainv
     for(ii = 0; ii < M * N; ii++)
     {
-        magmaf_h_Ainv[ii] = data.image[IDmatAinv].array.F[ii];
+        magmaf_h_Ainv[ii] = dcimg[IDmatAinv].array.F[ii];
     }
     magma_ssetmatrix(M, N, magmaf_h_Ainv, M, magmaf_d_Ainv, M, magmaqueue);
 
@@ -185,18 +217,27 @@ long LINALGEBRA_MatMatMult_testPseudoInverse(
 
     arraysizetmp[0] = N;
     arraysizetmp[1] = N;
-    create_image_ID(IDmatOut_name,
-                    2,
-                    arraysizetmp,
-                    _DATATYPE_FLOAT,
-                    0,
-                    0,
-                    0,
-                    &IDmatOut);
+    {
+        IMGID imgout =
+            imgid_make_from_name(
+                IDmatOut_name);
+        imgout.mdt->naxis = 2;
+        imgout.mdt->size[0] =
+            arraysizetmp[0];
+        imgout.mdt->size[1] =
+            arraysizetmp[1];
+        imgout.mdt->datatype =
+            _DATATYPE_FLOAT;
+        imgout.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgout);
+        IDmatOut = imgout.ID;
+    }
 
     for(ii = 0; ii < N * N; ii++)
     {
-        data.image[IDmatOut].array.F[ii] = magmaf_h_AinvA[ii];
+        dcimg[IDmatOut].array.F[ii] = magmaf_h_AinvA[ii];
     }
 
     TESTING_FREE_CPU(magmaf_h_AinvA);

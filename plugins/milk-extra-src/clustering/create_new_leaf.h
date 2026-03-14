@@ -1,3 +1,8 @@
+/**
+ * @file create_new_leaf.h
+ * @brief Create new leaf module
+ */
+
 #ifndef CLUSTERING__CREATE_NEW_LEAF_H
 #define CLUSTERING__CREATE_NEW_LEAF_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file psf.c
+ * @brief Psf module
+ */
+
 #include <malloc.h>
 #include <math.h>
 #include <stdint.h>
@@ -5,7 +10,7 @@
 
 #include <string.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -55,33 +60,95 @@ INIT_MODULE_LIB(psf)
 /* ================================================================== */
 /* ================================================================== */
 
-errno_t PSF_sequence_measure_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 1) + CLI_checkarg(3, 3) == 0)
-    {
-        PSF_sequence_measure(data.cmdargtoken[1].val.string,
-                             data.cmdargtoken[2].val.numf,
-                             data.cmdargtoken[3].val.string);
+errno_t PSF_sequence_measure(
+    const char *IDin_name,
+    float PSFsizeEst,
+    const char *outfname);
 
-        return CLICMD_SUCCESS;
+static char psm_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imc";
+static double psm_size = 20.0;
+static char psm_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outimc.txt";
+
+static FPS_APP_INFO FPS_app_info_psm = {
+    .fps_name    = "psfseqmeas",
+    .cmdkey      = "psfseqmeas",
+    .description =
+        "measure PSF sequence"
+};
+
+#define FPS_PARAMS_PSM(X) \
+    X(".in_name", psm_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image cube") \
+    X(".psfsize", &psm_size, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "estimated PSF size") \
+    X(".out_name", psm_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output file")
+
+#include "fps.h"
+
+static FPS_CLI_BINDING psm_bindings[] = {
+    FPS_PARAMS_PSM(FPS_X_BINDING)
+};
+static const int psm_nb_bindings =
+    sizeof(psm_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_PSM(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS psm_cms = {0};
+
+static __attribute__((constructor))
+void init_psm_cms(void)
+{
+    strncpy(CLIcmddata.key,
+            FPS_app_info_psm.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info_psm.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    CLIcmddata.nbarg =
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &psm_cms;
     }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+}
+
+static errno_t psm_compute(void)
+{
+    PSF_sequence_measure(psm_in,
+                         (float) psm_size,
+                         psm_out);
+    return RETURN_SUCCESS;
+}
+
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_psm, farg,
+        &CLIcmddata,
+        psm_bindings, psm_nb_bindings,
+        psm_compute);
 }
 
 static errno_t init_module_CLI()
 {
-    RegisterCLIcommand("psfseqmeas",
-                       __FILE__,
-                       PSF_sequence_measure_cli,
-                       "measure PSF sequence",
-                       "<input image cube> <estimated PSF size> <output file>",
-                       "psfseqmeas imc 20.0 outimc.txt",
-                       "int PSF_sequence_measure(const char *IDin_name, float "
-                       "PSFsizeEst, const char *outfname)");
-
+    safe_fps_fill_farg_examples(
+        farg, psm_bindings, psm_nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -108,14 +175,14 @@ imageID PSF_makeChromatPSF(const char *amp_name,
     float coeff, mcoeff, tmp;
     float eps = 1.0e-5;
 
-    IDamp = image_ID(amp_name);
-    IDpha = image_ID(pha_name);
+    IDamp = image_ID(amp_name, dcimg, dcnimg);
+    IDpha = image_ID(pha_name, dcimg, dcnimg);
 
-    xsize = data.image[IDamp].md[0].size[0];
-    ysize = data.image[IDamp].md[0].size[1];
+    xsize = dcimg[IDamp].md[0].size[0];
+    ysize = dcimg[IDamp].md[0].size[1];
 
-    if((data.image[IDpha].md[0].size[0] != xsize) ||
-            (data.image[IDpha].md[0].size[0] != xsize))
+    if((dcimg[IDpha].md[0].size[0] != xsize) ||
+            (dcimg[IDpha].md[0].size[0] != xsize))
     {
         printf(
             "ERROR in makeChromatPSF: images %s and %s have different sizes\n",
@@ -173,7 +240,7 @@ imageID PSF_makeChromatPSF(const char *amp_name,
         arith_image_cstpow("tmpamp", 2.0, "tmpint");
         delete_image_ID("tmpamp", DELETE_IMAGE_ERRMODE_WARNING);
         list_image_ID();
-        IDin = image_ID("tmpint");
+        IDin = image_ID("tmpint", dcimg, dcnimg);
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
             {
@@ -186,14 +253,14 @@ imageID PSF_makeChromatPSF(const char *amp_name,
                 if((i < xsize - 1) && (j < ysize - 1) && (i > -1) && (j > -1))
                 {
                     tmp = (1.0 - u) * (1.0 - t) *
-                          data.image[IDin].array.F[j * xsize + i];
+                          dcimg[IDin].array.F[j * xsize + i];
                     tmp += (1.0 - u) * t *
-                           data.image[IDin].array.F[(j + 1) * xsize + i];
+                           dcimg[IDin].array.F[(j + 1) * xsize + i];
                     tmp += u * (1.0 - t) *
-                           data.image[IDin].array.F[j * xsize + i + 1];
+                           dcimg[IDin].array.F[j * xsize + i + 1];
                     tmp += u * t *
-                           data.image[IDin].array.F[(j + 1) * xsize + i + 1];
-                    data.image[IDout].array.F[jj * xsize + ii] +=
+                           dcimg[IDin].array.F[(j + 1) * xsize + i + 1];
+                    dcimg[IDout].array.F[jj * xsize + ii] +=
                         mcoeff * tmp / coeff / coeff;
                 }
             }
@@ -218,8 +285,8 @@ errno_t PSF_finddiskcent(const char *ID_name, float rad, float *result)
     float    xcstart, xcend, ycstart, ycend;
     long     NBiter = 20;
 
-    ID   = image_ID(ID_name);
-    size = data.image[ID].md[0].size[0];
+    ID   = image_ID(ID_name, dcimg, dcnimg);
+    size = dcimg[ID].md[0].size[0];
     step = 0.1 * size;
 
     xcstart = 0.0;
@@ -253,8 +320,8 @@ errno_t PSF_finddiskcent(const char *ID_name, float rad, float *result)
                 totout = 0.0;
                 for(uint64_t ii = 0; ii < size * size; ii++)
                 {
-                    v = data.image[ID].array.F[ii];
-                    if(data.image[IDd].array.F[ii] > 0.5)
+                    v = dcimg[ID].array.F[ii];
+                    if(dcimg[IDd].array.F[ii] > 0.5f)
                     {
                         totin += v;
                     }
@@ -310,9 +377,9 @@ errno_t PSF_measurePhotocenter(const char *ID_name)
     float    iitot, jjtot, tot;
     float    v;
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     iitot = 0.0;
     jjtot = 0.0;
@@ -320,15 +387,15 @@ errno_t PSF_measurePhotocenter(const char *ID_name)
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
         for(uint32_t ii = 0; ii < naxes[0]; ii++)
         {
-            v = data.image[ID].array.F[jj * naxes[1] + ii];
+            v = dcimg[ID].array.F[jj * naxes[1] + ii];
             tot += v;
             iitot += v * ii;
             jjtot += v * jj;
         }
 
     printf("photocenter = %.2f %.2f\n", iitot / tot, jjtot / tot);
-    data.FLOATARRAY[0] = iitot / tot;
-    data.FLOATARRAY[1] = jjtot / tot;
+    dcfloatarr[0] = iitot / tot;
+    dcfloatarr[1] = jjtot / tot;
 
     return RETURN_SUCCESS;
 }
@@ -348,9 +415,9 @@ float measure_enc_NRJ(const char *ID_name,
     long     arraysize;
     float    value;
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     arraysize = (long)(sqrt(2) * naxes[0]);
 
@@ -374,7 +441,7 @@ float measure_enc_NRJ(const char *ID_name,
             index    = (long) distance;
             if(index < arraysize)
             {
-                total[index] += data.image[ID].array.F[jj * naxes[0] + ii];
+                total[index] += dcimg[ID].array.F[jj * naxes[0] + ii];
             }
         }
 
@@ -422,9 +489,9 @@ errno_t measure_enc_NRJ1(const char *ID_name,
 
     printf("Center is %f %f\n", xcenter, ycenter);
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     arraysize = (uint32_t)(sqrt(2) * naxes[0]);
 
@@ -455,7 +522,7 @@ errno_t measure_enc_NRJ1(const char *ID_name,
             index    = (long) distance;
             if(index < arraysize)
             {
-                total[index] += data.image[ID].array.F[jj * naxes[0] + ii];
+                total[index] += dcimg[ID].array.F[jj * naxes[0] + ii];
             }
         }
 
@@ -496,9 +563,9 @@ float measure_FWHM(
     long   i;
     float  FWHM;
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     //nelements = naxes[0] * naxes[1];
 
     dist = (float *) malloc(nb_step * sizeof(float));
@@ -546,9 +613,9 @@ float measure_FWHM(
             if(i < nb_step)
             {
                 dist[i] += distance;
-                mean[i] += data.image[ID].array.F[jj * naxes[0] + ii];
-                rms[i] += data.image[ID].array.F[jj * naxes[0] + ii] *
-                          data.image[ID].array.F[jj * naxes[0] + ii];
+                mean[i] += dcimg[ID].array.F[jj * naxes[0] + ii];
+                rms[i] += dcimg[ID].array.F[jj * naxes[0] + ii] *
+                          dcimg[ID].array.F[jj * naxes[0] + ii];
                 counts[i] += 1;
             }
         }
@@ -602,9 +669,9 @@ center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
     /* first approximation given by barycenter after median of image */
     median_filter(ID_name, "PSFctmp", 1);
 
-    ID       = image_ID("PSFctmp");
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID("PSFctmp", dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     centerx  = (double) naxes[0] / 2;
     centery  = (double) naxes[1] / 2;
@@ -646,15 +713,15 @@ center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
         for(uint32_t jj = jjstart; jj < jjend; jj++)
             for(uint32_t ii = iistart; ii < iiend; ii++)
             {
-                if(data.image[ID].array.F[jj * naxes[0] + ii] > back_cont)
+                if(dcimg[ID].array.F[jj * naxes[0] + ii] > back_cont)
                 {
                     centerx += 1.0 * ii *
-                               (data.image[ID].array.F[jj * naxes[0] + ii] -
+                               (dcimg[ID].array.F[jj * naxes[0] + ii] -
                                 1.0 * back_cont);
                     centery += 1.0 * jj *
-                               (data.image[ID].array.F[jj * naxes[0] + ii] -
+                               (dcimg[ID].array.F[jj * naxes[0] + ii] -
                                 1.0 * back_cont);
-                    total_fl += data.image[ID].array.F[jj * naxes[0] + ii] -
+                    total_fl += dcimg[ID].array.F[jj * naxes[0] + ii] -
                                 1.0 * back_cont;
                 }
             }
@@ -662,7 +729,7 @@ center_PSF(const char *ID_name, double *xcenter, double *ycenter, long box_size)
         centery /= total_fl;
 
         /*      printf("step %d\n",k);
-            printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
+            printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",dcimg[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
         */
         ocenterx = centerx;
         ocentery = centery;
@@ -693,9 +760,9 @@ errno_t fast_center_PSF(const char *ID_name,
 
     long iimin, iimax, jjmin, jjmax;
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     centerx  = (double) naxes[0] / 2;
     centery  = (double) naxes[1] / 2;
@@ -759,10 +826,10 @@ errno_t fast_center_PSF(const char *ID_name,
             for(uint32_t ii = (uint32_t) iimin; ii < (uint32_t) iimax; ii++)
             {
                 centerx +=
-                    1.0 * ii * (data.image[ID].array.F[jj * naxes[0] + ii]);
+                    1.0f * ii * (dcimg[ID].array.F[jj * naxes[0] + ii]);
                 centery +=
-                    1.0 * jj * (data.image[ID].array.F[jj * naxes[0] + ii]);
-                total_fl += data.image[ID].array.F[jj * naxes[0] + ii];
+                    1.0f * jj * (dcimg[ID].array.F[jj * naxes[0] + ii]);
+                total_fl += dcimg[ID].array.F[jj * naxes[0] + ii];
             }
 
         //        printf("effective box size is %ld (%ld) - center is %f %f   [ %3ld %3ld   %3ld %3ld]   ", n3, box_size, ocenterx, ocentery, iimin, iimax, jjmin, jjmax);
@@ -773,7 +840,7 @@ errno_t fast_center_PSF(const char *ID_name,
         centery /= total_fl;
 
         //printf("step %d\n",k);
-        //printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",data.image[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
+        //printf("image %s: center is %f %f for %ld by %ld pixels. Total_fl is %f\n",dcimg[ID].name,centerx,centery,naxes[0],naxes[1],total_fl);
 
         ocenterx = centerx;
         ocentery = centery;
@@ -807,9 +874,9 @@ errno_t center_PSF_alone(const char *ID_name)
         abort();
     }
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     xcenter[0] = naxes[0] / 2;
     ycenter[0] = naxes[1] / 2;
@@ -853,9 +920,9 @@ errno_t center_star(const char *ID_in_name, double *x_star, double *y_star)
 
     limit = 1.0 / 10000000000.0;
 
-    ID_in    = image_ID(ID_in_name);
-    naxes[0] = data.image[ID_in].md[0].size[0];
-    naxes[1] = data.image[ID_in].md[0].size[1];
+    ID_in    = image_ID(ID_in_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID_in].md[0].size[0];
+    naxes[1] = dcimg[ID_in].md[0].size[1];
     n1       = (long) x_star[0];
     n2       = (long) y_star[0];
     n3       = 20;
@@ -875,12 +942,12 @@ errno_t center_star(const char *ID_in_name, double *x_star, double *y_star)
                 coeff = coeff / n3 / n3;
                 coeff = exp(-coeff * 50 * (1.0 * i / max_nb_iter));
                 sum =
-                    sum + coeff * data.image[ID_in].array.F[jj * naxes[0] + ii];
+                    sum + coeff * dcimg[ID_in].array.F[jj * naxes[0] + ii];
                 xsum = xsum +
-                       coeff * (data.image[ID_in].array.F[jj * naxes[0] + ii]) *
+                       coeff * (dcimg[ID_in].array.F[jj * naxes[0] + ii]) *
                        ii;
                 ysum = ysum +
-                       coeff * (data.image[ID_in].array.F[jj * naxes[0] + ii]) *
+                       coeff * (dcimg[ID_in].array.F[jj * naxes[0] + ii]) *
                        jj;
             }
         xsum = xsum / sum;
@@ -979,12 +1046,12 @@ float get_sigma(const char *ID_name, float x, float y, const char *options)
 
     n1       = (long) x;
     n2       = (long) y;
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     C = 0.0;
-    A = data.image[ID].array.F[n2 * naxes[0] + n1 + 1];
+    A = dcimg[ID].array.F[n2 * naxes[0] + n1 + 1];
     printf("A initial is %f\n", A);
     /* f = Aexp(-a*a*x*x)+C */
 
@@ -1038,10 +1105,10 @@ float get_sigma(const char *ID_name, float x, float y, const char *options)
                     (jj < (int) naxes[1]))
             {
                 distsq = (ii - x) * (ii - x) + (jj - y) * (jj - y);
-                if(data.image[ID].array.F[jj * naxes[0] + ii] < SATURATION)
+                if(dcimg[ID].array.F[jj * naxes[0] + ii] < SATURATION)
                 {
                     x1[pixelnb]  = distsq;
-                    y1[pixelnb]  = data.image[ID].array.F[jj * naxes[0] + ii];
+                    y1[pixelnb]  = dcimg[ID].array.F[jj * naxes[0] + ii];
                     sig[pixelnb] = 1.0;
                     pixelnb++;
                 }
@@ -1165,9 +1232,9 @@ float get_sigma_alone(const char *ID_name)
         abort();
     }
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     xcenter[0] = naxes[0] / 2;
     ycenter[0] = naxes[1] / 2;
@@ -1193,7 +1260,7 @@ float get_sigma_alone(const char *ID_name)
         fast_center_PSF("tmpcen", xcenter, ycenter, box_size);
         center_star("tmpcen", xcenter, ycenter);
         printf("peak = %f\n",
-               data.image[ID].array.F[((long) ycenter[0]) * naxes[0] +
+               dcimg[ID].array.F[((long) ycenter[0]) * naxes[0] +
                                       ((long) xcenter[0])]);
         if(FWHM == 1)
         {
@@ -1229,9 +1296,9 @@ errno_t extract_psf(const char *ID_name, const char *out_name, long size)
         abort();
     }
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     xcenter[0] = naxes[0] / 2;
     ycenter[0] = naxes[1] / 2;
@@ -1281,9 +1348,9 @@ extract_psf_photcent(const char *ID_name, const char *out_name, long size)
     uint32_t naxes[2];
     long     ii, jj, ii0, jj0, ii1, jj1;
 
-    IDin     = image_ID(ID_name);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
 
     totx = 0.0;
     toty = 0.0;
@@ -1291,9 +1358,9 @@ extract_psf_photcent(const char *ID_name, const char *out_name, long size)
     for(ii = 0; ii < naxes[0]; ii++)
         for(jj = 0; jj < naxes[1]; jj++)
         {
-            totx += data.image[IDin].array.F[jj * naxes[0] + ii] * ii;
-            toty += data.image[IDin].array.F[jj * naxes[0] + ii] * jj;
-            tot += data.image[IDin].array.F[jj * naxes[0] + ii];
+            totx += dcimg[IDin].array.F[jj * naxes[0] + ii] * ii;
+            toty += dcimg[IDin].array.F[jj * naxes[0] + ii] * jj;
+            tot += dcimg[IDin].array.F[jj * naxes[0] + ii];
         }
     totx /= tot;
     toty /= tot;
@@ -1311,12 +1378,12 @@ extract_psf_photcent(const char *ID_name, const char *out_name, long size)
             jj = jj0 - size / 2 + jj1;
             if((ii > -1) && (jj > -1) && (ii < naxes[0]) && (jj < naxes[1]))
             {
-                data.image[IDout].array.F[jj1 * size + ii1] =
-                    data.image[IDin].array.F[jj * naxes[0] + ii];
+                dcimg[IDout].array.F[jj1 * size + ii1] =
+                    dcimg[IDin].array.F[jj * naxes[0] + ii];
             }
             else
             {
-                data.image[IDout].array.F[jj1 * size + ii1] = 0.0;
+                dcimg[IDout].array.F[jj1 * size + ii1] = 0.0f;
             }
         }
 
@@ -1367,7 +1434,7 @@ psf_variance(const char *ID_out_m, const char *ID_out_v, const char *options)
                 (options[i + str_pos] == '\n'))
         {
             file_name[j] = '\0';
-            IDn[file_nb] = image_ID(file_name);
+            IDn[file_nb] = image_ID(file_name, dcimg, dcnimg);
             printf("%d %s \n", IDn[file_nb], file_name);
             file_nb += 1;
             j = 0;
@@ -1379,8 +1446,8 @@ psf_variance(const char *ID_out_m, const char *ID_out_v, const char *options)
         }
         i++;
     }
-    naxes[0] = data.image[IDn[0]].md[0].size[0];
-    naxes[1] = data.image[IDn[0]].md[0].size[1];
+    naxes[0] = dcimg[IDn[0]].md[0].size[0];
+    naxes[1] = dcimg[IDn[0]].md[0].size[1];
 
     create_2Dimage_ID(ID_out_m, naxes[0], naxes[1], &IDoutm);
     create_2Dimage_ID(ID_out_v, naxes[0], naxes[1], &IDoutv);
@@ -1392,19 +1459,19 @@ psf_variance(const char *ID_out_m, const char *ID_out_v, const char *options)
             mean = 0.0;
             for(file_nb = 0; file_nb < Nb_files; file_nb++)
             {
-                mean += data.image[IDn[file_nb]].array.F[jj * naxes[0] + ii];
+                mean += dcimg[IDn[file_nb]].array.F[jj * naxes[0] + ii];
             }
             mean /= Nb_files;
-            data.image[IDoutm].array.F[jj * naxes[0] + ii] = mean;
+            dcimg[IDoutm].array.F[jj * naxes[0] + ii] = mean;
             rms                                            = 0.0;
             for(file_nb = 0; file_nb < Nb_files; file_nb++)
             {
                 tmp = (mean -
-                       data.image[IDn[file_nb]].array.F[jj * naxes[0] + ii]);
+                       dcimg[IDn[file_nb]].array.F[jj * naxes[0] + ii]);
                 rms += tmp * tmp;
             }
             rms = sqrt(rms / Nb_files);
-            data.image[IDoutv].array.F[jj * naxes[0] + ii] = rms;
+            dcimg[IDoutv].array.F[jj * naxes[0] + ii] = rms;
         }
 
     free(IDn);
@@ -1424,10 +1491,10 @@ imageID combine_2psf(const char *ID_name,
     uint32_t naxes[2];
     float    dist;
 
-    ID1      = image_ID(ID_name1);
-    ID2      = image_ID(ID_name2);
-    naxes[0] = data.image[ID1].md[0].size[0];
-    naxes[1] = data.image[ID1].md[0].size[1];
+    ID1      = image_ID(ID_name1, dcimg, dcnimg);
+    ID2      = image_ID(ID_name2, dcimg, dcnimg);
+    naxes[0] = dcimg[ID1].md[0].size[0];
+    naxes[1] = dcimg[ID1].md[0].size[1];
     create_2Dimage_ID(ID_name, naxes[0], naxes[1], &IDout);
 
     for(uint32_t jj = 0; jj < naxes[1]; jj++)
@@ -1435,11 +1502,11 @@ imageID combine_2psf(const char *ID_name,
         {
             dist = sqrt((ii - naxes[0] / 2) * (ii - naxes[0] / 2) +
                         (jj - naxes[1] / 2) * (jj - naxes[1] / 2));
-            data.image[IDout].array.F[jj * naxes[0] + ii] =
+            dcimg[IDout].array.F[jj * naxes[0] + ii] =
                 exp(-pow(dist / radius, index)) *
-                data.image[ID1].array.F[jj * naxes[0] + ii] +
+                dcimg[ID1].array.F[jj * naxes[0] + ii] +
                 (1.0 - exp(-pow(dist / radius, index))) *
-                data.image[ID2].array.F[jj * naxes[0] + ii];
+                dcimg[ID2].array.F[jj * naxes[0] + ii];
         }
 
     return IDout;
@@ -1485,9 +1552,9 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
         abort();
     }
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
 
     xcenter[0] = naxes[0] / 2;
     ycenter[0] = naxes[1] / 2;
@@ -1523,12 +1590,12 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
                               Csize,
                               ((long) xcenter[0]) - Csize / 2,
                               ((long) ycenter[0]) - Csize / 2);
-        ID   = image_ID("tmpsr");
+        ID   = image_ID("tmpsr", dcimg, dcnimg);
         peak = 0.0;
         for(ii = Csize / 2 - 5; ii < Csize / 2 + 5; ii++)
             for(jj = Csize / 2 - 5; jj < Csize / 2 + 5; jj++)
             {
-                tmp1 = data.image[ID].array.F[jj * Csize + ii];
+                tmp1 = dcimg[ID].array.F[jj * Csize + ii];
                 if(tmp1 > peak)
                 {
                     peak   = tmp1;
@@ -1538,13 +1605,13 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
             }
         for(ii = 0; ii < Csize; ii++)
             for(jj = 0; jj < Csize; jj++)
-                if(data.image[ID].array.F[jj * Csize + ii] > peak * 1.001)
+                if(dcimg[ID].array.F[jj * Csize + ii] > peak * 1.001f)
                 {
-                    data.image[ID].array.F[jj * Csize + ii] = 0.0;
+                    dcimg[ID].array.F[jj * Csize + ii] = 0.0f;
                 }
 
         fftzoom("tmpsr", "tmpsrz", fzoomfactor);
-        ID = image_ID("tmpsrz");
+        ID = image_ID("tmpsrz", dcimg, dcnimg);
         peakii *= fzoomfactor;
         peakjj *= fzoomfactor;
         total1 = 0.0;
@@ -1560,12 +1627,12 @@ float psf_measure_SR(const char *ID_name, float factor, float r1, float r2)
                 {
                     if(dist < r1 * fzoomfactor)
                     {
-                        total1 += data.image[ID].array.F[jj * Csize2 + ii];
+                        total1 += dcimg[ID].array.F[jj * Csize2 + ii];
                         cnt1++;
                     }
                     else
                     {
-                        total2 += data.image[ID].array.F[jj * Csize2 + ii];
+                        total2 += dcimg[ID].array.F[jj * Csize2 + ii];
                         cnt2++;
                     }
                 }
@@ -1612,10 +1679,10 @@ PSF_coaddbest(const char *IDcin_name, const char *IDout_name, float r_pix)
     double  *flux_array;
     long    *imgindex;
 
-    IDcin = image_ID(IDcin_name);
-    xsize = data.image[IDcin].md[0].size[0];
-    ysize = data.image[IDcin].md[0].size[1];
-    ksize = data.image[IDcin].md[0].size[2];
+    IDcin = image_ID(IDcin_name, dcimg, dcnimg);
+    xsize = dcimg[IDcin].md[0].size[0];
+    ysize = dcimg[IDcin].md[0].size[1];
+    ksize = dcimg[IDcin].md[0].size[2];
 
     //  printf("\"%s\" %ld SIZE = %ld %ld\n",IDcin_name, IDcin, xsize,ysize);
 
@@ -1643,8 +1710,8 @@ PSF_coaddbest(const char *IDcin_name, const char *IDout_name, float r_pix)
         for(ii = 0; ii < xsize * ysize; ii++)
         {
             flux_array[kk] -=
-                data.image[IDcin].array.F[kk * xsize * ysize + ii] *
-                data.image[IDmask].array.F[ii];
+                dcimg[IDcin].array.F[kk * xsize * ysize + ii] *
+                dcimg[IDmask].array.F[ii];
         }
     }
 
@@ -1659,14 +1726,14 @@ PSF_coaddbest(const char *IDcin_name, const char *IDout_name, float r_pix)
         kk1 = imgindex[kk];
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            data.image[IDout].array.F[kk * xsize * ysize + ii] =
-                data.image[IDcin].array.F[kk1 * xsize * ysize + ii];
+            dcimg[IDout].array.F[kk * xsize * ysize + ii] =
+                dcimg[IDcin].array.F[kk1 * xsize * ysize + ii];
         }
         if(kk > 0)
             for(ii = 0; ii < xsize * ysize; ii++)
             {
-                data.image[IDout].array.F[kk * xsize * ysize + ii] +=
-                    data.image[IDout].array.F[(kk - 1) * xsize * ysize + ii];
+                dcimg[IDout].array.F[kk * xsize * ysize + ii] +=
+                    dcimg[IDout].array.F[(kk - 1) * xsize * ysize + ii];
             }
     }
 
@@ -1711,13 +1778,13 @@ errno_t PSF_sequence_measure(const char *IDin_name,
         abort();
     }
 
-    IDin   = image_ID(IDin_name);
-    xsize  = data.image[IDin].md[0].size[0];
-    ysize  = data.image[IDin].md[0].size[1];
+    IDin   = image_ID(IDin_name, dcimg, dcnimg);
+    xsize  = dcimg[IDin].md[0].size[0];
+    ysize  = dcimg[IDin].md[0].size[1];
     xysize = xsize * ysize;
-    if(data.image[IDin].md[0].naxis == 3)
+    if(dcimg[IDin].md[0].naxis == 3)
     {
-        zsize = data.image[IDin].md[0].size[2];
+        zsize = dcimg[IDin].md[0].size[2];
     }
     else
     {
@@ -1729,9 +1796,9 @@ errno_t PSF_sequence_measure(const char *IDin_name,
     fpout = fopen(outfname, "w");
     for(kk = 0; kk < zsize; kk++)
     {
-        ptr = (char *) data.image[IDin].array.F;
+        ptr = (char *) dcimg[IDin].array.F;
         ptr += sizeof(float) * xysize * kk;
-        memcpy((void *) data.image[IDtmp].array.F,
+        memcpy((void *) dcimg[IDtmp].array.F,
                (void *) ptr,
                sizeof(float) * xysize);
         fast_center_PSF("_tmppsfim", xcenter, ycenter, boxsize);

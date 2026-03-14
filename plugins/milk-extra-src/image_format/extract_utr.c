@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    extract_utr.c
  * @brief   CDS (correlated double sampling) + UTR (sample up-the-ramp) image processing loop for CRED streams
@@ -17,54 +18,54 @@
 
 #include <pthread.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "extract_utr.h"
 
-// Local variables pointers
-static char  *in_imname;
-static char  *out_imname;
-static float *ptr_sat_value;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &in_imname,
-        NULL
-    },
-    {
-        CLIARG_STR_NOT_IMG,
-        ".out_name",
-        "up-the-ramp image",
-        "out2",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &out_imname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".sat_value",
-        "Saturation threshold",
-        "satval",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &ptr_sat_value,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "cred_cds_utr",
+    .cmdkey      = "cred_cds_utr",
+    .description = "RT compute of CDS/UTR for camera streams"
 };
 
-static CLICMDDATA CLIcmddata = {"cred_cds_utr",
-                                "RT compute of CDS/UTR for camera streams",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-static errno_t help_function()
-{
-    printf(
-        "Perform real-time up-the-ramp data reduction on CRED1/2 streams.\n");
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char  * in_imname = NULL;
+static char  * out_imname = NULL;
+static float * ptr_sat_value = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &in_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", &out_imname, \
+      FPTYPE_STRING_NOT_STREAM, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "up-the-ramp image") \
+    X(".sat_value", &ptr_sat_value, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Saturation threshold")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /*
 THE IMPORTANT, CUSTOM PART
@@ -307,29 +308,29 @@ static errno_t simple_desat_finalize(float *last_valid,
 BOILERPLATE
 */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID in_img = mkIMGID_from_name(in_imname);
-    resolveIMGID(&in_img, ERRMODE_ABORT);
+    IMGID in_img = imgid_make_from_name(in_imname);
+    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_imname);
     // for FPS mode:
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        strcpy(data.fpsptr->cmdset.triggerstreamname, in_imname);
+        strcpy(dcfpsptr->cmdset.triggerstreamname, in_imname);
     }
 
     // Resolve or create outputs, per need
-    IMGID out_img = mkIMGID_from_name(out_imname);
-    if(resolveIMGID(&out_img, ERRMODE_WARN))
+    IMGID out_img = imgid_make_from_name(out_imname);
+    if(resolveIMGID(&out_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING("WARNING - output image not found and being created");
-        in_img.datatype = _DATATYPE_FLOAT; // To be passed to out_img
+        in_img.mdt->datatype = _DATATYPE_FLOAT; // To be passed to out_img
         imcreatelikewiseIMGID(&out_img, &in_img);
-        resolveIMGID(&out_img, ERRMODE_ABORT);
+        resolveIMGID(&out_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     /*
@@ -733,7 +734,7 @@ static errno_t compute_function()
                 pending_fin_warps = FALSE;
                 if(publishable_output)
                 {
-                    processinfo_update_output_stream(processinfo, out_img.ID);
+                    processinfo_update_output_stream(processinfo, out_img.im, NULL);
                 }
             }
             ++next_fin_warp;
@@ -760,6 +761,9 @@ static errno_t compute_function()
         free(save_first_read[pp]);
     }
 
+    imgid_free(&in_img);
+    imgid_free(&out_img);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -767,13 +771,39 @@ static errno_t compute_function()
 /*
 CLI boilerplate
 */
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__cred_cds_utr()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

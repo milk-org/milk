@@ -1,3 +1,8 @@
+/**
+ * @file readPGM.h
+ * @brief Readpgm module
+ */
+
 /** @file readPGM.h
  */
 

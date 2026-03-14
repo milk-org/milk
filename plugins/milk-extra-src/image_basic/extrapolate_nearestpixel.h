@@ -1,3 +1,8 @@
+/**
+ * @file extrapolate_nearestpixel.h
+ * @brief Extrapolate nearestpixel module
+ */
+
 /** @file extrapolate_nearestpixel.h
  */
 

@@ -1,8 +1,17 @@
 /**
  * @file wisdom.c
+ * @brief Wisdom module
  */
 
-#include "CommandLineInterface/CLIcore.h"
+/**
+ * @file wisdom.c
+ */
+
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 
 errno_t import_wisdom()
 {
@@ -45,10 +54,12 @@ errno_t import_wisdom()
     }
     else
     {
+#ifdef MILK_MODULE
         if(fftwf_import_wisdom_from_file(fp) == 0)
         {
             PRINT_WARNING("Error reading wisdom");
         }
+#endif
         fclose(fp);
     }
 
@@ -68,10 +79,12 @@ errno_t import_wisdom()
     }
     else
     {
+#ifdef MILK_MODULE
         if(fftw_import_wisdom_from_file(fp) == 0)
         {
             PRINT_WARNING("Error reading wisdom");
         }
+#endif
         fclose(fp);
     }
 
@@ -111,7 +124,9 @@ errno_t export_wisdom()
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_single);
         abort();
     }
+#ifdef MILK_MODULE
     fftwf_export_wisdom_to_file(fp);
+#endif
     fclose(fp);
 
     if((fp = fopen(wisdom_file_double, "w")) == NULL)
@@ -119,7 +134,9 @@ errno_t export_wisdom()
         PRINT_ERROR("Error creating wisdom file \"%s\"", wisdom_file_double);
         abort();
     }
+#ifdef MILK_MODULE
     fftw_export_wisdom_to_file(fp);
+#endif
     fclose(fp);
 
     return RETURN_SUCCESS;

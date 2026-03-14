@@ -1,68 +1,67 @@
+/**
+ * @file writeBMP.c
+ * @brief Writebmp module
+ */
+
 /** @file writeBMP.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 const int BYTES_PER_PIXEL  = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;
 const int INFO_HEADER_SIZE = 40;
 
-// Local variables pointers
-static char *BMPfname;
-static char *imRname;
-static char *imGname;
-static char *imBname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".bmp_fname",
-        "BMP file name",
-        "out.bmp",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &BMPfname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".imRname",
-        "Red channel image",
-        "imR",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imRname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".imGname",
-        "Green channel image",
-        "imG",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imGname,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".imBname",
-        "Blue channel image",
-        "imB",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &imBname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkBMPim",
+    .cmdkey      = "mkBMPim",
+    .description = "make BMP image"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "mkBMPim", "make BMP image", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    printf("Create BMP format image\n");
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
+static char * BMPfname = NULL;
+static char * imRname = NULL;
+static char * imGname = NULL;
+static char * imBname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".bmp_fname", &BMPfname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "BMP file name") \
+    X(".imRname", &imRname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Red channel image") \
+    X(".imGname", &imGname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Green channel image") \
+    X(".imBname", &imBname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Blue channel image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 static unsigned char *createBitmapFileHeader(int height, int stride)
 {
@@ -172,11 +171,11 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
 
     printf("Function %s\n", __FUNCTION__);
 
-    IDR    = image_ID(IDnameR);
-    IDG    = image_ID(IDnameG);
-    IDB    = image_ID(IDnameB);
-    width  = (uint32_t) data.image[IDR].md[0].size[0];
-    height = (uint32_t) data.image[IDR].md[0].size[1];
+    IDR    = image_ID(IDnameR, dcimg, dcnimg);
+    IDG    = image_ID(IDnameG, dcimg, dcnimg);
+    IDB    = image_ID(IDnameB, dcimg, dcnimg);
+    width  = (uint32_t) dcimg[IDR].md[0].size[0];
+    height = (uint32_t) dcimg[IDR].md[0].size[1];
 
     array =
         (unsigned char *) malloc(sizeof(unsigned char) * width * height * 3);
@@ -190,15 +189,15 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
         for(jj = 0; jj < height; jj++)
         {
             array[(jj * width + ii) * 3] =
-                (unsigned char)(data.image[IDB]
+                (unsigned char)(dcimg[IDB]
                                 .array.F[(height - jj - 1) * width + ii]);
 
             array[(jj * width + ii) * 3 + 1] =
-                (unsigned char)(data.image[IDG]
+                (unsigned char)(dcimg[IDG]
                                 .array.F[(height - jj - 1) * width + ii]);
 
             array[(jj * width + ii) * 3 + 2] =
-                (unsigned char)(data.image[IDR]
+                (unsigned char)(dcimg[IDR]
                                 .array.F[(height - jj - 1) * width + ii]);
         }
     generateBitmapImage(array, height, width, outname);
@@ -208,7 +207,7 @@ errno_t image_writeBMP(const char *__restrict IDnameR,
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -221,12 +220,39 @@ static errno_t compute_function()
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__mkBMPimage()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

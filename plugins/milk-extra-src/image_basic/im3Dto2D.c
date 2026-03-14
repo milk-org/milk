@@ -1,48 +1,86 @@
-/** @file im3Dto2D.c
+/**
+ * @file im3Dto2D.c
+ * @brief Collapse first 2 axis of 3D image
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID image_basic_3Dto2D(
+    const char *__restrict IDname);
 
-imageID image_basic_3Dto2D(const char *__restrict IDname);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im1";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "im3Dto2D",
+    .cmdkey      = "im3Dto2D",
+    .description =
+        "collapse first 2 axis of 3D image"
+};
 
-static errno_t image_basic_3Dto2D_cli() // collapse first 2 axis into one
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) == 0)
-    {
-        image_basic_3Dto2D(data.cmdargtoken[1].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) im3Dto2D_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
+    image_basic_3Dto2D(p_in);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("im3Dto2D",
-                       __FILE__,
-                       image_basic_3Dto2D_cli,
-                       "collapse first 2 axis of 3D image (in place)",
-                       "<image name>",
-                       "im3Dto2D im1",
-                       "long image_basic_3Dto2D(const char *IDname)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_basic__im3Dto2D()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -55,15 +93,15 @@ errno_t __attribute__((cold)) im3Dto2D_addCLIcmd()
 
 imageID image_basic_3Dto2D_byID(imageID ID)
 {
-    if(data.image[ID].md[0].naxis != 3)
+    if(dcimg[ID].md[0].naxis != 3)
     {
         printf("ERROR: image needs to have 3 axis\n");
     }
     else
     {
-        data.image[ID].md[0].size[0] *= data.image[ID].md[0].size[1];
-        data.image[ID].md[0].size[1] = data.image[ID].md[0].size[2];
-        data.image[ID].md[0].naxis   = 2;
+        dcimg[ID].md[0].size[0] *= dcimg[ID].md[0].size[1];
+        dcimg[ID].md[0].size[1] = dcimg[ID].md[0].size[2];
+        dcimg[ID].md[0].naxis   = 2;
     }
 
     return ID;
@@ -73,7 +111,7 @@ imageID image_basic_3Dto2D(const char *__restrict IDname)
 {
     imageID ID;
 
-    ID = image_ID(IDname);
+    ID = image_ID(IDname, dcimg, dcnimg);
     image_basic_3Dto2D_byID(ID);
 
     return ID;

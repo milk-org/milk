@@ -1,12 +1,14 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
-
+[![Documentation](https://img.shields.io/badge/docs-milk--org.github.io-blue?logo=readthedocs)](https://milk-org.github.io/milk/)
 
 Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.svg)](https://github.com/milk-org/milk/tree/master)
 
 | Branch    | Build   | Docker Deployment    |  Activity   |
 |-------------|-------------|-------------|-------------|
-**main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
-**dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
+| **main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
+| **dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
+
+[![Docs Lint](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml)
 
 
 Code metrics (dev branch) :
@@ -17,15 +19,16 @@ Code metrics (dev branch) :
 
 
 
-
 ***
 
 # Milk
 
 milk-core for **milk** package
 
+> **📖 [Documentation](https://milk-org.github.io/milk/)** · **📚 [API Reference](https://milk-org.github.io/milk/api/html/)** · **🚀 [Getting Started](https://milk-org.github.io/milk/install/compile/)**
 
-### _Looking for something else?_
+## _Looking for something else?_
+
 [CACAO Github repository](https://www.github.com/cacao-org/cacao) | [CACAO Documentation](https://cacao-org.github.io/docs/)
 
 [ImageStreamIO core library](https://www.github.com/milk-org/imagestreamio)
@@ -34,58 +37,94 @@ milk-core for **milk** package
 
 ## Contents
 
-Module includes key frameworks :
+Module includes key frameworks:
 
-- **image streams** : low-latency shared memory streams
-- **processinfo** : process management and control
-- **function parameter structure (FPS)** : reading/writing function parameters
+- [**Image streams**](docs/streams.md) — low-latency shared memory streams
+- [**processinfo**](docs/procinfo.md) — process management and control
+- [**Function Parameter Structure (FPS)**](docs/fps.md) — reading/writing function parameters. See [FPS Standalone and CMD Modes](docs/FPS_Standalone_CMD_Modes.md) for implementation details.
+
+For a comprehensive guide, see the [Documentation Index](docs/index.md).
+For a full list of all available documentation in this repository, see the [Markdown Documentation Index](docs/Markdown_Index.md).
 
 ## Download
 
 ```bash
-git clone https://github.com/milk-org/milk.git
-cd milk
+$ git clone --recursive https://github.com/milk-org/milk.git
+$ cd milk
 ```
 
-## Compile
+## Build
 
-Check required package in Dockerfile.
+### Quick start (full build)
 
-Standard compile:
+Builds everything: interactive CLI, TUI, all plugins, and
+standalone fpsexec programs.
 
 ```bash
-mkdir _build
-cd _build
-cmake ..
-make
-sudo make install
+$ mkdir _build && cd _build
+$ cmake ..
+$ make -j$(nproc)
+$ sudo make install
 ```
 
-Compile with Python module (check script help with -h option for details):
+### Build tiers
+
+The build system supports four tiers with decreasing
+dependency requirements:
+
+| Tier | cmake command | External deps |
+|------|---------------|---------------|
+| **Engine** | `cmake .. -DUSE_COREMODS=OFF -DUSE_CLI=OFF` | POSIX only |
+| **Core** | `cmake .. -DUSE_CLI=OFF -DUSE_CFITSIO=OFF` | POSIX only |
+| **Core + FITS** | `cmake .. -DUSE_CLI=OFF` | cfitsio |
+| **Full** (default) | `cmake ..` | cfitsio, readline, ncurses |
+
+For details on each tier, what gets built, and what is
+disabled, see [Build Tiers](docs/install/build_tiers.md).
+
+### CMake options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `USE_COREMODS` | ON | Build core modules (COREMOD_*) |
+| `USE_CFITSIO` | ON | Build FITS I/O (requires cfitsio) |
+| `USE_CLI` | ON | Build interactive CLI (`milk-cli`), TUI, scripts |
+| `USE_NCURSES` | ON | Enable ncurses TUI (`milk-fpsCTRL`, `streamCTRL`) |
+| `USE_READLINE` | ON | Enable readline for CLI input |
+| `USE_GSL` | ON | Enable GSL for plugins |
+| `USE_CUDA` | OFF | Enable CUDA GPU acceleration |
+
+### Build with Python module
 
 ```bash
-./compile.sh $PWD/local
+$ ./compile.sh $PWD/local
 ```
 
-Set environment variables (.bashrc or equivalent):
-- MILK_ROOT: Source code directory, for example "/home/coldpenguin/src/milk"
-- MILK_INSTALLDIR: Installation directory, for example "/usr/local/milk"
-- MILK_SHM_DIR: Shared memory directory, for exmaple "/milk/shm"
+### Environment variables
 
+Set in `.bashrc` or equivalent:
 
-Check installation (from any directory) :
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `MILK_ROOT` | `/home/user/src/milk` | Source code directory |
+| `MILK_INSTALLDIR` | `/usr/local/milk` | Installation directory |
+| `MILK_SHM_DIR` | `/milk/shm` | Shared memory directory |
+
+### Verify installation
+
 ```bash
-milk-check
+$ milk-check
 ```
 
-
-
+For post-installation steps and dependency details, see
+[Installation](docs/install/compile.md).
 
 ## Interactive tutorial
 
 Pre-requisites: tmux, nnn
+
 ```bash
-milk-tutorial
+$ milk-tutorial
 ```
 
 ## Adding plugins
@@ -93,12 +132,13 @@ milk-tutorial
 Compile with cacao plugins:
 
 ```bash
-./fetch_cacao_dev.sh
-./compile.sh $PWD/local
+$ ./fetch_cacao_dev.sh
+$ ./compile.sh $PWD/local
 ```
+
 Compile with coffee plugins:
 
 ```bash
-./fetch_coffee_dev.sh
-./compile.sh $PWD/local
+$ ./fetch_coffee_dev.sh
+$ ./compile.sh $PWD/local
 ```

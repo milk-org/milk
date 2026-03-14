@@ -1,4 +1,10 @@
-#include "CommandLineInterface/CLIcore.h"
+/**
+ * @file cublas_PCA.c
+ * @brief Cublas pca module
+ */
+
+#include "ImageStreamIO/ImageStruct.h"
+#include "CLIcore.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -13,31 +19,41 @@
 
 #include <math.h>
 
-// Local variables pointers
-static char *inimname;
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "PCAdecomp",
+    .cmdkey      = "PCAdecomp",
+    .description = "Principal Components Analysis decomposition"
 };
 
-static CLICMDDATA CLIcmddata = {"PCAdecomp",
-                                "Principal Components Analysis decomposition",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-// detailed help
-static errno_t help_function()
-{
-    printf("cublas implementation only\n");
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inimname = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 void printMatrix(int m, int n, const double *A, int lda, const char *name)
 {
@@ -244,19 +260,31 @@ static imageID image_PCAdecomp(
     imPCAsize[1] = img->md->size[1];
     imPCAsize[2] = lmax;
     imageID outPCAID;
-    create_image_ID("imPCA",
-                    3,
-                    imPCAsize,
-                    _DATATYPE_DOUBLE,
-                    0,
-                    10,
-                    0,
-                    &outPCAID);
+    {
+        IMGID imgpca =
+            imgid_make_from_name(
+                "imPCA");
+        imgpca.mdt->naxis = 3;
+        imgpca.mdt->size[0] =
+            imPCAsize[0];
+        imgpca.mdt->size[1] =
+            imPCAsize[1];
+        imgpca.mdt->size[2] =
+            imPCAsize[2];
+        imgpca.mdt->datatype =
+            _DATATYPE_DOUBLE;
+        imgpca.mdt->NBkw = 10;
+        imgpca.im =
+            (IMAGE *) calloc(
+                1, sizeof(IMAGE));
+        imgid_mkimage(&imgpca);
+        outPCAID = imgpca.ID;
+    }
     for(uint32_t jj = 0; jj < lmax; jj++)
     {
         for(uint32_t ii = 0; ii < (uint32_t) n; ii++)
         {
-            data.image[outPCAID].array.D[jj * n + ii] = VT[ii * m + jj];
+            dcimg[outPCAID].array.D[jj * n + ii] = VT[ii * m + jj];
         }
     }
     free(imPCAsize);
@@ -367,7 +395,7 @@ static imageID image_PCAdecomp(
         (void) cudaStat;
     }
 
-    IMGID imgAres = makeIMGID_3D("imAres",
+    IMGID imgAres = imgid_make_from_name_3D("imAres",
                                  img->md->size[0],
                                  img->md->size[1],
                                  img->md->size[2]);
@@ -435,14 +463,14 @@ static imageID image_PCAdecomp(
     return (img->ID);
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     DEBUG_TRACEPOINT("PCA of %s", inimname);
 
-    IMGID img = mkIMGID_from_name(inimname);
-    resolveIMGID(&img, ERRMODE_ABORT);
+    IMGID img = imgid_make_from_name(inimname);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
 
     printf("PCA of %s\n", inimname);
 
@@ -451,19 +479,46 @@ static errno_t compute_function()
     image_PCAdecomp(&img);
 
     //DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    //processinfo_update_output_stream(processinfo, img.ID);
+    //processinfo_update_output_stream(processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linalgebra__PCAdecomp()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

@@ -1,3 +1,8 @@
+/**
+ * @file fit1D.h
+ * @brief Fit1d module
+ */
+
 /** @file fit1D.h
  */
 

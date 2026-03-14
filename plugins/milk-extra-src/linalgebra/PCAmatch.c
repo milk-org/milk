@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file PCAmatch.c
  *
@@ -9,127 +10,71 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *modesA;
-static long  fpi_modesA;
-
-static char *modesB;
-static long  fpi_modesB;
-
-static char *outcoeffA;
-static long  fpi_outcoeffA;
-
-static char *outcoeffB;
-static long  fpi_outcoeffB;
-
-static char *outimA;
-static long  fpi_outimA;
-
-static char *outimB;
-static long  fpi_outimB;
-
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".modesA",
-        "input modes A",
-        "inmA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &modesA,
-        &fpi_modesA
-    },
-    {
-        CLIARG_IMG,
-        ".modesB",
-        "input modes B",
-        "inmB",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &modesB,
-        &fpi_modesB
-    },
-    {
-        CLIARG_STR,
-        ".outcoeffA",
-        "output coeffs A",
-        "outcA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outcoeffA,
-        &fpi_outcoeffA
-    },
-    {
-        CLIARG_STR,
-        ".outcoeffB",
-        "output coeffs B",
-        "outcB",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outcoeffB,
-        &fpi_outcoeffB
-    },
-    {
-        CLIARG_STR,
-        ".outimA",
-        "output image A",
-        "outcA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimA,
-        &fpi_outimA
-    },
-    {
-        CLIARG_STR,
-        ".outimB",
-        "output image B",
-        "outcB",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimB,
-        &fpi_outimB
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "PCAmatch",
+    .cmdkey      = "PCAmatch",
+    .description = "find matching linear combination across two modal bases"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * modesA = NULL;
+static char * modesB = NULL;
+static char * outcoeffA = NULL;
+static char * outcoeffB = NULL;
+static char * outimA = NULL;
+static char * outimB = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "PCAmatch", "find matching linear combination across two modal bases", CLICMD_FIELDS_DEFAULTS
-};
+#define FPS_PARAMS(X) \
+    X(".modesA", &modesA, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input modes A") \
+    X(".modesB", &modesB, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input modes B") \
+    X(".outcoeffA", &outcoeffA, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coeffs A") \
+    X(".outcoeffB", &outcoeffB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coeffs B") \
+    X(".outimA", &outimA, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image A") \
+    X(".outimB", &outimB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image B")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-static errno_t help_function()
-{
-
-
-    return RETURN_SUCCESS;
-}
-
-
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /**
  * @brief Find matching linear combinations across two bases
@@ -164,27 +109,22 @@ errno_t PCAmatch(
 
     // output vectors
 
-    imgoutcA->datatype = _DATATYPE_FLOAT;
-    imgoutcA->naxis = 2;
-    imgoutcA->size[0] = NBmodesA;
-    imgoutcA->size[1] = 1;
+    imgoutcA->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutcA->mdt->naxis = 2;
+    imgoutcA->mdt->size[0] = NBmodesA;
+    imgoutcA->mdt->size[1] = 1;
     printf("CREATING %s\n", imgoutcA->name);
     fflush(stdout);
     createimagefromIMGID(imgoutcA);
 
 
-    imgoutcB->datatype = _DATATYPE_FLOAT;
-    imgoutcB->naxis = 2;
-    imgoutcB->size[0] = NBmodesA;
-    imgoutcB->size[1] = 1;
+    imgoutcB->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutcB->mdt->naxis = 2;
+    imgoutcB->mdt->size[0] = NBmodesA;
+    imgoutcB->mdt->size[1] = 1;
     printf("CREATING %s\n", imgoutcB->name);
     fflush(stdout);
     createimagefromIMGID(imgoutcB);
-
-
-
-
-
 
 
     // A->B coeff remapping matrix
@@ -224,13 +164,11 @@ errno_t PCAmatch(
     }
 
 
-
-
     // residual0
-    IMGID imgimres0  = mkIMGID_from_name("imres0");
-    imgimres0.naxis   = 2;
-    imgimres0.size[0] = imgmodesA.md->size[0];
-    imgimres0.size[1] = imgmodesA.md->size[1];
+    IMGID imgimres0  = imgid_make_from_name("imres0");
+    imgimres0.mdt->naxis   = 2;
+    imgimres0.mdt->size[0] = imgmodesA.md->size[0];
+    imgimres0.mdt->size[1] = imgmodesA.md->size[1];
     createimagefromIMGID(&imgimres0);
 
     double resim0 = 0.0;
@@ -242,9 +180,6 @@ errno_t PCAmatch(
         resim0 += vdiff*vdiff;
         imgimres0.im->array.F[ii] =  vdiff;
     }
-
-
-
 
 
     // project to B
@@ -294,7 +229,6 @@ errno_t PCAmatch(
         }
 
 
-
         // project to B
         computeSGEMM(
             imgAtoB,
@@ -330,9 +264,6 @@ errno_t PCAmatch(
     }
 
 
-
-
-
     // compute output images
     computeSGEMM(
         imgmodesA,
@@ -351,11 +282,10 @@ errno_t PCAmatch(
     );
 
 
-
-    IMGID imgimres  = mkIMGID_from_name("imres");
-    imgimres.naxis   = 2;
-    imgimres.size[0] = imgmodesA.md->size[0];
-    imgimres.size[1] = imgmodesA.md->size[1];
+    IMGID imgimres  = imgid_make_from_name("imres");
+    imgimres.mdt->naxis   = 2;
+    imgimres.mdt->size[0] = imgmodesA.md->size[0];
+    imgimres.mdt->size[1] = imgmodesA.md->size[1];
     createimagefromIMGID(&imgimres);
 
     double resim = 0.0;
@@ -372,8 +302,10 @@ errno_t PCAmatch(
     printf("GAIN = %f\n", resim0/resim);
     printf("\n");
 
-
-
+    imgid_free(&imgAtoB);
+    imgid_free(&imgBtoA);
+    imgid_free(&imgimres0);
+    imgid_free(&imgimres);
 
 
     DEBUG_TRACE_FEXIT();
@@ -381,19 +313,15 @@ errno_t PCAmatch(
 }
 
 
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imgmodesA = mkIMGID_from_name(modesA);
-    resolveIMGID(&imgmodesA, ERRMODE_ABORT);
+    IMGID imgmodesA = imgid_make_from_name(modesA);
+    resolveIMGID(&imgmodesA, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imgmodesB = mkIMGID_from_name(modesB);
-    resolveIMGID(&imgmodesB, ERRMODE_ABORT);
+    IMGID imgmodesB = imgid_make_from_name(modesB);
+    resolveIMGID(&imgmodesB, ERRMODE_ABORT, dcimg, dcnimg);
 
     printf("Modes images IDs : %ld %ld\n", imgmodesA.ID, imgmodesB.ID);
     fflush(stdout);
@@ -401,20 +329,20 @@ static errno_t compute_function()
 
     printf("outcoeffA = %s\n", outcoeffA);
     fflush(stdout);
-    IMGID imgoutcA  = mkIMGID_from_name(outcoeffA);
+    IMGID imgoutcA  = imgid_make_from_name(outcoeffA);
 
     printf("outcoeffB = %s\n", outcoeffB);
     fflush(stdout);
-    IMGID imgoutcB  = mkIMGID_from_name(outcoeffB);
+    IMGID imgoutcB  = imgid_make_from_name(outcoeffB);
 
 
     printf("imgoutimA = %s\n", outimA);
     fflush(stdout);
-    IMGID imgoutimA  = mkIMGID_from_name(outimA);
+    IMGID imgoutimA  = imgid_make_from_name(outimA);
 
     printf("imgoutimB = %s\n", outimB);
     fflush(stdout);
-    IMGID imgoutimB  = mkIMGID_from_name(outimB);
+    IMGID imgoutimB  = imgid_make_from_name(outimB);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -433,30 +361,58 @@ static errno_t compute_function()
             *GPUdevice
         );
 
-        processinfo_update_output_stream(processinfo, imgoutcA.ID);
-        processinfo_update_output_stream(processinfo, imgoutcB.ID);
-        //processinfo_update_output_stream(processinfo, imgoutimA.ID);
-        //processinfo_update_output_stream(processinfo, imgoutimB.ID);
+        processinfo_update_output_stream(processinfo, imgoutcA.im, NULL);
+        processinfo_update_output_stream(processinfo, imgoutcB.im, NULL);
+        //processinfo_update_output_stream(processinfo, imgoutimA.im, NULL);
+        //processinfo_update_output_stream(processinfo, imgoutimB.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imgmodesA);
+    imgid_free(&imgmodesB);
+    imgid_free(&imgoutcA);
+    imgid_free(&imgoutcB);
+    imgid_free(&imgoutimA);
+    imgid_free(&imgoutimB);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-
-INSERT_STD_FPSCLIfunctions
-
-
-errno_t CLIADDCMD_linalgebra__PCAmatch()
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
-    INSERT_STD_CLIREGISTERFUNC
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_linalgebra__PCAmatch()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
 

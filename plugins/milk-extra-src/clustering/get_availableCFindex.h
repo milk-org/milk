@@ -1,3 +1,8 @@
+/**
+ * @file get_availableCFindex.h
+ * @brief Get availablecfindex module
+ */
+
 #ifndef CLUSTERING__GET_AVAILABLECFINDEX_H
 #define CLUSTERING__GET_AVAILABLECFINDEX_H
 

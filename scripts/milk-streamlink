@@ -14,7 +14,7 @@ Reads conf/streamlink.<streamname>.name.txt to identify source stream
 
 Reads conf/streamlink.<streamname>.name.txt to identify source stream.
   - Create $MILK_SHM_DIR/<streamname>.im.shm that points to $MI_SHM_DIR/<sourcestream>.im.shm
-  - If stream exists, runs milk, connects to <streamname> and writes its size to ./conf/streamlink.<streamname>.imsize.txt
+  - If stream exists, runs milk-cli, connects to <streamname> and writes its size to ./conf/streamlink.<streamname>.imsize.txt
 "
 
 # standard configuration
@@ -23,7 +23,7 @@ source milk-script-std-config
 
 # prerequisites
 #
-RequiredCommands=( milk )
+RequiredCommands=( milk-cli )
 RequiredFiles=()
 RequiredDirs=()
 
@@ -90,7 +90,7 @@ echo "    Linking ${linkstreamname}: ln -s $SHMDIR/${streamname}.im.shm ${fullli
 
 if [ -e $SHMDIR/${streamname}.im.shm ]; then
 
-milk << EOF
+milk-cli << EOF
 readshmim ${streamname}
 readshmimsize ${streamname} "./conf/streamlink.${linkstreamname}.imsize.txt"
 exitCLI

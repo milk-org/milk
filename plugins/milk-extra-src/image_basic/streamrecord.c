@@ -1,105 +1,161 @@
-/** @file streamrecord.c
+/**
+ * @file streamrecord.c
+ * @brief Record stream of images
  */
 
 #include <sched.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID IMAGE_BASIC_streamrecord(
+    const char *__restrict streamname,
+    long NBframes,
+    const char *__restrict IDname);
 
-imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
-                                 long NBframes,
-                                 const char *__restrict IDname);
+static char p_stream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imstream";
+static long long p_nframes = 100;
+static char p_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imrec";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgstreamrec",
+    .cmdkey      = "imgstreamrec",
+    .description =
+        "record stream of images"
+};
 
-static errno_t IMAGE_BASIC_streamrecord_cli()
+#define FPS_PARAMS(X) \
+    X(".stream", p_stream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".nframes", &p_nframes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of frames") \
+    X(".out_name", p_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 2) + CLI_checkarg(3, 3) == 0)
-    {
-        IMAGE_BASIC_streamrecord(data.cmdargtoken[1].val.string,
-                                 data.cmdargtoken[2].val.numl,
-                                 data.cmdargtoken[3].val.string);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) streamrecord_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
-
-    RegisterCLIcommand("imgstreamrec",
-                       __FILE__,
-                       IMAGE_BASIC_streamrecord_cli,
-                       "record stream of images",
-                       "<stream> <# frames> <output>",
-                       "imgstreamrec imstream 100 imrec",
-                       "long IMAGE_BASIC_streamrecord(const char *streamname, "
-                       "long NBframes, const char *IDname)");
-
+    IMAGE_BASIC_streamrecord(
+        p_stream, (long) p_nframes, p_out);
     return RETURN_SUCCESS;
 }
 
-// works only for floats
-//
-imageID IMAGE_BASIC_streamrecord(const char *__restrict streamname,
-                                 long NBframes,
-                                 const char *__restrict IDname)
+static errno_t CLIfunction(void)
 {
-    imageID       ID;
-    imageID       IDstream;
-    long          xsize, ysize, zsize, xysize;
-    unsigned long cnt;
-    long          waitdelayus = 50;
-    long          kk;
-    char         *ptr;
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-    IDstream = image_ID(streamname);
-    xsize    = data.image[IDstream].md[0].size[0];
-    ysize    = data.image[IDstream].md[0].size[1];
-    zsize    = NBframes;
-    xysize   = xsize * ysize;
+errno_t
+CLIADDCMD_image_basic__streamrecord()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
 
-    create_3Dimage_ID(IDname, xsize, ysize, zsize, &ID);
-    cnt = data.image[IDstream].md[0].cnt0;
+/**
+ * Record NBframes from a float stream
+ * into a 3D cube.
+ */
+imageID IMAGE_BASIC_streamrecord(
+    const char *__restrict streamname,
+    long NBframes,
+    const char *__restrict IDname)
+{
+    IMGID imgin =
+        imgid_make_from_name(streamname);
+    resolveIMGID(&imgin, ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    kk = 0;
+    long xsize  = imgin.md->size[0];
+    long ysize  = imgin.md->size[1];
+    long xysize = xsize * ysize;
 
-    ptr = (char *) data.image[ID].array.F;
+    IMGID imgout =
+        imgid_make_from_name_3D(
+            IDname,
+            xsize, ysize, NBframes);
+    imgout.mdt->shared = 0;
+    imgout.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgout);
+
+    unsigned long cnt = imgin.md->cnt0;
+    long kk = 0;
+    long waitdelayus = 50;
+
+    char *ptr =
+        (char *) imgout.im->array.F;
     while(kk != NBframes)
     {
-        while(cnt > data.image[IDstream].md[0].cnt0)
+        while(cnt > imgin.md->cnt0)
         {
             usleep(waitdelayus);
         }
 
         cnt++;
 
-        printf("\r%ld / %ld  [%ld %ld]      ",
-               kk,
-               NBframes,
+        printf("\r%ld / %ld  [%lu %lu]"
+               "      ",
+               kk, NBframes,
                cnt,
-               data.image[ID].md[0].cnt0);
+               imgout.md->cnt0);
         fflush(stdout);
 
-        memcpy(ptr, data.image[IDstream].array.F, sizeof(float) * xysize);
+        memcpy(ptr,
+               imgin.im->array.F,
+               sizeof(float) * xysize);
         ptr += sizeof(float) * xysize;
         kk++;
     }
     printf("\n\n");
 
-    return ID;
+    return imgout.ID;
 }

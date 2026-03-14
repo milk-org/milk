@@ -1,96 +1,65 @@
 /** @file extract_RGGBchan.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static char *inim;
-static long  fpi_inim;
-
-static char *outimR;
-static long  fpi_outimR;
-
-static char *outimG1;
-static long  fpi_outimG1;
-
-static char *outimG2;
-static long  fpi_outimG2;
-
-static char *outimB;
-static long  fpi_outimB;
-
-
-
-
-static CLICMDARGDEF farg[] = {{
-        CLIARG_STR,
-        ".inim",
-        "input RGGB image",
-        "inim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inim,
-        &fpi_inim
-    },
-    {
-        CLIARG_STR,
-        ".outimR",
-        "output R image",
-        "inim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimR,
-        &fpi_outimR
-    },
-    {
-        CLIARG_STR,
-        ".outimG1",
-        "output G1 image",
-        "outimG1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimG1,
-        &fpi_outimG1
-    },
-    {
-        CLIARG_STR,
-        ".outimG2",
-        "output G2 image",
-        "outimG2",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimG2,
-        &fpi_outimG2
-    },
-    {
-        CLIARG_STR,
-        ".outimB",
-        "output B image",
-        "outimB",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimB,
-        &fpi_outimB
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "extractRGGBchan",
+    .cmdkey      = "extractRGGBchan",
+    .description = "extract RGGB channels from color image"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inim = NULL;
+static char * outimR = NULL;
+static char * outimG1 = NULL;
+static char * outimG2 = NULL;
+static char * outimB = NULL;
 
 
-static CLICMDDATA CLIcmddata = {"extractRGGBchan",
-                                "extract RGGB channels from color image",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &inim, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input RGGB image") \
+    X(".outimR", &outimR, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output R image") \
+    X(".outimG1", &outimG1, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output G1 image") \
+    X(".outimG2", &outimG2, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output G2 image") \
+    X(".outimB", &outimB, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output B image")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
-
-
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /*
     IMGID imgoutR,
@@ -109,39 +78,37 @@ errno_t image_format_extract_RGGBchan(
     DEBUG_TRACE_FSTART();
 
     // input image is required
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
 
+    imgid_copy(&imgin, &imgoutR);
+    imgoutR.mdt->size[0] = imgin.md->size[0] / 2;
+    imgoutR.mdt->size[1] = imgin.md->size[1] / 2;
 
-    copyIMGID(&imgin, &imgoutR);
-    imgoutR.size[0] = imgin.size[0] / 2;
-    imgoutR.size[1] = imgin.size[1] / 2;
-
-    copyIMGID(&imgoutR, &imgoutG1);
-    copyIMGID(&imgoutR, &imgoutG2);
-    copyIMGID(&imgoutR, &imgoutB);
+    imgid_copy(&imgoutR, &imgoutG1);
+    imgid_copy(&imgoutR, &imgoutG2);
+    imgid_copy(&imgoutR, &imgoutB);
 
     createimagefromIMGID(&imgoutR);
     createimagefromIMGID(&imgoutG1);
     createimagefromIMGID(&imgoutG2);
     createimagefromIMGID(&imgoutB);
 
-    uint32_t xsize = imgin.size[0];
+    uint32_t xsize = imgin.md->size[0];
 
     list_image_ID();
 
 
-
-    switch(imgin.datatype)
+    switch(imgin.md->datatype)
     {
 
         case _DATATYPE_FLOAT:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.F[pixi] =
                         imgin.im->array.F[(jj1 + 1) * xsize + ii1];
@@ -155,12 +122,12 @@ errno_t image_format_extract_RGGBchan(
             break;
 
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.D[pixi] =
                         imgin.im->array.D[(jj1 + 1) * xsize + ii1];
@@ -175,12 +142,12 @@ errno_t image_format_extract_RGGBchan(
 
 
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0; ii < imgoutR.size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.size[1]; jj++)
+            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
+                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.size[0] + ii;
+                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
 
                     imgoutR.im->array.UI16[pixi] =
                         imgin.im->array.UI16[(jj1 + 1) * xsize + ii1];
@@ -200,27 +167,31 @@ errno_t image_format_extract_RGGBchan(
 }
 
 
-
-
 /**
  * @brief Wrapper function, used by all CLI calls
  *
  * INSERT_STD_PROCINFO statements enable processinfo support
  */
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    image_format_extract_RGGBchan(mkIMGID_from_name(inim),
-                                  mkIMGID_from_name(outimR),
-                                  mkIMGID_from_name(outimG1),
-                                  mkIMGID_from_name(outimG2),
-                                  mkIMGID_from_name(outimB));
+    IMGID img_in = imgid_make_from_name(inim);
+    IMGID img_outR = imgid_make_from_name(outimR);
+    IMGID img_outG1 = imgid_make_from_name(outimG1);
+    IMGID img_outG2 = imgid_make_from_name(outimG2);
+    IMGID img_outB = imgid_make_from_name(outimB);
 
+    image_format_extract_RGGBchan(img_in, img_outR, img_outG1, img_outG2, img_outB);
+
+    imgid_free(&img_in);
+    imgid_free(&img_outR);
+    imgid_free(&img_outG1);
+    imgid_free(&img_outG2);
+    imgid_free(&img_outB);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
@@ -229,17 +200,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_image_format__extractRGGBchan()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

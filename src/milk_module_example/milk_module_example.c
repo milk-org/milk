@@ -11,7 +11,7 @@
  * > cmake .. -DEXTRAMODULES="milk_module_example" -DINSTALLMAKEDEFAULT=ON
  *
  *
- * To load, type "mload milkmilkmoduleexample" in CLI\n
+ * To load, type "mload milkmilk_module_example" in CLI\n
  *
  *
  *  Files
@@ -60,8 +60,7 @@
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
 
-
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 //
 // Forward declarations are required to connect CLI calls to functions
@@ -71,6 +70,7 @@
 #include "examplefunc2_FPS.h"
 #include "examplefunc3_updatestreamloop.h"
 #include "examplefunc4_streamprocess.h"
+#include "fps_cli_poc.h"
 
 
 // Module initialization macro in CLIcore.h
@@ -92,6 +92,7 @@ static errno_t init_module_CLI()
     CLIADDCMD_milk_module_example__simplefunc_FPS();
     CLIADDCMD_milk_module_example__updatestreamloop();
     CLIADDCMD_milk_module_example__streamprocess();
+    CLIADDCMD_milk_module_example__fpscli();
 
     // optional: add atexit functions here
 

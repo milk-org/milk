@@ -1,146 +1,225 @@
-/** @file imresize.c
+/**
+ * @file    imresize.c
+ * @brief   Resize 2D image
+ *
+ * Uses FPS V2 framework.
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "imresize.h"
+#include "fps.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
 
-long basic_resizeim(const char *imname_in,
-                    const char *imname_out,
-                    long        xsizeout,
-                    long        ysizeout);
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "resizeim",
+    .cmdkey      = "resizeim",
+    .description = "resize 2D image"
+};
 
-errno_t image_basic_resize_cli()
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char imresize_inimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static char imresize_outimname[
+    FUNCTION_PARAMETER_STRMAXLEN];
+static int64_t imresize_xsize = 64;
+static int64_t imresize_ysize = 64;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", imresize_inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", imresize_outimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".xsize", &imresize_xsize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "new x size") \
+    X(".ysize", &imresize_ysize, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "new y size")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+static void imresize_step(
+    IMAGE *imgin,
+    IMAGE *imgout)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 2) +
-            CLI_checkarg(4, 2) ==
-            0)
+    uint32_t nx_in  = imgin->md[0].size[0];
+    uint32_t ny_in  = imgin->md[0].size[1];
+    uint32_t nx_out = imgout->md[0].size[0];
+    uint32_t ny_out = imgout->md[0].size[1];
+
+    if (imgin->md[0].datatype
+        != _DATATYPE_FLOAT)
     {
-        basic_resizeim(data.cmdargtoken[1].val.string,
-                       data.cmdargtoken[2].val.string,
-                       data.cmdargtoken[3].val.numl,
-                       data.cmdargtoken[4].val.numl);
-        return CLICMD_SUCCESS;
+        return;
     }
-    else
+
+    for (uint32_t ii = 0;
+         ii < nx_out; ii++)
     {
-        return CLICMD_INVALID_ARG;
+        for (uint32_t jj = 0;
+             jj < ny_out; jj++)
+        {
+            float xf1 =
+                (float) ii * nx_in / nx_out;
+            float yf1 =
+                (float) jj * ny_in / ny_out;
+            long ii1 = (long) xf1;
+            long jj1 = (long) yf1;
+            float uf = xf1 - (float) ii1;
+            float tf = yf1 - (float) jj1;
+
+            if ((ii1 >= 0)
+                && (ii1 + 1 < (long) nx_in)
+                && (jj1 >= 0)
+                && (jj1 + 1 < (long) ny_in))
+            {
+                float v00 = imgin->array.F[
+                    jj1 * nx_in + ii1];
+                float v01 = imgin->array.F[
+                    (jj1 + 1) * nx_in + ii1];
+                float v10 = imgin->array.F[
+                    jj1 * nx_in + ii1 + 1];
+                float v11 = imgin->array.F[
+                    (jj1 + 1) * nx_in
+                    + ii1 + 1];
+                imgout->array.F[
+                    jj * nx_out + ii] =
+                    v00 * (1 - uf) * (1 - tf)
+                    + v10 * uf * (1 - tf)
+                    + v01 * (1 - uf) * tf
+                    + v11 * uf * tf;
+            } else {
+                imgout->array.F[
+                    jj * nx_out + ii] = 0.0;
+            }
+        }
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
 
-errno_t imresize_addCLIcmd()
+/* =========================================
+ * Public convenience function
+ * ========================================= */
+
+#ifndef FPS_STANDALONE
+long basic_resizeim(
+    const char *imname_in,
+    const char *imname_out,
+    long        xsizeout,
+    long        ysizeout)
 {
+    IMGID in =
+        imgid_make_from_name(imname_in);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        dcimg, dcnimg);
+    IMGID out = stream_connect_create_2Df32(
+        imname_out, xsizeout, ysizeout);
+    imresize_step(in.im, out.im);
+    ImageStreamIO_UpdateIm(out.im);
+    return 0;
+}
+#endif
 
-    RegisterCLIcommand("resizeim",
-                       __FILE__,
-                       image_basic_resize_cli,
-                       "resize 2D image",
-                       "<image in> <output image> <new x size> <new y size>",
-                       "resizeim im1 im2 230 200",
-                       "long basic_resizeim(const char *imname_in, const char "
-                       "*imname_out, long xsizeout, long ysizeout)");
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static MILK_HOT errno_t compute_function()
+{
+    IMGID in =
+        imgid_make_from_name(
+            imresize_inimname);
+    resolveIMGID(
+        &in, ERRMODE_ABORT,
+        dcimg, dcnimg);
+    IMGID out = stream_connect_create_2Df32(
+        imresize_outimname,
+        imresize_xsize, imresize_ysize);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    imresize_step(in.im, out.im);
+    processinfo_update_output_stream(
+        processinfo, out.im, in.im);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     return RETURN_SUCCESS;
 }
 
-/* ----------------------------------------------------------------------
- *
- * resize image using bilinear interpolation
- *
- *
- * ---------------------------------------------------------------------- */
 
-long basic_resizeim(const char *imname_in,
-                    const char *imname_out,
-                    long        xsizeout,
-                    long        ysizeout)
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
-    imageID  ID, IDout;
-    long     naxis = 2;
-    uint32_t naxes[2];
-    uint32_t naxesout[2];
-    float    xf, yf, xf1, yf1, uf, tf, v00f, v01f, v10f, v11f;
-    double   xd, yd, xd1, yd1, ud, td, v00d, v01d, v10d, v11d;
-    uint8_t  datatype;
-    long     ii, jj, ii1, jj1;
-
-    ID          = image_ID(imname_in);
-    datatype    = data.image[ID].md[0].datatype;
-    naxes[0]    = data.image[ID].md[0].size[0];
-    naxes[1]    = data.image[ID].md[0].size[1];
-    naxesout[0] = xsizeout;
-    naxesout[1] = ysizeout;
-
-    if(datatype == _DATATYPE_FLOAT)
-    {
-        create_image_ID(imname_out, naxis, naxesout, datatype, 0, 0, 0, &IDout);
-        for(ii = 0; ii < naxesout[0]; ii++)
-            for(jj = 0; jj < naxesout[1]; jj++)
-            {
-                xf  = (float)(1.0 * ii / naxesout[0]);
-                yf  = (float)(1.0 * jj / naxesout[1]);
-                xf1 = xf * (float) naxes[0];
-                yf1 = yf * (float) naxes[1];
-                ii1 = (long) xf1;
-                jj1 = (long) yf1;
-                uf  = xf1 - (float) ii1;
-                tf  = yf1 - (float) jj1;
-                if((ii1 > -1) && (ii1 + 1 < naxes[0]) && (jj1 > -1) &&
-                        (jj1 + 1 < naxes[1]))
-                {
-                    v00f = data.image[ID].array.F[jj1 * naxes[0] + ii1];
-                    v01f = data.image[ID].array.F[(jj1 + 1) * naxes[0] + ii1];
-                    v10f = data.image[ID].array.F[jj1 * naxes[0] + ii1 + 1];
-                    v11f =
-                        data.image[ID].array.F[(jj1 + 1) * naxes[0] + ii1 + 1];
-                    data.image[IDout].array.F[jj * naxesout[0] + ii] =
-                        (float)(v00f * (1.0 - uf) * (1.0 - tf) +
-                                v10f * uf * (1.0 - tf) +
-                                v01f * (1.0 - uf) * tf + v11f * uf * tf);
-                }
-            }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-        create_image_ID(imname_out, naxis, naxesout, datatype, 0, 0, 0, &IDout);
-        for(ii = 0; ii < naxesout[0] - 1; ii++)
-            for(jj = 0; jj < naxesout[1] - 1; jj++)
-            {
-                xd   = 1.0 * ii / naxesout[0];
-                yd   = 1.0 * jj / naxesout[1];
-                xd1  = xd * naxes[0];
-                yd1  = yd * naxes[1];
-                ii1  = (long) xd1;
-                jj1  = (long) yd1;
-                ud   = xd1 - (float) ii1;
-                td   = yd1 - (float) jj1;
-                v00d = data.image[ID].array.D[jj1 * naxes[0] + ii1];
-                v01d = data.image[ID].array.D[(jj1 + 1) * naxes[0] + ii1];
-                v10d = data.image[ID].array.D[jj1 * naxes[0] + ii1 + 1];
-                v11d = data.image[ID].array.D[(jj1 + 1) * naxes[0] + ii1 + 1];
-                data.image[IDout].array.D[jj * naxesout[0] + ii] =
-                    (double)(v00d * (1.0 - ud) * (1.0 - td) +
-                             v10d * ud * (1.0 - td) + v01d * (1.0 - ud) * td +
-                             v11d * ud * td);
-            }
-    }
-    else
-    {
-        PRINT_ERROR("Wrong image type(s)\n");
-        exit(0);
-    }
-
-    return (0);
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
 }
+
+errno_t CLIADDCMD_image_basic__imresize()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
+    return RETURN_SUCCESS;
+}
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

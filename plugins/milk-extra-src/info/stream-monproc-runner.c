@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include <string.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "stream_monproc.h"
 
 // External initialization functions from CLIcore

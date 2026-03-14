@@ -1,5 +1,17 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6484ee6d80a84008a47dc1b2332d3845)](https://www.codacy.com/gh/milk-org/psf?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/psf&amp;utm_campaign=Badge_Grade)
+# Module: psf
 
-# Module psf {#page_module_psf}
+Point Spread Function (PSF) analysis, including chromatic
+PSF generation, centroiding, FWHM measurement, encircled
+energy computation, and PSF sequence analysis.
 
-Point Spread Function (PSF) analysis
+## Source Files
+
+| File | Description |
+|------|-------------|
+| `psf.c` | Chromatic PSF generation, disk-center finding, photocenter measurement, FWHM measurement, encircled energy, PSF centering, and PSF sequence analysis |
+
+## Dependencies
+
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `COREMOD_arith`, `COREMOD_iofits`, `COREMOD_memory`, `COREMOD_tools`
+- `fft`, `image_basic`, `image_filter`, `image_gen`

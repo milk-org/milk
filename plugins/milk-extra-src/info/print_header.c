@@ -1,9 +1,21 @@
+/**
+ * @file print_header.c
+ * @brief Print header module
+ */
+
 /** @file print_header.c
  */
 
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#else
+#define printw(...) printf(__VA_ARGS__)
+#define attron(a)
+#define attroff(a)
+#define A_BOLD 0
+#endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 extern int infoscreen_wcol;
 extern int infoscreen_wrow;

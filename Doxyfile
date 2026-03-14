@@ -1,0 +1,38 @@
+# Doxyfile for the milk project
+# Used by CI (doxygen.yml) to generate API docs
+# deployed to GitHub Pages.
+
+PROJECT_NAME           = "milk"
+PROJECT_BRIEF          = "Modular Image Processing Toolkit"
+
+OUTPUT_DIRECTORY       = docs/doxygen
+INPUT                  = src plugins README.md
+FILE_PATTERNS          = *.c *.h *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */build/* */_build/* */.git/*
+
+# Use the top-level README as the landing page
+USE_MDFILE_AS_MAINPAGE = README.md
+
+# C-optimized output
+OPTIMIZE_OUTPUT_FOR_C  = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+
+# Formatting
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+HTML_TIMESTAMP         = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+# Graphs (requires graphviz)
+HAVE_DOT               = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES

@@ -1,53 +1,101 @@
-/** @file streamfeed.c
+/**
+ * @file streamfeed.c
+ * @brief Feed stream of images
  */
 
 #include <sched.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
-long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
-                            const char *__restrict streamname,
-                            float frequ);
+// Forward declaration
+long IMAGE_BASIC_streamfeed(
+    const char *__restrict IDname,
+    const char *__restrict streamname,
+    float frequ);
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_stream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imstream";
+static double p_freq = 100.0;
 
-static errno_t image_basic_streamfeed_cli()
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgstreamfeed",
+    .cmdkey      = "imgstreamfeed",
+    .description = "feed stream of images"
+};
+
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image/cube") \
+    X(".stream", p_stream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output stream") \
+    X(".freq", &p_freq, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "frequency [Hz]")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 1) == 0)
-    {
-        IMAGE_BASIC_streamfeed(data.cmdargtoken[1].val.string,
-                               data.cmdargtoken[2].val.string,
-                               data.cmdargtoken[3].val.numf);
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t __attribute__((cold)) streamfeed_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
-    RegisterCLIcommand("imgstreamfeed",
-                       __FILE__,
-                       image_basic_streamfeed_cli,
-                       "feed stream of images",
-                       "<input image/cube> <stream> <fequ [Hz]>",
-                       "imgstreamfeed im imstream 100",
-                       "long IMAGE_BASIC_streamfeed(const char *IDname, const "
-                       "char *streamname, float frequ)");
+    IMAGE_BASIC_streamfeed(
+        p_in, p_stream, (float) p_freq);
+    return RETURN_SUCCESS;
+}
 
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_image_basic__streamfeed()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -71,21 +119,21 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     long               ii;
 
     schedpar.sched_priority = RT_priority;
-    if(seteuid(data.euid) != 0)  //This goes up to maximum privileges
+    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
     {
         PRINT_ERROR("seteuid error");
     }
     sched_setscheduler(0,
                        SCHED_FIFO,
                        &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(data.ruid) != 0)    //Go back to normal privileges
+    if(seteuid(dcruid) != 0)    //Go back to normal privileges
     {
         PRINT_ERROR("seteuid error");
     }
 
-    ID     = image_ID(IDname);
-    xsize  = data.image[ID].md[0].size[0];
-    ysize  = data.image[ID].md[0].size[1];
+    ID     = image_ID(IDname, dcimg, dcnimg);
+    xsize  = dcimg[ID].md[0].size[0];
+    ysize  = dcimg[ID].md[0].size[1];
     xysize = xsize * ysize;
 
     tdelay = (long)(1000000.0 / frequ);
@@ -93,48 +141,48 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     printf("frequ = %f Hz\n", frequ);
     printf("tdelay = %ld us\n", tdelay);
 
-    IDs = image_ID(streamname);
-    if((xsize != data.image[IDs].md[0].size[0]) ||
-            (ysize != data.image[IDs].md[0].size[1]))
+    IDs = image_ID(streamname, dcimg, dcnimg);
+    if((xsize != dcimg[IDs].md[0].size[0]) ||
+            (ysize != dcimg[IDs].md[0].size[1]))
     {
         printf("ERROR: images have different x and y sizes");
         exit(0);
     }
-    zsize = data.image[ID].md[0].size[2];
+    zsize = dcimg[ID].md[0].size[2];
 
-    ptr1 = (char *) data.image[IDs].array.F; // destination
+    ptr1 = (char *) dcimg[IDs].array.F; // destination
 
-    if(sigaction(SIGINT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGTERM, &data.sigact, NULL) == -1)
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGBUS, &data.sigact, NULL) == -1)
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGSEGV, &data.sigact, NULL) == -1)
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGABRT, &data.sigact, NULL) == -1)
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGHUP, &data.sigact, NULL) == -1)
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
     }
-    if(sigaction(SIGPIPE, &data.sigact, NULL) == -1)
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
     {
         perror("sigaction");
         exit(EXIT_FAILURE);
@@ -144,13 +192,13 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     loopOK = 1;
     while(loopOK == 1)
     {
-        ptr0 = (char *) data.image[ID].array.F;
+        ptr0 = (char *) dcimg[ID].array.F;
         ptr0 += sizeof(float) * xysize * k;
-        data.image[IDs].md[0].write = 1;
+        dcimg[IDs].md[0].write = 1;
         memcpy((void *) ptr1, (void *) ptr0, sizeof(float) * xysize);
 
-        data.image[IDs].md[0].write = 0;
-        data.image[IDs].md[0].cnt0++;
+        dcimg[IDs].md[0].write = 0;
+        dcimg[IDs].md[0].cnt0++;
         COREMOD_MEMORY_image_set_sempost_byID(IDs, -1);
 
         usleep(tdelay);
@@ -160,30 +208,30 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
             k = 0;
         }
 
-        if((data.signal_INT == 1) || (data.signal_TERM == 1) ||
-                (data.signal_ABRT == 1) || (data.signal_BUS == 1) ||
-                (data.signal_SEGV == 1) || (data.signal_HUP == 1) ||
-                (data.signal_PIPE == 1))
+        if((dcsigINT == 1) || (dcsigTERM == 1) ||
+                (dcsigABRT == 1) || (dcsigBUS == 1) ||
+                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
+                (dcsigPIPE == 1))
         {
             loopOK = 0;
         }
     }
 
-    data.image[IDs].md[0].write = 1;
+    dcimg[IDs].md[0].write = 1;
     for(ii = 0; ii < xysize; ii++)
     {
-        data.image[IDs].array.F[ii] = 0.0;
+        dcimg[IDs].array.F[ii] = 0.0f;
     }
-    if(data.image[IDs].md[0].sem > 0)
+    if(dcimg[IDs].md[0].sem > 0)
     {
-        semval = ImageStreamIO_semvalue(data.image+IDs, 0);
+        semval = ImageStreamIO_semvalue(dcimg+IDs, 0);
         if(semval < SEMAPHORE_MAXVAL)
         {
-            ImageStreamIO_sempost(data.image+IDs, 0);
+            ImageStreamIO_sempost(dcimg+IDs, 0);
         }
     }
-    data.image[IDs].md[0].write = 0;
-    data.image[IDs].md[0].cnt0++;
+    dcimg[IDs].md[0].write = 0;
+    dcimg[IDs].md[0].cnt0++;
 
     return (0);
 }

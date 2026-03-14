@@ -1,6 +1,11 @@
+/**
+ * @file write_clustCFave.c
+ * @brief Write clustcfave module
+ */
+
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "clustering_defs.h"
@@ -21,7 +26,7 @@ errno_t write_clustCFave(
 
             // WRITE CF ave file to disk
 
-            IMGID imgCFave = makeIMGID_2D("CFave", ctree->xsize, ctree->ysize);
+            IMGID imgCFave = imgid_make_from_name_2D("CFave", ctree->xsize, ctree->ysize);
             createimagefromIMGID(&imgCFave);
 
             uint64_t xysize = ctree->xsize;

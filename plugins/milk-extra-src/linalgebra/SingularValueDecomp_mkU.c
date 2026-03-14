@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file SingularValueDecomp_mkU.c
  *
@@ -7,114 +8,58 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "SGEMM.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *inmatM;
-static long  fpi_inmatM;
-
-static char *inmatV;
-static long  fpi_inmatV;
-
-// singular values
-static char *invecS;
-static long  fpi_invecS;
-
-static char *outmatU;
-static long  fpi_outmatU;
-
-static char *outmatUS;
-static long  fpi_outmatUS;
-
-static int32_t *GPUdevice;
-static long     fpi_GPUdevice;
-
-
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".inM",
-        "input matrix M",
-        "inM",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatM,
-        &fpi_inmatM
-    },
-    {
-        CLIARG_IMG,
-        ".inV",
-        "input matrix V",
-        "inV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatV,
-        &fpi_inmatV
-    },
-    {
-        CLIARG_IMG,
-        ".inS",
-        "input singular values vec",
-        "inS",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &invecS,
-        &fpi_invecS
-    },
-    {
-        // output U
-        CLIARG_STR,
-        ".outU",
-        "output U",
-        "outU",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outmatU,
-        &fpi_outmatU
-    },
-    {
-        // output US
-        CLIARG_STR,
-        ".outUS",
-        "output US",
-        "outU",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outmatUS,
-        &fpi_outmatUS
-    },
-    {
-        // using GPU (99 : no GPU, otherwise GPU device)
-        CLIARG_INT32,
-        ".GPUdevice",
-        "GPU device, 99 for CPU",
-        "-1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUdevice,
-        &fpi_GPUdevice
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "SVDmkU",
+    .cmdkey      = "SVDmkU",
+    .description = "compute SVD U"
 };
 
 
-static CLICMDDATA CLIcmddata =
-{
-    "SVDmkU", "compute SVD U", CLICMD_FIELDS_DEFAULTS
-};
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inmatM = NULL;
+static char * inmatV = NULL;
+static char * invecS = NULL;
+static char * outmatU = NULL;
+static char * outmatUS = NULL;
+static int32_t * GPUdevice = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-static errno_t help_function()
-{
-    printf("Compute SVD's U from M, V and S\n");
+#define FPS_PARAMS(X) \
+    X(".inM", &inmatM, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix M") \
+    X(".inV", &inmatV, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input matrix V") \
+    X(".inS", &invecS, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input singular values vec")
 
-    return RETURN_SUCCESS;
-}
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 errno_t compute_SVDU(
     IMGID    imgM,
@@ -127,9 +72,9 @@ errno_t compute_SVDU(
 {
     DEBUG_TRACE_FSTART();
 
-    resolveIMGID(&imgM, ERRMODE_ABORT);
-    resolveIMGID(&imgV, ERRMODE_ABORT);
-    resolveIMGID(&imgS, ERRMODE_ABORT);
+    resolveIMGID(&imgM, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgV, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(&imgS, ERRMODE_ABORT, dcimg, dcnimg);
 
     computeSGEMM(
         imgM,
@@ -148,21 +93,21 @@ errno_t compute_SVDU(
 
     uint64_t framesize;
     uint32_t nbframe;
-    imgU->naxis = imgUS->naxis;
-    imgU->datatype = imgUS->md->datatype;
+    imgU->mdt->naxis = imgUS->md->naxis;
+    imgU->mdt->datatype = imgUS->md->datatype;
     switch(imgUS->md->naxis)
     {
     case 2 :
-        imgU->size[0] = imgUS->md->size[0];
-        imgU->size[1] = imgUS->md->size[1];
+        imgU->mdt->size[0] = imgUS->md->size[0];
+        imgU->mdt->size[1] = imgUS->md->size[1];
         framesize = imgUS->md->size[0];
         nbframe = imgUS->md->size[1];
         break;
 
     case 3 :
-        imgU->size[0] = imgUS->md->size[0];
-        imgU->size[1] = imgUS->md->size[1];
-        imgU->size[2] = imgUS->md->size[2];
+        imgU->mdt->size[0] = imgUS->md->size[0];
+        imgU->mdt->size[1] = imgUS->md->size[1];
+        imgU->mdt->size[2] = imgUS->md->size[2];
         framesize = imgUS->md->size[0] * imgUS->md->size[1];
         nbframe = imgUS->md->size[2];
         break;
@@ -191,26 +136,22 @@ errno_t compute_SVDU(
 }
 
 
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginM = mkIMGID_from_name(inmatM);
-    resolveIMGID(&imginM, ERRMODE_ABORT);
+    IMGID imginM = imgid_make_from_name(inmatM);
+    resolveIMGID(&imginM, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imginV = mkIMGID_from_name(inmatV);
-    resolveIMGID(&imginV, ERRMODE_ABORT);
+    IMGID imginV = imgid_make_from_name(inmatV);
+    resolveIMGID(&imginV, ERRMODE_ABORT, dcimg, dcnimg);
 
-    IMGID imginS = mkIMGID_from_name(invecS);
-    resolveIMGID(&imginS, ERRMODE_ABORT);
+    IMGID imginS = imgid_make_from_name(invecS);
+    resolveIMGID(&imginS, ERRMODE_ABORT, dcimg, dcnimg);
 
 
-    IMGID imgoutU  = mkIMGID_from_name(outmatU);
-    IMGID imgoutUS  = mkIMGID_from_name(outmatUS);
+    IMGID imgoutU  = imgid_make_from_name(outmatU);
+    IMGID imgoutUS  = imgid_make_from_name(outmatUS);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -220,34 +161,55 @@ static errno_t compute_function()
     {
 
         compute_SVDU(imginM, imginV, imginS, &imgoutU, &imgoutUS, *GPUdevice);
-        processinfo_update_output_stream(processinfo, imgoutU.ID);
-        processinfo_update_output_stream(processinfo, imgoutUS.ID);
+        processinfo_update_output_stream(processinfo, imgoutU.im, NULL);
+        processinfo_update_output_stream(processinfo, imgoutUS.im, NULL);
 
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginM);
+    imgid_free(&imginV);
+    imgid_free(&imginS);
+    imgid_free(&imgoutU);
+    imgid_free(&imgoutUS);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__compSVDU()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

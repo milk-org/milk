@@ -1,3 +1,8 @@
+/**
+ * @file ZernikePolyn.h
+ * @brief Zernikepolyn module
+ */
+
 #ifndef _ZERNIKEPOLYN_H
 #define _ZERNIKEPOLYN_H
 
