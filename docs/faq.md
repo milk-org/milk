@@ -7,7 +7,7 @@ running `milk`.
 
 ## 1. Installation
 
-<details>
+<details markdown="1">
 <summary><b>CMake cannot find cfitsio</b></summary>
 
 ```
@@ -33,7 +33,7 @@ See [Build Tiers](install/build_tiers.md) and
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Build fails with missing readline/ncurses</b></summary>
 
 ```
@@ -51,7 +51,7 @@ $ cmake .. -DUSE_CLI=OFF
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Library not found at runtime</b></summary>
 
 ```
@@ -78,7 +78,7 @@ export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 See also: [Streams](streams.md)
 
-<details>
+<details markdown="1">
 <summary><b>Permission denied when accessing /milk/shm</b></summary>
 
 ```
@@ -99,7 +99,7 @@ $ sudo mount /milk/shm
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Stale shared memory files</b></summary>
 
 Old `.im.shm` files from crashed processes can interfere.
@@ -112,7 +112,7 @@ $ milk-shmim-rm <streamname>   # remove a specific stream
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>SHM directory location</b></summary>
 
 The default shared memory directory is `/milk/shm`. Override with:
@@ -130,7 +130,7 @@ See also: [FPS](fps.md) ·
 [Process Info](procinfo.md) ·
 [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
-<details>
+<details markdown="1">
 <summary><b>FPS process won't start — "FPS already exists"</b></summary>
 
 ```
@@ -144,7 +144,7 @@ $ milk-fps-set <fpsname> ..delete
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>milk-fpsCTRL shows no processes</b></summary>
 
 Ensure the processinfo SHM directory exists and processes are
@@ -156,7 +156,7 @@ $ milk-procinfo-list             # scan for processes
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>tmux dispatch not working</b></summary>
 
 If standalone executables launched with `-tmux` don't appear:
@@ -173,7 +173,7 @@ If standalone executables launched with `-tmux` don't appear:
 
 See also: [CLI Reference](cli/CLIcore.md)
 
-<details>
+<details markdown="1">
 <summary><b>milk-cli prompt jumps to bottom of terminal</b></summary>
 
 This can happen when the startup banner clears the screen.
@@ -183,7 +183,7 @@ stabilize after the first command.
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Command not found — "Unknown command"</b></summary>
 
 ```
@@ -205,7 +205,7 @@ file is in the library path.
 
 ## 5. Performance
 
-<details>
+<details markdown="1">
 <summary><b>Real-time scheduling</b></summary>
 
 For latency-critical applications (AO loops), configure
@@ -218,7 +218,7 @@ $ milk-cli -p 90               # launch with high priority
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Semaphore loop speed</b></summary>
 
 Benchmark semaphore performance:
