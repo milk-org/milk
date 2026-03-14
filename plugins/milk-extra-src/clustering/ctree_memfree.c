@@ -1,5 +1,10 @@
+/**
+ * @file ctree_memfree.c
+ * @brief Ctree memfree module
+ */
 
-#include "CommandLineInterface/CLIcore.h"
+
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 errno_t ctree_memfree(CLUSTERTREE *ctree)

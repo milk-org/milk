@@ -11,15 +11,21 @@
 
 #include <fftw3.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 
+#include "wisdom.h"
+
+#ifndef MILK_NO_CLI
 #include "dofft.h"
 #include "fftcorrelation.h"
 #include "ffttranslate.h"
 #include "init_fftwplan.h"
 #include "permut.h"
 #include "testfftspeed.h"
-#include "wisdom.h"
 
 #include "pup2foc.h"
 
@@ -45,12 +51,12 @@ static errno_t init_module_CLI()
     //fftwf_set_timelimit(1000.0);
     //fftw_set_timelimit(1000.0);
 
-    init_fftwplan_addCLIcmd();
-    permut_addCLIcmd();
-    dofft_addCLIcmd();
-    testfftspeed_addCLIcmd();
-    ffttranslate_addCLIcmd();
-    fftcorrelation_addCLIcmd();
+    CLIADDCMD_milkfft__init_fftwplan();
+    CLIADDCMD_milkfft__permut();
+    CLIADDCMD_milkfft__dofft();
+    CLIADDCMD_milkfft__testfftspeed();
+    CLIADDCMD_milkfft__ffttranslate();
+    CLIADDCMD_milkfft__fftcorrelation();
 
     CLIADDCMD_milk_fft__pup2foc();
 
@@ -75,6 +81,7 @@ static void __attribute__((destructor)) close_fftwlib()
 #endif
     }
 }
+#endif /* MILK_NO_CLI */
 
 int fft_setNthreads(__attribute__((unused)) int nt)
 {

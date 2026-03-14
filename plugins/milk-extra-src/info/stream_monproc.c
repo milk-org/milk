@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_monproc.c
  * @brief   monitor stream with multi-level time binning, circular buffer, and dynamic histogram
@@ -13,77 +14,83 @@
 #include <errno.h>
 #include <float.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "ImageStreamIO/ImageStreamIO.h"
-#include "CommandLineInterface/processtools_trigger.h"
+#include "CLIcore.h"
+
+#include <processtools_trigger.h>
+
+#include "streamtiming_stats.h"
 #include "stream_monproc.h"
 
-static char *inimname;
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streammon",
+    .cmdkey      = "streammon",
+    .description = "stream monitor with multi-level time binning and circular buffer"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char * inimname = NULL;
+static uint64_t * tbinflag = NULL;
+static uint32_t * cbbuffersize = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+// ----------------------------------------------------------------------------
+// Help
+// ----------------------------------------------------------------------------
 
 /**
- * @brief Time binning flag
+ * @brief Print help text for the stream monitor
  *
- * Each bit 'i' set in tbinflag enables a time bin of 2^i frames.
- * Example: tbinflag = 48 (binary 110000) enables bins of 16 (2^4) and 32 (2^5) frames.
+ * @return errno_t RETURN_SUCCESS
  */
-static uint64_t *tbinflag;
-static long     fpi_tbinflag = -1;
-
-static uint32_t *cbbuffersize;
-static long     fpi_cbbuffersize = -1;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_UINT64,
-        ".tbinflag",
-        "time binning flag (bit i sets bin 2^i)",
-        "48",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &tbinflag,
-        &fpi_tbinflag
-    },
-    {
-        CLIARG_UINT32,
-        ".cbsize",
-        "circular buffer size",
-        "64",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &cbbuffersize,
-        &fpi_cbbuffersize
-    }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "streammon",
-    "stream monitor with multi-level time binning and circular buffer",
-    CLICMD_FIELDS_DEFAULTS
-};
-
-// Exposed help function
 errno_t stream_monitor_help()
 {
-    printf("Monitor a stream and compute averages and RMS at different time scales.\n");
-    printf("The scales are defined by the tbinflag bitmask.\n");
-    printf("Also maintains a circular buffer of the last .cbsize frames.\n");
-    printf("Supports input datatypes: uint8, int8, uint16, int16, uint32, int32, uint64, int64, float, double.\n");
-    printf("Creates a custom shared memory file <stream>.mon.shm for basic stats (Flux, Time) and Histogram.\n");
+    printf("\nStream Monitor Help\n");
+    printf("-------------------\n");
+    printf(
+        "Monitors an image stream with multi-level\n"
+        "time binning, circular buffer, and dynamic\n"
+        "histogram.\n\n"
+        "Created streams:\n"
+        "  <stream>.cb<N>       "
+        "Circular buffer (last N frames)\n"
+        "  <stream>.cb<N>time   "
+        "Timestamps for circular buffer\n"
+        "  <stream>.tbin<M>     "
+        "Time-binned average (M frames)\n"
+        "  <stream>.tbin<M>.rms "
+        "Time-binned RMS\n"
+        "  <stream>.mon.shm     "
+        "Monitor shared memory (flux,\n"
+        "                       "
+        " histogram, timing)\n\n"
+    );
     return RETURN_SUCCESS;
-}
-
-static errno_t help_function()
-{
-    return stream_monitor_help();
 }
 
 // ----------------------------------------------------------------------------
@@ -96,7 +103,7 @@ STREAM_MON_STRUCT* stream_monitor_connect(const char *streamname, int create)
     int fd;
     STREAM_MON_STRUCT *smon = NULL;
 
-    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", data.shmdir, streamname);
+    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", dcshmdir, streamname);
 
     int flags = O_RDWR;
     if (create) {
@@ -236,17 +243,17 @@ errno_t stream_monitor_run(
     }
 
     // Connect to input image
-    IMGID inimg = mkIMGID_from_name(inimname_arg);
-    resolveIMGID(&inimg, ERRMODE_WARN);
+    IMGID inimg = imgid_make_from_name(inimname_arg);
+    resolveIMGID(&inimg, ERRMODE_WARN, dcimg, dcnimg);
 
     if (inimg.ID == -1) {
         // Not found, try to load from SHM
-        read_sharedmem_image(inimname_arg);
-        resolveIMGID(&inimg, ERRMODE_ABORT);
+        read_sharedmem_image(inimname_arg, dcimg, dcnimg);
+        resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
-    uint32_t xsize  = inimg.size[0];
-    uint32_t ysize  = inimg.size[1];
+    uint32_t xsize  = inimg.md->size[0];
+    uint32_t ysize  = inimg.md->size[1];
     uint64_t xysize = (uint64_t) xsize * ysize;
     uint8_t datatype = inimg.md->datatype;
     int typesize = ImageStreamIO_typesize(datatype);
@@ -274,7 +281,7 @@ errno_t stream_monitor_run(
     {
         glob_t glob_result;
         char pattern[1024];
-        snprintf(pattern, sizeof(pattern), "%s/%s.cb*.im.shm", data.shmdir, inimg.name);
+        snprintf(pattern, sizeof(pattern), "%s/%s.cb*.im.shm", dcshmdir, inimg.name);
         if (glob(pattern, 0, NULL, &glob_result) == 0) {
             for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
                 char *filename = glob_result.gl_pathv[i];
@@ -406,7 +413,7 @@ errno_t stream_monitor_run(
         memcpy(cbptr_raw, inimg.im->array.raw, xysize * typesize);
         cbimg.md->cnt1 = cb_idx;
         cbimg.md->write = 1;
-        processinfo_update_output_stream(processinfo, cbimg.ID);
+        processinfo_update_output_stream(processinfo, cbimg.im, NULL);
 
         // --------------------------------------------------------------------
         // Update Timing
@@ -417,7 +424,7 @@ errno_t stream_monitor_run(
         cbtptr[cb_idx * 2 + 1] = (uint64_t) tnow.tv_nsec;
         cbtimg.md->cnt1 = cb_idx;
         cbtimg.md->write = 1;
-        processinfo_update_output_stream(processinfo, cbtimg.ID);
+        processinfo_update_output_stream(processinfo, cbtimg.im, NULL);
 
 
         // --------------------------------------------------------------------
@@ -531,8 +538,8 @@ errno_t stream_monitor_run(
                     outptr[pixi] = (float) avg;
                     outrmsptr[pixi] = (float) (var > 0 ? sqrt(var) : 0);
                 }
-                processinfo_update_output_stream(processinfo, imgoutbin[b].ID);
-                processinfo_update_output_stream(processinfo, imgoutbinrms[b].ID);
+                processinfo_update_output_stream(processinfo, imgoutbin[b].im, NULL);
+                processinfo_update_output_stream(processinfo, imgoutbinrms[b].im, NULL);
 
                 for (uint64_t pixi = 0; pixi < xysize; pixi++) {
                     arraysum[b][pixi] = 0.0;
@@ -557,7 +564,7 @@ errno_t stream_monitor_run(
                 processinfo_exec_end(processinfo);
             }
         } else {
-            if (data.signal_INT) processloopOK = 0;
+            if (dcsigINT) processloopOK = 0;
         }
 
         loopcnt++;
@@ -579,28 +586,61 @@ errno_t stream_monitor_run(
     for(int b = 0; b < numbin; b++) {
         free(arraysum[b]);
         free(arraysumsq[b]);
+        imgid_free(&imgoutbin[b]);
+        imgid_free(&imgoutbinrms[b]);
     }
     free(arraysum);
     free(arraysumsq);
     free(bincounter);
     free(imgoutbin);
     free(imgoutbinrms);
+    imgid_free(&inimg);
+    imgid_free(&cbimg);
+    imgid_free(&cbtimg);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     // Wrapper for CLI mode
     return stream_monitor_run(inimname, *tbinflag, *cbbuffersize, 0, 0);
 }
 
-INSERT_STD_FPSCLIfunctions_DynamicSize
 
-// Register function in CLI
-errno_t CLIADDCMD_info__stream_monproc()
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
 {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_info__stream_monproc()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

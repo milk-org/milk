@@ -161,7 +161,7 @@ checkFile $MILK_SHM_DIR/$1.im.shm
 
 # ============================= CHECK IF COMMAND EXISTS ==========================
 
-checkCommand milk
+checkCommand milk-cli
 
 
 
@@ -186,7 +186,7 @@ milk-streamFITSlog $1 on
 
 
 exit
-milk -n $pname << EOF
+milk-cli -n $pname << EOF
 csetpmove ${CPUset}
 shmimstreamlog $1 $2 "$3"
 exit

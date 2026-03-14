@@ -6,6 +6,7 @@ src/config.h
 src/milk_config.h
 local
 lib
+.cache
 
 _tmplist.txt
 .vscode
@@ -36,3 +37,8 @@ plugins/milk-extra-src/WFpropagate
 
 *.egg-info
 .eggs/
+local-install/
+
+# Documentation build output
+_site/
+docs/doxygen/

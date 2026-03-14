@@ -1,7 +1,16 @@
+/**
+ * @file medianfilter.c
+ * @brief Medianfilter module
+ */
+
 /** @file medianfilter.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -30,9 +39,9 @@ imageID median_filter(const char *__restrict ID_name,
         abort();
     }
 
-    ID       = image_ID(ID_name);
-    naxes[0] = data.image[ID].md[0].size[0];
-    naxes[1] = data.image[ID].md[0].size[1];
+    ID       = image_ID(ID_name, dcimg, dcnimg);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
     printf("name = %s, ID = %ld, Size = %ld %ld (%d)\n",
            ID_name,
            ID,
@@ -41,7 +50,7 @@ imageID median_filter(const char *__restrict ID_name,
            filter_size);
     fflush(stdout);
     copy_image_ID(ID_name, out_name, 0);
-    IDout = image_ID(out_name);
+    IDout = image_ID(out_name, dcimg, dcnimg);
 
     for(jj = filter_size; jj < naxes[1] - filter_size; jj++)
         for(ii = filter_size; ii < naxes[0] - filter_size; ii++)
@@ -50,13 +59,13 @@ imageID median_filter(const char *__restrict ID_name,
                 for(j = 0; j < (2 * filter_size + 1); j++)
                 {
                     array[i * (2 * filter_size + 1) + j] =
-                        data.image[ID]
+                        dcimg[ID]
                         .array.F[(jj - filter_size + j) * naxes[0] +
                                                         (ii - filter_size + i)];
                 }
             quick_sort_float(array,
                              (2 * filter_size + 1) * (2 * filter_size + 1));
-            data.image[IDout].array.F[jj * naxes[0] + ii] =
+            dcimg[IDout].array.F[jj * naxes[0] + ii] =
                 array[((2 * filter_size + 1) * (2 * filter_size + 1) - 1) / 2];
         }
     free(array);

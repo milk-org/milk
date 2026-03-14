@@ -1,3 +1,8 @@
+/**
+ * @file basis_rotate_match.h
+ * @brief Basis rotate match module
+ */
+
 #ifndef LINALGEBRA_BASIS_ROTATE_MATCH_H
 #define LINALGEBRA_BASIS_ROTATE_MATCH_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file fft.h
+ * @brief Fft module
+ */
+
 #ifndef _FFT_H
 #define _FFT_H
 

@@ -1,3 +1,8 @@
+/**
+ * @file PCAmatch.h
+ * @brief Pcamatch module
+ */
+
 #ifndef LINALGEBRA_PCAMATCH_H
 #define LINALGEBRA_PCAMATCH_H
 

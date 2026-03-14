@@ -1,3 +1,8 @@
+/**
+ * @file makeCPAmodes.h
+ * @brief Makecpamodes module
+ */
+
 #ifndef LINOPT_IMTOOLS__MAKECPAMODES_H
 #define LINOPT_IMTOOLS__MAKECPAMODES_H
 

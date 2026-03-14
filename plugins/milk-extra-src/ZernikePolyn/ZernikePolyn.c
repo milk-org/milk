@@ -1,3 +1,8 @@
+/**
+ * @file ZernikePolyn.c
+ * @brief ==================================================================
+ */
+
 
 
 /* ================================================================== */
@@ -21,7 +26,7 @@
 
 #include <fitsio.h> /* required by every program that uses CFITSIO  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
@@ -65,70 +70,202 @@ INIT_MODULE_LIB(ZernikePolyn)
 /* ================================================================== */
 /* ================================================================== */
 
-// CLI commands
-//
-// function CLI_checkarg used to check arguments
-// 1: float
-// 2: long
-// 3: string
-// 4: existing image
-//
+// Forward declarations
+imageID mk_zer(
+    const char *ID_name,
+    long SIZE,
+    long zer_nb,
+    float rpix);
 
-errno_t mk_zer_cli()
+long ZERNIKEPOLYN_rmPiston(
+    const char *ID_name,
+    const char *IDmask_name);
+
+/* ============================================
+ * Command: mkzer
+ * ============================================ */
+
+static char mkz_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "z43";
+static int64_t mkz_size = 512;
+static int64_t mkz_index = 43;
+static double mkz_rpix = 100.0;
+
+static FPS_APP_INFO FPS_app_info_mkz = {
+    .fps_name    = "mkzer",
+    .cmdkey      = "mkzer",
+    .description =
+        "create Zernike polynomial"
+};
+
+#define FPS_PARAMS_MKZ(X) \
+    X(".out_name", mkz_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".size", &mkz_size, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image size") \
+    X(".zerindex", &mkz_index, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Zernike index") \
+    X(".rpix", &mkz_rpix, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius in pixels")
+
+#include "fps.h"
+
+static FPS_CLI_BINDING mkz_bindings[] = {
+    FPS_PARAMS_MKZ(FPS_X_BINDING)
+};
+static const int mkz_nb_bindings =
+    sizeof(mkz_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_MKZ(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS mkz_cms = {0};
+
+static __attribute__((constructor))
+void init_mkz_cms(void)
 {
-    if(CLI_checkarg(1, CLIARG_STR_NOT_IMG) + CLI_checkarg(2, CLIARG_INT64) +
-            CLI_checkarg(3, CLIARG_INT64) + CLI_checkarg(4, CLIARG_FLOAT64) ==
-            0)
-    {
-        mk_zer(data.cmdargtoken[1].val.string,
-               data.cmdargtoken[2].val.numl,
-               data.cmdargtoken[3].val.numl,
-               data.cmdargtoken[4].val.numf);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info_mkz.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info_mkz.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    CLIcmddata.nbarg =
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &mkz_cms;
     }
 }
 
-errno_t ZERNIKEPOLYN_rmPiston_cli()
+static errno_t mkz_compute(void)
 {
-    if(CLI_checkarg(1, CLIARG_IMG) + CLI_checkarg(2, CLIARG_IMG) == 0)
-    {
-        ZERNIKEPOLYN_rmPiston(data.cmdargtoken[1].val.string,
-                              data.cmdargtoken[2].val.string);
+    mk_zer(mkz_out,
+            (long) mkz_size,
+            (long) mkz_index,
+            (float) mkz_rpix);
+    return RETURN_SUCCESS;
+}
 
-        return CLICMD_SUCCESS;
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_mkz, farg,
+        &CLIcmddata,
+        mkz_bindings, mkz_nb_bindings,
+        mkz_compute);
+}
+
+/* ============================================
+ * Command: rmcpiston
+ * ============================================ */
+
+static char rmp_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "wfc";
+static char rmp_mask[FUNCTION_PARAMETER_STRMAXLEN]
+    = "mask";
+
+static FPS_APP_INFO FPS_app_info_rmp = {
+    .fps_name    = "rmcpiston",
+    .cmdkey      = "rmcpiston",
+    .description =
+        "remove piston term from WF cube"
+};
+
+#define FPS_PARAMS_RMP(X) \
+    X(".in_name", rmp_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "WF cube") \
+    X(".mask_name", rmp_mask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "aperture mask")
+
+static FPS_CLI_BINDING rmp_bindings[] = {
+    FPS_PARAMS_RMP(FPS_X_BINDING)
+};
+static const int rmp_nb_bindings =
+    sizeof(rmp_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF rmp_farg[] = {
+    FPS_PARAMS_RMP(FPS_X_FARG)
+};
+static CLICMDDATA rmp_CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS rmp_cms = {0};
+
+static __attribute__((constructor))
+void init_rmp_cms(void)
+{
+    strncpy(rmp_CLIcmddata.key,
+            FPS_app_info_rmp.cmdkey,
+            sizeof(rmp_CLIcmddata.key) - 1);
+    strncpy(rmp_CLIcmddata.description,
+            FPS_app_info_rmp.description,
+            sizeof(rmp_CLIcmddata.description)
+            - 1);
+    rmp_CLIcmddata.nbarg =
+        sizeof(rmp_farg) / sizeof(CLICMDARGDEF);
+    rmp_CLIcmddata.funcfpscliarg = rmp_farg;
+    rmp_CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (rmp_CLIcmddata.cmdsettings == NULL) {
+        rmp_CLIcmddata.cmdsettings = &rmp_cms;
     }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+}
+
+static errno_t rmp_compute(void)
+{
+    ZERNIKEPOLYN_rmPiston(rmp_in, rmp_mask);
+    return RETURN_SUCCESS;
+}
+
+static errno_t rmp_CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_rmp, rmp_farg,
+        &rmp_CLIcmddata,
+        rmp_bindings, rmp_nb_bindings,
+        rmp_compute);
 }
 
 static errno_t init_module_CLI()
 {
+    /* mkzer */
+    {
+        safe_fps_fill_farg_examples(
+            farg, mkz_bindings,
+            mkz_nb_bindings);
+        int cmdi = RegisterCLIcmd(
+            CLIcmddata, CLIfunction);
+        CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
-    RegisterCLIcommand(
-        "mkzer",
-        __FILE__,
-        mk_zer_cli,
-        "create Zernike polynomial",
-        "<output image> <size> <zern index> <rpix>",
-        "mkzer z43 512 43 100.0",
-        "mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)");
-
-    RegisterCLIcommand("rmcpiston",
-                       __FILE__,
-                       ZERNIKEPOLYN_rmPiston_cli,
-                       "remove piston term from WF cube",
-                       "<WF cube> <aperture mask>",
-                       "rmcpiston wfc mask",
-                       "long ZERNIKEPOLYN_rmPiston(const char *ID_name, const "
-                       "char *IDmask_name);");
-
+    /* rmcpiston */
+    {
+        safe_fps_fill_farg_examples(
+            rmp_farg, rmp_bindings,
+            rmp_nb_bindings);
+        int cmdi = RegisterCLIcmd(
+            rmp_CLIcmddata, rmp_CLIfunction);
+        rmp_CLIcmddata.cmdsettings =
+            &data.cmd[cmdi].cmdsettings;
+    }
 
     CLIADDCMD_ZernikePolyn__mkzercube();
 
@@ -163,27 +300,27 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
     ID = variable_ID("ZEXTENDc1");
     if(ID != -1)
     {
-        coeffextend1 = data.variable[ID].value.f;
+        coeffextend1 = dcvar[ID].value.f;
         printf("ZEXTENDc1 = %f\n", coeffextend1);
     }
 
     ID = variable_ID("ZEXTENDc2");
     if(ID != -1)
     {
-        coeffextend2 = data.variable[ID].value.f;
+        coeffextend2 = dcvar[ID].value.f;
         printf("ZEXTENDc2 = %f\n", coeffextend2);
     }
 
     ID = variable_ID("Zxoffset");
     if(ID != -1)
     {
-        xoffset = data.variable[ID].value.f;
+        xoffset = dcvar[ID].value.f;
         printf("Zxoffset = %f\n", xoffset);
     }
     ID = variable_ID("Zyoffset");
     if(ID != -1)
     {
-        yoffset = data.variable[ID].value.f;
+        yoffset = dcvar[ID].value.f;
         printf("Zyoffset = %f\n", yoffset);
     }
 
@@ -210,20 +347,20 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
             theta = atan2(y, x);
             if(r < 1.0)
             {
-                data.image[ID].array.F[jj * naxes[0] + ii] =
+                dcimg[ID].array.F[jj * naxes[0] + ii] =
                     Zernike_value(zer_nb, r, theta);
                 //printf("%f\n", Zernike_value(zer_nb,r,theta));
-                ss += data.image[ID].array.F[jj * naxes[0] + ii] *
-                      data.image[ID].array.F[jj * naxes[0] + ii];
+                ss += dcimg[ID].array.F[jj * naxes[0] + ii] *
+                      dcimg[ID].array.F[jj * naxes[0] + ii];
             }
             else if(coeffextend1 > 0)
             {
                 r = 1.0 + (r - 1.0) / (1.0 + coeffextend1 * (r - 1.0));
-                data.image[ID].array.F[jj * naxes[0] + ii] =
+                dcimg[ID].array.F[jj * naxes[0] + ii] =
                     Zernike_value(zer_nb, 1.0, theta);
-                data.image[ID].array.F[jj * naxes[0] + ii] *=
+                dcimg[ID].array.F[jj * naxes[0] + ii] *=
                     exp(-pow((r - 1.0) / (rpix * coeffextend2), coeffextend3));
-                //	data.image[ID].array.F[jj*naxes[0]+ii] = r;
+                //	dcimg[ID].array.F[jj*naxes[0]+ii] = r;
                 //printf("%f %f\n", Zernike_value(zer_nb, 1.0, theta), exp(-pow((r-1.0)/(rpix*coeffextend2), coeffextend3)));
             }
         }
@@ -251,11 +388,11 @@ imageID mk_zer(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 {
                     if(coeffextend1 < 0)
                     {
-                        data.image[ID].array.F[jj * naxes[0] + ii] = 0.0;
+                        dcimg[ID].array.F[jj * naxes[0] + ii] = 0.0f;
                     }
                     else
                     {
-                        data.image[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                        dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
                     }
                 }
             }
@@ -294,7 +431,7 @@ mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 rpix;
             theta = atan2((jj - SIZE / 2), (ii - SIZE / 2));
             //	  if(r<1.0)
-            data.image[ID].array.F[jj * naxes[0] + ii] =
+            dcimg[ID].array.F[jj * naxes[0] + ii] =
                 Zernike_value(zer_nb, r, theta);
         }
 
@@ -316,7 +453,7 @@ mk_zer_unbounded(const char *ID_name, long SIZE, long zer_nb, float rpix)
             {
                 //r = sqrt((ii-SIZE/2)*(ii-SIZE/2)+(jj-SIZE/2)*(jj-SIZE/2))/rpix;
                 //    if(r<1.0)
-                data.image[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
     }
 
@@ -356,7 +493,7 @@ mk_zer_unbounded1(const char *ID_name, long SIZE, long zer_nb, float rpix)
             {
                 r = 1.0;
             }
-            data.image[ID].array.F[jj * naxes[0] + ii] =
+            dcimg[ID].array.F[jj * naxes[0] + ii] =
                 Zernike_value(zer_nb, r, theta);
         }
 
@@ -374,7 +511,7 @@ mk_zer_unbounded1(const char *ID_name, long SIZE, long zer_nb, float rpix)
         for(ii = 0; ii < SIZE; ii++)
             for(jj = 0; jj < SIZE; jj++)
             {
-                data.image[ID].array.F[jj * naxes[0] + ii] = 1.0;
+                dcimg[ID].array.F[jj * naxes[0] + ii] = 1.0f;
             }
     }
 
@@ -437,11 +574,11 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
             tmp = r[jj * naxes[0] + ii];
             if(tmp < 1.0)
             {
-                data.image[ID].array.F[jj * SIZE + ii] = 1.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 1.0f;
             }
             else
             {
-                data.image[ID].array.F[jj * SIZE + ii] = 0.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
             }
         }
     sprintf(fname, "%s%ld", ID_name, j);
@@ -458,12 +595,12 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 tmp = r[jj * naxes[0] + ii];
                 if(tmp < 1.0)
                 {
-                    data.image[ID].array.F[jj * SIZE + ii] =
+                    dcimg[ID].array.F[jj * SIZE + ii] =
                         Zernike_value(j, tmp, theta[jj * naxes[0] + ii]);
                 }
                 else
                 {
-                    data.image[ID].array.F[jj * SIZE + ii] = 0.0;
+                    dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
                 }
             }
 
@@ -497,7 +634,7 @@ mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rpix)
     zernike_init();
 
     create_3Dimage_ID(ID_namec, SIZE, SIZE, zer_nb, &ID);
-    //    ID = image_ID("ztmp");
+    //    ID = image_ID("ztmp", dcimg, dcnimg);
 
     r = (double *) malloc(SIZE * SIZE * sizeof(double));
     if(r == NULL)
@@ -531,11 +668,11 @@ mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rpix)
             tmp = r[jj * naxes[0] + ii];
             if(tmp < 1.0)
             {
-                data.image[ID].array.F[jj * SIZE + ii] = 1.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 1.0f;
             }
             else
             {
-                data.image[ID].array.F[jj * SIZE + ii] = 0.0;
+                dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
             }
         }
     for(j = 1; j < zer_nb; j++)
@@ -549,12 +686,12 @@ mk_zer_seriescube(const char *ID_namec, long SIZE, long zer_nb, float rpix)
                 tmp = r[jj * naxes[0] + ii];
                 if(tmp < 1.0)
                 {
-                    data.image[ID].array.F[j * SIZE * SIZE + jj * SIZE + ii] =
+                    dcimg[ID].array.F[j * SIZE * SIZE + jj * SIZE + ii] =
                         Zernike_value(j, tmp, theta[jj * naxes[0] + ii]);
                 }
                 else
                 {
-                    data.image[ID].array.F[j * SIZE * SIZE + jj * SIZE + ii] =
+                    dcimg[ID].array.F[j * SIZE * SIZE + jj * SIZE + ii] =
                         0.0;
                 }
             }
@@ -574,14 +711,14 @@ double get_zer(const char *ID_name, long zer_nb, double radius)
     char    fname[200];
     char    fname1[200];
 
-    ID   = image_ID(ID_name);
-    SIZE = data.image[ID].md[0].size[0];
+    ID   = image_ID(ID_name, dcimg, dcnimg);
+    SIZE = dcimg[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius);
 
     sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
     sprintf(fname1, "Z_%ld", zer_nb);
 
-    if((ID = image_ID(fname1)) == -1)
+    if((ID = image_ID(fname1, dcimg, dcnimg)) == -1)
     {
         if(file_exists(fname) == 1)
         {
@@ -613,14 +750,14 @@ get_zer_crop(const char *ID_name, long zer_nb, double radius, double radius1)
     char    fname[200];
     char    fname1[200];
 
-    ID   = image_ID(ID_name);
-    SIZE = data.image[ID].md[0].size[0];
+    ID   = image_ID(ID_name, dcimg, dcnimg);
+    SIZE = dcimg[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius1);
 
     sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
     sprintf(fname1, "Z_%ld", zer_nb);
 
-    if((ID = image_ID(fname1)) == -1)
+    if((ID = image_ID(fname1, dcimg, dcnimg)) == -1)
     {
         if(file_exists(fname) == 1)
         {
@@ -681,8 +818,8 @@ int remove_zerns(const char *ID_name,
     long    SIZE;
 
     copy_image_ID(ID_name, ID_name_out, 0);
-    ID   = image_ID(ID_name);
-    SIZE = data.image[ID].md[0].size[0];
+    ID   = image_ID(ID_name, dcimg, dcnimg);
+    SIZE = dcimg[ID].md[0].size[0];
     for(int i = 0; i < max_zer; i++)
     {
         double coeff;
@@ -705,13 +842,13 @@ long ZERNIKEPOLYN_rmPiston(const char *ID_name, const char *IDmask_name)
     long    xsize, ysize, zsize, xysize;
     long    ii, kk;
 
-    ID     = image_ID(ID_name);
-    xsize  = data.image[ID].md[0].size[0];
-    ysize  = data.image[ID].md[0].size[1];
-    zsize  = data.image[ID].md[0].size[2];
+    ID     = image_ID(ID_name, dcimg, dcnimg);
+    xsize  = dcimg[ID].md[0].size[0];
+    ysize  = dcimg[ID].md[0].size[1];
+    zsize  = dcimg[ID].md[0].size[2];
     xysize = xsize * ysize;
 
-    IDmask = image_ID(IDmask_name);
+    IDmask = image_ID(IDmask_name, dcimg, dcnimg);
 
     for(kk = 0; kk < zsize; kk++)
     {
@@ -721,14 +858,14 @@ long ZERNIKEPOLYN_rmPiston(const char *ID_name, const char *IDmask_name)
         tot2 = 0.0;
         for(ii = 0; ii < xysize; ii++)
         {
-            tot1 += data.image[ID].array.F[kk * xysize + ii] *
-                    data.image[IDmask].array.F[ii];
-            tot2 += data.image[IDmask].array.F[ii];
+            tot1 += dcimg[ID].array.F[kk * xysize + ii] *
+                    dcimg[IDmask].array.F[ii];
+            tot2 += dcimg[IDmask].array.F[ii];
         }
         ave = tot1 / tot2;
         for(ii = 0; ii < xysize; ii++)
         {
-            data.image[ID].array.F[kk * xysize + ii] -= ave;
+            dcimg[ID].array.F[kk * xysize + ii] -= ave;
         }
     }
 
@@ -744,8 +881,8 @@ int remove_TTF(const char *ID_name, const char *ID_name_out, double radius)
 
     //  printf("-- %s  --- %s --\n",ID_name,ID_name_out);
     copy_image_ID(ID_name, ID_name_out, 0);
-    ID   = image_ID(ID_name);
-    SIZE = data.image[ID].md[0].size[0];
+    ID   = image_ID(ID_name, dcimg, dcnimg);
+    SIZE = dcimg[ID].md[0].size[0];
     make_disk("disktmpttf", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius);
     //  list_image_ID();
     for(i = 0; i < 5; i++)
@@ -757,7 +894,7 @@ int remove_TTF(const char *ID_name, const char *ID_name_out, double radius)
             //coeff = arith_image_total("mult_tmp")/arith_image_total("disktmpttf");
             delete_image_ID("mult_tmp", DELETE_IMAGE_ERRMODE_WARNING);
             coeff               = -1.0 * get_zer(ID_name, i, radius);
-            data.DOUBLEARRAY[i] = coeff;
+            dcdoublearr[i] = coeff;
             mk_zer("zer_tmpu", SIZE, i, radius);
             arith_image_cstmult_inplace("zer_tmpu", coeff);
             //	  basic_add(ID_name_out,"zer_tmpu","tmp",0,0);
@@ -796,13 +933,13 @@ double fit_zer(const char *ID_name,
 
     copy_image_ID(ID_name, "resid", 0);
 
-    ID   = image_ID("resid");
-    SIZE = data.image[ID].md[0].size[0];
+    ID   = image_ID("resid", dcimg, dcnimg);
+    SIZE = dcimg[ID].md[0].size[0];
     IDdisk =
         make_disk("dtmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, 0.999 * radius);
 
     for(ii = 0; ii < SIZE * SIZE; ii++)
-        if(data.image[IDdisk].array.F[ii] > 0.5)
+        if(dcimg[IDdisk].array.F[ii] > 0.5f)
         {
             disktot += 1.0;
         }
@@ -820,7 +957,7 @@ double fit_zer(const char *ID_name,
             sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", i);
             sprintf(fname1, "Z_%ld", i);
 
-            if((IDZ = image_ID(fname1)) == -1)
+            if((IDZ = image_ID(fname1, dcimg, dcnimg)) == -1)
             {
                 if(file_exists(fname) == 1)
                 {
@@ -833,26 +970,26 @@ double fit_zer(const char *ID_name,
             }
             tmp = 0.0;
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(data.image[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
-                    tmp += data.image[IDZ].array.F[ii] *
-                           data.image[ID].array.F[ii];
+                    tmp += dcimg[IDZ].array.F[ii] *
+                           dcimg[ID].array.F[ii];
                 }
             value = tmp / disktot;
 
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(data.image[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
-                    data.image[ID].array.F[ii] -=
-                        value * data.image[IDZ].array.F[ii];
+                    dcimg[ID].array.F[ii] -=
+                        value * dcimg[IDZ].array.F[ii];
                 }
             zvalue[i] += value;
             tmp = 0.0;
             for(ii = 0; ii < SIZE * SIZE; ii++)
-                if(data.image[IDdisk].array.F[ii] > 0.5)
+                if(dcimg[IDdisk].array.F[ii] > 0.5f)
                 {
                     tmp +=
-                        data.image[ID].array.F[ii] * data.image[ID].array.F[ii];
+                        dcimg[ID].array.F[ii] * dcimg[ID].array.F[ii];
                 }
 
             residualf = sqrt(tmp / disktot);
@@ -868,9 +1005,9 @@ double fit_zer(const char *ID_name,
 
     for(ii = 0; ii < SIZE * SIZE; ii++)
     {
-        if(data.image[IDdisk].array.F[ii] < 0.5)
+        if(dcimg[IDdisk].array.F[ii] < 0.5f)
         {
-            data.image[ID].array.F[ii] = 0.0;
+            dcimg[ID].array.F[ii] = 0.0f;
         }
     }
 

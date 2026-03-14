@@ -1,7 +1,10 @@
-/** @file loadCR2toFITSRGB.c
+/**
+ * @file loadCR2toFITSRGB.c
+ * @brief Load CR2 file into R G B images
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -9,58 +12,100 @@
 #include "readPGM.h"
 
 static int CR2toFITS_NORM = 0;
-// 1 if FITS should be normalized to ISO = 1, exposure = 1 sec, and F/1.0
 
 static float FLUXFACTOR = 1.0;
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+errno_t loadCR2toFITSRGB(
+    const char *__restrict fnameCR2,
+    const char *__restrict fnameFITSr,
+    const char *__restrict fnameFITSg,
+    const char *__restrict fnameFITSb);
 
-errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
-                         const char *__restrict fnameFITSr,
-                         const char *__restrict fnameFITSg,
-                         const char *__restrict fnameFITSb);
+static char p_cr2[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_r[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imR";
+static char p_g[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imG";
+static char p_b[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imB";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "loadcr2torgb",
+    .cmdkey      = "loadcr2torgb",
+    .description =
+        "load CR2 file into R G B images"
+};
 
-static errno_t IMAGE_FORMAT_loadCR2toFITSRGB_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", p_cr2, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input CR2 image") \
+    X(".out_r", p_r, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output red") \
+    X(".out_g", p_g, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output green") \
+    X(".out_b", p_b, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output blue")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 3) +
-            CLI_checkarg(4, 3) ==
-            0)
-    {
-        loadCR2toFITSRGB(data.cmdargtoken[1].val.string,
-                         data.cmdargtoken[2].val.string,
-                         data.cmdargtoken[3].val.string,
-                         data.cmdargtoken[4].val.string);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t loadCR2toFITSRGB_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
+    loadCR2toFITSRGB(
+        p_cr2, p_r, p_g, p_b);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("loadcr2torgb",
-                       __FILE__,
-                       IMAGE_FORMAT_loadCR2toFITSRGB_cli,
-                       "load CR2 file into R G B images",
-                       "<input image> <imR> <imG> <imB>",
-                       "loadcr2torgb im imR imG imB",
-                       "loadCR2toFITSRGB(const char *fnameCR2, const char "
-                       "*fnameFITSr, const char *fnameFITSg, const "
-                       "char *fnameFITSb)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_format__loadCR2toFITSRGB()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -148,9 +193,9 @@ errno_t loadCR2toFITSRGB(const char *__restrict fnameCR2,
         }
         printf("aperture = %f\n", aperture);
 
-        //ID = image_ID("tmpfits1");
-        //        xsize = data.image[ID].md[0].size[0];
-        //        ysize = data.image[ID].md[0].size[1];
+        //ID = image_ID("tmpfits1", dcimg, dcnimg);
+        //        xsize = dcimg[ID].md[0].size[0];
+        //        ysize = dcimg[ID].md[0].size[1];
 
         FLUXFACTOR = aperture * aperture / (shutter * iso);
     }

@@ -1,3 +1,8 @@
+/**
+ * @file makeCosRadModes.h
+ * @brief Makecosradmodes module
+ */
+
 #ifndef LINOPT_IMTOOLS__MAKECOSRADMODES_H
 #define LINOPT_IMTOOLS__MAKECOSRADMODES_H
 

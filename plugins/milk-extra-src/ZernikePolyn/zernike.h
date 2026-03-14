@@ -1,5 +1,10 @@
 /**
  * @file zernike.h
+ * @brief structure to store Zernike coefficients
+ */
+
+/**
+ * @file zernike.h
  */
 
 

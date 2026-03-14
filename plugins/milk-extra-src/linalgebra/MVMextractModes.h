@@ -1,3 +1,8 @@
+/**
+ * @file MVMextractModes.h
+ * @brief Mvmextractmodes module
+ */
+
 #ifndef LINALGEBRA_MVMEXTRACTMODES_H
 #define LINALGEBRA_MVMEXTRACTMODES_H
 

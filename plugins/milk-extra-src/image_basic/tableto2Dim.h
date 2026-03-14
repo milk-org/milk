@@ -1,3 +1,8 @@
+/**
+ * @file tableto2Dim.h
+ * @brief Tableto2dim module
+ */
+
 /** @file tableto2Dim.h
  */
 

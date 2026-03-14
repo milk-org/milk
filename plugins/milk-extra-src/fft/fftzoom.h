@@ -1,3 +1,8 @@
+/**
+ * @file fftzoom.h
+ * @brief Fftzoom module
+ */
+
 /** @file fftzoom.h
  */
 

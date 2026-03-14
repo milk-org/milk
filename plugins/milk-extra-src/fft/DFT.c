@@ -3,7 +3,11 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -40,11 +44,11 @@ errno_t fft_DFT(const char *IDin_name,
 
     imageID IDcosXX, IDcosYY, IDsinXX, IDsinYY;
 
-    IDin = image_ID(IDin_name);
+    IDin = image_ID(IDin_name, dcimg, dcnimg);
 
-    IDinmask        = image_ID(IDinmask_name);
-    uint32_t xsize  = data.image[IDinmask].md[0].size[0];
-    uint32_t ysize  = data.image[IDinmask].md[0].size[1];
+    IDinmask        = image_ID(IDinmask_name, dcimg, dcnimg);
+    uint32_t xsize  = dcimg[IDinmask].md[0].size[0];
+    uint32_t ysize  = dcimg[IDinmask].md[0].size[1];
     uint64_t xysize = xsize;
     xysize *= ysize;
 
@@ -61,7 +65,7 @@ errno_t fft_DFT(const char *IDin_name,
         int pixact = 0;
         for(uint32_t jj = 0; jj < ysize; jj++)
         {
-            float val = data.image[IDinmask].array.F[jj * xsize + ii];
+            float val = dcimg[IDinmask].array.F[jj * xsize + ii];
             if(val > 0.5)
             {
                 pixact = 1;
@@ -81,7 +85,7 @@ errno_t fft_DFT(const char *IDin_name,
         int pixact = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
         {
-            float val = data.image[IDinmask].array.F[jj * xsize + ii];
+            float val = dcimg[IDinmask].array.F[jj * xsize + ii];
             if(val > 0.5)
             {
                 pixact = 1;
@@ -129,7 +133,7 @@ errno_t fft_DFT(const char *IDin_name,
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
             {
-                float val = data.image[IDinmask].array.F[jj * xsize + ii];
+                float val = dcimg[IDinmask].array.F[jj * xsize + ii];
                 if(val > 0.5)
                 {
                     iiinarray[k] = ii;
@@ -137,11 +141,11 @@ errno_t fft_DFT(const char *IDin_name,
                     xinarray[k]  = 1.0 * ii / xsize - 0.5;
                     yinarray[k]  = 1.0 * jj / xsize - 0.5;
                     float re =
-                        data.image[IDin]
+                        dcimg[IDin]
                         .array.CF[kin * xsize * ysize + jj * xsize + ii]
                         .re;
                     float im =
-                        data.image[IDin]
+                        dcimg[IDin]
                         .array.CF[kin * xsize * ysize + jj * xsize + ii]
                         .im;
                     valinamp[k]    = sqrt(re * re + im * im);
@@ -153,7 +157,7 @@ errno_t fft_DFT(const char *IDin_name,
             }
     }
 
-    IDoutmask = image_ID(IDoutmask_name);
+    IDoutmask = image_ID(IDoutmask_name, dcimg, dcnimg);
 
     uint32_t NBptsout       = 0;
     uint32_t NBpixact_iiout = 0;
@@ -162,7 +166,7 @@ errno_t fft_DFT(const char *IDin_name,
         int pixact = 0;
         for(uint32_t jj = 0; jj < ysize; jj++)
         {
-            float val = data.image[IDoutmask].array.F[jj * xsize + ii];
+            float val = dcimg[IDoutmask].array.F[jj * xsize + ii];
             if(val > 0.5)
             {
                 pixact = 1;
@@ -182,7 +186,7 @@ errno_t fft_DFT(const char *IDin_name,
         int pixact = 0;
         for(uint32_t ii = 0; ii < xsize; ii++)
         {
-            float val = data.image[IDoutmask].array.F[jj * xsize + ii];
+            float val = dcimg[IDoutmask].array.F[jj * xsize + ii];
             if(val > 0.5)
             {
                 pixact = 1;
@@ -226,7 +230,7 @@ errno_t fft_DFT(const char *IDin_name,
         for(uint32_t ii = 0; ii < xsize; ii++)
             for(uint32_t jj = 0; jj < ysize; jj++)
             {
-                float val = data.image[IDoutmask].array.F[jj * xsize + ii];
+                float val = dcimg[IDoutmask].array.F[jj * xsize + ii];
                 if(val > 0.5)
                 {
                     iioutarray[kout] = ii;
@@ -259,7 +263,7 @@ errno_t fft_DFT(const char *IDin_name,
     printf("Using openMP %d", omp_get_max_threads());
     #pragma omp parallel
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
 
         for(uint32_t pixiiout = 0; pixiiout < NBpixact_iiout; pixiiout++)
@@ -274,8 +278,8 @@ errno_t fft_DFT(const char *IDin_name,
                 float cospha = cosf(pha);
                 float sinpha = sinf(pha);
 
-                data.image[IDcosXX].array.F[iiout * xsize + iiin] = cospha;
-                data.image[IDsinXX].array.F[iiout * xsize + iiin] = sinpha;
+                dcimg[IDcosXX].array.F[iiout * xsize + iiin] = cospha;
+                dcimg[IDsinXX].array.F[iiout * xsize + iiin] = sinpha;
             }
         }
 #ifdef _OPENMP
@@ -293,7 +297,7 @@ errno_t fft_DFT(const char *IDin_name,
 #ifdef _OPENMP
     #pragma omp parallel
     {
-        #pragma omp for
+        #pragma omp for simd
 #endif
         for(uint32_t pixjjout = 0; pixjjout < NBpixact_jjout; pixjjout++)
         {
@@ -307,8 +311,8 @@ errno_t fft_DFT(const char *IDin_name,
                 float cospha = cosf(pha);
                 float sinpha = sinf(pha);
 
-                data.image[IDcosYY].array.F[jjout * ysize + jjin] = cospha;
-                data.image[IDsinYY].array.F[jjout * ysize + jjin] = sinpha;
+                dcimg[IDcosYY].array.F[jjout * ysize + jjin] = cospha;
+                dcimg[IDsinYY].array.F[jjout * ysize + jjin] = sinpha;
             }
         }
 #ifdef _OPENMP
@@ -334,7 +338,7 @@ errno_t fft_DFT(const char *IDin_name,
             fflush(stdout);
         }
 
-        #pragma omp for
+        #pragma omp for simd
 #endif
 
         for(uint32_t kout = 0; kout < NBptsout; kout++)
@@ -349,11 +353,11 @@ errno_t fft_DFT(const char *IDin_name,
                 uint32_t iiin = iiinarray[k];
                 uint32_t jjin = jjinarray[k];
 
-                float cosXX = data.image[IDcosXX].array.F[iiout * xsize + iiin];
-                float cosYY = data.image[IDcosYY].array.F[jjout * ysize + jjin];
+                float cosXX = dcimg[IDcosXX].array.F[iiout * xsize + iiin];
+                float cosYY = dcimg[IDcosYY].array.F[jjout * ysize + jjin];
 
-                float sinXX = data.image[IDsinXX].array.F[iiout * xsize + iiin];
-                float sinYY = data.image[IDsinYY].array.F[jjout * ysize + jjin];
+                float sinXX = dcimg[IDsinXX].array.F[iiout * xsize + iiin];
+                float sinYY = dcimg[IDsinYY].array.F[jjout * ysize + jjin];
 
                 float cosXY = cosXX * cosYY - sinXX * sinYY;
                 float sinXY = sinXX * cosYY + cosXX * sinYY;
@@ -364,10 +368,10 @@ errno_t fft_DFT(const char *IDin_name,
                 re += valinamp[k] * cospha;
                 im += valinamp[k] * sinpha;
             }
-            data.image[IDout]
+            dcimg[IDout]
             .array.CF[jjoutarray[kout] * xsize + iioutarray[kout]]
             .re = re / Zfactor;
-            data.image[IDout]
+            dcimg[IDout]
             .array.CF[jjoutarray[kout] * xsize + iioutarray[kout]]
             .im = im / Zfactor;
         }
@@ -463,19 +467,19 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         printf("---------------FORCING IMAGINARY PART TO ZERO-------------\n");
     }
 
-    ID_DFTmask00 = image_ID("_DFTmask00");
+    ID_DFTmask00 = image_ID("_DFTmask00", dcimg, dcnimg);
 
     printf("zfactor = %f\n", zfactor);
 
-    IDin            = image_ID(pupin_name);
-    xsize           = data.image[IDin].md[0].size[0];
-    ysize           = data.image[IDin].md[0].size[1];
+    IDin            = image_ID(pupin_name, dcimg, dcnimg);
+    xsize           = dcimg[IDin].md[0].size[0];
+    ysize           = dcimg[IDin].md[0].size[1];
     uint64_t xysize = (uint64_t) xsize;
     xysize *= ysize;
 
-    if(data.image[IDin].md[0].naxis > 2)
+    if(dcimg[IDin].md[0].naxis > 2)
     {
-        zsize = data.image[IDin].md[0].size[2];
+        zsize = dcimg[IDin].md[0].size[2];
     }
     else
     {
@@ -497,16 +501,16 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            double re   = data.image[IDin].array.CF[k * xysize + ii].re;
-            double im   = data.image[IDin].array.CF[k * xysize + ii].im;
+            double re   = dcimg[IDin].array.CF[k * xysize + ii].re;
+            double im   = dcimg[IDin].array.CF[k * xysize + ii].im;
             double amp2 = re * re + im * im;
             if(amp2 > eps)
             {
-                data.image[IDpupin_mask].array.F[ii] = 1.0;
+                dcimg[IDpupin_mask].array.F[ii] = 1.0f;
             }
             else
             {
-                data.image[IDpupin_mask].array.F[ii] = 0.0;
+                dcimg[IDpupin_mask].array.F[ii] = 0.0f;
             }
         }
         //
@@ -515,9 +519,9 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         if(ID_DFTmask00 != -1)
             for(uint64_t ii = 0; ii < xsize * ysize; ii++)
             {
-                if(data.image[ID_DFTmask00].array.F[ii] > 0.5)
+                if(dcimg[ID_DFTmask00].array.F[ii] > 0.5f)
                 {
-                    data.image[IDpupin_mask].array.F[ii] = 1.0;
+                    dcimg[IDpupin_mask].array.F[ii] = 1.0f;
                 }
             }
 
@@ -525,22 +529,22 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         // Construct focal plane mask for DFT
         // If amplitude >eps, turn pixel ON, save result in _fpmzmask
         //
-        IDfpmz = image_ID(fpmz_name);
+        IDfpmz = image_ID(fpmz_name, dcimg, dcnimg);
         FUNC_CHECK_RETURN(
             create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            double re   = data.image[IDfpmz].array.CF[k * xysize + ii].re;
-            double im   = data.image[IDfpmz].array.CF[k * xysize + ii].im;
+            double re   = dcimg[IDfpmz].array.CF[k * xysize + ii].re;
+            double im   = dcimg[IDfpmz].array.CF[k * xysize + ii].im;
             double amp2 = re * re + im * im;
             if(amp2 > eps)
             {
-                data.image[IDfpmz_mask].array.F[ii] = 1.0;
+                dcimg[IDfpmz_mask].array.F[ii] = 1.0f;
             }
             else
             {
-                data.image[IDfpmz_mask].array.F[ii] = 0.0;
+                dcimg[IDfpmz_mask].array.F[ii] = 0.0f;
             }
         }
 
@@ -565,17 +569,17 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
             {
                 double x  = 1.0 * ii - 0.5 * xsize;
                 double y  = 1.0 * jj - 0.5 * ysize;
-                double re = data.image[IDfpmz]
+                double re = dcimg[IDfpmz]
                             .array.CF[k * xysize + jj * xsize + ii]
                             .re;
-                double im = data.image[IDfpmz]
+                double im = dcimg[IDfpmz]
                             .array.CF[k * xysize + jj * xsize + ii]
                             .im;
                 double amp = sqrt(re * re + im * im);
                 double pha = atan2(im, re);
 
-                double rein  = data.image[ID].array.CF[jj * xsize + ii].re;
-                double imin  = data.image[ID].array.CF[jj * xsize + ii].im;
+                double rein  = dcimg[ID].array.CF[jj * xsize + ii].re;
+                double imin  = dcimg[ID].array.CF[jj * xsize + ii].im;
                 double ampin = sqrt(rein * rein + imin * imin);
                 double phain = atan2(imin, rein);
 
@@ -583,9 +587,9 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
                 total += ampin * ampin;
                 phain += pha;
 
-                data.image[ID].array.CF[jj * xsize + ii].re =
+                dcimg[ID].array.CF[jj * xsize + ii].re =
                     ampin * cos(phain);
-                data.image[ID].array.CF[jj * xsize + ii].im =
+                dcimg[ID].array.CF[jj * xsize + ii].im =
                     ampin * sin(phain);
 
                 tx += x * ampin * sin(phain) * ampin;
@@ -605,14 +609,14 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
                     double x = 1.0 * ii - 0.5 * xsize;
                     double y = 1.0 * jj - 0.5 * ysize;
 
-                    double re  = data.image[ID].array.CF[jj * xsize + ii].re;
-                    double im  = data.image[ID].array.CF[jj * xsize + ii].im;
+                    double re  = dcimg[ID].array.CF[jj * xsize + ii].re;
+                    double im  = dcimg[ID].array.CF[jj * xsize + ii].im;
                     double amp = sqrt(re * re + im * im);
 
-                    data.image[ID].array.CF[jj * xsize + ii].im -=
+                    dcimg[ID].array.CF[jj * xsize + ii].im -=
                         amp * (x * tx / tcx + y * ty / tcy);
-                    tx += x * data.image[ID].array.CF[jj * xsize + ii].im * amp;
-                    ty += y * data.image[ID].array.CF[jj * xsize + ii].im * amp;
+                    tx += x * dcimg[ID].array.CF[jj * xsize + ii].im * amp;
+                    ty += y * dcimg[ID].array.CF[jj * xsize + ii].im * amp;
                 }
             printf("  ->   %.18lf %.18lf", tx / tcx, ty / tcy);
 
@@ -631,18 +635,18 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
         }
         printf("\n");
 
-        data.FLOATARRAY[0] = (float) total;
+        dcfloatarr[0] = (float) total;
 
         /*  if(FORCE_IMZERO==1) // Remove tip-tilt in focal plane mask imaginary part
         {
         imresidual = 0.0;
-        ID = image_ID("_foc0");
+        ID = image_ID("_foc0", dcimg, dcnimg);
         ID1 = create_2Dimage_ID("imresidual", xsize, ysize);
         for(ii=0; ii<xsize*ysize; ii++)
         {
-        data.image[ID1].array.F[ii] = data.image[ID].array.CF[ii].im;
-        imresidual += data.image[ID].array.CF[ii].im*data.image[ID].array.CF[ii].im;
-        data.image[ID].array.CF[ii].im = 0.0;
+        dcimg[ID1].array.F[ii] = dcimg[ID].array.CF[ii].im;
+        imresidual += dcimg[ID].array.CF[ii].im*dcimg[ID].array.CF[ii].im;
+        dcimg[ID].array.CF[ii].im = 0.0;
         }
         printf("IM RESIDUAL = %lf\n", imresidual);
         save_fl_fits("imresidual", "imresidual.fits");
@@ -662,7 +666,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
             FUNC_CHECK_RETURN(save_fl_fits("tmp_foc0_p", "_DFT_focp.fits"));
 
             FUNC_CHECK_RETURN(
-                delete_image_ID("tmp_foc0_a", DELETE_IMAGE_ERRMODE_WARNING););
+                delete_image_ID("tmp_foc0_a", DELETE_IMAGE_ERRMODE_WARNING));
 
             FUNC_CHECK_RETURN(
                 delete_image_ID("tmp_foc0_p", DELETE_IMAGE_ERRMODE_WARNING));
@@ -675,7 +679,7 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
          y = 1.0*jj-ysize/2;
          r = sqrt(x*x+y*y);
          if(r<150.0)
-         data.image[IDpupin_mask].array.F[jj*xsize+ii] = 1.0;
+         dcimg[IDpupin_mask].array.F[jj*xsize+ii] = 1.0f;
          }*/
 
         FUNC_CHECK_RETURN(fft_DFT("_foc0",
@@ -696,10 +700,10 @@ errno_t fft_DFTinsertFPM(const char *pupin_name,
 
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            data.image[IDout].array.CF[k * xysize + ii].re =
-                data.image[IDout2D].array.CF[ii].re / (xysize);
-            data.image[IDout].array.CF[k * xysize + ii].im =
-                data.image[IDout2D].array.CF[ii].im / (xysize);
+            dcimg[IDout].array.CF[k * xysize + ii].re =
+                dcimg[IDout2D].array.CF[ii].re / (xysize);
+            dcimg[IDout].array.CF[k * xysize + ii].im =
+                dcimg[IDout2D].array.CF[ii].im / (xysize);
         }
 
         DEBUG_TRACEPOINT("IDout image content written");
@@ -751,13 +755,13 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
 
     imageID ID_DFTmask00;
 
-    imageID  IDin   = image_ID(pupin_name);
-    uint32_t xsize  = data.image[IDin].md[0].size[0];
-    uint32_t ysize  = data.image[IDin].md[0].size[1];
+    imageID  IDin   = image_ID(pupin_name, dcimg, dcnimg);
+    uint32_t xsize  = dcimg[IDin].md[0].size[0];
+    uint32_t ysize  = dcimg[IDin].md[0].size[1];
     uint64_t xysize = xsize;
     xysize *= ysize;
 
-    ID_DFTmask00 = image_ID("_DFTmask00");
+    ID_DFTmask00 = image_ID("_DFTmask00", dcimg, dcnimg);
 
     printf("zfactor = %f\n", zfactor);
 
@@ -765,16 +769,16 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
         create_2Dimage_ID("_DFTpupmask", xsize, ysize, &IDpupin_mask));
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        double re   = data.image[IDin].array.CF[ii].re;
-        double im   = data.image[IDin].array.CF[ii].im;
+        double re   = dcimg[IDin].array.CF[ii].re;
+        double im   = dcimg[IDin].array.CF[ii].im;
         double amp2 = re * re + im * im;
         if(amp2 > eps)
         {
-            data.image[IDpupin_mask].array.F[ii] = 1.0;
+            dcimg[IDpupin_mask].array.F[ii] = 1.0f;
         }
         else
         {
-            data.image[IDpupin_mask].array.F[ii] = 0.0;
+            dcimg[IDpupin_mask].array.F[ii] = 0.0f;
         }
     }
     //  save_fl_fits("_DFTpupmask", "_DFTpupmask.fits");
@@ -782,27 +786,27 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
     if(ID_DFTmask00 != -1)
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            if(data.image[ID_DFTmask00].array.F[ii] > 0.5)
+            if(dcimg[ID_DFTmask00].array.F[ii] > 0.5f)
             {
-                data.image[IDpupin_mask].array.F[ii] = 1.0;
+                dcimg[IDpupin_mask].array.F[ii] = 1.0f;
             }
         }
 
     // ! Why read and re-create ?
-    IDfpmz = image_ID(fpmz_name);
+    IDfpmz = image_ID(fpmz_name, dcimg, dcnimg);
     FUNC_CHECK_RETURN(
         create_2Dimage_ID("_fpmzmask", xsize, ysize, &IDfpmz_mask));
 
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        double amp = fabs(data.image[IDfpmz].array.F[ii]);
+        double amp = fabs(dcimg[IDfpmz].array.F[ii]);
         if(amp > eps)
         {
-            data.image[IDfpmz_mask].array.F[ii] = 1.0;
+            dcimg[IDfpmz_mask].array.F[ii] = 1.0f;
         }
         else
         {
-            data.image[IDfpmz_mask].array.F[ii] = 0.0;
+            dcimg[IDfpmz_mask].array.F[ii] = 0.0f;
         }
     }
 
@@ -819,20 +823,20 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
         double total = 0.0;
         for(uint64_t ii = 0; ii < xysize; ii++)
         {
-            double amp = data.image[IDfpmz].array.F[ii];
+            double amp = dcimg[IDfpmz].array.F[ii];
 
-            double rein  = data.image[ID].array.CF[ii].re;
-            double imin  = data.image[ID].array.CF[ii].im;
+            double rein  = dcimg[ID].array.CF[ii].re;
+            double imin  = dcimg[ID].array.CF[ii].im;
             double ampin = sqrt(rein * rein + imin * imin);
             double phain = atan2(imin, rein);
 
             ampin *= amp;
             total += ampin * ampin;
 
-            data.image[ID].array.CF[ii].re = ampin * cos(phain);
-            data.image[ID].array.CF[ii].im = ampin * sin(phain);
+            dcimg[ID].array.CF[ii].re = ampin * cos(phain);
+            dcimg[ID].array.CF[ii].im = ampin * sin(phain);
         }
-        data.FLOATARRAY[0] = (float) total;
+        dcfloatarr[0] = (float) total;
     }
 
     if(0)  // TEST
@@ -841,10 +845,10 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
 
         mk_amph_from_complex("_foc0", "tmp_foc0_a", "tmp_foc0_p", 0);
 
-        WRITE_FULLFILENAME(fname, "%s/_DFT_foca", data.SAVEDIR);
+        WRITE_FULLFILENAME(fname, "%s/_DFT_foca", dcsavedir);
         FUNC_CHECK_RETURN(save_fl_fits("tmp_foc0_a", fname));
 
-        WRITE_FULLFILENAME(fname, "%s/_DFT_focp", data.SAVEDIR);
+        WRITE_FULLFILENAME(fname, "%s/_DFT_focp", dcsavedir);
         FUNC_CHECK_RETURN(save_fl_fits("tmp_foc0_p", fname));
 
         FUNC_CHECK_RETURN(
@@ -865,8 +869,8 @@ errno_t fft_DFTinsertFPM_re(const char *pupin_name,
 
     for(uint64_t ii = 0; ii < xysize; ii++)
     {
-        data.image[IDout].array.CF[ii].re /= xsize * ysize;
-        data.image[IDout].array.CF[ii].im /= xsize * ysize;
+        dcimg[IDout].array.CF[ii].re /= xsize * ysize;
+        dcimg[IDout].array.CF[ii].im /= xsize * ysize;
     }
 
     FUNC_CHECK_RETURN(delete_image_ID("_foc0", DELETE_IMAGE_ERRMODE_WARNING));

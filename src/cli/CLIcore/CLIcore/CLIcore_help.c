@@ -1,0 +1,1447 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <libgen.h>
+#include <malloc.h>
+
+#include <fitsio.h>
+#ifdef USE_READLINE
+#include <readline/readline.h>
+#endif
+#include <regex.h>
+
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include <sys/ioctl.h>
+#include "CLIcore.h"
+#include "ImageStreamIO/ImageStreamIO_config.h" // For IMAGESTRUCT_VERSION
+
+
+#define C_RST    "\033[0m"
+#define C_TITLE  "\033[1;36m"
+#define C_HDR    "\033[1;35m"
+#define C_CMD    "\033[32m"
+#define C_BOLD   "\033[1m"
+#define C_NOTE   "\033[33m"
+
+// Compatibility aliases
+#ifndef COLORRESET
+#define COLORRESET     C_RST
+#endif
+
+#ifndef COLORCMD
+#define COLORCMD       C_CMD
+#endif
+
+#ifndef COLORINFO
+#define COLORINFO      "\033[32m" // green
+#endif
+
+#ifndef COLORARGCLI
+#define COLORARGCLI    "\033[36m" // argument part of CLI call: cyan
+#endif
+
+#ifndef COLORARGnotCLI
+#define COLORARGnotCLI "\033[35m" // argument not part of CLI call: yellow
+#endif
+
+
+errno_t printInfo()
+{
+    float f1;
+    printf("\n");
+    printf("  PID = %d\n", CLIPID);
+
+    printf("--------------- GENERAL ----------------------\n");
+    printf("%s  %s\n", dcpkgname, dcpkgver);
+    printf("IMAGESTRUCT_VERSION %s\n", IMAGESTRUCT_VERSION);
+    printf("%s BUILT   %s %s\n", __FILE__, __DATE__, __TIME__);
+    printf("\n");
+    printf("--------------- SETTINGS ---------------------\n");
+    printf("procinfo status = %d\n", dcprocinfo);
+
+    if(dcprecision == 0)
+    {
+        printf("Default precision upon startup : float\n");
+    }
+    if(dcprecision == 1)
+    {
+        printf("Default precision upon startup : double\n");
+    }
+    printf("sizeof(struct timespec)        = %4ld bit\n",
+           sizeof(struct timespec) * 8);
+    printf("sizeof(pid_t)                  = %4ld bit\n", sizeof(pid_t) * 8);
+    printf("sizeof(short int)              = %4ld bit\n",
+           sizeof(short int) * 8);
+    printf("sizeof(int)                    = %4ld bit\n", sizeof(int) * 8);
+    printf("sizeof(long)                   = %4ld bit\n", sizeof(long) * 8);
+    printf("sizeof(long long)              = %4ld bit\n",
+           sizeof(long long) * 8);
+    printf("sizeof(int_fast8_t)            = %4ld bit\n",
+           sizeof(int_fast8_t) * 8);
+    printf("sizeof(int_fast16_t)           = %4ld bit\n",
+           sizeof(int_fast16_t) * 8);
+    printf("sizeof(int_fast32_t)           = %4ld bit\n",
+           sizeof(int_fast32_t) * 8);
+    printf("sizeof(int_fast64_t)           = %4ld bit\n",
+           sizeof(int_fast64_t) * 8);
+    printf("sizeof(uint_fast8_t)           = %4ld bit\n",
+           sizeof(uint_fast8_t) * 8);
+    printf("sizeof(uint_fast16_t)          = %4ld bit\n",
+           sizeof(uint_fast16_t) * 8);
+    printf("sizeof(uint_fast32_t)          = %4ld bit\n",
+           sizeof(uint_fast32_t) * 8);
+    printf("sizeof(uint_fast64_t)          = %4ld bit\n",
+           sizeof(uint_fast64_t) * 8);
+    printf("sizeof(IMAGE_KEYWORD)          = %4ld bit\n",
+           sizeof(IMAGE_KEYWORD) * 8);
+
+    size_t offsetval  = 0;
+    size_t offsetval0 = 0;
+
+    printf(
+        "sizeof(IMAGE_METADATA)         = %4ld bit  = %4zu byte "
+        "------------------\n",
+        sizeof(IMAGE_METADATA) * 8,
+        sizeof(IMAGE_METADATA));
+
+    offsetval = offsetof(IMAGE_METADATA, version);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, name);
+    printf(
+        "   version                     offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, naxis);
+    printf(
+        "   name                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, size);
+    printf(
+        "   naxis                       offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, nelement);
+    printf(
+        "   size                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, datatype);
+    printf(
+        "   nelement                    offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, imagetype);
+    printf(
+        "   datatype                    offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, creationtime);
+    printf(
+        "   imagetype                   offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, lastaccesstime);
+    printf(
+        "   creationtime                offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, atime);
+    printf(
+        "   lastaccesstime              offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, writetime);
+    printf(
+        "   atime                       offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, location);
+    printf(
+        "   writetime                   offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, location);
+    printf(
+        "   shared                      offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, status);
+    printf(
+        "   location                    offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, flag);
+    printf(
+        "   status                      offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, sem);
+    printf(
+        "   flag                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, sem);
+    printf(
+        "   logflag                     offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, cnt0);
+    printf(
+        "   sem                         offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, cnt1);
+    printf(
+        "   cnt0                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, cnt2);
+    printf(
+        "   cnt1                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, write);
+    printf(
+        "   cnt2                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, NBkw);
+    printf(
+        "   write                       offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    offsetval  = offsetof(IMAGE_METADATA, cudaMemHandle);
+    printf(
+        "   NBkw                        offset = %4zu bit  = %4zu byte     "
+        "[%4zu byte]\n",
+        8 * offsetval0,
+        offsetval0,
+        offsetval - offsetval0);
+
+    offsetval0 = offsetval;
+    printf("   cudaMemHandle               offset = %4zu bit  = %4zu byte\n",
+           8 * offsetval0,
+           offsetval0);
+
+    printf(
+        "sizeof(IMAGE)                  offset = %4zu bit  = %4zu byte "
+        "------------------\n",
+        sizeof(IMAGE) * 8,
+        sizeof(IMAGE));
+    printf("   name                        offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, name),
+           offsetof(IMAGE, name));
+
+    printf("   used                        offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, used),
+           offsetof(IMAGE, used));
+
+    printf("   shmfd                       offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, shmfd),
+           offsetof(IMAGE, shmfd));
+
+    printf("   memsize                     offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, memsize),
+           offsetof(IMAGE, memsize));
+
+    printf("   semlog                      offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, semlog),
+           offsetof(IMAGE, semlog));
+
+    printf("   md                          offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, md),
+           offsetof(IMAGE, md));
+
+    printf("   atimearray                  offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, atimearray),
+           offsetof(IMAGE, atimearray));
+
+    printf("   writetimearray              offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, writetimearray),
+           offsetof(IMAGE, writetimearray));
+
+    printf("   flagarray                   offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, flagarray),
+           offsetof(IMAGE, flagarray));
+
+    printf("   cntarray                    offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, cntarray),
+           offsetof(IMAGE, cntarray));
+
+    printf("   array                       offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, array),
+           offsetof(IMAGE, array));
+
+    printf("   semptr                      offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, semptr),
+           offsetof(IMAGE, semptr));
+
+    printf("   kw                          offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE, kw),
+           offsetof(IMAGE, kw));
+
+    printf(
+        "sizeof(IMAGE_KEYWORD)          offset = %4zu bit  = %4zu byte "
+        "------------------\n",
+        sizeof(IMAGE_KEYWORD) * 8,
+        sizeof(IMAGE_KEYWORD));
+
+    printf("   name                        offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE_KEYWORD, name),
+           offsetof(IMAGE_KEYWORD, name));
+
+    printf("   type                        offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE_KEYWORD, type),
+           offsetof(IMAGE_KEYWORD, type));
+
+    printf("   value                       offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE_KEYWORD, value),
+           offsetof(IMAGE_KEYWORD, value));
+
+    printf("   comment                     offset = %4zu bit  = %4zu byte\n",
+           8 * offsetof(IMAGE_KEYWORD, comment),
+           offsetof(IMAGE_KEYWORD, comment));
+
+    printf("\n");
+    printf("--------------- LIBRARIES --------------------\n");
+#ifdef USE_READLINE
+    printf("READLINE : version %x\n", RL_READLINE_VERSION);
+#else
+    printf("READLINE : disabled\n");
+#endif
+#ifdef _OPENMP
+    printf("OPENMP   : Compiled by an OpenMP-compliant implementation.\n");
+#endif
+    printf("CFITSIO  : version %f\n", fits_get_version(&f1));
+    printf("\n");
+
+    printf("--------------- DIRECTORIES ------------------\n");
+    printf("CONFIGDIR = %s\n", dcconfigdir);
+    printf("SOURCEDIR = %s\n", dcsourcedir);
+    printf("\n");
+
+    printf("--------------- MALLOC INFO ------------------\n");
+    malloc_stats();
+
+    printf("\n");
+
+    return RETURN_SUCCESS;
+}
+
+
+errno_t list_commands()
+{
+    int cols = 120; // default
+#ifdef TIOCGWINSZ
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
+        if (ws.ws_col > 0) {
+            cols = ws.ws_col;
+        }
+    }
+#endif
+
+    int  cmdinfoslen = 50;
+    
+    // adjust cmdinfoslen if terminal is very small
+    int base_length = 4 + 3 + 24 + 2 + 16 + 2; // 51
+    if (cols - base_length - 2 < cmdinfoslen) {
+        cmdinfoslen = cols - base_length - 2;
+        if (cmdinfoslen < 5) cmdinfoslen = 5;
+    }
+
+    char cmdinfoshort[cmdinfoslen];
+
+    printf("================================================ LIST OF COMMANDS ================================================\n");
+    for(unsigned int i = 0; i < data.NBcmd; i++)
+    {
+        strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
+        cmdinfoshort[cmdinfoslen - 1] = '\0';
+        
+        int example_max_len = cols - (base_length + cmdinfoslen - 1 + 2);
+        char example_short[256];
+        if (example_max_len < 0) example_max_len = 0;
+        if (example_max_len > 255) example_max_len = 255;
+        
+        strncpy(example_short, data.cmd[i].example, example_max_len);
+        example_short[example_max_len] = '\0';
+
+        printf("%4u > " COLORCMD " %-24s " COLORRESET " %-16s " COLORINFO " %-*s " COLORRESET " %s\n",
+               i,
+               data.cmd[i].key,
+               data.cmd[i].module,
+               cmdinfoslen - 1,
+               cmdinfoshort,
+               example_short);
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+errno_t list_commands_module(const char *__restrict modulename)
+{
+    int cols = 120; // default
+#ifdef TIOCGWINSZ
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0) {
+        if (ws.ws_col > 0) {
+            cols = ws.ws_col;
+        }
+    }
+#endif
+
+    int  mOK         = 0;
+    int  cmdinfoslen = 38;
+    
+    // adjust cmdinfoslen if terminal is very small
+    int base_length = 3 + 24 + 2; // 29
+    if (cols - base_length < cmdinfoslen) {
+        cmdinfoslen = cols - base_length;
+        if (cmdinfoslen < 5) cmdinfoslen = 5;
+    }
+
+    char cmdinfoshort[cmdinfoslen];
+
+    int moduleindex = -1;
+    for(int m = 0; m < data.NBmodule; m++)
+    {
+        if(strcmp(modulename, data.module[m].name) == 0)
+        {
+            moduleindex = m;
+        }
+    }
+    if(moduleindex == -1)
+    {
+        printf("---- MODULE %s DOES NOT EXIST / NOT LOADED ---------\n",
+               modulename);
+    }
+    else
+    {
+        printf("   name         %s\n", data.module[moduleindex].name);
+        printf("   type         %d\n", data.module[moduleindex].type);
+        printf("   short name   %s\n", data.module[moduleindex].shortname);
+        printf("   package      %s\n", data.module[moduleindex].package);
+        printf("   loadname     %s\n", data.module[moduleindex].loadname);
+        printf("   sofilename   %s\n", data.module[moduleindex].sofilename);
+        printf("   version      %d %d %d\n",
+               data.module[moduleindex].versionmajor,
+               data.module[moduleindex].versionminor,
+               data.module[moduleindex].versionpatch);
+        printf("   date         %s %s\n",
+               data.module[moduleindex].datestring,
+               data.module[moduleindex].timestring);
+        printf("   info         %s\n", data.module[moduleindex].info);
+
+        for(unsigned int i = 0; i < data.NBcmd; i++)
+        {
+            int cmdstrlen = 200;
+            char cmpstring[cmdstrlen];
+            snprintf(cmpstring, cmdstrlen, "%s", data.cmd[i].module);
+
+            if(strcmp(modulename, cmpstring) == 0)
+            {
+                if(mOK == 0)
+                {
+                    printf("---- MODULE %s COMMANDS ---------\n", modulename);
+                }
+
+                strncpy(cmdinfoshort, data.cmd[i].info, cmdinfoslen - 1);
+                cmdinfoshort[cmdinfoslen - 1] = '\0';
+                
+                printf(COLORCMD "   %-24s" COLORRESET COLORINFO
+                       "  %-*s\n" COLORRESET,
+                       data.cmd[i].key,
+                       cmdinfoslen - 1,
+                       cmdinfoshort);
+                mOK = 1;
+            }
+        }
+
+        if(mOK == 0)
+        {
+            if(strlen(modulename) > 0)
+            {
+                printf(
+                    "---- MODULE %s DOES NOT HAVE COMMANDS "
+                    "---------\n",
+                    modulename);
+            }
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/** @brief Construct command line (CLI) arguments help string
+ *
+ */
+int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
+                           int          nbarg,
+                           char        *outargstring)
+{
+    char tmpstr[STRINGMAXLEN_CMD_SYNTAX];
+    tmpstr[0] = '\0';
+
+    int CLIargcnt = 0;
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            char typestring[100] = "?";
+
+            switch(fpscliarg[arg].type)
+            {
+            case CLIARG_FLOAT32:
+                strcpy(typestring, "FLOAT32");
+                break;
+
+            case CLIARG_FLOAT64:
+                strcpy(typestring, "FLOAT64");
+                break;
+
+            case CLIARG_INT32:
+                strcpy(typestring, "INT32");
+                break;
+
+            case CLIARG_UINT32:
+                strcpy(typestring, "UINT32");
+                break;
+
+            case CLIARG_INT64:
+                strcpy(typestring, "INT64");
+                break;
+
+            case CLIARG_UINT64:
+                strcpy(typestring, "UINT64");
+                break;
+
+            case CLIARG_STR_NOT_IMG:
+                strcpy(typestring, "STRING");
+                break;
+
+            case CLIARG_IMG:
+                strcpy(typestring, "STREAMNAME");
+                break;
+
+            case CLIARG_STR:
+                strcpy(typestring, "STRING");
+                break;
+
+            case CLIARG_ONOFF:
+                strcpy(typestring, "ONOFF");
+                break;
+
+            case CLIARG_FILENAME:
+                strcpy(typestring, "FILENAME");
+                break;
+
+            case CLIARG_FITSFILENAME:
+                strcpy(typestring,
+                       "FITSFILENAME");
+                break;
+
+            case CLIARG_FPSNAME:
+                strcpy(typestring, "FPSNAME");
+                break;
+            }
+
+            char tmpstr1[STRINGMAXLEN_CMD_SYNTAX];
+            if(CLIargcnt == 0)
+            {
+                snprintf(tmpstr1,
+                         STRINGMAXLEN_CMD_SYNTAX,
+                         "<%s [%s]>",
+                         fpscliarg[arg].descr,
+                         typestring);
+            }
+            else
+            {
+                snprintf(tmpstr1,
+                         STRINGMAXLEN_CMD_SYNTAX - 1,
+                         " <%s [%s]>",
+                         fpscliarg[arg].descr,
+                         typestring);
+            }
+
+            // max number of chars we can write
+            int n = STRINGMAXLEN_CMD_SYNTAX - strlen(tmpstr);
+            if(n > (int) strlen(tmpstr1))
+            {
+                strcat(tmpstr, tmpstr1);
+            }
+            CLIargcnt++;
+        }
+    }
+    strncpy(outargstring, tmpstr, STRINGMAXLEN_CMD_SYNTAX - 1);
+
+    return strlen(outargstring);
+}
+
+
+/** @brief Assemble command line (CLI) example command string
+ *
+ */
+int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
+                                  int          nbarg,
+                                  char        *shortname,
+                                  char        *outcmdexstring)
+{
+    char tmpstr[STRINGMAXLEN_CMD_EXAMPLE];
+
+    snprintf(tmpstr, STRINGMAXLEN_CMD_EXAMPLE, "%s", shortname);
+
+    for(int arg = 0; arg < nbarg; arg++)
+    {
+        if(fpscliarg[arg].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+        {
+            char tmpstr1[STRINGMAXLEN_CMD_EXAMPLE];
+            snprintf(tmpstr1,
+                     STRINGMAXLEN_CMD_EXAMPLE - 1,
+                     " %s",
+                     fpscliarg[arg].example);
+
+            // max number of chars we can write
+            int n = STRINGMAXLEN_CMD_EXAMPLE - strlen(tmpstr);
+            if(n > (int) strlen(tmpstr1))
+            {
+                strcat(tmpstr, tmpstr1);
+            }
+        }
+    }
+    strncpy(outcmdexstring, tmpstr, STRINGMAXLEN_CMD_EXAMPLE - 1);
+
+    return strlen(outcmdexstring);
+}
+
+static int checkFlag64(uint64_t flags, uint64_t testflag, char *flagdescription)
+{
+    int rval = 0;
+
+    // printf("--------- flags: %ld\n", flags);
+
+    if(flags & testflag)
+    {
+        rval = 1;
+        printf("    [%c[%d;%dm ON%c[%dm]  %s\n",
+               (char) 27,
+               1,
+               32,
+               (char) 27,
+               0,
+               flagdescription);
+    }
+    else
+    {
+        rval = 0;
+        printf("    [%c[%d;%dmOFF%c[%dm]  %s\n",
+               (char) 27,
+               1,
+               31,
+               (char) 27,
+               0,
+               flagdescription);
+    }
+    return rval;
+}
+
+/**
+ * @brief command help\n
+ *
+ * @param[in] cmdkey Commmand name
+ */
+
+errno_t help_command(
+    const char *__restrict cmdkey
+)
+{
+    int cOK = 0;
+
+    for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+    {
+        if(!strcmp(cmdkey, data.cmd[cmdi].key))
+        {
+            printf("\n");
+            printf(COLORCMD "%s" COLORRESET
+                   " in %s [%s]\n"
+                   "\t" COLORINFO
+                   "%s\n" COLORRESET,
+                   data.cmd[cmdi].key,
+                   data.cmd[cmdi].module,
+                   data.module[
+                       data.cmd[cmdi]
+                       .moduleindex]
+                   .shortname,
+                   data.cmd[cmdi].info);
+
+            printf("\t\033[33mexample>\033[0m"
+                   " \033[1m%s\033[0m\n",
+                   data.cmd[cmdi].example);
+            printf("\t\033[2msrc: %s\033[0m"
+                   "\n",
+                   data.cmd[cmdi].srcfile);
+
+            int FPSsupport = checkFlag64(data.cmd[cmdi].cmdsettings.flags,
+                                         CLICMDFLAG_FPS,
+                                         "FPS support");
+            if(FPSsupport == 1)
+            {
+                if(checkFlag64(data.cmd[cmdi].cmdsettings.flags,
+                               CLICMDFLAG_PROCINFO,
+                               "processinfo support (..procinfo 0/1)") == 1)
+                {
+                    printf("        loopcntMax         : %ld\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_loopcntMax);
+                    printf("      Triggering:\n");
+
+                    printf("        triggermode        : %d ",
+                           data.cmd[cmdi].cmdsettings.triggermode);
+                    switch(data.cmd[cmdi].cmdsettings.triggermode)
+                    {
+                    case PROCESSINFO_TRIGGERMODE_IMMEDIATE:
+                        printf("IMMEDIATE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT0:
+                        printf("CNT0");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT1:
+                        printf("CNT1");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_SEMAPHORE:
+                        printf("SEMAPHORE");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_DELAY:
+                        printf("DELAY");
+                        break;
+                    case PROCESSINFO_TRIGGERMODE_CNT2:
+                        printf("CNT2");
+                        break;
+                    default:
+                        printf("unknown");
+                        break;
+                    }
+                    printf("\n");
+
+                    printf("        triggerstreamname  : %s\n",
+                           data.cmd[cmdi].cmdsettings.triggerstreamname);
+
+                    printf("        semindexrequested  : %d\n",
+                           data.cmd[cmdi].cmdsettings.semindexrequested);
+
+                    printf(
+                        "        triggerdelay       : "
+                        "%lld.%09ld\n",
+                        (long long) data.cmd[cmdi]
+                        .cmdsettings.triggerdelay.tv_sec,
+                        data.cmd[cmdi].cmdsettings.triggerdelay.tv_nsec);
+
+                    printf(
+                        "        triggertimeout     : "
+                        "%lld.%09ld\n",
+                        (long long) data.cmd[cmdi]
+                        .cmdsettings.triggertimeout.tv_sec,
+                        data.cmd[cmdi].cmdsettings.triggertimeout.tv_nsec);
+
+                    printf("      Resources:\n");
+                    printf("        RT_priority        : %d\n",
+
+                           data.cmd[cmdi].cmdsettings.RT_priority);
+
+                    printf("        CPUmask            : ");
+
+                    int nproc = sysconf(_SC_NPROCESSORS_ONLN);
+                    for(int cpu = 0; cpu < nproc; cpu++)
+                    {
+                        printf(" %d",
+                               CPU_ISSET(cpu,
+                                         &data.cmd[cmdi].cmdsettings.CPUmask));
+                    }
+                    printf("\n");
+                    printf("        MeasureTiming      : %d\n",
+                           data.cmd[cmdi].cmdsettings.procinfo_MeasureTiming);
+                }
+            }
+
+            printf("\n");
+            printf("  CLI call arguments:\n");
+            //printf("  CLI#       tagname             Value         description\n");
+
+            int CLIargcnt = 0;
+            for(int argi = 0; argi < data.cmd[cmdi].nbparam; argi++)
+            {
+                char valuestring[STRINGMAXLEN_CLICMDARG] = "???";
+
+                switch(data.cmd[cmdi].argdata[argi].type)
+                {
+                case CLIARG_FLOAT32:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[float32]  %f",
+                                   data.cmd[cmdi].argdata[argi].val.f32);
+                    break;
+
+                case CLIARG_FLOAT64:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[float64]  %lf",
+                                   data.cmd[cmdi].argdata[argi].val.f64);
+                    break;
+
+                case CLIARG_ONOFF:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ ONOFF ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                    break;
+
+                case CLIARG_INT32:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ int32 ]  %d",
+                                   data.cmd[cmdi].argdata[argi].val.i32);
+                    break;
+
+                case CLIARG_UINT32:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[uint32 ]  %u",
+                                   data.cmd[cmdi].argdata[argi].val.ui32);
+                    break;
+
+                case CLIARG_INT64:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ int64 ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.i64);
+                    break;
+
+                case CLIARG_UINT64:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[uint64 ]  %lu",
+                                   data.cmd[cmdi].argdata[argi].val.ui64);
+                    break;
+
+                case CLIARG_STR_NOT_IMG:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ STRnI ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case CLIARG_IMG:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ STREAM]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_FITSFILENAME:
+                case FPTYPE_FILENAME:
+                case FPTYPE_DIRNAME:
+                case FPTYPE_EXECFILENAME:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ FILE  ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_STRING:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[STRING ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_PID:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[  PID  ]  %ld",
+                                   data.cmd[cmdi].argdata[argi].val.i64);
+                    break;
+
+                case FPTYPE_TIMESPEC:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[ TIME  ]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_PROCESS:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[PROCESS]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+
+                case FPTYPE_FPSNAME:
+                    SNPRINTF_CHECK(valuestring,
+                                   STRINGMAXLEN_CLICMDARG,
+                                   "[FPSNAME]  %s",
+                                   data.cmd[cmdi].argdata[argi].val.s);
+                    break;
+                }
+
+                if(data.cmd[cmdi].argdata[argi].fpflag & FPFLAG_PRIMARY_CLI_INPUT)
+                {
+                    printf("%6d   " COLORARGCLI " %-16s" COLORRESET " %-24s %s\n",
+                           CLIargcnt,
+                           data.cmd[cmdi].argdata[argi].fpstag,
+                           valuestring,
+                           data.cmd[cmdi].argdata[argi].descr);
+                    CLIargcnt++;
+                }
+                else
+                {
+                    printf("[hidden] " COLORARGnotCLI " %-16s" COLORRESET " %-24s %s\n",
+                           data.cmd[cmdi].argdata[argi].fpstag,
+                           valuestring,
+                           data.cmd[cmdi].argdata[argi].descr);
+                }
+            }
+
+            printf("\n");
+
+            cOK = 1;
+        }
+    }
+
+    int foundsubstring  = 0;
+    int foundregexmatch = 0;
+    if(cOK == 0)
+    {
+        printf("Command \"%s\" does not exist. Partial matches:\n", cmdkey);
+
+        regex_t regex;
+        int     reti;
+        /* Compile regular expression */
+        reti = regcomp(&regex, cmdkey, REG_EXTENDED);
+        if(reti)
+        {
+            fprintf(stderr, "Could not compile regex : \"%s\"\n", cmdkey);
+            exit(1);
+        }
+        int        maxGroups = 8;
+        regmatch_t groupArray[maxGroups];
+
+        for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+        {
+
+            int matchsubstring = 0;
+            // look for substring match
+
+            if(strstr(data.cmd[cmdi].key, cmdkey) != NULL)
+            {
+                foundsubstring = 1;
+                matchsubstring = 1;
+                printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
+                       "%s\n" COLORRESET,
+                       data.cmd[cmdi].key,
+                       data.cmd[cmdi].module,
+                       data.module[data.cmd[cmdi].moduleindex].shortname,
+                       data.cmd[cmdi].info);
+            }
+
+            // Regular expression search
+            if(matchsubstring == 0)
+            {
+                // Regular expression search
+                reti = regexec(&regex,
+                               data.cmd[cmdi].key,
+                               maxGroups,
+                               groupArray,
+                               0);
+                if(!reti)
+                {
+                    foundregexmatch = 1;
+                    printf(COLORCMD "%s" COLORRESET " in %s [%s]\n\t" COLORINFO
+                           "%s\n" COLORRESET,
+                           data.cmd[cmdi].key,
+                           data.cmd[cmdi].module,
+                           data.module[data.cmd[cmdi].moduleindex].shortname,
+                           data.cmd[cmdi].info);
+
+                    char        *cursor = data.cmd[cmdi].key;
+                    unsigned int offset = 0;
+                    for(int g = 0; g < maxGroups; g++)
+                    {
+                        if(groupArray[g].rm_so == (regoff_t)((size_t) -1))
+                        {
+                            break; // No more groups
+                        }
+
+                        if(g == 0)
+                        {
+                            offset = groupArray[g].rm_eo;
+                        }
+
+                        char cursorCopy[strlen(cursor) + 1];
+                        strcpy(cursorCopy, cursor);
+                        cursorCopy[groupArray[g].rm_eo] = 0;
+                        /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
+                               g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                               cursorCopy + groupArray[g].rm_so);*/
+                    }
+                    cursor += offset;
+                }
+                else if(reti == REG_NOMATCH)
+                {
+                    //puts("No match");
+                }
+                else
+                {
+                    char msgbuf[100];
+                    regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                    fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                    exit(1);
+                }
+            }
+        }
+
+        regfree(&regex);
+
+        if(foundsubstring == 0)
+        {
+            if(foundregexmatch == 0)
+            {
+                printf("\tNo substring or regex match to \"%s\"\n", cmdkey);
+            }
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/**
+ * @brief search for string in command info
+ *
+ */
+
+errno_t command_info_search(const char *restrict searchstring)
+{
+    int foundsubstring  = 0;
+    int foundregexmatch = 0;
+    int colorcodecmd    = 31; // red
+    int colorcodeinfo   = 32; // green
+
+    regex_t regex;
+    /* Compile regular expression */
+    int reti = regcomp(&regex, searchstring, REG_EXTENDED);
+    if(reti)
+    {
+        fprintf(stderr, "Could not compile regex : \"%s\"\n", searchstring);
+        exit(1);
+    }
+    int        maxGroups = 8;
+    regmatch_t groupArray[maxGroups];
+
+    for(unsigned int cmdi = 0; cmdi < data.NBcmd; cmdi++)
+    {
+
+        int matchsubstring = 0;
+        // look for substring match
+
+        if(strstr(data.cmd[cmdi].info, searchstring) != NULL)
+        {
+            foundsubstring = 1;
+            matchsubstring = 1;
+            printf("%c[%d;%dm%s%c[%dm in %s [%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                   (char) 27,
+                   1,
+                   colorcodecmd,
+                   data.cmd[cmdi].key,
+                   (char) 27,
+                   0,
+                   data.cmd[cmdi].module,
+                   data.module[data.cmd[cmdi].moduleindex].shortname,
+                   (char) 27,
+                   1,
+                   colorcodeinfo,
+                   data.cmd[cmdi].info,
+                   (char) 27,
+                   0);
+        }
+
+        // Regular expression search
+        if(matchsubstring == 0)
+        {
+            // Regular expression search
+            reti =
+                regexec(&regex, data.cmd[cmdi].info, maxGroups, groupArray, 0);
+            if(!reti)
+            {
+                foundregexmatch = 1;
+
+                printf(
+                    "%c[%d;%dm%s%c[%dm in %s "
+                    "[%s]\n\t%c[%d;%dm%s%c[%dm\n",
+                    (char) 27,
+                    1,
+                    colorcodecmd,
+                    data.cmd[cmdi].key,
+                    (char) 27,
+                    0,
+                    data.cmd[cmdi].module,
+                    data.module[data.cmd[cmdi].moduleindex].shortname,
+                    (char) 27,
+                    1,
+                    colorcodeinfo,
+                    data.cmd[cmdi].info,
+                    (char) 27,
+                    0);
+
+                char        *cursor = data.cmd[cmdi].info;
+                unsigned int offset = 0;
+                for(int g = 0; g < maxGroups; g++)
+                {
+                    if(groupArray[g].rm_so == (regoff_t)((size_t) -1))
+                    {
+                        break; // No more groups
+                    }
+
+                    if(g == 0)
+                    {
+                        offset = groupArray[g].rm_eo;
+                    }
+
+                    char cursorCopy[strlen(cursor) + 1];
+                    strcpy(cursorCopy, cursor);
+                    cursorCopy[groupArray[g].rm_eo] = 0;
+                    /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
+                           g, groupArray[g].rm_so, groupArray[g].rm_eo,
+                           cursorCopy + groupArray[g].rm_so);*/
+                }
+                cursor += offset;
+            }
+            else if(reti == REG_NOMATCH)
+            {
+                //puts("No match");
+            }
+            else
+            {
+                char msgbuf[100];
+                regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+                fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+                exit(1);
+            }
+        }
+    }
+
+    regfree(&regex);
+
+    if(foundsubstring == 0)
+    {
+        if(foundregexmatch == 0)
+        {
+            printf("\tNo substring or regex match to \"%s\"\n", searchstring);
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+void print_milk_framework_help(void)
+{
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                    milk OVERVIEW\n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf("The milk framework is built around three core pillars for\n");
+    printf("high-performance, real-time data processing:\n");
+    printf("\n");
+
+    printf(C_HDR "1. ImageStreamIO (Streams)\n" C_RST);
+    printf("Fast, low-latency shared-memory data streams designed to\n");
+    printf("pass images and multi-dimensional arrays between distinct\n");
+    printf("processes with zero-copy overhead.\n");
+    printf("  " C_NOTE "Detailed guide:" C_RST " Run " C_CMD "milk-stream-help\n" C_RST);
+    printf("\n");
+
+    printf(C_HDR "2. Function Parameter Structure (FPS)\n" C_RST);
+    printf("A shared memory architecture providing a unified namespace\n");
+    printf("to manage configurations, parameters, and telemetry for\n");
+    printf("applications seamlessly across the CLI and API.\n");
+    printf("  " C_NOTE "Detailed guide:" C_RST " Run " C_CMD "milk-fps-help\n" C_RST);
+    printf("\n");
+
+    printf(C_HDR "3. Processinfo (procinfo API)\n" C_RST);
+    printf("Advanced real-time execution management, CPU affinity,\n");
+    printf("scheduling policies, and stream-based process triggering.\n");
+    printf("  " C_NOTE "Detailed guide:" C_RST " Run " C_CMD "milk-procinfo-help\n" C_RST);
+    printf("\n");
+
+    printf(C_TITLE "--------------------------------------------------------\n" C_RST);
+    printf(C_HDR "General Usage\n" C_RST);
+    printf("To enter the interactive milk shell, simply type:\n");
+    printf("  $ " C_CMD "milk-cli\n" C_RST);
+    printf("\n");
+    printf("From within the milk shell, you can list\n");
+    printf("available commands to see all capabilities:\n");
+    printf("For CLI specific help, run " C_CMD "milk-cli-help\n" C_RST);
+    printf("\n");
+}
+
+void print_milk_cli_help(void)
+{
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                COMMAND LINE OPTIONS                    \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_CMD "  -h, --help      " C_RST "print this message and exit\n");
+    printf(C_CMD "  -v, --version   " C_RST "print version and exit\n");
+    printf(C_CMD "  -i, --info      " C_RST "print version, settings, info and exit\n");
+    printf(C_CMD "  --verbose       " C_RST "be verbose\n");
+    printf(C_CMD "  -d <level>      " C_RST "set debug level at startup\n");
+    printf(C_CMD "  -o, --overwrite " C_RST "overwrite existing FITS files " C_NOTE "(USE WITH CAUTION)\n" C_RST);
+    printf(C_CMD "  -e, --errorexit " C_RST "exit on error\n");
+    printf(C_CMD "  -Z, --idle      " C_RST "only run process when X is idle\n");
+    printf(C_CMD "  -A, --autocomplete " C_RST "enable autocomplete preview " C_NOTE "(ON by default)\n" C_RST);
+    printf(C_CMD "  --no-autocomplete  " C_RST "disable inline autocomplete preview\n");
+    printf(C_CMD "  --no-history-suggest " C_RST "disable history-based suggestions\n");
+    printf(C_CMD "  --no-arg-hints     " C_RST "disable argument hint line\n");
+    printf(C_CMD "  --no-fuzzy         " C_RST "disable fuzzy/substring matching\n");
+    printf(C_CMD "  -f, --fifoflag  " C_RST "enable default fifo input\n");
+    printf(C_CMD "  -F <fifoname>   " C_RST "specify custom fifo name\n");
+    printf(C_CMD "  -s <file>       " C_RST "execute startup script\n");
+    printf(C_CMD "  -n <name>       " C_RST "specify process name\n");
+    printf(C_CMD "  -p <priority>   " C_RST "set RT priority (0-99)\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                SYNTAX & INTERACTION                    \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Syntax Rules:\n" C_RST);
+    printf("  Spaces separate arguments. Use " C_BOLD "#" C_RST " for comments.\n");
+    printf("  Example: " C_CMD "command arg1 arg2 # comment\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Tab Completion & UX Features:\n" C_RST);
+    printf("  1st arg: Match commands, then images, then files.\n");
+    printf("  Subsequent: Match images, then files.\n");
+    printf("  " C_NOTE "History:" C_RST " Commands are saved persistently across sessions (Up/Down).\n");
+    printf("  " C_NOTE "Autocorrection:" C_RST " Mistyped commands suggest the closest match.\n");
+    printf("  " C_NOTE "Fuzzy finding:" C_RST " " C_CMD "milk-fpsexec-list <keyword>" C_RST " filters matches.\n");
+    printf("  " C_NOTE "Bash completion:" C_RST " Source scripts/milk-completion.sh for standard tab completion.\n");
+    printf("\n");
+    printf(C_HDR "Piping Commands:\n" C_RST);
+    printf("  Commands can be piped to milk-cli via stdin:\n");
+    printf("  " C_CMD "echo -e \"a=1\\nb=2\\nc=a+b\" | milk-cli\n" C_RST);
+    printf("  Use " C_BOLD "\\n" C_RST " to separate multiple commands.\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                 IMPORTANT COMMANDS                     \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_CMD "  ? / help        " C_RST "Show this overview\n");
+    printf(C_CMD "  cmd? [cmd]      " C_RST "Help for specific command\n");
+    printf(C_CMD "  m? [module]     " C_RST "List commands in module\n");
+    printf(C_CMD "  h? [string]     " C_RST "Search command descriptions\n");
+    printf(C_CMD "  ci              " C_RST "System info and memory usage\n");
+    printf(C_CMD "  mem.listim      " C_RST "List images in memory\n");
+    printf(C_CMD "  iofits.loadfits " C_RST "Load FITS file " C_NOTE "(requires CFITS)\n" C_RST);
+    printf(C_CMD "  iofits.savefits " C_RST "Save FITS file " C_NOTE "(requires CFITS)\n" C_RST);
+    printf(C_CMD "  quit / exit     " C_RST "Exit the milk shell\n");
+    printf(C_CMD "  !<syscommand>   " C_RST "Execute shell command\n");
+    printf("\n");
+
+    return;
+}
+
+errno_t help()
+{
+    print_milk_cli_help();
+
+    return RETURN_SUCCESS;
+}
+
+errno_t helpreadline()
+{
+
+    EXECUTE_SYSTEM_COMMAND(
+        "more %s/src/CommandLineInterface/doc/helpreadline.md",
+        dcsourcedir);
+
+    return RETURN_SUCCESS;
+}
+
+errno_t help_cmd()
+{
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    {
+        help_command(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        list_commands();
+    }
+
+    return RETURN_SUCCESS;
+}
+
+errno_t cmdinfosearch()
+{
+    if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_EXISTINGIMAGE) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_COMMAND) ||
+            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    {
+        command_info_search(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        list_commands();
+    }
+
+    return RETURN_SUCCESS;
+}
+
+errno_t help_module()
+{
+
+    if(data.cmdargtoken[1].type == 3)
+    {
+        list_commands_module(data.cmdargtoken[1].val.string);
+    }
+    else
+    {
+        long i;
+        printf("\n");
+        printf("%2s  %10s %32s %10s %7s    %20s %s\n",
+               "#",
+               "shortname",
+               "Name",
+               "Package",
+               "Version",
+               "last compiled",
+               "description");
+        printf(
+            "--------------------------------------------------------------"
+            "-----------------------------------------"
+            "-------\n");
+        for(i = 0; i < data.NBmodule; i++)
+        {
+            printf(
+                "%2ld %10s \033[1m%32s\033[0m %10s %2d.%02d.%02d    "
+                "%11s %8s  %s\n",
+                i,
+                data.module[i].shortname,
+                data.module[i].name,
+                data.module[i].package,
+                data.module[i].versionmajor,
+                data.module[i].versionminor,
+                data.module[i].versionpatch,
+                data.module[i].datestring,
+                data.module[i].timestring,
+                data.module[i].info);
+        }
+        printf(
+            "--------------------------------------------------------------"
+            "-----------------------------------------"
+            "\n");
+        printf("\n");
+    }
+
+    return RETURN_SUCCESS;
+}
+
+

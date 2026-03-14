@@ -1,7 +1,12 @@
+/**
+ * @file readPGM.c
+ * @brief Readpgm module
+ */
+
 /** @file readPGM.c
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
@@ -120,15 +125,38 @@ imageID read_PGMimage(const char *__restrict fname,
             else
             {
                 printf("Reading PGM image\n");
-                create_2Dimage_ID(ID_name, xsize, ysize, &ID);
+                IMGID imgout =
+                    imgid_make_from_name_2D(
+                        ID_name,
+                        xsize, ysize);
+                imgout.mdt->shared = 0;
+                imgout.im =
+                    (IMAGE *) calloc(
+                        1, sizeof(IMAGE));
+                imgid_mkimage(&imgout);
+                ID = imgout.ID;
                 fgetc(fp);
-                for(jj = 0; jj < ysize; jj++)
+                for(jj = 0;
+                    jj < ysize; jj++)
                 {
-                    for(ii = 0; ii < xsize; ii++)
+                    for(ii = 0;
+                        ii < xsize; ii++)
                     {
                         val =
-                            256.0 * ((int) fgetc(fp)) + 1.0 * ((int) fgetc(fp));
-                        data.image[ID].array.F[(ysize - jj - 1) * xsize + ii] =
+                            256.0
+                            * ((int)
+                               fgetc(fp))
+                            + 1.0
+                              * ((int)
+                                 fgetc(
+                                     fp));
+                        imgout.im
+                            ->array.F[
+                                (ysize
+                                 - jj
+                                 - 1)
+                                * xsize
+                                + ii] =
                             val;
                     }
                 }

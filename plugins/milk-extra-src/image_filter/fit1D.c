@@ -1,9 +1,18 @@
+/**
+ * @file fit1D.c
+ * @brief Fit1d module
+ */
+
 /** @file fit1D.c
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 #include "statistic/statistic.h"
 
 int filter_fit1D(const char *__restrict fname, long NBpts)

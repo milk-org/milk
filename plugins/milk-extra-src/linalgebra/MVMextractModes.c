@@ -1,3 +1,9 @@
+/**
+ * @file MVMextractModes.c
+ * @brief Mvmextractmodes module
+ */
+
+#include "ImageStreamIO/ImageStruct.h"
 #ifdef HAVE_CUDA
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
@@ -25,270 +31,87 @@
 #endif
 
 
-
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "MVM_CPU.h"
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// Local variables pointers
-static int32_t *GPUindex;
-long fpi_GPUindex;
-
-
-static uint32_t *mmax;
-long fpi_mmax;
-
-static uint32_t *nmax;
-long fpi_nmax;
-
-
-
-static char *insname;
-long fpi_insname;
-
-static char *inmasksname;
-long fpi_inmasksname;
-
-static char *immodes;
-long fpi_immodes;
-
-static char *outcoeff;
-long fpi_outcoeff;
-
-static int64_t *outinit;
-long fpi_outinit;
-
-static uint32_t *axmode;
-long fpi_axmode;
-
-static int64_t *PROCESS;
-long fpi_PROCESS;
-
-static int64_t *TRACEMODE;
-long fpi_TRACEMODE;
-
-static int64_t *MODENORM;
-long fpi_MODENORM;
-
-static char *intot_stream;
-long fpi_intot_stream;
-
-static char *inrefsname;
-long fpi_inrefsname;
-
-static char *outrefsname;
-long fpi_outrefsname;
-
-static uint64_t *twait;
-long fpi_twait;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_INT32,
-        ".GPUindex",
-        "GPU index, 99 for CPU",
-        "0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &GPUindex,
-        &fpi_GPUindex
-    },
-    {
-        CLIARG_STREAM,
-        ".insname",
-        "input stream name",
-        "inV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &insname,
-        &fpi_insname
-    },
-    {
-        CLIARG_STREAM,
-        ".inmasksname",
-        "nput mask stream name",
-        "inV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmasksname,
-        &fpi_inmasksname
-    },
-    {
-        CLIARG_STREAM,
-        ".immodes",
-        "modes stream name",
-        "mat",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &immodes,
-        &fpi_immodes
-    },
-    {
-        CLIARG_STREAM,
-        ".outcoeff",
-        "output coefficients",
-        "outV",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outcoeff,
-        &fpi_outcoeff
-    },
-    {
-        CLIARG_ONOFF,
-        ".outinit",
-        "output init mode",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &outinit,
-        &fpi_outinit
-    },
-    {
-        CLIARG_UINT32,
-        ".option.axmode",
-        "0 for normal mode extraction, 1 for expansion",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &axmode,
-        &fpi_axmode
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.PROCESS",
-        "processing flag",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &PROCESS,
-        &fpi_PROCESS
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.TRACEMODE",
-        "writing trace",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &TRACEMODE,
-        &fpi_TRACEMODE
-    },
-    {
-        CLIARG_ONOFF,
-        ".option.MODENORM",
-        "input modes normalization",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &MODENORM,
-        &fpi_MODENORM
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_intot",
-        "optional input normalization stream",
-        "null",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &intot_stream,
-        &fpi_intot_stream
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_refin",
-        "optional input reference to be subtracted stream",
-        "null",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inrefsname,
-        &fpi_inrefsname
-    },
-    {
-        CLIARG_STREAM,
-        ".option.sname_refout",
-        "optional output reference to be subtracted stream",
-        "null",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outrefsname,
-        &fpi_outrefsname
-    },
-    {
-        CLIARG_UINT64,
-        ".option.twait",
-        "insert time wait [us] at each iteration",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &twait,
-        &fpi_twait
-    },
-    {
-        CLIARG_UINT32,
-        ".option.mmax",
-        "partial computation: max m index value",
-        "100000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &mmax,
-        &fpi_mmax
-    },
-    {
-        CLIARG_UINT32,
-        ".option.nmax",
-        "partial computation: max n index value",
-        "100000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &nmax,
-        &fpi_nmax
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "MVMmextrmodes",
+    .cmdkey      = "MVMmextrmodes",
+    .description = "extract modes by MVM"
 };
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-        data.fpsptr->parray[fpi_insname].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-        data.fpsptr->parray[fpi_immodes].fpflag |=
-            FPFLAG_STREAM_RUN_REQUIRED | FPFLAG_CHECKSTREAM;
-    }
 
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "MVMmextrmodes", "extract modes by MVM", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+static int32_t * GPUindex = NULL;
+static uint32_t * mmax = NULL;
+static uint32_t * nmax = NULL;
+static char * insname = NULL;
+static char * inmasksname = NULL;
+static char * immodes = NULL;
+static char * outcoeff = NULL;
+static int64_t * outinit = NULL;
+static uint32_t * axmode = NULL;
+static int64_t * PROCESS = NULL;
+static int64_t * TRACEMODE = NULL;
+static int64_t * MODENORM = NULL;
+static char * intot_stream = NULL;
+static char * inrefsname = NULL;
+static char * outrefsname = NULL;
+static uint64_t * twait = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".GPUindex", &GPUindex, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "GPU index, 99 for CPU") \
+    X(".insname", &insname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream name") \
+    X(".inmasksname", &inmasksname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "nput mask stream name") \
+    X(".immodes", &immodes, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "modes stream name") \
+    X(".outcoeff", &outcoeff, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output coefficients") \
+    X(".option.sname_refin", &inrefsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional input reference to be subtracted stream") \
+    X(".option.sname_refout", &outrefsname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional output reference to be subtracted stream")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+FPS_V2_SECTION5(FPS_PARAMS)
 
-
-
-
-
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -307,16 +130,14 @@ static errno_t compute_function()
     float *d_modeval = NULL;
 
 
-
-
     // each step is 2x longer average than previous step
     uint32_t NBaveSTEP = 10;
 
     int initref = 0; // 1 when reference has been processed
 
     // CONNECT TO INPUT STREAM
-    IMGID imgin = mkIMGID_from_name(insname);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    IMGID imgin = imgid_make_from_name(insname);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
     printf("Input stream size : %u %u\n", imgin.md->size[0], imgin.md->size[1]);
     long m = imgin.md->size[0] * imgin.md->size[1];
 
@@ -326,8 +147,8 @@ static errno_t compute_function()
     uint32_t *mask_idx = NULL;  //Array holding the indices of the 1 pixels
     float *masked_pix = NULL;  //Array to hold the pixel values
 
-    IMGID imgmask = mkIMGID_from_name(inmasksname);
-    if(resolveIMGID(&imgmask, ERRMODE_WARN) != -1)
+    IMGID imgmask = imgid_make_from_name(inmasksname);
+    if(resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg) != -1)
     {
         printf("Mask stream size : %u %u\n", imgmask.md->size[0], imgmask.md->size[1]);
         if(imgmask.md->size[0] == imgin.md->size[0]
@@ -377,19 +198,18 @@ static errno_t compute_function()
     }
 
 
-
     /* // This was probaly never implemented at all.
     // NORMALIZATION
     // CONNECT TO TOTAL FLUX STREAM
     imageID IDintot;
-    IDintot = image_ID(intot_stream);
+    IDintot = image_ID(intot_stream, dcimg, dcnimg);
     int INNORMMODE = 0; // 1 if input normalized
 
     if(IDintot == -1)
     {
         INNORMMODE = 0;
         create_2Dimage_ID("intot_tmp", 1, 1, &IDintot);
-        data.image[IDintot].array.F[0] = 1.0;
+        dcimg[IDintot].array.F[0] = 1.0f;
     }
     else
     {
@@ -398,21 +218,26 @@ static errno_t compute_function()
     */
 
 
-
     // CONNECT TO OPTIONAL INPUT REFERENCE STREAM
     imageID IDinref = -1;
-    IMGID imginref = mkIMGID_from_name(inrefsname);
-    resolveIMGID(&imginref, ERRMODE_WARN);
+    IMGID imginref = imgid_make_from_name(
+        inrefsname);
+    resolveIMGID(&imginref,
+                 ERRMODE_WARN,
+                 dcimg, dcnimg);
     if(imginref.ID == -1)
     {
-        create_2Dimage_ID("_tmprefin",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          &IDinref);
-        for(uint64_t ii = 0; ii < imgin.md->size[0] * imgin.md->size[1]; ii++)
-        {
-            data.image[IDinref].array.F[ii] = 0.0;
-        }
+        IMGID imgref =
+            imgid_make_from_name_2D(
+                "_tmprefin",
+                imgin.md->size[0],
+                imgin.md->size[1]);
+        imgref.mdt->shared = 0;
+        imgref.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgref);
+        /* calloc zeros the array */
+        IDinref = imgref.ID;
     }
     else
     {
@@ -421,15 +246,15 @@ static errno_t compute_function()
 
 
     // CONNECT TO OPTIONAL OUTPUT REFERENCE STREAM
-    IMGID imgoutref = mkIMGID_from_name(outrefsname);
-    resolveIMGID(&imgoutref, ERRMODE_WARN);
+    IMGID imgoutref = imgid_make_from_name(outrefsname);
+    resolveIMGID(&imgoutref, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // CONNECT TO MODES STREAM
-    IMGID imgmodes = mkIMGID_from_name(immodes);
-    resolveIMGID(&imgmodes, ERRMODE_ABORT);
+    IMGID imgmodes = imgid_make_from_name(immodes);
+    resolveIMGID(&imgmodes, ERRMODE_ABORT, dcimg, dcnimg);
 
-    // Could this be IMGIDcompare?
+    // Could this be imgid_compare?
     if(imgmodes.md->datatype != _DATATYPE_FLOAT)
     {
         PRINT_ERROR("Cannot operate with modes other than FP32!!!s");
@@ -479,24 +304,50 @@ static errno_t compute_function()
                NBmodes);
         fflush(stdout);
 
-        create_3Dimage_ID("_tmpmodes",
-                          imgin.md->size[0],
-                          imgin.md->size[1],
-                          NBmodes,
-                          &IDmodes);
+        IMGID imgtmp =
+            imgid_make_from_name_3D(
+                "_tmpmodes",
+                imgin.md->size[0],
+                imgin.md->size[1],
+                NBmodes);
+        imgtmp.mdt->shared = 0;
+        imgtmp.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgtmp);
+        IDmodes = imgtmp.ID;
 
-        for(uint32_t ii = 0; ii < imgin.md->size[0]; ii++)
-            for(uint32_t jj = 0; jj < imgin.md->size[1]; jj++)
+        for(uint32_t ii = 0;
+            ii < imgin.md->size[0]; ii++)
+        {
+            for(uint32_t jj = 0;
+                jj < imgin.md->size[1];
+                jj++)
             {
-                for(long kk = 0; kk < NBmodes; kk++)
+                for(long kk = 0;
+                    kk < NBmodes; kk++)
                 {
-                    data.image[IDmodes]
-                    .array.F[kk * imgin.md->size[0] * imgin.md->size[1] +
-                                jj * imgin.md->size[0] + ii] =
-                                 imgmodes.im->array
-                                 .F[NBmodes * (jj * imgin.md->size[0] + ii) + kk];
+                    imgtmp.im->array.F[
+                        kk
+                        * imgin.md
+                              ->size[0]
+                        * imgin.md
+                              ->size[1]
+                        + jj
+                          * imgin.md
+                                ->size[0]
+                        + ii]
+                        = imgmodes.im
+                              ->array.F[
+                                  NBmodes
+                                  * (jj
+                                     * imgin
+                                       .md
+                                       ->size[0]
+                                     + ii)
+                                  + kk];
                 }
             }
+        }
 
         // save_fits("_tmpmodes", "_test_tmpmodes.fits");
     }
@@ -534,7 +385,7 @@ static errno_t compute_function()
 
     uint32_t *arraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
 
-    // IDrefout = image_ID(IDrefout_name);
+    // IDrefout = image_ID(IDrefout_name, dcimg, dcnimg);
     imageID IDrefout = -1; // TODO handle this
     if(IDrefout == -1)
     {
@@ -551,10 +402,9 @@ static errno_t compute_function()
     }
     else
     {
-        arraytmp[0] = data.image[IDrefout].md->size[0];
-        arraytmp[1] = data.image[IDrefout].md->size[1];
+        arraytmp[0] = dcimg[IDrefout].md->size[0];
+        arraytmp[1] = dcimg[IDrefout].md->size[1];
     }
-
 
 
     // CONNNECT TO OR CREATE OUTPUT STREAM
@@ -564,15 +414,12 @@ static errno_t compute_function()
     float *outarray = (float *) malloc(sizeof(float) * arraytmp[0] * arraytmp[1]);
 
 
-
     MODEVALCOMPUTE = 1;
 
     free(arraytmp);
 
 
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT;
-
 
 
     if(MODEVALCOMPUTE == 1)
@@ -659,17 +506,17 @@ static errno_t compute_function()
                 //reformat the matrix using the mask
                 matsz = mask_npix * NBmodes;
                 modesmat = (float *) malloc(sizeof(float) * mask_npix *
-                                            data.image[IDmodes].md->size[2]);
+                                            dcimg[IDmodes].md->size[2]);
 
-                uint32_t nrows = data.image[IDmodes].md->size[2];
-                uint32_t ncols = data.image[IDmodes].md->size[0] *
-                                 data.image[IDmodes].md->size[1];
+                uint32_t nrows = dcimg[IDmodes].md->size[2];
+                uint32_t ncols = dcimg[IDmodes].md->size[0] *
+                                 dcimg[IDmodes].md->size[1];
 
                 for(uint32_t rr = 0; rr < nrows; ++rr)
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        modesmat[rr * mask_npix + cc] = data.image[IDmodes].array.F[rr * ncols +
+                        modesmat[rr * mask_npix + cc] = dcimg[IDmodes].array.F[rr * ncols +
                                                         mask_idx[cc]];
                     }
                 }
@@ -677,7 +524,7 @@ static errno_t compute_function()
             else
             {
                 matsz = m * NBmodes;
-                modesmat = data.image[IDmodes].array.F;
+                modesmat = dcimg[IDmodes].array.F;
             }
 
             // load modes to GPU
@@ -761,34 +608,46 @@ static errno_t compute_function()
             }
         }
 
-        sizearraytmp[0] = TRACEsize;
-        sizearraytmp[1] = NBmodes;
-        IDtrace = image_ID(traceim_name);
+        IMGID imgtrace =
+            imgid_make_from_name(
+                traceim_name);
+        resolveIMGID(&imgtrace,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         int imOK = 1;
-        if(IDtrace == -1)
+        if(imgtrace.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((data.image[IDtrace].md[0].size[0] != TRACEsize) ||
-                    (data.image[IDtrace].md[0].size[1] != NBmodes))
+            if((imgtrace.md->size[0]
+                    != TRACEsize) ||
+                (imgtrace.md->size[1]
+                    != NBmodes))
             {
                 imOK = 0;
-                delete_image_ID(traceim_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    traceim_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(traceim_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDtrace);
+            imgtrace.mdt->naxis = 2;
+            imgtrace.mdt->size[0] =
+                TRACEsize;
+            imgtrace.mdt->size[1] =
+                NBmodes;
+            imgtrace.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgtrace.mdt->shared = 1;
+            imgtrace.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgtrace);
         }
+        IDtrace = imgtrace.ID;
         free(sizearraytmp);
     }
 
@@ -820,32 +679,46 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocave       = image_ID(process_ave_name);
+        IMGID imgprocave =
+            imgid_make_from_name(
+                process_ave_name);
+        resolveIMGID(&imgprocave,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         int imOK = 1;
-        if(IDprocave == -1)
+        if(imgprocave.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((data.image[IDprocave].md[0].size[0] != NBmodes) ||
-                    (data.image[IDprocave].md[0].size[1] != NBaveSTEP))
+            if((imgprocave.md->size[0]
+                    != NBmodes) ||
+                (imgprocave.md->size[1]
+                    != NBaveSTEP))
             {
                 imOK = 0;
-                delete_image_ID(process_ave_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    process_ave_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(process_ave_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDprocave);
+            imgprocave.mdt->naxis = 2;
+            imgprocave.mdt->size[0] =
+                NBmodes;
+            imgprocave.mdt->size[1] =
+                NBaveSTEP;
+            imgprocave.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgprocave.mdt->shared = 1;
+            imgprocave.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgprocave);
         }
+        IDprocave = imgprocave.ID;
         free(sizearraytmp);
 
         sizearraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
@@ -869,32 +742,46 @@ static errno_t compute_function()
 
         sizearraytmp[0] = NBmodes;
         sizearraytmp[1] = NBaveSTEP;
-        IDprocrms = image_ID(process_rms_name);
+        IMGID imgprocrms =
+            imgid_make_from_name(
+                process_rms_name);
+        resolveIMGID(&imgprocrms,
+                     ERRMODE_NULL,
+                     dcimg, dcnimg);
         imOK = 1;
-        if(IDprocrms == -1)
+        if(imgprocrms.ID == -1)
         {
             imOK = 0;
         }
         else
         {
-            if((data.image[IDprocrms].md->size[0] != NBmodes) ||
-                    (data.image[IDprocrms].md->size[1] != NBaveSTEP))
+            if((imgprocrms.md->size[0]
+                    != NBmodes) ||
+                (imgprocrms.md->size[1]
+                    != NBaveSTEP))
             {
                 imOK = 0;
-                delete_image_ID(process_rms_name, DELETE_IMAGE_ERRMODE_WARNING);
+                delete_image_ID(
+                    process_rms_name,
+                    DELETE_IMAGE_ERRMODE_WARNING);
             }
         }
         if(imOK == 0)
         {
-            create_image_ID(process_rms_name,
-                            2,
-                            sizearraytmp,
-                            _DATATYPE_FLOAT,
-                            1,
-                            0,
-                            0,
-                            &IDprocrms);
+            imgprocrms.mdt->naxis = 2;
+            imgprocrms.mdt->size[0] =
+                NBmodes;
+            imgprocrms.mdt->size[1] =
+                NBaveSTEP;
+            imgprocrms.mdt->datatype =
+                _DATATYPE_FLOAT;
+            imgprocrms.mdt->shared = 1;
+            imgprocrms.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgprocrms);
         }
+        IDprocrms = imgprocrms.ID;
         free(sizearraytmp);
     }
 
@@ -962,8 +849,6 @@ static errno_t compute_function()
 #endif
 
 
-
-
     float *ColMajorMatrix = (float *) malloc(sizeof(float) * m * n);
     if(*axmode == 0)
     {
@@ -1005,10 +890,10 @@ static errno_t compute_function()
         // Are we computing a new reference ?
         // if yes, set initref to 0 (reference is NOT initialized)
         //
-        if(refindex != data.image[IDinref].md->cnt0)
+        if(refindex != dcimg[IDinref].md->cnt0)
         {
             initref = 0;
-            refindex = data.image[IDinref].md->cnt0;
+            refindex = dcimg[IDinref].md->cnt0;
         }
 
 
@@ -1029,7 +914,6 @@ static errno_t compute_function()
                     beta = 1.0;
                     memcpy(outarray, imgoutref.im->array.F, sizeof(float)*n);
                 }
-
 
 
                 if(imgin.md->datatype != _DATATYPE_FLOAT)
@@ -1106,7 +990,6 @@ static errno_t compute_function()
                 }
 
 
-
                 if(*axmode == 1)
                 {
                     cblas_sgemv(CblasColMajor,
@@ -1163,13 +1046,13 @@ static errno_t compute_function()
 #endif
 
             // update output
-            data.image[imgout.ID].md->write = 1;
+            dcimg[imgout.ID].md->write = 1;
             for(int jj = 0; jj < n; jj++)
             {
                 imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
             }
 //            memcpy(imgout.im->array.F, outarray, sizeof(float)*n);
-            processinfo_update_output_stream(processinfo, imgout.ID);
+            processinfo_update_output_stream(processinfo, imgout.im, NULL);
         }
         else
         {
@@ -1186,12 +1069,12 @@ static errno_t compute_function()
                 {
                     for(uint32_t cc = 0; cc < mask_npix; ++cc)
                     {
-                        masked_pix[cc] = data.image[IDinref].array.F[mask_idx[cc]];
+                        masked_pix[cc] = dcimg[IDinref].array.F[mask_idx[cc]];
                     }
                 }
                 else
                 {
-                    masked_pix = data.image[IDinref].array.F;
+                    masked_pix = dcimg[IDinref].array.F;
                 }
                 cudaStat = cudaMemcpy(d_in,
                                       masked_pix,
@@ -1285,11 +1168,11 @@ static errno_t compute_function()
                                       sizeof(float) * NBmodes,
                                       cudaMemcpyDeviceToHost);
 
-                IDrefout = image_ID(outrefsname);
+                IDrefout = image_ID(outrefsname, dcimg, dcnimg);
                 if(IDrefout != -1)
                     for(long k = 0; k < NBmodes; k++)
                     {
-                        modevalarrayref[k] -= data.image[IDrefout].array.F[k];
+                        modevalarrayref[k] -= dcimg[IDrefout].array.F[k];
                     }
 
             }
@@ -1306,10 +1189,8 @@ static errno_t compute_function()
                     imgout.im->array.F[k] =
                         (modevalarray[k] - modevalarrayref[k]) / normcoeff[k];
                     // Renorm was never implemented
-                    // (modevalarray[k] / data.image[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
+                    // (modevalarray[k] / dcimg[IDintot].array.F[0] - modevalarrayref[k]) / normcoeff[k];
                 }
-
-
 
 
                 clock_gettime(CLOCK_MILK, &t1);
@@ -1320,8 +1201,7 @@ static errno_t compute_function()
                                              n, m, t01d * 1e6);
 
 
-
-                processinfo_update_output_stream(processinfo, imgout.ID);
+                processinfo_update_output_stream(processinfo, imgout.im, NULL);
             }
 #endif
         }
@@ -1346,7 +1226,6 @@ static errno_t compute_function()
     }
 
 
-
     if(use_mask)
     {
         free(masked_pix);
@@ -1357,21 +1236,38 @@ static errno_t compute_function()
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__MVMextractModes()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

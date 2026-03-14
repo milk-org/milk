@@ -1,4 +1,9 @@
-#include "CommandLineInterface/CLIcore.h"
+/**
+ * @file CFmeminit.c
+ * @brief Cfmeminit module
+ */
+
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 #include "addCF_to_CF.h"

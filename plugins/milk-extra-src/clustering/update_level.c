@@ -1,5 +1,10 @@
+/**
+ * @file update_level.c
+ * @brief Update level module
+ */
 
-#include "CommandLineInterface/CLIcore.h"
+
+#include "CLIcore.h"
 #include "clustering_defs.h"
 
 

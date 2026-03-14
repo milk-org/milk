@@ -1,6 +1,14 @@
-#ifndef CLUSTERING__CUBECLUSTER_H
-#define CLUSTERING__CUBECLUSTER_H
+/**
+ * @file    cubecluster.h
+ * @brief   Compute cube cluster.
+ */
 
-errno_t CLIADDCMD_clustering__imcube_mkcluster();
+#ifndef CLUSTERING_CUBECLUSTER_H
+#define CLUSTERING_CUBECLUSTER_H
+
+#include "CLIcore.h"
+
+errno_t
+CLIADDCMD_clustering__imcube_mkcluster();
 
 #endif

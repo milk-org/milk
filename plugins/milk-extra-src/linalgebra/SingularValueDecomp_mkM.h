@@ -1,3 +1,8 @@
+/**
+ * @file SingularValueDecomp_mkM.h
+ * @brief Singularvaluedecomp mkm module
+ */
+
 #ifndef LINALGEBRA_COMPSVD_MKM_H
 #define LINALGEBRA_COMPSVD_MKM_H
 

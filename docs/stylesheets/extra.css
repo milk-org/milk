@@ -1,0 +1,32 @@
+/* Extra styles for milk documentation — vLLM-inspired */
+
+/* Tighten the header shadow for a cleaner look */
+.md-header {
+  box-shadow: 0 0 0.2rem rgba(0, 0, 0, 0.1),
+              0 0.2rem 0.4rem rgba(0, 0, 0, 0.2);
+}
+
+/* Slightly wider content area for readability */
+.md-grid {
+  max-width: 1440px;
+}
+
+/* Details/summary blocks — match admonition styling */
+details {
+  margin-bottom: 1em;
+}
+
+details summary {
+  cursor: pointer;
+  padding: 0.4em 0;
+}
+
+/* Code blocks — softer background */
+.highlight pre {
+  border-radius: 0.3rem;
+}
+
+/* Navigation tabs — bolder active state */
+.md-tabs__link--active {
+  font-weight: 700;
+}

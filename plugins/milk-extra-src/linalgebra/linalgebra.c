@@ -17,7 +17,7 @@
 #include "magma_v2.h"
 #endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "linalgebra_types.h"
 
@@ -26,7 +26,6 @@
 #include "GramSchmidt.h"
 #include "MVMextractModes.h"
 #include "magma_MatMatMult_testPseudoInverse.h"
-#include "cublas_linalgebra_MVMextractModesLoop.h"
 #include "linalgebrainit.h"
 #include "cublas_linalgebratest.h"
 #include "magma_compute_SVDpseudoInverse.h"
@@ -70,7 +69,7 @@ static void __attribute__((constructor)) libinit_linalgebra_printinfo()
 #ifdef HAVE_CUDA
     if(!getenv("MILK_QUIET"))
     {
-        printf("[CUDA %d]", data.quiet);
+        printf("[CUDA %d]", dcquiet);
     }
 
 #endif
@@ -108,7 +107,6 @@ static errno_t init_module_CLI()
 #endif
 
     Coeff2Map_Loop_addCLIcmd();
-    linalgebra_MVMextractModesLoop_addCLIcmd();
 #endif
 
     CLIADDCMD_linalgebra__MVMextractModes();

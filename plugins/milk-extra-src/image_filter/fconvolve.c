@@ -1,60 +1,110 @@
-/** @file fconvolve.c
- *
+/**
+ * @file fconvolve.c
+ * @brief Fourier-based convolution
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "fft/fft.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID fconvolve(
+    const char *__restrict name_in,
+    const char *__restrict name_ke,
+    const char *__restrict name_out);
 
-imageID fconvolve(const char *__restrict name_in,
-                  const char *__restrict name_ke,
-                  const char *__restrict name_out);
+static char fconv_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imin";
+static char fconv_ke[FUNCTION_PARAMETER_STRMAXLEN]
+    = "kernim";
+static char fconv_out[FUNCTION_PARAMETER_STRMAXLEN]
+    = "imout";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "fconv",
+    .cmdkey      = "fconv",
+    .description =
+        "Fourier-based convolution"
+};
 
-static errno_t fconvolve_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", fconv_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".ke_name", fconv_ke, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "kernel image") \
+    X(".out_name", fconv_out, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image")
+
+static FPS_CLI_BINDING FPS_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(FPS_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(0 + CLI_checkarg(1, 4) + CLI_checkarg(2, 4) + CLI_checkarg(3, 3) == 0)
-    {
-        fconvolve(data.cmdargtoken[1].val.string,
-                  data.cmdargtoken[2].val.string,
-                  data.cmdargtoken[3].val.string);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    CLIcmddata.nbarg =
+        sizeof(farg) / sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t fconvolve_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
+    fconvolve(fconv_in, fconv_ke, fconv_out);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("fconv",
-                       __FILE__,
-                       fconvolve_cli,
-                       "Fourier-based convolution",
-                       "<input image> <kernel> <output image>",
-                       "fconv imin kernim imout",
-                       "long fconvolve(const char *ID_in, const char *ID_ke, "
-                       "const char *ID_out)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg,
+        &CLIcmddata,
+        FPS_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_filter__fconvolve()
+{
+    safe_fps_fill_farg_examples(
+        farg, FPS_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -67,12 +117,12 @@ imageID fconvolve(const char *__restrict name_in,
     long    naxes[2];
     imageID IDout;
 
-    IDin     = image_ID(name_in);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
-    IDke     = image_ID(name_ke);
-    if((naxes[0] != data.image[IDke].md[0].size[0]) ||
-            (naxes[1] != data.image[IDke].md[0].size[1]))
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
+    IDke     = image_ID(name_ke, dcimg, dcnimg);
+    if((naxes[0] != dcimg[IDke].md[0].size[0]) ||
+            (naxes[1] != dcimg[IDke].md[0].size[1]))
     {
         fprintf(stderr,
                 "ERROR in function fconvolve: image and kernel have different "
@@ -101,7 +151,7 @@ imageID fconvolve(const char *__restrict name_in,
     delete_image_ID("tmpre", DELETE_IMAGE_ERRMODE_WARNING);
     permut(name_out);
 
-    IDout = image_ID(name_out);
+    IDout = image_ID(name_out, dcimg, dcnimg);
 
     return IDout;
 }
@@ -122,12 +172,12 @@ imageID fconvolve_padd(const char *__restrict name_in,
     long    naxespadd[2];
     long    ii, jj;
 
-    IDin     = image_ID(name_in);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
-    IDke     = image_ID(name_ke);
-    if((naxes[0] != data.image[IDke].md[0].size[0]) ||
-            (naxes[1] != data.image[IDke].md[0].size[1]))
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
+    IDke     = image_ID(name_ke, dcimg, dcnimg);
+    if((naxes[0] != dcimg[IDke].md[0].size[0]) ||
+            (naxes[1] != dcimg[IDke].md[0].size[1]))
     {
         fprintf(stderr,
                 "ERROR in function fconvolve: image and kernel have different "
@@ -147,13 +197,13 @@ imageID fconvolve_padd(const char *__restrict name_in,
     for(ii = 0; ii < naxes[0]; ii++)
         for(jj = 0; jj < naxes[1]; jj++)
         {
-            data.image[ID1]
+            dcimg[ID1]
             .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
-                data.image[IDin].array.F[jj * naxes[0] + ii];
-            data.image[ID2]
+                dcimg[IDin].array.F[jj * naxes[0] + ii];
+            dcimg[ID2]
             .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
-                data.image[IDke].array.F[jj * naxes[0] + ii];
-            data.image[ID3]
+                dcimg[IDke].array.F[jj * naxes[0] + ii];
+            dcimg[ID3]
             .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] =
                 1.0;
         }
@@ -172,17 +222,17 @@ imageID fconvolve_padd(const char *__restrict name_in,
     delete_image_ID("tmpkepadd", DELETE_IMAGE_ERRMODE_WARNING);
     delete_image_ID("tmpim1padd", DELETE_IMAGE_ERRMODE_WARNING);
 
-    ID1 = image_ID("tmpconv1");
-    ID2 = image_ID("tmpconv2");
+    ID1 = image_ID("tmpconv1", dcimg, dcnimg);
+    ID2 = image_ID("tmpconv2", dcimg, dcnimg);
     create_2Dimage_ID(name_out, naxes[0], naxes[1], &IDout);
 
     for(ii = 0; ii < naxes[0]; ii++)
         for(jj = 0; jj < naxes[1]; jj++)
         {
-            data.image[IDout].array.F[jj * naxes[0] + ii] =
-                data.image[ID1]
+            dcimg[IDout].array.F[jj * naxes[0] + ii] =
+                dcimg[ID1]
                 .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)] /
-                data.image[ID2]
+                dcimg[ID2]
                 .array.F[(jj + paddsize) * naxespadd[0] + (ii + paddsize)];
         }
     delete_image_ID("tmpconv1", DELETE_IMAGE_ERRMODE_WARNING);
@@ -199,9 +249,9 @@ imageID fconvolve_1(const char *__restrict name_in,
     imageID IDin;
     long    naxes[2];
 
-    IDin     = image_ID(name_in);
-    naxes[0] = data.image[IDin].md[0].size[0];
-    naxes[1] = data.image[IDin].md[0].size[1];
+    IDin     = image_ID(name_in, dcimg, dcnimg);
+    naxes[0] = dcimg[IDin].md[0].size[0];
+    naxes[1] = dcimg[IDin].md[0].size[1];
 
     do2drfft(name_in, "infft");
 
@@ -215,7 +265,7 @@ imageID fconvolve_1(const char *__restrict name_in,
     arith_image_cstmult("tmpre", 1.0 / naxes[0] / naxes[1], name_out);
     delete_image_ID("tmpre", DELETE_IMAGE_ERRMODE_WARNING);
     permut(name_out);
-    imageID IDout = image_ID(name_out);
+    imageID IDout = image_ID(name_out, dcimg, dcnimg);
 
     return IDout;
 }
@@ -239,9 +289,9 @@ imageID fconvolveblock(const char *__restrict name_in,
     float   alpha = 4.0;
 
     overlap = (long)(blocksize / 10);
-    IDin    = image_ID(name_in);
-    xsize   = data.image[IDin].md[0].size[0];
-    ysize   = data.image[IDin].md[0].size[1];
+    IDin    = image_ID(name_in, dcimg, dcnimg);
+    xsize   = dcimg[IDin].md[0].size[0];
+    ysize   = dcimg[IDin].md[0].size[1];
 
     create_2Dimage_ID(name_out, xsize, ysize, &IDout);
 
@@ -251,7 +301,7 @@ imageID fconvolveblock(const char *__restrict name_in,
 
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        data.image[IDcnt].array.F[ii] = 0.0;
+        dcimg[IDcnt].array.F[ii] = 0.0f;
     }
 
     for(ii0 = 0; ii0 < xsize - overlap; ii0 += blocksize - overlap)
@@ -262,17 +312,17 @@ imageID fconvolveblock(const char *__restrict name_in,
                 {
                     if((ii0 + ii < xsize) && (jj0 + jj < ysize))
                     {
-                        data.image[IDtmp].array.F[jj * blocksize + ii] =
-                            data.image[IDin]
+                        dcimg[IDtmp].array.F[jj * blocksize + ii] =
+                            dcimg[IDin]
                             .array.F[(jj0 + jj) * xsize + (ii0 + ii)];
                     }
                     else
                     {
-                        data.image[IDtmp].array.F[jj * blocksize + ii] = 0.0;
+                        dcimg[IDtmp].array.F[jj * blocksize + ii] = 0.0f;
                     }
                 }
             fconvolve("tmpblock", name_ke, "tmpblockc");
-            IDtmpout = image_ID("tmpblockc");
+            IDtmpout = image_ID("tmpblockc", dcimg, dcnimg);
             for(ii = 0; ii < blocksize; ii++)
                 for(jj = 0; jj < blocksize; jj++)
                 {
@@ -300,11 +350,11 @@ imageID fconvolveblock(const char *__restrict name_in,
                                     alpha);
                         }
 
-                        data.image[IDout]
+                        dcimg[IDout]
                         .array.F[(jj0 + jj) * xsize + (ii0 + ii)] +=
                             gain *
-                            data.image[IDtmpout].array.F[jj * blocksize + ii];
-                        data.image[IDcnt]
+                            dcimg[IDtmpout].array.F[jj * blocksize + ii];
+                        dcimg[IDcnt]
                         .array.F[(jj0 + jj) * xsize + (ii0 + ii)] +=
                             gain * 1.0;
                     }
@@ -314,7 +364,7 @@ imageID fconvolveblock(const char *__restrict name_in,
     // exit(0);
     for(ii = 0; ii < xsize * ysize; ii++)
     {
-        data.image[IDout].array.F[ii] /= data.image[IDcnt].array.F[ii] + 1.0e-8;
+        dcimg[IDout].array.F[ii] /= dcimg[IDcnt].array.F[ii] + 1.0e-8;
     }
 
     delete_image_ID("tmpcnt", DELETE_IMAGE_ERRMODE_WARNING);

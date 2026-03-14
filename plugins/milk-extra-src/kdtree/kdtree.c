@@ -1,3 +1,8 @@
+/**
+ * @file kdtree.c
+ * @brief Kdtree module
+ */
+
 
 /*
 This file is part of ``kdtree'', a library for working with kd-trees.
