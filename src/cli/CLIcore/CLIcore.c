@@ -1147,6 +1147,22 @@ void runCLI_cmd_init()
                        "usleep 1000",
                        "usleep(long tus)");
 
+    RegisterCLIcommand("cd",
+                       __FILE__,
+                       cli_cd,
+                       "change current directory",
+                       "<dir>",
+                       "cd /tmp",
+                       "cli_cd()");
+
+    RegisterCLIcommand("pwd",
+                       __FILE__,
+                       cli_pwd,
+                       "print current directory",
+                       "no argument",
+                       "pwd",
+                       "cli_pwd()");
+
     RegisterCLIcommand("alias",
                        __FILE__,
                        cli_alias_add,
