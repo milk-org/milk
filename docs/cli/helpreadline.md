@@ -13,7 +13,7 @@ READLINE QUICK HELP
 
 Notations:
 C- is control key
-M- is meta key (if already bound to action, use ESC and then type the folling character)
+M- is meta key (if already bound to action, use ESC and then type the following character)
 
 C-_ or C-x C-u    Undo the last editing command. You can undo all the way back to an empty line.
 C-a	    Move to the start of the line
