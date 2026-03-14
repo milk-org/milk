@@ -337,7 +337,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 ## 5. Detailed Dependency Tables
 
-<details>
+<details markdown="1">
 <summary><b>Engine Tier — Core Libraries</b></summary>
 
 | Target | Links to | Optional |
@@ -349,7 +349,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Framework Libraries</b></summary>
 
 | Target | Links to | Optional |
@@ -363,7 +363,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Core Tier — COREMOD Libraries</b></summary>
 
 | Target | Links to | Conditional |
@@ -384,7 +384,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Full Tier — milk-extra Plugins</b></summary>
 
 | Target | Links to | Optional |
@@ -417,7 +417,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Full Tier — Cacao Modules</b></summary>
 
 | Target | Links to | Optional |
@@ -434,7 +434,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Executables</b></summary>
 
 | Target | Links to |
@@ -452,7 +452,7 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Standalone CMake Functions</b></summary>
 
 | Function | Base link set |
