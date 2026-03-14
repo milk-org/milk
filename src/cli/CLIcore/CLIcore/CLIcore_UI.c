@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #include <termios.h>
 
 #ifdef USE_READLINE
@@ -1546,6 +1547,490 @@ errno_t cli_source(void)
 }
 
 
+/*
+ * ============================================================
+ *  Configurable Prompt — setprompt command
+ * ============================================================
+ *
+ * Format tokens:
+ *   %h = hostname
+ *   %u = username
+ *   %d = cwd basename
+ *   %t = HH:MM:SS
+ *   %n = CLI process name (data.processname)
+ */
+
+/** prompt_format stored in data struct is TBD;
+ *  for now use a file-scope buffer. */
+static char cli_prompt_format[200] = "";
+
+/**
+ * @brief Build prompt string from format tokens
+ */
+void cli_build_prompt(
+    const char *fmt,
+    char       *out,
+    int         maxlen
+)
+{
+    int pos = 0;
+    for(int i = 0; fmt[i] != '\0'
+            && pos < maxlen - 1; i++)
+    {
+        if(fmt[i] == '%' && fmt[i + 1] != '\0')
+        {
+            i++;
+            switch(fmt[i])
+            {
+            case 'h':
+            {
+                char hn[64];
+                gethostname(hn, sizeof(hn));
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", hn);
+                break;
+            }
+            case 'u':
+            {
+                const char *u = getenv("USER");
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", u ? u : "?");
+                break;
+            }
+            case 'd':
+            {
+                char cwd[256];
+                if(getcwd(cwd, sizeof(cwd)))
+                {
+                    char *base = strrchr(cwd,
+                                         '/');
+                    pos += snprintf(out + pos,
+                        (size_t)(maxlen - pos),
+                        "%s",
+                        base ? base + 1 : cwd);
+                }
+                break;
+            }
+            case 't':
+            {
+                time_t now = time(NULL);
+                struct tm *tm = localtime(&now);
+                pos += (int) strftime(
+                    out + pos,
+                    (size_t)(maxlen - pos),
+                    "%H:%M:%S", tm);
+                break;
+            }
+            case 'n':
+                pos += snprintf(out + pos,
+                    (size_t)(maxlen - pos),
+                    "%s", data.processname);
+                break;
+            default:
+                if(pos < maxlen - 2)
+                {
+                    out[pos++] = '%';
+                    out[pos++] = fmt[i];
+                }
+                break;
+            }
+        }
+        else
+        {
+            out[pos++] = fmt[i];
+        }
+    }
+    out[pos] = '\0';
+}
+
+errno_t cli_setprompt(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        if(cli_prompt_format[0] != '\0')
+        {
+            printf("Current prompt format: "
+                   "'%s'\n",
+                   cli_prompt_format);
+        }
+        else
+        {
+            printf("Using default prompt\n");
+        }
+        printf("Tokens: %%h=host %%u=user "
+               "%%d=dir %%t=time %%n=name\n");
+        return RETURN_SUCCESS;
+    }
+    strncpy(cli_prompt_format,
+            data.cmdargtoken[1].val.string,
+            sizeof(cli_prompt_format) - 1);
+    cli_prompt_format[
+        sizeof(cli_prompt_format) - 1] = '\0';
+    printf("Prompt set to: '%s'\n",
+           cli_prompt_format);
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Command Bookmarks
+ * ============================================================
+ */
+
+#define BOOKMARK_MAX       64
+#define BOOKMARK_NAMELEN   64
+#define BOOKMARK_CMDLEN   512
+
+struct bookmark_entry
+{
+    char name[BOOKMARK_NAMELEN];
+    char cmd[BOOKMARK_CMDLEN];
+};
+
+static struct bookmark_entry
+    bookmarks[BOOKMARK_MAX];
+static int bookmark_count = 0;
+
+/**
+ * @brief Load bookmarks from ~/.milk_bookmarks
+ */
+void cli_bookmark_load(void)
+{
+    char path[STRINGMAXLEN_FULLFILENAME];
+    snprintf(path,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_bookmarks",
+             getenv("HOME"));
+    FILE *fp = fopen(path, "r");
+    if(fp == NULL)
+    {
+        return;
+    }
+    bookmark_count = 0;
+    char line[1024];
+    while(fgets(line, (int) sizeof(line), fp)
+            && bookmark_count < BOOKMARK_MAX)
+    {
+        size_t len = strlen(line);
+        if(len > 0 && line[len - 1] == '\n')
+        {
+            line[len - 1] = '\0';
+        }
+        char *tab = strchr(line, '\t');
+        if(tab == NULL)
+        {
+            continue;
+        }
+        *tab = '\0';
+        strncpy(
+            bookmarks[bookmark_count].name,
+            line,
+            BOOKMARK_NAMELEN - 1);
+        bookmarks[bookmark_count].name[
+            BOOKMARK_NAMELEN - 1] = '\0';
+        strncpy(
+            bookmarks[bookmark_count].cmd,
+            tab + 1,
+            BOOKMARK_CMDLEN - 1);
+        bookmarks[bookmark_count].cmd[
+            BOOKMARK_CMDLEN - 1] = '\0';
+        bookmark_count++;
+    }
+    fclose(fp);
+}
+
+/**
+ * @brief Save bookmarks to ~/.milk_bookmarks
+ */
+static void cli_bookmark_save(void)
+{
+    char path[STRINGMAXLEN_FULLFILENAME];
+    snprintf(path,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milk_bookmarks",
+             getenv("HOME"));
+    FILE *fp = fopen(path, "w");
+    if(fp == NULL)
+    {
+        return;
+    }
+    for(int i = 0; i < bookmark_count; i++)
+    {
+        fprintf(fp, "%s\t%s\n",
+                bookmarks[i].name,
+                bookmarks[i].cmd);
+    }
+    fclose(fp);
+}
+
+errno_t cli_bookmark(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage:\n"
+               "  bookmark save <name> "
+               "\"cmd1 ; cmd2\"\n"
+               "  bookmark run  <name>\n"
+               "  bookmark list\n"
+               "  bookmark rm   <name>\n");
+        return RETURN_SUCCESS;
+    }
+    const char *action =
+        data.cmdargtoken[1].val.string;
+
+    if(strcmp(action, "list") == 0)
+    {
+        if(bookmark_count == 0)
+        {
+            printf("No bookmarks saved\n");
+        }
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            printf("  \033[1m%-16s\033[0m %s\n",
+                   bookmarks[i].name,
+                   bookmarks[i].cmd);
+        }
+        return RETURN_SUCCESS;
+    }
+
+    if(strcmp(action, "save") == 0)
+    {
+        if(data.cmdNBarg < 4)
+        {
+            printf("Usage: bookmark save "
+                   "<name> \"cmd\"\n");
+            return RETURN_FAILURE;
+        }
+        if(bookmark_count >= BOOKMARK_MAX)
+        {
+            printf("Bookmark limit reached\n");
+            return RETURN_FAILURE;
+        }
+        strncpy(
+            bookmarks[bookmark_count].name,
+            data.cmdargtoken[2].val.string,
+            BOOKMARK_NAMELEN - 1);
+        bookmarks[bookmark_count].name[
+            BOOKMARK_NAMELEN - 1] = '\0';
+        /* Join remaining args as command */
+        {
+            char cmd[BOOKMARK_CMDLEN] = "";
+            for(long a = 3;
+                    a < data.cmdNBarg; a++)
+            {
+                if(a > 3)
+                {
+                    strncat(cmd, " ",
+                        BOOKMARK_CMDLEN
+                        - strlen(cmd) - 1);
+                }
+                strncat(cmd,
+                    data.cmdargtoken[a]
+                        .val.string,
+                    BOOKMARK_CMDLEN
+                    - strlen(cmd) - 1);
+            }
+            strncpy(
+                bookmarks[bookmark_count].cmd,
+                cmd, BOOKMARK_CMDLEN - 1);
+            bookmarks[bookmark_count].cmd[
+                BOOKMARK_CMDLEN - 1] = '\0';
+        }
+        bookmark_count++;
+        cli_bookmark_save();
+        printf("Bookmark '%s' saved\n",
+               data.cmdargtoken[2].val.string);
+        return RETURN_SUCCESS;
+    }
+
+    if(strcmp(action, "run") == 0)
+    {
+        if(data.cmdNBarg < 3)
+        {
+            printf("Usage: bookmark run "
+                   "<name>\n");
+            return RETURN_FAILURE;
+        }
+        const char *name =
+            data.cmdargtoken[2].val.string;
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            if(strcmp(bookmarks[i].name,
+                     name) == 0)
+            {
+                strncpy(data.CLIcmdline,
+                        bookmarks[i].cmd,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+                return CLI_execute_line();
+            }
+        }
+        printf("Bookmark '%s' not found\n",
+               name);
+        return RETURN_FAILURE;
+    }
+
+    if(strcmp(action, "rm") == 0)
+    {
+        if(data.cmdNBarg < 3)
+        {
+            printf("Usage: bookmark rm "
+                   "<name>\n");
+            return RETURN_FAILURE;
+        }
+        const char *name =
+            data.cmdargtoken[2].val.string;
+        for(int i = 0; i < bookmark_count; i++)
+        {
+            if(strcmp(bookmarks[i].name,
+                     name) == 0)
+            {
+                for(int j = i;
+                        j < bookmark_count - 1;
+                        j++)
+                {
+                    bookmarks[j] =
+                        bookmarks[j + 1];
+                }
+                bookmark_count--;
+                cli_bookmark_save();
+                printf("Bookmark '%s' "
+                       "removed\n", name);
+                return RETURN_SUCCESS;
+            }
+        }
+        printf("Bookmark '%s' not found\n",
+               name);
+        return RETURN_FAILURE;
+    }
+
+    printf("Unknown bookmark action '%s'\n",
+           action);
+    return RETURN_FAILURE;
+}
+
+
+/*
+ * ============================================================
+ *  Session Logging
+ * ============================================================
+ */
+
+static FILE *session_log_fp = NULL;
+static struct timespec session_log_t0;
+
+errno_t cli_sessionlog(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: sessionlog "
+               "[on|off|<filename>]\n");
+        printf("Status: %s\n",
+               session_log_fp ? "ON" : "OFF");
+        return RETURN_SUCCESS;
+    }
+    const char *arg =
+        data.cmdargtoken[1].val.string;
+
+    if(strcmp(arg, "off") == 0)
+    {
+        if(session_log_fp)
+        {
+            fclose(session_log_fp);
+            session_log_fp = NULL;
+            printf("Session logging stopped\n");
+        }
+        return RETURN_SUCCESS;
+    }
+
+    /* Close previous if open */
+    if(session_log_fp)
+    {
+        fclose(session_log_fp);
+        session_log_fp = NULL;
+    }
+
+    char logpath[STRINGMAXLEN_FULLFILENAME];
+    if(strcmp(arg, "on") == 0)
+    {
+        snprintf(logpath,
+                 STRINGMAXLEN_FULLFILENAME,
+                 "%s/.milk_session.log",
+                 getenv("HOME"));
+    }
+    else
+    {
+        strncpy(logpath, arg,
+                STRINGMAXLEN_FULLFILENAME - 1);
+        logpath[
+            STRINGMAXLEN_FULLFILENAME - 1]
+            = '\0';
+    }
+
+    session_log_fp = fopen(logpath, "a");
+    if(session_log_fp == NULL)
+    {
+        printf("Cannot open '%s'\n", logpath);
+        return RETURN_FAILURE;
+    }
+    clock_gettime(CLOCK_MONOTONIC,
+                  &session_log_t0);
+    printf("Session logging to '%s'\n", logpath);
+
+    /* Write session start marker */
+    {
+        time_t now = time(NULL);
+        char tbuf[64];
+        strftime(tbuf, sizeof(tbuf),
+                 "%Y-%m-%dT%H:%M:%S",
+                 localtime(&now));
+        fprintf(session_log_fp,
+                "# Session started %s\n", tbuf);
+        fflush(session_log_fp);
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Log a command to session log if active
+ */
+static void cli_session_log_cmd(
+    const char *cmd
+)
+{
+    if(session_log_fp == NULL)
+    {
+        return;
+    }
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    double elapsed_ms =
+        (double)(now.tv_sec
+                 - session_log_t0.tv_sec)
+        * 1000.0
+        + (double)(now.tv_nsec
+                   - session_log_t0.tv_nsec)
+        / 1.0e6;
+    {
+        time_t t = time(NULL);
+        char tbuf[64];
+        strftime(tbuf, sizeof(tbuf),
+                 "%Y-%m-%dT%H:%M:%S",
+                 localtime(&t));
+        fprintf(session_log_fp,
+                "[%s] [%10.1f ms] %s\n",
+                tbuf, elapsed_ms, cmd);
+        fflush(session_log_fp);
+    }
+}
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -1571,6 +2056,9 @@ errno_t CLI_execute_line()
 
     /* Expand aliases before anything else */
     cli_alias_expand();
+
+    /* Log command to session log if active */
+    cli_session_log_cmd(data.CLIcmdline);
 
     /*
      * ---- Semicolon chaining ----

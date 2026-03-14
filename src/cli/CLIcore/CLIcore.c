@@ -513,6 +513,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Load persistent command history
     cli_history_load();
 
+    // Load persistent bookmarks
+    cli_bookmark_load();
+
     // set shared memory directory
     setSHMdir();
 
@@ -1210,6 +1213,33 @@ void runCLI_cmd_init()
                        "<filename>",
                        "source myscript.milk",
                        "cli_source()");
+
+    RegisterCLIcommand(
+        "setprompt",
+        __FILE__,
+        cli_setprompt,
+        "set custom prompt format",
+        "[<format>]",
+        "setprompt \"%u@%h %d > \"",
+        "cli_setprompt()");
+
+    RegisterCLIcommand(
+        "bookmark",
+        __FILE__,
+        cli_bookmark,
+        "manage command bookmarks",
+        "save|run|list|rm <name> [cmd]",
+        "bookmark save myjob \"cmd1 ; cmd2\"",
+        "cli_bookmark()");
+
+    RegisterCLIcommand(
+        "sessionlog",
+        __FILE__,
+        cli_sessionlog,
+        "enable session command logging",
+        "[on|off|<filename>]",
+        "sessionlog on",
+        "cli_sessionlog()");
 
     //  init_modules();
 

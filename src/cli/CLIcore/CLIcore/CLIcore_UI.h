@@ -58,4 +58,19 @@ void cli_history_save(void);
 /* Script execution */
 errno_t cli_source(void);
 
+/* Configurable prompt */
+errno_t cli_setprompt(void);
+void cli_build_prompt(
+    const char *fmt,
+    char       *out,
+    int         maxlen
+);
+
+/* Command bookmarks */
+errno_t cli_bookmark(void);
+void cli_bookmark_load(void);
+
+/* Session logging */
+errno_t cli_sessionlog(void);
+
 #endif
