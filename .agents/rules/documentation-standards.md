@@ -34,8 +34,12 @@ When creating or editing markdown documentation in the
 2. **Plugin READMEs:** Must follow the standardized
    template with: one-line module description, source file
    table (`| File | Description |`), and dependency list.
-3. **New topic pages:** Must be added to `docs/index.md`
-   in the appropriate section.
+3. **New topic pages:** Must be added to both
+   `docs/index.md` and the `nav:` section of `mkdocs.yml`
+   under the appropriate tab.
+4. **MkDocs details blocks:** Use `<details markdown="1">`
+   (not bare `<details>`) so markdown content inside
+   renders correctly. See `documentation-site.md` rule.
 
 ## Before Committing
 
