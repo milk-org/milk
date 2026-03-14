@@ -5,11 +5,11 @@
 > controlled by CMake options. Lower tiers have fewer external
 > dependencies and produce a smaller footprint.
 
----
+***
 
 ## Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────┐
 │  Full Build (default)                               │
 │  CLI (milk-cli) + plugins + example module          │
@@ -36,7 +36,7 @@
 └─────────────────────────────────────────────────────┘
 ```
 
----
+***
 
 ## CMake Options
 
@@ -51,12 +51,13 @@
 
 > [!IMPORTANT]
 > **Dependency chain:**
+>
 > - `USE_CLI=ON` automatically enables `USE_COREMODS`
 > - Plugins are only built when `USE_COREMODS=ON`
 > - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles
 >   remaining modules without cfitsio linkage
 
----
+***
 
 ## Quick Reference
 
@@ -77,7 +78,7 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
----
+***
 
 ## Behavior When cfitsio Is Disabled
 
@@ -97,5 +98,5 @@ are compiled out via `#ifdef USE_CFITSIO` guards:
 > processing is needed and disk I/O to FITS files is
 > unnecessary.
 
----
+***
 ← [Documentation Index](../index.md)

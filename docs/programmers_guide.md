@@ -3,6 +3,7 @@
 Welcome to `milk`. This document serves as an overview of its core architecture and programming model. If you are reading this while setting up a new module, debugging, or wanting to write a custom module, this guide will orient you on the core concepts.
 
 ## 1. Core Architecture
+
 `milk` is structured around decoupled, high-performance
 computing components. Instead of monolithic structures, it
 relies on small modular units ("compute units") talking to
@@ -100,6 +101,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
    - Pure computation; parameters are already synced
 
 5. **Add CMake targets**: In your module's `CMakeLists.txt`:
+
    ```cmake
    # Shared library (for milk CLI usage)
    add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
@@ -138,7 +140,8 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 - `docs/`: Documentation.
 
 ### Standalone Executables vs Core Modules
-`milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`). 
+
+`milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`).
 Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment, linking securely to only the `_compute` variants of libraries. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
 
 > [!TIP]
@@ -178,7 +181,7 @@ for each module:
 
 | Variant | Suffix | Compiled with | Linked by |
 |---------|--------|--------------|----------|
-| Full | `.so` | *(default)* | `milk-cli`, module `.so` | 
+| Full | `.so` | *(default)* | `milk-cli`, module `.so` |
 | Compute-only | `_compute.so` | `MILK_NO_CLI` | `fpsexec` standalones |
 
 `_compute` variants contain pure computation code
@@ -239,31 +242,32 @@ for new modules.
 <details markdown="1">
 <summary><b>Standard CMakeLists.txt layout</b></summary>
 
-```
-# ═══════════════════════════════════════
-#  module_name — Short description
-# ═══════════════════════════════════════
+```text
+## ═══════════════════════════════════════
+##  module_name — Short description
+## ═══════════════════════════════════════
 
 set(LIBNAME ...)
 
-# ── Source files ─────────────────────
+## ── Source files ─────────────────────
 set(SOURCEFILES ...)
 
-# ── Library ──────────────────────────
+## ── Library ──────────────────────────
 add_library(${LIBNAME} ...)
 
-# ── Compute-only variant ─────────────
-# (if applicable)
+## ── Compute-only variant ─────────────
+## (if applicable)
 set(LIBNAME_COMPUTE ...)
 
-# ── Standalone executables ───────────
+## ── Standalone executables ───────────
 add_milk_standalone(...)
 
-# ── Tests ────────────────────────────
+## ── Tests ────────────────────────────
 add_test(...)
 ```
 
 **Key rules:**
+
 - Comment each source file in `SOURCEFILES` if it is also a standalone (dual-mode)
 - Place `target_link_libraries()` calls directly below the `add_*_standalone()` they modify
 - Keep lines ≤ 80 characters; split long `target_link_libraries` across lines
@@ -344,6 +348,7 @@ body in `.c` files:
 <summary><b>Module README</b></summary>
 
 Each module directory should have a `README.md` with:
+
 - One-line purpose
 - Table of source files with descriptions
 - Table of standalone executables (if any)
@@ -351,11 +356,11 @@ Each module directory should have a `README.md` with:
 
 </details>
 
----
+***
 
 
 *(This guide is automatically updated by your coding agent using the [/update-programmers-guide](../.agents/workflows/update-programmers-guide.md) workflow)*
 
 
----
+***
 ← [Documentation Index](index.md)

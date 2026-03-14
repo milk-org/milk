@@ -17,4 +17,5 @@ Creating images (shapes, useful functions, and patterns).
 | `milk-fpsexec-imggen-voronoi` | `voronoi.c` | Generate Voronoi tessellation patterns |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
