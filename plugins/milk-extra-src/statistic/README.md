@@ -11,5 +11,6 @@ simulation, and BIRCH clustering.
 | `statistic.c` | Random number generators, Poisson/Gaussian noise injection, BIRCH clustering |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
 - `COREMOD_memory`

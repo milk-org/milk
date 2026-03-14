@@ -32,4 +32,5 @@ Read and write images, supports several image formats.
 | `milk-fpsexec-imgfmt-writeBMP` | `writeBMP.c` | Write image to BMP format |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

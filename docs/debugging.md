@@ -23,6 +23,7 @@ $ milk-procinfo-list
 ```
 
 Look for:
+
 - **Green PIDs:** healthy, actively looping.
 - **Red / missing PIDs:** the process has died or its
   heartbeat has stopped.

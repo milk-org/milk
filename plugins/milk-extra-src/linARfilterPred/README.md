@@ -17,4 +17,5 @@ Linear AutoRegressive prediction filter
 | `milk-fpsexec-linpred-buildlinPF` | `build_linPF.c` | Build linear predictive filter |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
