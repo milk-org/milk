@@ -162,7 +162,139 @@ milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
 
 </details>
 
-## 5. Arithmetic Operations
+## 5. Persistent History
+
+Command history is saved to `~/.milk_history` and loaded
+at startup. Up to 1000 entries are retained between sessions.
+
+## 6. History Expansion
+
+| Shortcut | Description |
+|----------|-------------|
+| `!!` | Re-run the last command |
+| `!!args` | Append `args` to the last command |
+| `!$` | Insert the last argument of the previous command |
+| `!prefix` | Re-run the last command starting with `prefix` |
+
+The expanded command is printed with a `>>` prefix before
+execution.
+
+## 7. Startup Script
+
+Commands in `~/.milkrc` are executed line-by-line on startup.
+Blank lines and `#` comments are skipped.
+
+## 8. Command Timing
+
+```text
+milk-cli > time mem.listim      # measure execution time
+```
+
+## 9. Command Chaining, Pipes, and Redirects
+
+```text
+milk-cli > cmd1 ; cmd2           # sequential execution
+milk-cli > mem.listim | grep im  # pipe to shell
+milk-cli > mem.listim > out.txt  # redirect to file
+```
+
+## 10. Command Statistics
+
+```text
+milk-cli > cmdstats              # top 20 most-used commands
+```
+
+## 11. Script Execution
+
+```text
+milk-cli > source myscript.milk  # run commands from file
+```
+
+Blank lines and `#` comments are skipped. Errors show the
+file name and line number.
+
+## 12. Syntax Highlighting
+
+The first word is colored **green** (valid command) or
+**red** (unknown). Toggle with:
+
+```text
+milk-cli > synhl off             # disable
+milk-cli > synhl on              # enable (default)
+```
+
+> [!TIP]
+> If you encounter rendering issues with syntax
+> highlighting, disable it with `synhl off`.
+
+## 13. Auto-Correction
+
+When a command is not found, the CLI suggests the closest
+match using Levenshtein distance:
+
+```text
+milk-cli > mem.lisim
+Command 'mem.lisim' not found. Did you mean 'mem.listim'?
+```
+
+## 14. Configurable Prompt
+
+Customize the prompt format using `setprompt`:
+
+```text
+milk-cli > setprompt "%u@%h %d > "
+```
+
+| Token | Expands to |
+|-------|------------|
+| `%h` | hostname |
+| `%u` | username |
+| `%d` | current directory basename |
+| `%t` | HH:MM:SS |
+| `%n` | process name |
+
+## 15. Command Bookmarks
+
+Save and recall multi-command sequences:
+
+```text
+milk-cli > bookmark save setup "cmd1 ; cmd2 ; cmd3"
+milk-cli > bookmark run setup
+milk-cli > bookmark list
+milk-cli > bookmark rm setup
+```
+
+Bookmarks persist in `~/.milk_bookmarks`.
+
+## 16. Session Logging
+
+Log all commands with timestamps:
+
+```text
+milk-cli > sessionlog on          # log to ~/.milk_session.log
+milk-cli > sessionlog mylog.txt   # log to custom file
+milk-cli > sessionlog off         # stop logging
+```
+
+## 17. Command Aliases
+
+```text
+milk-cli > alias li mem.listim   # create alias
+milk-cli > unalias li            # remove alias
+milk-cli > aliaslist             # list all aliases
+```
+
+Aliases persist in `~/.milk_aliases`.
+
+## 18. Watch Command
+
+```text
+milk-cli > watch 1000 mem.listim   # repeat every 1000ms
+```
+
+Press any key to stop.
+
+## 19. Arithmetic Operations
 
 ```text
 milk-cli > im1=sqrt(im+2.0)       # arithmetic on images
