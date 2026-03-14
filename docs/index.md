@@ -52,6 +52,10 @@ Guidelines and tutorials for writing your own compute modules or extending the C
 - [**FAQ & Troubleshooting**](faq.md): Common issues and solutions.
 - [**Automatically Generated Index**](Markdown_Index.md): Complete list of all Markdown files in the repository.
 
+## 🔬 API Reference
+
+- [**Doxygen API Docs**](api/html/index.html): Auto-generated C API reference with call graphs and source browser.
+
 ***
 *Can't find what you're looking for? Check the [Automatically Generated Document Index](Markdown_Index.md) for all plugin READMEs.*
 
