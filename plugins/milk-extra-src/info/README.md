@@ -26,4 +26,5 @@ Image information, statistics, and stream monitoring.
 | `milk-fpsexec-info-strmonproc` | `stream_monproc.c` | Multi-level time-binned stream monitor |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)

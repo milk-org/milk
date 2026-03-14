@@ -31,6 +31,7 @@ $ milk-semloopspeed 10000
 ```
 
 Typical values on modern hardware:
+
 - **x86_64 (bare metal):** 200–500 kHz
 - **ARM (embedded):** 50–150 kHz
 - **VM / container:** 30–100 kHz (overhead from

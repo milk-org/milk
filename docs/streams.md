@@ -77,6 +77,7 @@ the user and aborts the module spin-up to prevent silent
 failures.*
 
 ## 4. Introspection
+
 Tools like `milk-streamCTRL` provide real-time
 introspection into active streams, displaying frame
 arrival rates, recent values, and the current state of
@@ -93,19 +94,23 @@ arguments.
 ### 5.1. Creating an `IMGID`
 
 Creating a blank `IMGID` (this does not allocate memory yet):
+
 ```c
 static inline IMGID imgid_make()
 ```
 
 Creating an `IMGID` with a name:
+
 ```c
 static inline IMGID imgid_make_from_name(CONST_WORD name)
 ```
+
 *(Special characters like `s>tf32>im1` can also be used to automatically set type and location properties).*
 
 ### 5.2. Connecting to a stream
 
 If you expect the stream to already exist, you can connect to it:
+
 ```c
 IMGID img1 = imgid_make();
 // imgid_connect returns quickly. Check if img1.ID != -1
@@ -118,6 +123,7 @@ if(img1.ID == -1) {
 ### 5.3. Creating an image in shared memory
 
 To create a new stream:
+
 ```c
 IMGID img = imgid_make_from_name("im1");
 img.naxis = 2;
@@ -148,6 +154,7 @@ imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_CREATE);
 ```
 
 For convenience, specialized typed functions are available:
+
 ```c
 // Force connection/creation of a 2D float32 array
 imgid_connect_create_2Df32("streamname1", &img1, xsize, ysize);
