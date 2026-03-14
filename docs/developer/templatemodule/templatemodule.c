@@ -13,7 +13,7 @@
  *
  * ## Other files of interest
  * Each module should include :
- * - souce code (.c file)
+ * - source code (.c file)
  * - header file (.h file)
  *
  * ## Change log
