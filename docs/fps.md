@@ -1,3 +1,11 @@
+---
+tags:
+  - fps
+  - configuration
+  - parameters
+  - shared-memory
+---
+
 # Function Processing System (FPS)
 
 The Function Processing System (FPS) is `milk`'s core

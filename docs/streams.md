@@ -1,3 +1,11 @@
+---
+tags:
+  - streams
+  - imagestreamio
+  - zero-copy
+  - shared-memory
+---
+
 # Shared Memory Streams (`ImageStreamIO`)
 
 `milk` is built around a low-latency, zero-copy architecture

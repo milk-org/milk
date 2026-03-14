@@ -47,10 +47,15 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
+plugins:
+  - search
+  - tags
+
 docs_dir: docs
 
 nav:
   - Home: index.md
+  - Tags Index: tags.md
   - Getting Started:
     - Installation: install/compile.md
     - Build Tiers: install/build_tiers.md
