@@ -131,6 +131,8 @@ milk-cli > creaim <im> <xs> <ys>   # create 2D image
 milk-cli > usleep <usec>           # sleep for <usec> microseconds
 milk-cli > dpsingle                # set default precision to float
 milk-cli > dpdouble                # set default precision to double
+milk-cli > cd <dir>                # change current working directory
+milk-cli > pwd                     # print current working directory
 ```
 
 ## 9. FITS File I/O
@@ -212,7 +214,7 @@ filename and line number are printed in red.
 
 ```bash
 # This is a sample milk script
-echo "Starting image processing..."
+!echo "Starting image processing..."
 
 # Create a 100x100 image named 'myimg'
 mem.mk2Dim myimg 100 100
@@ -275,7 +277,26 @@ milk-cli > iofits.loadfits ${HOME}/data/im.fits im1
 milk-cli > iofits.saveFITS im1 $OUTDIR/result.fits
 ```
 
-## 20. Backslash Line Continuation
+## 20. Command Substitution
+
+Replace `$(cmd)` or `` `cmd` `` in the command line with the standard
+output of the command execution.
+
+```text
+milk-cli > cd $(echo /tmp)
+milk-cli > iofits.loadfits `findim.sh` result
+```
+
+## 21. Wildcard Expansion (Globbing)
+
+File path wildcards like `*`, `?`, and `[]` are automatically
+expanded into matching files if placed unquoted in arguments.
+
+```text
+milk-cli > iofits.imgs2cube *.fits cube.fits
+```
+
+## 22. Backslash Line Continuation
 
 End a line with `\` to continue on the next line. The
 prompt changes to `>` for continuation lines:
