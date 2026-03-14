@@ -10,7 +10,7 @@ The `milk` project includes **agent rules** and
 (Gemini, Copilot, etc.) to follow project
 conventions automatically. They live under:
 
-```text
+```
 .agents/
 ├── rules/        # Always-on guardrails
 └── workflows/    # On-demand task templates
@@ -40,20 +40,20 @@ requiring you to remember every checklist.
 
 | Rule | File | What it enforces |
 |------|------|------------------|
-| Architecture principles | [`architecture-principles.md`](../.agents/rules/architecture-principles.md) | Minimize cross-module deps; consult `dependency_graph.md` before adding new ones. |
-| CMake conventions | [`cmake-conventions.md`](../.agents/rules/cmake-conventions.md) | Use `PUBLIC`/`INTERFACE` properties; each module owns its headers. |
-| Code style | [`code-style-guide.md`](../.agents/rules/code-style-guide.md) | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
-| Compile after edit | [`compile-after-edit.md`](../.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
-| Documentation standards | [`documentation-standards.md`](../.agents/rules/documentation-standards.md) | Markdown formatting, shell prompts, link checking. |
-| fpsexec conventions | [`fpsexec-conventions.md`](../.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
-| Git workflow | [`git-workflow.md`](../.agents/rules/git-workflow.md) | All changes via PRs from feature branches into `framework-dev`. NO pushes to `dev`. |
-| Help consistency | [`help-consistency.md`](../.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
-| Programmer's Guide | [`maintain-programmers-guide.md`](../.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
-| Performance practices | [`performance-practices.md`](../.agents/rules/performance-practices.md) | SIMD, BLAS, pointer alignment, type dispatch, memory allocation, CPU pinning. |
-| Running commands | [`run-milk-commands.md`](../.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
-| Script documentation | [`script-docs.md`](../.agents/rules/script-docs.md) | Update `docs/scripts.md` and add `--help` when scripts change. |
-| README updates | [`readme-update.md`](../.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
-| Workspace layout | [`files-directories.md`](../.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
+| Architecture principles | [`architecture-principles.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/architecture-principles.md) | Minimize cross-module deps; consult `dependency_graph.md` before adding new ones. |
+| CMake conventions | [`cmake-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/cmake-conventions.md) | Use `PUBLIC`/`INTERFACE` properties; each module owns its headers. |
+| Code style | [`code-style-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/code-style-guide.md) | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
+| Compile after edit | [`compile-after-edit.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
+| Documentation standards | [`documentation-standards.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/documentation-standards.md) | Markdown formatting, shell prompts, link checking. |
+| fpsexec conventions | [`fpsexec-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
+| Git workflow | [`git-workflow.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/git-workflow.md) | All changes via PRs from feature branches into `framework-dev`. NO pushes to `dev`. |
+| Help consistency | [`help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
+| Programmer's Guide | [`maintain-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
+| Performance practices | [`performance-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/performance-practices.md) | SIMD, BLAS, pointer alignment, type dispatch, memory allocation, CPU pinning. |
+| Running commands | [`run-milk-commands.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
+| Script documentation | [`script-docs.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/script-docs.md) | Update `docs/scripts.md` and add `--help` when scripts change. |
+| README updates | [`readme-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
+| Workspace layout | [`files-directories.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
 
 ## Workflows
 
@@ -63,16 +63,16 @@ step-by-step checklists for common tasks.
 
 | Command | File | What it does |
 |---------|------|--------------|
-| `/compile-test` | [`compile-test.md`](../.agents/workflows/compile-test.md) | Incremental build from `_build/`, report errors. |
-| `/create-fpsexec` | [`create-fpsexec.md`](../.agents/workflows/create-fpsexec.md) | Scaffold a new V2 fpsexec standalone executable. |
-| `/add-new-module` | [`add-new-module.md`](../.agents/workflows/add-new-module.md) | Scaffold a new plugin module (README, CMake, boilerplate). |
-| `/add-function` | [`add-function.md`](../.agents/workflows/add-function.md) | Add a function to an existing module (dispatches to sub-workflows). |
-| `/add-stream-processor` | [`add-stream-processor.md`](../.agents/workflows/add-stream-processor.md) | Scaffold a stream processing loop compute unit. |
-| `/add-cli-command` | [`add-cli-command.md`](../.agents/workflows/add-cli-command.md) | Add a CLI command to an existing module. |
-| `/update-programmers-guide` | [`update-programmers-guide.md`](../.agents/workflows/update-programmers-guide.md) | Scan recent commits and refresh `docs/programmers_guide.md`. |
-| `/audit-help-consistency` | [`audit-help-consistency.md`](../.agents/workflows/audit-help-consistency.md) | Cross-check all help sources for drift or contradictions. |
-| `/update-scripts-docs` | [`update-scripts-docs.md`](../.agents/workflows/update-scripts-docs.md) | Sync `docs/scripts.md` after script changes. |
-| `/check-type-consistency` | [`check-type-consistency.md`](../.agents/workflows/check-type-consistency.md) | Audit `switch` blocks for incomplete type handling. |
+| `/compile-test` | [`compile-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/compile-test.md) | Incremental build from `_build/`, report errors. |
+| `/create-fpsexec` | [`create-fpsexec.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/create-fpsexec.md) | Scaffold a new V2 fpsexec standalone executable. |
+| `/add-new-module` | [`add-new-module.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-new-module.md) | Scaffold a new plugin module (README, CMake, boilerplate). |
+| `/add-function` | [`add-function.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-function.md) | Add a function to an existing module (dispatches to sub-workflows). |
+| `/add-stream-processor` | [`add-stream-processor.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-stream-processor.md) | Scaffold a stream processing loop compute unit. |
+| `/add-cli-command` | [`add-cli-command.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/add-cli-command.md) | Add a CLI command to an existing module. |
+| `/update-programmers-guide` | [`update-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-programmers-guide.md) | Scan recent commits and refresh `docs/programmers_guide.md`. |
+| `/audit-help-consistency` | [`audit-help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/audit-help-consistency.md) | Cross-check all help sources for drift or contradictions. |
+| `/update-scripts-docs` | [`update-scripts-docs.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/update-scripts-docs.md) | Sync `docs/scripts.md` after script changes. |
+| `/check-type-consistency` | [`check-type-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/workflows/check-type-consistency.md) | Audit `switch` blocks for incomplete type handling. |
 
 ## Adding New Rules or Workflows
 
@@ -82,9 +82,9 @@ Create a new `.md` file in `.agents/rules/` with
 YAML frontmatter:
 
 ```yaml
-***
+---
 description: Short description of what this rule does
-***
+---
 ```
 
 Then write the trigger conditions and required
@@ -96,14 +96,14 @@ Create a new `.md` file in `.agents/workflows/`
 with YAML frontmatter:
 
 ```yaml
-***
+---
 description: Short description of the workflow
-***
+---
 ```
 
 Then write numbered steps below the frontmatter.
 Use `// turbo-all` at the top of the steps section
 if every command should auto-run without confirmation.
 
-***
+---
 ← [Documentation Index](index.md)
