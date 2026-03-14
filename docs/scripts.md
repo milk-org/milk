@@ -25,6 +25,7 @@ See also: [Streams](streams.md) ·
 | `milk-fpslist-addentry` | Add an entry to `fpslist.txt` |
 | `milk-fpsmkcmd` | Generate FPS command scripts |
 | `milk-fps-set-completion.bash` | Bash completion for `milk-fps-set` |
+| `milk-latency-audit` | Profile latency, cache misses, and IRQ affinities |
 
 ## 2. Stream Utilities (`scripts/`)
 
