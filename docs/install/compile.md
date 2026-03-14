@@ -59,7 +59,7 @@ $ sudo mount /milk/shm
 | **pkg-config** | Locates installed libraries |
 | **pthreads** | POSIX threading (provided by libc) |
 
-<details>
+<details markdown="1">
 <summary><b>Optional dependencies</b></summary>
 
 ### 4.2. Optional
@@ -79,7 +79,7 @@ See [Build Tiers](build_tiers.md) for details.
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Package installation commands</b></summary>
 
 **Ubuntu / Debian:**
@@ -98,7 +98,7 @@ $ sudo yum install \
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>cfitsio from source (alternative)</b></summary>
 
 If your distribution does not package cfitsio, install it
@@ -117,7 +117,7 @@ $ sudo make install
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>GPU acceleration (optional)</b></summary>
 
 For GPU-accelerated linear algebra:
@@ -136,7 +136,7 @@ export PKG_CONFIG_PATH=/usr/local/magma/lib/pkgconfig
 
 ---
 
-<details>
+<details markdown="1">
 <summary><b>Running multiple versions side by side</b></summary>
 
 **⚠️ Warning:** Untested — may require tweaking.

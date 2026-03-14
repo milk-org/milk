@@ -89,7 +89,7 @@ in `fps.h`.
 Standalone executables support two layers of argument
 parsing:
 
-<details>
+<details markdown="1">
 <summary><b>A. Standard FPS Process Control Commands</b></summary>
 
 Before mapping to business logic, the executable looks
@@ -116,7 +116,7 @@ segment.
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>B. Direct Execution (Positional Arguments)</b></summary>
 
 If the user passes positional arguments that do not

@@ -146,7 +146,7 @@ Standalones are specifically designed to execute one compute unit in isolation w
 
 ## 5. Dependency Architecture
 
-<details>
+<details markdown="1">
 <summary><b>Header Hierarchy</b></summary>
 
 Compute unit source files use conditional includes to support both CLI and standalone builds:
@@ -170,7 +170,7 @@ Compute unit source files use conditional includes to support both CLI and stand
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Library Link Patterns — Dual Architecture</b></summary>
 
 The build system maintains two library variants
@@ -213,7 +213,7 @@ CLIcore.
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Compile-Time Guards</b></summary>
 
 | Macro | Set by | Effect |
@@ -236,7 +236,7 @@ It is also integrated as a CTest (`standalone-dep-check`) and runs automatically
 Use `src/milk_module_example/CMakeLists.txt` as the template
 for new modules.
 
-<details>
+<details markdown="1">
 <summary><b>Standard CMakeLists.txt layout</b></summary>
 
 ```
@@ -270,7 +270,7 @@ add_test(...)
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Standalone helper functions</b></summary>
 
 Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
@@ -285,7 +285,7 @@ Defined in `cmake/MilkStandalone.cmake` (included by root CMakeLists):
 
 ## 7. C Source File Conventions
 
-<details>
+<details markdown="1">
 <summary><b>File header template</b></summary>
 
 Every `.c` file should start with a kernel-doc header:
@@ -302,7 +302,7 @@ Every `.c` file should start with a kernel-doc header:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Dual-mode files</b></summary>
 
 Files compiled both as part of a shared library (CLI mode)
@@ -319,7 +319,7 @@ and as standalone executables use conditional includes:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Function documentation</b></summary>
 
 Document functions with kernel-doc style above the function
@@ -340,7 +340,7 @@ body in `.c` files:
 
 </details>
 
-<details>
+<details markdown="1">
 <summary><b>Module README</b></summary>
 
 Each module directory should have a `README.md` with:
