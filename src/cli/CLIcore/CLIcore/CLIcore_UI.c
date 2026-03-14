@@ -1016,6 +1016,315 @@ watch_done:
 }
 
 
+/*
+ * ============================================================
+ *  Startup Script (~/.milkrc)
+ * ============================================================
+ */
+
+void cli_milkrc_load(void)
+{
+    char rcpath[STRINGMAXLEN_FULLFILENAME];
+    snprintf(rcpath,
+             STRINGMAXLEN_FULLFILENAME,
+             "%s/.milkrc", getenv("HOME"));
+
+    FILE *fp = fopen(rcpath, "r");
+    if(fp == NULL)
+    {
+        return;
+    }
+
+    char line[STRINGMAXLEN_CLICMDLINE];
+    while(fgets(line, STRINGMAXLEN_CLICMDLINE,
+                fp) != NULL)
+    {
+        size_t len = strlen(line);
+        if(len > 0 && line[len - 1] == '\n')
+        {
+            line[len - 1] = '\0';
+        }
+        const char *p = line;
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if(*p == '\0' || *p == '#')
+        {
+            continue;
+        }
+        strncpy(data.CLIcmdline, line,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        CLI_execute_line();
+    }
+    fclose(fp);
+}
+
+
+/*
+ * ============================================================
+ *  Command Timing
+ * ============================================================
+ */
+
+errno_t cli_time(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: time <command...>\n");
+        return RETURN_FAILURE;
+    }
+    char timecmd[STRINGMAXLEN_CLICMDLINE];
+    timecmd[0] = '\0';
+    for(long a = 1; a < data.cmdNBarg; a++)
+    {
+        if(a > 1)
+        {
+            strncat(timecmd, " ",
+                    STRINGMAXLEN_CLICMDLINE
+                    - strlen(timecmd) - 1);
+        }
+        strncat(timecmd,
+                data.cmdargtoken[a].val.string,
+                STRINGMAXLEN_CLICMDLINE
+                - strlen(timecmd) - 1);
+    }
+    struct timespec t0;
+    struct timespec t1;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
+    strncpy(data.CLIcmdline, timecmd,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[
+        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    CLI_execute_line();
+
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    {
+        double elapsed =
+            (double)(t1.tv_sec - t0.tv_sec)
+            + 1.0e-9
+            * (double)(t1.tv_nsec - t0.tv_nsec);
+        printf(
+            "\n\033[33mElapsed: %.6f s\033[0m\n",
+            elapsed);
+    }
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Command Statistics
+ * ============================================================
+ */
+
+errno_t cli_cmdstats(void)
+{
+    typedef struct
+    {
+        const char *key;
+        uint32_t    count;
+    } CmdStatEntry;
+
+    CmdStatEntry entries[DATA_NB_MAX_COMMAND];
+    int nused = 0;
+    for(uint32_t i = 0; i < data.NBcmd; i++)
+    {
+        if(data.cmd[i].callcount > 0)
+        {
+            entries[nused].key =
+                data.cmd[i].key;
+            entries[nused].count =
+                data.cmd[i].callcount;
+            nused++;
+        }
+    }
+    if(nused == 0)
+    {
+        printf("No commands executed yet.\n");
+        return RETURN_SUCCESS;
+    }
+    for(int i = 1; i < nused; i++)
+    {
+        CmdStatEntry tmp = entries[i];
+        int j = i - 1;
+        while(j >= 0
+                && entries[j].count < tmp.count)
+        {
+            entries[j + 1] = entries[j];
+            j--;
+        }
+        entries[j + 1] = tmp;
+    }
+    int show = nused < 20 ? nused : 20;
+    printf("\n\033[1mCommand usage "
+           "(top %d):\033[0m\n", show);
+    printf("  %-30s  %s\n", "COMMAND", "CALLS");
+    printf("  %-30s  %s\n",
+           "------------------------------",
+           "-----");
+    for(int i = 0; i < show; i++)
+    {
+        printf("  %-30s  %u\n",
+               entries[i].key,
+               entries[i].count);
+    }
+    printf("\n");
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Syntax Highlighting (optional, ON by default)
+ * ============================================================
+ */
+
+#ifdef USE_READLINE
+
+errno_t cli_syntax_highlight_toggle(void)
+{
+    if(data.cmdNBarg >= 2)
+    {
+        const char *arg =
+            data.cmdargtoken[1].val.string;
+        if(strcmp(arg, "on") == 0
+                || strcmp(arg, "1") == 0)
+        {
+            data.syntax_highlight = 1;
+            printf("Syntax highlighting ON\n");
+        }
+        else if(strcmp(arg, "off") == 0
+                || strcmp(arg, "0") == 0)
+        {
+            data.syntax_highlight = 0;
+            printf("Syntax highlighting OFF\n");
+        }
+        else
+        {
+            printf("Usage: synhl [on|off]\n");
+        }
+    }
+    else
+    {
+        data.syntax_highlight =
+            !data.syntax_highlight;
+        printf("Syntax highlighting %s\n",
+               data.syntax_highlight
+               ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
+
+static int cli_is_command(const char *word)
+{
+    for(uint32_t i = 0; i < data.NBcmd; i++)
+    {
+        if(strcmp(data.cmd[i].key, word) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void cli_highlight_redisplay(void)
+{
+    if(!data.syntax_highlight)
+    {
+        rl_redisplay();
+        return;
+    }
+    char firstword[200];
+    int fwlen = 0;
+    const char *p = rl_line_buffer;
+    while(*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+    while(*p != '\0' && *p != ' '
+            && *p != '\t' && fwlen < 199)
+    {
+        firstword[fwlen++] = *p++;
+    }
+    firstword[fwlen] = '\0';
+
+    const char *col;
+    if(fwlen == 0)
+    {
+        col = "\033[0m";
+    }
+    else if(cli_is_command(firstword))
+    {
+        col = "\033[32m";
+    }
+    else
+    {
+        col = "\033[31m";
+    }
+
+    char buf[2048];
+    int bpos = 0;
+    int src = 0;
+    int in_first = 1;
+
+    const char *prompt = rl_display_prompt
+        ? rl_display_prompt : "";
+    bpos += snprintf(buf + bpos,
+                     sizeof(buf) - (size_t) bpos,
+                     "\r%s", prompt);
+
+    while(rl_line_buffer[src] != '\0'
+            && bpos < 2000)
+    {
+        char c = rl_line_buffer[src];
+        if(in_first && (c == ' ' || c == '\t'))
+        {
+            in_first = 0;
+            bpos += snprintf(
+                buf + bpos,
+                sizeof(buf) - (size_t) bpos,
+                "\033[0m");
+        }
+        if(in_first)
+        {
+            bpos += snprintf(
+                buf + bpos,
+                sizeof(buf) - (size_t) bpos,
+                "%s%c", col, c);
+        }
+        else if(c >= '0' && c <= '9')
+        {
+            bpos += snprintf(
+                buf + bpos,
+                sizeof(buf) - (size_t) bpos,
+                "\033[33m%c\033[0m", c);
+        }
+        else
+        {
+            buf[bpos++] = c;
+        }
+        src++;
+    }
+    bpos += snprintf(buf + bpos,
+                     sizeof(buf) - (size_t) bpos,
+                     "\033[0m");
+    fprintf(rl_outstream, "\r\033[K%s", buf);
+    {
+        int prompt_len = (int) strlen(prompt);
+        int ccol = prompt_len + rl_point;
+        fprintf(rl_outstream,
+                "\r\033[%dC", ccol);
+    }
+    fflush(rl_outstream);
+}
+
+#endif /* USE_READLINE */
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -1032,6 +1341,123 @@ errno_t CLI_execute_line()
 
     /* Expand aliases before anything else */
     cli_alias_expand();
+
+    /*
+     * ---- Semicolon chaining ----
+     */
+    {
+        char *semi = strchr(data.CLIcmdline, ';');
+        if(semi != NULL)
+        {
+            char fullline[STRINGMAXLEN_CLICMDLINE];
+            strncpy(fullline, data.CLIcmdline,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+            fullline[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            size_t off =
+                (size_t)(semi - data.CLIcmdline);
+            fullline[off] = '\0';
+            strncpy(data.CLIcmdline, fullline,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            CLI_execute_line();
+            const char *rest = fullline + off + 1;
+            while(*rest == ' ' || *rest == '\t')
+            {
+                rest++;
+            }
+            if(*rest != '\0')
+            {
+                strncpy(data.CLIcmdline, rest,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE - 1]
+                    = '\0';
+                CLI_execute_line();
+            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return RETURN_SUCCESS;
+        }
+    }
+
+    /* ---- Pipe to shell ---- */
+    FILE *pipe_fp = NULL;
+    int   saved_stdout_fd = -1;
+    {
+        char *pipe_pos =
+            strchr(data.CLIcmdline, '|');
+        if(pipe_pos != NULL)
+        {
+            *pipe_pos = '\0';
+            const char *rhs = pipe_pos + 1;
+            while(*rhs == ' ' || *rhs == '\t')
+            {
+                rhs++;
+            }
+            if(*rhs != '\0')
+            {
+                pipe_fp = popen(rhs, "w");
+                if(pipe_fp != NULL)
+                {
+                    saved_stdout_fd =
+                        dup(STDOUT_FILENO);
+                    dup2(fileno(pipe_fp),
+                         STDOUT_FILENO);
+                }
+            }
+        }
+    }
+
+    /* ---- Output redirect to file ---- */
+    FILE *redir_fp = NULL;
+    int   saved_stdout_redir = -1;
+    if(pipe_fp == NULL)
+    {
+        char *redir_pos =
+            strchr(data.CLIcmdline, '>');
+        if(redir_pos != NULL)
+        {
+            *redir_pos = '\0';
+            const char *fname = redir_pos + 1;
+            while(*fname == ' '
+                    || *fname == '\t')
+            {
+                fname++;
+            }
+            if(*fname != '\0')
+            {
+                char fpath[500];
+                strncpy(fpath, fname, 499);
+                fpath[499] = '\0';
+                {
+                    size_t fl = strlen(fpath);
+                    while(fl > 0
+                            && (fpath[fl - 1]
+                                == ' '
+                                || fpath[fl - 1]
+                                == '\t'
+                                || fpath[fl - 1]
+                                == '\n'))
+                    {
+                        fpath[--fl] = '\0';
+                    }
+                }
+                redir_fp = fopen(fpath, "w");
+                if(redir_fp != NULL)
+                {
+                    saved_stdout_redir =
+                        dup(STDOUT_FILENO);
+                    dup2(fileno(redir_fp),
+                         STDOUT_FILENO);
+                }
+            }
+        }
+    }
 
 #ifdef USE_READLINE
     add_history(data.CLIcmdline);
@@ -1267,7 +1693,10 @@ errno_t CLI_execute_line()
             if(data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_COMMAND)
             {
                 // Execute CLI command
-                data.CMDerrstatus = data.cmd[data.cmdindex].fp();
+                data.cmd[data.cmdindex]
+                    .callcount++;
+                data.CMDerrstatus =
+                    data.cmd[data.cmdindex].fp();
 
                 if(data.CMDerrstatus != RETURN_SUCCESS)
                 {
@@ -1366,6 +1795,24 @@ errno_t CLI_execute_line()
             printf(COLORRED
                    "Command not found, or command with no effect\n" COLORRESET);
         }
+    }
+
+    /* Restore stdout if pipe was active */
+    if(pipe_fp != NULL)
+    {
+        fflush(stdout);
+        dup2(saved_stdout_fd, STDOUT_FILENO);
+        close(saved_stdout_fd);
+        pclose(pipe_fp);
+    }
+    /* Restore stdout if redirect was active */
+    if(redir_fp != NULL)
+    {
+        fflush(stdout);
+        dup2(saved_stdout_redir,
+             STDOUT_FILENO);
+        close(saved_stdout_redir);
+        fclose(redir_fp);
     }
 
     free(thetime);
@@ -1812,10 +2259,18 @@ static void update_hint_area(void)
 
 static void CLI_redisplay(void)
 {
-    /* Default redisplay */
+    /* Default or syntax-highlighted redisplay */
     rl_redisplay_function = NULL;
-    rl_redisplay();
-    fflush(stdout);
+    if(data.syntax_highlight
+            && rl_line_buffer[0] != '\0')
+    {
+        cli_highlight_redisplay();
+    }
+    else
+    {
+        rl_redisplay();
+        fflush(stdout);
+    }
     rl_redisplay_function = CLI_redisplay;
 
     /* Clear any stale suggestion */

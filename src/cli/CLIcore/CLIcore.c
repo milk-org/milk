@@ -503,6 +503,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Load persistent command aliases
     cli_alias_load();
 
+    // Enable syntax highlighting by default
+    data.syntax_highlight = 1;
+
+    // Load startup script (~/.milkrc)
+    cli_milkrc_load();
+
     // set shared memory directory
     setSHMdir();
 
@@ -1165,6 +1171,33 @@ void runCLI_cmd_init()
                        "<interval_ms> <command...>",
                        "watch 1000 mem.listim",
                        "cli_watch()");
+
+    RegisterCLIcommand("time",
+                       __FILE__,
+                       cli_time,
+                       "measure command execution time",
+                       "<command...>",
+                       "time mem.listim",
+                       "cli_time()");
+
+    RegisterCLIcommand("cmdstats",
+                       __FILE__,
+                       cli_cmdstats,
+                       "show command usage statistics",
+                       "no argument",
+                       "cmdstats",
+                       "cli_cmdstats()");
+
+#ifdef USE_READLINE
+    RegisterCLIcommand(
+        "synhl",
+        __FILE__,
+        cli_syntax_highlight_toggle,
+        "toggle syntax highlighting",
+        "[on|off]",
+        "synhl off",
+        "cli_syntax_highlight_toggle()");
+#endif
 
     //  init_modules();
 

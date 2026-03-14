@@ -277,6 +277,8 @@ typedef struct
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;
+
+    uint32_t callcount;
 } CMD;
 
 // The command line is parsed and
@@ -367,6 +369,7 @@ typedef struct
     int autocomplete_history;
     int autocomplete_arghint;
     int autocomplete_fuzzy;
+    int syntax_highlight;
     long        cmdNBarg;
     CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
 

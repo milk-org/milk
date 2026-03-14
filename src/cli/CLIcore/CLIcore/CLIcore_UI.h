@@ -37,4 +37,18 @@ errno_t cli_alias_list(void);
 /* Watch command */
 errno_t cli_watch(void);
 
+/* Startup script */
+void cli_milkrc_load(void);
+
+/* Command timing */
+errno_t cli_time(void);
+
+/* Command statistics */
+errno_t cli_cmdstats(void);
+
+/* Syntax highlighting toggle */
+#ifdef USE_READLINE
+errno_t cli_syntax_highlight_toggle(void);
+#endif
+
 #endif
