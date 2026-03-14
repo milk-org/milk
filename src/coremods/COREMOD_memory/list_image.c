@@ -183,8 +183,8 @@ static errno_t CLIfunction_listim(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info_listim,
-        farg, &CLIcmddata_listim,
-        my_bindings, nb_bindings,
+        NULL, &CLIcmddata_listim,
+        NULL, 0,
         compute_listim);
 }
 
