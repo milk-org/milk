@@ -28,6 +28,7 @@
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
 #define CLICOMPLETIONMODE_FILES    3
+#define CLICOMPLETIONMODE_FPSPARAMS 4
 
 // COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
@@ -362,6 +363,64 @@ retry_fuzzy:
         }
     }
 
+    if(data.CLImatchMode == CLICOMPLETIONMODE_FPSPARAMS)
+    {
+        /*
+         * FPS parameter name completion.
+         * Scan /dev/shm for fps.* entries,
+         * strip "fps." prefix and ".shm"
+         * suffix, offer as completions.
+         */
+        static DIR *fps_dirp = NULL;
+
+        if(!state)
+        {
+            if(fps_dirp != NULL)
+            {
+                closedir(fps_dirp);
+                fps_dirp = NULL;
+            }
+            fps_dirp = opendir("/dev/shm");
+        }
+
+        if(fps_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(fps_dirp))
+                    != NULL)
+            {
+                /* Only fps.*.shm entries */
+                if(strncmp(ent->d_name,
+                           "fps.", 4) != 0)
+                {
+                    continue;
+                }
+                /* Strip "fps." prefix */
+                char fpsname[256];
+                strncpy(fpsname,
+                        ent->d_name + 4,
+                        sizeof(fpsname) - 1);
+                fpsname[
+                    sizeof(fpsname) - 1]
+                    = '\0';
+                /* Strip ".shm" suffix */
+                char *dot = strstr(
+                    fpsname, ".shm");
+                if(dot != NULL)
+                {
+                    *dot = '\0';
+                }
+                if(strncmp(fpsname, text,
+                           len) == 0)
+                {
+                    return dupstr(fpsname);
+                }
+            }
+            closedir(fps_dirp);
+            fps_dirp = NULL;
+        }
+    }
+
     /* Fuzzy fallback: if prefix pass found nothing,
      * restart with substring matching */
     if(generator_fuzzy_pass == 0 &&
@@ -487,6 +546,11 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
                         {
                             matched_file = 1;
                         }
+                        if(atype == CLIARG_FPSNAME)
+                        {
+                            data.CLImatchMode =
+                                CLICOMPLETIONMODE_FPSPARAMS;
+                        }
                         break;
                     }
                     cli_ai++;
@@ -502,7 +566,8 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
                 rl_completion_append_character
                     = '\0';
             }
-            else
+            else if(data.CLImatchMode
+                    != CLICOMPLETIONMODE_FPSPARAMS)
             {
                 data.CLImatchMode =
                     CLICOMPLETIONMODE_IMAGES;
