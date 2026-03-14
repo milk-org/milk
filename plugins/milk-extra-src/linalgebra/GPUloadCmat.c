@@ -1,3 +1,8 @@
+/**
+ * @file GPUloadCmat.c
+ * @brief Gpuloadcmat module
+ */
+
 /** @file GPUloadCmat.c
  */
 
@@ -5,7 +10,7 @@
 
 #include <cublas_v2.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "linalgebra_types.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];

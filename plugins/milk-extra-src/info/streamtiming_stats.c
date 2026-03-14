@@ -1,11 +1,24 @@
+/**
+ * @file streamtiming_stats.c
+ * @brief Streamtiming stats module
+ */
+
 /** @file streamtiming_stats.c
  */
 
 #include <math.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
+#else
+#define printw(...) printf(__VA_ARGS__)
+#define attron(a)
+#define attroff(a)
+#define A_BOLD 0
+#define COLOR_PAIR(c) 0
+#endif
 #include <sched.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_tools/COREMOD_tools.h"
@@ -26,7 +39,7 @@ errno_t info_image_streamtiming_stats_disp(
 errno_t info_image_streamtiming_stats(
     imageID ID, int sem, long NBsamplesmax, float samplestimeout, int buffinit)
 {
-    IMAGE *image = &data.image[ID];
+    IMAGE *image = &dcimg[ID];
 
     static int     initflag = 0;
     static double *tdiffvarray;

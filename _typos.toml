@@ -1,0 +1,39 @@
+[default.extend-words]
+# Domain-specific terms that are NOT typos
+stdev = "stdev"
+linpf = "linpf"
+shmim = "shmim"
+imrot = "imrot"
+imresize = "imresize"
+strmtempstat = "strmtempstat"
+cubeclust = "cubeclust"
+pixtab = "pixtab"
+respM = "respM"
+SVDpInverse = "SVDpInverse"
+filt = "filt"
+bblurr = "bblurr"
+RGGB = "RGGB"
+keyparam = "keyparam"
+pInv = "pInv"
+fpsexec = "fpsexec"
+fpsCTRL = "fpsCTRL"
+streamCTRL = "streamCTRL"
+processinfo = "processinfo"
+procinfo = "procinfo"
+flistname = "flistname"
+mkzerc = "mkzerc"
+imcXprod = "imcXprod"
+mkCPAmodes = "mkCPAmodes"
+thi = "thi"
+fils = "fils"
+
+[default.extend-identifiers]
+CLIcmddata = "CLIcmddata"
+
+[files]
+extend-exclude = [
+  "docs/cli/help.txt",
+  "docs/Markdown_Index.md",
+  "src/",
+  "plugins/cacao-src/",
+]

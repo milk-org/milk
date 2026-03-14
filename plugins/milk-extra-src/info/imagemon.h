@@ -1,4 +1,9 @@
 /**
+ * @file imagemon.h
+ * @brief Imagemon module
+ */
+
+/**
  * @file    imagemon.h
  */
 

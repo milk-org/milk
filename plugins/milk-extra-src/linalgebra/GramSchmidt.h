@@ -1,3 +1,8 @@
+/**
+ * @file GramSchmidt.h
+ * @brief Gramschmidt module
+ */
+
 #ifndef LINALGEBRA_GRAMSCHMIDT_H
 #define LINALGEBRA_GRAMSCHMIDT_H
 

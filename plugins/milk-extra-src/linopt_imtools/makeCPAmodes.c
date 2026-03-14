@@ -1,281 +1,98 @@
+/**
+ * @file makeCPAmodes.c
+ * @brief log all debug trace points to file
+ */
+
 #include <math.h>
 
 // log all debug trace points to file
 #define DEBUGLOG
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
-// Local variables pointers
-static char   *outimname;
 
-static uint32_t *sizexout;
-static uint32_t *sizeyout;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static uint64_t *centered;
-long fpi_centered;
-
-static float *xcent;
-static float *ycent;
-
-// Radial CPA
-static float *rCPAminval;
-static float *rCPAmaxval;
-
-// sampling xy CPA
-static float *CPAmaxval;
-
-static float *deltaCPAval;
-
-static float *radiusval;
-
-static float *radiusfactorlimval;
-
-static float *fpowerlaw;
-
-static float *fpowerlaw_minf;
-
-static float *fpowerlaw_maxf;
-
-static uint32_t   *writefileval;
-
-static char *maskim;
-
-// extrapolation factor
-// extrapolate out to extrfactor radian
-static float *extrfactor;
-
-// extrapolation offset
-static float *extroffset;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_STR,
-        ".out_name",
-        "output image",
-        "out1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".sizex",
-        "sizex",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &sizexout,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".sizey",
-        "sizey",
-        "512",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &sizeyout,
-        NULL
-    },
-    {
-        CLIARG_ONOFF,
-        ".align.centered",
-        "on if centered",
-        "1",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &centered,
-        &fpi_centered
-    },
-    {
-        CLIARG_FLOAT32,
-        ".align.xcenter",
-        "x axis center",
-        "200",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &xcent,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".align.ycenter",
-        "y axis center",
-        "200",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &ycent,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".rCPAmin",
-        "minimum radial cycle per aperture",
-        "-1.0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &rCPAminval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".rCPAmax",
-        "maximum radial cycle per aperture",
-        "1008.0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &rCPAmaxval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".CPAmax",
-        "maximum cycle per aperture",
-        "8.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &CPAmaxval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".deltaCPA",
-        "CPA interval",
-        "0.8",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &deltaCPAval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".radius",
-        "disk radius",
-        "160.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &radiusval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".radfactlim",
-        "radius factor limit",
-        "1.5",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &radiusfactorlimval,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw",
-        "frequency power law (amp x f^a)",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &fpowerlaw,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw_minf",
-        "frequency power law min freq",
-        "1.0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &fpowerlaw_minf,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".fpowerlaw_maxf",
-        "frequency power law max freq",
-        "100.0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &fpowerlaw_maxf,
-        NULL
-    },
-    {
-        CLIARG_UINT32,
-        ".writefile",
-        "write file flag",
-        "0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &writefileval,
-        NULL
-    },
-    {
-        CLIARG_IMG,
-        ".maskim",
-        "optional mask for extrapolation",
-        "mask",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &maskim,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".extrfactor",
-        "extrapolation factor [radian]",
-        "1.0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &extrfactor,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".extroffset",
-        "extrapolation offset [pix]",
-        "0.5",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &extroffset,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkFouriermodes",
+    .cmdkey      = "mkFouriermodes",
+    .description = "make basis of Fourier Modes"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char   * outimname = NULL;
+static uint32_t * sizexout = NULL;
+static uint32_t * sizeyout = NULL;
+static uint64_t * centered = NULL;
+static float * xcent = NULL;
+static float * ycent = NULL;
+static float * rCPAminval = NULL;
+static float * rCPAmaxval = NULL;
+static float * CPAmaxval = NULL;
+static float * deltaCPAval = NULL;
+static float * radiusval = NULL;
+static float * radiusfactorlimval = NULL;
+static float * fpowerlaw = NULL;
+static float * fpowerlaw_minf = NULL;
+static float * fpowerlaw_maxf = NULL;
+static uint32_t   * writefileval = NULL;
+static char * maskim = NULL;
+static float * extrfactor = NULL;
+static float * extroffset = NULL;
 
 
-// Optional custom configuration setup.
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
 
-    }
-
-    return RETURN_SUCCESS;
-}
-
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-
-    }
-
-    return RETURN_SUCCESS;
-}
-
-
-
-
-
-
-
-static CLICMDDATA CLIcmddata =
-{
-    "mkFouriermodes", "make basis of Fourier Modes", CLICMD_FIELDS_DEFAULTS
-};
-
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+#define FPS_PARAMS(X) \
+    X(".out_name", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".sizex", &sizexout, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sizex") \
+    X(".sizey", &sizeyout, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sizey") \
+    X(".CPAmax", &CPAmaxval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "maximum cycle per aperture") \
+    X(".deltaCPA", &deltaCPAval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "CPA interval") \
+    X(".radius", &radiusval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "disk radius") \
+    X(".radfactlim", &radiusfactorlimval, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "radius factor limit") \
+    X(".writefile", &writefileval, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "write file flag")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
+FPS_V2_SECTION5(FPS_PARAMS)
 
 errno_t linopt_imtools_makeCPAmodes(
     IMGID *imgoutm,
@@ -321,25 +138,25 @@ errno_t linopt_imtools_makeCPAmodes(
     long sizexy = sizex * sizey;
 
 
-    IMGID imgx = mkIMGID_from_name("cpa_tmpx");
-    imgx.naxis = 2;
-    imgx.datatype = _DATATYPE_FLOAT;
-    imgx.size[0] = sizex;
-    imgx.size[1] = sizey;
+    IMGID imgx = imgid_make_from_name("cpa_tmpx");
+    imgx.mdt->naxis = 2;
+    imgx.mdt->datatype = _DATATYPE_FLOAT;
+    imgx.mdt->size[0] = sizex;
+    imgx.mdt->size[1] = sizey;
     createimagefromIMGID(&imgx);
 
-    IMGID imgy = mkIMGID_from_name("cpa_tmpy");
-    imgy.naxis = 2;
-    imgy.datatype = _DATATYPE_FLOAT;
-    imgy.size[0] = sizex;
-    imgy.size[1] = sizey;
+    IMGID imgy = imgid_make_from_name("cpa_tmpy");
+    imgy.mdt->naxis = 2;
+    imgy.mdt->datatype = _DATATYPE_FLOAT;
+    imgy.mdt->size[0] = sizex;
+    imgy.mdt->size[1] = sizey;
     createimagefromIMGID(&imgy);
 
-    IMGID imgr = mkIMGID_from_name("cpa_tmpr");
-    imgr.naxis = 2;
-    imgr.datatype = _DATATYPE_FLOAT;
-    imgr.size[0] = sizex;
-    imgr.size[1] = sizey;
+    IMGID imgr = imgid_make_from_name("cpa_tmpr");
+    imgr.mdt->naxis = 2;
+    imgr.mdt->datatype = _DATATYPE_FLOAT;
+    imgr.mdt->size[0] = sizex;
+    imgr.mdt->size[1] = sizey;
     createimagefromIMGID(&imgr);
 
     list_image_ID();
@@ -354,7 +171,7 @@ errno_t linopt_imtools_makeCPAmodes(
         for(uint32_t jj = 0; jj < sizey; jj++)
         {
             float y = (1.0 * jj - ycenter) / radius;
-            float r = sqrt(x * x + y * y);
+            float r = sqrtf(x * x + y * y);
             imgx.im->array.F[jj * sizex + ii] = x;
             imgy.im->array.F[jj * sizex + ii] = y;
             imgr.im->array.F[jj * sizex + ii] = r;
@@ -365,9 +182,9 @@ errno_t linopt_imtools_makeCPAmodes(
     // If mask exists, compute distance to mask for extrapolation
     //
     int MASKext = 0; // toggles to 1 if applying mask for extrapolation
-    resolveIMGID(&imgmask, ERRMODE_WARN);
+    resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg);
 
-    IMGID imgpixdist = mkIMGID_from_name("pixdist");
+    IMGID imgpixdist = imgid_make_from_name("pixdist");
 
     if(imgmask.ID != -1)
     {
@@ -375,10 +192,10 @@ errno_t linopt_imtools_makeCPAmodes(
         printf("processing mask\n");
         fflush(stdout);
 
-        imgpixdist.naxis = 2;
-        imgpixdist.datatype = _DATATYPE_FLOAT;
-        imgpixdist.size[0] = sizex;
-        imgpixdist.size[1] = sizey;
+        imgpixdist.mdt->naxis = 2;
+        imgpixdist.mdt->datatype = _DATATYPE_FLOAT;
+        imgpixdist.mdt->size[0] = sizex;
+        imgpixdist.mdt->size[1] = sizey;
         createimagefromIMGID(&imgpixdist);
 
 
@@ -436,7 +253,7 @@ errno_t linopt_imtools_makeCPAmodes(
                     float dx = x0 - maskx[mpix];
                     float dy = y0 - masky[mpix];
                     float dr2 = dx * dx + dy * dy;
-                    float dr = sqrt(dr2);
+                    float dr = sqrtf(dr2);
 
                     if(dr < imgpixdist.im->array.F[ii0])
                     {
@@ -451,8 +268,6 @@ errno_t linopt_imtools_makeCPAmodes(
     }
 
 
-
-
     printf("CPA: max = %f   delta = %f\n", CPAmax, deltaCPA);
     fflush(stdout);
     NBfrequ = 0;
@@ -464,7 +279,7 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                float CPAr = sqrtf(CPAx * CPAx + CPAy * CPAy);
                 if(CPAr > 0.001) // excluding piston from array
                 {
                     if((CPAr > rCPAmin) && (CPAr < rCPAmax))
@@ -489,12 +304,6 @@ errno_t linopt_imtools_makeCPAmodes(
         }
     }
     printf("%ld spatial frequencies\n", NBfrequ);
-
-
-
-
-
-
 
 
     DEBUG_TRACEPOINT("NBfrequ = %ld", NBfrequ);
@@ -526,7 +335,7 @@ errno_t linopt_imtools_makeCPAmodes(
             int initCPAy = 0;
             for(float CPAy = 0.0; CPAy < CPAmax; CPAy += deltaCPA)
             {
-                float CPAr = sqrt(CPAx * CPAx + CPAy * CPAy);
+                float CPAr = sqrtf(CPAx * CPAx + CPAy * CPAy);
                 if(CPAr > 0.001) // excluding piston from array
                 {
                     if((CPAr > rCPAmin) && (CPAr < rCPAmax))
@@ -570,14 +379,12 @@ errno_t linopt_imtools_makeCPAmodes(
     printf("%ld modes\n", NBmax);
 
 
-    imgoutm->naxis = 3;
-    imgoutm->datatype = _DATATYPE_FLOAT;
-    imgoutm->size[0] = sizex;
-    imgoutm->size[1] = sizey;
-    imgoutm->size[2] = NBmax;
+    imgoutm->mdt->naxis = 3;
+    imgoutm->mdt->datatype = _DATATYPE_FLOAT;
+    imgoutm->mdt->size[0] = sizex;
+    imgoutm->mdt->size[1] = sizey;
+    imgoutm->mdt->size[2] = NBmax;
     createimagefromIMGID(imgoutm);
-
-
 
 
     if(writeMfile == 1)
@@ -599,7 +406,7 @@ errno_t linopt_imtools_makeCPAmodes(
         {
             float CPAx = CPAxarray[k1];
             float CPAy = CPAyarray[k1];
-            float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
+            float frequency = sqrtf(CPAx * CPAx + CPAy * CPAy);
 
 
             float fampl = 1.0;
@@ -609,12 +416,13 @@ errno_t linopt_imtools_makeCPAmodes(
             }
             else if(frequency > fpowerlaw_maxf)
             {
-                fampl = pow(fpowerlaw_maxf / fpowerlaw_minf,  fpowerlaw);
+                fampl = powf(fpowerlaw_maxf / fpowerlaw_minf,
+                             fpowerlaw);
             }
             else
             {
                 float f1 = frequency / fpowerlaw_minf;
-                fampl = pow(f1, fpowerlaw);
+                fampl = powf(f1, fpowerlaw);
             }
 
 
@@ -684,7 +492,7 @@ errno_t linopt_imtools_makeCPAmodes(
         {
             // mode 0 (piston) included
 
-            data.image[IDfreq].array.F[0] = 0.0;
+            dcimg[IDfreq].array.F[0] = 0.0f;
             for(uint32_t ii = 0; ii < sizexy; ii++)
             {
                 float r = imgr.im->array.F[ii];
@@ -709,7 +517,7 @@ errno_t linopt_imtools_makeCPAmodes(
         float CPAy = CPAyarray[k1];
         DEBUG_TRACEPOINT("    %ld %f %f", k1, CPAx, CPAy);
 
-        float frequency = sqrt(CPAx * CPAx + CPAy * CPAy);
+        float frequency = sqrtf(CPAx * CPAx + CPAy * CPAy);
 
         float fampl = 1.0;
         if(frequency < fpowerlaw_minf)
@@ -718,12 +526,13 @@ errno_t linopt_imtools_makeCPAmodes(
         }
         else if(frequency > fpowerlaw_maxf)
         {
-            fampl = pow(fpowerlaw_maxf / fpowerlaw_minf,  fpowerlaw);
+            fampl = powf(fpowerlaw_maxf / fpowerlaw_minf,
+                         fpowerlaw);
         }
         else
         {
             float f1 = frequency / fpowerlaw_minf;
-            fampl = pow(f1, fpowerlaw);
+            fampl = powf(f1, fpowerlaw);
         }
 
         for(uint32_t ii = 0; ii < sizexy; ii++)
@@ -732,8 +541,8 @@ errno_t linopt_imtools_makeCPAmodes(
             float y                           = imgy.im->array.F[ii];
             float r                           = imgr.im->array.F[ii];
 
-            data.image[IDfreq].array.F[k]    = frequency;
-            data.image[IDfreq].array.F[k + 1]  = frequency;
+            dcimg[IDfreq].array.F[k]    = frequency;
+            dcimg[IDfreq].array.F[k + 1]  = frequency;
             if(r < radfactlim)
             {
                 // attenuation factor for extrapolation
@@ -741,7 +550,7 @@ errno_t linopt_imtools_makeCPAmodes(
                 if(MASKext == 1)
                 {
                     float pdist = imgpixdist.im->array.F[ii];
-                    float afact0 = 1.0 + extroffset - pdist * sqrt(CPAx * CPAx + CPAy * CPAy) *
+                    float afact0 = 1.0 + extroffset - pdist * sqrtf(CPAx * CPAx + CPAy * CPAy) *
                                    M_PI / extrfactor;
                     if(afact0 > 1.0)
                     {
@@ -774,7 +583,6 @@ errno_t linopt_imtools_makeCPAmodes(
     free(CPArarray);
 
 
-
     DEBUG_TRACEPOINT("delete tmp files");
 
     FUNC_CHECK_RETURN(
@@ -786,6 +594,10 @@ errno_t linopt_imtools_makeCPAmodes(
     FUNC_CHECK_RETURN(
         delete_image_ID("cpa_tmpr", DELETE_IMAGE_ERRMODE_WARNING));
 
+    imgid_free(&imgx);
+    imgid_free(&imgy);
+    imgid_free(&imgr);
+    imgid_free(&imgpixdist);
 
     if(outNBmax != NULL)
     {
@@ -797,9 +609,7 @@ errno_t linopt_imtools_makeCPAmodes(
 }
 
 
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -835,10 +645,10 @@ static errno_t compute_function()
 
     // optional mask
     //
-    IMGID imgmask = mkIMGID_from_name(maskim);
-    resolveIMGID(&imgmask, ERRMODE_WARN);
+    IMGID imgmask = imgid_make_from_name(maskim);
+    resolveIMGID(&imgmask, ERRMODE_WARN, dcimg, dcnimg);
 
-    IMGID imgoutm = mkIMGID_from_name(outimname);
+    IMGID imgoutm = imgid_make_from_name(outimname);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
     {
@@ -867,23 +677,46 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&imgmask);
+    imgid_free(&imgoutm);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-INSERT_STD_FPSCLIfunctions
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linopt_imtools__makeCPAmodes()
 {
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

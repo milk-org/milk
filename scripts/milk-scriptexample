@@ -110,7 +110,7 @@ infile="${inputMSargARRAY[0]}"
 
 # execute script commands
 
-milk << EOF
+milk-cli << EOF
 m?
 exitCLI
 EOF

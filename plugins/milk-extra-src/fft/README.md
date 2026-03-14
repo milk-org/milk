@@ -1,5 +1,32 @@
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/537355d444fb4e6595fb352fb0e14d1b)](https://www.codacy.com/gh/milk-org/fft?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=milk-org/fft&amp;utm_campaign=Badge_Grade)
+# Module: fft
 
-# Module fft {#page_module_fft}
+Fourier Transforms using FFTW library.
 
-Fourier Transforms
+## Source Files
+
+| File | Description |
+|------|-------------|
+| `DFT.c` | Discrete Fourier Transform for focal plane mask insertion |
+| `dofft.c` | Perform 2D complex FFT on images |
+| `fft_autocorrelation.c` | Compute autocorrelation of an image via FFT |
+| `fft_structure_function.c` | Compute structure function via FFT |
+| `fftcorrelation.c` | Cross-correlate two images via FFT |
+| `ffttranslate.c` | Sub-pixel image translation using Fourier shift |
+| `fftzoom.c` | Zoom / resample image using FFT |
+| `init_fftwplan.c` | Initialize and cache FFTW plans |
+| `permut.c` | Quadrant swap (shift zero-frequency to center) |
+| `pup2foc.c` | Pupil-to-focal-plane propagation via FFT |
+| `testfftspeed.c` | Benchmark FFT execution speed |
+| `wisdom.c` | Manage FFTW wisdom files for plan optimization |
+
+## Standalone Executables
+
+| Executable | Source File | Description |
+|------------|-------------|-------------|
+| `milk-fpsexec-fft-dofft` | `dofft.c` | Perform 2D complex FFT |
+| `milk-fpsexec-fft-pup2foc` | `pup2foc.c` | Pupil-to-focal-plane propagation |
+
+## Dependencies
+
+- `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
+- `fftw3`, `fftw3f` (single and double precision)

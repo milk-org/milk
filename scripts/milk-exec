@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 
 
-MSdescr="execute milk command"
+MSdescr="execute milk-cli command"
 
-MSextdescr="Execute command string within milk command line interface (CLI).
+MSextdescr="Execute command string within milk-cli command line interface (CLI).
 Multiple commands separated by ; character"
 
 source milk-script-std-config
 
-RequiredCommands=(milk)
+RequiredCommands=(milk-cli)
 RequiredFiles=()
 RequiredDirs=()
 
@@ -61,6 +61,6 @@ done
 echo "exitCLI" >> $SF
 #cp ${SF} test.txt
 
-MILK_QUIET=1 milk -n ${pname} -f -s ${SF}
+MILK_QUIET=1 milk-cli -n ${pname} -f -s ${SF}
 
 rm ${SF}

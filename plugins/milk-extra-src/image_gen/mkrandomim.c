@@ -1,60 +1,68 @@
-#include "CommandLineInterface/CLIcore.h"
+#include "ImageStreamIO/ImageStruct.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
 #include "statistic/statistic.h" // ran1, gauss, gauss_trc
 
-#include "COREMOD_memory/image_keyword_addL.h"
-#include "COREMOD_memory/image_keyword_addS.h"
-
-// Local variables pointers
-static LOCVAR_OUTIMG2D outim;
 
 
-static uint32_t       *distrib;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-
-static CLICMDARGDEF farg[] =
-{
-    FARG_OUTIM_NAME(outim),
-    FARG_OUTIM_SHARED(outim),
-    FARG_OUTIM_XSIZE(outim),
-    FARG_OUTIM_YSIZE(outim),
-    {
-        CLIARG_UINT32,
-        ".distrib",
-        "distribution \n"
-        " (0: uniform)\n"
-        " (1: gauss)\n"
-        " (2: truncated gauss)\n",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &distrib,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "mkrnd",
+    .cmdkey      = "mkrnd",
+    .description = "make random image"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-static CLICMDDATA CLIcmddata =
-{
-    "mkrnd", "make random image", CLICMD_FIELDS_DEFAULTS
-};
-
-
-
-
-/** @brief Detailed help
- */
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+static char     outim_name[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outim";
+static uint32_t outim_xsize  = 256;
+static uint32_t outim_ysize  = 256;
+static uint32_t distrib_val  = 0;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".outim.name", outim_name, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".outim.xsize", &outim_xsize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "x size") \
+    X(".outim.ysize", &outim_ysize, \
+      FPTYPE_UINT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "y size") \
+    X(".distrib", &distrib_val, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "distribution (0:uniform 1:gauss 2:trunc)")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 
 
 /**
  * @brief Make random image
- *
  *
  * @param[out] img
  *      Output image
@@ -78,34 +86,40 @@ static imageID make_image_random(
     // Create image if needed
     imcreateIMGID(img);
 
-    // openMP is slow when calling gsl random number generator : do not use openMP here
-    if(pdf == 0)
+    // openMP is slow when calling gsl random
+    // number generator : do not use openMP here
+    if (pdf == 0)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
             img->im->array.F[ii] = (float) ran1();
         }
     }
-    if(pdf == 1)
+    if (pdf == 1)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
             img->im->array.F[ii] = (float) gauss();
         }
     }
-    if(pdf == 2)
+    if (pdf == 2)
     {
-        for(uint64_t ii = 0; ii < img->md->nelement; ii++)
+        for (uint64_t ii = 0;
+             ii < img->md->nelement; ii++)
         {
-            img->im->array.F[ii] = (float) gauss_trc();
+            img->im->array.F[ii] =
+                (float) gauss_trc();
         }
     }
-    if(pdf == 3)  // test pattern
+    if (pdf == 3)  // test pattern
     {
         static uint64_t ii   = 0;
-        img->im->array.F[ii] = 1.0 - img->im->array.F[ii];
+        img->im->array.F[ii] =
+            1.0 - img->im->array.F[ii];
         ii++;
-        if(ii == img->md->nelement)
+        if (ii == img->md->nelement)
         {
             ii = 0;
         }
@@ -115,58 +129,65 @@ static imageID make_image_random(
     return (img->ID);
 }
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    DEBUG_TRACEPOINT("make IMGID for %s", outim.name);
-    IMGID img  = makeIMGID_2D(outim.name, *outim.xsize, *outim.ysize);
-    img.shared = *outim.shared;
-    //img.NBkw   = *outim.NBkw;
-    //img.CBsize = *outim.CBsize;
+    DEBUG_TRACEPOINT("make IMGID for %s",
+                     outim_name);
 
-    printf("NBkw   = %d\n", img.NBkw);
-    printf("CBsize = %d\n", img.CBsize);
+    IMGID img = imgid_make_from_name_2D(
+        outim_name, outim_xsize, outim_ysize);
 
-
-
-
-    // Create image if needed
-    imcreateIMGID(&img);
-
-
-    list_image_ID();
-
-/*
-    image_keyword_addS(img, "MILKFUNC", "mkrandomim", "MILK function");
-    image_keyword_addL(img,
-                       "RNDPDF",
-                       (long)(*distrib),
-                       "random value distribution");
-*/
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
+    make_image_random(&img, distrib_val);
 
-
-
-
-    make_image_random(&img, *distrib);
-
-    DEBUG_TRACEPOINT("update output ID %ld", img.ID);
-    processinfo_update_output_stream(processinfo, img.ID);
+    DEBUG_TRACEPOINT("update output ID %ld",
+                     img.ID);
+    processinfo_update_output_stream(
+        processinfo, img.im, NULL);
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+    imgid_free(&img);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_gen__mkrandomim()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

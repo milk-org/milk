@@ -1,100 +1,92 @@
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include <gsl/gsl_blas.h>
-#include <gsl/gsl_eigen.h>
-#include <gsl/gsl_matrix.h>
+#ifdef USE_MKL
+#include "mkl_lapacke.h"
+#else
+#include <cblas.h>
+#include <lapacke.h>
+#endif
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_iofits/savefits.h"
-#include "CommandLineInterface/timeutils.h"
+#include "timeutils.h"
 #include "linalgebra/linalgebra.h"
 
-// Local variables pointers
-static char   *inimname;
-static char   *outimname;
-static double *SVD_epsilon;
-static long   *max_NBmodes;
-static char   *outimVTmatname;
-static long   *useGPU;
 
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".inim",
-        "input image",
-        "im",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inimname,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outim",
-        "output image",
-        "outim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".svdeps",
-        "SVD cutoff",
-        "0.001",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &SVD_epsilon,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".maxNBmode",
-        "Maximum NB modes",
-        "10000",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &max_NBmodes,
-        NULL
-    },
-    {
-        CLIARG_STR,
-        ".outimVT",
-        "output VT matrix",
-        "outVTmat",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outimVTmatname,
-        NULL
-    },
-    {
-        CLIARG_INT64,
-        ".GPU",
-        "use GPU",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &useGPU,
-        NULL
-    }
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "impsinvsvd",
+    .cmdkey      = "impsinvsvd",
+    .description = "compute pseudoinverse"
 };
 
-static CLICMDDATA CLIcmddata =
-{
-    "impsinvsvd", "compute pseudoinverse", CLICMD_FIELDS_DEFAULTS
-};
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-//
-// Computes control matrix
-// Conventions:
-//   m: number of actuators (= NB_MODES)
-//   n: number of sensors  (= # of pixels)
-//
-// This implementation computes the eigenvalue decomposition of transpose(M) x M, so it is efficient if n>>m, as transpose(M) x M is size m x m
-//
+static char   * inimname = NULL;
+static char   * outimname = NULL;
+static double * SVD_epsilon = NULL;
+static long   * max_NBmodes = NULL;
+static char   * outimVTmatname = NULL;
+static long   * useGPU = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".inim", &inimname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".outim", &outimname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output image") \
+    X(".svdeps", &SVD_epsilon, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "SVD cutoff") \
+    X(".maxNBmode", &max_NBmodes, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Maximum NB modes") \
+    X(".outimVT", &outimVTmatname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output VT matrix")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+
+/**
+ * @brief Compute pseudoinverse via eigenvalue
+ *        decomposition of D^T * D
+ *
+ * Uses LAPACKE dsyev for eigenvalue decomposition
+ * and CBLAS dgemm for matrix multiplication.
+ *
+ * Conventions:
+ *   m: number of actuators (= NB_MODES)
+ *   n: number of sensors  (= # of pixels)
+ *
+ * Efficient when n >> m, as D^T*D is m x m.
+ */
 errno_t
 linopt_compute_SVDpseudoInverse(
     const char *ID_Rmatrix_name,
@@ -102,48 +94,28 @@ linopt_compute_SVDpseudoInverse(
     double      SVDeps,
     long        MaxNBmodes,
     const char *ID_VTmatrix_name,
-    imageID    *outID
-) /* works for m != n */
+    imageID    *outID)
 {
     DEBUG_TRACE_FSTART();
 
-    FILE       *fp;
-    char        fname[200];
-    gsl_matrix *matrix_D;  /* this is the input response matrix */
-    gsl_matrix *matrix_Ds; /* this is the output pseudo inverse of D */
-    gsl_matrix *matrix_Dtra;
-    gsl_matrix *matrix_DtraD;
-    gsl_matrix *matrix_DtraDinv;
-    gsl_matrix *matrix_DtraD_evec;
-    gsl_matrix *matrix1;
-    gsl_matrix *matrix2;
-    gsl_vector *matrix_DtraD_eval;
-    gsl_eigen_symmv_workspace *w;
+    FILE    *fp;
+    char     fname[200];
+    long     m, n;
+    double   egvlim;
+    long     nbmodesremoved;
+    uint8_t  datatype;
+    long     MaxNBmodes1, mode;
 
-    gsl_matrix *matrix_save;
-
-    long      m;
-    long      n;
-    imageID   ID_Rmatrix, ID_Cmatrix, ID_VTmatrix;
-    uint32_t *arraysizetmp;
-    double    egvlim;
-    long      nbmodesremoved;
-
-    uint8_t datatype;
-
-    long MaxNBmodes1, mode;
-
-    // Timing
     int             timing = 1;
-    struct timespec t0, t1, t2, t3, t4, t5, t6, t7;
-    double          t01d, t12d, t23d, t34d, t45d, t56d, t67d;
+    struct timespec t0, t1, t2, t3, t4;
+    struct timespec t5, t6, t7;
+    double          t01d, t12d, t23d, t34d;
+    double          t45d, t56d, t67d;
     struct timespec tdiff;
 
-    int     testmode = 0;
-    imageID ID_AtA;
-    imageID ID;
+    int testmode = 0;
 
-    printf("[CPU (gsl) SVD start]");
+    printf("[CPU (lapack) SVD start]");
     fflush(stdout);
 
     if(timing == 1)
@@ -151,72 +123,87 @@ linopt_compute_SVDpseudoInverse(
         clock_gettime(CLOCK_MILK, &t0);
     }
 
-    arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) * 3);
-    if(arraysizetmp == NULL)
-    {
-        FUNC_RETURN_FAILURE("malloc returns NULL pointer");
-    }
+    IMGID imgin =
+        imgid_make_from_name(
+            ID_Rmatrix_name);
+    resolveIMGID(&imgin,
+                 ERRMODE_ABORT,
+                 dcimg, dcnimg);
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
-    if(ID_Rmatrix == -1)
+    datatype = imgin.md->datatype;
+    if(imgin.md->naxis == 3)
     {
-        printf("ERROR: matrix %s not found in memory\n", ID_Rmatrix_name);
-        exit(0);
-    }
-    datatype = data.image[ID_Rmatrix].md[0].datatype;
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
-    {
-        n = data.image[ID_Rmatrix].md[0].size[0] *
-            data.image[ID_Rmatrix].md[0].size[1];
-        m = data.image[ID_Rmatrix].md[0].size[2];
-        printf("3D image -> %ld %ld\n", n, m);
-        fflush(stdout);
+        n = imgin.md->size[0]
+            * imgin.md->size[1];
+        m = imgin.md->size[2];
+        printf(
+            "3D image -> %ld %ld\n",
+            n, m);
     }
     else
     {
-        n = data.image[ID_Rmatrix].md[0].size[0];
-        m = data.image[ID_Rmatrix].md[0].size[1];
-        printf("2D image -> %ld %ld\n", n, m);
-        fflush(stdout);
+        n = imgin.md->size[0];
+        m = imgin.md->size[1];
+        printf(
+            "2D image -> %ld %ld\n",
+            n, m);
     }
-
-    /* in this procedure, m=number of actuators/modes, n=number of WFS elements */
-    //  long m = smao[0].NBmode;
-    // long n = smao[0].NBwfselem;
-
-    printf("m = %ld , n = %ld \n", m, n);
     fflush(stdout);
 
-    matrix_DtraD_eval = gsl_vector_alloc(m);
-    matrix_D          = gsl_matrix_alloc(n, m);
-    matrix_Ds         = gsl_matrix_alloc(m, n);
-    matrix_Dtra       = gsl_matrix_alloc(m, n);
-    matrix_DtraD      = gsl_matrix_alloc(m, m);
-    matrix_DtraDinv   = gsl_matrix_alloc(m, m);
-    matrix_DtraD_evec = gsl_matrix_alloc(m, m);
+    printf(
+        "m = %ld , n = %ld \n",
+        m, n);
+    fflush(stdout);
 
-    /* write matrix_D */
+    /* Allocate double work arrays */
+    double *D =
+        calloc((size_t) n * m,
+               sizeof(double));
+    double *Ds =
+        calloc((size_t) m * n,
+               sizeof(double));
+    double *DtD =
+        calloc((size_t) m * m,
+               sizeof(double));
+    double *DtDinv =
+        calloc((size_t) m * m,
+               sizeof(double));
+    double *eval =
+        calloc((size_t) m,
+               sizeof(double));
+    double *tmp1 =
+        calloc((size_t) m * m,
+               sizeof(double));
+    double *tmp2 =
+        calloc((size_t) m * m,
+               sizeof(double));
+
+    /* Fill D column-major */
     if(datatype == _DATATYPE_FLOAT)
     {
-        for(int k = 0; k < m; k++)
-            for(int ii = 0; ii < n; ii++)
+        for(long k = 0; k < m; k++)
+        {
+            for(long ii = 0;
+                ii < n; ii++)
             {
-                gsl_matrix_set(matrix_D,
-                               ii,
-                               k,
-                               data.image[ID_Rmatrix].array.F[k * n + ii]);
+                D[ii + k * n] =
+                    imgin.im->array.F[
+                        k * n + ii];
             }
+        }
     }
     else
     {
-        for(int k = 0; k < m; k++)
-            for(int ii = 0; ii < n; ii++)
+        for(long k = 0; k < m; k++)
+        {
+            for(long ii = 0;
+                ii < n; ii++)
             {
-                gsl_matrix_set(matrix_D,
-                               ii,
-                               k,
-                               data.image[ID_Rmatrix].array.D[k * n + ii]);
+                D[ii + k * n] =
+                    imgin.im->array.D[
+                        k * n + ii];
             }
+        }
     }
 
     if(timing == 1)
@@ -224,27 +211,39 @@ linopt_compute_SVDpseudoInverse(
         clock_gettime(CLOCK_MILK, &t1);
     }
 
-    /* compute DtraD */
-    gsl_blas_dgemm(CblasTrans,
-                   CblasNoTrans,
-                   1.0,
-                   matrix_D,
-                   matrix_D,
-                   0.0,
-                   matrix_DtraD);
+    /* DtD = D^T * D  (m x m) */
+    cblas_dgemm(
+        CblasColMajor,
+        CblasTrans, CblasNoTrans,
+        (int) m, (int) m, (int) n,
+        1.0, D, (int) n,
+        D, (int) n,
+        0.0, DtD, (int) m);
 
     if(testmode == 1)
     {
-        // TEST
-        FUNC_CHECK_RETURN(create_2Dimage_ID("AtA", m, m, &ID_AtA));
+        IMGID imgAtA =
+            imgid_make_from_name_2D(
+                "AtA", m, m);
+        imgAtA.mdt->shared = 0;
+        imgAtA.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgAtA);
 
-        for(int ii = 0; ii < m; ii++)
-            for(int jj = 0; jj < m; jj++)
+        for(long ii = 0;
+            ii < m; ii++)
+        {
+            for(long jj = 0;
+                jj < m; jj++)
             {
-                data.image[ID_AtA].array.F[jj * m + ii] =
-                    (float) gsl_matrix_get(matrix_DtraD, ii, jj);
+                imgAtA.im->array.F[
+                    jj * m + ii] =
+                    (float) DtD[
+                        ii + jj * m];
             }
-        save_fits("AtA", "test_AtA.fits");
+        }
+        save_fits(
+            "AtA", "test_AtA.fits");
     }
 
     if(timing == 1)
@@ -252,53 +251,74 @@ linopt_compute_SVDpseudoInverse(
         clock_gettime(CLOCK_MILK, &t2);
     }
 
-    /* compute the inverse of DtraD */
-
-    /* first, compute the eigenvalues and eigenvectors */
-    w           = gsl_eigen_symmv_alloc(m);
-    matrix_save = gsl_matrix_alloc(m, m);
-    gsl_matrix_memcpy(matrix_save, matrix_DtraD);
-    gsl_eigen_symmv(matrix_save, matrix_DtraD_eval, matrix_DtraD_evec, w);
-    gsl_matrix_free(matrix_save);
-    gsl_eigen_symmv_free(w);
+    /* Eigenvalue decomposition */
+    {
+        int info = LAPACKE_dsyev(
+            LAPACK_COL_MAJOR, 'V', 'U',
+            (int) m, DtD,
+            (int) m, eval);
+        if(info != 0)
+        {
+            printf(
+                "LAPACKE_dsyev"
+                " failed: %d\n",
+                info);
+        }
+    }
 
     if(timing == 1)
     {
         clock_gettime(CLOCK_MILK, &t3);
     }
 
-    gsl_eigen_symmv_sort(matrix_DtraD_eval,
-                         matrix_DtraD_evec,
-                         GSL_EIGEN_SORT_ABS_DESC);
+    /* Reverse to descending order */
+    for(long i = 0; i < m / 2; i++)
+    {
+        double t = eval[i];
+        eval[i] = eval[m - 1 - i];
+        eval[m - 1 - i] = t;
+    }
+    for(long i = 0; i < m / 2; i++)
+    {
+        for(long j = 0; j < m; j++)
+        {
+            double t =
+                DtD[j + i * m];
+            DtD[j + i * m] =
+                DtD[j
+                    + (m - 1 - i) * m];
+            DtD[j
+                + (m - 1 - i) * m]
+                = t;
+        }
+    }
 
     if(timing == 1)
     {
         clock_gettime(CLOCK_MILK, &t4);
     }
 
-    //  printf("Eigenvalues\n");
-    //  fflush(stdout);
-
-    // Write eigenvalues
+    /* Write eigenvalues to file */
     sprintf(fname, "eigenv.dat");
-    if((fp = fopen(fname, "w")) == NULL)
+    fp = fopen(fname, "w");
+    if(fp == NULL)
     {
-        printf("ERROR: cannot create file \"%s\"\n", fname);
+        printf(
+            "ERROR: cannot create"
+            " \"%s\"\n",
+            fname);
         exit(0);
     }
-    for(int k = 0; k < m; k++)
+    for(long k = 0; k < m; k++)
     {
-        fprintf(fp,
-                "%d %g %g\n",
-                k,
-                sqrt(gsl_vector_get(matrix_DtraD_eval, k)),
-                gsl_vector_get(matrix_DtraD_eval, k));
+        fprintf(fp, "%ld %g %g\n",
+                k, sqrt(eval[k]),
+                eval[k]);
     }
     fclose(fp);
 
-    //  for(k=0; k<m; k++)
-    //    printf("Mode %ld eigenvalue = %g\n", k, gsl_vector_get(matrix_DtraD_eval,k));
-    egvlim      = SVDeps * SVDeps * gsl_vector_get(matrix_DtraD_eval, 0);
+    egvlim = SVDeps * SVDeps
+             * eval[0];
     MaxNBmodes1 = MaxNBmodes;
     if(MaxNBmodes1 > m)
     {
@@ -309,182 +329,204 @@ linopt_compute_SVDpseudoInverse(
         MaxNBmodes1 = n;
     }
     mode = 0;
-    while((mode < MaxNBmodes1) &&
-            (gsl_vector_get(matrix_DtraD_eval, mode) > egvlim))
+    while((mode < MaxNBmodes1)
+          && (eval[mode] > egvlim))
     {
         mode++;
     }
-    printf("Keeping %ld modes  (SVDeps = %g-> %g, MaxNBmodes = %ld -> %ld)\n",
-           mode,
-           SVDeps,
-           egvlim,
-           MaxNBmodes,
-           MaxNBmodes1);
+    printf(
+        "Keeping %ld modes  "
+        "(SVDeps = %g-> %g, "
+        "MaxNBmodes = %ld -> %ld)\n",
+        mode, SVDeps, egvlim,
+        MaxNBmodes, MaxNBmodes1);
     MaxNBmodes1 = mode;
 
-    // Write rotation matrix
-    arraysizetmp[0] = m;
-    arraysizetmp[1] = m;
-
-    FUNC_CHECK_RETURN(create_image_ID(ID_VTmatrix_name,
-                                      2,
-                                      arraysizetmp,
-                                      datatype,
-                                      0,
-                                      0,
-                                      0,
-                                      &ID_VTmatrix));
+    /* Write rotation matrix VT */
+    IMGID imgVT =
+        imgid_make_from_name_2D(
+            ID_VTmatrix_name, m, m);
+    imgVT.mdt->datatype = datatype;
+    imgVT.mdt->shared = 0;
+    imgVT.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgVT);
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        for(int ii = 0; ii < m; ii++)   // modes
-            for(int k = 0; k < m; k++)  // modes
+        for(long ii = 0;
+            ii < m; ii++)
+        {
+            for(long k = 0;
+                k < m; k++)
             {
-                data.image[ID_VTmatrix].array.F[k * m + ii] =
-                    (float) gsl_matrix_get(matrix_DtraD_evec, k, ii);
+                imgVT.im->array.F[
+                    k * m + ii] =
+                    (float) DtD[
+                        k + ii * m];
             }
+        }
     }
     else
     {
-        for(int ii = 0; ii < m; ii++)   // modes
-            for(int k = 0; k < m; k++)  // modes
+        for(long ii = 0;
+            ii < m; ii++)
+        {
+            for(long k = 0;
+                k < m; k++)
             {
-                data.image[ID_VTmatrix].array.D[k * m + ii] =
-                    gsl_matrix_get(matrix_DtraD_evec, k, ii);
+                imgVT.im->array.D[
+                    k * m + ii] =
+                    DtD[k + ii * m];
             }
+        }
     }
 
     if(testmode == 1)
     {
-        save_fits(ID_VTmatrix_name, "test_VT.fits");
+        save_fits(ID_VTmatrix_name,
+                  "test_VT.fits");
     }
 
-    /* second, build the "inverse" of the diagonal matrix of eigenvalues (matrix1) */
+    /* Build diagonal inverse */
     nbmodesremoved = 0;
-    matrix1        = gsl_matrix_alloc(m, m);
-    for(int ii1 = 0; ii1 < m; ii1++)  // mode
-        for(int jj1 = 0; jj1 < m; jj1++)
+    memset(tmp1, 0,
+           (size_t) m * m
+           * sizeof(double));
+    for(long ii = 0; ii < m; ii++)
+    {
+        if(ii > MaxNBmodes1 - 1)
         {
-            if(ii1 == jj1)
-            {
-                if(ii1 > MaxNBmodes1 - 1)
-                {
-                    gsl_matrix_set(matrix1, ii1, jj1, 0.0);
-                    nbmodesremoved++;
-                }
-                else
-                {
-                    gsl_matrix_set(matrix1,
-                                   ii1,
-                                   jj1,
-                                   1.0 /
-                                   gsl_vector_get(matrix_DtraD_eval, ii1));
-                }
-            }
-            else
-            {
-                gsl_matrix_set(matrix1, ii1, jj1, 0.0);
-            }
+            nbmodesremoved++;
         }
-    // printf("%ld modes removed\n", nbmodesremoved);
-    // printf("Compute inverse\n");
-    // fflush(stdout);
-
+        else
+        {
+            tmp1[ii + ii * m] =
+                1.0 / eval[ii];
+        }
+    }
 
     if(timing == 1)
     {
         clock_gettime(CLOCK_MILK, &t5);
     }
 
-    /* third, compute the "inverse" of DtraD */
-    matrix2 = gsl_matrix_alloc(m, m);
-    gsl_blas_dgemm(CblasNoTrans,
-                   CblasNoTrans,
-                   1.0,
-                   matrix_DtraD_evec,
-                   matrix1,
-                   0.0,
-                   matrix2);
-    gsl_blas_dgemm(CblasNoTrans,
-                   CblasTrans,
-                   1.0,
-                   matrix2,
-                   matrix_DtraD_evec,
-                   0.0,
-                   matrix_DtraDinv);
-    gsl_matrix_free(matrix1);
-    gsl_matrix_free(matrix2);
+    /* DtDinv = evec * diag^-1
+     * * evec^T */
+    cblas_dgemm(
+        CblasColMajor,
+        CblasNoTrans, CblasNoTrans,
+        (int) m, (int) m, (int) m,
+        1.0, DtD, (int) m,
+        tmp1, (int) m,
+        0.0, tmp2, (int) m);
+    cblas_dgemm(
+        CblasColMajor,
+        CblasNoTrans, CblasTrans,
+        (int) m, (int) m, (int) m,
+        1.0, tmp2, (int) m,
+        DtD, (int) m,
+        0.0, DtDinv, (int) m);
 
     if(testmode == 1)
     {
-        FUNC_CHECK_RETURN(create_2Dimage_ID("M2", m, m, &ID));
+        IMGID imgM2 =
+            imgid_make_from_name_2D(
+                "M2", m, m);
+        imgM2.mdt->shared = 0;
+        imgM2.im = (IMAGE *) calloc(
+            1, sizeof(IMAGE));
+        imgid_mkimage(&imgM2);
 
-        for(int ii = 0; ii < m; ii++)
-            for(int jj = 0; jj < m; jj++)
+        for(long ii = 0;
+            ii < m; ii++)
+        {
+            for(long jj = 0;
+                jj < m; jj++)
             {
-                data.image[ID].array.F[jj * m + ii] =
-                    gsl_matrix_get(matrix_DtraDinv, ii, jj);
+                imgM2.im->array.F[
+                    jj * m + ii] =
+                    (float) DtDinv[
+                        ii + jj * m];
             }
-        save_fits("M2", "test_M2.fits");
+        }
+        save_fits(
+            "M2", "test_M2.fits");
     }
 
-    gsl_blas_dgemm(CblasNoTrans,
-                   CblasTrans,
-                   1.0,
-                   matrix_DtraDinv,
-                   matrix_D,
-                   0.0,
-                   matrix_Ds);
+    /* Ds = DtDinv * D^T  (m x n) */
+    cblas_dgemm(
+        CblasColMajor,
+        CblasNoTrans, CblasTrans,
+        (int) m, (int) n, (int) m,
+        1.0, DtDinv, (int) m,
+        D, (int) n,
+        0.0, Ds, (int) m);
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    IMGID imgC =
+        imgid_make_from_name(
+            ID_Cmatrix_name);
+    if(imgin.md->naxis == 3)
     {
-        arraysizetmp[0] = data.image[ID_Rmatrix].md[0].size[0];
-        arraysizetmp[1] = data.image[ID_Rmatrix].md[0].size[1];
-        arraysizetmp[2] = m;
+        imgC.mdt->naxis = 3;
+        imgC.mdt->size[0] =
+            imgin.md->size[0];
+        imgC.mdt->size[1] =
+            imgin.md->size[1];
+        imgC.mdt->size[2] = m;
     }
     else
     {
-        arraysizetmp[0] = n;
-        arraysizetmp[1] = m;
+        imgC.mdt->naxis = 2;
+        imgC.mdt->size[0] = n;
+        imgC.mdt->size[1] = m;
     }
-
-    FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                      data.image[ID_Rmatrix].md[0].naxis,
-                                      arraysizetmp,
-                                      datatype,
-                                      0,
-                                      0,
-                                      0,
-                                      &ID_Cmatrix));
+    imgC.mdt->datatype = datatype;
+    imgC.mdt->shared = 0;
+    imgC.im = (IMAGE *) calloc(
+        1, sizeof(IMAGE));
+    imgid_mkimage(&imgC);
 
     if(timing == 1)
     {
         clock_gettime(CLOCK_MILK, &t6);
     }
 
-    /* write result */
+    /* Write result */
     if(datatype == _DATATYPE_FLOAT)
     {
-        for(int ii = 0; ii < n; ii++)   // sensors
-            for(int k = 0; k < m; k++)  // actuator modes
+        for(long ii = 0;
+            ii < n; ii++)
+        {
+            for(long k = 0;
+                k < m; k++)
             {
-                data.image[ID_Cmatrix].array.F[k * n + ii] =
-                    (float) gsl_matrix_get(matrix_Ds, k, ii);
+                imgC.im->array.F[
+                    k * n + ii] =
+                    (float) Ds[
+                        k + ii * m];
             }
+        }
     }
     else
     {
-        for(int ii = 0; ii < n; ii++)   // sensors
-            for(int k = 0; k < m; k++)  // actuator modes
+        for(long ii = 0;
+            ii < n; ii++)
+        {
+            for(long k = 0;
+                k < m; k++)
             {
-                data.image[ID_Cmatrix].array.D[k * n + ii] =
-                    gsl_matrix_get(matrix_Ds, k, ii);
+                imgC.im->array.D[
+                    k * n + ii] =
+                    Ds[k + ii * m];
             }
+        }
     }
 
     if(testmode == 1)
     {
-        save_fits(ID_Cmatrix_name, "test_Ainv.fits");
+        save_fits(ID_Cmatrix_name,
+                  "test_Ainv.fits");
     }
 
     if(timing == 1)
@@ -492,55 +534,76 @@ linopt_compute_SVDpseudoInverse(
         clock_gettime(CLOCK_MILK, &t7);
     }
 
-    gsl_vector_free(matrix_DtraD_eval);
-    gsl_matrix_free(matrix_D);
-    gsl_matrix_free(matrix_Ds);
-    gsl_matrix_free(matrix_Dtra);
-    gsl_matrix_free(matrix_DtraD);
-    gsl_matrix_free(matrix_DtraDinv);
-    gsl_matrix_free(matrix_DtraD_evec);
+    free(eval);
+    free(D);
+    free(Ds);
+    free(DtD);
+    free(DtDinv);
+    free(tmp1);
+    free(tmp2);
 
-    free(arraysizetmp);
-
-    printf("[CPU pseudo-inverse done]\n");
+    printf(
+        "[CPU pseudo-inverse done]\n");
     fflush(stdout);
 
     if(timing == 1)
     {
         tdiff = timespec_diff(t0, t1);
-        t01d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t01d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t1, t2);
-        t12d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t12d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t2, t3);
-        t23d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t23d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t3, t4);
-        t34d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t34d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t4, t5);
-        t45d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t45d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t5, t6);
-        t56d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
-
+        t56d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
         tdiff = timespec_diff(t6, t7);
-        t67d  = 1.0 * tdiff.tv_sec + 1.0e-9 * tdiff.tv_nsec;
+        t67d = 1.0 * tdiff.tv_sec
+               + 1.0e-9
+                 * tdiff.tv_nsec;
 
         printf("Timing info: \n");
-        printf("  0-1	%12.3f ms\n", t01d * 1000.0);
-        printf("  1-2	%12.3f ms\n", t12d * 1000.0);
-        printf("  2-3	%12.3f ms\n", t23d * 1000.0);
-        printf("  3-4	%12.3f ms\n", t34d * 1000.0);
-        printf("  4-5	%12.3f ms\n", t45d * 1000.0);
-        printf("  5-6	%12.3f ms\n", t56d * 1000.0);
-        printf("  6-7	%12.3f ms\n", t67d * 1000.0);
+        printf(
+            "  0-1\t%12.3f ms\n",
+            t01d * 1000.0);
+        printf(
+            "  1-2\t%12.3f ms\n",
+            t12d * 1000.0);
+        printf(
+            "  2-3\t%12.3f ms\n",
+            t23d * 1000.0);
+        printf(
+            "  3-4\t%12.3f ms\n",
+            t34d * 1000.0);
+        printf(
+            "  4-5\t%12.3f ms\n",
+            t45d * 1000.0);
+        printf(
+            "  5-6\t%12.3f ms\n",
+            t56d * 1000.0);
+        printf(
+            "  6-7\t%12.3f ms\n",
+            t67d * 1000.0);
     }
 
     if(outID != NULL)
     {
-        *outID = ID_Cmatrix;
+        *outID = imgC.ID;
     }
 
     DEBUG_TRACE_FEXIT();
@@ -548,38 +611,28 @@ linopt_compute_SVDpseudoInverse(
 }
 
 
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    if(*useGPU == 0)
-    {
+    if (*useGPU == 0) {
         printf("==== CPU =====\n");
-        linopt_compute_SVDpseudoInverse(inimname,
-                                        outimname,
-                                        *SVD_epsilon,
-                                        *max_NBmodes,
-                                        outimVTmatname,
-                                        NULL);
-    }
-    else
-    {
+        linopt_compute_SVDpseudoInverse(
+            inimname, outimname,
+            *SVD_epsilon, *max_NBmodes,
+            outimVTmatname, NULL);
+    } else {
         printf("==== GPU =====\n");
 #ifdef HAVE_MAGMA
-        LINALGEBRA_magma_compute_SVDpseudoInverse(inimname,
-                                                outimname,
-                                                *SVD_epsilon,
-                                                *max_NBmodes,
-                                                outimVTmatname,
-                                                0,
-                                                1,
-                                                64,
-                                                0, // GPU device
-                                                NULL);
+        LINALGEBRA_magma_compute_SVDpseudoInverse(
+            inimname, outimname,
+            *SVD_epsilon, *max_NBmodes,
+            outimVTmatname,
+            0, 1, 64,
+            0, /* GPU device */
+            NULL);
 #endif
     }
 
@@ -590,12 +643,37 @@ static errno_t compute_function()
 }
 
 
-INSERT_STD_FPSCLIfunctions
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
-// Register function in CLI
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_linopt_imtools__compute_SVDpseudoinverse()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif

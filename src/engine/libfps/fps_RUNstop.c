@@ -1,0 +1,41 @@
+/**
+ * @file    fps_RUNstop.c
+ * @brief   FPS run process stop
+ */
+
+#include "fps.h"
+#include "fps_internal.h"
+#include "fps_globals.h"
+
+/** @brief FPS stop RUN process
+ *
+ * Run pre-set function fpsrunstop in tmux ctrl window
+ */
+errno_t functionparameter_RUNstop(FUNCTION_PARAMETER_STRUCT *fps)
+{
+    // Move to correct launch directory
+    //
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m",
+                           fps->md->name,
+                           fps->md->workdir);
+
+    if (strstr(fps->md->execfullpath, "fpsexec") != NULL) {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m",
+                               fps->md->name,
+                               fps->md->execfullpath,
+                               fps->md->name);
+    } else {
+        EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" fpsrunstop\" C-m",
+                               fps->md->name);
+    }
+
+    // Send C-c in case runstop command is not implemented
+    EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:run C-c &> /dev/null",
+                           fps->md->name);
+
+    fps->md->status &= ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    fps->md->signal |=
+        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; // notify GUI loop to update
+
+    return RETURN_SUCCESS;
+}

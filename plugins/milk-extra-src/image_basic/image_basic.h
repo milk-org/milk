@@ -1,3 +1,8 @@
+/**
+ * @file image_basic.h
+ * @brief Image basic module
+ */
+
 #ifndef _BASIC_H
 #define _BASIC_H
 

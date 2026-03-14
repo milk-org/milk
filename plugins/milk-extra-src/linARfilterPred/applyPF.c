@@ -1,14 +1,12 @@
 /**
- * @file    applyPF.c
- * @brief   Apply predictive filter
- *
- *
+ * @file applyPF.c
+ * @brief Applypf module
  */
+
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
-
+#include "CLIcore.h"
 
 
 #ifdef HAVE_CUDA
@@ -16,182 +14,89 @@
 #endif
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static uint64_t *AOloopindex;
-
-static char *indata;
-static char *inmask;
-
-static char *PFmat;
-
-static char *outdata;
-static char *outmask;
-
-// shared by muplitple processes to keep track
-static char *outPFstat;
-
-
-static char *GPUsetstr;
-static long  fpi_GPUsetstr;
-
-static uint64_t *compOLresidual;
-static long      fpi_compOLresidual;
-
-static uint32_t *compOLresidualNBpt;
-static long      fpi_compOLresidualNBpt;
-
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        // AO loop index - used for automatic naming of streams aolX_
-        CLIARG_UINT64,
-        ".AOloopindex",
-        "AO loop index",
-        "0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &AOloopindex,
-        NULL
-    },
-    {
-        // Input stream
-        CLIARG_STREAM,
-        ".indata",
-        "input data stream",
-        "inim",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &indata,
-        NULL
-    },
-    {
-        // Input stream active mask
-        CLIARG_STREAM,
-        ".inmask",
-        "input data mask",
-        "inmask",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmask,
-        NULL
-    },
-    {
-        // Prediction filter matrix
-        CLIARG_STREAM,
-        ".PFmat",
-        "predictive filter matrix",
-        "PFmat",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &PFmat,
-        NULL
-    },
-    {
-        // Output stream
-        CLIARG_STREAM,
-        ".outdata",
-        "output data stream",
-        "outPF",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outdata,
-        NULL
-    },
-    {
-        // Output mask
-        CLIARG_STREAM,
-        ".outmask",
-        "output data mask",
-        "outmask",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outmask,
-        NULL
-    },
-    {
-        // Output update
-        CLIARG_STR,
-        ".outPFstat",
-        "output PF stats image",
-        "outPFstat",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outPFstat,
-        NULL
-    },
-    {
-        // Set of GPU(s) for computation
-        CLIARG_STR,
-        ".GPUset",
-        "column-separated list of GPUs",
-        ":0:",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &GPUsetstr,
-        &fpi_GPUsetstr
-    },
-    {
-        // compute residual mismatch
-        CLIARG_ONOFF,
-        ".comp.residual",
-        "compute residual mismatch",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &compOLresidual,
-        &fpi_compOLresidual
-    },
-    {
-        // Set of GPU(s) for computation
-        CLIARG_UINT32,
-        ".comp.OLresidualNBpt",
-        "sampling size for OL residual",
-        "1000",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &compOLresidualNBpt,
-        &fpi_compOLresidualNBpt
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "applyPF",
+    .cmdkey      = "applyPF",
+    .description = "apply predictive filter"
 };
 
 
-// Optional custom configuration setup. comptbuff
-// Runs once at conf startup
-//
-static errno_t customCONFsetup()
-{
-    if(data.fpsptr != NULL)
-    {
-    }
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-    return RETURN_SUCCESS;
-}
-
-// Optional custom configuration checks.
-// Runs at every configuration check loop iteration
-//
-static errno_t customCONFcheck()
-{
-
-    if(data.fpsptr != NULL)
-    {
-    }
-
-    return RETURN_SUCCESS;
-}
-
-static CLICMDDATA CLIcmddata =
-{
-    "applyPF", "apply predictive filter", CLICMD_FIELDS_DEFAULTS
-};
+static uint64_t *AOloopindex        = NULL;
+static char     *indata             = NULL;
+static char     *inmask             = NULL;
+static char     *PFmat              = NULL;
+static char     *outdata            = NULL;
+static char     *outmask            = NULL;
+static char     *outPFstat          = NULL;
+static char     *GPUsetstr          = NULL;
+static uint64_t *compOLresidual     = NULL;
+static uint32_t *compOLresidualNBpt = NULL;
 
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".AOloopindex", &AOloopindex, \
+      FPTYPE_UINT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "AO loop index") \
+    X(".indata", &indata, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input data stream") \
+    X(".inmask", &inmask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input data mask") \
+    X(".PFmat", &PFmat, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "predictive filter matrix") \
+    X(".outdata", &outdata, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output data stream") \
+    X(".outmask", &outmask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output data mask") \
+    X(".outPFstat", &outPFstat, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output PF stats image") \
+    X(".GPUset", &GPUsetstr, \
+      FPTYPE_STRING, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "column-separated list of GPUs") \
+    X(".comp.residual", &compOLresidual, \
+      FPTYPE_ONOFF, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "compute residual mismatch") \
+    X(".comp.OLresidualNBpt", &compOLresidualNBpt, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sampling size for OL residual")
 
 
-// detailed help
-static errno_t help_function()
-{
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
 
-
-    return RETURN_SUCCESS;
-}
-
+FPS_V2_SECTION5(FPS_PARAMS)
 
 
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -205,26 +110,25 @@ static errno_t compute_function()
 
     // Connect to 2D input stream
     //
-    IMGID imgin = mkIMGID_from_name(indata);
-    resolveIMGID(&imgin, ERRMODE_ABORT);
+    IMGID imgin = imgid_make_from_name(indata);
+    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
     long NBmodeINmax = imgin.md->size[0] * imgin.md->size[1];
 
     // connect to 2D predictive filter (PF) matrix
     //
-    IMGID imgPFmat = mkIMGID_from_name(PFmat);
-    resolveIMGID(&imgPFmat, ERRMODE_ABORT);
+    IMGID imgPFmat = imgid_make_from_name(PFmat);
+    resolveIMGID(&imgPFmat, ERRMODE_ABORT, dcimg, dcnimg);
     long NBmodeOUT = imgPFmat.md->size[1];
 
     list_image_ID();
-
 
 
     // Input mask
     // 0: inactive input
     // 1: active input
     //
-    IMGID imginmask = mkIMGID_from_name(inmask);
-    resolveIMGID(&imginmask, ERRMODE_WARN);
+    IMGID imginmask = imgid_make_from_name(inmask);
+    resolveIMGID(&imginmask, ERRMODE_WARN, dcimg, dcnimg);
 
     long  NBinmaskpix = 0;
     long *inmaskindex;
@@ -274,8 +178,6 @@ static errno_t compute_function()
     long NBmodeIN = NBinmaskpix;
 
 
-
-
     long NBPFstep = imgPFmat.md->size[0] / NBmodeIN;
 
     printf("Number of active input modes  = %ld  / %ld\n",
@@ -285,20 +187,17 @@ static errno_t compute_function()
     printf("Number of time steps          = %ld\n", NBPFstep);
 
 
-
-
     // create input buffer holding recent input values
     //
     printf("Creating input buffer\n");
-    IMGID imginbuff = makeIMGID_2D("iminbuff", NBmodeIN, NBPFstep);
+    IMGID imginbuff = imgid_make_from_name_2D("iminbuff", NBmodeIN, NBPFstep);
     createimagefromIMGID(&imginbuff);
-
 
 
     // create input buffer holding recent input values
     //
     printf("Creating output buffer\n");
-    IMGID imgoutbuff = makeIMGID_2D("imoutbuff", NBmodeOUT, 1);
+    IMGID imgoutbuff = imgid_make_from_name_2D("imoutbuff", NBmodeOUT, 1);
     createimagefromIMGID(&imgoutbuff);
 
 
@@ -306,21 +205,19 @@ static errno_t compute_function()
     // The buffer is used to measure residual OL error as a function of latency
     //
     printf("Creating output time buffer\n");
-    IMGID imgoutTbuff = makeIMGID_2D("imoutTbuff", NBmodeOUT, NBPFstep);
+    IMGID imgoutTbuff = imgid_make_from_name_2D("imoutTbuff", NBmodeOUT, NBPFstep);
     createimagefromIMGID(&imgoutTbuff);
-
 
 
     // OUTPUT
 
     // Connect to output mask and data stream
     //
-    IMGID imgout = mkIMGID_from_name(outdata);
-    resolveIMGID(&imgout, ERRMODE_WARN);
+    IMGID imgout = imgid_make_from_name(outdata);
+    resolveIMGID(&imgout, ERRMODE_WARN, dcimg, dcnimg);
 
-    IMGID imgoutmask = mkIMGID_from_name(outmask);
-    resolveIMGID(&imgoutmask, ERRMODE_WARN);
-
+    IMGID imgoutmask = imgid_make_from_name(outmask);
+    resolveIMGID(&imgoutmask, ERRMODE_WARN, dcimg, dcnimg);
 
 
     // output update
@@ -332,27 +229,26 @@ static errno_t compute_function()
     }
 
 
-
     // If both outdata and outmask exist, check they are consistent
     if((imgout.ID != -1) && (imgoutmask.ID != -1))
     {
         // compate image sizes (not type)
         int compOK = 1;
-        if(imgout.naxis != imgoutmask.naxis)
+        if(imgout.md->naxis != imgoutmask.md->naxis)
         {
             printf("ERROR: naxis %d %d values don't match\n",
-                   imgout.naxis,
-                   imgoutmask.naxis);
+                   imgout.md->naxis,
+                   imgoutmask.md->naxis);
             compOK = 0;
         }
-        for(int dim = 0; dim < imgout.naxis; dim++)
+        for(int dim = 0; dim < imgout.md->naxis; dim++)
         {
-            if(imgout.size[dim] != imgoutmask.size[dim])
+            if(imgout.md->size[dim] != imgoutmask.md->size[dim])
             {
                 printf("ERROR: size[%d] %d %d values don't match\n",
                        dim,
-                       imgout.size[dim],
-                       imgoutmask.size[dim]);
+                       imgout.md->size[dim],
+                       imgoutmask.md->size[dim]);
                 compOK = 0;
             }
         }
@@ -394,8 +290,8 @@ static errno_t compute_function()
             // outmask exists, but outdata does not
             // create outdata according to outmask
             //
-            copyIMGID(&imgoutmask, &imgout);
-            imgout.datatype = _DATATYPE_FLOAT;
+            imgid_copy(&imgoutmask, &imgout);
+            imgout.mdt->datatype = _DATATYPE_FLOAT;
             createimagefromIMGID(&imgout);
         }
         else
@@ -404,7 +300,7 @@ static errno_t compute_function()
             // 2D array
             //
             imgout = stream_connect_create_2Df32(outdata, NBmodeOUT, 1);
-            imgout = stream_connect_create_2Df32(outmask, NBmodeOUT, 1);
+            imgoutmask = stream_connect_create_2Df32(outmask, NBmodeOUT, 1);
             for(uint32_t ii = 0; ii < NBmodeOUT; ii++)
             {
                 imgoutmask.im->array.SI8[ii] = 1;
@@ -468,8 +364,6 @@ static errno_t compute_function()
         DEBUG_TRACE_FEXIT();
         return (EXIT_FAILURE);
     }
-
-
 
 
     // Identify GPUs
@@ -591,9 +485,8 @@ static errno_t compute_function()
         imgout.im->array.F[outmaskindex[mi]] = imgoutbuff.im->array.F[mi];
         imgoutPFstat.im->array.F[outmaskindex[mi]] = 1.0;
     }
-    processinfo_update_output_stream(processinfo, imgoutPFstat.ID);
-    processinfo_update_output_stream(processinfo, imgout.ID);
-
+    processinfo_update_output_stream(processinfo, imgoutPFstat.im, NULL);
+    processinfo_update_output_stream(processinfo, imgout.im, NULL);
 
 
     clock_gettime(CLOCK_MILK, &t1);
@@ -623,8 +516,6 @@ static errno_t compute_function()
         {
             imgoutTbuff.im->array.F[mi] = imgoutbuff.im->array.F[mi];
         }
-
-
 
 
         for(long tstep = 0; tstep < NBPFstep; tstep++)
@@ -720,8 +611,6 @@ static errno_t compute_function()
     }
 
 
-
-
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     free(GPUset);
@@ -729,25 +618,53 @@ static errno_t compute_function()
     free(OLRMS2res);
     free(OLRMS2avedt);
 
+    imgid_free(&imgin);
+    imgid_free(&imgPFmat);
+    imgid_free(&imginmask);
+    imgid_free(&imginbuff);
+    imgid_free(&imgoutbuff);
+    imgid_free(&imgoutTbuff);
+    imgid_free(&imgout);
+    imgid_free(&imgoutmask);
+    imgid_free(&imgoutPFstat);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_LinARfilterPred__applyPF()
 {
-
-    CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

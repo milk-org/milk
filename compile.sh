@@ -87,3 +87,14 @@ fi
 
 NCPUS=`fgrep processor /proc/cpuinfo | wc -l`
 cmake --build . -- -j $NCPUS
+
+# Create lib directory and symlink libraries for dev use
+echo "Creating _build/lib and symlinking libraries..."
+mkdir -p lib
+# Remove existing symlinks to avoid loops/stale links
+rm -f lib/*.so
+# Find libraries excluding the lib directory itself
+find . -path ./lib -prune -o -name "libmilk*.so" -exec ln -sf ../{} lib/ \;
+find . -path ./lib -prune -o -name "libcacao*.so" -exec ln -sf ../{} lib/ \;
+find . -path ./lib -prune -o -name "libvampirespdi.so" -exec ln -sf ../{} lib/ \;
+echo "Libraries symlinked in _build/lib"

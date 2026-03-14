@@ -8,7 +8,7 @@
  * See script milk-test-simplefunc for example usage.
  */
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 // Local variables pointers
 
@@ -35,8 +35,6 @@ static double *scoeff; // matches CLIARG_FLOAT64
 // static int64_t *    for CLIARG_INT64, CLIARG_ONOFF, CLIARG_LONG
 
 
-
-
 // List of arguments to function
 // { CLItype, tag, description, initial value, flag, fptype, fpflag }
 //
@@ -51,7 +49,7 @@ static CLICMDARGDEF farg[] =
         ".in_name",
         "input image",
         "im1",
-        CLIARG_VISIBLE_DEFAULT, // This will be exposed as a function argument in the milk CLI, which has to be entered
+        (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), // This will be exposed as a function argument in the milk CLI, which has to be entered
         (void **) &inimname,
         NULL
     },
@@ -60,7 +58,7 @@ static CLICMDARGDEF farg[] =
         ".scaling",
         "scaling coefficient",
         "1.0",
-        CLIARG_HIDDEN_DEFAULT, // hidden argument is not part of CLI call, FPFLAG ignored
+        FPFLAG_DEFAULT_INPUT, // hidden argument is not part of CLI call, FPFLAG ignored
         (void **) &scoeff,
         NULL
     }
@@ -73,7 +71,6 @@ static CLICMDDATA CLIcmddata =
     "compute total of image example1", // brief (1-line) description of what the function does
     CLICMD_FIELDS_NOFPS                // do NOT use Function Parameter Structure (FPS)
 };
-
 
 
 /** @brief Compute function code
@@ -100,7 +97,7 @@ static errno_t example_compute_2Dimage_total(
     // Resolve image if not already resolved.
     // This is a low-overhead function if the image is already in memory and imgptr already pointing to it.
     // If not already connected, the function will use imgptr->name to try to connect to it.
-    resolveIMGID(imgptr, ERRMODE_ABORT);
+    resolveIMGID(imgptr, ERRMODE_ABORT, dcimg, dcnimg);
     // Abort if unable to resolve.
     // Upon success, these are available for use:
     // imgptr->name, imgptr->naxis, imgptr->ID, imgptr->size, imgptr->im
@@ -135,14 +132,14 @@ static errno_t example_compute_2Dimage_total(
  *
  * @return errno_t
  */
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
 
     // Note how we are accessing the image from its name.
-    IMGID img = mkIMGID_from_name(inimname);
-    // The function mkIMGID_from_name takes the name as argument and forms an IMGID from it.
+    IMGID img = imgid_make_from_name(inimname);
+    // The function imgid_make_from_name takes the name as argument and forms an IMGID from it.
     // At this point the connection to the image has not been established. This will be done
     // on the first call of resolveIMGID inside the compute function.
 
@@ -156,7 +153,6 @@ static errno_t compute_function()
 
 
 INSERT_STD_CLIfunction
-
 
 
 /** @brief Register CLI command

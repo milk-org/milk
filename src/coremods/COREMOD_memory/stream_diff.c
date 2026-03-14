@@ -1,0 +1,225 @@
+/**
+ * @file    stream_diff.c
+ * @brief   compute difference between two streams
+ *
+ * Uses FPS V2 framework.
+ */
+
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
+#endif
+#include "fps.h"
+
+#include "stream_sem.h"
+
+
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
+
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "streamdiff",
+    .cmdkey      = "streamdiff",
+    .description =
+        "compute stream difference"
+};
+
+
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char p_stream0[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream0";
+
+static char p_stream1[FUNCTION_PARAMETER_STRMAXLEN]
+    = "stream1";
+
+static char p_mask[FUNCTION_PARAMETER_STRMAXLEN]
+    = "null";
+
+static char p_outstream[FUNCTION_PARAMETER_STRMAXLEN]
+    = "outstream";
+
+static long long p_semtrig = 3;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_stream0", p_stream0, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream 0") \
+    X(".in_stream1", p_stream1, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream 1") \
+    X(".mask", p_mask, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "optional mask (null=none)") \
+    X(".out_stream", p_outstream, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_OUTPUT, \
+      "output stream") \
+    X(".semtrig", &p_semtrig, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "sem trigger index")
+
+
+/* ================================================================
+ * 4.  COMPUTATION LOGIC
+ * ============================================================= */
+
+/**
+ * Compute difference between two 2D streams.
+ * Triggers on stream0.
+ */
+imageID COREMOD_MEMORY_streamDiff(
+    const char *IDstream0_name,
+    const char *IDstream1_name,
+    const char *IDstreammask_name,
+    const char *IDstreamout_name,
+    long        semtrig)
+{
+    IMGID img0 = imgid_make_from_name(IDstream0_name);
+    resolveIMGID(&img0, ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
+    IMGID img1 = imgid_make_from_name(IDstream1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT,
+                 dcimg, dcnimg);
+
+    IMGID imgmask =
+        imgid_make_from_name(IDstreammask_name);
+    resolveIMGID(&imgmask, ERRMODE_NULL,
+                 dcimg, dcnimg);
+
+    uint32_t xsize = img0.md->size[0];
+    uint32_t ysize = img0.md->size[1];
+    uint64_t xysize = xsize * ysize;
+
+    IMGID imgout =
+        imgid_make_from_name(IDstreamout_name);
+    resolveIMGID(&imgout, ERRMODE_NULL,
+                 dcimg, dcnimg);
+    if(imgout.ID == -1)
+    {
+        imgout = stream_connect_create_2D(
+            IDstreamout_name,
+            xsize, ysize,
+            _DATATYPE_FLOAT);
+    }
+
+    unsigned long long cnt = 0;
+
+    while(1)
+    {
+        if(img0.md->sem == 0)
+        {
+            while(cnt == img0.md->cnt0)
+            {
+                usleep(5);
+            }
+            cnt = img0.md->cnt0;
+        }
+        else
+        {
+            ImageStreamIO_semwait(
+                img0.im, semtrig);
+        }
+
+        imgout.md->write = 1;
+        if(imgmask.ID == -1)
+        {
+            for(uint64_t ii = 0;
+                    ii < xysize; ii++)
+            {
+                imgout.im->array.F[ii] =
+                    img0.im->array.F[ii]
+                    - img1.im->array.F[ii];
+            }
+        }
+        else
+        {
+            for(uint64_t ii = 0;
+                    ii < xysize; ii++)
+            {
+                imgout.im->array.F[ii] =
+                    (img0.im->array.F[ii]
+                     - img1.im->array.F[ii])
+                    * imgmask.im->array.F[ii];
+            }
+        }
+        COREMOD_MEMORY_image_set_sempost_byID(
+            imgout.ID, -1);
+        imgout.md->cnt0++;
+        imgout.md->write = 0;
+    }
+
+    return imgout.ID;
+}
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
+
+
+/* ================================================================
+ * 6.  COMPUTE WRAPPER
+ * ============================================================= */
+
+static MILK_HOT errno_t compute_function()
+{
+    DEBUG_TRACE_FSTART();
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    COREMOD_MEMORY_streamDiff(
+        p_stream0, p_stream1,
+        p_mask, p_outstream,
+        p_semtrig);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
+errno_t
+CLIADDCMD_COREMOD_memory__stream_diff()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+
+    int cmdi = RegisterCLIcmd(
+        CLIcmddata, CLIfunction);
+    CLIcmddata.cmdsettings =
+        &data.cmd[cmdi].cmdsettings;
+
+    return RETURN_SUCCESS;
+}
+#endif

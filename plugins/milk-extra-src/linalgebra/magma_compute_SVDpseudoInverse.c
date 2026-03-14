@@ -15,8 +15,8 @@
 #include "magma_lapack.h"
 #include "magma_v2.h"
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 #include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -40,66 +40,93 @@ static magma_int_t *magma_iwork;
 // Forward declaration(s)
 // ==========================================
 
-errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
-        const char *ID_Cmatrix_name,
-        double      SVDeps,
-        long        MaxNBmodes,
-        const char *ID_VTmatrix_name,
-        int         LOOPmode,
-        int         testmode,
-        int         precision,
-        int         GPUdevice,
-        imageID    *outID);
+errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(
+    const char *ID_Rmatrix_name,
+    const char *ID_Cmatrix_name,
+    double SVDeps, long MaxNBmodes,
+    const char *ID_VTmatrix_name,
+    int LOOPmode, int testmode,
+    int precision, int GPUdevice,
+    imageID *outID);
 
 // ==========================================
-// Command line interface wrapper function(s)
+// Gen 4 V2 CLI command: linalgebrapsinv
 // ==========================================
 
-static errno_t LINALGEBRA_magma_compute_SVDpseudoInverse_cli()
-{
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) + CLI_checkarg(3, 1) +
-            CLI_checkarg(4, 2) + CLI_checkarg(5, 3) + CLI_checkarg(6, 2) +
-            CLI_checkarg(7, 1) + CLI_checkarg(8, 1) ==
-            0)
-    {
-        LINALGEBRA_magma_compute_SVDpseudoInverse(data.cmdargtoken[1].val.string,
-                                                data.cmdargtoken[2].val.string,
-                                                data.cmdargtoken[3].val.numf,
-                                                data.cmdargtoken[4].val.numl,
-                                                data.cmdargtoken[5].val.string,
-                                                0,
-                                                0,
-                                                64,
-                                                0,
-                                                NULL);
-
-        return CLICMD_SUCCESS;
-    }
-    else
-    {
-        return CLICMD_INVALID_ARG;
-    }
+static char pi_r[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matA";
+static char pi_c[FUNCTION_PARAMETER_STRMAXLEN]
+    = "matAinv";
+static double pi_eps = 0.01;
+static int64_t pi_nm = 100;
+static char pi_vt[FUNCTION_PARAMETER_STRMAXLEN]
+    = "VTmat";
+static FPS_APP_INFO FPS_app_info_pi = {
+    .fps_name = "linalgebrapsinv",
+    .cmdkey   = "linalgebrapsinv",
+    .description =
+        "compute pseudo inverse"
+};
+#define FPS_PARAMS_PI(X) \
+    X(".inmat", pi_r, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, "input mat") \
+    X(".outmat", pi_c, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "output") \
+    X(".svdeps", &pi_eps, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "SVD eps") \
+    X(".nbmodes", &pi_nm, \
+      FPTYPE_INT64, 1, \
+      FPFLAG_DEFAULT_INPUT, "max modes") \
+    X(".vtmat", pi_vt, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, "VT matrix")
+#include "fps.h"
+static FPS_CLI_BINDING pi_b[] = {
+    FPS_PARAMS_PI(FPS_X_BINDING) };
+static const int pi_nb =
+    sizeof(pi_b)/sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS_PI(FPS_X_FARG) };
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS };
+static CMDSETTINGS pi_cms = {0};
+static __attribute__((constructor))
+void init_pi(void) {
+    strncpy(CLIcmddata.key,
+        FPS_app_info_pi.cmdkey,
+        sizeof(CLIcmddata.key)-1);
+    strncpy(CLIcmddata.description,
+        FPS_app_info_pi.description,
+        sizeof(CLIcmddata.description)-1);
+    CLIcmddata.nbarg =
+        sizeof(farg)/sizeof(CLICMDARGDEF);
+    CLIcmddata.funcfpscliarg = farg;
+    CLIcmddata.flags = CLICMDFLAG_FPS;
+    if(!CLIcmddata.cmdsettings)
+        CLIcmddata.cmdsettings = &pi_cms;
 }
-
-// ==========================================
-// Register CLI command(s)
-// ==========================================
+static errno_t pi_compute(void) {
+    LINALGEBRA_magma_compute_SVDpseudoInverse(
+        pi_r, pi_c, pi_eps,
+        (long)pi_nm, pi_vt,
+        0, 0, 64, 0, NULL);
+    return RETURN_SUCCESS;
+}
+static errno_t CLIfunction(void) {
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info_pi, farg,
+        &CLIcmddata,
+        pi_b, pi_nb, pi_compute);
+}
 
 errno_t magma_compute_SVDpseudoInverse_addCLIcmd()
 {
-
-    RegisterCLIcommand("linalgebrapsinv",
-                       __FILE__,
-                       LINALGEBRA_magma_compute_SVDpseudoInverse_cli,
-                       "compute pseudo inverse",
-                       "<input matrix [string]> <output pseudoinv [string]> "
-                       "<eps [float]> <NBmodes [long]> <VTmat [string]>",
-                       "linalgebrapsinv matA matAinv 0.01 100 VTmat 0 1e-4 1e-7",
-                       "int LINALGEBRA_magma_compute_SVDpseudoInverse(const char "
-                       "*ID_Rmatrix_name, const char *ID_Cmatrix_name, double "
-                       "SVDeps, long MaxNBmodes, const char *ID_VTmatrix_name, "
-                       "int LOOPmode, int PSINV_MODE, double qdwh_s, float "
-                       "qdwh_tol)");
+    safe_fps_fill_farg_examples(
+        farg, pi_b, pi_nb);
+    INSERT_STD_CLIREGISTERFUNC;
 
     return RETURN_SUCCESS;
 }
@@ -319,16 +346,16 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     /// (assuming here that vector = column of the matrix)
     ///
 
-    ID_Rmatrix = image_ID(ID_Rmatrix_name);
-    datatype   = data.image[ID_Rmatrix].md[0].datatype;
+    ID_Rmatrix = image_ID(ID_Rmatrix_name, dcimg, dcnimg);
+    datatype   = dcimg[ID_Rmatrix].md[0].datatype;
 
-    if(data.image[ID_Rmatrix].md[0].naxis == 3)
+    if(dcimg[ID_Rmatrix].md[0].naxis == 3)
     {
         /// each column (N=cst) of A is a z=cst slice of image Rmatrix
-        M = data.image[ID_Rmatrix].md[0].size[0] *
-            data.image[ID_Rmatrix].md[0].size[1];
+        M = dcimg[ID_Rmatrix].md[0].size[0] *
+            dcimg[ID_Rmatrix].md[0].size[1];
 
-        N = data.image[ID_Rmatrix].md[0].size[2];
+        N = dcimg[ID_Rmatrix].md[0].size[2];
 
         if(VERBOSE_LINALGEBRA_magma_compute_SVDpseudoInverse == 1)
         {
@@ -339,9 +366,9 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     else
     {
         /// each column (N=cst) of A is a line (y=cst) of Rmatrix (90 deg rotation)
-        M = data.image[ID_Rmatrix].md[0].size[0];
+        M = dcimg[ID_Rmatrix].md[0].size[0];
 
-        N = data.image[ID_Rmatrix].md[0].size[1];
+        N = dcimg[ID_Rmatrix].md[0].size[1];
 
         if(VERBOSE_LINALGEBRA_magma_compute_SVDpseudoInverse == 1)
         {
@@ -352,7 +379,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
     //TEST
     //for(ii=0;ii<N;ii++)
-    //data.image[ID_Rmatrix].array.F[ii*M+ii] += 1.0;
+    //dcimg[ID_Rmatrix].array.F[ii*M+ii] += 1.0f;
 
     if(VERBOSE_LINALGEBRA_magma_compute_SVDpseudoInverse == 1)
     {
@@ -508,7 +535,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 // need magmaf_h_A, otherwise, straight to magmaf_d_A
 
                 memcpy(magmaf_h_A,
-                       data.image[ID_Rmatrix].array.F,
+                       dcimg[ID_Rmatrix].array.F,
                        sizeof(float) * M * N);
                 // copy from host to device
                 magma_ssetmatrix(M,
@@ -523,7 +550,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             {
                 magma_ssetmatrix(M,
                                  N,
-                                 data.image[ID_Rmatrix].array.F,
+                                 dcimg[ID_Rmatrix].array.F,
                                  M,
                                  magmaf_d_A,
                                  M,
@@ -534,7 +561,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                magma_h_A[ii] = data.image[ID_Rmatrix].array.F[ii];
+                magma_h_A[ii] = dcimg[ID_Rmatrix].array.F[ii];
             }
 
             // copy from host to device
@@ -547,7 +574,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                magmaf_h_A[ii] = data.image[ID_Rmatrix].array.D[ii];
+                magmaf_h_A[ii] = dcimg[ID_Rmatrix].array.D[ii];
             }
 
             // copy from host to device
@@ -558,9 +585,9 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             if(testmode == 1)  // need magma_h_A for testing
             {
                 //for(ii=0; ii<M*N; ii++)
-                //    magma_h_A[ii] = data.image[ID_Rmatrix].array.D[ii];
+                //    magma_h_A[ii] = dcimg[ID_Rmatrix].array.D[ii];
                 memcpy(magma_h_A,
-                       data.image[ID_Rmatrix].array.D,
+                       dcimg[ID_Rmatrix].array.D,
                        sizeof(double) * M * N);
                 // copy from host to device
                 magma_dsetmatrix(M, N, magma_h_A, M, magma_d_A, M, magmaqueue);
@@ -569,7 +596,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             {
                 magma_dsetmatrix(M,
                                  N,
-                                 data.image[ID_Rmatrix].array.D,
+                                 dcimg[ID_Rmatrix].array.D,
                                  M,
                                  magma_d_A,
                                  M,
@@ -589,14 +616,14 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                data.image[ID_A].array.F[ii] = magmaf_h_A[ii];
+                dcimg[ID_A].array.F[ii] = magmaf_h_A[ii];
             }
         }
         else
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                data.image[ID_A].array.F[ii] = magma_h_A[ii];
+                dcimg[ID_A].array.F[ii] = magma_h_A[ii];
             }
         }
 
@@ -701,14 +728,14 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             {
                 for(long ii = 0; ii < N * N; ii++)
                 {
-                    data.image[ID_AtA].array.F[ii] = magmaf_h_AtA[ii];
+                    dcimg[ID_AtA].array.F[ii] = magmaf_h_AtA[ii];
                 }
             }
             else
             {
                 for(long ii = 0; ii < N * N; ii++)
                 {
-                    data.image[ID_AtA].array.F[ii] = magma_h_AtA[ii];
+                    dcimg[ID_AtA].array.F[ii] = magma_h_AtA[ii];
                 }
             }
             FUNC_CHECK_RETURN(save_fits("mAtA", "test_mAtA.fits"));
@@ -1060,7 +1087,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 for(long ii = 0; ii < N; ii++)
                     for(long jj = 0; jj < N; jj++)
                     {
-                        data.image[ID_VT].array.F[jj * N + ii] =
+                        dcimg[ID_VT].array.F[jj * N + ii] =
                             magmaf_h_AtA[(N - ii - 1) * N + jj];
                     }
             }
@@ -1069,7 +1096,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 for(long ii = 0; ii < N; ii++)
                     for(long jj = 0; jj < N; jj++)
                     {
-                        data.image[ID_VT].array.F[jj * N + ii] =
+                        dcimg[ID_VT].array.F[jj * N + ii] =
                             magma_h_AtA[(N - ii - 1) * N + jj];
                     }
             }
@@ -1215,7 +1242,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 for(long ii = 0; ii < N; ii++)
                     for(long jj = 0; jj < N; jj++)
                     {
-                        data.image[ID_M2].array.F[jj * N + ii] =
+                        dcimg[ID_M2].array.F[jj * N + ii] =
                             magmaf_h_M2[jj * N + ii];
                     }
             }
@@ -1233,7 +1260,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 for(long ii = 0; ii < N; ii++)
                     for(long jj = 0; jj < N; jj++)
                     {
-                        data.image[ID_M2].array.F[jj * N + ii] =
+                        dcimg[ID_M2].array.F[jj * N + ii] =
                             magma_h_M2[jj * N + ii];
                     }
             }
@@ -1385,7 +1412,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
                 for(long ii = 0; ii < M; ii++)
                     for(long jj = 0; jj < N; jj++)
                     {
-                        data.image[ID_Ainv].array.F[jj * M + ii] =
+                        dcimg[ID_Ainv].array.F[jj * M + ii] =
                             magmaf_h_Ainv[jj * M + ii];
                     }
             }
@@ -1395,7 +1422,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             for(long ii = 0; ii < M; ii++)
                 for(long jj = 0; jj < N; jj++)
                 {
-                    data.image[ID_Ainv].array.F[jj * M + ii] =
+                    dcimg[ID_Ainv].array.F[jj * M + ii] =
                         magma_h_Ainv[jj * M + ii];
                 }
         }
@@ -1413,12 +1440,12 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     {
         uint32_t *arraysizetmp;
         arraysizetmp = (uint32_t *) malloc(sizeof(uint32_t) *
-                                           data.image[ID_Rmatrix].md[0].naxis);
+                                           dcimg[ID_Rmatrix].md[0].naxis);
 
-        if(data.image[ID_Rmatrix].md[0].naxis == 3)
+        if(dcimg[ID_Rmatrix].md[0].naxis == 3)
         {
-            arraysizetmp[0] = data.image[ID_Rmatrix].md[0].size[0];
-            arraysizetmp[1] = data.image[ID_Rmatrix].md[0].size[1];
+            arraysizetmp[0] = dcimg[ID_Rmatrix].md[0].size[0];
+            arraysizetmp[1] = dcimg[ID_Rmatrix].md[0].size[1];
             arraysizetmp[2] = N;
         }
         else
@@ -1427,20 +1454,34 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             arraysizetmp[1] = N;
         }
 
-        FUNC_CHECK_RETURN(create_image_ID(ID_Cmatrix_name,
-                                          data.image[ID_Rmatrix].md[0].naxis,
-                                          arraysizetmp,
-                                          datatype,
-                                          0,
-                                          0,
-                                          0,
-                                          &ID_Cmatrix));
+        {
+            IMGID imgcm =
+                imgid_make_from_name(
+                    ID_Cmatrix_name);
+            imgcm.mdt->naxis =
+                dcimg[ID_Rmatrix].md[0]
+                    .naxis;
+            for(int a = 0;
+                a < imgcm.mdt->naxis;
+                a++)
+            {
+                imgcm.mdt->size[a] =
+                    arraysizetmp[a];
+            }
+            imgcm.mdt->datatype =
+                datatype;
+            imgcm.im =
+                (IMAGE *) calloc(
+                    1, sizeof(IMAGE));
+            imgid_mkimage(&imgcm);
+            ID_Cmatrix = imgcm.ID;
+        }
 
         free(arraysizetmp);
     }
     else
     {
-        ID_Cmatrix = image_ID(ID_Cmatrix_name);
+        ID_Cmatrix = image_ID(ID_Cmatrix_name, dcimg, dcnimg);
     }
 
     magma_queue_sync(magmaqueue);
@@ -1457,7 +1498,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         if(MAGMAfloat == 1)
         {
 
-            memcpy(data.image[ID_Cmatrix].array.F,
+            memcpy(dcimg[ID_Cmatrix].array.F,
                    magmaf_h_Ainv,
                    sizeof(float) * M * N);
         }
@@ -1465,7 +1506,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                data.image[ID_Cmatrix].array.F[ii] = (float) magma_h_Ainv[ii];
+                dcimg[ID_Cmatrix].array.F[ii] = (float) magma_h_Ainv[ii];
             }
         }
     }
@@ -1477,12 +1518,12 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             for(long ii = 0; ii < M * N; ii++)
             {
-                data.image[ID_Cmatrix].array.D[ii] = magmaf_h_Ainv[ii];
+                dcimg[ID_Cmatrix].array.D[ii] = magmaf_h_Ainv[ii];
             }
         }
         else
         {
-            memcpy(data.image[ID_Cmatrix].array.D,
+            memcpy(dcimg[ID_Cmatrix].array.D,
                    magma_h_Ainv,
                    sizeof(double) * M * N);
         }
@@ -1553,7 +1594,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         {
             if(MAGMAfloat == 1)
             {
-                memcpy(data.image[ID_AinvA].array.F,
+                memcpy(dcimg[ID_AinvA].array.F,
                        magmaf_h_AtA,
                        sizeof(float) * N * N);
             }
@@ -1561,7 +1602,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             {
                 for(long ii = 0; ii < N * N; ii++)
                 {
-                    data.image[ID_AinvA].array.F[ii] = magma_h_AtA[ii];
+                    dcimg[ID_AinvA].array.F[ii] = magma_h_AtA[ii];
                 }
             }
         }
@@ -1571,12 +1612,12 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
             {
                 for(long ii = 0; ii < N * N; ii++)
                 {
-                    data.image[ID_AinvA].array.D[ii] = magmaf_h_AtA[ii];
+                    dcimg[ID_AinvA].array.D[ii] = magmaf_h_AtA[ii];
                 }
             }
             else
             {
-                memcpy(data.image[ID_AinvA].array.D,
+                memcpy(dcimg[ID_AinvA].array.D,
                        magma_h_AtA,
                        sizeof(double) * M * N);
             }
@@ -1590,14 +1631,14 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
     magma_queue_sync(magmaqueue);
     clock_gettime(CLOCK_MILK, &t12);
 
-    ID_PFfmdat = image_ID("PFfmdat");
+    ID_PFfmdat = image_ID("PFfmdat", dcimg, dcnimg);
     if(ID_PFfmdat != -1)
     {
         printf("Transp(Ainv)     N x M   = %d x %d\n", N, M);
         printf("PFfmdat  M x K           = %d x %d\n",
-               data.image[ID_PFfmdat].md[0].size[0],
-               data.image[ID_PFfmdat].md[0].size[1]);
-        long K = data.image[ID_PFfmdat].md[0].size[1];
+               dcimg[ID_PFfmdat].md[0].size[0],
+               dcimg[ID_PFfmdat].md[0].size[1]);
+        long K = dcimg[ID_PFfmdat].md[0].size[1];
         printf("K = %ld\n", K);
 
         float *magmaf_d_PFfmdat;
@@ -1612,7 +1653,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
 
         magma_ssetmatrix(M,
                          K,
-                         data.image[ID_PFfmdat].array.F,
+                         dcimg[ID_PFfmdat].array.F,
                          M,
                          magmaf_d_PFfmdat,
                          M,
@@ -1643,7 +1684,7 @@ errno_t LINALGEBRA_magma_compute_SVDpseudoInverse(const char *ID_Rmatrix_name,
         imageID ID_PF;
         FUNC_CHECK_RETURN(create_2Dimage_ID("psinvPFmat", N, K, &ID_PF));
 
-        memcpy(data.image[ID_PF].array.F, magmaf_h_PF, sizeof(float) * N * K);
+        memcpy(dcimg[ID_PF].array.F, magmaf_h_PF, sizeof(float) * N * K);
         FUNC_CHECK_RETURN(save_fits("psinvPFmat", "psinvPFmat.fits"));
 
         TESTING_FREE_DEV(magmaf_d_PFfmdat);

@@ -6,15 +6,17 @@
 #define NCURSES_WIDECHAR 1
 
 #include <math.h>
+#ifdef USE_NCURSES
 #include <ncurses.h>
 #include <curses.h>
+#endif
 
 #include <stdio.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <locale.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -26,8 +28,6 @@
 #include "TUItools.h"
 
 
-
-
 // screen size
 static uint16_t wrow, wcol;
 
@@ -36,55 +36,51 @@ static uint64_t       cntlast;
 static struct timespec tlast;
 
 
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-// Local variables pointers
-static char  *instreamname;
-static float *updatefrequency;
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".insname",
-        "input stream",
-        "im1",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &instreamname,
-        NULL
-    },
-    {
-        CLIARG_FLOAT32,
-        ".frequ",
-        "frequency [Hz]",
-        "3.0",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &updatefrequency,
-        NULL
-    }
-};
-
-static CLICMDDATA CLIcmddata =
-{
-    "imgmon", "image monitor", CLICMD_FIELDS_DEFAULTS
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "imgmon",
+    .cmdkey      = "imgmon",
+    .description = "image monitor"
 };
 
 
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char  * instreamname = NULL;
+static float * updatefrequency = NULL;
 
 
-// detailed help
-static errno_t help_function()
-{
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".insname", &instreamname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input stream") \
+    X(".frequ", &updatefrequency, \
+      FPTYPE_FLOAT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "frequency [Hz]")
 
 
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 errno_t info_image_monitor(const char *ID_name, float frequ);
 errno_t printstatus(imageID ID);
 
 
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -98,6 +94,7 @@ static errno_t compute_function()
     TUIscreenarray[0].keych = 'h';
     strcpy(TUIscreenarray[0].name, "[h] Help");
 
+#ifdef USE_NCURSES
     TUIscreenarray[1].index = 2;
     TUIscreenarray[1].keych = KEY_F(2);
     strcpy(TUIscreenarray[1].name, "[F2] summary");
@@ -105,6 +102,7 @@ static errno_t compute_function()
     TUIscreenarray[2].index = 3;
     TUIscreenarray[2].keych = KEY_F(3);
     strcpy(TUIscreenarray[2].name, "[F3] timing");
+#endif
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -114,7 +112,7 @@ static errno_t compute_function()
     int diplaycntinterval = (int)((1.0 / *updatefrequency) / pinfotdelay);
     int dispcnt           = 0;
 
-    imageID ID        = image_ID(instreamname);
+    imageID ID        = image_ID(instreamname, dcimg, dcnimg);
     int     TUIscreen = 2;
     int     sem       = -1;
 
@@ -136,7 +134,9 @@ static errno_t compute_function()
         if((dispcnt == 0) && (TUIpause == 0))
         {
             processinfo_WriteMessage(processinfo, "clear screen");
+#ifdef USE_NCURSES
             erase();
+#endif
 
             // Check for screen size change
             TUI_get_terminal_size(&wrow, &wcol);
@@ -166,7 +166,7 @@ static errno_t compute_function()
                 if(sem == -1)
                 {
                     int semdefault = 0;
-                    sem = ImageStreamIO_getsemwaitindex(&data.image[ID],
+                    sem = ImageStreamIO_getsemwaitindex(&dcimg[ID],
                                                         semdefault);
                 }
                 long  NBtsamples     = 10000;
@@ -195,7 +195,9 @@ static errno_t compute_function()
                 sem = -1;
             }
 
+#ifdef USE_NCURSES
             refresh();
+#endif
         }
 
         if(++dispcnt > diplaycntinterval)
@@ -206,35 +208,42 @@ static errno_t compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
+#ifdef USE_NCURSES
     endwin();
+#endif
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_info__imagemon()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
-
-
+#endif
 
 
 errno_t printstatus(imageID ID)
 {
-    IMAGE *image = &data.image[ID];
+    IMAGE *image = &dcimg[ID];
 
     long          j;
     double        frequ;
@@ -279,15 +288,16 @@ errno_t printstatus(imageID ID)
 
         for(j = 1; j < image->md->naxis; j++)
         {
-            WRITE_STRING(str1,
-                         "%s x %6ld",
-                         str,
-                         (long) image->md->size[j]);
+            snprintf(str1,
+                     STRINGMAXLEN_DEFAULT,
+                     "%s x %6ld",
+                     str,
+                     (long) image->md->size[j]);
 
             strcpy(str, str1);
         }
 
-        WRITE_STRING(str1, "%s]", str);
+        snprintf(str1, STRINGMAXLEN_DEFAULT, "%s]", str);
         strcpy(str, str1);
 
         TUI_printfw("%-28s\n", str);
@@ -314,7 +324,6 @@ errno_t printstatus(imageID ID)
         TUI_printfw("[cnt0 %8d] [%6.2f Hz] ", image->md->cnt0, frequ);
         TUI_printfw("[cnt1 %8d]\n", image->md->cnt1);
     }
-
 
 
     if(1)
@@ -372,8 +381,6 @@ errno_t printstatus(imageID ID)
                     imtotal);
 
 
-
-
         vcnt = (long *) malloc(sizeof(long) * NBhistopt);
         if(vcnt == NULL)
         {
@@ -384,7 +391,6 @@ errno_t printstatus(imageID ID)
         {
             vcnt[h] = 0;
         }
-
 
 
         if(datatype == _DATATYPE_FLOAT)
@@ -659,7 +665,6 @@ errno_t printstatus(imageID ID)
         }
 
 
-
         RMS   = sqrt(RMS / image->md->nelement);
         RMS01 = 0.9 * RMS01 + 0.1 * RMS; // wut
 
@@ -696,14 +701,18 @@ errno_t printstatus(imageID ID)
                         vcnt[h]);
 
                 TUI_printfw("%s", line1);
+#ifdef USE_NCURSES
                 attron(COLOR_PAIR(customcolor));
+#endif
 
                 cnt = vcnt[h] * (wcol - 2 - strlen(line1)) / vcntmax;
                 for(unsigned long i = 0; i < cnt; ++i)
                 {
                     TUI_printfw(" ");
                 }
+#ifdef USE_NCURSES
                 attroff(COLOR_PAIR(customcolor));
+#endif
 
                 TUI_printfw("\n");
             }
@@ -805,3 +814,16 @@ errno_t printstatus(imageID ID)
 
     return RETURN_SUCCESS;
 }
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

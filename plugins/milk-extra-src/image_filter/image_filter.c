@@ -13,7 +13,10 @@
 // Module short description
 #define MODULE_DESCRIPTION "Image filtering"
 
-#include "CommandLineInterface/CLIcore.h"
+#ifdef MILK_NO_CLI
+#include "CLIcore_standalone.h"
+#else
+#include "CLIcore.h"
 
 #include "fconvolve.h"
 #include "gaussfilter.h"
@@ -33,7 +36,7 @@ INIT_MODULE_LIB(image_filter)
 static errno_t init_module_CLI()
 {
     gaussfilter_addCLIcmd();
-    fconvolve_addCLIcmd();
+    CLIADDCMD_image_filter__fconvolve();
 
     CLIADDCMD_image_filter__im2Dfilter_1pixblurr();
 
@@ -41,5 +44,4 @@ static errno_t init_module_CLI()
 
     return RETURN_SUCCESS;
 }
-
-
+#endif /* MILK_NO_CLI */

@@ -1,3 +1,8 @@
+/**
+ * @file build_linPF.h
+ * @brief Build linpf module
+ */
+
 #ifndef LINARFILTERPRED_BUILD_LINPF_H
 #define LINARFILTERPRED_BUILD_LINPF_H
 

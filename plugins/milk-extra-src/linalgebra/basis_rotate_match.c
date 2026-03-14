@@ -1,88 +1,61 @@
 /**
+ * @file basis_rotate_match.c
+ * @brief Basis rotate match module
+ */
+
+/**
  * @file SGEMM.c
  *
  */
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
 
-static char *inmatAB;
-static long  fpi_inmatAB;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static char *outmatArot;
-static long  fpi_outmatArot;
-
-static uint32_t *optmode;
-static long fpi_optmode;
-
-
-static CLICMDARGDEF farg[] =
-{
-    {
-        CLIARG_IMG,
-        ".matAB",
-        "input decomposition of modes B in basis A",
-        "matA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &inmatAB,
-        &fpi_inmatAB
-    },
-    {
-        CLIARG_STR,
-        ".matArot",
-        "output rotation matrix",
-        "matA",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &outmatArot,
-        &fpi_outmatArot
-    },
-    {
-        CLIARG_UINT32,
-        ".optmode",
-        "optimization mode",
-        "0",
-        CLIARG_HIDDEN_DEFAULT,
-        (void **) &optmode,
-        &fpi_optmode
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "basisrotmatch",
+    .cmdkey      = "basisrotmatch",
+    .description = "rotate modal basis to fit modes"
 };
 
 
-static CLICMDDATA CLIcmddata =
-{
-    "basisrotmatch", "rotate modal basis to fit modes", CLICMD_FIELDS_DEFAULTS
-};
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
 
-// detailed help
-static errno_t help_function()
-{
-    printf("Force modal basis A to match set of modes B a much as possible\n");
-    printf("basis A is assumed to be orthonormal\n");
-    printf("set of modes B has no constraint\n");
-    printf("The imput to this function is the modal decomposition of vectors B on the modal basis A\n");
-    printf("Match is enforced by rotations that preserve basis A orthonormality\n");
-    printf("\n");
-    printf("NOTATIONS :\n");
-    printf("modal basis A has N modes, (n = 0...N-1)\n");
-    printf("vector set B has M modes, (m = 0...M-1)\n");
-    printf("B decompositions on A : C matrix, coeffs c(n,m)");
-    printf("\n");
-    printf("Optimization Mode:\n");
-    printf("   0 (default) : B mode #m is linear combination of first m modes A\n");
-    printf("       c(n,m)=0 if n>m");
-    printf("       C matrix is triangular\n");
-    printf("       Assumes B modes have no null space\n");
-    printf("   1 (skipmatch): skip null space in B\n");
-    printf("   2 (linforce) try to force match between n/N and m/N\n");
+static char * inmatAB = NULL;
+static char * outmatArot = NULL;
+static uint32_t * optmode = NULL;
 
-    return RETURN_SUCCESS;
-}
 
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".matAB", &inmatAB, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input decomposition of modes B in basis A") \
+    X(".matArot", &outmatArot, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output rotation matrix")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 errno_t compute_basis_rotate_match(
     IMGID imginAB,
@@ -152,16 +125,10 @@ errno_t compute_basis_rotate_match(
         }
 
 
-
         // counters
         int skipcnt = 0; // skipped
         int incrcnt = 0; // incremented
         int proccnt = 0; // processed
-
-
-
-
-
 
 
         // loop over target vectors
@@ -180,7 +147,6 @@ errno_t compute_basis_rotate_match(
             //
             int aindex;
             aindex = m1*Bdim + iB;
-
 
 
             int procflag = 0; // toggles to 1 if processed
@@ -231,7 +197,6 @@ errno_t compute_basis_rotate_match(
                 }
 
 
-
                 modei --;
             }
 
@@ -257,7 +222,6 @@ errno_t compute_basis_rotate_match(
             }
 
         }
-
 
 
         printf("%9.6f  incremented %d, skipped %d  processed %d  (Bsize = %d) \n",
@@ -292,13 +256,6 @@ errno_t compute_basis_rotate_match(
     }
 
     free(diagVal);
-
-
-
-
-
-
-
 
 
     if(optmode == 2)
@@ -392,8 +349,6 @@ errno_t compute_basis_rotate_match(
                     double optvalneg1  = 0.0;
 
 
-
-
                     for(uint32_t ii=0; ii<Bdim; ii++)
                     {
                         double x  = 1.0*ii / Adim;
@@ -439,7 +394,6 @@ errno_t compute_basis_rotate_match(
                         //wcoeff = pow(wcoeff, 4.0);
                         wcoeff0 = 1.0;
                         wcoeff1 = 1.0;
-
 
 
                         // optimization metric without rotation
@@ -547,9 +501,6 @@ errno_t compute_basis_rotate_match(
             }
 
 
-
-
-
             // Measure, for each A mode, the effective index of B modes
             // AmodeBeff[iia] has to be > iia
             //
@@ -588,8 +539,6 @@ errno_t compute_basis_rotate_match(
             }
 
 
-
-
             if ( loopiter == loopiterMax-1 )
             {
                 // re-order A modes
@@ -609,9 +558,6 @@ errno_t compute_basis_rotate_match(
             free(iarray);
 
 
-
-
-
             loopiter ++;
         }
 
@@ -626,14 +572,12 @@ errno_t compute_basis_rotate_match(
     }
 
 
-
-
 // Create output
 //
-    imgArot->naxis = 2;
-    imgArot->size[0] = Adim;
-    imgArot->size[1] = Adim;
-    imgArot->datatype = _DATATYPE_FLOAT;
+    imgArot->mdt->naxis = 2;
+    imgArot->mdt->size[0] = Adim;
+    imgArot->mdt->size[1] = Adim;
+    imgArot->mdt->datatype = _DATATYPE_FLOAT;
     createimagefromIMGID(imgArot);
     for(uint64_t ii = 0; ii < Adim*Adim; ii++ )
     {
@@ -656,19 +600,15 @@ errno_t compute_basis_rotate_match(
 }
 
 
-
-
-
-
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID imginAB = mkIMGID_from_name(inmatAB);
-    resolveIMGID(&imginAB, ERRMODE_ABORT);
+    IMGID imginAB = imgid_make_from_name(inmatAB);
+    resolveIMGID(&imginAB, ERRMODE_ABORT, dcimg, dcnimg);
 
 
-    IMGID imgoutArot  = mkIMGID_from_name(outmatArot);
+    IMGID imgoutArot  = imgid_make_from_name(outmatArot);
 
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
@@ -684,29 +624,46 @@ static errno_t compute_function()
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
-
+    imgid_free(&imginAB);
+    imgid_free(&imgoutArot);
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
 
 
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
 
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
-INSERT_STD_FPSCLIfunctions
-
-
-
-
-// Register function in CLI
 errno_t
 CLIADDCMD_linalgebra__basis_rotate_match()
 {
-
-    //CLIcmddata.FPS_customCONFsetup = customCONFsetup;
-    //CLIcmddata.FPS_customCONFcheck = customCONFcheck;
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
 

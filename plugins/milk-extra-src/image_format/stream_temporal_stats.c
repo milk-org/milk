@@ -1,3 +1,4 @@
+#include "ImageStreamIO/ImageStruct.h"
 /**
  * @file    stream_temporal_stats.c
  * @brief   Publishes average and standard dev of image stream at regular intervals
@@ -15,55 +16,54 @@
 
 #include <math.h>
 
-#include "CommandLineInterface/CLIcore.h"
-#include "CommandLineInterface/timeutils.c"
-#include "CommandLineInterface/timeutils.h"
+#include "CLIcore.h"
+#include "timeutils.h"
 
 
-// Local variables pointers
-static char    *in_name;
-static int32_t *ptr_n_frames;
-static double  *ptr_timeout;
+/* ================================================================
+ * 1.  FPS COMPONENT IDENTITY
+ * ============================================================= */
 
-static CLICMDARGDEF farg[] = {{
-        CLIARG_IMG,
-        ".in_name",
-        "input image",
-        "in_name",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &in_name,
-        NULL
-    },
-    {
-        CLIARG_INT32,
-        ".n_frames",
-        "Stats every n frames max",
-        "n_frames",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &ptr_n_frames,
-        NULL
-    },
-    {
-        CLIARG_FLOAT64,
-        ".timeout",
-        "Stats at timeout (sec)",
-        "timeout",
-        CLIARG_VISIBLE_DEFAULT,
-        (void **) &ptr_timeout,
-        NULL
-    }
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "stream_av_std",
+    .cmdkey      = "stream_av_std",
+    .description = "RT compute of ave/std of image streams"
 };
 
-static CLICMDDATA CLIcmddata = {"stream_av_std",
-                                "RT compute of ave/std of image streams",
-                                CLICMD_FIELDS_DEFAULTS
-                               };
 
-static errno_t help_function()
-{
-    printf("Compute temporal average and st-dev of image stream\n");
-    return RETURN_SUCCESS;
-}
+/* ================================================================
+ * 2.  LOCAL PARAMETER VARIABLES
+ * ============================================================= */
+
+static char    * in_name = NULL;
+static int32_t * ptr_n_frames = NULL;
+static double  * ptr_timeout = NULL;
+
+
+/* ================================================================
+ * 3.  UNIFIED PARAMETER TABLE (X-Macro)
+ * ============================================================= */
+
+#define FPS_PARAMS(X) \
+    X(".in_name", &in_name, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".n_frames", &ptr_n_frames, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Stats every n frames max") \
+    X(".timeout", &ptr_timeout, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Stats at timeout (sec)")
+
+
+/* ================================================================
+ * 5.  BINDINGS, FARG, AND CLI DATA
+ * ============================================================= */
+
+FPS_V2_SECTION5(FPS_PARAMS)
 
 /*
 THE IMPORTANT, CUSTOM PART
@@ -106,7 +106,7 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
 
     if(reset)
     {
-        switch(in_img.datatype)
+        switch(in_img.md->datatype)
         {
             case _DATATYPE_UINT8:
                 FOREACH_CAST(0, n_pixels, UI8, float);
@@ -147,7 +147,7 @@ ave_std_accumulate(IMGID in_img, void *sum_x, void *sum_xx, int reset)
     }
     else
     {
-        switch(in_img.datatype)
+        switch(in_img.md->datatype)
         {
             case _DATATYPE_UINT8:
                 FOREACH_CASTADD(0, n_pixels, UI8, float);
@@ -199,7 +199,7 @@ errno_t ave_finalize(IMGID out_ave_img, void *sum_x, int n_frames_acc)
     out_ave_img.md->write = TRUE;
 
     // Two possible datatypes: float or double
-    if(out_ave_img.datatype == _DATATYPE_FLOAT)
+    if(out_ave_img.md->datatype == _DATATYPE_FLOAT)
     {
         float *ptr_sumx = (float *) sum_x;
         for(int ii = 0; ii < n_pixels; ++ii)
@@ -207,7 +207,7 @@ errno_t ave_finalize(IMGID out_ave_img, void *sum_x, int n_frames_acc)
             out_ave_img.im->array.F[ii] = ptr_sumx[ii] / n_frames_acc;
         }
     }
-    else if(out_ave_img.datatype == _DATATYPE_DOUBLE)
+    else if(out_ave_img.md->datatype == _DATATYPE_DOUBLE)
     {
         double *ptr_sumx = (double *) sum_x;
         for(int ii = 0; ii < n_pixels; ++ii)
@@ -231,7 +231,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
     out_std_img.md->write = TRUE;
 
     // Two possible datatypes: float or double
-    if(out_std_img.datatype == _DATATYPE_FLOAT)
+    if(out_std_img.md->datatype == _DATATYPE_FLOAT)
     {
         float *ptr_sumx  = (float *) sum_x;
         float *ptr_sumxx = (float *) sum_xx;
@@ -243,7 +243,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
                      (n_frames_acc - 1));
         }
     }
-    else if(out_std_img.datatype == _DATATYPE_DOUBLE)
+    else if(out_std_img.md->datatype == _DATATYPE_DOUBLE)
     {
         double *ptr_sumx  = (double *) sum_x;
         double *ptr_sumxx = (double *) sum_xx;
@@ -267,19 +267,19 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
 BOILERPLATE
 */
 
-static errno_t compute_function()
+static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-    IMGID in_img = mkIMGID_from_name(in_name);
-    resolveIMGID(&in_img, ERRMODE_ABORT);
+    IMGID in_img = imgid_make_from_name(in_name);
+    resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
     strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_name);
     // for FPS mode:
-    if(data.fpsptr != NULL)
+    if(dcfpsptr != NULL)
     {
-        strcpy(data.fpsptr->cmdset.triggerstreamname, in_name);
+        strcpy(dcfpsptr->cmdset.triggerstreamname, in_name);
     }
 
     // HANDLE DATATYPES
@@ -296,25 +296,25 @@ static errno_t compute_function()
     strcat(out_std_name, "_std");
 
     // Resolve or create outputs, per need
-    IMGID out_ave_img = mkIMGID_from_name(out_ave_name);
-    if(resolveIMGID(&out_ave_img, ERRMODE_WARN))
+    IMGID out_ave_img = imgid_make_from_name(out_ave_name);
+    if(resolveIMGID(&out_ave_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING(
             "WARNING - output average image not found and being created");
-        in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
+        in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_ave_img
         imcreatelikewiseIMGID(&out_ave_img, &in_img);
-        in_img.datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_ave_img, ERRMODE_ABORT);
+        in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
+        resolveIMGID(&out_ave_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
-    IMGID out_std_img = mkIMGID_from_name(out_std_name);
-    if(resolveIMGID(&out_std_img, ERRMODE_WARN))
+    IMGID out_std_img = imgid_make_from_name(out_std_name);
+    if(resolveIMGID(&out_std_img, ERRMODE_WARN, dcimg, dcnimg))
     {
         PRINT_WARNING("WARNING - output std image not found and being created");
-        in_img.datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
+        in_img.mdt->datatype = _DATATYPE_OUTPUT; // To be passed to out_std_img
         imcreatelikewiseIMGID(&out_std_img, &in_img);
-        in_img.datatype = _DATATYPE_INPUT; // Revert !
-        resolveIMGID(&out_std_img, ERRMODE_ABORT);
+        in_img.mdt->datatype = _DATATYPE_INPUT; // Revert !
+        resolveIMGID(&out_std_img, ERRMODE_ABORT, dcimg, dcnimg);
     }
 
     /*
@@ -397,13 +397,12 @@ static errno_t compute_function()
                 }
 
                 ave_finalize(out_ave_img, sum_x, n_frames_acc);
-                processinfo_update_output_stream(processinfo, out_ave_img.ID);
+                processinfo_update_output_stream(processinfo, out_ave_img.im, NULL);
 
                 if(n_frames_acc >= 2)
                 {
                     std_finalize(out_std_img, sum_x, sum_xx, n_frames_acc);
-                    processinfo_update_output_stream(processinfo,
-                                                     out_std_img.ID);
+                    processinfo_update_output_stream(processinfo, out_std_img.im, NULL);
                 }
 
                 // TODO update the timeout timespec
@@ -424,6 +423,10 @@ static errno_t compute_function()
     free(sum_x);
     free(sum_xx);
 
+    imgid_free(&in_img);
+    imgid_free(&out_ave_img);
+    imgid_free(&out_std_img);
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -431,13 +434,39 @@ static errno_t compute_function()
 /*
 CLI boilerplate
 */
-INSERT_STD_FPSCLIfunctions
 
-// Register function in CLI
+/* ================================================================
+ * 7.  MILK MODULE REGISTRATION
+ * ============================================================= */
+
+#ifndef FPS_STANDALONE
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
+
 errno_t
 CLIADDCMD_image_format__temporal_stats()
 {
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
     INSERT_STD_CLIREGISTERFUNC
-
     return RETURN_SUCCESS;
 }
+#endif
+
+
+/* ================================================================
+ * 8.  STANDALONE ENTRY POINT
+ * ============================================================= */
+
+#ifdef FPS_STANDALONE
+FPS_MAIN_STANDALONE_V2(
+    FPS_app_info,
+    FPS_PARAMS,
+    compute_function)
+#endif
+

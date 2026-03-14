@@ -1,53 +1,92 @@
-/** @file FITS_to_ushortintbin_lock.c
+/**
+ * @file FITS_to_ushortintbin_lock.c
+ * @brief Write ushort binary with file locking
  */
 
 #include <sys/file.h>
 
-#include "CommandLineInterface/CLIcore.h"
+#include "CLIcore.h"
+#include "fps.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
-// ==========================================
-// Forward declaration(s)
-// ==========================================
+// Forward declaration
+imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(
+    const char *__restrict IDname,
+    const char *__restrict fname);
 
-imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
-        const char *__restrict fname);
+static char p_in[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im";
+static char p_fname[FUNCTION_PARAMETER_STRMAXLEN]
+    = "im.bin";
 
-// ==========================================
-// Command line interface wrapper function(s)
-// ==========================================
+static FPS_APP_INFO FPS_app_info = {
+    .fps_name    = "writeushortintlock",
+    .cmdkey      = "writeushortintlock",
+    .description =
+        "write ushort with file locking"
+};
 
-static errno_t IMAGE_FORMAT_FITS_to_ushortintbin_lock_cli()
+#define FPS_PARAMS(X) \
+    X(".in_name", p_in, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "input image") \
+    X(".out_name", p_fname, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "output binary file")
+
+static FPS_CLI_BINDING my_bindings[] = {
+    FPS_PARAMS(FPS_X_BINDING)
+};
+static const int nb_bindings =
+    sizeof(my_bindings) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg[] = {
+    FPS_PARAMS(FPS_X_FARG)
+};
+static CLICMDDATA CLIcmddata = {
+    "", "", CLICMD_FIELDS_DEFAULTS
+};
+static CMDSETTINGS cms = {0};
+
+static __attribute__((constructor))
+void init_cms(void)
 {
-    if(CLI_checkarg(1, 4) + CLI_checkarg(2, 3) == 0)
-    {
-        IMAGE_FORMAT_FITS_to_ushortintbin_lock(data.cmdargtoken[1].val.string,
-                                               data.cmdargtoken[2].val.string);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        return RETURN_FAILURE;
+    strncpy(CLIcmddata.key,
+            FPS_app_info.cmdkey,
+            sizeof(CLIcmddata.key) - 1);
+    strncpy(CLIcmddata.description,
+            FPS_app_info.description,
+            sizeof(CLIcmddata.description)
+            - 1);
+    if (CLIcmddata.cmdsettings == NULL) {
+        CLIcmddata.cmdsettings = &cms;
     }
 }
 
-// ==========================================
-// Register CLI command(s)
-// ==========================================
-
-errno_t FITS_to_ushortintbin_lock_addCLIcmd()
+static MILK_HOT errno_t compute_function()
 {
+    IMAGE_FORMAT_FITS_to_ushortintbin_lock(
+        p_in, p_fname);
+    return RETURN_SUCCESS;
+}
 
-    RegisterCLIcommand("writeushortintlock",
-                       __FILE__,
-                       IMAGE_FORMAT_FITS_to_ushortintbin_lock_cli,
-                       "write unsigned short int with file locking",
-                       "str1 is image, str2 is binary file",
-                       "writeushortintlock im im.bin",
-                       "long IMAGE_FORMAT_FITS_to_ushortintbin_lock( const "
-                       "char *IDname, const char *fname)");
+static errno_t CLIfunction(void)
+{
+    return safe_fps_generic_CLIfunction(
+        &FPS_app_info, farg, &CLIcmddata,
+        my_bindings, nb_bindings,
+        compute_function);
+}
 
+errno_t
+CLIADDCMD_image_format__ushortintbin_lock()
+{
+    safe_fps_fill_farg_examples(
+        farg, my_bindings, nb_bindings);
+    INSERT_STD_CLIREGISTERFUNC
     return RETURN_SUCCESS;
 }
 
@@ -60,9 +99,9 @@ imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
     int                 fd;
     unsigned short int *valarray;
 
-    ID    = image_ID(IDname);
-    xsize = data.image[ID].md[0].size[0];
-    ysize = data.image[ID].md[0].size[1];
+    ID    = image_ID(IDname, dcimg, dcnimg);
+    xsize = dcimg[ID].md[0].size[0];
+    ysize = dcimg[ID].md[0].size[1];
 
     valarray = (unsigned short int *) malloc(sizeof(unsigned short int) *
                xsize * ysize);
@@ -72,20 +111,20 @@ imageID IMAGE_FORMAT_FITS_to_ushortintbin_lock(const char *__restrict IDname,
         abort();
     }
 
-    if(data.image[ID].md[0].datatype == _DATATYPE_FLOAT)
+    if(dcimg[ID].md[0].datatype == _DATATYPE_FLOAT)
     {
         printf("float -> unsigned short int array\n");
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            valarray[ii] = (unsigned short int) data.image[ID].array.F[ii];
+            valarray[ii] = (unsigned short int) dcimg[ID].array.F[ii];
         }
     }
-    if(data.image[ID].md[0].datatype == _DATATYPE_DOUBLE)
+    if(dcimg[ID].md[0].datatype == _DATATYPE_DOUBLE)
     {
         printf("double -> unsigned short int array\n");
         for(ii = 0; ii < xsize * ysize; ii++)
         {
-            valarray[ii] = (unsigned short int) data.image[ID].array.D[ii];
+            valarray[ii] = (unsigned short int) dcimg[ID].array.D[ii];
         }
     }
 

@@ -1,3 +1,8 @@
+/**
+ * @file modalremap.h
+ * @brief Modalremap module
+ */
+
 #ifndef LINALGEBRA_MODALREMAP_H
 #define LINALGEBRA_MODALREMAP_H
 
