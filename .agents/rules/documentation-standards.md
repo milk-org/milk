@@ -37,7 +37,10 @@ When creating or editing markdown documentation in the
 3. **New topic pages:** Must be added to both
    `docs/index.md` and the `nav:` section of `mkdocs.yml`
    under the appropriate tab.
-4. **MkDocs details blocks:** Use `<details markdown="1">`
+4. **MkDocs tags:** Every new `.md` page must have
+   YAML frontmatter `tags: [topic1, topic2]` added to
+   the very top to seed the `docs/tags.md` index.
+5. **MkDocs details blocks:** Use `<details markdown="1">`
    (not bare `<details>`) so markdown content inside
    renders correctly. See `documentation-site.md` rule.
 
