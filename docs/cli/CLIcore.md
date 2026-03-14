@@ -55,9 +55,21 @@ milk-cli > <command> <arg1> <arg2>   # comment
 ## 3. Tab Completion
 
 - **First argument:** matches command → image → filename
-- **Additional arguments:** matches image → filename
+- **Additional arguments:** context-aware based on command's
+  parameter types:
+  - `FILENAME` / `FITSFILENAME` args → filesystem paths
+  - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
+  - Other args → match image stream names
+- Fuzzy (substring) matching automatically kicks in when
+  prefix matching finds nothing
 
-## 4. Input
+## 4. Argument Hints
+
+When a known command is typed, the bottom line shows the
+command's syntax with `<angle bracket>` parameter tokens.
+The active argument position is highlighted in bold cyan.
+
+## 5. Input
 
 GNU readline is used for line editing. Type `helprl` at the
 prompt for a quick reference. See
