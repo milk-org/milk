@@ -1238,87 +1238,76 @@ static void cli_highlight_redisplay(void)
         rl_redisplay();
         return;
     }
+
+    /*
+     * Let readline draw normally first so its
+     * internal cursor state stays consistent.
+     * Then overwrite just the first word in color.
+     */
+    rl_redisplay();
+
+    /* Find the first word boundaries */
+    int ws = 0;
+    while(rl_line_buffer[ws] == ' '
+            || rl_line_buffer[ws] == '\t')
+    {
+        ws++;
+    }
+    int we = ws;
+    while(rl_line_buffer[we] != '\0'
+            && rl_line_buffer[we] != ' '
+            && rl_line_buffer[we] != '\t')
+    {
+        we++;
+    }
+    if(we == ws)
+    {
+        fflush(stdout);
+        return;
+    }
+
+    /* Extract first word */
     char firstword[200];
-    int fwlen = 0;
-    const char *p = rl_line_buffer;
-    while(*p == ' ' || *p == '\t')
+    int fwlen = we - ws;
+    if(fwlen > 199)
     {
-        p++;
+        fwlen = 199;
     }
-    while(*p != '\0' && *p != ' '
-            && *p != '\t' && fwlen < 199)
-    {
-        firstword[fwlen++] = *p++;
-    }
+    memcpy(firstword, rl_line_buffer + ws,
+           (size_t) fwlen);
     firstword[fwlen] = '\0';
 
+    /* Pick color */
     const char *col;
-    if(fwlen == 0)
+    if(cli_is_command(firstword))
     {
-        col = "\033[0m";
-    }
-    else if(cli_is_command(firstword))
-    {
-        col = "\033[32m";
+        col = "\033[32m"; /* green */
     }
     else
     {
-        col = "\033[31m";
+        col = "\033[31m"; /* red */
     }
 
-    char buf[2048];
-    int bpos = 0;
-    int src = 0;
-    int in_first = 1;
-
-    const char *prompt = rl_display_prompt
-        ? rl_display_prompt : "";
-    bpos += snprintf(buf + bpos,
-                     sizeof(buf) - (size_t) bpos,
-                     "\r%s", prompt);
-
-    while(rl_line_buffer[src] != '\0'
-            && bpos < 2000)
+    /*
+     * After rl_redisplay(), cursor is at rl_point.
+     * Move back to the first word, overwrite with
+     * color, then restore cursor position.
+     * Use cursor-relative movement (not absolute
+     * column) to avoid prompt-width calculation
+     * errors from invisible escape sequences.
+     */
+    fprintf(rl_outstream, "\0337");  /* save */
     {
-        char c = rl_line_buffer[src];
-        if(in_first && (c == ' ' || c == '\t'))
+        int back = rl_point - ws;
+        if(back > 0)
         {
-            in_first = 0;
-            bpos += snprintf(
-                buf + bpos,
-                sizeof(buf) - (size_t) bpos,
-                "\033[0m");
+            fprintf(rl_outstream,
+                    "\033[%dD", back);
         }
-        if(in_first)
-        {
-            bpos += snprintf(
-                buf + bpos,
-                sizeof(buf) - (size_t) bpos,
-                "%s%c", col, c);
-        }
-        else if(c >= '0' && c <= '9')
-        {
-            bpos += snprintf(
-                buf + bpos,
-                sizeof(buf) - (size_t) bpos,
-                "\033[33m%c\033[0m", c);
-        }
-        else
-        {
-            buf[bpos++] = c;
-        }
-        src++;
     }
-    bpos += snprintf(buf + bpos,
-                     sizeof(buf) - (size_t) bpos,
-                     "\033[0m");
-    fprintf(rl_outstream, "\r\033[K%s", buf);
-    {
-        int prompt_len = (int) strlen(prompt);
-        int ccol = prompt_len + rl_point;
-        fprintf(rl_outstream,
-                "\r\033[%dC", ccol);
-    }
+    fprintf(rl_outstream, "%s%s\033[0m",
+            col, firstword);
+    fprintf(rl_outstream, "\0338");  /* restore */
     fflush(rl_outstream);
 }
 
