@@ -277,6 +277,8 @@ typedef struct
 
     // dynamic settings for function
     CMDSETTINGS cmdsettings;
+
+    uint32_t callcount;
 } CMD;
 
 // The command line is parsed and
@@ -316,6 +318,16 @@ extern uint8_t TYPESIZE[32];
 
 
 
+
+#define CLI_MAX_ALIASES    128
+#define CLI_ALIAS_NAMELEN   64
+#define CLI_ALIAS_CMDLEN   512
+
+typedef struct
+{
+    char name[CLI_ALIAS_NAMELEN];
+    char cmd[CLI_ALIAS_CMDLEN];
+} CLI_ALIAS;
 
 /**
  * @brief Extended data structure for CLI programs
@@ -357,6 +369,7 @@ typedef struct
     int autocomplete_history;
     int autocomplete_arghint;
     int autocomplete_fuzzy;
+    int syntax_highlight;
     long        cmdNBarg;
     CMDARGTOKEN cmdargtoken[NB_ARG_MAX];
 
@@ -386,6 +399,12 @@ typedef struct
         STRINGMAXLEN_MODULE_DATESTRING];
     char moduletimestring[
         STRINGMAXLEN_MODULE_TIMESTRING];
+
+    // COMMAND ALIASES
+    // =================================================
+
+    int       NBalias;
+    CLI_ALIAS alias[CLI_MAX_ALIASES];
 
 } DATA;
 
