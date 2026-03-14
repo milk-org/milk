@@ -10,7 +10,7 @@ The `milk` project includes **agent rules** and
 (Gemini, Copilot, etc.) to follow project
 conventions automatically. They live under:
 
-```
+```text
 .agents/
 ├── rules/        # Always-on guardrails
 └── workflows/    # On-demand task templates
