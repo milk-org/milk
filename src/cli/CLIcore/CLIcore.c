@@ -500,6 +500,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // CLI initialize
     CLI_startup();
 
+    // Load persistent command aliases
+    cli_alias_load();
+
     // set shared memory directory
     setSHMdir();
 
@@ -1130,6 +1133,38 @@ void runCLI_cmd_init()
                        "<us>",
                        "usleep 1000",
                        "usleep(long tus)");
+
+    RegisterCLIcommand("alias",
+                       __FILE__,
+                       cli_alias_add,
+                       "create/update command alias",
+                       "<name> <command...>",
+                       "alias ld mem.listim",
+                       "cli_alias_add()");
+
+    RegisterCLIcommand("unalias",
+                       __FILE__,
+                       cli_alias_remove,
+                       "remove command alias",
+                       "<name>",
+                       "unalias ld",
+                       "cli_alias_remove()");
+
+    RegisterCLIcommand("aliases",
+                       __FILE__,
+                       cli_alias_list,
+                       "list all command aliases",
+                       "no argument",
+                       "aliases",
+                       "cli_alias_list()");
+
+    RegisterCLIcommand("watch",
+                       __FILE__,
+                       cli_watch,
+                       "repeat command at interval",
+                       "<interval_ms> <command...>",
+                       "watch 1000 mem.listim",
+                       "cli_watch()");
 
     //  init_modules();
 

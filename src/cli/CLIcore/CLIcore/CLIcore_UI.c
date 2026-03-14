@@ -6,7 +6,10 @@
  */
 
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 
 #ifdef USE_READLINE
 #include <readline/history.h>
@@ -23,6 +26,7 @@
 #define CLICOMPLETIONMODE_COMMANDS 0
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
+#define CLICOMPLETIONMODE_FILES    3
 
 // COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
@@ -248,6 +252,115 @@ retry_fuzzy:
         }
     }
 
+    if(data.CLImatchMode == CLICOMPLETIONMODE_FILES)
+    {
+        /* Filesystem path completion.
+         * Split text into directory + prefix,
+         * enumerate with opendir/readdir. */
+        static DIR *dirp = NULL;
+        static char dirpart[512];
+        static char prefix[256];
+        static unsigned int preflen;
+
+        if(!state)
+        {
+            if(dirp != NULL)
+            {
+                closedir(dirp);
+                dirp = NULL;
+            }
+
+            /* Split text into dir + filename prefix */
+            const char *slash =
+                strrchr(text, '/');
+            if(slash != NULL)
+            {
+                int dlen = (int)(slash - text) + 1;
+                if(dlen > (int) sizeof(dirpart) - 1)
+                {
+                    dlen = (int) sizeof(dirpart) - 1;
+                }
+                memcpy(dirpart, text, dlen);
+                dirpart[dlen] = '\0';
+                strncpy(prefix, slash + 1,
+                        sizeof(prefix) - 1);
+                prefix[sizeof(prefix) - 1] = '\0';
+            }
+            else
+            {
+                strcpy(dirpart, ".");
+                strncpy(prefix, text,
+                        sizeof(prefix) - 1);
+                prefix[sizeof(prefix) - 1] = '\0';
+            }
+            preflen = strlen(prefix);
+
+            dirp = opendir(dirpart);
+        }
+
+        if(dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(dirp)) != NULL)
+            {
+                /* Skip . and .. */
+                if(strcmp(ent->d_name, ".") == 0
+                    || strcmp(ent->d_name,
+                             "..") == 0)
+                {
+                    continue;
+                }
+
+                if(strncmp(ent->d_name, prefix,
+                           preflen) == 0)
+                {
+                    /* Build full path for
+                     * stat check */
+                    char fullpath[1024];
+                    snprintf(fullpath,
+                             sizeof(fullpath),
+                             "%s/%s",
+                             dirpart,
+                             ent->d_name);
+
+                    /* Build result: dirpart
+                     * prefix + entry name */
+                    char result[1024];
+                    if(strcmp(dirpart, ".") == 0)
+                    {
+                        snprintf(result,
+                                 sizeof(result),
+                                 "%s",
+                                 ent->d_name);
+                    }
+                    else
+                    {
+                        snprintf(result,
+                                 sizeof(result),
+                                 "%s%s",
+                                 dirpart,
+                                 ent->d_name);
+                    }
+
+                    /* Append / for directories */
+                    struct stat st;
+                    if(stat(fullpath, &st) == 0
+                        && S_ISDIR(st.st_mode))
+                    {
+                        strncat(result, "/",
+                                sizeof(result)
+                                - strlen(result)
+                                - 1);
+                    }
+
+                    return dupstr(result);
+                }
+            }
+            closedir(dirp);
+            dirp = NULL;
+        }
+    }
+
     /* Fuzzy fallback: if prefix pass found nothing,
      * restart with substring matching */
     if(generator_fuzzy_pass == 0 &&
@@ -308,6 +421,92 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
         {
             data.CLImatchMode = CLICOMPLETIONMODE_CMDARGS;
         }
+        else if(cmdimatch != -1)
+        {
+            /* Count which CLI argument position
+             * the cursor is at */
+            int argpos = 0;
+            {
+                const char *p = rl_line_buffer;
+                /* Skip command word */
+                while(*p && *p != ' ')
+                {
+                    p++;
+                }
+                int in_word = 0;
+                while(*p)
+                {
+                    if(*p != ' ')
+                    {
+                        if(!in_word)
+                        {
+                            argpos++;
+                            in_word = 1;
+                        }
+                    }
+                    else
+                    {
+                        in_word = 0;
+                    }
+                    p++;
+                }
+                /* If trailing space, next arg */
+                if(rl_end > 0
+                    && rl_line_buffer[
+                        rl_end - 1] == ' ')
+                {
+                    /* argpos already correct */
+                }
+                else if(argpos > 0)
+                {
+                    argpos--;
+                }
+            }
+
+            /* Check argument type at this
+             * position (CLI-visible args) */
+            int cli_ai = 0;
+            int matched_file = 0;
+            for(int ai = 0;
+                ai < data.cmd[cmdimatch].nbparam;
+                ai++)
+            {
+                if(data.cmd[cmdimatch]
+                    .argdata[ai].fpflag
+                    & FPFLAG_PRIMARY_CLI_INPUT)
+                {
+                    if(cli_ai == argpos)
+                    {
+                        uint64_t atype =
+                            data.cmd[cmdimatch]
+                            .argdata[ai].type;
+                        if(atype == CLIARG_FILENAME
+                            || atype
+                            == CLIARG_FITSFILENAME)
+                        {
+                            matched_file = 1;
+                        }
+                        break;
+                    }
+                    cli_ai++;
+                }
+            }
+
+            if(matched_file)
+            {
+                data.CLImatchMode =
+                    CLICOMPLETIONMODE_FILES;
+                /* Don't append space after
+                 * directory names */
+                rl_completion_append_character
+                    = '\0';
+            }
+            else
+            {
+                data.CLImatchMode =
+                    CLICOMPLETIONMODE_IMAGES;
+            }
+        }
         else
         {
             // match string with images
@@ -316,6 +515,12 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
     }
 
     matches = rl_completion_matches((char *) text, &CLI_generator);
+
+    /* Reset append char to default space */
+    if(data.CLImatchMode != CLICOMPLETIONMODE_FILES)
+    {
+        rl_completion_append_character = ' ';
+    }
 
     //    else
     //  rl_bind_key('\t',rl_abort);
@@ -386,6 +591,431 @@ errno_t write_tracedebugfile()
 }
 
 
+/*
+ * ============================================================
+ *  Command Alias Subsystem
+ * ============================================================
+ *
+ * Aliases are stored in data.alias[] and persisted
+ * to ~/.milk_aliases (one "name=command" per line).
+ */
+
+/** @brief Path to alias persistence file */
+static const char *CLI_alias_file(void)
+{
+    static char path[1024] = {0};
+    if(path[0] == '\0')
+    {
+        const char *home = getenv("HOME");
+        if(home)
+        {
+            snprintf(path, sizeof(path),
+                     "%s/.milk_aliases", home);
+        }
+        else
+        {
+            snprintf(path, sizeof(path),
+                     ".milk_aliases");
+        }
+    }
+    return path;
+}
+
+/**
+ * @brief Load aliases from ~/.milk_aliases
+ */
+void cli_alias_load(void)
+{
+    data.NBalias = 0;
+    FILE *fp = fopen(CLI_alias_file(), "r");
+    if(fp == NULL)
+    {
+        return;
+    }
+
+    char line[CLI_ALIAS_NAMELEN + CLI_ALIAS_CMDLEN + 4];
+    while(fgets(line, (int) sizeof(line), fp)
+            != NULL)
+    {
+        if(data.NBalias >= CLI_MAX_ALIASES)
+        {
+            break;
+        }
+        /* Strip trailing newline */
+        line[strcspn(line, "\n")] = '\0';
+        /* Skip empty / comment lines */
+        if(line[0] == '\0' || line[0] == '#')
+        {
+            continue;
+        }
+        /* Split on first '=' */
+        char *eq = strchr(line, '=');
+        if(eq == NULL)
+        {
+            continue;
+        }
+        *eq = '\0';
+        strncpy(data.alias[data.NBalias].name,
+                line,
+                CLI_ALIAS_NAMELEN - 1);
+        data.alias[data.NBalias].name[
+            CLI_ALIAS_NAMELEN - 1] = '\0';
+        strncpy(data.alias[data.NBalias].cmd,
+                eq + 1,
+                CLI_ALIAS_CMDLEN - 1);
+        data.alias[data.NBalias].cmd[
+            CLI_ALIAS_CMDLEN - 1] = '\0';
+        data.NBalias++;
+    }
+    fclose(fp);
+}
+
+/**
+ * @brief Save aliases to ~/.milk_aliases
+ */
+static void cli_alias_save(void)
+{
+    FILE *fp = fopen(CLI_alias_file(), "w");
+    if(fp == NULL)
+    {
+        printf("ERROR: cannot write %s\n",
+               CLI_alias_file());
+        return;
+    }
+    for(int i = 0; i < data.NBalias; i++)
+    {
+        fprintf(fp, "%s=%s\n",
+                data.alias[i].name,
+                data.alias[i].cmd);
+    }
+    fclose(fp);
+}
+
+/**
+ * @brief CLI handler: alias <name> <command...>
+ *
+ * Creates or updates a command alias.
+ */
+errno_t cli_alias_add(void)
+{
+    if(data.cmdNBarg < 3)
+    {
+        printf("Usage: alias <name> <command...>\n");
+        return RETURN_FAILURE;
+    }
+
+    const char *name =
+        data.cmdargtoken[1].val.string;
+
+    /* Build command from args 2..N */
+    char cmd[CLI_ALIAS_CMDLEN];
+    cmd[0] = '\0';
+    for(long a = 2; a < data.cmdNBarg; a++)
+    {
+        if(a > 2)
+        {
+            strncat(cmd, " ",
+                    CLI_ALIAS_CMDLEN
+                    - strlen(cmd) - 1);
+        }
+        strncat(cmd,
+                data.cmdargtoken[a].val.string,
+                CLI_ALIAS_CMDLEN
+                - strlen(cmd) - 1);
+    }
+
+    /* Check if alias already exists — update */
+    for(int i = 0; i < data.NBalias; i++)
+    {
+        if(strcmp(data.alias[i].name, name) == 0)
+        {
+            strncpy(data.alias[i].cmd, cmd,
+                    CLI_ALIAS_CMDLEN - 1);
+            data.alias[i].cmd[
+                CLI_ALIAS_CMDLEN - 1] = '\0';
+            cli_alias_save();
+            printf("Alias updated: %s = %s\n",
+                   name, cmd);
+            return RETURN_SUCCESS;
+        }
+    }
+
+    /* Add new alias */
+    if(data.NBalias >= CLI_MAX_ALIASES)
+    {
+        printf("ERROR: alias table full (%d)\n",
+               CLI_MAX_ALIASES);
+        return RETURN_FAILURE;
+    }
+
+    strncpy(data.alias[data.NBalias].name,
+            name, CLI_ALIAS_NAMELEN - 1);
+    data.alias[data.NBalias].name[
+        CLI_ALIAS_NAMELEN - 1] = '\0';
+    strncpy(data.alias[data.NBalias].cmd,
+            cmd, CLI_ALIAS_CMDLEN - 1);
+    data.alias[data.NBalias].cmd[
+        CLI_ALIAS_CMDLEN - 1] = '\0';
+    data.NBalias++;
+
+    cli_alias_save();
+    printf("Alias created: %s = %s\n",
+           name, cmd);
+
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief CLI handler: unalias <name>
+ */
+errno_t cli_alias_remove(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: unalias <name>\n");
+        return RETURN_FAILURE;
+    }
+
+    const char *name =
+        data.cmdargtoken[1].val.string;
+
+    for(int i = 0; i < data.NBalias; i++)
+    {
+        if(strcmp(data.alias[i].name, name) == 0)
+        {
+            /* Shift remaining entries */
+            for(int j = i;
+                    j < data.NBalias - 1; j++)
+            {
+                data.alias[j] = data.alias[j + 1];
+            }
+            data.NBalias--;
+            cli_alias_save();
+            printf("Alias removed: %s\n", name);
+            return RETURN_SUCCESS;
+        }
+    }
+
+    printf("Alias '%s' not found\n", name);
+    return RETURN_FAILURE;
+}
+
+/**
+ * @brief CLI handler: aliases
+ */
+errno_t cli_alias_list(void)
+{
+    if(data.NBalias == 0)
+    {
+        printf("No aliases defined.\n");
+        return RETURN_SUCCESS;
+    }
+    printf("--- Aliases (%d) ---\n",
+           data.NBalias);
+    for(int i = 0; i < data.NBalias; i++)
+    {
+        printf("  %-16s = %s\n",
+               data.alias[i].name,
+               data.alias[i].cmd);
+    }
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Expand alias in data.CLIcmdline
+ *
+ * If the first word matches an alias name,
+ * substitute it with the alias command, keeping
+ * any trailing arguments.
+ */
+static void cli_alias_expand(void)
+{
+    if(data.NBalias == 0)
+    {
+        return;
+    }
+
+    /* Extract first word */
+    char firstword[CLI_ALIAS_NAMELEN];
+    int  fwlen = 0;
+    const char *p = data.CLIcmdline;
+
+    /* Skip leading whitespace */
+    while(*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+    while(*p != '\0' && *p != ' '
+            && *p != '\t' && *p != '\n')
+    {
+        if(fwlen < CLI_ALIAS_NAMELEN - 1)
+        {
+            firstword[fwlen++] = *p;
+        }
+        p++;
+    }
+    firstword[fwlen] = '\0';
+
+    if(fwlen == 0)
+    {
+        return;
+    }
+
+    /* Search aliases */
+    for(int i = 0; i < data.NBalias; i++)
+    {
+        if(strcmp(data.alias[i].name,
+                 firstword) == 0)
+        {
+            /* Build expanded line */
+            char expanded[STRINGMAXLEN_CLICMDLINE];
+            snprintf(expanded,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "%s%s",
+                     data.alias[i].cmd,
+                     p); /* p points to rest */
+            strncpy(data.CLIcmdline, expanded,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            return;
+        }
+    }
+}
+
+
+/*
+ * ============================================================
+ *  Watch Command
+ * ============================================================
+ */
+
+/**
+ * @brief CLI handler: watch <interval_ms> <command>
+ *
+ * Repeats a command at a fixed interval with
+ * in-place terminal refresh. Press any key to stop.
+ */
+errno_t cli_watch(void)
+{
+    if(data.cmdNBarg < 3)
+    {
+        printf(
+            "Usage: watch <interval_ms>"
+            " <command...>\n");
+        return RETURN_FAILURE;
+    }
+
+    long interval_ms =
+        data.cmdargtoken[1].val.numl;
+    if(interval_ms < 10)
+    {
+        interval_ms = 10;
+    }
+
+    /* Build command from remaining args */
+    char watchcmd[STRINGMAXLEN_CLICMDLINE];
+    watchcmd[0] = '\0';
+    for(long a = 2; a < data.cmdNBarg; a++)
+    {
+        if(a > 2)
+        {
+            strncat(watchcmd, " ",
+                    STRINGMAXLEN_CLICMDLINE
+                    - strlen(watchcmd) - 1);
+        }
+        strncat(watchcmd,
+                data.cmdargtoken[a].val.string,
+                STRINGMAXLEN_CLICMDLINE
+                - strlen(watchcmd) - 1);
+    }
+
+    /* Switch terminal to raw mode so we can
+     * detect single keypresses without Enter.
+     * Readline leaves the terminal in cooked
+     * mode which buffers input. */
+    struct termios orig_termios;
+    struct termios raw_termios;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    raw_termios = orig_termios;
+    raw_termios.c_lflag &=
+        ~((tcflag_t) ICANON | (tcflag_t) ECHO);
+    raw_termios.c_cc[VMIN]  = 0;
+    raw_termios.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSANOW,
+              &raw_termios);
+
+    /* Loop until keypress */
+    for(;;)
+    {
+        /* Clear screen, move cursor to top */
+        printf("\033[2J\033[H");
+
+        /* Print header */
+        {
+            time_t now = time(NULL);
+            struct tm *tm = localtime(&now);
+            printf(
+                "Every %ldms: %s   "
+                "%02d:%02d:%02d"
+                "  (press any key to stop)\n\n",
+                interval_ms, watchcmd,
+                tm->tm_hour, tm->tm_min,
+                tm->tm_sec);
+        }
+
+        /* Execute the command */
+        strncpy(data.CLIcmdline, watchcmd,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        CLI_execute_line();
+
+        fflush(stdout);
+
+        /* Sleep in small increments, checking
+         * for keypress */
+        {
+            long slept = 0;
+            long step = 50000; /* 50 ms */
+            while(slept < interval_ms * 1000)
+            {
+                struct timeval tv;
+                fd_set fds;
+                tv.tv_sec  = 0;
+                tv.tv_usec = step;
+                FD_ZERO(&fds);
+                FD_SET(STDIN_FILENO, &fds);
+                int r = select(
+                    STDIN_FILENO + 1,
+                    &fds, NULL, NULL, &tv);
+                if(r > 0)
+                {
+                    /* Consume the keypress */
+                    char discard;
+                    if(read(STDIN_FILENO,
+                            &discard, 1) > 0)
+                    {
+                        /* ignore value */
+                    }
+                    goto watch_done;
+                }
+                slept += step;
+            }
+        }
+    }
+
+watch_done:
+    /* Restore original terminal settings */
+    tcsetattr(STDIN_FILENO, TCSANOW,
+              &orig_termios);
+    printf("\nwatch stopped.\n");
+
+    return RETURN_SUCCESS;
+}
+
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -400,6 +1030,8 @@ errno_t CLI_execute_line()
         (struct timespec *) malloc(sizeof(struct timespec));
     char calctmpimname[STRINGMAXLEN_IMGNAME];
 
+    /* Expand aliases before anything else */
+    cli_alias_expand();
 
 #ifdef USE_READLINE
     add_history(data.CLIcmdline);
