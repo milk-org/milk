@@ -8,7 +8,7 @@ the pieces fit together before diving into code.
 See also: [Programmer's Guide](programmers_guide.md) ·
 [Dependency Graph](dependency_graph.md)
 
----
+***
 
 ## 1. Purpose
 
@@ -19,7 +19,7 @@ independent compute units that communicate through
 zero-copy shared memory, enabling microsecond-latency
 data pipelines.
 
----
+***
 
 ## 2. Design Philosophy
 
@@ -30,7 +30,7 @@ data pipelines.
 | **Live reconfiguration** | Parameters live in shared memory (FPS); any process, CLI, or TUI can change them while the pipeline runs. |
 | **Layered build** | The build system is tiered (Engine → Core → Full) so embedded or headless deployments only compile the minimal subset. |
 
----
+***
 
 ## 3. The Three Pillars
 
@@ -71,14 +71,14 @@ graph TD
 | **FPS** (Function Processing System) | `fps.*.shm` | [fps.md](fps.md) |
 | **processinfo** | `proc.*.shm` | [procinfo.md](procinfo.md) |
 
----
+***
 
 ## 4. Layered Architecture
 
 The codebase is organized in strict dependency layers.
 Lower layers have no knowledge of higher ones.
 
-```
+```text
 ┌──────────────────────────────────────────┐
 │            User Interfaces               │
 │  milk-cli · milk-fpsCTRL · streamCTRL    │
@@ -116,11 +116,11 @@ compiled independently:
 → Details: [Build Tiers](install/build_tiers.md) ·
 [Dependency Graph](dependency_graph.md)
 
----
+***
 
 ## 5. Source Tree
 
-```
+```text
 milk/
 ├── src/
 │   ├── engine/                        ← Engine tier
@@ -179,7 +179,7 @@ milk/
 └── _build/                            ← Build output
 ```
 
----
+***
 
 ## 6. Data Flow
 
@@ -208,12 +208,13 @@ sequenceDiagram
 ```
 
 Each box in this pipeline is an independent process:
+
 - Connected only through shared-memory streams
 - Configured via its own FPS instance
 - Monitored via processinfo heartbeats
 - Running inside a dedicated tmux session
 
----
+***
 
 ## 7. Compute Units (Standalone Executables)
 
@@ -221,7 +222,7 @@ The fundamental building block is the **compute unit** —
 a self-contained executable that reads input streams,
 applies computation, and writes output streams.
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │         Standalone Executable           │
 │         (milk-fpsexec-*)                │
@@ -248,6 +249,7 @@ documented in the template
 `src/milk_module_example/examplefunc_fps_cli_poc.c`.
 
 They can run in two modes:
+
 - **CLI mode**: loaded as a shared library inside
   `milk-cli`
 - **Standalone mode**: independent binary
@@ -257,7 +259,7 @@ They can run in two modes:
 [Programmer's Guide](programmers_guide.md) ·
 [FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
 
----
+***
 
 ## 8. Plugin System
 
@@ -327,7 +329,7 @@ graph TD
 
 → Details: [Adding Plugins](developer/plugins.md)
 
----
+***
 
 ## 9. User Interfaces
 
@@ -343,7 +345,7 @@ graph TD
 → Details: [CLI Overview](cli/CLI_Overview.md) ·
 [Scripts Reference](scripts.md)
 
----
+***
 
 ## 10. Multi-Host Operation
 
@@ -352,7 +354,7 @@ FPS shared memory to a central
 [Valkey](https://valkey.io/) key-value store, enabling
 cross-host parameter sync with PubSub notifications.
 
-```
+```text
 Host A  ←──►  Valkey Server  ←──►  Host B
 (FPS SHM)     (fps:hostA:*)        (FPS SHM)
               (fps:hostB:*)
@@ -360,7 +362,7 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 
 → Details: [Valkey Integration](valkey.md)
 
----
+***
 
 ## 11. Document Map
 
@@ -379,5 +381,5 @@ Host A  ←──►  Valkey Server  ←──►  Host B
 | [Build Tiers](install/build_tiers.md) | Compilation tier configuration |
 | [Adding Plugins](developer/plugins.md) | Plugin module creation guide |
 
----
+***
 ← [Documentation Index](index.md)

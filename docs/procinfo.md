@@ -27,6 +27,7 @@ and provides a visual overview of all processes that have
 registered themselves with `procinfo`.
 
 ### 2.1. State Tracking
+
 A correctly implemented compute unit will constantly
 update its state so tools like `milk-procinfo-list` can
 display:
@@ -41,6 +42,7 @@ display:
   for restart.
 
 ## 3. Loop Profiling
+
 Along with boolean states, `procinfo` actively measures
 loop execution frequencies. It can display the **Hz**
 (loops per second) for active pipelines. This means
@@ -48,6 +50,7 @@ performance drops or bottlenecks in stream processing are
 immediately visible from the top-level dashboard.
 
 ## 4. Standalone Executable Integration (`fpsexec`)
+
 When utilizing the standard V2 templates for standalone
 modules (`FPS_MAIN_STANDALONE_V2`), `procinfo` is
 automatically enabled and registered for you. Your
@@ -55,6 +58,7 @@ executable simply needs to correctly execute its while
 loop, and the framework pulses the heartbeat for you.
 
 ## 5. C Code Template
+
 For custom usage without the standard V2 template, here is how you initialize and use `PROCESSINFO`:
 
 ```c

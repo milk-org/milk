@@ -5,8 +5,8 @@ Latest Version: [![latesttag](https://img.shields.io/github/tag/milk-org/milk.sv
 
 | Branch    | Build   | Docker Deployment    |  Activity   |
 |-------------|-------------|-------------|-------------|
-**main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
-**dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
+| **main**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=main)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/main.svg)|
+| **dev**|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/cmake.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/cmake.yml)|[![CMake badge](https://github.com/milk-org/milk/actions/workflows/docker-image.yml/badge.svg?branch=dev)](https://github.com/milk-org/milk/actions/workflows/docker-image.yml)|![lastcommit](https://img.shields.io/github/last-commit/milk-org/milk/dev.svg)|
 
 [![Docs Lint](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml/badge.svg)](https://github.com/milk-org/milk/actions/workflows/docs-lint.yml)
 
@@ -27,7 +27,8 @@ milk-core for **milk** package
 
 > **📖 [Documentation](https://milk-org.github.io/milk/)** · **📚 [API Reference](https://milk-org.github.io/milk/api/html/)** · **🚀 [Getting Started](https://milk-org.github.io/milk/install/compile/)**
 
-### _Looking for something else?_
+## _Looking for something else?_
+
 [CACAO Github repository](https://www.github.com/cacao-org/cacao) | [CACAO Documentation](https://cacao-org.github.io/docs/)
 
 [ImageStreamIO core library](https://www.github.com/milk-org/imagestreamio)

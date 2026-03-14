@@ -17,10 +17,11 @@ All plugins belong inside the `plugins/` directory at the root of the project.
 Milk's configuration script uses `find -mindepth 2 -maxdepth 2` inside `plugins/` to discover subdirectories containing a `CMakeLists.txt`.
 
 Typically, plugins are placed inside an intermediate group folder such as:
+
 - `plugins/milk-extra-src/<your_plugin>`
 - `plugins/cacao-src/<your_plugin>` (For `cacao` AO loop modules)
 
-> [!NOTE] 
+> [!NOTE]
 > Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
 
 ### Standalone Executables Relation to Core
@@ -96,6 +97,7 @@ add_cacao_standalone_plugins(my_cacao_func my_cacao_func.c fft imagegen)
 ## 5. Reviewing the Build
 
 Once your `CMakeLists.txt` and C sources are in progress:
+
 1. Navigate back to the main `milk` build directory.
 2. Run `cmake ..`
 3. Look for the message `ADDING SUBDIR = plugins/milk-extra-src/my_new_plugin`. If you see that, `milk` has successfully hooked your plugin into the global project.

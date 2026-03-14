@@ -48,4 +48,5 @@ Linear algebra operations: SVD, pseudo-inverse, matrix multiplication via BLAS, 
 | `milk-fpsexec-linalg-modalremap` | `modalremap.c` | Remap input using inter-space mapping |
 
 ## Dependencies
+
 - `CLIcore` (includes transitive: `milkfps`, `ImageStreamIO`, `milkdata`)
