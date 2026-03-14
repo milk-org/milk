@@ -1,32 +1,39 @@
-site_name: milk Documentation
+site_name: milk
 site_url: https://milk-org.github.io/milk/
+site_description: >-
+  High-performance real-time image processing framework
+  for Adaptive Optics and scientific computing.
 repo_url: https://github.com/milk-org/milk
 repo_name: milk-org/milk
 
 theme:
   name: material
+  font:
+    text: Roboto
+    code: Roboto Mono
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: indigo
-      accent: cyan
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: indigo
-      accent: cyan
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
+      accent: indigo
   features:
-    - search.suggest
-    - search.highlight
+    # Navigation
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.path
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
+    # Content
     - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    # TOC
     - toc.follow
   icon:
     repo: fontawesome/brands/github
@@ -39,16 +46,17 @@ nav:
     - Installation: install/compile.md
     - Build Tiers: install/build_tiers.md
     - CLI Overview: cli/CLI_Overview.md
-  - Core Concepts:
+    - FAQ & Troubleshooting: faq.md
+  - User Guide:
     - Streams: streams.md
     - FPS: fps.md
     - Process Info: procinfo.md
-  - Architecture:
-    - Overview: architecture.md
-    - "Programmer's Guide": programmers_guide.md
-    - Dependency Graph: dependency_graph.md
-    - FPS Standalone Modes: FPS_Standalone_CMD_Modes.md
-  - Developer:
+    - CLI Syntax: cli/CLIcore.md
+    - Readline Keys: cli/helpreadline.md
+    - Scripts: scripts.md
+    - Python API: python.md
+    - Valkey Integration: valkey.md
+  - Developer Guide:
     - Tutorial: developer/tutorial.md
     - Coding Standards: developer/coding_standards.md
     - Adding Plugins: developer/plugins.md
@@ -57,19 +65,17 @@ nav:
     - Loading Modules: developer/LoadingModules.md
     - Documenting Code: developer/DocumentingCode.md
     - Working with Git: developer/WorkingWithGit.md
-  - Tools & Reference:
-    - CLI Syntax: cli/CLIcore.md
-    - Readline Keys: cli/helpreadline.md
-    - Scripts: scripts.md
-    - Python API: python.md
-    - Valkey Integration: valkey.md
+    - Code Assist: code_assist.md
+  - Architecture:
+    - Overview: architecture.md
+    - "Programmer's Guide": programmers_guide.md
+    - Dependency Graph: dependency_graph.md
+    - FPS Standalone Modes: FPS_Standalone_CMD_Modes.md
   - Operations:
     - Performance Tuning: performance.md
     - PGO & LTO: pgo.md
     - Debugging: debugging.md
-  - FAQ: faq.md
-  - Code Assist: code_assist.md
-  - API Reference (Doxygen): api/html/index.html
+  - API Reference: api/html/index.html
 
 markdown_extensions:
   - admonition
@@ -82,14 +88,27 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.snippets
+  - attr_list
+  - def_list
   - tables
   - toc:
       permalink: true
+      toc_depth: 3
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/milk-org/milk
+      name: milk on GitHub
+
+extra_css:
+  - stylesheets/extra.css
