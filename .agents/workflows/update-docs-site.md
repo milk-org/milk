@@ -32,6 +32,17 @@ subdirectory:
 | Developer guides | `docs/developer/` |
 | Top-level concepts | `docs/` (root) |
 
+Add YAML frontmatter to the very top of the new markdown
+file to categorize it in the Tag Index (`docs/tags.md`):
+
+```yaml
+---
+tags:
+  - topic1
+  - topic2
+---
+```
+
 Use `<details markdown="1">` (not bare `<details>`) for
 collapsible sections containing markdown tables or code.
 
