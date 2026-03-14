@@ -1,3 +1,10 @@
+---
+tags:
+  - python
+  - pymilk
+  - api
+---
+
 # Python API
 
 Accessing `milk` shared memory streams from Python using
