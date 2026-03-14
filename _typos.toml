@@ -26,6 +26,7 @@ imcXprod = "imcXprod"
 mkCPAmodes = "mkCPAmodes"
 thi = "thi"
 fils = "fils"
+permut = "permut"
 
 [default.extend-identifiers]
 CLIcmddata = "CLIcmddata"
