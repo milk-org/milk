@@ -33,3 +33,22 @@ request. Never commit directly to `framework-dev`
 
 5. **Do not merge** — let the maintainer review
    and merge.
+
+## Parallel Development (Git Worktrees)
+
+To work on multiple feature tracks simultaneously (e.g., CLI, Performance, Documentation), use **Git Worktrees** rather than switching branches in a single directory.
+
+1. Keep your main repository (e.g., `~/src/milk`) on `framework-dev`.
+2. Create dedicated worktrees for different tracks next to your main repository:
+   ```bash
+   git worktree add ../milk-docs -b docs/current-task framework-dev
+   git worktree add ../milk-cli -b feat/current-task framework-dev
+   ```
+3. **Reusing Worktrees:** When starting a new task in the same track, do not create a new worktree. Go to the existing worktree, update `framework-dev`, and checkout a new branch:
+   ```bash
+   cd ~/src/milk-cli
+   git checkout framework-dev
+   git pull --ff-only origin framework-dev
+   git checkout -b feat/next-task
+   ```
+4. **Build Isolation:** Always use a dedicated `_build` directory inside each worktree so CMake caches and object files remain isolated.
