@@ -87,7 +87,7 @@ are compiled out via `#ifdef USE_CFITSIO` guards:
 
 | Module | Effect |
 |--------|--------|
-| `COREMOD_iofits` | Not built — `loadfits` / `saveFITS` unavailable |
+| `COREMOD_iofits` | Not built — `iofits.loadfits` / `iofits.saveFITS` unavailable |
 | `COREMOD_memory` | `logshmim`, `saveall`, `stream_pixmapdecode` print a warning instead of writing FITS |
 | `COREMOD_arith` | No impact (never used cfitsio) |
 | `COREMOD_tools` | No impact |
