@@ -356,6 +356,40 @@ Each module directory should have a `README.md` with:
 
 </details>
 
+## 8. Parallel Development using Git Worktrees
+
+The `milk` project enforces strict branching rules where all work must occur on feature branches off of `framework-dev`. If you need to work on multiple tracks simultaneously (e.g., optimizing performance while also updating documentation or fixing a CLI bug), you should use **Git Worktrees**.
+
+Git worktrees allow you to have multiple isolated working directories that share the exact same underlying local `.git` repository.
+
+### Best Practices
+
+1. **Keep the Main Clone Clean:**
+   Keep your primary repository (e.g., `~/src/milk`) checked out to `framework-dev`.
+
+2. **Create Track-Specific Worktrees:**
+   Create sibling directories for your parallel tracks.
+   ```bash
+   cd ~/src/milk
+   git worktree add ../milk-docs -b docs/my-task framework-dev
+   git worktree add ../milk-cli -b feat/my-cli-task framework-dev
+   ```
+
+3. **Isolate Builds:**
+   Each worktree should have its own dedicated `_build` directory. This ensures CMake caches and compiled object files do not interfere with each other when you context-switch.
+
+4. **Reusing Worktrees:**
+   When you finish a task (e.g., your CLI feature is merged), **do not** delete the worktree. Reuse it for your next CLI task to preserve your CMake build cache:
+   ```bash
+   cd ~/src/milk-cli
+   git checkout framework-dev
+   git pull --ff-only origin framework-dev
+   git checkout -b feat/my-next-cli-task
+   ```
+
+> [!TIP]
+> A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
+
 ***
 
 
