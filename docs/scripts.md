@@ -16,6 +16,7 @@ See also: [Streams](streams.md) ·
 | `milk-argparse` | Argument parsing helper for milk scripts |
 | `milk-script-std-config` | Standard configuration for milk scripts |
 | `milk-scriptexample` | Example/template for writing new scripts |
+| `milk-setup-worktrees` | Set up parallel development Git worktrees |
 | `milk-exec` | Execute a milk CLI command non-interactively |
 | `milk-cli-all` | Launch milk-cli on all accessible instances |
 | `milk-commands` | List all available milk CLI commands |
