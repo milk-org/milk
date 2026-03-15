@@ -90,7 +90,7 @@ IMPORTANT COMMANDS
 
 > ci
 	# compilation time and memory usage
-> listim
+> mem.listim
 	# list all images in memory
 > listimf <filename>
 	# list all images in memory and write output to file <filename>
@@ -100,7 +100,7 @@ IMPORTANT COMMANDS
 	# prints history of all commands
 > quit
 	# exit program (exit also works)
-> mk2Dim <im> <xs> <ys>
+> mem.mk2Dim <im> <xs> <ys>
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 
 -----------------------------------------------------------------------------------
@@ -110,28 +110,28 @@ FITSIO is used for FITS files I/O, see FITSIO documentation for more detailed in
 
 LOADING FILES
 
-> loadfits <fname> <imname>
+> iofits.loadfits <fname> <imname>
 	# load FITS file <fname> into image <imname>
-> loadfits im1.fits imf1
+> iofits.loadfits im1.fits imf1
 	# load file im1.fits in memory with name imf1
-> loadfits im1.fits
+> iofits.loadfits im1.fits
 	# load file im1.fits in memory with name im1 (default name is composed of all chars before first ".")
-> loadfits im1.fits.gz im1
+> iofits.loadfits im1.fits.gz im1
 	# load compressed file
 
 SAVING FILES
 
-> savefits  <imname> <fname>
+> iofits.saveFITS  <imname> <fname>
 	# save image <imname> into FITS file <fname>
-> savefits im1 imf1.fits
+> iofits.saveFITS im1 imf1.fits
 	# write image im1 to disk file imf1.fits
-> savefits im1
+> iofits.saveFITS im1
 	# write image im1 to disk file im1.fits (default file name = image name + ".fits")
-> savefits im1 "!im1.fits"
+> iofits.saveFITS im1 "!im1.fits"
 	# overwrite file im1.fits if it exists
-> savefits im1 "../dir2/im1.fits"
+> iofits.saveFITS im1 "../dir2/im1.fits"
 	# specify full path
-> savefits im1 im1.fits.gz
+> iofits.saveFITS im1 im1.fits.gz
 	# save compressed image
 
 -----------------------------------------------------------------------------------
@@ -150,14 +150,14 @@ cat myscript.txt > clififo
 More complex commands can be issued within the executable using the fifo.
 For example, to load all im*.fits files in memory, you can type within the executable:
 
-> !ls im*.fits | xargs -I {} echo loadfits {} >> clififo
+> !ls im*.fits | xargs -I {} echo iofits.loadfits {} >> clififo
 
 
 USING "imlist.txt" AND fifo
 
 If you start the executable with the "--listimf" option,  the file "imlist.txt" contains the list of images currently in memory in a ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files :
 
-> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo saveflfits {} {}_tmp.fits >> clififo
+> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo iofits.saveFITS {} {}_tmp.fits >> clififo
 
 Note that if you launch several instances of the executable in the same directory, they will share the same fifo - this is generally a bad idea, as there is no easy way to control wich of the programs will read and execute the fifo commands.
 
