@@ -71,7 +71,7 @@ milk-cli > <command> <arg1> <arg2>   # comment
 
 ```text
 milk-cli > mem.<TAB>           # list commands starting with mem.
-milk-cli > loadfits my<TAB>    # complete filename starting with my
+milk-cli > iofits.loadfits my<TAB>    # complete filename starting with my
 ```
 
 ## 4. Ghost Suggestions
@@ -123,11 +123,11 @@ dim for source file paths.
 
 ```text
 milk-cli > ci                      # compilation info & memory usage
-milk-cli > listim                  # list all images in memory
+milk-cli > mem.listim                  # list all images in memory
 milk-cli > listimf <file>          # list images, write to file
 milk-cli > !<syscmd>               # execute system command
 milk-cli > quit                    # exit (or: exit, exitCLI)
-milk-cli > creaim <im> <xs> <ys>   # create 2D image
+milk-cli > mem.mk2Dim <im> <xs> <ys>   # create 2D image
 milk-cli > usleep <usec>           # sleep for <usec> microseconds
 milk-cli > dpsingle                # set default precision to float
 milk-cli > dpdouble                # set default precision to double
@@ -141,11 +141,11 @@ FITSIO is used for FITS file I/O. Requires `USE_CFITSIO=ON`.
 See [Build Tiers](../install/build_tiers.md).
 
 ```text
-milk-cli > loadfits im1.fits imf1       # load as "imf1"
-milk-cli > loadfits im1.fits            # auto-name from filename
-milk-cli > loadfits im1.fits.gz im1     # load compressed FITS
-milk-cli > save_fl im1 imf1.fits        # save as float
-milk-cli > save_fl im1 "!im1.fits"      # overwrite existing file
+milk-cli > iofits.loadfits im1.fits imf1       # load as "imf1"
+milk-cli > iofits.loadfits im1.fits            # auto-name from filename
+milk-cli > iofits.loadfits im1.fits.gz im1     # load compressed FITS
+milk-cli > iofits.save_fl im1 imf1.fits        # save as float
+milk-cli > iofits.save_fl im1 "!im1.fits"      # overwrite existing file
 ```
 
 ## 10. Persistent History
@@ -175,18 +175,18 @@ The expanded command is printed with a `>>` prefix before
 execution.
 
 ```text
-milk-cli > loadfits im1.fits im1
-milk-cli > !!                   # re-runs: loadfits im1.fits im1
-milk-cli > save_fl !$           # expands to: save_fl im1
+milk-cli > iofits.loadfits im1.fits im1
+milk-cli > !!                   # re-runs: iofits.loadfits im1.fits im1
+milk-cli > iofits.save_fl !$    # expands to: iofits.save_fl im1
 ```
 
 ## 12. Fuzzy History Search
 
 ```text
-milk-cli > searchhist listim
+milk-cli > searchhist mem.listim
 ```
 
-Finds all history entries containing "listim" (case-
+Finds all history entries containing "mem.listim" (case-
 insensitive) and highlights the matching substring in
 yellow. Shows match count at the end.
 
@@ -428,13 +428,13 @@ the CLI.
 **From inside `milk-cli`:**
 
 ```text
-milk-cli > !ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
+milk-cli > !ls im*.fits | xargs -I {} echo iofits.loadfits {} > cmdfile.txt
 ```
 
 **From a separate shell (while `milk-cli` is running):**
 
 ```bash
-$ ls im*.fits | xargs -I {} echo loadfits {} > cmdfile.txt
+$ ls im*.fits | xargs -I {} echo iofits.loadfits {} > cmdfile.txt
 ```
 
 ### Using `imlist.txt` and `cmdfile.txt`
@@ -444,7 +444,7 @@ filter and act on the list:
 
 ```text
 milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
-        | xargs -I {} echo save_fl {} {}_tmp.fits > cmdfile.txt
+        | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > cmdfile.txt
 ```
 
 ---

@@ -98,7 +98,7 @@ Lets run it :
 	milk-cli > mex.func1 im1 1.2
 
 	# check the image is in memory
-	milk-cli > listim
+	milk-cli > mem.listim
 
 
 
