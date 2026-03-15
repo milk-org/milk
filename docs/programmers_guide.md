@@ -369,6 +369,7 @@ Git worktrees allow you to have multiple isolated working directories that share
 
 2. **Create Track-Specific Worktrees:**
    Create sibling directories for your parallel tracks.
+
    ```bash
    cd ~/src/milk
    git worktree add ../milk-docs -b docs/my-task framework-dev
@@ -380,6 +381,7 @@ Git worktrees allow you to have multiple isolated working directories that share
 
 4. **Reusing Worktrees:**
    When you finish a task (e.g., your CLI feature is merged), **do not** delete the worktree. Reuse it for your next CLI task to preserve your CMake build cache:
+
    ```bash
    cd ~/src/milk-cli
    git checkout framework-dev
