@@ -24,6 +24,7 @@ to external source trees or git submodules.
 All code changes **must** go through a pull request. Never commit directly to `framework-dev` (or `main`).
 
 **CRITICAL BRANCHING RULE:**
+
 - You are **STRICTLY FORBIDDEN** from modifying or pushing to the `dev` branch for `milk`, `cacao`, and `ImageStreamIO`.
 - You must **ONLY** push to and merge into `framework-dev` or feature branches derived from `framework-dev`.
 
@@ -82,10 +83,12 @@ When releasing a new version from `framework-dev` (or the equivalent stable bran
 
 Merge `framework-dev` into `main`, then tag:
 
-	$ git checkout main
-	$ git merge framework-dev
-	$ git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
-	$ git push origin main --tags
+```bash
+$ git checkout main
+$ git merge framework-dev
+$ git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
+$ git push origin main --tags
+```
 
 > [!NOTE]
 > Modules that are shared between packages (e.g., `milk` and `cacao`) can have

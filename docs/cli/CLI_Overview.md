@@ -1,3 +1,9 @@
+---
+tags:
+  - cli
+  - getting-started
+---
+
 # CLI Overview
 
 `milk` compiles into multiple executables:

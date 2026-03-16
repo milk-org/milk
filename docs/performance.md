@@ -1,3 +1,10 @@
+---
+tags:
+  - performance
+  - optimization
+  - developer-guide
+---
+
 # Performance Tuning
 
 Guidelines for optimizing `milk` pipeline throughput and
