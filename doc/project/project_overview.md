@@ -1,14 +1,21 @@
-Brief description.
+# Project overview
 
-Work packages.
+This document is to describe CACAO++ project structure, work packages, and be a reference for planning and execution.
+I want to provide a high-level view of progress and milestones, and keep track of various KPI.
 
-Advancement of the project.
+## Summary
 
-Tasks, issues, and PRs endeavored towards the project.
+## Timeline
 
-- Tasks in other repos should only reflect software issues directly to that repo. Anything architectural should be posted here.
-- PRs can and should be tagged with appropriate WP milestones.
+## Work packages
 
-- Summary of milestones and tasks endeavored is in the sub-pages.
-- Tracking of publications as well
-- No tracking of other KPIs, since adoption by various people is not inherently a public information
+## Achievements
+
+- Summary of milestones and associated production
+
+## KPIs
+
+- Adoption
+- Publications
+- Presentations and other community events
+- Other performance metrics.
