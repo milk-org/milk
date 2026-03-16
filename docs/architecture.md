@@ -1,3 +1,9 @@
+---
+tags:
+  - architecture
+  - core-concepts
+---
+
 # Software Architecture
 
 This document presents a hierarchical overview of the

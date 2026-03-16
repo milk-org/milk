@@ -1,3 +1,10 @@
+---
+tags:
+  - developer-guide
+  - architecture
+  - c-api
+---
+
 # Programmer's Guide to `milk`
 
 Welcome to `milk`. This document serves as an overview of its core architecture and programming model. If you are reading this while setting up a new module, debugging, or wanting to write a custom module, this guide will orient you on the core concepts.
