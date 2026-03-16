@@ -1,3 +1,10 @@
+---
+tags:
+  - scripts
+  - cli
+  - automation
+---
+
 # Scripts Reference
 
 `milk` includes shell scripts for common operations. Scripts
