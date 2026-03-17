@@ -20,7 +20,7 @@
 #define OMP_NELEMENT_LIMIT 100000
 #endif
 
-double arith_image_total_IMGID(IMGID *imgin)
+double MILK_HOT arith_image_total_IMGID(IMGID *imgin)
 {
     long double lvalue; // uses long double internally
     uint64_t    nelement;
@@ -40,7 +40,8 @@ double arith_image_total_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float * restrict ptr = imgin->im->array.F;
+        float * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.F);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -51,7 +52,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        double * restrict ptr = imgin->im->array.D;
+        double * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.D);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -62,7 +64,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t * restrict ptr = imgin->im->array.UI8;
+        uint8_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -73,7 +76,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t * restrict ptr = imgin->im->array.UI16;
+        uint16_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -84,7 +88,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t * restrict ptr = imgin->im->array.UI32;
+        uint32_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -95,7 +100,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t * restrict ptr = imgin->im->array.UI64;
+        uint64_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -106,7 +112,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        int8_t * restrict ptr = imgin->im->array.SI8;
+        int8_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -117,7 +124,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        int16_t * restrict ptr = imgin->im->array.SI16;
+        int16_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -128,7 +136,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        int32_t * restrict ptr = imgin->im->array.SI32;
+        int32_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -139,7 +148,8 @@ double arith_image_total_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        int64_t * restrict ptr = imgin->im->array.SI64;
+        int64_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -170,7 +180,7 @@ double arith_image_total(const char *ID_name)
     return arith_image_total_IMGID(&imgin);
 }
 
-double arith_image_sumsquare_IMGID(IMGID *imgin)
+double MILK_HOT arith_image_sumsquare_IMGID(IMGID *imgin)
 {
     double lvalue; // uses double internally
     uint64_t    nelement;
@@ -190,7 +200,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
 
     if(datatype == _DATATYPE_FLOAT)
     {
-        float * restrict ptr = imgin->im->array.F;
+        float * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.F);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -201,7 +212,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_DOUBLE)
     {
-        double * restrict ptr = imgin->im->array.D;
+        double * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.D);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -212,7 +224,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT8)
     {
-        uint8_t * restrict ptr = imgin->im->array.UI8;
+        uint8_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI8);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -223,7 +236,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT16)
     {
-        uint16_t * restrict ptr = imgin->im->array.UI16;
+        uint16_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -234,7 +248,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT32)
     {
-        uint32_t * restrict ptr = imgin->im->array.UI32;
+        uint32_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI32);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -245,7 +260,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_UINT64)
     {
-        uint64_t * restrict ptr = imgin->im->array.UI64;
+        uint64_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.UI64);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -256,7 +272,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT8)
     {
-        int8_t * restrict ptr = imgin->im->array.SI8;
+        int8_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI8);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -267,7 +284,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT16)
     {
-        int16_t * restrict ptr = imgin->im->array.SI16;
+        int16_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI16);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -278,7 +296,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT32)
     {
-        int32_t * restrict ptr = imgin->im->array.SI32;
+        int32_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI32);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
@@ -289,7 +308,8 @@ double arith_image_sumsquare_IMGID(IMGID *imgin)
     }
     else if(datatype == _DATATYPE_INT64)
     {
-        int64_t * restrict ptr = imgin->im->array.SI64;
+        int64_t * MILK_RESTRICT ptr =
+            MILK_ASSUME_ALIGNED(imgin->im->array.SI64);
 #ifdef _OPENMP
         #pragma omp for simd
 #endif
