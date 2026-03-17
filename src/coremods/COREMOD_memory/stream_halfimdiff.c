@@ -67,7 +67,7 @@ static long long p_semtrig = 3;
  * Compute difference between two halves of an
  * image stream. Triggers on instream.
  */
-imageID COREMOD_MEMORY_stream_halfimDiff(
+imageID MILK_HOT COREMOD_MEMORY_stream_halfimDiff(
     const char *IDstream_name,
     const char *IDstreamout_name,
     long        semtrig)
@@ -149,95 +149,105 @@ imageID COREMOD_MEMORY_stream_halfimDiff(
         switch(datatype)
         {
         case _DATATYPE_UINT8:
+        {
+            uint8_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.UI8);
+            int16_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI16);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI16[ii] =
-                    img0.im->array.UI8[ii]
-                    - img0.im->array.UI8[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_UINT16:
+        {
+            uint16_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.UI16);
+            int32_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI32);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI32[ii] =
-                    img0.im->array.UI16[ii]
-                    - img0.im->array.UI16[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_UINT32:
+        {
+            uint32_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.UI32);
+            int64_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI64[ii] =
-                    img0.im->array.UI32[ii]
-                    - img0.im->array.UI32[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_UINT64:
+        {
+            uint64_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.UI64);
+            int64_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI64[ii] =
-                    img0.im->array.UI64[ii]
-                    - img0.im->array.UI64[
-                        xysize + ii];
-            }
+                pout[ii] = (int64_t)pin[ii] - (int64_t)pin[xysize + ii];
             break;
+        }
         case _DATATYPE_INT8:
+        {
+            int8_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.SI8);
+            int16_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI16);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI16[ii] =
-                    img0.im->array.SI8[ii]
-                    - img0.im->array.SI8[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_INT16:
+        {
+            int16_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.SI16);
+            int32_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI32);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI32[ii] =
-                    img0.im->array.SI16[ii]
-                    - img0.im->array.SI16[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_INT32:
+        {
+            int32_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.SI32);
+            int64_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI64[ii] =
-                    img0.im->array.SI32[ii]
-                    - img0.im->array.SI32[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_INT64:
+        {
+            int64_t * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.SI64);
+            int64_t * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.SI64);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.SI64[ii] =
-                    img0.im->array.SI64[ii]
-                    - img0.im->array.SI64[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_FLOAT:
+        {
+            float * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.F);
+            float * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.F);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.F[ii] =
-                    img0.im->array.F[ii]
-                    - img0.im->array.F[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         case _DATATYPE_DOUBLE:
+        {
+            double * MILK_RESTRICT pin =
+                MILK_ASSUME_ALIGNED(img0.im->array.D);
+            double * MILK_RESTRICT pout =
+                MILK_ASSUME_ALIGNED(imgout.im->array.D);
             for(uint64_t ii = 0; ii < xysize; ii++)
-            {
-                imgout.im->array.D[ii] =
-                    img0.im->array.D[ii]
-                    - img0.im->array.D[
-                        xysize + ii];
-            }
+                pout[ii] = pin[ii] - pin[xysize + ii];
             break;
+        }
         default:
             PRINT_ERROR("unsupported datatype");
             break;

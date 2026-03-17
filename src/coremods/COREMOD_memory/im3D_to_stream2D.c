@@ -103,7 +103,7 @@ static errno_t extract_slice_to_2D(
         * ImageStreamIO_typesize(
             inimg->md->datatype);
 
-    memcpy(outimg->im->array.raw,
+    __builtin_memcpy(outimg->im->array.raw,
            inimg->im->array.raw
            + slice_idx * framesize,
            framesize);

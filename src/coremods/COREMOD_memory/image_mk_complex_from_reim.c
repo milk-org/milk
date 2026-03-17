@@ -98,14 +98,24 @@ errno_t mk_complex_from_reim_IMGID(
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0;
-             ii < nelement; ii++)
+        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
+        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
+        complex_float * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CF);
+
+#ifdef _OPENMP
+        #pragma omp parallel \
+            if (nelement > OMP_NELEMENT_LIMIT)
         {
-            imgout->im->array.CF[ii].re =
-                imgre->im->array.F[ii];
-            imgout->im->array.CF[ii].im =
-                imgim->im->array.F[ii];
+            #pragma omp for simd
+#endif
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
+                ptr_out[ii].re = ptr_re[ii];
+                ptr_out[ii].im = ptr_im[ii];
+            }
+#ifdef _OPENMP
         }
+#endif
     }
     else if((datatype_re == _DATATYPE_FLOAT)
             && (datatype_im == _DATATYPE_DOUBLE))
@@ -114,14 +124,24 @@ errno_t mk_complex_from_reim_IMGID(
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0;
-             ii < nelement; ii++)
+        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
+        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
+
+#ifdef _OPENMP
+        #pragma omp parallel \
+            if (nelement > OMP_NELEMENT_LIMIT)
         {
-            imgout->im->array.CD[ii].re =
-                imgre->im->array.F[ii];
-            imgout->im->array.CD[ii].im =
-                imgim->im->array.D[ii];
+            #pragma omp for simd
+#endif
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
+                ptr_out[ii].re = ptr_re[ii];
+                ptr_out[ii].im = ptr_im[ii];
+            }
+#ifdef _OPENMP
         }
+#endif
     }
     else if((datatype_re == _DATATYPE_DOUBLE)
             && (datatype_im == _DATATYPE_FLOAT))
@@ -130,14 +150,24 @@ errno_t mk_complex_from_reim_IMGID(
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0;
-             ii < nelement; ii++)
+        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
+        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
+
+#ifdef _OPENMP
+        #pragma omp parallel \
+            if (nelement > OMP_NELEMENT_LIMIT)
         {
-            imgout->im->array.CD[ii].re =
-                imgre->im->array.D[ii];
-            imgout->im->array.CD[ii].im =
-                imgim->im->array.F[ii];
+            #pragma omp for simd
+#endif
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
+                ptr_out[ii].re = ptr_re[ii];
+                ptr_out[ii].im = ptr_im[ii];
+            }
+#ifdef _OPENMP
         }
+#endif
     }
     else if((datatype_re == _DATATYPE_DOUBLE)
             && (datatype_im == _DATATYPE_DOUBLE))
@@ -146,14 +176,24 @@ errno_t mk_complex_from_reim_IMGID(
         imgout->mdt->datatype = datatype_out;
         createimagefromIMGID(imgout);
 
-        for(uint64_t ii = 0;
-             ii < nelement; ii++)
+        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
+        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgout->im->array.CD);
+
+#ifdef _OPENMP
+        #pragma omp parallel \
+            if (nelement > OMP_NELEMENT_LIMIT)
         {
-            imgout->im->array.CD[ii].re =
-                imgre->im->array.D[ii];
-            imgout->im->array.CD[ii].im =
-                imgim->im->array.D[ii];
+            #pragma omp for simd
+#endif
+            for(uint64_t ii = 0; ii < nelement; ii++)
+            {
+                ptr_out[ii].re = ptr_re[ii];
+                ptr_out[ii].im = ptr_im[ii];
+            }
+#ifdef _OPENMP
         }
+#endif
     }
     else
     {

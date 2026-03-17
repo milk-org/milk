@@ -97,19 +97,20 @@ errno_t mk_reim_from_complex_IMGID(
 
         imgre->md[0].write = 1;
         imgim->md[0].write = 1;
+        complex_float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CF);
+        float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
+        float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for simd
 #endif
-            for(uint64_t ii = 0;
-                 ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                imgre->im->array.F[ii] =
-                    imgin->im->array.CF[ii].re;
-                imgim->im->array.F[ii] =
-                    imgin->im->array.CF[ii].im;
+                ptr_re[ii] = ptr_in[ii].re;
+                ptr_im[ii] = ptr_in[ii].im;
             }
 #ifdef _OPENMP
         }
@@ -141,19 +142,20 @@ errno_t mk_reim_from_complex_IMGID(
 
         imgre->md[0].write = 1;
         imgim->md[0].write = 1;
+        complex_double * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CD);
+        double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
+        double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for simd
 #endif
-            for(uint64_t ii = 0;
-                 ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                imgre->im->array.D[ii] =
-                    imgin->im->array.CD[ii].re;
-                imgim->im->array.D[ii] =
-                    imgin->im->array.CD[ii].im;
+                ptr_re[ii] = ptr_in[ii].re;
+                ptr_im[ii] = ptr_in[ii].im;
             }
 #ifdef _OPENMP
         }
