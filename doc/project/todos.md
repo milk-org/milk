@@ -1,0 +1,4 @@
+- Add more hooks and increase the automation
+  - Add an automated .md formatter
+- Integrate github workflows
+- Define communication tooling
