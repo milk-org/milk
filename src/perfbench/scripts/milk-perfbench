@@ -289,14 +289,38 @@ fi
 # PARSE PERF STAT OUTPUT
 # =========================================
 
-# Extract counters from perf stat JSON lines
+# Extract counters from perf stat JSON lines.
+# On hybrid CPUs (Intel P+E), events appear as
+# "cpu_atom/cycles/" and "cpu_core/cycles/"
+# instead of plain "cycles". We match the event
+# basename and sum values from all core types.
 get_perf_counter() {
     local event="$1"
-    grep "\"${event}\"" "${PERF_OUT}" 2>/dev/null \
-        | grep -o '"counter-value" *: *"[^"]*"' \
-        | head -1 \
-        | sed 's/.*: *"\([^"]*\)"/\1/' \
-        | tr -d ','
+    local total=0
+    local found=0
+
+    # Match exact name or */name/ pattern
+    while IFS= read -r line; do
+        val=$(echo "${line}" \
+            | grep -o \
+                '"counter-value" *: *"[^"]*"' \
+            | sed 's/.*: *"\([^"]*\)"/\1/' \
+            | tr -d ',')
+        if [ -n "${val}" ] \
+           && [ "${val}" != "<not" ]; then
+            total=$(echo "${total} + ${val}" \
+                | bc)
+            found=1
+        fi
+    done < <(grep -E \
+        "\"(${event}|[^\"]*/${event}/[^\"]*)\"" \
+        "${PERF_OUT}" 2>/dev/null)
+
+    if [ ${found} -eq 1 ]; then
+        echo "${total}"
+    else
+        echo "0"
+    fi
 }
 
 CYCLES=$(get_perf_counter "cycles")
