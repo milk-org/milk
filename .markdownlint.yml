@@ -33,3 +33,11 @@ MD012: false
 
 # Disable table column style checking (produces ~470 false positives)
 MD060: false
+
+# Allow flexible list-marker spacing — Material card grids
+# use 3-space indent after "-   " which triggers this rule.
+MD030: false
+
+# Allow indented code blocks — Material content tabs
+# (=== "tab") require 4-space-indented code fences.
+MD046: false
