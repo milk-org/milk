@@ -473,34 +473,73 @@ echo "}"
 # SUMMARY
 # =========================================
 
+# per-iteration helper: total / NBITER
+per_iter() {
+    local v="$1"
+    if [ "${v}" = "0" ] || [ -z "${v}" ]; then
+        echo "0"
+    else
+        echo "scale=1; ${v} / ${NBITER}" \
+            | bc 2>/dev/null || echo "0"
+    fi
+}
+
+FMT="  %-16s %14s %12s/iter\n"
+FMTHDR="  %-16s %14s %12s\n"
+
 echo ""
-echo "======================================="
-echo "  Benchmark Results"
-echo "======================================="
-echo "  Wall clock     : ${ELAPSED_S} s"
-echo "  Cycles         : ${CYCLES}"
-echo "  Instructions   : ${INSTRUCTIONS}"
-echo "  IPC            : ${IPC}"
-echo "  ---"
-echo "  L1d loads      : ${L1D_LOADS}"
-echo "  L1d misses     : ${L1D_MISSES} (${L1D_MISS_PCT}%)"
-echo "  L1i misses     : ${L1I_MISSES}"
-echo "  LLC loads      : ${LLC_LOADS}"
-echo "  LLC misses     : ${LLC_MISSES} (${LLC_MISS_PCT}%)"
-echo "  dTLB loads     : ${DTLB_LOADS}"
-echo "  dTLB misses    : ${DTLB_MISSES}"
-echo "  ---"
-echo "  Branch misses  : ${BRANCH_MISSES}"
-echo "  Ctx switches   : ${CTX_SWITCHES}"
+echo "=========================================="
+echo "  Benchmark Results (${NBITER} iterations)"
+echo "=========================================="
+printf "${FMTHDR}" "" "Total" "Per-iter"
+echo "  ------------------------------------------"
+printf "${FMT}" "Wall clock" \
+    "${ELAPSED_S} s" \
+    "$(echo "scale=1; ${ELAPSED_NS} / ${NBITER}" \
+        | bc) ns"
+printf "${FMT}" "Cycles" \
+    "${CYCLES}" "$(per_iter ${CYCLES})"
+printf "${FMT}" "Instructions" \
+    "${INSTRUCTIONS}" "$(per_iter ${INSTRUCTIONS})"
+printf "  %-16s %14s\n" "IPC" "${IPC}"
+echo "  ------------------------------------------"
+printf "${FMT}" "L1d loads" \
+    "${L1D_LOADS}" "$(per_iter ${L1D_LOADS})"
+printf "${FMT}" "L1d misses" \
+    "${L1D_MISSES}" "$(per_iter ${L1D_MISSES})"
+printf "  %-16s %14s\n" \
+    "  L1d miss rate" "${L1D_MISS_PCT}%"
+printf "${FMT}" "L1i misses" \
+    "${L1I_MISSES}" "$(per_iter ${L1I_MISSES})"
+printf "${FMT}" "LLC loads" \
+    "${LLC_LOADS}" "$(per_iter ${LLC_LOADS})"
+printf "${FMT}" "LLC misses" \
+    "${LLC_MISSES}" "$(per_iter ${LLC_MISSES})"
+printf "  %-16s %14s\n" \
+    "  LLC miss rate" "${LLC_MISS_PCT}%"
+printf "${FMT}" "dTLB loads" \
+    "${DTLB_LOADS}" "$(per_iter ${DTLB_LOADS})"
+printf "${FMT}" "dTLB misses" \
+    "${DTLB_MISSES}" "$(per_iter ${DTLB_MISSES})"
+echo "  ------------------------------------------"
+printf "${FMT}" "Branch misses" \
+    "${BRANCH_MISSES}" \
+    "$(per_iter ${BRANCH_MISSES})"
+printf "${FMT}" "Ctx switches" \
+    "${CTX_SWITCHES}" \
+    "$(per_iter ${CTX_SWITCHES})"
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
-    echo "  ---"
-    echo "  Median iter ns : ${PI_MED_ITER}"
-    echo "  Median exec ns : ${PI_MED_EXEC}"
-    echo "  VmPeak (kB)    : ${PI_VMPEAK}"
+    echo "  ------------------------------------------"
+    printf "  %-16s %14s\n" \
+        "Median iter" "${PI_MED_ITER} ns"
+    printf "  %-16s %14s\n" \
+        "Median exec" "${PI_MED_EXEC} ns"
+    printf "  %-16s %14s\n" \
+        "VmPeak" "${PI_VMPEAK} kB"
 fi
-echo "======================================="
+echo "=========================================="
 echo "  Results: ${RESULT_FILE}"
-echo "======================================="
+echo "=========================================="
 echo ""
 
 # =========================================

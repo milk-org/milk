@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-03-17T21:34:42Z",
+  "compute_unit": "milk-fpsexec-imggen-mkrandom",
+  "git_commit": "unknown",
+  "iterations": 10000,
+  "wall_clock_s": 3.466491,
+  "hw_counters": {
+    "cycles": 23150571413,
+    "instructions": 79095026991,
+    "ipc": 3.416,
+    "L1_dcache_loads": 26476426760,
+    "L1_dcache_misses": 1912143,
+    "L1_dcache_miss_pct": .0072,
+    "L1_icache_misses": 75200507,
+    "LLC_loads": 6044797,
+    "LLC_misses": 110124,
+    "LLC_miss_pct": 1.8217,
+    "dTLB_loads": 25657510606,
+    "dTLB_misses": 1520599,
+    "branch_misses": 84606802,
+    "branches": 20277483800,
+    "context_switches": 215,
+    "task_clock_ms": 3441300745
+  },
+  "processinfo": null
+}
