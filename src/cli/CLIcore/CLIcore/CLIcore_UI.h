@@ -46,6 +46,9 @@ errno_t cli_time(void);
 /* Command statistics */
 errno_t cli_cmdstats(void);
 
+/* Command timing */
+errno_t cli_timing_toggle(void);
+
 /* Syntax highlighting toggle */
 #ifdef USE_READLINE
 errno_t cli_syntax_highlight_toggle(void);
@@ -78,6 +81,7 @@ errno_t cli_history_show(void);
 
 /* Fuzzy history search */
 errno_t cli_searchhist(void);
+errno_t cli_fhist(void);
 
 /* Built-in cd and pwd */
 errno_t cli_cd(void);

@@ -370,6 +370,7 @@ typedef struct
     int autocomplete_arghint;
     int autocomplete_fuzzy;
     int syntax_highlight;
+    int print_cmd_timing;
     char last_argument[200];
     long        cmdNBarg;
     CMDARGTOKEN cmdargtoken[NB_ARG_MAX];

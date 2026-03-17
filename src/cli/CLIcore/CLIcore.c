@@ -506,6 +506,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
     // Enable syntax highlighting by default
     data.syntax_highlight = 1;
+    
+    // Disable command timing by default
+    data.print_cmd_timing = 0;
 
     // Load startup script (~/.milkrc)
     cli_milkrc_load();
@@ -993,6 +996,14 @@ void runCLI_cmd_init()
                        "help",
                        "int help()");
 
+    RegisterCLIcommand("fhelp",
+                       __FILE__,
+                       cli_fhelp,
+                       "interactive fuzzy help search",
+                       "no argument",
+                       "fhelp",
+                       "int cli_fhelp()");
+
     RegisterCLIcommand("?",
                        __FILE__,
                        help,
@@ -1211,6 +1222,15 @@ void runCLI_cmd_init()
                        "cmdstats",
                        "cli_cmdstats()");
 
+    RegisterCLIcommand(
+        "cli.timing",
+        __FILE__,
+        cli_timing_toggle,
+        "toggle display of command execution timing",
+        "[on|off]",
+        "cli.timing on",
+        "cli_timing_toggle()");
+
 #ifdef USE_READLINE
     RegisterCLIcommand(
         "synhl",
@@ -1274,6 +1294,24 @@ void runCLI_cmd_init()
         "<pattern>",
         "searchhist listim",
         "cli_searchhist()");
+
+    RegisterCLIcommand(
+        "fhist",
+        __FILE__,
+        cli_fhist,
+        "interactive fuzzy search history",
+        "",
+        "fhist",
+        "cli_fhist()");
+
+    RegisterCLIcommand(
+        "fparam",
+        __FILE__,
+        cli_fparam,
+        "interactive FPS parameter editor",
+        "<fpsname>",
+        "fparam cnt2push",
+        "cli_fparam()");
 
     //  init_modules();
 
