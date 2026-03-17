@@ -517,16 +517,16 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
                 }
 
                 // Fill up the transmission buffer
-                memcpy(ptr_buff_metadata,
+                __builtin_memcpy(ptr_buff_metadata,
                     &dcimg[ID].md[0],
                     sizeof(IMAGE_METADATA));
 
                 ptr_img_data_slice = ptr_img_data + framesize * slice;
-                memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
+                __builtin_memcpy(ptr_buff_data, ptr_img_data_slice, framesize);
 
                 if(TCPTRANSFERKW == 1)
                 {
-                    memcpy(ptr_buff_keywords,
+                    __builtin_memcpy(ptr_buff_keywords,
                            (char *) dcimg[ID].kw,
                            dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
@@ -809,7 +809,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         // If this is a first datagram, we're having the metadata here:
         if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
         {
-            memcpy(imgmd, buff_udp + 2, sizeof(IMAGE_METADATA));
+            __builtin_memcpy(imgmd, buff_udp + 2, sizeof(IMAGE_METADATA));
             break;
         }
     }
@@ -1084,7 +1084,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             if(buff_udp[0] == MULTIGRAM_MAGIC && buff_udp[1] == 0)
             {
                 // 0-th datagram is legit, memcpy it.
-                memcpy(buff, buff_udp + 2, first_dgram_bytes - 2);
+                __builtin_memcpy(buff, buff_udp + 2, first_dgram_bytes - 2);
             }
             else
             {
@@ -1133,7 +1133,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
                     abort_frame = 1;
                     break;
                 }
-                memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE,
+                __builtin_memcpy(buff + k_dgram * DGRAM_CHUNK_SIZE,
                     buff_udp + 2,
                     this_dgram_bytes);
             }
@@ -1142,12 +1142,12 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         {
 
             // Copy the data !
-            memcpy(ptr_dest_data_sliceroot, ptr_buff_data, framesize);
+            __builtin_memcpy(ptr_dest_data_sliceroot, ptr_buff_data, framesize);
 
             if(TCPTRANSFERKW == 1)
             {
                 // copy kw
-                memcpy(dcimg[ID].kw,
+                __builtin_memcpy(dcimg[ID].kw,
                        (IMAGE_KEYWORD *)(ptr_buff_keywords),
                        nbkw * sizeof(IMAGE_KEYWORD));
             }

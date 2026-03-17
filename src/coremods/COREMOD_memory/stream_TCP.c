@@ -746,15 +746,15 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                     ptr0 +
                     framesize *
                     slice; //img_p->md->cnt1; // frame that was just written
-                memcpy(buff, ptr1, framesize);
+                __builtin_memcpy(buff, ptr1, framesize);
                 *(TCP_BUFFER_METADATA *)(buff + framesize) = frame_md;
                 //memcpy(buff + framesize, &frame_md, sizeof());
 
                 if(TCPTRANSFERKW == 1)
                 {
-                    memcpy(buff + framesize1,
-                           (char *) img_p->kw,
-                           img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
+                    __builtin_memcpy(buff + framesize1,
+                           (char *) dcimg[ID].kw,
+                           dcimg[ID].md[0].NBkw * sizeof(IMAGE_KEYWORD));
                 }
 
                 rs = send(fds_client, buff, framesizeall, 0);
@@ -1292,17 +1292,17 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             // copy pixel data
             if(NBslices > 1)
             {
-                memcpy(ptr0 + framesize * frame_md_p->cnt1, buff, framesize);
+                __builtin_memcpy(ptr0 + framesize * frame_md_p->cnt1, buff, framesize);
             }
             else
             {
-                memcpy(ptr0, buff, framesize);
+                __builtin_memcpy(ptr0, buff, framesize);
             }
 
             if(TCPTRANSFERKW == 1)
             {
                 // copy kw
-                memcpy(img_p->kw,
+                __builtin_memcpy(img_p->kw,
                        (IMAGE_KEYWORD *)(buff + framesize1),
                        img_p->md->NBkw * sizeof(IMAGE_KEYWORD));
             }
