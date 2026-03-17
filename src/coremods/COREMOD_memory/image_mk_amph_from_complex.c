@@ -97,27 +97,24 @@ errno_t mk_amph_from_complex_IMGID(
 
         imgamp->md[0].write = 1;
         imgpha->md[0].write = 1;
+        complex_float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CF);
+        float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.F);
+        float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.F);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for simd
 #endif
-            for(uint64_t ii = 0;
-                 ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                float amp_f =
-                    (float) sqrt(
-                        imgin->im->array.CF[ii].re
-                        * imgin->im->array.CF[ii].re
-                        + imgin->im->array.CF[ii].im
-                        * imgin->im->array.CF[ii].im);
-                float pha_f =
-                    (float) atan2(
-                        imgin->im->array.CF[ii].im,
-                        imgin->im->array.CF[ii].re);
-                imgamp->im->array.F[ii] = amp_f;
-                imgpha->im->array.F[ii] = pha_f;
+                float re_f = ptr_in[ii].re;
+                float im_f = ptr_in[ii].im;
+                float amp_f = sqrtf(re_f * re_f + im_f * im_f);
+                float pha_f = atan2f(im_f, re_f);
+                ptr_am[ii] = amp_f;
+                ptr_ph[ii] = pha_f;
             }
 #ifdef _OPENMP
         }
@@ -151,25 +148,24 @@ errno_t mk_amph_from_complex_IMGID(
 
         imgamp->md[0].write = 1;
         imgpha->md[0].write = 1;
+        complex_double * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CD);
+        double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.D);
+        double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.D);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (nelement > OMP_NELEMENT_LIMIT)
         {
             #pragma omp for simd
 #endif
-            for(uint64_t ii = 0;
-                 ii < nelement; ii++)
+            for(uint64_t ii = 0; ii < nelement; ii++)
             {
-                double amp_d = sqrt(
-                    imgin->im->array.CD[ii].re
-                    * imgin->im->array.CD[ii].re
-                    + imgin->im->array.CD[ii].im
-                    * imgin->im->array.CD[ii].im);
-                double pha_d = atan2(
-                    imgin->im->array.CD[ii].im,
-                    imgin->im->array.CD[ii].re);
-                imgamp->im->array.D[ii] = amp_d;
-                imgpha->im->array.D[ii] = pha_d;
+                double re_d = ptr_in[ii].re;
+                double im_d = ptr_in[ii].im;
+                double amp_d = sqrt(re_d * re_d + im_d * im_d);
+                double pha_d = atan2(im_d, re_d);
+                ptr_am[ii] = amp_d;
+                ptr_ph[ii] = pha_d;
             }
 #ifdef _OPENMP
         }

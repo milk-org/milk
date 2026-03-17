@@ -97,7 +97,7 @@ static MILK_HOT errno_t fpsexec(
         if (oj >= ih) {
             continue;
         }
-        memcpy(
+        __builtin_memcpy(
             ((char *)
              output_image->array.raw)
             + j * xw * ts,

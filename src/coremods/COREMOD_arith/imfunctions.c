@@ -2148,7 +2148,7 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
             for(uint64_t i=0; i<nelement; i++) po[i] = p1[i] * p1[i];
         } else {
             _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")
-            for(uint64_t i=0; i<nelement; i++) po[i] = powf(p1[i], (float)f1);
+            for(uint64_t i=0; i<nelement; i++) po[i] = pow(p1[i], f1);
         }
     }
     else

@@ -168,7 +168,7 @@ static errno_t streamdelay(
         destptr +=
             inimg.md->imdatamemsize
             * bufferindex_input;
-        memcpy(destptr,
+        __builtin_memcpy(destptr,
                inimg.im->array.raw,
                inimg.md->imdatamemsize);
 
@@ -227,7 +227,7 @@ static errno_t streamdelay(
         srcptr +=
             inimg.md->imdatamemsize
             * bufferindex_output_last;
-        memcpy(outimg.im->array.raw,
+        __builtin_memcpy(outimg.im->array.raw,
                srcptr,
                inimg.md->imdatamemsize);
 

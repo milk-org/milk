@@ -55,13 +55,16 @@ static int32_t modeRMS = 0;
       FPTYPE_ONOFF, 0, \
       FPFLAG_DEFAULT_INPUT, "output RMS=1 over mask")
 
-errno_t image_slicenormalize(
+static errno_t image_slicenormalize_core(
     IMGID inimg,
     IMGID maskimg,
     IMGID *outimg,
     uint8_t sliceaxis,
     IMGID imgaux,
-    int modeRMS
+    int modeRMS,
+    double *__restrict normarray,
+    double *__restrict avarray,
+    double *__restrict maskcntarray
 )
 {
     DEBUG_TRACE_FSTART();
@@ -128,24 +131,10 @@ errno_t image_slicenormalize(
     sizemmask[2] = 1;
     sizemmask[sliceaxis] = 0;
 
-    double *__restrict normarray = (double *) malloc(sizeof(
-                                       double) * sizescan[sliceaxis]);
     for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
     {
         normarray[ii] = 0.0;
-    }
-
-    double *__restrict avarray = (double *) malloc(sizeof(double) *
-                                 sizescan[sliceaxis]);
-    for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
-    {
         avarray[ii] = 0.0;
-    }
-
-    double *__restrict maskcntarray = (double *) malloc(sizeof(
-                                          double) * sizescan[sliceaxis]);
-    for(uint32_t ii = 0; ii < inimg.md->size[sliceaxis]; ii++)
-    {
         maskcntarray[ii] = 0.0;
     }
 
@@ -282,12 +271,39 @@ errno_t image_slicenormalize(
         }
     }
 
+
+
+    DEBUG_TRACE_FEXIT();
+    return RETURN_SUCCESS;
+}
+
+errno_t image_slicenormalize(
+    IMGID inimg,
+    IMGID maskimg,
+    IMGID *outimg,
+    uint8_t sliceaxis,
+    IMGID imgaux,
+    int modeRMS
+)
+{
+    resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+    if(inimg.ID == -1) return RETURN_FAILURE;
+    uint32_t size = inimg.md->size[sliceaxis];
+
+    double *__restrict normarray = (double *) malloc(sizeof(double) * size);
+    double *__restrict avarray = (double *) malloc(sizeof(double) * size);
+    double *__restrict maskcntarray = (double *) malloc(sizeof(double) * size);
+
+    errno_t ret = image_slicenormalize_core(
+        inimg, maskimg, outimg, sliceaxis, imgaux, modeRMS,
+        normarray, avarray, maskcntarray
+    );
+
     free(normarray);
     free(avarray);
     free(maskcntarray);
 
-    DEBUG_TRACE_FEXIT();
-    return RETURN_SUCCESS;
+    return ret;
 }
 
 
@@ -309,23 +325,46 @@ static MILK_HOT errno_t compute_function()
 
     IMGID outimg = imgid_make_from_name(outimname);
 
+    uint32_t alloc_sliceaxis_size = 0;
+    double *__restrict normarray = NULL;
+    double *__restrict avarray = NULL;
+    double *__restrict maskcntarray = NULL;
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
     {
+        resolveIMGID(&inimg, ERRMODE_ABORT, dcimg, dcnimg);
+        if(inimg.ID != -1)
+        {
+            uint32_t current_sliceaxis_size = inimg.md->size[sliceaxis];
+            if (alloc_sliceaxis_size < current_sliceaxis_size || normarray == NULL) {
+                normarray = (double *) realloc(normarray, sizeof(double) * current_sliceaxis_size);
+                avarray = (double *) realloc(avarray, sizeof(double) * current_sliceaxis_size);
+                maskcntarray = (double *) realloc(maskcntarray, sizeof(double) * current_sliceaxis_size);
+                alloc_sliceaxis_size = current_sliceaxis_size;
+            }
 
-        image_slicenormalize(
-            inimg,
-            maskimg,
-            &outimg,
-            sliceaxis,
-            imgaux,
-            modeRMS
-        );
+            image_slicenormalize_core(
+                inimg,
+                maskimg,
+                &outimg,
+                sliceaxis,
+                imgaux,
+                modeRMS,
+                normarray,
+                avarray,
+                maskcntarray
+            );
+        }
 
         processinfo_update_output_stream(processinfo, outimg.im, NULL);
     }
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
+
+    if (normarray) free(normarray);
+    if (avarray) free(avarray);
+    if (maskcntarray) free(maskcntarray);
 
     imgid_free(&inimg);
     imgid_free(&maskimg);
