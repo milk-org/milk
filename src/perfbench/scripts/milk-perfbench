@@ -228,14 +228,20 @@ if [ ${PERF_CAN_RUN} -eq 1 ]; then
         -j \
         -e cycles \
         -e instructions \
+        -e bus-cycles \
         -e L1-dcache-loads \
         -e L1-dcache-load-misses \
+        -e L1-dcache-stores \
         -e L1-icache-loads \
         -e L1-icache-load-misses \
+        -e iTLB-load-misses \
         -e LLC-loads \
         -e LLC-load-misses \
+        -e LLC-stores \
+        -e LLC-store-misses \
         -e dTLB-loads \
         -e dTLB-load-misses \
+        -e dTLB-store-misses \
         -e branch-misses \
         -e branches \
         -e page-faults \
@@ -338,15 +344,21 @@ get_perf_counter() {
 }
 
 CYCLES=$(get_perf_counter "cycles")
+BUS_CYCLES=$(get_perf_counter "bus-cycles")
 INSTRUCTIONS=$(get_perf_counter "instructions")
 L1D_LOADS=$(get_perf_counter "L1-dcache-loads")
 L1D_MISSES=$(get_perf_counter "L1-dcache-load-misses")
+L1D_STORES=$(get_perf_counter "L1-dcache-stores")
 L1I_LOADS=$(get_perf_counter "L1-icache-loads")
 L1I_MISSES=$(get_perf_counter "L1-icache-load-misses")
+ITLB_MISSES=$(get_perf_counter "iTLB-load-misses")
 LLC_LOADS=$(get_perf_counter "LLC-loads")
 LLC_MISSES=$(get_perf_counter "LLC-load-misses")
+LLC_STORES=$(get_perf_counter "LLC-stores")
+LLC_ST_MISSES=$(get_perf_counter "LLC-store-misses")
 DTLB_LOADS=$(get_perf_counter "dTLB-loads")
 DTLB_MISSES=$(get_perf_counter "dTLB-load-misses")
+DTLB_ST_MISSES=$(get_perf_counter "dTLB-store-misses")
 BRANCH_MISSES=$(get_perf_counter "branch-misses")
 BRANCHES=$(get_perf_counter "branches")
 PAGE_FAULTS=$(get_perf_counter "page-faults")
@@ -356,12 +368,21 @@ CPU_MIGRATIONS=$(get_perf_counter "cpu-migrations")
 CTX_SWITCHES=$(get_perf_counter "context-switches")
 TASK_CLOCK=$(get_perf_counter "task-clock")
 
+# Executable file size
+EXE_PATH=$(command -v "${FPSEXEC}" 2>/dev/null)
+EXE_SIZE=0
+if [ -n "${EXE_PATH}" ]; then
+    EXE_SIZE=$(stat --format=%s \
+        "${EXE_PATH}" 2>/dev/null || echo 0)
+fi
+
 # Compute IPC if we have both values
 IPC="0"
 if [ -n "${INSTRUCTIONS}" ] \
     && [ -n "${CYCLES}" ] \
     && [ "${CYCLES}" != "0" ]; then
-    IPC=$(echo "scale=3; ${INSTRUCTIONS} / ${CYCLES}" \
+    IPC=$(echo "scale=3; \
+        ${INSTRUCTIONS} / ${CYCLES}" \
         | bc 2>/dev/null || echo "0")
 fi
 
@@ -380,19 +401,27 @@ miss_rate() {
 L1D_MISS_PCT=$(miss_rate ${L1D_MISSES} ${L1D_LOADS})
 L1I_MISS_PCT=$(miss_rate ${L1I_MISSES} ${L1I_LOADS})
 LLC_MISS_PCT=$(miss_rate ${LLC_MISSES} ${LLC_LOADS})
-DTLB_MISS_PCT=$(miss_rate ${DTLB_MISSES} ${DTLB_LOADS})
+LLC_ST_MISS_PCT=$(miss_rate \
+    ${LLC_ST_MISSES} ${LLC_STORES})
+DTLB_MISS_PCT=$(miss_rate \
+    ${DTLB_MISSES} ${DTLB_LOADS})
 
-# Default missing values to 0
 : "${CYCLES:=0}"
+: "${BUS_CYCLES:=0}"
 : "${INSTRUCTIONS:=0}"
 : "${L1D_LOADS:=0}"
 : "${L1D_MISSES:=0}"
+: "${L1D_STORES:=0}"
 : "${L1I_LOADS:=0}"
 : "${L1I_MISSES:=0}"
+: "${ITLB_MISSES:=0}"
 : "${LLC_LOADS:=0}"
 : "${LLC_MISSES:=0}"
+: "${LLC_STORES:=0}"
+: "${LLC_ST_MISSES:=0}"
 : "${DTLB_LOADS:=0}"
 : "${DTLB_MISSES:=0}"
+: "${DTLB_ST_MISSES:=0}"
 : "${BRANCH_MISSES:=0}"
 : "${BRANCHES:=0}"
 : "${PAGE_FAULTS:=0}"
@@ -414,27 +443,34 @@ eval "${_SAVED_ERR_TRAP}"
 echo "{"
 echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
 echo "  \"compute_unit\": \"${FPSEXEC}\","
+echo "  \"exe_size_bytes\": ${EXE_SIZE},"
 echo "  \"git_commit\": \"${GIT_COMMIT}\","
 echo "  \"iterations\": ${NBITER},"
 echo "  \"wall_clock_s\": ${ELAPSED_S},"
 
-# Hardware counters
 echo "  \"hw_counters\": {"
 echo "    \"cycles\": ${CYCLES},"
+echo "    \"bus_cycles\": ${BUS_CYCLES},"
 echo "    \"instructions\": ${INSTRUCTIONS},"
 echo "    \"ipc\": ${IPC},"
 echo "    \"L1_dcache_loads\": ${L1D_LOADS},"
 echo "    \"L1_dcache_misses\": ${L1D_MISSES},"
 echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
+echo "    \"L1_dcache_stores\": ${L1D_STORES},"
 echo "    \"L1_icache_loads\": ${L1I_LOADS},"
 echo "    \"L1_icache_misses\": ${L1I_MISSES},"
 echo "    \"L1_icache_miss_pct\": ${L1I_MISS_PCT},"
+echo "    \"iTLB_misses\": ${ITLB_MISSES},"
 echo "    \"LLC_loads\": ${LLC_LOADS},"
 echo "    \"LLC_misses\": ${LLC_MISSES},"
 echo "    \"LLC_miss_pct\": ${LLC_MISS_PCT},"
+echo "    \"LLC_stores\": ${LLC_STORES},"
+echo "    \"LLC_store_misses\": ${LLC_ST_MISSES},"
+echo "    \"LLC_store_miss_pct\": ${LLC_ST_MISS_PCT},"
 echo "    \"dTLB_loads\": ${DTLB_LOADS},"
 echo "    \"dTLB_misses\": ${DTLB_MISSES},"
 echo "    \"dTLB_miss_pct\": ${DTLB_MISS_PCT},"
+echo "    \"dTLB_store_misses\": ${DTLB_ST_MISSES},"
 echo "    \"branch_misses\": ${BRANCH_MISSES},"
 echo "    \"branches\": ${BRANCHES},"
 echo "    \"page_faults\": ${PAGE_FAULTS},"
@@ -530,6 +566,8 @@ printf "${FMT}" "Wall clock" \
         | bc) ns"
 printf "${FMT}" "Cycles" \
     "${CYCLES}" "$(per_iter ${CYCLES})"
+printf "${FMT}" "Bus cycles" \
+    "${BUS_CYCLES}" "$(per_iter ${BUS_CYCLES})"
 printf "${FMT}" "Instructions" \
     "${INSTRUCTIONS}" "$(per_iter ${INSTRUCTIONS})"
 printf "  %-16s %14s\n" "IPC" "${IPC}"
@@ -540,24 +578,38 @@ printf "${FMT}" "L1d misses" \
     "${L1D_MISSES}" "$(per_iter ${L1D_MISSES})"
 printf "  %-16s %14s\n" \
     "  L1d miss rate" "${L1D_MISS_PCT}%"
+printf "${FMT}" "L1d stores" \
+    "${L1D_STORES}" "$(per_iter ${L1D_STORES})"
 printf "${FMT}" "L1i loads" \
     "${L1I_LOADS}" "$(per_iter ${L1I_LOADS})"
 printf "${FMT}" "L1i misses" \
     "${L1I_MISSES}" "$(per_iter ${L1I_MISSES})"
 printf "  %-16s %14s\n" \
     "  L1i miss rate" "${L1I_MISS_PCT}%"
+printf "${FMT}" "iTLB misses" \
+    "${ITLB_MISSES}" "$(per_iter ${ITLB_MISSES})"
 printf "${FMT}" "LLC loads" \
     "${LLC_LOADS}" "$(per_iter ${LLC_LOADS})"
 printf "${FMT}" "LLC misses" \
     "${LLC_MISSES}" "$(per_iter ${LLC_MISSES})"
 printf "  %-16s %14s\n" \
     "  LLC miss rate" "${LLC_MISS_PCT}%"
+printf "${FMT}" "LLC stores" \
+    "${LLC_STORES}" "$(per_iter ${LLC_STORES})"
+printf "${FMT}" "LLC st misses" \
+    "${LLC_ST_MISSES}" \
+    "$(per_iter ${LLC_ST_MISSES})"
+printf "  %-16s %14s\n" \
+    "  LLC st miss %" "${LLC_ST_MISS_PCT}%"
 printf "${FMT}" "dTLB loads" \
     "${DTLB_LOADS}" "$(per_iter ${DTLB_LOADS})"
 printf "${FMT}" "dTLB misses" \
     "${DTLB_MISSES}" "$(per_iter ${DTLB_MISSES})"
 printf "  %-16s %14s\n" \
     "  dTLB miss rate" "${DTLB_MISS_PCT}%"
+printf "${FMT}" "dTLB st misses" \
+    "${DTLB_ST_MISSES}" \
+    "$(per_iter ${DTLB_ST_MISSES})"
 echo "  ------------------------------------------"
 printf "${FMT}" "Branch misses" \
     "${BRANCH_MISSES}" \
@@ -591,6 +643,8 @@ if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     printf "  %-16s %14s\n" \
         "VmRSS" "${PI_VMRSS} kB"
 fi
+printf "  %-16s %14s\n" \
+    "Exe size" "${EXE_SIZE} B"
 echo "=========================================="
 echo "  Results: ${RESULT_FILE}"
 echo "=========================================="
