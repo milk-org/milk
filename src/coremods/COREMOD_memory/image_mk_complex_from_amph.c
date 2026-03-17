@@ -123,6 +123,10 @@ errno_t mk_complex_from_amph_IMGID(
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
+        float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
+        float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.F);
+        complex_float * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CF);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
@@ -133,31 +137,18 @@ errno_t mk_complex_from_amph_IMGID(
                  kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp - 1)
-                    kkamp = zsizeamp - 1;
+                if(kkamp > zsizeamp - 1) kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha - 1)
-                    kkpha = zsizepha - 1;
+                if(kkpha > zsizepha - 1) kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0;
-                     ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    imgoutC->im->array
-                        .CF[kk*xysize + ii].re =
-                        imginamp->im->array
-                            .F[kkamp*xysize + ii]
-                        * ((float) cos(
-                            imginpha->im->array
-                            .F[kkpha*xysize + ii]));
+                    ptr_out[kk*xysize + ii].re =
+                        ptr_am[kkamp*xysize + ii] * cosf(ptr_ph[kkpha*xysize + ii]);
 
-                    imgoutC->im->array
-                        .CF[kk*xysize + ii].im =
-                        imginamp->im->array
-                            .F[kkamp*xysize + ii]
-                        * ((float) sin(
-                            imginpha->im->array
-                            .F[kkpha*xysize + ii]));
+                    ptr_out[kk*xysize + ii].im =
+                        ptr_am[kkamp*xysize + ii] * sinf(ptr_ph[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -174,6 +165,10 @@ errno_t mk_complex_from_amph_IMGID(
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
+        float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
+        double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.D);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
@@ -184,31 +179,18 @@ errno_t mk_complex_from_amph_IMGID(
                  kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp - 1)
-                    kkamp = zsizeamp - 1;
+                if(kkamp > zsizeamp - 1) kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha - 1)
-                    kkpha = zsizepha - 1;
+                if(kkpha > zsizepha - 1) kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0;
-                     ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].re =
-                        imginamp->im->array
-                            .F[kkamp*xysize + ii]
-                        * cos(
-                            imginpha->im->array
-                            .D[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].re =
+                        ptr_am[kkamp*xysize + ii] * cos(ptr_ph[kkpha*xysize + ii]);
 
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].im =
-                        imginamp->im->array
-                            .F[kkamp*xysize + ii]
-                        * sin(
-                            imginpha->im->array
-                            .D[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].im =
+                        ptr_am[kkamp*xysize + ii] * sin(ptr_ph[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -225,6 +207,10 @@ errno_t mk_complex_from_amph_IMGID(
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
+        double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);
+        float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.F);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
@@ -235,31 +221,18 @@ errno_t mk_complex_from_amph_IMGID(
                  kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp - 1)
-                    kkamp = zsizeamp - 1;
+                if(kkamp > zsizeamp - 1) kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha - 1)
-                    kkpha = zsizepha - 1;
+                if(kkpha > zsizepha - 1) kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0;
-                     ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].re =
-                        imginamp->im->array
-                            .D[kkamp*xysize + ii]
-                        * cos(
-                            imginpha->im->array
-                            .F[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].re =
+                        ptr_am[kkamp*xysize + ii] * cos(ptr_ph[kkpha*xysize + ii]);
 
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].im =
-                        imginamp->im->array
-                            .D[kkamp*xysize + ii]
-                        * sin(
-                            imginpha->im->array
-                            .F[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].im =
+                        ptr_am[kkamp*xysize + ii] * sin(ptr_ph[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP
@@ -276,6 +249,10 @@ errno_t mk_complex_from_amph_IMGID(
         createimagefromIMGID(imgoutC);
 
         imgoutC->md->write = 1;
+        double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);
+        double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.D);
+        complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
+
 #ifdef _OPENMP
         #pragma omp parallel \
             if (xysize > OMP_NELEMENT_LIMIT)
@@ -286,31 +263,18 @@ errno_t mk_complex_from_amph_IMGID(
                  kk < zsize; kk++)
             {
                 uint32_t kkamp = kk;
-                if(kkamp > zsizeamp - 1)
-                    kkamp = zsizeamp - 1;
+                if(kkamp > zsizeamp - 1) kkamp = zsizeamp - 1;
 
                 uint32_t kkpha = kk;
-                if(kkpha > zsizepha - 1)
-                    kkpha = zsizepha - 1;
+                if(kkpha > zsizepha - 1) kkpha = zsizepha - 1;
 
-                for(uint64_t ii = 0;
-                     ii < xysize; ii++)
+                for(uint64_t ii = 0; ii < xysize; ii++)
                 {
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].re =
-                        imginamp->im->array
-                            .D[kkamp*xysize + ii]
-                        * cos(
-                            imginpha->im->array
-                            .D[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].re =
+                        ptr_am[kkamp*xysize + ii] * cos(ptr_ph[kkpha*xysize + ii]);
 
-                    imgoutC->im->array
-                        .CD[kk*xysize + ii].im =
-                        imginamp->im->array
-                            .D[kkamp*xysize + ii]
-                        * sin(
-                            imginpha->im->array
-                            .D[kkpha*xysize + ii]);
+                    ptr_out[kk*xysize + ii].im =
+                        ptr_am[kkamp*xysize + ii] * sin(ptr_ph[kkpha*xysize + ii]);
                 }
             }
 #ifdef _OPENMP

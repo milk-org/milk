@@ -81,7 +81,7 @@ static long long p_semtrig = 3;
  * Compute difference between two 2D streams.
  * Triggers on stream0.
  */
-imageID COREMOD_MEMORY_streamDiff(
+imageID MILK_HOT COREMOD_MEMORY_streamDiff(
     const char *IDstream0_name,
     const char *IDstream1_name,
     const char *IDstreammask_name,
@@ -117,6 +117,17 @@ imageID COREMOD_MEMORY_streamDiff(
             _DATATYPE_FLOAT);
     }
 
+    float * MILK_RESTRICT ptr0 =
+        MILK_ASSUME_ALIGNED(img0.im->array.F);
+    float * MILK_RESTRICT ptr1 =
+        MILK_ASSUME_ALIGNED(img1.im->array.F);
+    float * MILK_RESTRICT ptrm =
+        (imgmask.ID != -1)
+        ? MILK_ASSUME_ALIGNED(imgmask.im->array.F)
+        : NULL;
+    float * MILK_RESTRICT ptro =
+        MILK_ASSUME_ALIGNED(imgout.im->array.F);
+
     unsigned long long cnt = 0;
 
     while(1)
@@ -136,14 +147,12 @@ imageID COREMOD_MEMORY_streamDiff(
         }
 
         imgout.md->write = 1;
-        if(imgmask.ID == -1)
+        if(ptrm == NULL)
         {
             for(uint64_t ii = 0;
                     ii < xysize; ii++)
             {
-                imgout.im->array.F[ii] =
-                    img0.im->array.F[ii]
-                    - img1.im->array.F[ii];
+                ptro[ii] = ptr0[ii] - ptr1[ii];
             }
         }
         else
@@ -151,10 +160,8 @@ imageID COREMOD_MEMORY_streamDiff(
             for(uint64_t ii = 0;
                     ii < xysize; ii++)
             {
-                imgout.im->array.F[ii] =
-                    (img0.im->array.F[ii]
-                     - img1.im->array.F[ii])
-                    * imgmask.im->array.F[ii];
+                ptro[ii] =
+                    (ptr0[ii] - ptr1[ii]) * ptrm[ii];
             }
         }
         COREMOD_MEMORY_image_set_sempost_byID(
