@@ -169,16 +169,40 @@ if [ -n "${FPSARGS}" ]; then
     ${FPSEXEC} ${FPSNAME}:set ${FPSARGS}
 fi
 
-# Step 4: Run setup command (create streams etc)
+# Step 4: Auto-create missing streams
+echo "[4/6] Creating missing streams ..."
+# Query FPS for STREAMNAME parameters and
+# create any streams that don't exist yet.
+# Strip ANSI codes, find STREAMNAME type
+# entries, extract the value (field 4).
+SHMDIR="${MILK_SHM_DIR:-/milk/shm}"
+${FPSEXEC} ${FPSNAME}:fps 2>/dev/null \
+    | sed 's/\x1b\[[0-9;]*m//g' \
+    | awk '$3 == "STREAMNAME" && NF >= 8 \
+           { print $4 }' \
+    | while read -r SNAME; do
+    if [ -z "${SNAME}" ]; then
+        continue
+    fi
+    if [ ! -f "${SHMDIR}/${SNAME}.im.shm" ]; then
+        echo "  Creating stream: ${SNAME} (32x32)"
+        milk-perfbench-mkstream \
+            "${SNAME}" 32 32
+    else
+        echo "  Stream exists: ${SNAME}"
+    fi
+done
+
+# Run user setup command if provided
 if [ -n "${SETUPCMD}" ]; then
-    echo "[4/5] Setup: ${SETUPCMD}"
+    echo "[5/6] Setup: ${SETUPCMD}"
     eval "${SETUPCMD}"
 else
-    echo "[4/5] No setup command"
+    echo "[5/6] No setup command"
 fi
 
-# Step 5: Run under perf stat
-echo "[5/5] Running ${NBITER} iterations ..."
+# Step 6: Run the benchmark
+echo "[6/6] Running ${NBITER} iterations ..."
 
 # Temporarily disable set -e and ERR trap:
 # perf stat may fail (permissions), and
@@ -188,23 +212,41 @@ _SAVED_ERR_TRAP=$(trap -p ERR)
 set +eE
 trap - ERR
 
+# Probe: can perf stat actually run commands?
+# With perf_event_paranoid=4, perf stat exits
+# 255 WITHOUT executing the child command.
+PERF_CAN_RUN=0
+perf stat -- true 2>/dev/null
+if [ $? -ne 255 ]; then
+    PERF_CAN_RUN=1
+fi
+
 TSTART=$(date +%s%N)
 
-perf stat \
-    -j \
-    -e cycles \
-    -e instructions \
-    -e cache-misses \
-    -e cache-references \
-    -e branch-misses \
-    -e branches \
-    -e context-switches \
-    -e task-clock \
-    -o "${PERF_OUT}" \
-    -- ${FPSEXEC} ${FPSNAME}:runstart \
-    2>/dev/null
+if [ ${PERF_CAN_RUN} -eq 1 ]; then
+    perf stat \
+        -j \
+        -e cycles \
+        -e instructions \
+        -e cache-misses \
+        -e cache-references \
+        -e branch-misses \
+        -e branches \
+        -e context-switches \
+        -e task-clock \
+        -o "${PERF_OUT}" \
+        -- ${FPSEXEC} ${FPSNAME}:runstart \
+        2>/dev/null
+    PERF_EXIT=$?
+else
+    echo "  perf stat unavailable" \
+         "(perf_event_paranoid), running" \
+         "without hardware counters"
+    ${FPSEXEC} ${FPSNAME}:runstart \
+        >/dev/null 2>&1
+    PERF_EXIT=$?
+fi
 
-PERF_EXIT=$?
 TEND=$(date +%s%N)
 
 if [ ${PERF_EXIT} -ne 0 ]; then
