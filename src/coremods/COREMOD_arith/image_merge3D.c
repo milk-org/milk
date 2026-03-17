@@ -118,9 +118,9 @@ static MILK_HOT errno_t fpsexec(
     if (mergeaxis == idout->mdt->naxis - 1) {
         size_t sz0 =
             ts * id0->md->nelement;
-        memcpy(idout->im->array.raw,
+        __builtin_memcpy(idout->im->array.raw,
                id0->im->array.raw, sz0);
-        memcpy(
+        __builtin_memcpy(
             ((char *)
              idout->im->array.raw) + sz0,
             id1->im->array.raw,
@@ -134,7 +134,7 @@ static MILK_HOT errno_t fpsexec(
         }
         uint64_t po = 0, p0 = 0, p1 = 0;
         while (po < idout->md->nelement) {
-            memcpy(
+            __builtin_memcpy(
                 ((char *)
                  idout->im->array.raw)
                 + po * ts,
@@ -144,7 +144,7 @@ static MILK_HOT errno_t fpsexec(
                 ts * b0);
             p0 += b0;
             po += b0;
-            memcpy(
+            __builtin_memcpy(
                 ((char *)
                  idout->im->array.raw)
                 + po * ts,
