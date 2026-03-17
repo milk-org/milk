@@ -228,8 +228,13 @@ if [ ${PERF_CAN_RUN} -eq 1 ]; then
         -j \
         -e cycles \
         -e instructions \
-        -e cache-misses \
-        -e cache-references \
+        -e L1-dcache-loads \
+        -e L1-dcache-load-misses \
+        -e L1-icache-load-misses \
+        -e LLC-loads \
+        -e LLC-load-misses \
+        -e dTLB-loads \
+        -e dTLB-load-misses \
         -e branch-misses \
         -e branches \
         -e context-switches \
@@ -306,8 +311,11 @@ get_perf_counter() {
                 '"counter-value" *: *"[^"]*"' \
             | sed 's/.*: *"\([^"]*\)"/\1/' \
             | tr -d ',')
-        if [ -n "${val}" ] \
-           && [ "${val}" != "<not" ]; then
+        # Only accept numeric values (skip
+        # <not counted>, <not supported>, etc)
+        if echo "${val}" \
+            | grep -qE '^[0-9]+\.?[0-9]*$'
+        then
             total=$(echo "${total} + ${val}" \
                 | bc)
             found=1
@@ -326,8 +334,13 @@ get_perf_counter() {
 
 CYCLES=$(get_perf_counter "cycles")
 INSTRUCTIONS=$(get_perf_counter "instructions")
-CACHE_MISSES=$(get_perf_counter "cache-misses")
-CACHE_REFS=$(get_perf_counter "cache-references")
+L1D_LOADS=$(get_perf_counter "L1-dcache-loads")
+L1D_MISSES=$(get_perf_counter "L1-dcache-load-misses")
+L1I_MISSES=$(get_perf_counter "L1-icache-load-misses")
+LLC_LOADS=$(get_perf_counter "LLC-loads")
+LLC_MISSES=$(get_perf_counter "LLC-load-misses")
+DTLB_LOADS=$(get_perf_counter "dTLB-loads")
+DTLB_MISSES=$(get_perf_counter "dTLB-load-misses")
 BRANCH_MISSES=$(get_perf_counter "branch-misses")
 BRANCHES=$(get_perf_counter "branches")
 CTX_SWITCHES=$(get_perf_counter "context-switches")
@@ -342,11 +355,30 @@ if [ -n "${INSTRUCTIONS}" ] \
         | bc 2>/dev/null || echo "0")
 fi
 
+# Compute miss rates
+L1D_MISS_PCT="0"
+if [ "${L1D_LOADS}" != "0" ]; then
+    L1D_MISS_PCT=$(echo "scale=4; \
+        100 * ${L1D_MISSES} / ${L1D_LOADS}" \
+        | bc 2>/dev/null || echo "0")
+fi
+LLC_MISS_PCT="0"
+if [ "${LLC_LOADS}" != "0" ]; then
+    LLC_MISS_PCT=$(echo "scale=4; \
+        100 * ${LLC_MISSES} / ${LLC_LOADS}" \
+        | bc 2>/dev/null || echo "0")
+fi
+
 # Default missing values to 0
 : "${CYCLES:=0}"
 : "${INSTRUCTIONS:=0}"
-: "${CACHE_MISSES:=0}"
-: "${CACHE_REFS:=0}"
+: "${L1D_LOADS:=0}"
+: "${L1D_MISSES:=0}"
+: "${L1I_MISSES:=0}"
+: "${LLC_LOADS:=0}"
+: "${LLC_MISSES:=0}"
+: "${DTLB_LOADS:=0}"
+: "${DTLB_MISSES:=0}"
 : "${BRANCH_MISSES:=0}"
 : "${BRANCHES:=0}"
 : "${CTX_SWITCHES:=0}"
@@ -372,13 +404,20 @@ echo "  \"wall_clock_s\": ${ELAPSED_S},"
 echo "  \"hw_counters\": {"
 echo "    \"cycles\": ${CYCLES},"
 echo "    \"instructions\": ${INSTRUCTIONS},"
-echo "    \"cache_misses\": ${CACHE_MISSES},"
-echo "    \"cache_references\": ${CACHE_REFS},"
+echo "    \"ipc\": ${IPC},"
+echo "    \"L1_dcache_loads\": ${L1D_LOADS},"
+echo "    \"L1_dcache_misses\": ${L1D_MISSES},"
+echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
+echo "    \"L1_icache_misses\": ${L1I_MISSES},"
+echo "    \"LLC_loads\": ${LLC_LOADS},"
+echo "    \"LLC_misses\": ${LLC_MISSES},"
+echo "    \"LLC_miss_pct\": ${LLC_MISS_PCT},"
+echo "    \"dTLB_loads\": ${DTLB_LOADS},"
+echo "    \"dTLB_misses\": ${DTLB_MISSES},"
 echo "    \"branch_misses\": ${BRANCH_MISSES},"
 echo "    \"branches\": ${BRANCHES},"
 echo "    \"context_switches\": ${CTX_SWITCHES},"
-echo "    \"task_clock_ms\": ${TASK_CLOCK},"
-echo "    \"ipc\": ${IPC}"
+echo "    \"task_clock_ms\": ${TASK_CLOCK}"
 echo "  },"
 
 # Processinfo timing (if available)
@@ -442,7 +481,15 @@ echo "  Wall clock     : ${ELAPSED_S} s"
 echo "  Cycles         : ${CYCLES}"
 echo "  Instructions   : ${INSTRUCTIONS}"
 echo "  IPC            : ${IPC}"
-echo "  Cache misses   : ${CACHE_MISSES}"
+echo "  ---"
+echo "  L1d loads      : ${L1D_LOADS}"
+echo "  L1d misses     : ${L1D_MISSES} (${L1D_MISS_PCT}%)"
+echo "  L1i misses     : ${L1I_MISSES}"
+echo "  LLC loads      : ${LLC_LOADS}"
+echo "  LLC misses     : ${LLC_MISSES} (${LLC_MISS_PCT}%)"
+echo "  dTLB loads     : ${DTLB_LOADS}"
+echo "  dTLB misses    : ${DTLB_MISSES}"
+echo "  ---"
 echo "  Branch misses  : ${BRANCH_MISSES}"
 echo "  Ctx switches   : ${CTX_SWITCHES}"
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
