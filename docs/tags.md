@@ -5,4 +5,4 @@ search:
 
 # Tags
 
-[TAGS]
+<!-- material/tags -->
