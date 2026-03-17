@@ -98,40 +98,77 @@ else
 fi
 
 # =========================================
-# RUN BENCHMARK
+# FPS LIFECYCLE BENCHMARK
 # =========================================
+
+# Unique FPS name to avoid collisions
+FPSNAME="pb$(date +%s%N | tail -c 8)"
+
+# Cleanup function
+cleanup_fps() {
+    local shmdir
+    if [ -n "${MILK_SHM_DIR}" ]; then
+        shmdir="${MILK_SHM_DIR}"
+    elif [ -d "/milk/shm" ]; then
+        shmdir="/milk/shm"
+    else
+        shmdir="/tmp"
+    fi
+    rm -f "${shmdir}/fps.${FPSNAME}"*.shm \
+          2>/dev/null
+    rm -rf "${shmdir}/${FPSNAME}.fps.datadir" \
+           2>/dev/null
+    rm -f /tmp/perfbench-perf.* \
+          /tmp/perfbench-pinfo.* 2>/dev/null
+}
+trap cleanup_fps EXIT
 
 echo ""
 echo "======================================="
 echo "  milk-perfbench"
 echo "======================================="
 echo "  Command   : ${FPSEXEC}"
+echo "  FPS name  : ${FPSNAME}"
 echo "  Iterations: ${NBITER}"
 echo "  Output    : ${RESULT_FILE}"
 echo "======================================="
 echo ""
 
-# Build the exec command
-# We use the exec subcommand with --loopcntMax
-# to run a bounded number of iterations
-EXEC_CMD="${FPSEXEC} exec ${FPSARGS}"
+# Step 1: Create FPS with processinfo enabled
+echo "[1/4] fpsinit -procinfo ..."
+${FPSEXEC} ${FPSNAME}:fpsinit -procinfo
 
-# Run under perf stat
-# -j produces JSON-line output
-# Collect: cycles, instructions, cache-misses,
-# cache-references, branch-misses, branches,
-# context-switches, task-clock
-TSTART=$(date +%s%N)
+# Step 2: Configuration step
+# This creates the .procinfo.* entries
+echo "[2/4] confstep ..."
+${FPSEXEC} ${FPSNAME}:confstep
+
+# Step 3: Set benchmark parameters
+echo "[3/4] Setting FPS params ..."
+# triggermode 0 = IMMEDIATE (no wait)
+milk-fps-set \
+    ${FPSNAME}.procinfo.triggermode 0
+# Set max iteration count
+milk-fps-set \
+    ${FPSNAME}.procinfo.loopcntMax ${NBITER}
+
+# Set any extra positional args (stream names)
+if [ -n "${FPSARGS}" ]; then
+    ${FPSEXEC} ${FPSNAME}:set ${FPSARGS}
+fi
+
+# Step 4: Run under perf stat
+echo "[4/4] Running ${NBITER} iterations ..."
 
 # Temporarily disable set -e and ERR trap:
-# the benchmarked command may exit non-zero
-# (expected for some compute units), and
+# perf stat may fail (permissions), and
 # grep/sed in parsing may return non-zero
 # when perf data is unavailable.
-# Save the ERR trap to restore later.
 _SAVED_ERR_TRAP=$(trap -p ERR)
 set +eE
 trap - ERR
+
+TSTART=$(date +%s%N)
 
 perf stat \
     -j \
@@ -144,7 +181,7 @@ perf stat \
     -e context-switches \
     -e task-clock \
     -o "${PERF_OUT}" \
-    -- ${EXEC_CMD} \
+    -- ${FPSEXEC} ${FPSNAME}:runstart \
     2>/dev/null
 
 PERF_EXIT=$?
