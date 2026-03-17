@@ -1,63 +1,191 @@
-# Milk Documentation
+# milk Documentation
 
-Welcome to the `milk` documentation!
+Welcome to the `milk` documentation — a high-performance
+real-time image processing framework for Adaptive Optics
+and scientific computing.
 
-`milk` provides a high-performance framework and tools for image processing and analysis, particularly suited for building real-time execution pipelines (such as Adaptive Optics loops) out of small modular units. The framework provides zero-copy tensor passing and instant parameter synchronization.
+`milk` orchestrates many small compute units that
+communicate through zero-copy shared memory tensors,
+enabling microsecond-latency data pipelines. The three
+pillars — **ImageStreamIO**, **FPS**, and
+**processinfo** — live entirely in `/dev/shm/`.
 
-## 🚀 Getting Started
+---
 
-If you are new to the `milk` environment, follow these steps:
+## :rocket: Getting Started
 
-1. [**Install milk**](install/compile.md) — clone, build, and configure.
-2. [**CLI Overview**](cli/CLI_Overview.md) — understand `milk-cli` and standalone executables.
-3. [**Shared Memory Streams**](streams.md) — core concept: zero-copy image passing.
-4. [**Function Processing System (FPS)**](fps.md) — core concept: process parameters and configuration.
-5. [**Developer Tutorial**](developer/tutorial.md) — write your first compute module.
+<div class="grid cards" markdown>
 
-## 🏛️ Core Architecture
+-   :material-download-circle:{ .lg .middle } **Install**
 
-For a deep dive into how `milk` components interact at a system level, these documents explain the underlying structures.
+    ---
 
-- [**Software Architecture**](architecture.md): Top-level hierarchical overview of the system design, subsystems, and data flow.
-- [**Programmer's Guide**](programmers_guide.md): The best starting point to understand the overall architecture, C API, and CMake setup.
-- [**Dependency Graph**](dependency_graph.md): Visual map of module dependencies.
-- [**FPS Standalone and CMD Modes**](FPS_Standalone_CMD_Modes.md): Execution context details for `milk-fpsexec-*` binaries.
-- [**Process Info (`procinfo`)**](procinfo.md): Telemetry, heartbeat monitoring, and profiling.
-- [**Debugging**](debugging.md): GDB, procinfo diagnostics, tmux log inspection, common failure patterns.
-- [**Performance Tuning**](performance.md): CPU pinning, RT scheduling, shared memory, GPU acceleration.
-- [**PGO & LTO Optimization**](pgo.md): Profile-guided optimization + static LTO for 15–40% speedup.
+    Clone, build, and configure the milk framework.
 
-## 🛠️ Developer Guides
+    [:octicons-arrow-right-24: Installation](install/compile.md)
 
-Guidelines and tutorials for writing your own compute modules or extending the CLI framework.
+-   :material-layers-outline:{ .lg .middle } **Build Tiers**
 
-- [**Coding Standards**](developer/coding_standards.md): C coding conventions for `milk`.
-- [**Adding Plugins**](developer/plugins.md): How to build modules that compile alongside the core.
-- [**Template Source Code**](developer/TemplateSourceCode.md): Breakdown of the example C module.
-- [**Loading Custom Modules**](developer/LoadingModules.md): Linking `.so` modules at runtime.
-- [**Working With Git**](developer/WorkingWithGit.md): Branching and commit workflow.
-- [**Documenting Code**](developer/DocumentingCode.md): In-code documentation standards.
-- [**Developer Tutorial**](developer/tutorial.md): Step-by-step guide to writing your first module.
-- [**Module Files Layout**](developer/ModuleFiles.md): Directory structure conventions.
-- [**Python API**](python.md): Accessing streams from Python with `pyMilk` and numpy.
-- [**Valkey Integration**](valkey.md): Multi-host FPS parameter sync via Valkey.
-- [**Code Assist Tools**](code_assist.md): Agent rules and workflows for AI-assisted development.
+    ---
 
-## 📖 CLI & Tools Reference
+    Engine → Core → Full: compile only what you need.
 
-- [**CLI Core Syntax**](cli/CLIcore.md): Argument parsing and command invocation rules.
-- [**Readline Keys**](cli/helpreadline.md): Keyboard shortcuts inside the `milk` shell.
-- [**Scripts Reference**](scripts.md): All `milk-*` shell scripts and utilities.
-- [**Help Text**](cli/help.txt): Built-in help text reference.
-- [**FAQ & Troubleshooting**](faq.md): Common issues and solutions.
-- [**Automatically Generated Index**](Markdown_Index.md): Complete list of all Markdown files in the repository.
+    [:octicons-arrow-right-24: Build tiers](install/build_tiers.md)
 
-## 🔬 API Reference
+-   :material-console:{ .lg .middle } **CLI Overview**
 
-- [**Doxygen API Docs**](api/html/index.html): Auto-generated C API reference with call graphs and source browser.
+    ---
 
-***
-*Can't find what you're looking for? Check the [Automatically Generated Document Index](Markdown_Index.md) for all plugin READMEs.*
+    Interactive shell, standalone executables, and
+    scripting basics.
 
-***
-← [Documentation Index](index.md)
+    [:octicons-arrow-right-24: CLI overview](cli/CLI_Overview.md)
+
+-   :material-help-circle-outline:{ .lg .middle } **FAQ**
+
+    ---
+
+    Common issues with builds, SHM, FPS, and CLI.
+
+    [:octicons-arrow-right-24: FAQ & Troubleshooting](faq.md)
+
+</div>
+
+---
+
+## :classical_building: Core Concepts
+
+<div class="grid cards" markdown>
+
+-   :material-memory:{ .lg .middle } **Streams**
+
+    ---
+
+    Zero-copy shared memory tensors (`ImageStreamIO`).
+
+    [:octicons-arrow-right-24: Streams](streams.md)
+
+-   :material-tune-variant:{ .lg .middle } **FPS**
+
+    ---
+
+    Live parameter sync, state control, TUI dashboards.
+
+    [:octicons-arrow-right-24: FPS](fps.md)
+
+-   :material-heart-pulse:{ .lg .middle } **Process Info**
+
+    ---
+
+    Heartbeat telemetry, loop-rate profiling, health
+    monitoring.
+
+    [:octicons-arrow-right-24: Process Info](procinfo.md)
+
+-   :material-sitemap-outline:{ .lg .middle } **Architecture**
+
+    ---
+
+    System overview, layered design, data flow diagrams.
+
+    [:octicons-arrow-right-24: Architecture](architecture.md)
+
+</div>
+
+---
+
+## :hammer_and_wrench: Developer Guides
+
+<div class="grid cards" markdown>
+
+-   :material-school-outline:{ .lg .middle } **Tutorial**
+
+    ---
+
+    Write your first compute module step by step.
+
+    [:octicons-arrow-right-24: Tutorial](developer/tutorial.md)
+
+-   :material-code-braces:{ .lg .middle } **Coding Standards**
+
+    ---
+
+    C style, line length, includes, Kernel-Doc.
+
+    [:octicons-arrow-right-24: Coding standards](developer/coding_standards.md)
+
+-   :material-puzzle-outline:{ .lg .middle } **Adding Plugins**
+
+    ---
+
+    Build modules that compile alongside the core.
+
+    [:octicons-arrow-right-24: Plugins](developer/plugins.md)
+
+-   :material-file-tree-outline:{ .lg .middle } **Template Code**
+
+    ---
+
+    Breakdown of `milk_module_example`.
+
+    [:octicons-arrow-right-24: Template source](developer/TemplateSourceCode.md)
+
+</div>
+
+---
+
+## :bar_chart: Operations & Reference
+
+<div class="grid cards" markdown>
+
+-   :material-speedometer:{ .lg .middle } **Performance**
+
+    ---
+
+    CPU pinning, RT scheduling, SIMD, BLAS, GPU.
+
+    [:octicons-arrow-right-24: Performance](performance.md)
+
+-   :material-chart-line:{ .lg .middle } **PGO & LTO**
+
+    ---
+
+    Profile-guided optimization + static link-time
+    optimization for 15–40 % speedup.
+
+    [:octicons-arrow-right-24: PGO & LTO](pgo.md)
+
+-   :material-bug-outline:{ .lg .middle } **Debugging**
+
+    ---
+
+    GDB, tmux logs, procinfo diagnostics, common
+    failures.
+
+    [:octicons-arrow-right-24: Debugging](debugging.md)
+
+-   :material-api:{ .lg .middle } **API Reference**
+
+    ---
+
+    Auto-generated Doxygen C API docs with call graphs.
+
+    [:octicons-arrow-right-24: Doxygen API](api/html/index.html)
+
+</div>
+
+---
+
+## :link: More Resources
+
+- [CLI Syntax Reference](cli/CLIcore.md) ·
+  [Readline Keys](cli/helpreadline.md)
+- [Scripts Reference](scripts.md) ·
+  [Python API](python.md) ·
+  [Valkey Integration](valkey.md)
+- [Programmer's Guide](programmers_guide.md) ·
+  [Dependency Graph](dependency_graph.md)
+- [Working with Git](developer/WorkingWithGit.md) ·
+  [Code Assist Tools](code_assist.md)
+- [All Markdown Files](Markdown_Index.md) ·
+  [Tag Index](tags.md)

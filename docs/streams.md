@@ -99,77 +99,83 @@ images and streams. This structure is one level above
 the preferred way to pass images and streams as function
 arguments.
 
-### 5.1. Creating an `IMGID`
+=== "Create"
 
-Creating a blank `IMGID` (this does not allocate memory yet):
+    Creating a blank `IMGID` (does not allocate memory yet):
 
-```c
-static inline IMGID imgid_make()
-```
+    ```c
+    static inline IMGID imgid_make()
+    ```
 
-Creating an `IMGID` with a name:
+    Creating an `IMGID` with a name:
 
-```c
-static inline IMGID imgid_make_from_name(CONST_WORD name)
-```
+    ```c
+    static inline IMGID imgid_make_from_name(
+        CONST_WORD name
+    )
+    ```
 
-*(Special characters like `s>tf32>im1` can also be used to automatically set type and location properties).*
+    Creating a new stream in shared memory:
 
-### 5.2. Connecting to a stream
+    ```c
+    IMGID img = imgid_make_from_name("im1");
+    img.naxis = 2;
+    img.size[0] = 128;
+    img.size[1] = 128;
+    img.shared = 1; // 1 = SHM, 0 = local
 
-If you expect the stream to already exist, you can connect to it:
+    imgid_mkimage(&img);
 
-```c
-IMGID img1 = imgid_make();
-// imgid_connect returns quickly. Check if img1.ID != -1
-imgid_connect("streamname1", &img1, 0);
-if(img1.ID == -1) {
-	// handle failure securely
-}
-```
+    // When done:
+    imgid_free(&img);
+    ```
 
-### 5.3. Creating an image in shared memory
+=== "Connect"
 
-To create a new stream:
+    Connect to an existing stream:
 
-```c
-IMGID img = imgid_make_from_name("im1");
-img.naxis = 2;
-img.size[0] = 128;
-img.size[1] = 128;
-img.shared = 1; // 1 for shared memory stream, 0 for local memory
+    ```c
+    IMGID img1 = imgid_make();
+    imgid_connect("streamname1", &img1, 0);
+    if (img1.ID == -1) {
+        // handle failure
+    }
+    ```
 
-// Allocate memory and initialize stream headers
-imgid_mkimage(&img);
+    Special name syntax like `s>tf32>im1` can also be
+    used to automatically set type and location
+    properties.
 
-// When done parsing or exiting
-imgid_free(&img);
-```
+=== "Format-checked"
 
-### 5.4. Creating or connecting with format checks
+    Ensure the stream has specific dimensions, or create it
+    if it doesn't match:
 
-Often, you want to ensure the stream has specific dimensions and types before using it, or create it if it doesn't match:
+    ```c
+    IMGID img1 = imgid_make();
+    img1.naxis = 2;
+    img1.size[0] = 128;
+    img1.size[1] = 128;
 
-```c
-IMGID img1 = imgid_make();
-img1.naxis = 2;
-img1.size[0] = 128;
-img1.size[1] = 128;
+    // Create if format is wrong or doesn't exist
+    imgid_connect("streamname1", &img1,
+        IMGID_CONNECT_CHECK_CREATE);
+    ```
 
-// IMGID_CONNECT_CHECK_CREATE will create it if the format is wrong or it doesn't exist
-// IMGID_CONNECT_CHECK_FAIL will fail the connection if the format is wrong
-imgid_connect("streamname1", &img1, IMGID_CONNECT_CHECK_CREATE);
-```
+    Typed convenience function:
 
-For convenience, specialized typed functions are available:
-
-```c
-// Force connection/creation of a 2D float32 array
-imgid_connect_create_2Df32("streamname1", &img1, xsize, ysize);
-```
+    ```c
+    // Force 2D float32 creation/connection
+    imgid_connect_create_2Df32(
+        "streamname1", &img1, xsize, ysize
+    );
+    ```
 
 > [!TIP]
-> Functions should prefer passing parameters using `IMGID` pointers and accessing pixels through `img.im->array.F` or similar data type unions based on `img.im->md[0].datatype`.
+> Functions should prefer passing parameters using
+> `IMGID` pointers and accessing pixels through
+> `img.im->array.F` or similar data type unions based
+> on `img.im->md[0].datatype`.
 
 ---
 ← [Documentation Index](index.md)

@@ -103,37 +103,45 @@ Then run `milk-fpsmkcmd` to automatically generate startup scripts for initializ
 
 The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _ALL` scans and manages all FPS instances defined in `fpslist.txt`.
 
-## 4. Parameter Data Types
+## 4. Parameter Data Types and Flags
 
-FPS natively supports multiple parameter forms and configurations:
+=== "Data Types"
 
-- `ONOFF`: Booleans (0/1)
-- `INT`: Integer values
-- `FLOAT`: Floating-point measurements
-- `STRING`: Texts and paths
-- `TIMESPEC`: Specific timestamp mapping structures
-- `STREAMNAME`: Name of a shared memory stream
-- `FILENAME`: File path on disk
+    FPS natively supports the following parameter types:
 
-### 4.1. Common Parameter Flags
+    | Type | Description |
+    |------|-------------|
+    | `ONOFF` | Boolean (0/1) |
+    | `INT` | Integer value |
+    | `FLOAT` | Floating-point measurement |
+    | `STRING` | Text or path string |
+    | `TIMESPEC` | Timestamp structure |
+    | `STREAMNAME` | Name of a SHM stream |
+    | `FILENAME` | File path on disk |
 
-When creating parameters, you can apply flags to configure their behavior and GUI visibility:
+=== "Flags"
 
-- `FPFLAG_DEFAULT_INPUT`: Standard interactive input
-  parameter (combines `FPFLAG_ACTIVE`,
-  `FPFLAG_USED`, `FPFLAG_VISIBLE`, `FPFLAG_WRITE`,
-  `FPFLAG_WRITECONF`, `FPFLAG_SAVEONCHANGE`,
-  `FPFLAG_FEEDBACK`, `FPFLAG_WRITESTATUS`).
-- `FPFLAG_CLI_INPUT`: Typically combined with default
-  input.
-- `FPFLAG_MINLIMIT` / `FPFLAG_MAXLIMIT`: Enforces
-  min/max boundaries on the parameter.
+    Flags control parameter behavior and TUI visibility:
 
-For a module developer, integrating with FPS generally
-entails filling out `FPS_APP_INFO` to register an
-identity, defining `FPS_PARAMS` with an X-macro to bind
-shared memory to local C references, and wrapping the
-core math inside `fpsexec()`.
+    | Flag | Effect |
+    |------|--------|
+    | `FPFLAG_DEFAULT_INPUT` | Standard interactive input (combines ACTIVE, USED, VISIBLE, WRITE, WRITECONF, SAVEONCHANGE, FEEDBACK, WRITESTATUS) |
+    | `FPFLAG_CLI_INPUT` | Typically combined with default input |
+    | `FPFLAG_MINLIMIT` | Enforce minimum boundary |
+    | `FPFLAG_MAXLIMIT` | Enforce maximum boundary |
+
+=== "Developer Integration"
+
+    Integrating with FPS entails three steps:
+
+    1. Fill out `FPS_APP_INFO` to register an identity
+       (SHM name, CLI keyword, description).
+    2. Define `FPS_PARAMS` with an X-macro to bind shared
+       memory to local C variables.
+    3. Wrap the core computation inside `fpsexec()`.
+
+    See the [Developer Tutorial](developer/tutorial.md) for
+    a step-by-step walkthrough.
 
 
 ---
