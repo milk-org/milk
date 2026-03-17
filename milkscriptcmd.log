@@ -2,3 +2,8 @@
 2026-03-17T20:42:19.056788Z 1773780139.056788 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 10000
 2026-03-17T20:43:42.764965Z 1773780222.764965 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 1000000
 2026-03-17T20:44:01.541694Z 1773780241.541694 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 10
+2026-03-17T20:58:52.902726Z 1773781132.902726 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 10
+2026-03-17T20:58:58.124419Z 1773781138.124419 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 1
+2026-03-17T20:59:00.794017Z 1773781140.794017 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 10000
+2026-03-17T20:59:04.152578Z 1773781144.152578 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 1000000
+2026-03-17T20:59:47.052956Z 1773781187.052956 CMD oguyon@/home/oguyon/src/milk-perf milk-perfbench milk-fpsexec-clitest 1000000

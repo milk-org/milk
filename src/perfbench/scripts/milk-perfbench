@@ -40,9 +40,15 @@ function set_outdir() {
 }
 
 FPSARGS=""
-MSopt+=( "a:fpsargs:set_fpsargs:args[string]:extra args passed to fpsexec exec" )
+MSopt+=( "a:fpsargs:set_fpsargs:args[string]:extra args passed to fpsexec set" )
 function set_fpsargs() {
     FPSARGS="$1"
+}
+
+SETUPCMD=""
+MSopt+=( "s:setup:set_setup:cmd[string]:setup command run before benchmark" )
+function set_setup() {
+    SETUPCMD="$1"
 }
 
 # parse arguments
@@ -144,7 +150,13 @@ echo "[2/4] confstep ..."
 ${FPSEXEC} ${FPSNAME}:confstep
 
 # Step 3: Set benchmark parameters
-echo "[3/4] Setting FPS params ..."
+echo "[3/5] Setting FPS params ..."
+# Enable processinfo
+milk-fps-set \
+    ${FPSNAME}.procinfo.enabled ON
+# Enable timing measurement
+milk-fps-set \
+    ${FPSNAME}.procinfo.MeasureTiming ON
 # triggermode 0 = IMMEDIATE (no wait)
 milk-fps-set \
     ${FPSNAME}.procinfo.triggermode 0
@@ -157,8 +169,16 @@ if [ -n "${FPSARGS}" ]; then
     ${FPSEXEC} ${FPSNAME}:set ${FPSARGS}
 fi
 
-# Step 4: Run under perf stat
-echo "[4/4] Running ${NBITER} iterations ..."
+# Step 4: Run setup command (create streams etc)
+if [ -n "${SETUPCMD}" ]; then
+    echo "[4/5] Setup: ${SETUPCMD}"
+    eval "${SETUPCMD}"
+else
+    echo "[4/5] No setup command"
+fi
+
+# Step 5: Run under perf stat
+echo "[5/5] Running ${NBITER} iterations ..."
 
 # Temporarily disable set -e and ERR trap:
 # perf stat may fail (permissions), and

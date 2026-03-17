@@ -32,6 +32,24 @@ install(TARGETS milk-perfbench-readprocinfo
     DESTINATION bin)
 
 # ──────────────────────────────────────────
+# C utility: create dummy SHM streams
+# ──────────────────────────────────────────
+
+add_executable(milk-perfbench-mkstream
+    perfbench-mkstream.c)
+
+target_include_directories(
+    milk-perfbench-mkstream PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+
+target_link_libraries(
+    milk-perfbench-mkstream
+    ImageStreamIO)
+
+install(TARGETS milk-perfbench-mkstream
+    DESTINATION bin)
+
+# ──────────────────────────────────────────
 # Install scripts
 # ──────────────────────────────────────────
 
@@ -45,16 +63,18 @@ install(PROGRAMS ${PERFBENCH_SCRIPTS}
 include(CTest)
 
 # Smoke test: run the template compute unit
-# through the harness with 1 iteration
+# through the harness.
+# Uses a wrapper script that creates the
+# cam01 stream required by clitest.
 set(TESTNAME "perf-clitest")
 add_test(NAME "${TESTNAME}"
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/milk-perfbench
-        milk-fpsexec-clitest 1
-        -o ${CMAKE_BINARY_DIR}/perfresults)
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/tests/test-perf-clitest.sh
+        100
+        ${CMAKE_BINARY_DIR}/perfresults)
 set_property(TEST "${TESTNAME}"
     PROPERTY LABELS "perf")
 set_property(TEST "${TESTNAME}"
     PROPERTY TIMEOUT 30)
 set_property(TEST "${TESTNAME}"
     PROPERTY ENVIRONMENT
-    "PATH=${CMAKE_BINARY_DIR}/src/perfbench:${CMAKE_BINARY_DIR}/src/milk_module_example:$ENV{PATH}")
+    "PATH=${CMAKE_BINARY_DIR}/src/perfbench:${CMAKE_BINARY_DIR}/src/milk_module_example:${CMAKE_BINARY_DIR}/src/engine/libfps:${PROJECT_SOURCE_DIR}/scripts:$ENV{PATH}")
