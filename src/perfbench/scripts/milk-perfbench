@@ -238,6 +238,10 @@ if [ ${PERF_CAN_RUN} -eq 1 ]; then
         -e dTLB-load-misses \
         -e branch-misses \
         -e branches \
+        -e page-faults \
+        -e minor-faults \
+        -e major-faults \
+        -e cpu-migrations \
         -e context-switches \
         -e task-clock \
         -o "${PERF_OUT}" \
@@ -345,6 +349,10 @@ DTLB_LOADS=$(get_perf_counter "dTLB-loads")
 DTLB_MISSES=$(get_perf_counter "dTLB-load-misses")
 BRANCH_MISSES=$(get_perf_counter "branch-misses")
 BRANCHES=$(get_perf_counter "branches")
+PAGE_FAULTS=$(get_perf_counter "page-faults")
+MINOR_FAULTS=$(get_perf_counter "minor-faults")
+MAJOR_FAULTS=$(get_perf_counter "major-faults")
+CPU_MIGRATIONS=$(get_perf_counter "cpu-migrations")
 CTX_SWITCHES=$(get_perf_counter "context-switches")
 TASK_CLOCK=$(get_perf_counter "task-clock")
 
@@ -387,6 +395,10 @@ DTLB_MISS_PCT=$(miss_rate ${DTLB_MISSES} ${DTLB_LOADS})
 : "${DTLB_MISSES:=0}"
 : "${BRANCH_MISSES:=0}"
 : "${BRANCHES:=0}"
+: "${PAGE_FAULTS:=0}"
+: "${MINOR_FAULTS:=0}"
+: "${MAJOR_FAULTS:=0}"
+: "${CPU_MIGRATIONS:=0}"
 : "${CTX_SWITCHES:=0}"
 : "${TASK_CLOCK:=0}"
 
@@ -425,6 +437,10 @@ echo "    \"dTLB_misses\": ${DTLB_MISSES},"
 echo "    \"dTLB_miss_pct\": ${DTLB_MISS_PCT},"
 echo "    \"branch_misses\": ${BRANCH_MISSES},"
 echo "    \"branches\": ${BRANCHES},"
+echo "    \"page_faults\": ${PAGE_FAULTS},"
+echo "    \"minor_faults\": ${MINOR_FAULTS},"
+echo "    \"major_faults\": ${MAJOR_FAULTS},"
+echo "    \"cpu_migrations\": ${CPU_MIGRATIONS},"
 echo "    \"context_switches\": ${CTX_SWITCHES},"
 echo "    \"task_clock_ms\": ${TASK_CLOCK}"
 echo "  },"
@@ -446,6 +462,8 @@ if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     PI_P95_ITER=$(extract_json "p95_iter_ns")
     PI_P99_ITER=$(extract_json "p99_iter_ns")
     PI_VMPEAK=$(extract_json "vmpeak_kb")
+    PI_VMHWM=$(extract_json "vmhwm_kb")
+    PI_VMRSS=$(extract_json "vmrss_kb")
     PI_LOOPCNT=$(extract_json "loopcnt")
 
     : "${PI_MED_ITER:=0}"
@@ -457,6 +475,8 @@ if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     : "${PI_P95_ITER:=0}"
     : "${PI_P99_ITER:=0}"
     : "${PI_VMPEAK:=-1}"
+    : "${PI_VMHWM:=-1}"
+    : "${PI_VMRSS:=-1}"
     : "${PI_LOOPCNT:=0}"
 
     echo "  \"processinfo\": {"
@@ -469,7 +489,9 @@ if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     echo "    \"p50_iter_ns\": ${PI_P50_ITER},"
     echo "    \"p95_iter_ns\": ${PI_P95_ITER},"
     echo "    \"p99_iter_ns\": ${PI_P99_ITER},"
-    echo "    \"vmpeak_kb\": ${PI_VMPEAK}"
+    echo "    \"vmpeak_kb\": ${PI_VMPEAK},"
+    echo "    \"vmhwm_kb\": ${PI_VMHWM},"
+    echo "    \"vmrss_kb\": ${PI_VMRSS}"
     echo "  }"
 else
     echo "  \"processinfo\": null"
@@ -540,6 +562,19 @@ echo "  ------------------------------------------"
 printf "${FMT}" "Branch misses" \
     "${BRANCH_MISSES}" \
     "$(per_iter ${BRANCH_MISSES})"
+echo "  ------------------------------------------"
+printf "${FMT}" "Page faults" \
+    "${PAGE_FAULTS}" \
+    "$(per_iter ${PAGE_FAULTS})"
+printf "${FMT}" "  minor" \
+    "${MINOR_FAULTS}" \
+    "$(per_iter ${MINOR_FAULTS})"
+printf "${FMT}" "  major" \
+    "${MAJOR_FAULTS}" \
+    "$(per_iter ${MAJOR_FAULTS})"
+printf "${FMT}" "CPU migrations" \
+    "${CPU_MIGRATIONS}" \
+    "$(per_iter ${CPU_MIGRATIONS})"
 printf "${FMT}" "Ctx switches" \
     "${CTX_SWITCHES}" \
     "$(per_iter ${CTX_SWITCHES})"
@@ -551,6 +586,10 @@ if [ "${HAVE_PROCINFO}" -eq 1 ]; then
         "Median exec" "${PI_MED_EXEC} ns"
     printf "  %-16s %14s\n" \
         "VmPeak" "${PI_VMPEAK} kB"
+    printf "  %-16s %14s\n" \
+        "VmHWM (RSS)" "${PI_VMHWM} kB"
+    printf "  %-16s %14s\n" \
+        "VmRSS" "${PI_VMRSS} kB"
 fi
 echo "=========================================="
 echo "  Results: ${RESULT_FILE}"

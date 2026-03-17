@@ -47,13 +47,25 @@ static int cmp_long(const void *a, const void *b)
 }
 
 
+/** Memory stats from /proc/PID/status */
+struct proc_mem
+{
+    long vmpeak_kb;  /**< peak virtual memory */
+    long vmhwm_kb;   /**< peak resident set size */
+    long vmrss_kb;   /**< current RSS at readout */
+};
+
+
 /**
- * @brief Read VmPeak from /proc/PID/status.
+ * @brief Read memory stats from /proc/PID/status.
  *
  * @param pid   Process ID to query
- * @return      VmPeak in kB, or -1 on failure
+ * @param[out] mem  Filled with VmPeak, VmHWM, VmRSS
+ * @return      0 on success, -1 on failure
  */
-static long read_vmpeak(pid_t pid)
+static int read_proc_memory(
+    pid_t pid,
+    struct proc_mem *mem)
 {
     char path[128];
     snprintf(path, sizeof(path),
@@ -65,24 +77,41 @@ static long read_vmpeak(pid_t pid)
         return -1;
     }
 
+    mem->vmpeak_kb = -1;
+    mem->vmhwm_kb  = -1;
+    mem->vmrss_kb  = -1;
+
     char line[256];
-    long vmpeak_kb = -1;
+    int found = 0;
 
     while (fgets(line, sizeof(line), fp) != NULL)
     {
         if (strncmp(line, "VmPeak:", 7) == 0)
         {
-            if (sscanf(line + 7, " %ld", &vmpeak_kb)
-                != 1)
-            {
-                vmpeak_kb = -1;
-            }
+            sscanf(line + 7, " %ld",
+                   &mem->vmpeak_kb);
+            found++;
+        }
+        else if (strncmp(line, "VmHWM:", 6) == 0)
+        {
+            sscanf(line + 6, " %ld",
+                   &mem->vmhwm_kb);
+            found++;
+        }
+        else if (strncmp(line, "VmRSS:", 6) == 0)
+        {
+            sscanf(line + 6, " %ld",
+                   &mem->vmrss_kb);
+            found++;
+        }
+        if (found >= 3)
+        {
             break;
         }
     }
 
     fclose(fp);
-    return vmpeak_kb;
+    return 0;
 }
 
 
@@ -207,8 +236,9 @@ int main(int argc, char *argv[])
         p99_iter = iter_ns[(nvalid * 99) / 100];
     }
 
-    /* Read VmPeak */
-    long vmpeak_kb = read_vmpeak(pinfo->PID);
+    /* Read memory stats */
+    struct proc_mem mem;
+    read_proc_memory(pinfo->PID, &mem);
 
     /* ----- Output JSON ----- */
 
@@ -231,7 +261,9 @@ int main(int argc, char *argv[])
     printf("    \"p99_iter_ns\": %ld\n", p99_iter);
     printf("  },\n");
     printf("  \"memory\": {\n");
-    printf("    \"vmpeak_kb\": %ld\n", vmpeak_kb);
+    printf("    \"vmpeak_kb\": %ld,\n", mem.vmpeak_kb);
+    printf("    \"vmhwm_kb\": %ld,\n", mem.vmhwm_kb);
+    printf("    \"vmrss_kb\": %ld\n", mem.vmrss_kb);
     printf("  }\n");
     printf("}\n");
 
