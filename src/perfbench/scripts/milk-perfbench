@@ -51,6 +51,12 @@ function set_setup() {
     SETUPCMD="$1"
 }
 
+WARMUP=0
+MSopt+=( "w:warmup:set_warmup:n[int]:warmup iterations (subtracted from results)" )
+function set_warmup() {
+    WARMUP="$1"
+}
+
 # parse arguments
 source milk-argparse
 
@@ -136,6 +142,10 @@ echo "======================================="
 echo "  Command   : ${FPSEXEC}"
 echo "  FPS name  : ${FPSNAME}"
 echo "  Iterations: ${NBITER}"
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "  Warmup    : ${WARMUP}"
+    echo "  Measured  : $(( NBITER - WARMUP ))"
+fi
 echo "  Output    : ${RESULT_FILE}"
 echo "======================================="
 echo ""
@@ -201,8 +211,25 @@ else
     echo "[5/6] No setup command"
 fi
 
-# Step 6: Run the benchmark
-echo "[6/6] Running ${NBITER} iterations ..."
+## =========================================
+# PERF STAT HELPERS
+# =========================================
+
+# Shared list of perf events
+PERF_EVENTS=(
+    cycles instructions bus-cycles
+    L1-dcache-loads L1-dcache-load-misses
+    L1-dcache-stores
+    L1-icache-loads L1-icache-load-misses
+    iTLB-load-misses
+    LLC-loads LLC-load-misses
+    LLC-stores LLC-store-misses
+    dTLB-loads dTLB-load-misses
+    dTLB-store-misses
+    branch-misses branches
+    page-faults minor-faults major-faults
+    cpu-migrations context-switches task-clock
+)
 
 # Temporarily disable set -e and ERR trap:
 # perf stat may fail (permissions), and
@@ -213,117 +240,63 @@ set +eE
 trap - ERR
 
 # Probe: can perf stat actually run commands?
-# With perf_event_paranoid=4, perf stat exits
-# 255 WITHOUT executing the child command.
 PERF_CAN_RUN=0
 perf stat -- true 2>/dev/null
 if [ $? -ne 255 ]; then
     PERF_CAN_RUN=1
 fi
 
-TSTART=$(date +%s%N)
+# Build -e flags string once
+PERF_EFLAGS=""
+for ev in "${PERF_EVENTS[@]}"; do
+    PERF_EFLAGS="${PERF_EFLAGS} -e ${ev}"
+done
 
-if [ ${PERF_CAN_RUN} -eq 1 ]; then
-    perf stat \
-        -j \
-        -e cycles \
-        -e instructions \
-        -e bus-cycles \
-        -e L1-dcache-loads \
-        -e L1-dcache-load-misses \
-        -e L1-dcache-stores \
-        -e L1-icache-loads \
-        -e L1-icache-load-misses \
-        -e iTLB-load-misses \
-        -e LLC-loads \
-        -e LLC-load-misses \
-        -e LLC-stores \
-        -e LLC-store-misses \
-        -e dTLB-loads \
-        -e dTLB-load-misses \
-        -e dTLB-store-misses \
-        -e branch-misses \
-        -e branches \
-        -e page-faults \
-        -e minor-faults \
-        -e major-faults \
-        -e cpu-migrations \
-        -e context-switches \
-        -e task-clock \
-        -o "${PERF_OUT}" \
-        -- ${FPSEXEC} ${FPSNAME}:runstart \
-        2>/dev/null
-    PERF_EXIT=$?
-else
-    echo "  perf stat unavailable" \
-         "(perf_event_paranoid), running" \
-         "without hardware counters"
-    ${FPSEXEC} ${FPSNAME}:runstart \
-        >/dev/null 2>&1
-    PERF_EXIT=$?
-fi
+## run_perf_phase <label> <iters> <perf_outfile>
+## Sets loopcntMax, runs under perf stat,
+## returns wall-clock ns in PHASE_NS.
+run_perf_phase() {
+    local label="$1"
+    local iters="$2"
+    local outfile="$3"
 
-TEND=$(date +%s%N)
+    milk-fps-set \
+        ${FPSNAME}.procinfo.loopcntMax \
+        "${iters}" >/dev/null 2>&1
 
-if [ ${PERF_EXIT} -ne 0 ]; then
-    echo "WARNING: perf stat exited with" \
-        "code ${PERF_EXIT}"
-fi
+    echo "  [${label}] ${iters} iterations ..."
 
-# Wall-clock time
-ELAPSED_NS=$(( TEND - TSTART ))
-ELAPSED_S=$(echo "scale=6; ${ELAPSED_NS} / 1000000000" \
-    | bc)
+    local tstart tend
+    tstart=$(date +%s%N)
 
-# =========================================
-# READ PROCESSINFO
-# =========================================
-
-# Find the processinfo SHM file for the fpsexec
-# The file is named proc.<name>.<PID>.shm
-# We search for the most recently modified match
-PINFO_FILE=""
-PINFO_FILE=$(find "${PROCDIR}" \
-    -maxdepth 1 \
-    -name "proc.*.shm" \
-    -newer "${PERF_OUT}" \
-    -printf '%T@ %p\n' 2>/dev/null \
-    | sort -rn \
-    | head -1 \
-    | awk '{print $2}')
-
-HAVE_PROCINFO=0
-if [ -n "${PINFO_FILE}" ] && [ -f "${PINFO_FILE}" ]; then
-    milk-perfbench-readprocinfo \
-        "${PINFO_FILE}" > "${PROCINFO_OUT}" 2>/dev/null
-    if [ $? -eq 0 ]; then
-        HAVE_PROCINFO=1
+    if [ ${PERF_CAN_RUN} -eq 1 ]; then
+        eval perf stat -j ${PERF_EFLAGS} \
+            -o \"${outfile}\" \
+            -- ${FPSEXEC} ${FPSNAME}:runstart \
+            2\>/dev/null
+    else
+        ${FPSEXEC} ${FPSNAME}:runstart \
+            >/dev/null 2>&1
     fi
-fi
 
-# =========================================
-# PARSE PERF STAT OUTPUT
-# =========================================
+    tend=$(date +%s%N)
+    PHASE_NS=$(( tend - tstart ))
+}
 
-# Extract counters from perf stat JSON lines.
-# On hybrid CPUs (Intel P+E), events appear as
-# "cpu_atom/cycles/" and "cpu_core/cycles/"
-# instead of plain "cycles". We match the event
-# basename and sum values from all core types.
+## get_perf_counter <event> <perf_outfile>
+## Extracts a counter value from perf JSON.
 get_perf_counter() {
     local event="$1"
+    local pfile="$2"
     local total=0
     local found=0
 
-    # Match exact name or */name/ pattern
     while IFS= read -r line; do
         val=$(echo "${line}" \
             | grep -o \
                 '"counter-value" *: *"[^"]*"' \
             | sed 's/.*: *"\([^"]*\)"/\1/' \
             | tr -d ',')
-        # Only accept numeric values (skip
-        # <not counted>, <not supported>, etc)
         if echo "${val}" \
             | grep -qE '^[0-9]+\.?[0-9]*$'
         then
@@ -333,40 +306,149 @@ get_perf_counter() {
         fi
     done < <(grep -E \
         "\"(${event}|[^\"]*/${event}/[^\"]*)\"" \
-        "${PERF_OUT}" 2>/dev/null)
+        "${pfile}" 2>/dev/null)
 
     if [ ${found} -eq 1 ]; then
-        # Truncate to integer
-        echo "${total}" | sed 's/\..*//'
+        echo "${total}" | sed 's/\..*//';
     else
         echo "0"
     fi
 }
 
-CYCLES=$(get_perf_counter "cycles")
-BUS_CYCLES=$(get_perf_counter "bus-cycles")
-INSTRUCTIONS=$(get_perf_counter "instructions")
-L1D_LOADS=$(get_perf_counter "L1-dcache-loads")
-L1D_MISSES=$(get_perf_counter "L1-dcache-load-misses")
-L1D_STORES=$(get_perf_counter "L1-dcache-stores")
-L1I_LOADS=$(get_perf_counter "L1-icache-loads")
-L1I_MISSES=$(get_perf_counter "L1-icache-load-misses")
-ITLB_MISSES=$(get_perf_counter "iTLB-load-misses")
-LLC_LOADS=$(get_perf_counter "LLC-loads")
-LLC_MISSES=$(get_perf_counter "LLC-load-misses")
-LLC_STORES=$(get_perf_counter "LLC-stores")
-LLC_ST_MISSES=$(get_perf_counter "LLC-store-misses")
-DTLB_LOADS=$(get_perf_counter "dTLB-loads")
-DTLB_MISSES=$(get_perf_counter "dTLB-load-misses")
-DTLB_ST_MISSES=$(get_perf_counter "dTLB-store-misses")
-BRANCH_MISSES=$(get_perf_counter "branch-misses")
-BRANCHES=$(get_perf_counter "branches")
-PAGE_FAULTS=$(get_perf_counter "page-faults")
-MINOR_FAULTS=$(get_perf_counter "minor-faults")
-MAJOR_FAULTS=$(get_perf_counter "major-faults")
-CPU_MIGRATIONS=$(get_perf_counter "cpu-migrations")
-CTX_SWITCHES=$(get_perf_counter "context-switches")
-TASK_CLOCK=$(get_perf_counter "task-clock")
+# Counter names used throughout
+COUNTER_NAMES=(
+    cycles bus_cycles instructions
+    L1D_LOADS L1D_MISSES L1D_STORES
+    L1I_LOADS L1I_MISSES ITLB_MISSES
+    LLC_LOADS LLC_MISSES LLC_STORES
+    LLC_ST_MISSES DTLB_LOADS DTLB_MISSES
+    DTLB_ST_MISSES BRANCH_MISSES BRANCHES
+    PAGE_FAULTS MINOR_FAULTS MAJOR_FAULTS
+    CPU_MIGRATIONS CTX_SWITCHES TASK_CLOCK
+)
+
+# Perf event names matching COUNTER_NAMES
+COUNTER_EVENTS=(
+    cycles bus-cycles instructions
+    L1-dcache-loads L1-dcache-load-misses
+    L1-dcache-stores
+    L1-icache-loads L1-icache-load-misses
+    iTLB-load-misses
+    LLC-loads LLC-load-misses LLC-stores
+    LLC-store-misses dTLB-loads
+    dTLB-load-misses dTLB-store-misses
+    branch-misses branches
+    page-faults minor-faults major-faults
+    cpu-migrations context-switches task-clock
+)
+
+## parse_all_counters <prefix> <perf_outfile>
+## Sets ${prefix}_cycles, ${prefix}_bus_cycles, ...
+parse_all_counters() {
+    local pfx="$1"
+    local pfile="$2"
+    local i=0
+
+    for cname in "${COUNTER_NAMES[@]}"; do
+        local val
+        val=$(get_perf_counter \
+            "${COUNTER_EVENTS[$i]}" "${pfile}")
+        : "${val:=0}"
+        eval "${pfx}_${cname}=${val}"
+        i=$(( i + 1 ))
+    done
+}
+
+# =========================================
+# RUN BENCHMARK PHASE(S)
+# =========================================
+
+PERF_OUT_TOTAL=$(mktemp /tmp/pb-total.XXXXXX)
+PERF_OUT_WARMUP=$(mktemp /tmp/pb-warmup.XXXXXX)
+
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "[6/7] Running benchmark ..."
+    run_perf_phase "warmup" "${WARMUP}" \
+        "${PERF_OUT_WARMUP}"
+    W_NS=${PHASE_NS}
+
+    # Re-init FPS for 2nd run (reset procinfo)
+    ${FPSEXEC} ${FPSNAME}:fpsinit -procinfo \
+        >/dev/null 2>&1
+    ${FPSEXEC} ${FPSNAME}:confstep \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.enabled ON \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.MeasureTiming ON \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.triggermode 0 \
+        >/dev/null 2>&1
+
+    run_perf_phase "total " "${NBITER}" \
+        "${PERF_OUT_TOTAL}"
+    T_NS=${PHASE_NS}
+
+    MEASURED=$(( NBITER - WARMUP ))
+else
+    echo "[6/6] Running ${NBITER} iterations ..."
+    run_perf_phase "run" "${NBITER}" \
+        "${PERF_OUT_TOTAL}"
+    T_NS=${PHASE_NS}
+    W_NS=0
+    MEASURED=${NBITER}
+fi
+
+# Wall-clock times
+ELAPSED_NS=${T_NS}
+ELAPSED_S=$(echo "scale=6; \
+    ${ELAPSED_NS} / 1000000000" \
+    | bc)
+WARMUP_NS=${W_NS}
+WARMUP_S=$(echo "scale=6; \
+    ${WARMUP_NS} / 1000000000" \
+    | bc)
+
+# =========================================
+# READ PROCESSINFO (from total run)
+# =========================================
+
+PINFO_FILE=""
+PINFO_FILE=$(find "${PROCDIR}" \
+    -maxdepth 1 \
+    -name "proc.*.shm" \
+    -newer "${PERF_OUT_TOTAL}" \
+    -printf '%T@ %p\n' 2>/dev/null \
+    | sort -rn \
+    | head -1 \
+    | awk '{print $2}')
+
+HAVE_PROCINFO=0
+if [ -n "${PINFO_FILE}" ] \
+    && [ -f "${PINFO_FILE}" ]; then
+    milk-perfbench-readprocinfo \
+        "${PINFO_FILE}" \
+        > "${PROCINFO_OUT}" 2>/dev/null
+    if [ $? -eq 0 ]; then
+        HAVE_PROCINFO=1
+    fi
+fi
+
+# =========================================
+# PARSE COUNTERS
+# =========================================
+
+parse_all_counters "T" "${PERF_OUT_TOTAL}"
+
+if [ "${WARMUP}" -gt 0 ]; then
+    parse_all_counters "W" "${PERF_OUT_WARMUP}"
+else
+    for cname in "${COUNTER_NAMES[@]}"; do
+        eval "W_${cname}=0"
+    done
+fi
 
 # Executable file size
 EXE_PATH=$(command -v "${FPSEXEC}" 2>/dev/null)
@@ -376,17 +458,15 @@ if [ -n "${EXE_PATH}" ]; then
         "${EXE_PATH}" 2>/dev/null || echo 0)
 fi
 
-# Compute IPC if we have both values
+# Compute IPC (from total run)
 IPC="0"
-if [ -n "${INSTRUCTIONS}" ] \
-    && [ -n "${CYCLES}" ] \
-    && [ "${CYCLES}" != "0" ]; then
+if [ "${T_cycles}" != "0" ]; then
     IPC=$(echo "scale=3; \
-        ${INSTRUCTIONS} / ${CYCLES}" \
+        ${T_instructions} / ${T_cycles}" \
         | bc 2>/dev/null || echo "0")
 fi
 
-# Compute miss rates (6 decimal places)
+# Compute miss rates (from total run)
 miss_rate() {
     local misses="$1" loads="$2"
     if [ "${loads}" != "0" ] \
@@ -398,40 +478,18 @@ miss_rate() {
         echo "0"
     fi
 }
-L1D_MISS_PCT=$(miss_rate ${L1D_MISSES} ${L1D_LOADS})
-L1I_MISS_PCT=$(miss_rate ${L1I_MISSES} ${L1I_LOADS})
-LLC_MISS_PCT=$(miss_rate ${LLC_MISSES} ${LLC_LOADS})
+L1D_MISS_PCT=$(miss_rate \
+    ${T_L1D_MISSES} ${T_L1D_LOADS})
+L1I_MISS_PCT=$(miss_rate \
+    ${T_L1I_MISSES} ${T_L1I_LOADS})
+LLC_MISS_PCT=$(miss_rate \
+    ${T_LLC_MISSES} ${T_LLC_LOADS})
 LLC_ST_MISS_PCT=$(miss_rate \
-    ${LLC_ST_MISSES} ${LLC_STORES})
+    ${T_LLC_ST_MISSES} ${T_LLC_STORES})
 DTLB_MISS_PCT=$(miss_rate \
-    ${DTLB_MISSES} ${DTLB_LOADS})
+    ${T_DTLB_MISSES} ${T_DTLB_LOADS})
 
-: "${CYCLES:=0}"
-: "${BUS_CYCLES:=0}"
-: "${INSTRUCTIONS:=0}"
-: "${L1D_LOADS:=0}"
-: "${L1D_MISSES:=0}"
-: "${L1D_STORES:=0}"
-: "${L1I_LOADS:=0}"
-: "${L1I_MISSES:=0}"
-: "${ITLB_MISSES:=0}"
-: "${LLC_LOADS:=0}"
-: "${LLC_MISSES:=0}"
-: "${LLC_STORES:=0}"
-: "${LLC_ST_MISSES:=0}"
-: "${DTLB_LOADS:=0}"
-: "${DTLB_MISSES:=0}"
-: "${DTLB_ST_MISSES:=0}"
-: "${BRANCH_MISSES:=0}"
-: "${BRANCHES:=0}"
-: "${PAGE_FAULTS:=0}"
-: "${MINOR_FAULTS:=0}"
-: "${MAJOR_FAULTS:=0}"
-: "${CPU_MIGRATIONS:=0}"
-: "${CTX_SWITCHES:=0}"
-: "${TASK_CLOCK:=0}"
-
-# Re-enable strict error checking + ERR trap
+# Re-enable strict error handling
 set -eE
 eval "${_SAVED_ERR_TRAP}"
 
@@ -446,44 +504,57 @@ echo "  \"compute_unit\": \"${FPSEXEC}\","
 echo "  \"exe_size_bytes\": ${EXE_SIZE},"
 echo "  \"git_commit\": \"${GIT_COMMIT}\","
 echo "  \"iterations\": ${NBITER},"
+echo "  \"warmup_iterations\": ${WARMUP},"
+echo "  \"measured_iterations\": ${MEASURED},"
 echo "  \"wall_clock_s\": ${ELAPSED_S},"
+echo "  \"warmup_s\": ${WARMUP_S},"
 
 echo "  \"hw_counters\": {"
-echo "    \"cycles\": ${CYCLES},"
-echo "    \"bus_cycles\": ${BUS_CYCLES},"
-echo "    \"instructions\": ${INSTRUCTIONS},"
+echo "    \"cycles\": ${T_cycles},"
+echo "    \"bus_cycles\": ${T_bus_cycles},"
+echo "    \"instructions\": ${T_instructions},"
 echo "    \"ipc\": ${IPC},"
-echo "    \"L1_dcache_loads\": ${L1D_LOADS},"
-echo "    \"L1_dcache_misses\": ${L1D_MISSES},"
+echo "    \"L1_dcache_loads\": ${T_L1D_LOADS},"
+echo "    \"L1_dcache_misses\": ${T_L1D_MISSES},"
 echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
-echo "    \"L1_dcache_stores\": ${L1D_STORES},"
-echo "    \"L1_icache_loads\": ${L1I_LOADS},"
-echo "    \"L1_icache_misses\": ${L1I_MISSES},"
+echo "    \"L1_dcache_stores\": ${T_L1D_STORES},"
+echo "    \"L1_icache_loads\": ${T_L1I_LOADS},"
+echo "    \"L1_icache_misses\": ${T_L1I_MISSES},"
 echo "    \"L1_icache_miss_pct\": ${L1I_MISS_PCT},"
-echo "    \"iTLB_misses\": ${ITLB_MISSES},"
-echo "    \"LLC_loads\": ${LLC_LOADS},"
-echo "    \"LLC_misses\": ${LLC_MISSES},"
+echo "    \"iTLB_misses\": ${T_ITLB_MISSES},"
+echo "    \"LLC_loads\": ${T_LLC_LOADS},"
+echo "    \"LLC_misses\": ${T_LLC_MISSES},"
 echo "    \"LLC_miss_pct\": ${LLC_MISS_PCT},"
-echo "    \"LLC_stores\": ${LLC_STORES},"
-echo "    \"LLC_store_misses\": ${LLC_ST_MISSES},"
+echo "    \"LLC_stores\": ${T_LLC_STORES},"
+echo "    \"LLC_store_misses\": ${T_LLC_ST_MISSES},"
 echo "    \"LLC_store_miss_pct\": ${LLC_ST_MISS_PCT},"
-echo "    \"dTLB_loads\": ${DTLB_LOADS},"
-echo "    \"dTLB_misses\": ${DTLB_MISSES},"
+echo "    \"dTLB_loads\": ${T_DTLB_LOADS},"
+echo "    \"dTLB_misses\": ${T_DTLB_MISSES},"
 echo "    \"dTLB_miss_pct\": ${DTLB_MISS_PCT},"
-echo "    \"dTLB_store_misses\": ${DTLB_ST_MISSES},"
-echo "    \"branch_misses\": ${BRANCH_MISSES},"
-echo "    \"branches\": ${BRANCHES},"
-echo "    \"page_faults\": ${PAGE_FAULTS},"
-echo "    \"minor_faults\": ${MINOR_FAULTS},"
-echo "    \"major_faults\": ${MAJOR_FAULTS},"
-echo "    \"cpu_migrations\": ${CPU_MIGRATIONS},"
-echo "    \"context_switches\": ${CTX_SWITCHES},"
-echo "    \"task_clock_ms\": ${TASK_CLOCK}"
+echo "    \"dTLB_store_misses\": ${T_DTLB_ST_MISSES},"
+echo "    \"branch_misses\": ${T_BRANCH_MISSES},"
+echo "    \"branches\": ${T_BRANCHES},"
+echo "    \"page_faults\": ${T_PAGE_FAULTS},"
+echo "    \"minor_faults\": ${T_MINOR_FAULTS},"
+echo "    \"major_faults\": ${T_MAJOR_FAULTS},"
+echo "    \"cpu_migrations\": ${T_CPU_MIGRATIONS},"
+echo "    \"context_switches\": ${T_CTX_SWITCHES},"
+echo "    \"task_clock_ms\": ${T_TASK_CLOCK}"
 echo "  },"
+
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "  \"warmup_counters\": {"
+    echo "    \"cycles\": ${W_cycles},"
+    echo "    \"instructions\": ${W_instructions},"
+    echo "    \"L1_dcache_misses\": ${W_L1D_MISSES},"
+    echo "    \"LLC_misses\": ${W_LLC_MISSES},"
+    echo "    \"branch_misses\": ${W_BRANCH_MISSES},"
+    echo "    \"page_faults\": ${W_PAGE_FAULTS}"
+    echo "  },"
+fi
 
 # Processinfo timing (if available)
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
-    # Extract fields from procinfo JSON
     extract_json() {
         grep "\"$1\"" "${PROCINFO_OUT}" \
             | head -1 \
@@ -540,114 +611,146 @@ echo "}"
 # SUMMARY
 # =========================================
 
-# per-iteration helper: total / NBITER
-per_iter() {
-    local v="$1"
-    if [ "${v}" = "0" ] || [ -z "${v}" ]; then
+# per-measured-iteration helper:
+# (total - warmup) / measured_iters
+pm_iter() {
+    local t="$1" w="$2"
+    local diff=$(( t - w ))
+    if [ "${diff}" -le 0 ] \
+        || [ "${MEASURED}" -le 0 ]; then
         echo "0"
     else
-        echo "scale=1; ${v} / ${NBITER}" \
+        echo "scale=1; ${diff} / ${MEASURED}" \
             | bc 2>/dev/null || echo "0"
     fi
 }
 
-FMT="  %-26s %14s %12s/iter\n"
-FMTHDR="  %-26s %14s %12s\n"
-FMTS="  %-26s %14s\n"
+if [ "${WARMUP}" -gt 0 ]; then
+    FMT="  %-26s %14s %14s %14s/iter\n"
+    FMTHDR="  %-26s %14s %14s %14s\n"
+    FMTS="  %-26s %14s\n"
+    SEP="  ------------------------------------------------------------------"
+else
+    FMT="  %-26s %14s %14s/iter\n"
+    FMTHDR="  %-26s %14s %14s\n"
+    FMTS="  %-26s %14s\n"
+    SEP="  ------------------------------------------------------"
+fi
+
+## Print a counter row
+## pc <label> <total_var_name>
+pc() {
+    local label="$1"
+    local tvar="$2"
+    local tval wval
+    eval "tval=\${T_${tvar}}"
+    eval "wval=\${W_${tvar}}"
+    : "${tval:=0}" "${wval:=0}"
+
+    if [ "${WARMUP}" -gt 0 ]; then
+        printf "${FMT}" "${label}" \
+            "${tval}" "${wval}" \
+            "$(pm_iter ${tval} ${wval})"
+    else
+        printf "${FMT}" "${label}" \
+            "${tval}" \
+            "$(pm_iter ${tval} 0)"
+    fi
+}
 
 echo ""
 echo "======================================================"
-echo "  Benchmark Results (${NBITER} iterations)"
+echo "  Benchmark Results"
+echo "  Total: ${NBITER}  Warmup: ${WARMUP}" \
+    " Measured: ${MEASURED}"
 echo "======================================================"
-printf "${FMTHDR}" "" "Total" "Per-iter"
-echo "  ------------------------------------------------------"
-printf "${FMT}" "Wall clock" \
-    "${ELAPSED_S} s" \
-    "$(echo "scale=1; ${ELAPSED_NS} / ${NBITER}" \
-        | bc) ns"
-printf "${FMT}" "Cycles" \
-    "${CYCLES}" "$(per_iter ${CYCLES})"
-printf "${FMT}" "Bus cycles" \
-    "${BUS_CYCLES}" "$(per_iter ${BUS_CYCLES})"
-printf "${FMT}" "Instructions" \
-    "${INSTRUCTIONS}" \
-    "$(per_iter ${INSTRUCTIONS})"
-printf "${FMTS}" "Instr per Cycle (IPC)" \
-    "${IPC}"
-echo "  ------------------------------------------------------"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTHDR}" "" \
+        "Total" "Warmup" "Measured"
+else
+    printf "${FMTHDR}" "" "Total" "Per-iter"
+fi
+echo "${SEP}"
+
+# Wall clock
+if [ "${WARMUP}" -gt 0 ]; then
+    MEAS_NS=$(( ELAPSED_NS - WARMUP_NS ))
+    MEAS_PI=$(echo "scale=1; \
+        ${MEAS_NS} / ${MEASURED}" \
+        | bc 2>/dev/null || echo 0)
+    printf "${FMT}" "Wall clock" \
+        "${ELAPSED_S} s" \
+        "${WARMUP_S} s" \
+        "${MEAS_PI} ns"
+else
+    printf "${FMT}" "Wall clock" \
+        "${ELAPSED_S} s" \
+        "$(echo "scale=1; \
+            ${ELAPSED_NS} / ${MEASURED}" \
+            | bc) ns"
+fi
+
+pc "Cycles" "cycles"
+pc "Bus cycles" "bus_cycles"
+pc "Instructions" "instructions"
+printf "${FMTS}" \
+    "Instr per Cycle (IPC)" "${IPC}"
+
+echo "${SEP}"
 echo "  --- L1 Data Cache ---"
-printf "${FMT}" "  Loads" \
-    "${L1D_LOADS}" "$(per_iter ${L1D_LOADS})"
-printf "${FMT}" "  Load misses" \
-    "${L1D_MISSES}" "$(per_iter ${L1D_MISSES})"
+pc "  Loads" "L1D_LOADS"
+pc "  Load misses" "L1D_MISSES"
 printf "${FMTS}" "    Miss rate" \
     "${L1D_MISS_PCT}%"
-printf "${FMT}" "  Stores" \
-    "${L1D_STORES}" "$(per_iter ${L1D_STORES})"
+pc "  Stores" "L1D_STORES"
+
 echo "  --- L1 Instruction Cache ---"
-printf "${FMT}" "  Loads" \
-    "${L1I_LOADS}" "$(per_iter ${L1I_LOADS})"
-printf "${FMT}" "  Load misses" \
-    "${L1I_MISSES}" "$(per_iter ${L1I_MISSES})"
+pc "  Loads" "L1I_LOADS"
+pc "  Load misses" "L1I_MISSES"
 printf "${FMTS}" "    Miss rate" \
     "${L1I_MISS_PCT}%"
+
 echo "  --- Instruction TLB ---"
-printf "${FMT}" "  Load misses" \
-    "${ITLB_MISSES}" \
-    "$(per_iter ${ITLB_MISSES})"
+pc "  Load misses" "ITLB_MISSES"
+
 echo "  --- Last Level Cache (LLC) ---"
-printf "${FMT}" "  Loads" \
-    "${LLC_LOADS}" "$(per_iter ${LLC_LOADS})"
-printf "${FMT}" "  Load misses" \
-    "${LLC_MISSES}" "$(per_iter ${LLC_MISSES})"
+pc "  Loads" "LLC_LOADS"
+pc "  Load misses" "LLC_MISSES"
 printf "${FMTS}" "    Load miss rate" \
     "${LLC_MISS_PCT}%"
-printf "${FMT}" "  Stores" \
-    "${LLC_STORES}" "$(per_iter ${LLC_STORES})"
-printf "${FMT}" "  Store misses" \
-    "${LLC_ST_MISSES}" \
-    "$(per_iter ${LLC_ST_MISSES})"
+pc "  Stores" "LLC_STORES"
+pc "  Store misses" "LLC_ST_MISSES"
 printf "${FMTS}" "    Store miss rate" \
     "${LLC_ST_MISS_PCT}%"
+
 echo "  --- Data TLB ---"
-printf "${FMT}" "  Loads" \
-    "${DTLB_LOADS}" "$(per_iter ${DTLB_LOADS})"
-printf "${FMT}" "  Load misses" \
-    "${DTLB_MISSES}" \
-    "$(per_iter ${DTLB_MISSES})"
+pc "  Loads" "DTLB_LOADS"
+pc "  Load misses" "DTLB_MISSES"
 printf "${FMTS}" "    Load miss rate" \
     "${DTLB_MISS_PCT}%"
-printf "${FMT}" "  Store misses" \
-    "${DTLB_ST_MISSES}" \
-    "$(per_iter ${DTLB_ST_MISSES})"
-echo "  ------------------------------------------------------"
-printf "${FMT}" "Branch misses" \
-    "${BRANCH_MISSES}" \
-    "$(per_iter ${BRANCH_MISSES})"
-echo "  ------------------------------------------------------"
-printf "${FMT}" "Page faults" \
-    "${PAGE_FAULTS}" \
-    "$(per_iter ${PAGE_FAULTS})"
-printf "${FMT}" "  Minor (in page cache)" \
-    "${MINOR_FAULTS}" \
-    "$(per_iter ${MINOR_FAULTS})"
-printf "${FMT}" "  Major (disk I/O)" \
-    "${MAJOR_FAULTS}" \
-    "$(per_iter ${MAJOR_FAULTS})"
-printf "${FMT}" "CPU core migrations" \
-    "${CPU_MIGRATIONS}" \
-    "$(per_iter ${CPU_MIGRATIONS})"
-printf "${FMT}" "Context switches" \
-    "${CTX_SWITCHES}" \
-    "$(per_iter ${CTX_SWITCHES})"
+pc "  Store misses" "DTLB_ST_MISSES"
+
+echo "${SEP}"
+pc "Branch misses" "BRANCH_MISSES"
+
+echo "${SEP}"
+pc "Page faults" "PAGE_FAULTS"
+pc "  Minor (in page cache)" "MINOR_FAULTS"
+pc "  Major (disk I/O)" "MAJOR_FAULTS"
+pc "CPU core migrations" "CPU_MIGRATIONS"
+pc "Context switches" "CTX_SWITCHES"
+
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
-    echo "  ------------------------------------------------------"
+    echo "${SEP}"
     printf "${FMTS}" \
-        "Median iteration time" "${PI_MED_ITER} ns"
+        "Median iteration time" \
+        "${PI_MED_ITER} ns"
     printf "${FMTS}" \
-        "Median exec time" "${PI_MED_EXEC} ns"
+        "Median exec time" \
+        "${PI_MED_EXEC} ns"
     printf "${FMTS}" \
-        "Peak virtual memory" "${PI_VMPEAK} kB"
+        "Peak virtual memory" \
+        "${PI_VMPEAK} kB"
     printf "${FMTS}" \
         "Peak RSS (VmHWM)" "${PI_VMHWM} kB"
     printf "${FMTS}" \
@@ -665,3 +768,5 @@ echo ""
 # =========================================
 
 rm -f "${PERF_OUT}" "${PROCINFO_OUT}"
+rm -f "${PERF_OUT_TOTAL}" "${PERF_OUT_WARMUP}"
+
