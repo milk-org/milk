@@ -251,32 +251,53 @@ retry_fuzzy:
 
     if(data.CLImatchMode == CLICOMPLETIONMODE_IMAGES)
     {
-        while(list_index1 < dcnimg)
+        static DIR *img_dirp = NULL;
+
+        if(!state)
         {
-            int iok;
-            iok = dcimg[list_index1].used;
-            if(iok == 1)
+            if(img_dirp != NULL)
             {
-                name = dcimg[list_index1].name;
+                closedir(img_dirp);
+                img_dirp = NULL;
             }
-            list_index1++;
-            if(iok == 1)
+            img_dirp = opendir(dcshmdir);
+        }
+
+        if(img_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(img_dirp)) != NULL)
             {
-                if(generator_fuzzy_pass == 0)
+                char *ext = strstr(ent->d_name, ".im.shm");
+                if(ext != NULL && strcmp(ext, ".im.shm") == 0)
                 {
-                    if(strncmp(name, text, len) == 0)
+                    char imgname[256];
+                    int namelen = ext - ent->d_name;
+                    if(namelen > 255)
                     {
-                        return (dupstr(name));
+                        namelen = 255;
+                    }
+                    strncpy(imgname, ent->d_name, namelen);
+                    imgname[namelen] = '\0';
+
+                    if(generator_fuzzy_pass == 0)
+                    {
+                        if(strncmp(imgname, text, len) == 0)
+                        {
+                            return (dupstr(imgname));
+                        }
+                    }
+                    else
+                    {
+                        if(strstr(imgname, text) != NULL)
+                        {
+                            return (dupstr(imgname));
+                        }
                     }
                 }
-                else
-                {
-                    if(strstr(name, text) != NULL)
-                    {
-                        return (dupstr(name));
-                    }
-                }
             }
+            closedir(img_dirp);
+            img_dirp = NULL;
         }
     }
 
@@ -408,10 +429,9 @@ retry_fuzzy:
     if(data.CLImatchMode == CLICOMPLETIONMODE_FPSPARAMS)
     {
         /*
-         * FPS parameter name completion.
-         * Scan /dev/shm for fps.* entries,
-         * strip "fps." prefix and ".shm"
-         * suffix, offer as completions.
+         * FPS name completion.
+         * Scan dcshmdir for fps.*.datadir entries,
+         * strip "fps." prefix and ".datadir" suffix.
          */
         static DIR *fps_dirp = NULL;
 
@@ -422,40 +442,45 @@ retry_fuzzy:
                 closedir(fps_dirp);
                 fps_dirp = NULL;
             }
-            fps_dirp = opendir("/dev/shm");
+            fps_dirp = opendir(dcshmdir);
         }
 
         if(fps_dirp != NULL)
         {
             struct dirent *ent;
-            while((ent = readdir(fps_dirp))
-                    != NULL)
+            while((ent = readdir(fps_dirp)) != NULL)
             {
-                /* Only fps.*.shm entries */
-                if(strncmp(ent->d_name,
-                           "fps.", 4) != 0)
+                /* Only fps.*.datadir entries */
+                if(strncmp(ent->d_name, "fps.", 4) != 0)
                 {
                     continue;
                 }
-                /* Strip "fps." prefix */
-                char fpsname[256];
-                strncpy(fpsname,
-                        ent->d_name + 4,
-                        sizeof(fpsname) - 1);
-                fpsname[
-                    sizeof(fpsname) - 1]
-                    = '\0';
-                /* Strip ".shm" suffix */
-                char *dot = strstr(
-                    fpsname, ".shm");
-                if(dot != NULL)
+                char *ext = strstr(ent->d_name, ".datadir");
+                if(ext != NULL && strcmp(ext, ".datadir") == 0)
                 {
-                    *dot = '\0';
-                }
-                if(strncmp(fpsname, text,
-                           len) == 0)
-                {
-                    return dupstr(fpsname);
+                    char fpsname[256];
+                    int namelen = ext - (ent->d_name + 4);
+                    if(namelen > 255)
+                    {
+                        namelen = 255;
+                    }
+                    strncpy(fpsname, ent->d_name + 4, namelen);
+                    fpsname[namelen] = '\0';
+
+                    if(generator_fuzzy_pass == 0)
+                    {
+                        if(strncmp(fpsname, text, len) == 0)
+                        {
+                            return dupstr(fpsname);
+                        }
+                    }
+                    else
+                    {
+                        if(strstr(fpsname, text) != NULL)
+                        {
+                            return dupstr(fpsname);
+                        }
+                    }
                 }
             }
             closedir(fps_dirp);
@@ -611,8 +636,17 @@ CLI_completion(const char *text, int start, int __attribute__((unused)) end)
             else if(data.CLImatchMode
                     != CLICOMPLETIONMODE_FPSPARAMS)
             {
-                data.CLImatchMode =
-                    CLICOMPLETIONMODE_IMAGES;
+                if(strcmp(data.cmd[cmdimatch].key, "fparam") == 0 ||
+                   strcmp(data.cmd[cmdimatch].key, "fpsCTRL") == 0 ||
+                   strcmp(data.cmd[cmdimatch].key, "fpsload") == 0 ||
+                   strcmp(data.cmd[cmdimatch].key, "dpsingle") == 0)
+                {
+                    data.CLImatchMode = CLICOMPLETIONMODE_FPSPARAMS;
+                }
+                else
+                {
+                    data.CLImatchMode = CLICOMPLETIONMODE_IMAGES;
+                }
             }
         }
         else
@@ -1292,6 +1326,40 @@ errno_t cli_cmdstats(void)
  */
 
 #ifdef USE_READLINE
+
+errno_t cli_timing_toggle(void)
+{
+    if(data.cmdNBarg >= 2)
+    {
+        const char *arg =
+            data.cmdargtoken[1].val.string;
+        if(strcmp(arg, "on") == 0
+                || strcmp(arg, "1") == 0)
+        {
+            data.print_cmd_timing = 1;
+            printf("Command execution timing ON\n");
+        }
+        else if(strcmp(arg, "off") == 0
+                || strcmp(arg, "0") == 0)
+        {
+            data.print_cmd_timing = 0;
+            printf("Command execution timing OFF\n");
+        }
+        else
+        {
+            printf("Usage: cli.timing [on|off]\n");
+        }
+    }
+    else
+    {
+        data.print_cmd_timing =
+            !data.print_cmd_timing;
+        printf("Command execution timing %s\n",
+               data.print_cmd_timing
+               ? "ON" : "OFF");
+    }
+    return RETURN_SUCCESS;
+}
 
 errno_t cli_syntax_highlight_toggle(void)
 {
@@ -2927,8 +2995,21 @@ errno_t CLI_execute_line()
                 // Execute CLI command
                 data.cmd[data.cmdindex]
                     .callcount++;
+
+                struct timespec t0, t1;
+                clock_gettime(CLOCK_MONOTONIC, &t0);
+
                 data.CMDerrstatus =
                     data.cmd[data.cmdindex].fp();
+
+                if(data.print_cmd_timing)
+                {
+                    clock_gettime(CLOCK_MONOTONIC, &t1);
+                    double elapsed_ms = (t1.tv_sec - t0.tv_sec) * 1000.0 + 
+                                        (t1.tv_nsec - t0.tv_nsec) / 1000000.0;
+                    printf("Execution time: %.3f ms\n", elapsed_ms);
+                }
+
                 cli_save_last_argument();
 
                 if(data.CMDerrstatus != RETURN_SUCCESS)
@@ -3002,22 +3083,43 @@ errno_t CLI_execute_line()
         if(data.cmdNBarg > 0 && strlen(data.cmdargtoken[0].val.string) > 0)
         {
             const char *input_cmd = data.cmdargtoken[0].val.string;
-            int best_dist = 9999;
-            const char *best_match = NULL;
+            
+            struct MatchNode {
+                int dist;
+                const char *cmd;
+            } matches[3] = { {9999, NULL}, {9999, NULL}, {9999, NULL} };
 
             for(unsigned int i = 0; i < data.NBcmd; i++) {
                 int d = levenshtein_distance((const char*)input_cmd,
                     (const char*)data.cmd[i].key);
-                if(d < best_dist) {
-                    best_dist = d;
-                    best_match = data.cmd[i].key;
+                
+                // Keep top 3 smallest distances
+                if (d < matches[2].dist) {
+                    matches[2].dist = d;
+                    matches[2].cmd = data.cmd[i].key;
+                    
+                    // Bubble up
+                    if (matches[2].dist < matches[1].dist) {
+                        struct MatchNode tmp = matches[1];
+                        matches[1] = matches[2];
+                        matches[2] = tmp;
+                    }
+                    if (matches[1].dist < matches[0].dist) {
+                        struct MatchNode tmp = matches[0];
+                        matches[0] = matches[1];
+                        matches[1] = tmp;
+                    }
                 }
             }
 
-            if(best_dist <= 3 && best_match != NULL) {
+            if(matches[0].dist <= 4 && matches[0].cmd != NULL) {
                 printf(COLORRED "Command '%s' not found. " COLORRESET
-                       "Did you mean " COLORHBOLDCYAN "'%s'" COLORRESET "?\n",
-                       input_cmd, best_match);
+                       "Did you mean:\n", input_cmd);
+                for (int m = 0; m < 3; m++) {
+                    if (matches[m].cmd && matches[m].dist <= 4 && matches[m].dist < 9999) {
+                        printf("  - " COLORHBOLDCYAN "%s" COLORRESET "\n", matches[m].cmd);
+                    }
+                }
             } else {
                 printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
             }
