@@ -50,4 +50,10 @@ errno_t list_commands_module(CONST_WORD modulename);
 
 errno_t help_command(CONST_WORD cmdkey);
 
+int cli_fhelp(void);
+
+int cli_fhist(void);
+
+int cli_fparam(void);
+
 #endif
