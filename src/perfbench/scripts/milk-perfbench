@@ -551,15 +551,16 @@ per_iter() {
     fi
 }
 
-FMT="  %-16s %14s %12s/iter\n"
-FMTHDR="  %-16s %14s %12s\n"
+FMT="  %-26s %14s %12s/iter\n"
+FMTHDR="  %-26s %14s %12s\n"
+FMTS="  %-26s %14s\n"
 
 echo ""
-echo "=========================================="
+echo "======================================================"
 echo "  Benchmark Results (${NBITER} iterations)"
-echo "=========================================="
+echo "======================================================"
 printf "${FMTHDR}" "" "Total" "Per-iter"
-echo "  ------------------------------------------"
+echo "  ------------------------------------------------------"
 printf "${FMT}" "Wall clock" \
     "${ELAPSED_S} s" \
     "$(echo "scale=1; ${ELAPSED_NS} / ${NBITER}" \
@@ -569,85 +570,94 @@ printf "${FMT}" "Cycles" \
 printf "${FMT}" "Bus cycles" \
     "${BUS_CYCLES}" "$(per_iter ${BUS_CYCLES})"
 printf "${FMT}" "Instructions" \
-    "${INSTRUCTIONS}" "$(per_iter ${INSTRUCTIONS})"
-printf "  %-16s %14s\n" "IPC" "${IPC}"
-echo "  ------------------------------------------"
-printf "${FMT}" "L1d loads" \
+    "${INSTRUCTIONS}" \
+    "$(per_iter ${INSTRUCTIONS})"
+printf "${FMTS}" "Instr per Cycle (IPC)" \
+    "${IPC}"
+echo "  ------------------------------------------------------"
+echo "  --- L1 Data Cache ---"
+printf "${FMT}" "  Loads" \
     "${L1D_LOADS}" "$(per_iter ${L1D_LOADS})"
-printf "${FMT}" "L1d misses" \
+printf "${FMT}" "  Load misses" \
     "${L1D_MISSES}" "$(per_iter ${L1D_MISSES})"
-printf "  %-16s %14s\n" \
-    "  L1d miss rate" "${L1D_MISS_PCT}%"
-printf "${FMT}" "L1d stores" \
+printf "${FMTS}" "    Miss rate" \
+    "${L1D_MISS_PCT}%"
+printf "${FMT}" "  Stores" \
     "${L1D_STORES}" "$(per_iter ${L1D_STORES})"
-printf "${FMT}" "L1i loads" \
+echo "  --- L1 Instruction Cache ---"
+printf "${FMT}" "  Loads" \
     "${L1I_LOADS}" "$(per_iter ${L1I_LOADS})"
-printf "${FMT}" "L1i misses" \
+printf "${FMT}" "  Load misses" \
     "${L1I_MISSES}" "$(per_iter ${L1I_MISSES})"
-printf "  %-16s %14s\n" \
-    "  L1i miss rate" "${L1I_MISS_PCT}%"
-printf "${FMT}" "iTLB misses" \
-    "${ITLB_MISSES}" "$(per_iter ${ITLB_MISSES})"
-printf "${FMT}" "LLC loads" \
+printf "${FMTS}" "    Miss rate" \
+    "${L1I_MISS_PCT}%"
+echo "  --- Instruction TLB ---"
+printf "${FMT}" "  Load misses" \
+    "${ITLB_MISSES}" \
+    "$(per_iter ${ITLB_MISSES})"
+echo "  --- Last Level Cache (LLC) ---"
+printf "${FMT}" "  Loads" \
     "${LLC_LOADS}" "$(per_iter ${LLC_LOADS})"
-printf "${FMT}" "LLC misses" \
+printf "${FMT}" "  Load misses" \
     "${LLC_MISSES}" "$(per_iter ${LLC_MISSES})"
-printf "  %-16s %14s\n" \
-    "  LLC miss rate" "${LLC_MISS_PCT}%"
-printf "${FMT}" "LLC stores" \
+printf "${FMTS}" "    Load miss rate" \
+    "${LLC_MISS_PCT}%"
+printf "${FMT}" "  Stores" \
     "${LLC_STORES}" "$(per_iter ${LLC_STORES})"
-printf "${FMT}" "LLC st misses" \
+printf "${FMT}" "  Store misses" \
     "${LLC_ST_MISSES}" \
     "$(per_iter ${LLC_ST_MISSES})"
-printf "  %-16s %14s\n" \
-    "  LLC st miss %" "${LLC_ST_MISS_PCT}%"
-printf "${FMT}" "dTLB loads" \
+printf "${FMTS}" "    Store miss rate" \
+    "${LLC_ST_MISS_PCT}%"
+echo "  --- Data TLB ---"
+printf "${FMT}" "  Loads" \
     "${DTLB_LOADS}" "$(per_iter ${DTLB_LOADS})"
-printf "${FMT}" "dTLB misses" \
-    "${DTLB_MISSES}" "$(per_iter ${DTLB_MISSES})"
-printf "  %-16s %14s\n" \
-    "  dTLB miss rate" "${DTLB_MISS_PCT}%"
-printf "${FMT}" "dTLB st misses" \
+printf "${FMT}" "  Load misses" \
+    "${DTLB_MISSES}" \
+    "$(per_iter ${DTLB_MISSES})"
+printf "${FMTS}" "    Load miss rate" \
+    "${DTLB_MISS_PCT}%"
+printf "${FMT}" "  Store misses" \
     "${DTLB_ST_MISSES}" \
     "$(per_iter ${DTLB_ST_MISSES})"
-echo "  ------------------------------------------"
+echo "  ------------------------------------------------------"
 printf "${FMT}" "Branch misses" \
     "${BRANCH_MISSES}" \
     "$(per_iter ${BRANCH_MISSES})"
-echo "  ------------------------------------------"
+echo "  ------------------------------------------------------"
 printf "${FMT}" "Page faults" \
     "${PAGE_FAULTS}" \
     "$(per_iter ${PAGE_FAULTS})"
-printf "${FMT}" "  minor" \
+printf "${FMT}" "  Minor (in page cache)" \
     "${MINOR_FAULTS}" \
     "$(per_iter ${MINOR_FAULTS})"
-printf "${FMT}" "  major" \
+printf "${FMT}" "  Major (disk I/O)" \
     "${MAJOR_FAULTS}" \
     "$(per_iter ${MAJOR_FAULTS})"
-printf "${FMT}" "CPU migrations" \
+printf "${FMT}" "CPU core migrations" \
     "${CPU_MIGRATIONS}" \
     "$(per_iter ${CPU_MIGRATIONS})"
-printf "${FMT}" "Ctx switches" \
+printf "${FMT}" "Context switches" \
     "${CTX_SWITCHES}" \
     "$(per_iter ${CTX_SWITCHES})"
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
-    echo "  ------------------------------------------"
-    printf "  %-16s %14s\n" \
-        "Median iter" "${PI_MED_ITER} ns"
-    printf "  %-16s %14s\n" \
-        "Median exec" "${PI_MED_EXEC} ns"
-    printf "  %-16s %14s\n" \
-        "VmPeak" "${PI_VMPEAK} kB"
-    printf "  %-16s %14s\n" \
-        "VmHWM (RSS)" "${PI_VMHWM} kB"
-    printf "  %-16s %14s\n" \
-        "VmRSS" "${PI_VMRSS} kB"
+    echo "  ------------------------------------------------------"
+    printf "${FMTS}" \
+        "Median iteration time" "${PI_MED_ITER} ns"
+    printf "${FMTS}" \
+        "Median exec time" "${PI_MED_EXEC} ns"
+    printf "${FMTS}" \
+        "Peak virtual memory" "${PI_VMPEAK} kB"
+    printf "${FMTS}" \
+        "Peak RSS (VmHWM)" "${PI_VMHWM} kB"
+    printf "${FMTS}" \
+        "Final RSS (VmRSS)" "${PI_VMRSS} kB"
 fi
-printf "  %-16s %14s\n" \
-    "Exe size" "${EXE_SIZE} B"
-echo "=========================================="
+printf "${FMTS}" \
+    "Executable size" "${EXE_SIZE} B"
+echo "======================================================"
 echo "  Results: ${RESULT_FILE}"
-echo "=========================================="
+echo "======================================================"
 echo ""
 
 # =========================================
