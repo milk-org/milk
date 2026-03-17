@@ -317,7 +317,8 @@ get_perf_counter() {
         "${PERF_OUT}" 2>/dev/null)
 
     if [ ${found} -eq 1 ]; then
-        echo "${total}"
+        # Truncate to integer
+        echo "${total}" | sed 's/\..*//'
     else
         echo "0"
     fi
