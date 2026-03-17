@@ -5,6 +5,7 @@ site_description: >-
   for Adaptive Optics and scientific computing.
 repo_url: https://github.com/milk-org/milk
 repo_name: milk-org/milk
+edit_uri: edit/framework-dev/docs/
 
 theme:
   name: material
@@ -34,6 +35,8 @@ theme:
     - navigation.instant
     - navigation.instant.progress
     - navigation.path
+    - navigation.indexes
+    - navigation.footer
     # Search
     - search.suggest
     - search.highlight
@@ -42,14 +45,25 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
     # TOC
     - toc.follow
   icon:
     repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
 
 plugins:
   - search
   - tags
+  - glightbox
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+  - minify:
+      minify_html: true
 
 docs_dir: docs
 
@@ -92,8 +106,12 @@ nav:
   - API Reference: api/html/index.html
 
 markdown_extensions:
+  - abbr
   - admonition
+  - attr_list
+  - def_list
   - md_in_html
+  - tables
   - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
@@ -110,10 +128,12 @@ markdown_extensions:
       slugify: !!python/object/apply:pymdownx.slugs.slugify
         kwds:
           case: lower
-  - pymdownx.snippets
-  - attr_list
-  - def_list
-  - tables
+  - pymdownx.snippets:
+      auto_append:
+        - docs/includes/abbreviations.md
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
       toc_depth: 3
