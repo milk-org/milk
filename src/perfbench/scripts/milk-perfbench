@@ -230,6 +230,7 @@ if [ ${PERF_CAN_RUN} -eq 1 ]; then
         -e instructions \
         -e L1-dcache-loads \
         -e L1-dcache-load-misses \
+        -e L1-icache-loads \
         -e L1-icache-load-misses \
         -e LLC-loads \
         -e LLC-load-misses \
@@ -336,6 +337,7 @@ CYCLES=$(get_perf_counter "cycles")
 INSTRUCTIONS=$(get_perf_counter "instructions")
 L1D_LOADS=$(get_perf_counter "L1-dcache-loads")
 L1D_MISSES=$(get_perf_counter "L1-dcache-load-misses")
+L1I_LOADS=$(get_perf_counter "L1-icache-loads")
 L1I_MISSES=$(get_perf_counter "L1-icache-load-misses")
 LLC_LOADS=$(get_perf_counter "LLC-loads")
 LLC_MISSES=$(get_perf_counter "LLC-load-misses")
@@ -355,25 +357,29 @@ if [ -n "${INSTRUCTIONS}" ] \
         | bc 2>/dev/null || echo "0")
 fi
 
-# Compute miss rates
-L1D_MISS_PCT="0"
-if [ "${L1D_LOADS}" != "0" ]; then
-    L1D_MISS_PCT=$(echo "scale=4; \
-        100 * ${L1D_MISSES} / ${L1D_LOADS}" \
-        | bc 2>/dev/null || echo "0")
-fi
-LLC_MISS_PCT="0"
-if [ "${LLC_LOADS}" != "0" ]; then
-    LLC_MISS_PCT=$(echo "scale=4; \
-        100 * ${LLC_MISSES} / ${LLC_LOADS}" \
-        | bc 2>/dev/null || echo "0")
-fi
+# Compute miss rates (6 decimal places)
+miss_rate() {
+    local misses="$1" loads="$2"
+    if [ "${loads}" != "0" ] \
+       && [ -n "${loads}" ]; then
+        echo "scale=6; \
+            100 * ${misses} / ${loads}" \
+            | bc 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+L1D_MISS_PCT=$(miss_rate ${L1D_MISSES} ${L1D_LOADS})
+L1I_MISS_PCT=$(miss_rate ${L1I_MISSES} ${L1I_LOADS})
+LLC_MISS_PCT=$(miss_rate ${LLC_MISSES} ${LLC_LOADS})
+DTLB_MISS_PCT=$(miss_rate ${DTLB_MISSES} ${DTLB_LOADS})
 
 # Default missing values to 0
 : "${CYCLES:=0}"
 : "${INSTRUCTIONS:=0}"
 : "${L1D_LOADS:=0}"
 : "${L1D_MISSES:=0}"
+: "${L1I_LOADS:=0}"
 : "${L1I_MISSES:=0}"
 : "${LLC_LOADS:=0}"
 : "${LLC_MISSES:=0}"
@@ -408,12 +414,15 @@ echo "    \"ipc\": ${IPC},"
 echo "    \"L1_dcache_loads\": ${L1D_LOADS},"
 echo "    \"L1_dcache_misses\": ${L1D_MISSES},"
 echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
+echo "    \"L1_icache_loads\": ${L1I_LOADS},"
 echo "    \"L1_icache_misses\": ${L1I_MISSES},"
+echo "    \"L1_icache_miss_pct\": ${L1I_MISS_PCT},"
 echo "    \"LLC_loads\": ${LLC_LOADS},"
 echo "    \"LLC_misses\": ${LLC_MISSES},"
 echo "    \"LLC_miss_pct\": ${LLC_MISS_PCT},"
 echo "    \"dTLB_loads\": ${DTLB_LOADS},"
 echo "    \"dTLB_misses\": ${DTLB_MISSES},"
+echo "    \"dTLB_miss_pct\": ${DTLB_MISS_PCT},"
 echo "    \"branch_misses\": ${BRANCH_MISSES},"
 echo "    \"branches\": ${BRANCHES},"
 echo "    \"context_switches\": ${CTX_SWITCHES},"
@@ -509,8 +518,12 @@ printf "${FMT}" "L1d misses" \
     "${L1D_MISSES}" "$(per_iter ${L1D_MISSES})"
 printf "  %-16s %14s\n" \
     "  L1d miss rate" "${L1D_MISS_PCT}%"
+printf "${FMT}" "L1i loads" \
+    "${L1I_LOADS}" "$(per_iter ${L1I_LOADS})"
 printf "${FMT}" "L1i misses" \
     "${L1I_MISSES}" "$(per_iter ${L1I_MISSES})"
+printf "  %-16s %14s\n" \
+    "  L1i miss rate" "${L1I_MISS_PCT}%"
 printf "${FMT}" "LLC loads" \
     "${LLC_LOADS}" "$(per_iter ${LLC_LOADS})"
 printf "${FMT}" "LLC misses" \
@@ -521,6 +534,8 @@ printf "${FMT}" "dTLB loads" \
     "${DTLB_LOADS}" "$(per_iter ${DTLB_LOADS})"
 printf "${FMT}" "dTLB misses" \
     "${DTLB_MISSES}" "$(per_iter ${DTLB_MISSES})"
+printf "  %-16s %14s\n" \
+    "  dTLB miss rate" "${DTLB_MISS_PCT}%"
 echo "  ------------------------------------------"
 printf "${FMT}" "Branch misses" \
     "${BRANCH_MISSES}" \
