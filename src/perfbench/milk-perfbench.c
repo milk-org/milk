@@ -1489,39 +1489,53 @@ static void print_summary(
     /* Processinfo timing */
     if (pi && pi->valid)
     {
+        /*
+         * print_pi_row — one processinfo value row.
+         *
+         * Keeps the value aligned under "Total"
+         * column. When warmup is active, Warmup and
+         * Measured columns are left blank so the
+         * table line up with other metrics.
+         */
+#define print_pi_row(label, val, unit) \
+        do { \
+            if (hw) \
+                printf("  %-*s %*ld %-3s%*s%*s\n", \
+                       COL1W, (label), \
+                       COL2W, (long)(val), (unit), \
+                       COL2W + 3, "", \
+                       COL2W + 3, ""); \
+            else \
+                printf("  %-*s %*ld %-3s\n", \
+                       COL1W, (label), \
+                       COL2W, (long)(val), (unit)); \
+        } while (0)
+
         print_sep();
         printf("  --- Timing (processinfo) ---\n");
-        printf("  %-*s %*ld\n",
-               COL1W, "  Iterations counted",
-               COL2W, pi->loopcnt);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Iter time  p50",
-               COL2W, pi->p50_iter);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Iter time  p95",
-               COL2W, pi->p95_iter);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Iter time  p99",
-               COL2W, pi->p99_iter);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Exec time  p50",
-               COL2W, pi->p50_exec);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Exec time  p95",
-               COL2W, pi->p95_exec);
-        printf("  %-*s %*ld ns\n",
-               COL1W, "  Exec time  p99",
-               COL2W, pi->p99_exec);
+        print_pi_row("  Iterations counted",
+                     pi->loopcnt, "");
+        print_pi_row("  Iter time  p50",
+                     pi->p50_iter, "ns");
+        print_pi_row("  Iter time  p95",
+                     pi->p95_iter, "ns");
+        print_pi_row("  Iter time  p99",
+                     pi->p99_iter, "ns");
+        print_pi_row("  Exec time  p50",
+                     pi->p50_exec, "ns");
+        print_pi_row("  Exec time  p95",
+                     pi->p95_exec, "ns");
+        print_pi_row("  Exec time  p99",
+                     pi->p99_exec, "ns");
         printf("  --- Memory ---\n");
-        printf("  %-*s %*ld kB\n",
-               COL1W, "  Peak virtual memory",
-               COL2W, pi->vmpeak_kb);
-        printf("  %-*s %*ld kB\n",
-               COL1W, "  Peak RSS (VmHWM)",
-               COL2W, pi->vmhwm_kb);
-        printf("  %-*s %*ld kB\n",
-               COL1W, "  Final RSS (VmRSS)",
-               COL2W, pi->vmrss_kb);
+        print_pi_row("  Peak virtual memory",
+                     pi->vmpeak_kb, "kB");
+        print_pi_row("  Peak RSS (VmHWM)",
+                     pi->vmhwm_kb, "kB");
+        print_pi_row("  Final RSS (VmRSS)",
+                     pi->vmrss_kb, "kB");
+
+#undef print_pi_row
     }
 
     printf("  %-*s %*ld B\n",
