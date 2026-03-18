@@ -37,6 +37,7 @@
 #include <sys/syscall.h>
 #include <linux/perf_event.h>
 #include <asm/unistd.h>
+#include <limits.h>
 
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStruct.h"
@@ -148,6 +149,15 @@ static const perf_ev_t PERF_EVS[] = {
         (PERF_COUNT_HW_CACHE_DTLB)
         | (PERF_COUNT_HW_CACHE_OP_WRITE << 8)
         | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16)},
+    /* stalls */
+    {"stalled-cycles-frontend",
+        "stalled_cycles_frontend",
+        PERF_TYPE_HARDWARE,
+        PERF_COUNT_HW_STALLED_CYCLES_FRONTEND},
+    {"stalled-cycles-backend",
+        "stalled_cycles_backend",
+        PERF_TYPE_HARDWARE,
+        PERF_COUNT_HW_STALLED_CYCLES_BACKEND},
     /* branch */
     {"branches",          "branches",
         PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_INSTRUCTIONS},
@@ -180,6 +190,7 @@ enum {
     IDX_LLC_LOADS, IDX_LLC_MISSES,
     IDX_LLC_STORES, IDX_LLC_STORE_MISSES,
     IDX_DTLB_LOADS, IDX_DTLB_MISSES, IDX_DTLB_ST_MISSES,
+    IDX_STALL_FE, IDX_STALL_BE,
     IDX_BRANCHES, IDX_BRANCH_MISSES,
     IDX_PAGE_FAULTS, IDX_MINOR_FAULTS, IDX_MAJOR_FAULTS,
     IDX_CPU_MIGRATIONS, IDX_CTX_SWITCHES,
@@ -200,10 +211,25 @@ typedef struct
 /** Processinfo-derived stats */
 typedef struct
 {
-    long p50_iter, p95_iter, p99_iter; /* ns */
-    long p50_exec, p95_exec, p99_exec; /* ns */
+    /* timing percentiles */
+    long p50_iter,  p95_iter,  p99_iter;
+    long p999_iter, max_iter;
+    long p50_exec,  p95_exec,  p99_exec;
+    long p999_exec, max_exec;
+    /* derived jitter (p99 - p50) */
+    long jitter_iter, jitter_exec;
     long loopcnt;
+    /* memory */
     long vmpeak_kb, vmhwm_kb, vmrss_kb;
+    long anon_huge_kb; /* anonymous huge pages */
+    /* OS scheduling */
+    long vol_ctxt;  /* voluntary context switches   */
+    long nvol_ctxt; /* non-voluntary context switches */
+    /* CPU frequency during run (kHz) */
+    long cpu_freq_min_khz;
+    long cpu_freq_max_khz;
+    /* RAPL energy (micro-joules, -1 if unavailable) */
+    long long rapl_uj;
     long exe_size; /* bytes */
     int  valid;
 } pi_stats_t;
@@ -688,17 +714,22 @@ static int find_proc_shm(
 }
 
 /**
- * @brief Read memory stats from /proc/PID/status.
+ * @brief Read memory + scheduling stats from
+ *        /proc/PID/status.
  */
 static void read_proc_mem(
     pid_t  pid,
     long  *vmpeak_kb,
     long  *vmhwm_kb,
-    long  *vmrss_kb)
+    long  *vmrss_kb,
+    long  *vol_ctxt,
+    long  *nvol_ctxt)
 {
     *vmpeak_kb = -1;
     *vmhwm_kb  = -1;
     *vmrss_kb  = -1;
+    *vol_ctxt  = -1;
+    *nvol_ctxt = -1;
 
     char path[128];
     snprintf(path, sizeof(path),
@@ -717,8 +748,128 @@ static void read_proc_mem(
             sscanf(line + 6, " %ld", vmhwm_kb);
         else if (strncmp(line, "VmRSS:", 6) == 0)
             sscanf(line + 6, " %ld", vmrss_kb);
+        else if (strncmp(line,
+                         "voluntary_ctxt_switches:",
+                         24) == 0)
+            sscanf(line + 24, " %ld", vol_ctxt);
+        else if (strncmp(line,
+                         "nonvoluntary_ctxt_switches:",
+                         27) == 0)
+            sscanf(line + 27, " %ld", nvol_ctxt);
     }
     fclose(fp);
+}
+
+/**
+ * @brief Read anonymous huge-page usage from
+ *        /proc/PID/smaps_rollup.
+ *
+ * @param pid   Target process
+ * @return      AnonHugePages in kB, or 0 if
+ *              unavailable
+ */
+static long read_smaps_huge(pid_t pid)
+{
+    char path[128];
+    snprintf(path, sizeof(path),
+             "/proc/%d/smaps_rollup", (int) pid);
+    FILE *fp = fopen(path, "r");
+    if (!fp)
+        return 0;
+    char line[256];
+    long val = 0;
+    while (fgets(line, sizeof(line), fp))
+    {
+        if (strncmp(line, "AnonHugePages:", 14) == 0)
+        {
+            sscanf(line + 14, " %ld", &val);
+            break;
+        }
+    }
+    fclose(fp);
+    return val;
+}
+
+/**
+ * @brief Sample CPU frequency from sysfs.
+ *
+ * Reads scaling_cur_freq for every online CPU,
+ * returns min and max observed values in kHz.
+ * Falls back to cpuinfo_cur_freq if scaling_cur
+ * is absent.
+ */
+static void read_cpu_freq(
+    long *freq_min_khz,
+    long *freq_max_khz)
+{
+    *freq_min_khz = -1;
+    *freq_max_khz = -1;
+    long fmin = LONG_MAX;
+    long fmax = 0;
+    int  found = 0;
+
+    for (int cpu = 0; cpu < 1024; cpu++)
+    {
+        char path[160];
+        snprintf(path, sizeof(path),
+            "/sys/devices/system/cpu/"
+            "cpu%d/cpufreq/scaling_cur_freq",
+            cpu);
+        FILE *fp = fopen(path, "r");
+        if (!fp)
+        {
+            /* Try cpuinfo_cur_freq */
+            snprintf(path, sizeof(path),
+                "/sys/devices/system/cpu/"
+                "cpu%d/cpufreq/cpuinfo_cur_freq",
+                cpu);
+            fp = fopen(path, "r");
+        }
+        if (!fp)
+        {
+            if (found)
+                break; /* no more CPUs */
+            continue;
+        }
+        long f = 0;
+        if (fscanf(fp, "%ld", &f) == 1 && f > 0)
+        {
+            found = 1;
+            if (f < fmin)
+                fmin = f;
+            if (f > fmax)
+                fmax = f;
+        }
+        fclose(fp);
+    }
+    if (found)
+    {
+        *freq_min_khz = fmin;
+        *freq_max_khz = fmax;
+    }
+}
+
+/**
+ * @brief Read RAPL package energy counter.
+ *
+ * Reads /sys/class/powercap/intel-rapl/intel-rapl:0/
+ * energy_uj.  Returns -1 if unavailable or if
+ * access is denied.
+ *
+ * @return Energy in micro-joules, or -1
+ */
+static long long read_rapl_energy(void)
+{
+    const char *rapl =
+        "/sys/class/powercap/intel-rapl/"
+        "intel-rapl:0/energy_uj";
+    FILE *fp = fopen(rapl, "r");
+    if (!fp)
+        return -1LL;
+    long long val = -1LL;
+    IGNORE_RESULT(fscanf(fp, "%lld", &val));
+    fclose(fp);
+    return val;
 }
 
 /**
@@ -730,7 +881,8 @@ static void read_proc_mem(
 static void read_procinfo_stats(
     const char *shm_path,
     pid_t       child_pid,
-    pi_stats_t *out)
+    pi_stats_t *out,
+    long long   rapl_start)
 {
     out->valid = 0;
 
@@ -755,17 +907,18 @@ static void read_procinfo_stats(
     }
 
     /*
-     * Use timerindex as the sample count.
-     * timingbuffercnt > 0 means the ring wrapped;
-     * in that case timerindex wraps around too and
-     * is itself clamped to PROCESSINFO_NBtimer by
-     * the processinfo implementation.
-     * Never read beyond what was actually written.
+     * Determine how many ring-buffer entries are valid.
+     * timingbuffercnt > 0: ring has wrapped at least once,
+     * all PROCESSINFO_NBtimer slots are valid.
+     * timingbuffercnt == 0: ring has not wrapped yet,
+     * timerindex is the number of entries written so far.
      */
-    int nbsam = pi->timerindex;
-    if (nbsam > PROCESSINFO_NBtimer)
-        nbsam = PROCESSINFO_NBtimer;
+    int nbsam;
     if (pi->timingbuffercnt > 0)
+        nbsam = PROCESSINFO_NBtimer;
+    else
+        nbsam = pi->timerindex;
+    if (nbsam > PROCESSINFO_NBtimer)
         nbsam = PROCESSINFO_NBtimer;
 
     long iter_ns[PROCESSINFO_NBtimer];
@@ -801,11 +954,38 @@ static void read_procinfo_stats(
 
     out->loopcnt = pi->loopcnt;
 
-    /* Read memory while process still exists */
+    /* Read memory + scheduling stats */
     read_proc_mem(child_pid,
                   &out->vmpeak_kb,
                   &out->vmhwm_kb,
-                  &out->vmrss_kb);
+                  &out->vmrss_kb,
+                  &out->vol_ctxt,
+                  &out->nvol_ctxt);
+
+    /* Anonymous huge pages */
+    out->anon_huge_kb = read_smaps_huge(child_pid);
+
+    /* CPU frequency (min/max across all CPUs) */
+    read_cpu_freq(&out->cpu_freq_min_khz,
+                  &out->cpu_freq_max_khz);
+
+    /* RAPL energy delta */
+    {
+        long long rapl_end = read_rapl_energy();
+        if (rapl_start >= 0 && rapl_end >= 0)
+        {
+            /* Handle counter wrap (max_energy_range_uj)
+             * by taking absolute diff */
+            out->rapl_uj =
+                (rapl_end >= rapl_start)
+                ? (rapl_end - rapl_start)
+                : rapl_end; /* wrapped: use end value */
+        }
+        else
+        {
+            out->rapl_uj = -1LL;
+        }
+    }
 
     munmap(pi, (size_t) st.st_size);
     close(fd);
@@ -822,16 +1002,30 @@ static void read_procinfo_stats(
 #define PCTILE(arr, pct) \
     (arr)[((nv * (pct) / 100) < nv \
            ? (nv * (pct) / 100) : (nv - 1))]
+/* p99.9: need 1000-based arithmetic */
+#define PCTILE999(arr) \
+    (arr)[((nv * 999 / 1000) < nv \
+           ? (nv * 999 / 1000) : (nv - 1))]
 
-    out->p50_exec = PCTILE(exec_ns, 50);
-    out->p95_exec = PCTILE(exec_ns, 95);
-    out->p99_exec = PCTILE(exec_ns, 99);
-    out->p50_iter = PCTILE(iter_ns, 50);
-    out->p95_iter = PCTILE(iter_ns, 95);
-    out->p99_iter = PCTILE(iter_ns, 99);
+    out->p50_exec  = PCTILE(exec_ns, 50);
+    out->p95_exec  = PCTILE(exec_ns, 95);
+    out->p99_exec  = PCTILE(exec_ns, 99);
+    out->p999_exec = PCTILE999(exec_ns);
+    out->max_exec  = exec_ns[nv - 1];
+    out->p50_iter  = PCTILE(iter_ns, 50);
+    out->p95_iter  = PCTILE(iter_ns, 95);
+    out->p99_iter  = PCTILE(iter_ns, 99);
+    out->p999_iter = PCTILE999(iter_ns);
+    out->max_iter  = iter_ns[nv - 1];
+
+    /* Jitter: tail spread above median */
+    out->jitter_iter = out->p99_iter - out->p50_iter;
+    out->jitter_exec = out->p99_exec - out->p50_exec;
+
     out->valid = 1;
 
 #undef PCTILE
+#undef PCTILE999
 }
 
 /* ================================================================
@@ -933,6 +1127,9 @@ static void run_phase(
     int                collect_pi,
     long long         *wall_ns)
 {
+    /* Capture RAPL energy baseline for delta */
+    long long rapl_start = read_rapl_energy();
+
     char iters_str[32];
     snprintf(iters_str, sizeof(iters_str),
              "%d", iters);
@@ -997,11 +1194,12 @@ static void run_phase(
             {
                 /* Child exited: do a final read */
                 if (find_proc_shm(
-                        cfg->procdir, 0,
+                        cfg->procdir, child,
                         shm_path, sizeof(shm_path)))
                 {
                     read_procinfo_stats(
-                        shm_path, child, pi);
+                        shm_path, child,
+                        pi, rapl_start);
                 }
                 perf_read_close(fds, phase);
                 clock_gettime(CLOCK_MONOTONIC,
@@ -1017,14 +1215,15 @@ static void run_phase(
 
             /* Poll proc SHM */
             if (find_proc_shm(
-                    cfg->procdir, 0,
+                    cfg->procdir, child,
                     shm_path, sizeof(shm_path)))
             {
                 /* snapshot the most recent state */
                 pi_stats_t tmp;
                 memset(&tmp, 0, sizeof(tmp));
                 read_procinfo_stats(
-                    shm_path, child, &tmp);
+                    shm_path, child,
+                    &tmp, rapl_start);
                 if (tmp.valid)
                     *pi = tmp;
             }
@@ -1202,20 +1401,41 @@ static void write_json(
             "    \"p50_iter_ns\": %ld,\n"
             "    \"p95_iter_ns\": %ld,\n"
             "    \"p99_iter_ns\": %ld,\n"
+            "    \"p999_iter_ns\": %ld,\n"
+            "    \"max_iter_ns\": %ld,\n"
+            "    \"jitter_iter_ns\": %ld,\n"
             "    \"p50_exec_ns\": %ld,\n"
             "    \"p95_exec_ns\": %ld,\n"
             "    \"p99_exec_ns\": %ld,\n"
+            "    \"p999_exec_ns\": %ld,\n"
+            "    \"max_exec_ns\": %ld,\n"
+            "    \"jitter_exec_ns\": %ld,\n"
             "    \"vmpeak_kb\": %ld,\n"
             "    \"vmhwm_kb\": %ld,\n"
-            "    \"vmrss_kb\": %ld\n"
+            "    \"vmrss_kb\": %ld,\n"
+            "    \"anon_huge_kb\": %ld,\n"
+            "    \"vol_ctxt_switches\": %ld,\n"
+            "    \"nvol_ctxt_switches\": %ld,\n"
+            "    \"cpu_freq_min_khz\": %ld,\n"
+            "    \"cpu_freq_max_khz\": %ld,\n"
+            "    \"rapl_energy_uj\": %lld\n"
             "  },\n",
             pi->loopcnt,
             pi->p50_iter, pi->p95_iter,
             pi->p99_iter,
+            pi->p999_iter, pi->max_iter,
+            pi->jitter_iter,
             pi->p50_exec, pi->p95_exec,
             pi->p99_exec,
+            pi->p999_exec, pi->max_exec,
+            pi->jitter_exec,
             pi->vmpeak_kb, pi->vmhwm_kb,
-            pi->vmrss_kb);
+            pi->vmrss_kb,
+            pi->anon_huge_kb,
+            pi->vol_ctxt, pi->nvol_ctxt,
+            pi->cpu_freq_min_khz,
+            pi->cpu_freq_max_khz,
+            pi->rapl_uj);
     }
     else
     {
@@ -1231,15 +1451,34 @@ static void write_json(
             "    \"p50_iter_ns\": %ld,\n"
             "    \"p95_iter_ns\": %ld,\n"
             "    \"p99_iter_ns\": %ld,\n"
+            "    \"p999_iter_ns\": %ld,\n"
+            "    \"max_iter_ns\": %ld,\n"
+            "    \"jitter_iter_ns\": %ld,\n"
             "    \"p50_exec_ns\": %ld,\n"
             "    \"p95_exec_ns\": %ld,\n"
-            "    \"p99_exec_ns\": %ld\n"
+            "    \"p99_exec_ns\": %ld,\n"
+            "    \"p999_exec_ns\": %ld,\n"
+            "    \"max_exec_ns\": %ld,\n"
+            "    \"jitter_exec_ns\": %ld,\n"
+            "    \"vol_ctxt_switches\": %ld,\n"
+            "    \"nvol_ctxt_switches\": %ld,\n"
+            "    \"cpu_freq_min_khz\": %ld,\n"
+            "    \"cpu_freq_max_khz\": %ld,\n"
+            "    \"rapl_energy_uj\": %lld\n"
             "  }\n",
             pi_w->loopcnt,
             pi_w->p50_iter, pi_w->p95_iter,
             pi_w->p99_iter,
+            pi_w->p999_iter, pi_w->max_iter,
+            pi_w->jitter_iter,
             pi_w->p50_exec, pi_w->p95_exec,
-            pi_w->p99_exec);
+            pi_w->p99_exec,
+            pi_w->p999_exec, pi_w->max_exec,
+            pi_w->jitter_exec,
+            pi_w->vol_ctxt, pi_w->nvol_ctxt,
+            pi_w->cpu_freq_min_khz,
+            pi_w->cpu_freq_max_khz,
+            pi_w->rapl_uj);
     }
     else
     {
@@ -1520,6 +1759,13 @@ static void print_summary(
         C(IDX_DTLB_ST_MISSES), measured, hw, 1);
 
     print_sep();
+    /* Stall cycles */
+    print_row("Stalled cyc (frontend)",
+        C(IDX_STALL_FE), measured, hw, 1);
+    print_row("Stalled cyc (backend)",
+        C(IDX_STALL_BE), measured, hw, 1);
+
+    print_sep();
     print_row("Branch misses",
         C(IDX_BRANCH_MISSES), measured, hw, 1);
 
@@ -1595,6 +1841,30 @@ static void print_summary(
                      pi->p99_exec,
                      (pi_w ? pi_w->p99_exec : 0L),
                      "ns");
+        print_pi_row("  Iter time  p99.9",
+                     pi->p999_iter,
+                     (pi_w ? pi_w->p999_iter : 0L),
+                     "ns");
+        print_pi_row("  Exec time  p99.9",
+                     pi->p999_exec,
+                     (pi_w ? pi_w->p999_exec : 0L),
+                     "ns");
+        print_pi_row("  Iter time  max",
+                     pi->max_iter,
+                     (pi_w ? pi_w->max_iter : 0L),
+                     "ns");
+        print_pi_row("  Exec time  max",
+                     pi->max_exec,
+                     (pi_w ? pi_w->max_exec : 0L),
+                     "ns");
+        print_pi_row("  Iter jitter (p99-p50)",
+                     pi->jitter_iter,
+                     (pi_w ? pi_w->jitter_iter : 0L),
+                     "ns");
+        print_pi_row("  Exec jitter (p99-p50)",
+                     pi->jitter_exec,
+                     (pi_w ? pi_w->jitter_exec : 0L),
+                     "ns");
         printf("  --- Memory ---\n");
         print_pi_row("  Peak virtual memory",
                      pi->vmpeak_kb, 0L, "kB");
@@ -1602,6 +1872,55 @@ static void print_summary(
                      pi->vmhwm_kb, 0L, "kB");
         print_pi_row("  Final RSS (VmRSS)",
                      pi->vmrss_kb, 0L, "kB");
+        print_pi_row("  Anonymous huge pages",
+                     pi->anon_huge_kb,
+                     (pi_w ? pi_w->anon_huge_kb : 0L),
+                     "kB");
+        printf("  --- Scheduling ---\n");
+        print_pi_row("  Voluntary ctx switches",
+                     pi->vol_ctxt,
+                     (pi_w ? pi_w->vol_ctxt : 0L),
+                     "");
+        print_pi_row("  Nonvol ctx switches",
+                     pi->nvol_ctxt,
+                     (pi_w ? pi_w->nvol_ctxt : 0L),
+                     "");
+        printf("  --- CPU Frequency ---\n");
+        if (pi->cpu_freq_min_khz > 0)
+        {
+            print_pi_row(
+                "  Min across cores",
+                pi->cpu_freq_min_khz / 1000L,
+                (pi_w ? pi_w->cpu_freq_min_khz
+                            / 1000L
+                      : 0L),
+                "MHz");
+            print_pi_row(
+                "  Max across cores",
+                pi->cpu_freq_max_khz / 1000L,
+                (pi_w ? pi_w->cpu_freq_max_khz
+                            / 1000L
+                      : 0L),
+                "MHz");
+        }
+        else
+            printf("  %-*s N/A\n",
+                   COL1W, "  (unavailable)");
+        printf("  --- Power (RAPL) ---\n");
+        if (pi->rapl_uj >= 0)
+        {
+            print_pi_row(
+                "  Package energy",
+                (long)(pi->rapl_uj / 1000LL),
+                (pi_w && pi_w->rapl_uj >= 0
+                    ? (long)(pi_w->rapl_uj / 1000LL)
+                    : 0L),
+                "mJ");
+        }
+        else
+            printf("  %-*s N/A (need root or"
+                   " perf_event_paranoid<=0)\n",
+                   COL1W, "  Package energy");
 
 #undef print_pi_row
     }
