@@ -458,15 +458,7 @@ if [ -n "${EXE_PATH}" ]; then
         "${EXE_PATH}" 2>/dev/null || echo 0)
 fi
 
-# Compute IPC (from total run)
-IPC="0"
-if [ "${T_cycles}" != "0" ]; then
-    IPC=$(echo "scale=3; \
-        ${T_instructions} / ${T_cycles}" \
-        | bc 2>/dev/null || echo "0")
-fi
-
-# Compute miss rates (from total run)
+# Compute IPC for each phase
 miss_rate() {
     local misses="$1" loads="$2"
     if [ "${loads}" != "0" ] \
@@ -478,16 +470,74 @@ miss_rate() {
         echo "0"
     fi
 }
-L1D_MISS_PCT=$(miss_rate \
+
+comp_ipc() {
+    local instr="$1" cyc="$2"
+    if [ "${cyc}" != "0" ] \
+       && [ -n "${cyc}" ]; then
+        echo "scale=3; ${instr} / ${cyc}" \
+            | bc 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Total IPC
+IPC_T=$(comp_ipc ${T_instructions} ${T_cycles})
+# Warmup IPC
+IPC_W=$(comp_ipc ${W_instructions} ${W_cycles})
+# Measured IPC (total - warmup)
+M_instr=$(( T_instructions - W_instructions ))
+M_cycles=$(( T_cycles - W_cycles ))
+IPC_M=$(comp_ipc ${M_instr} ${M_cycles})
+
+# Miss rates: total / warmup / measured
+L1D_MR_T=$(miss_rate \
     ${T_L1D_MISSES} ${T_L1D_LOADS})
-L1I_MISS_PCT=$(miss_rate \
+L1D_MR_W=$(miss_rate \
+    ${W_L1D_MISSES} ${W_L1D_LOADS})
+L1D_MR_M=$(miss_rate \
+    $(( T_L1D_MISSES - W_L1D_MISSES )) \
+    $(( T_L1D_LOADS - W_L1D_LOADS )))
+
+L1I_MR_T=$(miss_rate \
     ${T_L1I_MISSES} ${T_L1I_LOADS})
-LLC_MISS_PCT=$(miss_rate \
+L1I_MR_W=$(miss_rate \
+    ${W_L1I_MISSES} ${W_L1I_LOADS})
+L1I_MR_M=$(miss_rate \
+    $(( T_L1I_MISSES - W_L1I_MISSES )) \
+    $(( T_L1I_LOADS - W_L1I_LOADS )))
+
+LLC_MR_T=$(miss_rate \
     ${T_LLC_MISSES} ${T_LLC_LOADS})
-LLC_ST_MISS_PCT=$(miss_rate \
+LLC_MR_W=$(miss_rate \
+    ${W_LLC_MISSES} ${W_LLC_LOADS})
+LLC_MR_M=$(miss_rate \
+    $(( T_LLC_MISSES - W_LLC_MISSES )) \
+    $(( T_LLC_LOADS - W_LLC_LOADS )))
+
+LLC_SMR_T=$(miss_rate \
     ${T_LLC_ST_MISSES} ${T_LLC_STORES})
-DTLB_MISS_PCT=$(miss_rate \
+LLC_SMR_W=$(miss_rate \
+    ${W_LLC_ST_MISSES} ${W_LLC_STORES})
+LLC_SMR_M=$(miss_rate \
+    $(( T_LLC_ST_MISSES - W_LLC_ST_MISSES )) \
+    $(( T_LLC_STORES - W_LLC_STORES )))
+
+DTLB_MR_T=$(miss_rate \
     ${T_DTLB_MISSES} ${T_DTLB_LOADS})
+DTLB_MR_W=$(miss_rate \
+    ${W_DTLB_MISSES} ${W_DTLB_LOADS})
+DTLB_MR_M=$(miss_rate \
+    $(( T_DTLB_MISSES - W_DTLB_MISSES )) \
+    $(( T_DTLB_LOADS - W_DTLB_LOADS )))
+
+# Keep backward-compat JSON names
+L1D_MISS_PCT=${L1D_MR_T}
+L1I_MISS_PCT=${L1I_MR_T}
+LLC_MISS_PCT=${LLC_MR_T}
+LLC_ST_MISS_PCT=${LLC_SMR_T}
+DTLB_MISS_PCT=${DTLB_MR_T}
 
 # Re-enable strict error handling
 set -eE
@@ -513,7 +563,7 @@ echo "  \"hw_counters\": {"
 echo "    \"cycles\": ${T_cycles},"
 echo "    \"bus_cycles\": ${T_bus_cycles},"
 echo "    \"instructions\": ${T_instructions},"
-echo "    \"ipc\": ${IPC},"
+echo "    \"ipc\": ${IPC_T},"
 echo "    \"L1_dcache_loads\": ${T_L1D_LOADS},"
 echo "    \"L1_dcache_misses\": ${T_L1D_MISSES},"
 echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
@@ -629,11 +679,13 @@ if [ "${WARMUP}" -gt 0 ]; then
     FMT="  %-26s %14s %14s %14s/iter\n"
     FMTHDR="  %-26s %14s %14s %14s\n"
     FMTS="  %-26s %14s\n"
+    FMTR="  %-26s %14s %14s %14s\n"
     SEP="  ------------------------------------------------------------------"
 else
     FMT="  %-26s %14s %14s/iter\n"
     FMTHDR="  %-26s %14s %14s\n"
     FMTS="  %-26s %14s\n"
+    FMTR="  %-26s %14s\n"
     SEP="  ------------------------------------------------------"
 fi
 
@@ -693,22 +745,40 @@ fi
 pc "Cycles" "cycles"
 pc "Bus cycles" "bus_cycles"
 pc "Instructions" "instructions"
-printf "${FMTS}" \
-    "Instr per Cycle (IPC)" "${IPC}"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "Instr per Cycle (IPC)" \
+        "${IPC_T}" "${IPC_W}" "${IPC_M}"
+else
+    printf "${FMTS}" \
+        "Instr per Cycle (IPC)" "${IPC_T}"
+fi
 
 echo "${SEP}"
 echo "  --- L1 Data Cache ---"
 pc "  Loads" "L1D_LOADS"
 pc "  Load misses" "L1D_MISSES"
-printf "${FMTS}" "    Miss rate" \
-    "${L1D_MISS_PCT}%"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" "    Miss rate" \
+        "${L1D_MR_T}%" \
+        "${L1D_MR_W}%" "${L1D_MR_M}%"
+else
+    printf "${FMTS}" "    Miss rate" \
+        "${L1D_MR_T}%"
+fi
 pc "  Stores" "L1D_STORES"
 
 echo "  --- L1 Instruction Cache ---"
 pc "  Loads" "L1I_LOADS"
 pc "  Load misses" "L1I_MISSES"
-printf "${FMTS}" "    Miss rate" \
-    "${L1I_MISS_PCT}%"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" "    Miss rate" \
+        "${L1I_MR_T}%" \
+        "${L1I_MR_W}%" "${L1I_MR_M}%"
+else
+    printf "${FMTS}" "    Miss rate" \
+        "${L1I_MR_T}%"
+fi
 
 echo "  --- Instruction TLB ---"
 pc "  Load misses" "ITLB_MISSES"
@@ -716,18 +786,42 @@ pc "  Load misses" "ITLB_MISSES"
 echo "  --- Last Level Cache (LLC) ---"
 pc "  Loads" "LLC_LOADS"
 pc "  Load misses" "LLC_MISSES"
-printf "${FMTS}" "    Load miss rate" \
-    "${LLC_MISS_PCT}%"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Load miss rate" \
+        "${LLC_MR_T}%" \
+        "${LLC_MR_W}%" "${LLC_MR_M}%"
+else
+    printf "${FMTS}" \
+        "    Load miss rate" \
+        "${LLC_MR_T}%"
+fi
 pc "  Stores" "LLC_STORES"
 pc "  Store misses" "LLC_ST_MISSES"
-printf "${FMTS}" "    Store miss rate" \
-    "${LLC_ST_MISS_PCT}%"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Store miss rate" \
+        "${LLC_SMR_T}%" \
+        "${LLC_SMR_W}%" "${LLC_SMR_M}%"
+else
+    printf "${FMTS}" \
+        "    Store miss rate" \
+        "${LLC_SMR_T}%"
+fi
 
 echo "  --- Data TLB ---"
 pc "  Loads" "DTLB_LOADS"
 pc "  Load misses" "DTLB_MISSES"
-printf "${FMTS}" "    Load miss rate" \
-    "${DTLB_MISS_PCT}%"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Load miss rate" \
+        "${DTLB_MR_T}%" \
+        "${DTLB_MR_W}%" "${DTLB_MR_M}%"
+else
+    printf "${FMTS}" \
+        "    Load miss rate" \
+        "${DTLB_MR_T}%"
+fi
 pc "  Store misses" "DTLB_ST_MISSES"
 
 echo "${SEP}"
