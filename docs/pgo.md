@@ -476,7 +476,117 @@ $ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
 
 ***
 
-## 6. Notes
+## 6. Manual CMake Flags (Dynamic Libs)
+
+When the built-in `USE_STATIC_LTO` option is not
+available (e.g., milk libs are built as `.so` only),
+PGO + LTO can still be applied via explicit CMake
+flags. This approach works because GCC LTO operates
+on the `.so` boundary too — it cannot inline across
+it, but it **can** profile-optimize the executable's
+own code and the linker performs LTO on all objects it
+controls.
+
+### 6.1 Quick Reference
+
+```bash
+cd /home/oguyon/src/milk-perf/_build
+PGODIR=/tmp/pgo-imggen
+BIN=./plugins/milk-extra-src/image_gen/milk-fpsexec-imggen-mkrandom
+```
+
+### 6.2 Pass 1 — Instrument
+
+Rebuild **all** targets so shared libs also carry
+the instrumentation (needed for consistent `.gcda`
+file generation):
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-fprofile-generate=$PGODIR -O3 -flto" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fprofile-generate=$PGODIR -flto" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-fprofile-generate=$PGODIR -flto" \
+  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+
+mkdir -p $PGODIR
+make -j$(nproc)
+```
+
+### 6.3 Collect Profile
+
+Use `milk-perfbench` to drive a representative
+workload. Run several times to enrich the profile:
+
+```bash
+PERFBENCH=./src/perfbench/milk-perfbench
+
+for i in 1 2 3; do
+  $PERFBENCH $BIN 5000 -w 0 -o /tmp/pgo_out
+done
+```
+
+> [!TIP]
+> Use `-w 0` (no warmup) so the profiling run
+> captures the steady-state hot loop without
+> polluting the `.gcda` files with startup code.
+
+### 6.4 Pass 2 — Optimise + Strip
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-fprofile-use=$PGODIR -fprofile-correction -O3 -flto -g0" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fprofile-use=$PGODIR -flto -s" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-fprofile-use=$PGODIR -fprofile-correction -flto -g0" \
+  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+
+make milk-fpsexec-imggen-mkrandom -j$(nproc)
+```
+
+Flag summary:
+
+| Flag | Purpose |
+|------|---------|
+| `-fprofile-use` | Apply collected profiles |
+| `-fprofile-correction` | Tolerate minor count mismatches |
+| `-flto` | Link-time optimization |
+| `-g0` | Suppress debug info |
+| `-s` | Strip symbols at link time |
+
+### 6.5 Verify and Install
+
+```bash
+# Should report: ... dynamically linked ... stripped
+file $BIN
+
+# Install the optimised binary
+sudo install -m 755 $BIN /usr/local/milk/bin/
+```
+
+> [!NOTE]
+> Do **not** pass `-static` to the linker — milk
+> libs only ship as `.so` files. Mixing `-static`
+> with `.so`-only dependencies causes a link error.
+> Dynamic LTO still yields measurable gains for the
+> executable's own hot path.
+
+### 6.6 Restore Normal Build
+
+After installation, clear the PGO flags so
+subsequent builds are unaffected:
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="" \
+  -DCMAKE_EXE_LINKER_FLAGS="" \
+  -DCMAKE_SHARED_LINKER_FLAGS=""
+```
+
+***
+
+## 7. Notes
 
 - Profile data (`.gcda` files) is written to
   `PGO_DIR` (default: `_build/pgo/`).
