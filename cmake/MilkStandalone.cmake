@@ -47,22 +47,30 @@ set(_MILK_STANDALONE_LIBS
 # references between the archives (e.g. COREMOD
 # functions calling FPS functions and vice versa).
 if(USE_STATIC_LTO)
+  # Core static libs always required
   set(_MILK_STANDALONE_STATIC_LIBS
       -Wl,--start-group
       milkCOREMODmemory_compute_static
       milkCOREMODtools_compute_static
       milkCOREMODarith_compute_static
-      milkCOREMODiofits_compute_static
       milkfpsStandalone_static
       milkfps_static
       milkdata_static
       milkprocessinfo_static
-      ImageStreamIO_static
       -Wl,--end-group
-      ${CFITSIO_LIBRARIES}
       m rt pthread
       -Wl,--allow-shlib-undefined
   )
+  # CFITSIO-dependent libs only when CFITSIO is enabled
+  if(USE_CFITSIO AND CFITSIO_FOUND)
+    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1
+        milkCOREMODiofits_compute_static
+        ImageStreamIO_static
+        ${CFITSIO_LIBRARIES})
+  else()
+    # Link ImageStreamIO static archive when CFITSIO is not used
+    list(APPEND _MILK_STANDALONE_STATIC_LIBS ImageStreamIO_static)
+  endif()
 endif()
 
 

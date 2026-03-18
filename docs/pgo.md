@@ -628,4 +628,169 @@ PGO on top of dynamic-lib LTO when
   that the right optimization level was applied.
 
 ***
+
+## 8. Fully Static Binaries with musl libc
+
+For maximum portability — deploying a single
+self-contained binary to a target machine without
+installing any runtime libraries — you can build
+`fpsexec` executables against
+[musl libc](https://musl.libc.org/) instead of glibc.
+
+> [!NOTE]
+> The standard static LTO build (section 1.6 Option A)
+> still depends on the system glibc at runtime (3 libs:
+> `libc.so`, `ld-linux.so`, `libm.so`). The musl build
+> here produces a true **zero-dependency** binary.
+
+### 8.1. Prerequisites
+
+```bash
+## Ubuntu / Debian
+sudo apt install musl-tools musl-dev
+```
+
+Verify the toolchain is present:
+
+```bash
+$ musl-gcc --version
+musl-gcc (GCC 11.4.0)
+```
+
+### 8.2. Build a Static musl Binary
+
+```bash
+cd /path/to/milk-perf
+mkdir -p _build_musl && cd _build_musl
+
+cmake .. \
+  -DCMAKE_C_COMPILER=musl-gcc \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-O3 -march=native -D_GNU_SOURCE \
+    -I/path/to/milk-perf/src/coremods \
+    -I/path/to/milk-perf/src" \
+  -DCMAKE_EXE_LINKER_FLAGS="-static" \
+  -DUSE_STATIC_LTO=ON \
+  -DUSE_CFITSIO=OFF \
+  -DUSE_CLI=OFF \
+  -DUSE_NCURSES=OFF \
+  -DUSE_READLINE=OFF \
+  -DUSE_OPENBLAS=OFF \
+  -DBUILD_SHARED_LIBS=OFF
+
+## Build a specific standalone executable
+make milk-fpsexec-imggen-mkrandom -j$(nproc)
+```
+
+Replace `/path/to/milk-perf` with the absolute path
+to your source tree. The `-D_GNU_SOURCE` flag is
+required to expose `cpu_set_t` and thread affinity
+APIs; the extra include paths expose `COREMOD_memory`
+headers needed by plugins built with `-DUSE_CLI=OFF`.
+
+### 8.3. Verify the Binary is Fully Static
+
+```bash
+$ ldd _build_musl/plugins/.../milk-fpsexec-imggen-mkrandom
+    not a dynamic executable
+
+$ file milk-fpsexec-imggen-mkrandom
+ELF 64-bit LSB executable, x86-64,
+statically linked, with debug_info, not stripped
+
+$ ls -lh milk-fpsexec-imggen-mkrandom
+291K
+```
+
+No shared library dependencies — deploy by copying
+the single binary file.
+
+### 8.4. Install
+
+**Copy to system `bin`:**
+
+```bash
+sudo cp _build_musl/plugins/milk-extra-src/image_gen/milk-fpsexec-imggen-mkrandom \
+    /usr/local/bin/
+```
+
+**Copy to user `bin` (no sudo):**
+
+```bash
+cp milk-fpsexec-imggen-mkrandom ~/bin/
+```
+
+**Deploy to a remote machine:**
+
+```bash
+scp milk-fpsexec-imggen-mkrandom user@target-host:/usr/local/bin/
+```
+
+Because the binary is fully self-contained, no
+library installation is needed on the target.
+
+### 8.5. Required CMake Flags and Why
+
+| Flag | Value | Reason |
+|------|-------|--------|
+| `CMAKE_C_COMPILER` | `musl-gcc` | Wrapper that redirects includes/libs to musl |
+| `CMAKE_EXE_LINKER_FLAGS` | `-static` | Tells the linker to produce a static binary |
+| `USE_STATIC_LTO` | `ON` | Builds `.a` archives; required by `-static` |
+| `USE_CFITSIO` | `OFF` | System cfitsio is glibc-linked; incompatible with musl static |
+| `USE_CLI` | `OFF` | CLI requires ncurses/readline dynamic libs |
+| `USE_NCURSES` | `OFF` | ncurses has no musl static variant by default |
+| `USE_READLINE` | `OFF` | Same as ncurses |
+| `USE_OPENBLAS` | `OFF` | System OpenBLAS is glibc-linked |
+| `BUILD_SHARED_LIBS` | `OFF` | Prevents cmake from building `.so` targets that would fail the static link |
+| `-D_GNU_SOURCE` (C flag) | set | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
+
+### 8.6. Known Warnings (Non-Fatal)
+
+**`_GNU_SOURCE` redefined:**
+
+```
+fps_standalone_data.c:6:9: warning: '_GNU_SOURCE' redefined
+```
+
+`fps_standalone_data.c` defines `_GNU_SOURCE`
+internally; passing it as a CMake flag causes a
+harmless redefinition. No action required.
+
+**LTO type mismatch on `copy_image_ID`:**
+
+```
+warning: type of 'copy_image_ID' does not match original declaration [-Wlto-type-mismatch]
+image_copy.h: return value: imageID vs int
+```
+
+`fps_loadmemstream_lite.c` declares `copy_image_ID`
+as `int` while `image_copy.h` uses `typedef imageID`.
+This is a pre-existing mismatch in the codebase (not
+introduced by the musl build). The binary is correct
+because `imageID` is `typedef long` which matches
+GCC's `int` ABI on the return path. No runtime
+impact.
+
+### 8.7. Limitations Compared to Standard Static LTO
+
+| Feature | Standard static LTO | musl static |
+|---------|--------------------|----|
+| CFITSIO support | ✓ | ✗ (glibc-only) |
+| OpenBLAS/MKL | ✓ | ✗ |
+| ncurses TUI | ✓ | ✗ |
+| Dynamic library deps | 3 (libc family) | **0** |
+| Deploy without runtime | ✗ | **✓** |
+| Binary portability | Same glibc version | Any Linux x86-64 |
+| PGO compatible | ✓ | ✓ (same workflow) |
+
+### 8.8. musl vs glibc `strerror_r` ABI
+
+musl implements the POSIX (XSI) variant of
+`strerror_r` which returns `int`, whereas glibc
+defaults to the GNU variant returning `char *`.
+The milk source correctly detects this via
+`#ifndef __GLIBC__` in `ImageStreamIO.c` — no
+user action needed.
+
+***
 ← [Documentation Index](index.md)
