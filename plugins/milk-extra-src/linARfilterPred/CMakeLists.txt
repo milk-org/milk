@@ -88,4 +88,5 @@ target_link_libraries(milk-fpsexec-linpred-applyPF
     PUBLIC ${LIBNAME})
 add_milk_standalone(linpred-buildlinPF build_linPF.c)
 target_link_libraries(milk-fpsexec-linpred-buildlinPF
-    PUBLIC ${LIBNAME})
+    PUBLIC ${LIBNAME} milklinalgebra)
+
