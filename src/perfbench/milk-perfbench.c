@@ -754,7 +754,17 @@ static void read_procinfo_stats(
         return;
     }
 
+    /*
+     * Use timerindex as the sample count.
+     * timingbuffercnt > 0 means the ring wrapped;
+     * in that case timerindex wraps around too and
+     * is itself clamped to PROCESSINFO_NBtimer by
+     * the processinfo implementation.
+     * Never read beyond what was actually written.
+     */
     int nbsam = pi->timerindex;
+    if (nbsam > PROCESSINFO_NBtimer)
+        nbsam = PROCESSINFO_NBtimer;
     if (pi->timingbuffercnt > 0)
         nbsam = PROCESSINFO_NBtimer;
 
@@ -776,7 +786,12 @@ static void read_procinfo_stats(
             * 1000000000L
             + (pi->texecstart[i].tv_nsec
                - pi->texecstart[i-1].tv_nsec);
-        if (dt_exec > 0 && dt_iter > 0)
+        /* Reject negative, zero, or implausibly
+         * large values (stale ring buffer entries
+         * from a previous FPS session). */
+        if (dt_exec > 0 && dt_iter > 0
+            && dt_exec < 10000000000L
+            && dt_iter < 10000000000L)
         {
             exec_ns[nv] = dt_exec;
             iter_ns[nv] = dt_iter;
@@ -803,13 +818,20 @@ static void read_procinfo_stats(
     qsort(iter_ns,  (size_t) nv,
           sizeof(long), cmp_long);
 
-    out->p50_exec = exec_ns[nv / 2];
-    out->p95_exec = exec_ns[nv * 95 / 100];
-    out->p99_exec = exec_ns[nv * 99 / 100];
-    out->p50_iter = iter_ns[nv / 2];
-    out->p95_iter = iter_ns[nv * 95 / 100];
-    out->p99_iter = iter_ns[nv * 99 / 100];
+    /* Compute percentile index, clamped to [0,nv-1] */
+#define PCTILE(arr, pct) \
+    (arr)[((nv * (pct) / 100) < nv \
+           ? (nv * (pct) / 100) : (nv - 1))]
+
+    out->p50_exec = PCTILE(exec_ns, 50);
+    out->p95_exec = PCTILE(exec_ns, 95);
+    out->p99_exec = PCTILE(exec_ns, 99);
+    out->p50_iter = PCTILE(iter_ns, 50);
+    out->p95_iter = PCTILE(iter_ns, 95);
+    out->p99_iter = PCTILE(iter_ns, 99);
     out->valid = 1;
+
+#undef PCTILE
 }
 
 /* ================================================================
@@ -1082,7 +1104,8 @@ static void sub_phase(
  * @param measured Number of measured iterations
  * @param t_ns     Total wall-clock ns
  * @param w_ns     Warmup wall-clock ns
- * @param pi       Processinfo stats
+ * @param pi       Total-run processinfo stats
+ * @param pi_w     Warmup processinfo stats
  * @param exe_sz   Executable size in bytes
  */
 static void write_json(
@@ -1093,6 +1116,7 @@ static void write_json(
     long long          t_ns,
     long long          w_ns,
     const pi_stats_t  *pi,
+    const pi_stats_t  *pi_w,
     long               exe_sz)
 {
     FILE *fp = fopen(cfg->result_file, "w");
@@ -1169,7 +1193,7 @@ static void write_json(
                 w->v[IDX_PAGE_FAULTS]);
     }
 
-    /* processinfo */
+    /* processinfo - total */
     if (pi && pi->valid)
     {
         fprintf(fp,
@@ -1184,7 +1208,7 @@ static void write_json(
             "    \"vmpeak_kb\": %ld,\n"
             "    \"vmhwm_kb\": %ld,\n"
             "    \"vmrss_kb\": %ld\n"
-            "  }\n",
+            "  },\n",
             pi->loopcnt,
             pi->p50_iter, pi->p95_iter,
             pi->p99_iter,
@@ -1195,7 +1219,32 @@ static void write_json(
     }
     else
     {
-        fprintf(fp, "  \"processinfo\": null\n");
+        fprintf(fp,
+                "  \"processinfo\": null,\n");
+    }
+    /* processinfo - warmup */
+    if (pi_w && pi_w->valid)
+    {
+        fprintf(fp,
+            "  \"processinfo_warmup\": {\n"
+            "    \"loopcnt\": %ld,\n"
+            "    \"p50_iter_ns\": %ld,\n"
+            "    \"p95_iter_ns\": %ld,\n"
+            "    \"p99_iter_ns\": %ld,\n"
+            "    \"p50_exec_ns\": %ld,\n"
+            "    \"p95_exec_ns\": %ld,\n"
+            "    \"p99_exec_ns\": %ld\n"
+            "  }\n",
+            pi_w->loopcnt,
+            pi_w->p50_iter, pi_w->p95_iter,
+            pi_w->p99_iter,
+            pi_w->p50_exec, pi_w->p95_exec,
+            pi_w->p99_exec);
+    }
+    else
+    {
+        fprintf(fp,
+                "  \"processinfo_warmup\": null\n");
     }
 
     fprintf(fp, "}\n");
@@ -1294,6 +1343,7 @@ static void print_summary(
     long long          t_ns,
     long long          w_ns,
     const pi_stats_t  *pi,
+    const pi_stats_t  *pi_w,
     long               exe_sz)
 {
     int hw = (cfg->warmup > 0);
@@ -1490,50 +1540,68 @@ static void print_summary(
     if (pi && pi->valid)
     {
         /*
-         * print_pi_row — one processinfo value row.
+         * print_pi_row — one processinfo timing row.
          *
-         * Keeps the value aligned under "Total"
-         * column. When warmup is active, Warmup and
-         * Measured columns are left blank so the
-         * table line up with other metrics.
+         * When warmup active: shows Total value in
+         * col 2, Warmup value in col 3. Measured
+         * col is omitted (procinfo is a run snapshot,
+         * not per-iteration arithmetic).
+         *
+         * When no warmup: single value in col 2.
          */
-#define print_pi_row(label, val, unit) \
+#define print_pi_row(label, tot, wrm, unit) \
         do { \
-            if (hw) \
-                printf("  %-*s %*ld %-3s%*s%*s\n", \
-                       COL1W, (label), \
-                       COL2W, (long)(val), (unit), \
-                       COL2W + 3, "", \
-                       COL2W + 3, ""); \
+            long _wv = (long)(wrm); \
+            if (hw && pi_w && pi_w->valid) \
+                printf( \
+                    "  %-*s %*ld %-3s%*ld %-3s\n", \
+                    COL1W, (label), \
+                    COL2W, (long)(tot), (unit), \
+                    COL2W - 1, _wv, (unit)); \
             else \
-                printf("  %-*s %*ld %-3s\n", \
-                       COL1W, (label), \
-                       COL2W, (long)(val), (unit)); \
+                printf( \
+                    "  %-*s %*ld %-3s\n", \
+                    COL1W, (label), \
+                    COL2W, (long)(tot), (unit)); \
         } while (0)
 
         print_sep();
         printf("  --- Timing (processinfo) ---\n");
         print_pi_row("  Iterations counted",
-                     pi->loopcnt, "");
+                     pi->loopcnt,
+                     (pi_w ? pi_w->loopcnt : 0L),
+                     "");
         print_pi_row("  Iter time  p50",
-                     pi->p50_iter, "ns");
-        print_pi_row("  Iter time  p95",
-                     pi->p95_iter, "ns");
-        print_pi_row("  Iter time  p99",
-                     pi->p99_iter, "ns");
+                     pi->p50_iter,
+                     (pi_w ? pi_w->p50_iter : 0L),
+                     "ns");
         print_pi_row("  Exec time  p50",
-                     pi->p50_exec, "ns");
+                     pi->p50_exec,
+                     (pi_w ? pi_w->p50_exec : 0L),
+                     "ns");
+        print_pi_row("  Iter time  p95",
+                     pi->p95_iter,
+                     (pi_w ? pi_w->p95_iter : 0L),
+                     "ns");
         print_pi_row("  Exec time  p95",
-                     pi->p95_exec, "ns");
+                     pi->p95_exec,
+                     (pi_w ? pi_w->p95_exec : 0L),
+                     "ns");
+        print_pi_row("  Iter time  p99",
+                     pi->p99_iter,
+                     (pi_w ? pi_w->p99_iter : 0L),
+                     "ns");
         print_pi_row("  Exec time  p99",
-                     pi->p99_exec, "ns");
+                     pi->p99_exec,
+                     (pi_w ? pi_w->p99_exec : 0L),
+                     "ns");
         printf("  --- Memory ---\n");
         print_pi_row("  Peak virtual memory",
-                     pi->vmpeak_kb, "kB");
+                     pi->vmpeak_kb, 0L, "kB");
         print_pi_row("  Peak RSS (VmHWM)",
-                     pi->vmhwm_kb, "kB");
+                     pi->vmhwm_kb, 0L, "kB");
         print_pi_row("  Final RSS (VmRSS)",
-                     pi->vmrss_kb, "kB");
+                     pi->vmrss_kb, 0L, "kB");
 
 #undef print_pi_row
     }
@@ -1664,12 +1732,13 @@ int main(int argc, char *argv[])
 
     /* ---- WARMUP PHASE ---- */
     hw_phase_t ph_warmup, ph_total;
-    pi_stats_t pi;
+    pi_stats_t pi, pi_warmup;
     long long  w_ns = 0, t_ns = 0;
 
-    memset(&ph_warmup, 0, sizeof(ph_warmup));
-    memset(&ph_total,  0, sizeof(ph_total));
-    memset(&pi,        0, sizeof(pi));
+    memset(&ph_warmup,  0, sizeof(ph_warmup));
+    memset(&ph_total,   0, sizeof(ph_total));
+    memset(&pi,         0, sizeof(pi));
+    memset(&pi_warmup,  0, sizeof(pi_warmup));
 
     if (cfg->warmup > 0)
     {
@@ -1677,7 +1746,7 @@ int main(int argc, char *argv[])
         printf("  [warmup] %d iterations ...\n",
                cfg->warmup);
         run_phase(cfg, cfg->warmup,
-                  &ph_warmup, NULL, 0, &w_ns);
+                  &ph_warmup, &pi_warmup, 1, &w_ns);
 
         /* Re-init FPS for 2nd run */
         run_cmd("%s %s:fpsinit -procinfo"
@@ -1710,14 +1779,14 @@ int main(int argc, char *argv[])
     write_json(cfg,
                &ph_total, &ph_warmup,
                measured, t_ns, w_ns,
-               &pi, sz);
+               &pi, &pi_warmup, sz);
 
     /* Summary */
     print_summary(cfg,
                   measured,
                   &ph_total, &ph_warmup,
                   t_ns, w_ns,
-                  &pi, sz);
+                  &pi, &pi_warmup, sz);
 
     return 0;
 }
