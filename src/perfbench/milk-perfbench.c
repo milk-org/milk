@@ -247,6 +247,7 @@ typedef struct
     char procdir[MAX_PATH];
     char result_file[MAX_PATH];
     char git_commit[64];
+    char build_tags[256]; /* extracted from binary */
 } bench_cfg_t;
 
 /* ================================================================
@@ -487,6 +488,124 @@ static long exe_size(const char *exe)
     if (stat(path, &st) != 0)
         return 0;
     return (long) st.st_size;
+}
+
+/**
+ * @brief Extract MILK_BUILD sentinel string from binary.
+ *
+ * Uses `strings | grep` to find the embedded tag
+ * written by MILK_EMBED_BUILD_TAG() in fps.h.
+ * Parses and formats relevant fields into @p out.
+ *
+ * @param exe   fpsexec name or full path
+ * @param out   output buffer
+ * @param outsz size of output buffer
+ */
+static void read_build_tags(
+    const char *exe,
+    char       *out,
+    size_t      outsz)
+{
+    out[0] = '\0';
+
+    /* Resolve full path */
+    char cmd[MAX_CMD];
+    snprintf(cmd, sizeof(cmd),
+             "command -v '%s' 2>/dev/null", exe);
+    FILE *fp = popen(cmd, "r");
+    if (!fp)
+        return;
+    char path[MAX_PATH] = {0};
+    if (!fgets(path, sizeof(path) - 1, fp))
+    {
+        pclose(fp);
+        return;
+    }
+    pclose(fp);
+    path[strcspn(path, "\n")] = '\0';
+    if (strlen(path) == 0)
+        return;
+
+    /* Extract the sentinel via strings(1) */
+    snprintf(cmd, sizeof(cmd),
+        "strings '%s' 2>/dev/null"
+        " | grep 'MILK_BUILD:'",
+        path);
+    fp = popen(cmd, "r");
+    if (!fp)
+        return;
+    char raw[512] = {0};
+    if (!fgets(raw, sizeof(raw) - 1, fp))
+    {
+        pclose(fp);
+        out[0] = '\0';
+        return;
+    }
+    pclose(fp);
+    raw[strcspn(raw, "\n")] = '\0';
+
+    /* Locate payload after "MILK_BUILD:" prefix */
+    char *payload = strstr(raw, "MILK_BUILD:");
+    if (!payload)
+        return;
+    payload += strlen("MILK_BUILD:");
+
+    /* Build a compact human-readable summary */
+    char summary[256] = {0};
+    size_t slen = 0;
+
+    if (strstr(payload, "OPT=3"))
+        slen += (size_t) snprintf(
+            summary + slen,
+            sizeof(summary) - slen,
+            "O3 ");
+    if (strstr(payload, "PGO=USE"))
+        slen += (size_t) snprintf(
+            summary + slen,
+            sizeof(summary) - slen,
+            "PGO ");
+    else if (strstr(payload, "PGO=GENERATE"))
+        slen += (size_t) snprintf(
+            summary + slen,
+            sizeof(summary) - slen,
+            "PGO-instr ");
+    if (strstr(payload, "LTO=STATIC"))
+        slen += (size_t) snprintf(
+            summary + slen,
+            sizeof(summary) - slen,
+            "LTO-static ");
+    else if (strstr(payload, "LTO=1"))
+        slen += (size_t) snprintf(
+            summary + slen,
+            sizeof(summary) - slen,
+            "LTO ");
+
+    /* Extract architecture field */
+    {
+        char *ap = strstr(payload, "ARCH=");
+        if (ap)
+        {
+            ap += 5;
+            char arch[32] = {0};
+            size_t ai = 0;
+            while (*ap && *ap != ',' && ai < 31)
+                arch[ai++] = *ap++;
+            slen += (size_t) snprintf(
+                summary + slen,
+                sizeof(summary) - slen,
+                "[%s]", arch);
+        }
+    }
+
+    if (slen == 0)
+        snprintf(summary, sizeof(summary),
+                 "default (no PGO/LTO)");
+
+    /* Trim trailing space */
+    while (slen > 0 && summary[slen - 1] == ' ')
+        summary[--slen] = '\0';
+
+    snprintf(out, outsz, "%s", summary);
 }
 
 /* ================================================================
@@ -1343,6 +1462,10 @@ static void write_json(
             exe_sz);
     fprintf(fp, "  \"git_commit\": \"%s\",\n",
             cfg->git_commit);
+    fprintf(fp, "  \"build_tags\": \"%s\",\n",
+            cfg->build_tags[0]
+                ? cfg->build_tags
+                : "default");
     fprintf(fp, "  \"iterations\": %d,\n",
             cfg->nbiter);
     fprintf(fp, "  \"warmup_iterations\": %d,\n",
@@ -2009,6 +2132,12 @@ int main(int argc, char *argv[])
     long sz = exe_size(cfg->fpsexec);
     int  measured = cfg->nbiter - cfg->warmup;
 
+    /* Read build tags from binary before printing header */
+    read_build_tags(
+        cfg->fpsexec,
+        cfg->build_tags,
+        sizeof(cfg->build_tags));
+
     /* Print header */
     printf("\n");
     printf("===========================================\n");
@@ -2016,6 +2145,10 @@ int main(int argc, char *argv[])
     printf("===========================================\n");
     printf("  Command   : %s\n", cfg->fpsexec);
     printf("  FPS name  : %s\n", cfg->fpsname);
+    printf("  Build     : %s\n",
+           cfg->build_tags[0]
+               ? cfg->build_tags
+               : "default (no PGO/LTO)");
     printf("  Iterations: %d\n", cfg->nbiter);
     if (cfg->warmup > 0)
     {
