@@ -73,91 +73,132 @@ FPS_V2_SECTION5(FPS_PARAMS)
 // output written in im_r, im_g1, im_g2 and im_b
 //
 errno_t image_format_extract_RGGBchan(
-    IMGID imgin, IMGID imgoutR, IMGID imgoutG1, IMGID imgoutG2, IMGID imgoutB)
+    IMGID *imgin,
+    IMGID *imgoutR,
+    IMGID *imgoutG1,
+    IMGID *imgoutG2,
+    IMGID *imgoutB)
 {
     DEBUG_TRACE_FSTART();
 
     // input image is required
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
+    // Create output images if not yet allocated.
+    // Guards prevent reallocation on every frame.
+    if(imgoutR->ID == -1)
+    {
+        imgid_copy(imgin, imgoutR);
+        imgoutR->mdt->size[0] = imgin->md->size[0] / 2;
+        imgoutR->mdt->size[1] = imgin->md->size[1] / 2;
+        createimagefromIMGID(imgoutR);
+    }
+    if(imgoutG1->ID == -1)
+    {
+        imgid_copy(imgoutR, imgoutG1);
+        createimagefromIMGID(imgoutG1);
+    }
+    if(imgoutG2->ID == -1)
+    {
+        imgid_copy(imgoutR, imgoutG2);
+        createimagefromIMGID(imgoutG2);
+    }
+    if(imgoutB->ID == -1)
+    {
+        imgid_copy(imgoutR, imgoutB);
+        createimagefromIMGID(imgoutB);
+    }
 
-    imgid_copy(&imgin, &imgoutR);
-    imgoutR.mdt->size[0] = imgin.md->size[0] / 2;
-    imgoutR.mdt->size[1] = imgin.md->size[1] / 2;
-
-    imgid_copy(&imgoutR, &imgoutG1);
-    imgid_copy(&imgoutR, &imgoutG2);
-    imgid_copy(&imgoutR, &imgoutB);
-
-    createimagefromIMGID(&imgoutR);
-    createimagefromIMGID(&imgoutG1);
-    createimagefromIMGID(&imgoutG2);
-    createimagefromIMGID(&imgoutB);
-
-    uint32_t xsize = imgin.md->size[0];
+    uint32_t xsize = imgin->md->size[0];
 
     list_image_ID();
 
 
-    switch(imgin.md->datatype)
+    switch(imgin->md->datatype)
     {
 
         case _DATATYPE_FLOAT:
-            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
+            for(uint32_t ii = 0;
+                 ii < imgoutR->mdt->size[0]; ii++)
+            {
+                for(uint32_t jj = 0;
+                     jj < imgoutR->mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
+                    uint64_t pixi =
+                        jj * imgoutR->mdt->size[0] + ii;
 
-                    imgoutR.im->array.F[pixi] =
-                        imgin.im->array.F[(jj1 + 1) * xsize + ii1];
-                    imgoutG1.im->array.F[pixi] =
-                        imgin.im->array.F[jj1 * xsize + ii1];
-                    imgoutG2.im->array.F[pixi] =
-                        imgin.im->array.F[(jj1 + 1) * xsize + (ii1 + 1)];
-                    imgoutB.im->array.F[pixi] =
-                        imgin.im->array.F[jj1 * xsize + (ii1 + 1)];
+                    imgoutR->im->array.F[pixi] =
+                        imgin->im->array.F[
+                            (jj1 + 1) * xsize + ii1];
+                    imgoutG1->im->array.F[pixi] =
+                        imgin->im->array.F[
+                            jj1 * xsize + ii1];
+                    imgoutG2->im->array.F[pixi] =
+                        imgin->im->array.F[
+                            (jj1 + 1) * xsize + ii1 + 1];
+                    imgoutB->im->array.F[pixi] =
+                        imgin->im->array.F[
+                            jj1 * xsize + ii1 + 1];
                 }
+            }
             break;
 
         case _DATATYPE_DOUBLE:
-            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
+            for(uint32_t ii = 0;
+                 ii < imgoutR->mdt->size[0]; ii++)
+            {
+                for(uint32_t jj = 0;
+                     jj < imgoutR->mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
+                    uint64_t pixi =
+                        jj * imgoutR->mdt->size[0] + ii;
 
-                    imgoutR.im->array.D[pixi] =
-                        imgin.im->array.D[(jj1 + 1) * xsize + ii1];
-                    imgoutG1.im->array.D[pixi] =
-                        imgin.im->array.D[jj1 * xsize + ii1];
-                    imgoutG2.im->array.D[pixi] =
-                        imgin.im->array.D[(jj1 + 1) * xsize + (ii1 + 1)];
-                    imgoutB.im->array.D[pixi] =
-                        imgin.im->array.D[jj1 * xsize + (ii1 + 1)];
+                    imgoutR->im->array.D[pixi] =
+                        imgin->im->array.D[
+                            (jj1 + 1) * xsize + ii1];
+                    imgoutG1->im->array.D[pixi] =
+                        imgin->im->array.D[
+                            jj1 * xsize + ii1];
+                    imgoutG2->im->array.D[pixi] =
+                        imgin->im->array.D[
+                            (jj1 + 1) * xsize + ii1 + 1];
+                    imgoutB->im->array.D[pixi] =
+                        imgin->im->array.D[
+                            jj1 * xsize + ii1 + 1];
                 }
+            }
             break;
 
-
         case _DATATYPE_UINT16:
-            for(uint32_t ii = 0; ii < imgoutR.mdt->size[0]; ii++)
-                for(uint32_t jj = 0; jj < imgoutR.mdt->size[1]; jj++)
+            for(uint32_t ii = 0;
+                 ii < imgoutR->mdt->size[0]; ii++)
+            {
+                for(uint32_t jj = 0;
+                     jj < imgoutR->mdt->size[1]; jj++)
                 {
                     uint32_t ii1  = 2 * ii;
                     uint32_t jj1  = 2 * jj;
-                    uint64_t pixi = jj * imgoutR.mdt->size[0] + ii;
+                    uint64_t pixi =
+                        jj * imgoutR->mdt->size[0] + ii;
 
-                    imgoutR.im->array.UI16[pixi] =
-                        imgin.im->array.UI16[(jj1 + 1) * xsize + ii1];
-                    imgoutG1.im->array.UI16[pixi] =
-                        imgin.im->array.UI16[jj1 * xsize + ii1];
-                    imgoutG2.im->array.UI16[pixi] =
-                        imgin.im->array.UI16[(jj1 + 1) * xsize + (ii1 + 1)];
-                    imgoutB.im->array.UI16[pixi] =
-                        imgin.im->array.UI16[jj1 * xsize + (ii1 + 1)];
+                    imgoutR->im->array.UI16[pixi] =
+                        imgin->im->array.UI16[
+                            (jj1 + 1) * xsize + ii1];
+                    imgoutG1->im->array.UI16[pixi] =
+                        imgin->im->array.UI16[
+                            jj1 * xsize + ii1];
+                    imgoutG2->im->array.UI16[pixi] =
+                        imgin->im->array.UI16[
+                            (jj1 + 1) * xsize + ii1 + 1];
+                    imgoutB->im->array.UI16[pixi] =
+                        imgin->im->array.UI16[
+                            jj1 * xsize + ii1 + 1];
                 }
+            }
             break;
     }
 
@@ -176,24 +217,35 @@ static MILK_HOT errno_t compute_function()
 {
     DEBUG_TRACE_FSTART();
 
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_START
-
-    IMGID img_in = imgid_make_from_name(inim);
-    IMGID img_outR = imgid_make_from_name(outimR);
+    // Declare IMGIDs before the loop so allocations
+    // are guarded and only happen on the first frame.
+    IMGID img_in   = imgid_make_from_name(inim);
+    IMGID img_outR  = imgid_make_from_name(outimR);
     IMGID img_outG1 = imgid_make_from_name(outimG1);
     IMGID img_outG2 = imgid_make_from_name(outimG2);
-    IMGID img_outB = imgid_make_from_name(outimB);
+    IMGID img_outB  = imgid_make_from_name(outimB);
 
-    image_format_extract_RGGBchan(img_in, img_outR, img_outG1, img_outG2, img_outB);
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+    {
+        image_format_extract_RGGBchan(
+            &img_in,
+            &img_outR,
+            &img_outG1,
+            &img_outG2,
+            &img_outB);
+
+        processinfo_update_output_stream(
+            processinfo, img_outR.im, NULL);
+    }
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     imgid_free(&img_in);
     imgid_free(&img_outR);
     imgid_free(&img_outG1);
     imgid_free(&img_outG2);
     imgid_free(&img_outB);
-
-    INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
