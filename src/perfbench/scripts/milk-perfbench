@@ -675,6 +675,19 @@ pm_iter() {
     fi
 }
 
+# 6-decimal-place variant for rare events
+pm_iter6() {
+    local t="$1" w="$2"
+    local diff=$(( t - w ))
+    if [ "${diff}" -le 0 ] \
+        || [ "${MEASURED}" -le 0 ]; then
+        echo "0"
+    else
+        echo "scale=6; ${diff} / ${MEASURED}" \
+            | bc 2>/dev/null || echo "0"
+    fi
+}
+
 if [ "${WARMUP}" -gt 0 ]; then
     FMT="  %-26s %14s %14s %14s/iter\n"
     FMTHDR="  %-26s %14s %14s %14s\n"
@@ -689,8 +702,7 @@ else
     SEP="  ------------------------------------------------------"
 fi
 
-## Print a counter row
-## pc <label> <total_var_name>
+## pc - print a counter row (1 d.p. per-iter)
 pc() {
     local label="$1"
     local tvar="$2"
@@ -707,6 +719,27 @@ pc() {
         printf "${FMT}" "${label}" \
             "${tval}" \
             "$(pm_iter ${tval} 0)"
+    fi
+}
+
+## pc6 - print a counter row (6 d.p. per-iter)
+## Use for rare events like page faults.
+pc6() {
+    local label="$1"
+    local tvar="$2"
+    local tval wval
+    eval "tval=\${T_${tvar}}"
+    eval "wval=\${W_${tvar}}"
+    : "${tval:=0}" "${wval:=0}"
+
+    if [ "${WARMUP}" -gt 0 ]; then
+        printf "${FMT}" "${label}" \
+            "${tval}" "${wval}" \
+            "$(pm_iter6 ${tval} ${wval})"
+    else
+        printf "${FMT}" "${label}" \
+            "${tval}" \
+            "$(pm_iter6 ${tval} 0)"
     fi
 }
 
@@ -828,11 +861,11 @@ echo "${SEP}"
 pc "Branch misses" "BRANCH_MISSES"
 
 echo "${SEP}"
-pc "Page faults" "PAGE_FAULTS"
-pc "  Minor (in page cache)" "MINOR_FAULTS"
-pc "  Major (disk I/O)" "MAJOR_FAULTS"
-pc "CPU core migrations" "CPU_MIGRATIONS"
-pc "Context switches" "CTX_SWITCHES"
+pc6 "Page faults" "PAGE_FAULTS"
+pc6 "  Minor (in page cache)" "MINOR_FAULTS"
+pc6 "  Major (disk I/O)" "MAJOR_FAULTS"
+pc6 "CPU core migrations" "CPU_MIGRATIONS"
+pc6 "Context switches" "CTX_SWITCHES"
 
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     echo "${SEP}"
