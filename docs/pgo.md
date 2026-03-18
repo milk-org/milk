@@ -1,6 +1,5 @@
-# Profile-Guided Optimization (PGO) & Link-Time
+# Profile-Guided Optimization (PGO) & Link-Time Optimization (LTO)
 
-## Optimization (LTO)
 
 The `milk` build system supports two complementary
 compiler optimization techniques for `fpsexec`
@@ -179,18 +178,76 @@ sequentially, and the entire hot loop fits in L1i.
 | Compact hot path | Inlined code is sequential in memory | L1i cache stays warm |
 | Zero startup overhead | No `ld.so` symbol resolution | Faster process launch |
 
-### 1.6. Usage
+### 1.6. Build Modes
+
+Two approaches are available, depending on whether
+you need full static linking or just LTO on the
+executable itself:
+
+#### Option A — Static LTO (recommended)
+
+Builds static archive variants (`.a`) of every
+milk library and links them into standalone
+executables. Gives GCC maximum cross-module
+visibility.
 
 ```bash
-$ mkdir _build_lto && cd _build_lto
-$ cmake .. -DUSE_STATIC_LTO=ON
-$ make -j$(nproc) && sudo make install
+cd /home/oguyon/src/milk-perf/_build
+
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=ON \
+  -DCMAKE_C_FLAGS="-O3 -march=native"
+
+make -j$(nproc)
+sudo make install
 ```
 
-> [!NOTE]
-> Static LTO only affects `fpsexec` standalone
-> executables. Shared libraries and the `milk-cli`
-> binary are unchanged.
+`milk-perfbench` build tag: **`O3 LTO-static [x86_64]`**
+
+#### Option B — Dynamic LTO (manual flags)
+
+Keeps the default dynamic `.so` linking but
+passes `-flto` explicitly. LTO operates only
+within the executable's own compilation units —
+cross-library inlining is **not** available, but
+the executable's hot path is still LTO-optimized.
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="-O3 -march=native -flto=auto" \
+  -DCMAKE_EXE_LINKER_FLAGS="-flto=auto -Wl,-O2" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-flto=auto"
+
+make -j$(nproc)
+sudo make install
+```
+
+`milk-perfbench` build tag: **`O3 LTO [x86_64]`**
+
+> [!IMPORTANT]
+> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+> when switching to Option B. CMake caches values
+> between runs — if `USE_STATIC_LTO=ON` was set
+> previously, it remains active until explicitly
+> cleared. Forgetting this causes a link error:
+> `cannot find -lImageStreamIO_static`.
+
+#### Restore Normal Build
+
+After any optimization build, clear flags so
+subsequent builds are unaffected:
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="" \
+  -DCMAKE_EXE_LINKER_FLAGS="" \
+  -DCMAKE_SHARED_LINKER_FLAGS=""
+```
 
 ### 1.7. Verifying Static Linking
 
@@ -202,6 +259,35 @@ $ ldd /usr/local/bin/milk-fpsexec-arith-crop2D
 ## Default:  14 shared libs (milkfps.so, ImageStreamIO.so, ...)
 ## Static LTO:  3 deps (libc, ld-linux, vdso)
 ```
+
+### 1.8. Verifying the Build Mode
+
+Every fpsexec binary embeds a build-tag sentinel
+string that can be inspected with `strings(1)`:
+
+```bash
+$ strings milk-fpsexec-imggen-mkrandom | grep 'MILK_BUILD:'
+MILK_BUILD:VER=1,...,ARCH=x86_64,OPT=3,LTO=STATIC,END
+```
+
+`milk-perfbench` reads and displays this
+automatically in its header line:
+
+```
+  Build     : O3 LTO-static [x86_64]
+```
+
+Possible `Build:` values:
+
+| Shown | Meaning |
+|-------|---------|
+| `default (no PGO/LTO)` | Plain Release build |
+| `O3 [x86_64]` | `-O3`, no LTO |
+| `O3 LTO [x86_64]` | Option B (dynamic LTO) |
+| `O3 LTO-static [x86_64]` | Option A (static LTO) |
+| `O3 PGO [x86_64]` | PGO pass-2, no LTO |
+| `O3 PGO LTO [x86_64]` | PGO + dynamic LTO |
+| `O3 PGO LTO-static [x86_64]` | PGO + static LTO (maximum) |
 
 ***
 
@@ -460,129 +546,58 @@ libCOREMODiofits_compute.a
 Build configurations:
 
 ```bash
-## Default (dynamic, LTO within modules)
-$ cmake ..
+## Default (shared libs, no LTO)
+cmake .. -DUSE_STATIC_LTO=OFF
 
-## Static LTO only
-$ cmake .. -DUSE_STATIC_LTO=ON
+## Option A — Static LTO only
+cmake .. \
+  -DUSE_STATIC_LTO=ON \
+  -DCMAKE_C_FLAGS="-O3 -march=native"
+
+## Option B — Dynamic LTO (manual flags)
+cmake .. \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="-O3 -march=native -flto=auto" \
+  -DCMAKE_EXE_LINKER_FLAGS="-flto=auto -Wl,-O2" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-flto=auto"
 
 ## PGO only
-$ cmake .. -DUSE_PGO=GENERATE   # step 1
-$ cmake .. -DUSE_PGO=USE        # step 3
+cmake .. -DUSE_PGO=GENERATE   # step 1
+cmake .. -DUSE_PGO=USE        # step 3
 
-## Maximum optimization
-$ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
+## Maximum optimization (PGO + static LTO)
+cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
+
+## Restore normal build (clear all flags)
+cmake .. \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="" \
+  -DCMAKE_EXE_LINKER_FLAGS="" \
+  -DCMAKE_SHARED_LINKER_FLAGS=""
 ```
+
+> [!CAUTION]
+> CMake **caches** all `-D` options between runs.
+> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+> when switching away from static LTO. Omitting it
+> leaves `USE_STATIC_LTO=ON` in the cache and
+> causes `cannot find -lImageStreamIO_static`.
+
+### CMake Policy
+
+Add `cmake_policy(SET CMP0069 NEW)` to any
+`CMakeLists.txt` that calls `add_library()` to
+suppress the `INTERPROCEDURAL_OPTIMIZATION`
+policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`
+is set. This is already applied to `CLIcore`.
 
 ***
 
 ## 6. Manual CMake Flags (Dynamic Libs)
 
-When the built-in `USE_STATIC_LTO` option is not
-available (e.g., milk libs are built as `.so` only),
-PGO + LTO can still be applied via explicit CMake
-flags. This approach works because GCC LTO operates
-on the `.so` boundary too — it cannot inline across
-it, but it **can** profile-optimize the executable's
-own code and the linker performs LTO on all objects it
-controls.
-
-### 6.1 Quick Reference
-
-```bash
-cd /home/oguyon/src/milk-perf/_build
-PGODIR=/tmp/pgo-imggen
-BIN=./plugins/milk-extra-src/image_gen/milk-fpsexec-imggen-mkrandom
-```
-
-### 6.2 Pass 1 — Instrument
-
-Rebuild **all** targets so shared libs also carry
-the instrumentation (needed for consistent `.gcda`
-file generation):
-
-```bash
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_FLAGS="-fprofile-generate=$PGODIR -O3 -flto" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fprofile-generate=$PGODIR -flto" \
-  -DCMAKE_SHARED_LINKER_FLAGS="-fprofile-generate=$PGODIR -flto" \
-  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-
-mkdir -p $PGODIR
-make -j$(nproc)
-```
-
-### 6.3 Collect Profile
-
-Use `milk-perfbench` to drive a representative
-workload. Run several times to enrich the profile:
-
-```bash
-PERFBENCH=./src/perfbench/milk-perfbench
-
-for i in 1 2 3; do
-  $PERFBENCH $BIN 5000 -w 0 -o /tmp/pgo_out
-done
-```
-
-> [!TIP]
-> Use `-w 0` (no warmup) so the profiling run
-> captures the steady-state hot loop without
-> polluting the `.gcda` files with startup code.
-
-### 6.4 Pass 2 — Optimise + Strip
-
-```bash
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_FLAGS="-fprofile-use=$PGODIR -fprofile-correction -O3 -flto -g0" \
-  -DCMAKE_EXE_LINKER_FLAGS="-fprofile-use=$PGODIR -flto -s" \
-  -DCMAKE_SHARED_LINKER_FLAGS="-fprofile-use=$PGODIR -fprofile-correction -flto -g0" \
-  -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-
-make milk-fpsexec-imggen-mkrandom -j$(nproc)
-```
-
-Flag summary:
-
-| Flag | Purpose |
-|------|---------|
-| `-fprofile-use` | Apply collected profiles |
-| `-fprofile-correction` | Tolerate minor count mismatches |
-| `-flto` | Link-time optimization |
-| `-g0` | Suppress debug info |
-| `-s` | Strip symbols at link time |
-
-### 6.5 Verify and Install
-
-```bash
-# Should report: ... dynamically linked ... stripped
-file $BIN
-
-# Install the optimised binary
-sudo install -m 755 $BIN /usr/local/milk/bin/
-```
-
-> [!NOTE]
-> Do **not** pass `-static` to the linker — milk
-> libs only ship as `.so` files. Mixing `-static`
-> with `.so`-only dependencies causes a link error.
-> Dynamic LTO still yields measurable gains for the
-> executable's own hot path.
-
-### 6.6 Restore Normal Build
-
-After installation, clear the PGO flags so
-subsequent builds are unaffected:
-
-```bash
-cmake .. \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_C_FLAGS="" \
-  -DCMAKE_EXE_LINKER_FLAGS="" \
-  -DCMAKE_SHARED_LINKER_FLAGS=""
-```
+This is **Option B** from section 1.6 — applying
+PGO on top of dynamic-lib LTO when
+`USE_STATIC_LTO` is not used.
 
 ***
 
@@ -602,6 +617,15 @@ cmake .. \
   library code is embedded — this is expected.
 - Build time with static LTO is longer due to
   whole-program optimization at link time.
+- **CMake cache:** always pass `-DUSE_STATIC_LTO=OFF`
+  when switching back to dynamic builds. Cached
+  `ON` causes `cannot find -lXxx_static` errors.
+- **Build tag:** every fpsexec embeds a
+  `MILK_BUILD:` sentinel string in `.rodata`
+  readable via `strings | grep MILK_BUILD:`. The
+  `milk-perfbench` header reports this as the
+  `Build:` line, allowing unambiguous verification
+  that the right optimization level was applied.
 
 ***
 ← [Documentation Index](index.md)
