@@ -1617,8 +1617,84 @@ static void write_json(
  * Human-readable summary
  * ============================================================= */
 
-#define COL1W  26
-#define COL2W  14
+/*
+ * ANSI escape sequences for terminal styling.
+ * All output gracefully degrades if stdout is
+ * redirected (no color codes in piped output).
+ */
+#define ANSI_RESET   "\033[0m"
+#define ANSI_BOLD    "\033[1m"
+#define ANSI_DIM     "\033[2m"
+#define ANSI_CYAN    "\033[36m"
+#define ANSI_YELLOW  "\033[33m"
+#define ANSI_GREEN   "\033[32m"
+#define ANSI_MAGENTA "\033[35m"
+#define ANSI_WHITE   "\033[97m"
+
+/* Check once at startup whether stdout is a tty */
+static int g_use_color = 0;
+
+/* Width constants */
+#define COL1W  28   /* label column */
+#define COL2W  14   /* value column */
+
+/* Box-drawing strings */
+#define BOX_HEAVY \
+    "\342\224\201" /* ━ */
+#define BOX_LIGHT \
+    "\342\224\200" /* ─ */
+#define SEP_WIDE \
+    "  " BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT \
+    BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT BOX_LIGHT
+
+/* color helper macros — emit codes only when tty */
+#define C(code) (g_use_color ? code : "")
+#define CR       C(ANSI_RESET)
+#define CB       C(ANSI_BOLD)
+#define CD       C(ANSI_DIM)
+#define CCY      C(ANSI_CYAN)
+#define CYL      C(ANSI_YELLOW)
+#define CGR      C(ANSI_GREEN)
+#define CMG      C(ANSI_MAGENTA)
+#define CWH      C(ANSI_WHITE)
+
+/**
+ * @brief Print a heavy separator line (section boundary).
+ */
+static void print_heavy_sep(void)
+{
+    printf("%s  ", CB);
+    for (int i = 0; i < 54; i++)
+        printf("%s", BOX_HEAVY);
+    printf("%s\n", CR);
+}
+
+/**
+ * @brief Print a light separator line.
+ */
+static void print_sep(void)
+{
+    printf("%s%s%s\n", CD, SEP_WIDE, CR);
+}
+
+/**
+ * @brief Print a colored section header.
+ *
+ * @param title  Section label, e.g. "L1 Data Cache"
+ */
+static void print_section(
+    const char *title)
+{
+    printf("\n  %s\342\226\270 %s%s\n",
+           CCY, title, CR);
+}
 
 /**
  * @brief Print a counter row: label, total,
@@ -1641,30 +1717,30 @@ static void print_row(
     if (has_warmup)
     {
         if (decimals == 6)
-            printf("  %-*s %*lld %*lld %*.6f/iter\n",
-                   COL1W, label,
+            printf("  %s%-*s%s %*lld %*lld %s%*.6f%s/iter\n",
+                   CD, COL1W, label, CR,
                    COL2W, total,
                    COL2W, warmup_v,
-                   COL2W, per_iter);
+                   CYL, COL2W, per_iter, CR);
         else
-            printf("  %-*s %*lld %*lld %*.1f/iter\n",
-                   COL1W, label,
+            printf("  %s%-*s%s %*lld %*lld %s%*.1f%s/iter\n",
+                   CD, COL1W, label, CR,
                    COL2W, total,
                    COL2W, warmup_v,
-                   COL2W, per_iter);
+                   CYL, COL2W, per_iter, CR);
     }
     else
     {
         if (decimals == 6)
-            printf("  %-*s %*lld %*.6f/iter\n",
-                   COL1W, label,
+            printf("  %s%-*s%s %*lld %s%*.6f%s/iter\n",
+                   CD, COL1W, label, CR,
                    COL2W, total,
-                   COL2W, per_iter);
+                   CYL, COL2W, per_iter, CR);
         else
-            printf("  %-*s %*lld %*.1f/iter\n",
-                   COL1W, label,
+            printf("  %s%-*s%s %*lld %s%*.1f%s/iter\n",
+                   CD, COL1W, label, CR,
                    COL2W, total,
-                   COL2W, per_iter);
+                   CYL, COL2W, per_iter, CR);
     }
 }
 
@@ -1676,22 +1752,16 @@ static void print_rate(
     int         has_warmup)
 {
     if (has_warmup)
-        printf("  %-*s %*.6f%% %*.6f%% %*.6f%%\n",
-               COL1W, label,
-               COL2W - 1, rate_t,
-               COL2W - 1, rate_w,
-               COL2W - 1, rate_m);
+        printf("  %s%-*s%s %s%*.3f%%%s "
+               "%s%*.3f%%%s %s%*.3f%%%s\n",
+               CD, COL1W, label, CR,
+               CD, COL2W - 1, rate_t, CR,
+               CD, COL2W - 1, rate_w, CR,
+               CMG, COL2W - 1, rate_m, CR);
     else
-        printf("  %-*s %*.6f%%\n",
-               COL1W, label,
-               COL2W - 1, rate_t);
-}
-
-static void print_sep(void)
-{
-    printf("  %s\n",
-           "------------------------------------------"
-           "--------------------");
+        printf("  %s%-*s%s %s%*.3f%%%s\n",
+               CD, COL1W, label, CR,
+               CMG, COL2W - 1, rate_t, CR);
 }
 
 /**
@@ -1708,29 +1778,46 @@ static void print_summary(
     const pi_stats_t  *pi_w,
     long               exe_sz)
 {
+    /* detect color support once */
+    g_use_color = isatty(STDOUT_FILENO);
+
     int hw = (cfg->warmup > 0);
     hw_phase_t m;
     sub_phase(&m, t, w);
 
-    printf("\n");
-    printf("======================================================\n");
-    printf("  Benchmark Results\n");
-    printf("  Total: %d  Warmup: %d  Measured: %d\n",
-           cfg->nbiter, cfg->warmup, measured);
-    printf("======================================================\n");
+    print_heavy_sep();
+    printf("  %s%-*s%s %s%-*s%s %s%-*s%s\n",
+           CB, COL1W, "", CR,
+           CB, COL2W, "Total", CR,
+           (hw ? CB : CD), COL2W,
+               (hw ? "Warmup" : ""), CR);
+    printf("  %s%-*s%s %s%-*s%s %s%-*s%s\n",
+           CB, COL1W,
+               "Benchmark Results", CR,
+           CD, COL2W,
+               "", CR,
+           CB, COL2W,
+               "Measured", CR);
+    printf("  %s%-*s%s  %s%d iter%s, "
+           "%sBuild:%s %s\n",
+           CD, COL1W,
+               cfg->fpsexec[0] == '/' || cfg->fpsexec[0] == '.'
+                   ? (strrchr(cfg->fpsexec, '/') + 1)
+                   : cfg->fpsexec,
+           CR,
+           CD, measured, CR,
+           CD, CR,
+           cfg->build_tags[0]
+               ? cfg->build_tags
+               : "default");
+    print_heavy_sep();
 
-    if (hw)
-        printf("  %-*s %*s %*s %*s\n",
-               COL1W, "",
-               COL2W, "Total",
-               COL2W, "Warmup",
-               COL2W, "Measured");
-    else
-        printf("  %-*s %*s %*s\n",
-               COL1W, "",
-               COL2W, "Total",
-               COL2W, "Per-iter");
-
+    /* Column header */
+    printf("  %s%-*s%s %s%*s%s %s%*s%s %s%*s%s\n",
+           CD, COL1W, "", CR,
+           CD, COL2W, "total", CR,
+           CD, COL2W, hw ? "warmup" : "", CR,
+           CB, COL2W, "per-iter", CR);
     print_sep();
 
     /* Wall clock */
@@ -1740,27 +1827,39 @@ static void print_summary(
             (measured > 0)
             ? (double) meas_ns / measured
             : 0.0;
+        /* display timing in µs when >= 1000 ns */
+        int use_us = (meas_pi >= 1000.0);
+        double scale = use_us ? 1e3 : 1.0;
+        const char *unit = use_us ? "µs" : "ns";
 
         if (hw)
-            printf("  %-*s %*.6f s %*.6f s %*.1f ns/iter\n",
-                   COL1W, "Wall clock",
-                   COL2W - 2, (double) t_ns / 1e9,
-                   COL2W - 2, (double) w_ns / 1e9,
-                   COL2W, meas_pi);
+            printf("  %s%-*s%s %*.3f s %*.3f s "
+                   "%s%*.1f %s/iter%s\n",
+                   CB, COL1W, "Wall clock", CR,
+                   COL2W - 2,
+                       (double) t_ns / 1e9,
+                   COL2W - 2,
+                       (double) w_ns / 1e9,
+                   CWH,
+                   COL2W - 2,
+                       meas_pi / scale,
+                   unit, CR);
         else
-            printf("  %-*s %*.6f s %*.1f ns/iter\n",
-                   COL1W, "Wall clock",
-                   COL2W - 2, (double) t_ns / 1e9,
-                   COL2W, (double) t_ns / measured);
+            printf("  %s%-*s%s %*.3f s %s%*.1f %s/iter%s\n",
+                   CB, COL1W, "Wall clock", CR,
+                   COL2W - 2,
+                       (double) t_ns / 1e9,
+                   CWH,
+                   COL2W - 2,
+                       (double) t_ns / measured / scale,
+                   unit, CR);
     }
 
-#define C(idx) t->v[idx], w->v[idx]
+#define C_VAL(idx) t->v[idx], w->v[idx]
     print_row("Cycles",
-        C(IDX_CYCLES), measured, hw, 1);
-    print_row("Bus cycles",
-        C(IDX_BUS_CYCLES), measured, hw, 1);
+        C_VAL(IDX_CYCLES), measured, hw, 1);
     print_row("Instructions",
-        C(IDX_INSTRUCTIONS), measured, hw, 1);
+        C_VAL(IDX_INSTRUCTIONS), measured, hw, 1);
 
     /* IPC */
     {
@@ -1768,23 +1867,40 @@ static void print_summary(
         double ipc_w = ipc(w);
         double ipc_m = ipc(&m);
         if (hw)
-            printf("  %-*s %*.3f %*.3f %*.3f\n",
-                   COL1W, "Instr per Cycle (IPC)",
+            printf("  %s%-*s%s %*.3f %*.3f %s%*.3f%s\n",
+                   CD, COL1W,
+                       "Instr per Cycle (IPC)", CR,
                    COL2W, ipc_t,
                    COL2W, ipc_w,
-                   COL2W, ipc_m);
+                   CGR, COL2W, ipc_m, CR);
         else
-            printf("  %-*s %*.3f\n",
-                   COL1W, "Instr per Cycle (IPC)",
-                   COL2W, ipc_t);
+            printf("  %s%-*s%s %s%*.3f%s\n",
+                   CD, COL1W,
+                       "Instr per Cycle (IPC)", CR,
+                   CGR, COL2W, ipc_t, CR);
+    }
+    print_row("Branch misses",
+        C_VAL(IDX_BRANCH_MISSES), measured, hw, 1);
+    {
+        long long stall_fe = t->v[IDX_STALL_FE];
+        long long stall_be = t->v[IDX_STALL_BE];
+        if (stall_fe > 0 || stall_be > 0)
+        {
+            print_row("Stalled cyc (FE)",
+                C_VAL(IDX_STALL_FE), measured, hw, 1);
+            print_row("Stalled cyc (BE)",
+                C_VAL(IDX_STALL_BE), measured, hw, 1);
+        }
     }
 
+    print_section("Cache");
     print_sep();
-    printf("  --- L1 Data Cache ---\n");
-    print_row("  Loads",
-        C(IDX_L1D_LOADS), measured, hw, 1);
-    print_row("  Load misses",
-        C(IDX_L1D_MISSES), measured, hw, 1);
+    /* L1 Data */
+    printf("    %sL1 Data%s\n", CD, CR);
+    print_row("      Loads",
+        C_VAL(IDX_L1D_LOADS), measured, hw, 1);
+    print_row("      Load misses",
+        C_VAL(IDX_L1D_MISSES), measured, hw, 1);
     {
         double mr_t = miss_rate(
             t->v[IDX_L1D_MISSES],
@@ -1795,17 +1911,15 @@ static void print_summary(
         double mr_m = miss_rate(
             m.v[IDX_L1D_MISSES],
             m.v[IDX_L1D_LOADS]);
-        print_rate("    Miss rate",
+        print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw);
     }
-    print_row("  Stores",
-        C(IDX_L1D_STORES), measured, hw, 1);
-
-    printf("  --- L1 Instruction Cache ---\n");
-    print_row("  Loads",
-        C(IDX_L1I_LOADS), measured, hw, 1);
-    print_row("  Load misses",
-        C(IDX_L1I_MISSES), measured, hw, 1);
+    /* L1 Instruction */
+    printf("    %sL1 Instruction%s\n", CD, CR);
+    print_row("      Loads",
+        C_VAL(IDX_L1I_LOADS), measured, hw, 1);
+    print_row("      Load misses",
+        C_VAL(IDX_L1I_MISSES), measured, hw, 1);
     {
         double mr_t = miss_rate(
             t->v[IDX_L1I_MISSES],
@@ -1816,19 +1930,15 @@ static void print_summary(
         double mr_m = miss_rate(
             m.v[IDX_L1I_MISSES],
             m.v[IDX_L1I_LOADS]);
-        print_rate("    Miss rate",
+        print_rate("        miss rate",
                    mr_t, mr_w, mr_m, hw);
     }
-
-    printf("  --- Instruction TLB ---\n");
-    print_row("  Load misses",
-        C(IDX_ITLB_MISSES), measured, hw, 1);
-
-    printf("  --- Last Level Cache (LLC) ---\n");
-    print_row("  Loads",
-        C(IDX_LLC_LOADS), measured, hw, 1);
-    print_row("  Load misses",
-        C(IDX_LLC_MISSES), measured, hw, 1);
+    /* LLC */
+    printf("    %sLast Level Cache%s\n", CD, CR);
+    print_row("      Loads",
+        C_VAL(IDX_LLC_LOADS), measured, hw, 1);
+    print_row("      Load misses",
+        C_VAL(IDX_LLC_MISSES), measured, hw, 1);
     {
         double mr_t = miss_rate(
             t->v[IDX_LLC_MISSES],
@@ -1839,32 +1949,17 @@ static void print_summary(
         double mr_m = miss_rate(
             m.v[IDX_LLC_MISSES],
             m.v[IDX_LLC_LOADS]);
-        print_rate("    Load miss rate",
-                   mr_t, mr_w, mr_m, hw);
-    }
-    print_row("  Stores",
-        C(IDX_LLC_STORES), measured, hw, 1);
-    print_row("  Store misses",
-        C(IDX_LLC_STORE_MISSES), measured, hw, 1);
-    {
-        double mr_t = miss_rate(
-            t->v[IDX_LLC_STORE_MISSES],
-            t->v[IDX_LLC_STORES]);
-        double mr_w = miss_rate(
-            w->v[IDX_LLC_STORE_MISSES],
-            w->v[IDX_LLC_STORES]);
-        double mr_m = miss_rate(
-            m.v[IDX_LLC_STORE_MISSES],
-            m.v[IDX_LLC_STORES]);
-        print_rate("    Store miss rate",
+        print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw);
     }
 
-    printf("  --- Data TLB ---\n");
-    print_row("  Loads",
-        C(IDX_DTLB_LOADS), measured, hw, 1);
-    print_row("  Load misses",
-        C(IDX_DTLB_MISSES), measured, hw, 1);
+    print_section("TLB");
+    print_sep();
+    printf("    %sData TLB%s\n", CD, CR);
+    print_row("      Loads",
+        C_VAL(IDX_DTLB_LOADS), measured, hw, 1);
+    print_row("      Load misses",
+        C_VAL(IDX_DTLB_MISSES), measured, hw, 1);
     {
         double mr_t = miss_rate(
             t->v[IDX_DTLB_MISSES],
@@ -1875,132 +1970,126 @@ static void print_summary(
         double mr_m = miss_rate(
             m.v[IDX_DTLB_MISSES],
             m.v[IDX_DTLB_LOADS]);
-        print_rate("    Load miss rate",
+        print_rate("        load miss rate",
                    mr_t, mr_w, mr_m, hw);
     }
-    print_row("  Store misses",
-        C(IDX_DTLB_ST_MISSES), measured, hw, 1);
+    printf("    %sInstruction TLB%s\n", CD, CR);
+    print_row("      Load misses",
+        C_VAL(IDX_ITLB_MISSES), measured, hw, 1);
 
+    print_section("OS Events");
     print_sep();
-    /* Stall cycles */
-    print_row("Stalled cyc (frontend)",
-        C(IDX_STALL_FE), measured, hw, 1);
-    print_row("Stalled cyc (backend)",
-        C(IDX_STALL_BE), measured, hw, 1);
-
-    print_sep();
-    print_row("Branch misses",
-        C(IDX_BRANCH_MISSES), measured, hw, 1);
-
-    print_sep();
-    print_row("Page faults",
-        C(IDX_PAGE_FAULTS), measured, hw, 6);
-    print_row("  Minor (in page cache)",
-        C(IDX_MINOR_FAULTS), measured, hw, 6);
-    print_row("  Major (disk I/O)",
-        C(IDX_MAJOR_FAULTS), measured, hw, 6);
-    print_row("CPU core migrations",
-        C(IDX_CPU_MIGRATIONS), measured, hw, 6);
-    print_row("Context switches",
-        C(IDX_CTX_SWITCHES), measured, hw, 6);
-#undef C
+    print_row("  Page faults (minor)",
+        C_VAL(IDX_MINOR_FAULTS), measured, hw, 6);
+    print_row("  Page faults (major)",
+        C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6);
+    print_row("  CPU migrations",
+        C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6);
+    print_row("  Context switches",
+        C_VAL(IDX_CTX_SWITCHES), measured, hw, 6);
+#undef C_VAL
 
     /* Processinfo timing */
     if (pi && pi->valid)
     {
         /*
          * print_pi_row — one processinfo timing row.
-         *
-         * When warmup active: shows Total value in
-         * col 2, Warmup value in col 3. Measured
-         * col is omitted (procinfo is a run snapshot,
-         * not per-iteration arithmetic).
-         *
-         * When no warmup: single value in col 2.
          */
 #define print_pi_row(label, tot, wrm, unit) \
         do { \
             long _wv = (long)(wrm); \
             if (hw && pi_w && pi_w->valid) \
                 printf( \
-                    "  %-*s %*ld %-3s%*ld %-3s\n", \
-                    COL1W, (label), \
-                    COL2W, (long)(tot), (unit), \
+                    "  %s%-*s%s %s%*ld%s %-3s%*ld %-3s\n", \
+                    CD, COL1W, (label), CR, \
+                    CWH, COL2W, (long)(tot), CR, \
+                    (unit), \
                     COL2W - 1, _wv, (unit)); \
             else \
                 printf( \
-                    "  %-*s %*ld %-3s\n", \
-                    COL1W, (label), \
-                    COL2W, (long)(tot), (unit)); \
+                    "  %s%-*s%s %s%*ld%s %-3s\n", \
+                    CD, COL1W, (label), CR, \
+                    CWH, COL2W, (long)(tot), CR, \
+                    (unit)); \
         } while (0)
 
+        print_section("Timing  (processinfo ring buffer)");
         print_sep();
-        printf("  --- Timing (processinfo) ---\n");
-        print_pi_row("  Iterations counted",
-                     pi->loopcnt,
-                     (pi_w ? pi_w->loopcnt : 0L),
-                     "");
-        print_pi_row("  Iter time  p50",
-                     pi->p50_iter,
-                     (pi_w ? pi_w->p50_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec time  p50",
-                     pi->p50_exec,
-                     (pi_w ? pi_w->p50_exec : 0L),
-                     "ns");
-        print_pi_row("  Iter time  p95",
-                     pi->p95_iter,
-                     (pi_w ? pi_w->p95_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec time  p95",
-                     pi->p95_exec,
-                     (pi_w ? pi_w->p95_exec : 0L),
-                     "ns");
-        print_pi_row("  Iter time  p99",
-                     pi->p99_iter,
-                     (pi_w ? pi_w->p99_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec time  p99",
-                     pi->p99_exec,
-                     (pi_w ? pi_w->p99_exec : 0L),
-                     "ns");
-        print_pi_row("  Iter time  p99.9",
-                     pi->p999_iter,
-                     (pi_w ? pi_w->p999_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec time  p99.9",
-                     pi->p999_exec,
-                     (pi_w ? pi_w->p999_exec : 0L),
-                     "ns");
-        print_pi_row("  Iter time  max",
-                     pi->max_iter,
-                     (pi_w ? pi_w->max_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec time  max",
-                     pi->max_exec,
-                     (pi_w ? pi_w->max_exec : 0L),
-                     "ns");
-        print_pi_row("  Iter jitter (p99-p50)",
-                     pi->jitter_iter,
-                     (pi_w ? pi_w->jitter_iter : 0L),
-                     "ns");
-        print_pi_row("  Exec jitter (p99-p50)",
-                     pi->jitter_exec,
-                     (pi_w ? pi_w->jitter_exec : 0L),
-                     "ns");
-        printf("  --- Memory ---\n");
-        print_pi_row("  Peak virtual memory",
-                     pi->vmpeak_kb, 0L, "kB");
-        print_pi_row("  Peak RSS (VmHWM)",
+        printf("  %s%-*s%s %s%*ld%s\n",
+               CD, COL1W, "  Iterations counted", CR,
+               CWH, COL2W, (long)pi->loopcnt, CR);
+
+        /* Scale ns → µs for display if values > 5000 ns */
+        long scale = (pi->p50_iter > 5000L) ? 1000L : 1L;
+        const char *tunit =
+            (scale == 1000L) ? "µs" : "ns";
+
+#define print_timing_row(lbl, tot, wrm) \
+        do { \
+            long _t = (long)(tot) / scale; \
+            long _w = (long)(wrm) / scale; \
+            if (hw && pi_w && pi_w->valid) \
+                printf("  %s%-*s%s %s%*ld%s %-3s%*ld %-3s\n",\
+                       CD, COL1W, (lbl), CR, \
+                       CWH, COL2W, _t, CR, tunit, \
+                       COL2W - 1, _w, tunit); \
+            else \
+                printf("  %s%-*s%s %s%*ld%s %-3s\n", \
+                       CD, COL1W, (lbl), CR, \
+                       CWH, COL2W, _t, CR, tunit); \
+        } while (0)
+
+               /* Column header for timing table */
+        printf("  %s  %-28s %14s %14s %s%14s%s\n",
+               CD, "", "p50", "p95",
+               CWH, "p99", CR);
+        /* Iter row */
+        printf("  %s%-*s%s %s%14ld%s %-3s%14ld %-3s"
+               "%s%14ld%s %-3s\n",
+               CD, COL1W, "  Iter time", CR,
+               CD, (long)pi->p50_iter / scale, CR,
+               tunit,
+               (long)pi->p95_iter / scale, tunit,
+               CWH, (long)pi->p99_iter / scale, CR,
+               tunit);
+        /* Exec row */
+        printf("  %s%-*s%s %s%14ld%s %-3s%14ld %-3s"
+               "%s%14ld%s %-3s\n",
+               CD, COL1W, "  Exec time", CR,
+               CD, (long)pi->p50_exec / scale, CR,
+               tunit,
+               (long)pi->p95_exec / scale, tunit,
+               CWH, (long)pi->p99_exec / scale, CR,
+               tunit);
+        /* Jitter + max */
+        printf("  %s%-*s%s %s%14ld%s %-3s   "
+               "%s%-*s%s %s%14ld%s %-3s\n",
+               CD, COL1W, "  Iter jitter (p99-p50)", CR,
+               CWH, (long)pi->jitter_iter / scale, CR,
+               tunit,
+               CD, COL1W, "  Exec jitter (p99-p50)", CR,
+               CWH, (long)pi->jitter_exec / scale, CR,
+               tunit);
+        printf("  %s%-*s%s %s%14ld%s %-3s   "
+               "%s%-*s%s %s%14ld%s %-3s\n",
+               CD, COL1W, "  Iter max", CR,
+               CWH, (long)pi->max_iter / scale, CR,
+               tunit,
+               CD, COL1W, "  Exec max", CR,
+               CWH, (long)pi->max_exec / scale, CR,
+               tunit);
+#undef print_timing_row
+
+        print_section("Memory & OS");
+        print_sep();
+        print_pi_row("  Peak RSS",
                      pi->vmhwm_kb, 0L, "kB");
-        print_pi_row("  Final RSS (VmRSS)",
-                     pi->vmrss_kb, 0L, "kB");
-        print_pi_row("  Anonymous huge pages",
-                     pi->anon_huge_kb,
-                     (pi_w ? pi_w->anon_huge_kb : 0L),
-                     "kB");
-        printf("  --- Scheduling ---\n");
-        print_pi_row("  Voluntary ctx switches",
+        print_pi_row("  Virtual peak",
+                     pi->vmpeak_kb, 0L, "kB");
+        if (pi->anon_huge_kb > 0)
+            print_pi_row("  Anon huge pages",
+                         pi->anon_huge_kb, 0L, "kB");
+        print_pi_row("  Vol ctx switches",
                      pi->vol_ctxt,
                      (pi_w ? pi_w->vol_ctxt : 0L),
                      "");
@@ -2008,53 +2097,48 @@ static void print_summary(
                      pi->nvol_ctxt,
                      (pi_w ? pi_w->nvol_ctxt : 0L),
                      "");
-        printf("  --- CPU Frequency ---\n");
         if (pi->cpu_freq_min_khz > 0)
         {
             print_pi_row(
-                "  Min across cores",
+                "  CPU freq (min)",
                 pi->cpu_freq_min_khz / 1000L,
                 (pi_w ? pi_w->cpu_freq_min_khz
-                            / 1000L
-                      : 0L),
+                            / 1000L : 0L),
                 "MHz");
             print_pi_row(
-                "  Max across cores",
+                "  CPU freq (max)",
                 pi->cpu_freq_max_khz / 1000L,
                 (pi_w ? pi_w->cpu_freq_max_khz
-                            / 1000L
-                      : 0L),
+                            / 1000L : 0L),
                 "MHz");
         }
-        else
-            printf("  %-*s N/A\n",
-                   COL1W, "  (unavailable)");
-        printf("  --- Power (RAPL) ---\n");
         if (pi->rapl_uj >= 0)
-        {
             print_pi_row(
-                "  Package energy",
+                "  RAPL (package)",
                 (long)(pi->rapl_uj / 1000LL),
                 (pi_w && pi_w->rapl_uj >= 0
                     ? (long)(pi_w->rapl_uj / 1000LL)
                     : 0L),
                 "mJ");
-        }
         else
-            printf("  %-*s N/A (need root or"
-                   " perf_event_paranoid<=0)\n",
-                   COL1W, "  Package energy");
+            printf("  %s%-*s%s %sN/A%s "
+                   "%s(need root or "
+                   "perf_event_paranoid<=0)%s\n",
+                   CD, COL1W, "  RAPL (package)", CR,
+                   CYL, CR, CD, CR);
 
 #undef print_pi_row
     }
 
-    printf("  %-*s %*ld B\n",
-           COL1W, "Executable size",
-           COL2W, exe_sz);
-
-    printf("======================================================\n");
-    printf("  Results: %s\n", cfg->result_file);
-    printf("======================================================\n");
+    /* Executable info */
+    print_heavy_sep();
+    printf("  %s%-*s%s %s%*ld%s B   "
+           "%s%-*s%s %s%s%s\n",
+           CD, COL1W, "Executable size", CR,
+           CWH, COL2W, exe_sz, CR,
+           CD, COL1W - 4, "Results", CR,
+           CCY, cfg->result_file, CR);
+    print_heavy_sep();
     printf("\n");
 }
 
