@@ -41,6 +41,13 @@
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStruct.h"
 
+/**
+ * Suppress -Wunused-result on calls where we
+ * intentionally discard the return value.
+ */
+#define IGNORE_RESULT(x) \
+    do { if (x) {} } while (0)
+
 /* ================================================================
  * Constants
  * ============================================================= */
@@ -439,7 +446,11 @@ static long exe_size(const char *exe)
     if (!fp)
         return 0;
     char path[MAX_PATH] = {0};
-    fgets(path, sizeof(path) - 1, fp);
+    if (!fgets(path, sizeof(path) - 1, fp))
+    {
+        pclose(fp);
+        return 0;
+    }
     pclose(fp);
     path[strcspn(path, "\n")] = '\0';
 
@@ -863,8 +874,9 @@ static void perf_read_close(
         if (fds[i] < 0)
             continue;
         ioctl(fds[i], PERF_EVENT_IOC_DISABLE, 0);
-        read(fds[i], &phase->v[i],
-             sizeof(long long));
+        IGNORE_RESULT(
+            read(fds[i], &phase->v[i],
+                 sizeof(long long)));
         close(fds[i]);
         fds[i] = -1;
         phase->valid = 1;
@@ -1633,7 +1645,7 @@ int main(int argc, char *argv[])
     {
         printf("[5/5] Setup: %s\n",
                cfg->setupcmd);
-        system(cfg->setupcmd);
+        IGNORE_RESULT(system(cfg->setupcmd));
     }
 
     /* ---- WARMUP PHASE ---- */
