@@ -1699,6 +1699,11 @@ static void print_section(
 /**
  * @brief Print a counter row: label, total,
  *        [warmup,] per-measured-iter.
+ *
+ * @param paired_warmup_misses  Companion "misses" counter warmup
+ *   value.  When > 0 and warmup_v == 0, the loads counter was
+ *   multiplexed out by the PMU scheduler.  Pass 0 to disable
+ *   detection (e.g. for misses rows themselves).
  */
 static void print_row(
     const char *label,
@@ -1706,8 +1711,15 @@ static void print_row(
     long long   warmup_v,
     int         measured,
     int         has_warmup,
-    int         decimals)
+    int         decimals,
+    long long   paired_warmup_misses)
 {
+    /* Detect PMU multiplexing: loads counter got zero samples
+     * during warmup while its companion misses counter did not. */
+    int mux_out = has_warmup
+                  && (warmup_v == 0)
+                  && (paired_warmup_misses > 0);
+
     double per_iter =
         (measured > 0 && total > warmup_v)
         ? (double)(total - warmup_v)
@@ -1716,18 +1728,38 @@ static void print_row(
 
     if (has_warmup)
     {
-        if (decimals == 6)
-            printf("  %s%-*s%s %*lld %*lld %s%*.6f%s/iter\n",
-                   CD, COL1W, label, CR,
-                   COL2W, total,
-                   COL2W, warmup_v,
-                   CYL, COL2W, per_iter, CR);
+        if (mux_out)
+        {
+            /* Warmup column: show "n/a" to flag multiplexed-out
+             * PMU counter rather than a misleading zero. */
+            if (decimals == 6)
+                printf("  %s%-*s%s %*lld %s%*s%s %s%*.6f%s/iter\n",
+                       CD, COL1W, label, CR,
+                       COL2W, total,
+                       CD, COL2W, "n/a", CR,
+                       CYL, COL2W, per_iter, CR);
+            else
+                printf("  %s%-*s%s %*lld %s%*s%s %s%*.1f%s/iter\n",
+                       CD, COL1W, label, CR,
+                       COL2W, total,
+                       CD, COL2W, "n/a", CR,
+                       CYL, COL2W, per_iter, CR);
+        }
         else
-            printf("  %s%-*s%s %*lld %*lld %s%*.1f%s/iter\n",
-                   CD, COL1W, label, CR,
-                   COL2W, total,
-                   COL2W, warmup_v,
-                   CYL, COL2W, per_iter, CR);
+        {
+            if (decimals == 6)
+                printf("  %s%-*s%s %*lld %*lld %s%*.6f%s/iter\n",
+                       CD, COL1W, label, CR,
+                       COL2W, total,
+                       COL2W, warmup_v,
+                       CYL, COL2W, per_iter, CR);
+            else
+                printf("  %s%-*s%s %*lld %*lld %s%*.1f%s/iter\n",
+                       CD, COL1W, label, CR,
+                       COL2W, total,
+                       COL2W, warmup_v,
+                       CYL, COL2W, per_iter, CR);
+        }
     }
     else
     {
@@ -1744,20 +1776,38 @@ static void print_row(
     }
 }
 
+/**
+ * @brief Print a miss-rate percentage row.
+ *
+ * @param loads_mux_out  When non-zero the loads counter was
+ *   multiplexed out during warmup, so the warmup miss rate
+ *   cannot be computed — show "n/a" instead of 0.000%%.
+ */
 static void print_rate(
     const char *label,
     double      rate_t,
     double      rate_w,
     double      rate_m,
-    int         has_warmup)
+    int         has_warmup,
+    int         loads_mux_out)
 {
     if (has_warmup)
-        printf("  %s%-*s%s %s%*.3f%%%s "
-               "%s%*.3f%%%s %s%*.3f%%%s\n",
-               CD, COL1W, label, CR,
-               CD, COL2W - 1, rate_t, CR,
-               CD, COL2W - 1, rate_w, CR,
-               CMG, COL2W - 1, rate_m, CR);
+    {
+        if (loads_mux_out)
+            printf("  %s%-*s%s %s%*.3f%%%s "
+                   "%s%*s%s %s%*.3f%%%s\n",
+                   CD, COL1W, label, CR,
+                   CD, COL2W - 1, rate_t, CR,
+                   CD, COL2W, "n/a", CR,
+                   CMG, COL2W - 1, rate_m, CR);
+        else
+            printf("  %s%-*s%s %s%*.3f%%%s "
+                   "%s%*.3f%%%s %s%*.3f%%%s\n",
+                   CD, COL1W, label, CR,
+                   CD, COL2W - 1, rate_t, CR,
+                   CD, COL2W - 1, rate_w, CR,
+                   CMG, COL2W - 1, rate_m, CR);
+    }
     else
         printf("  %s%-*s%s %s%*.3f%%%s\n",
                CD, COL1W, label, CR,
@@ -1857,9 +1907,9 @@ static void print_summary(
 
 #define C_VAL(idx) t->v[idx], w->v[idx]
     print_row("Cycles",
-        C_VAL(IDX_CYCLES), measured, hw, 1);
+        C_VAL(IDX_CYCLES), measured, hw, 1, 0);
     print_row("Instructions",
-        C_VAL(IDX_INSTRUCTIONS), measured, hw, 1);
+        C_VAL(IDX_INSTRUCTIONS), measured, hw, 1, 0);
 
     /* IPC */
     {
@@ -1880,16 +1930,16 @@ static void print_summary(
                    CGR, COL2W, ipc_t, CR);
     }
     print_row("Branch misses",
-        C_VAL(IDX_BRANCH_MISSES), measured, hw, 1);
+        C_VAL(IDX_BRANCH_MISSES), measured, hw, 1, 0);
     {
         long long stall_fe = t->v[IDX_STALL_FE];
         long long stall_be = t->v[IDX_STALL_BE];
         if (stall_fe > 0 || stall_be > 0)
         {
             print_row("Stalled cyc (FE)",
-                C_VAL(IDX_STALL_FE), measured, hw, 1);
+                C_VAL(IDX_STALL_FE), measured, hw, 1, 0);
             print_row("Stalled cyc (BE)",
-                C_VAL(IDX_STALL_BE), measured, hw, 1);
+                C_VAL(IDX_STALL_BE), measured, hw, 1, 0);
         }
     }
 
@@ -1898,10 +1948,13 @@ static void print_summary(
     /* L1 Data */
     printf("    %sL1 Data%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1D_LOADS), measured, hw, 1);
+        C_VAL(IDX_L1D_LOADS), measured, hw, 1,
+        w->v[IDX_L1D_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1D_MISSES), measured, hw, 1);
+        C_VAL(IDX_L1D_MISSES), measured, hw, 1, 0);
     {
+        int l1d_mux = hw && (w->v[IDX_L1D_LOADS] == 0)
+                          && (w->v[IDX_L1D_MISSES] > 0);
         double mr_t = miss_rate(
             t->v[IDX_L1D_MISSES],
             t->v[IDX_L1D_LOADS]);
@@ -1912,15 +1965,18 @@ static void print_summary(
             m.v[IDX_L1D_MISSES],
             m.v[IDX_L1D_LOADS]);
         print_rate("        miss rate",
-                   mr_t, mr_w, mr_m, hw);
+                   mr_t, mr_w, mr_m, hw, l1d_mux);
     }
     /* L1 Instruction */
     printf("    %sL1 Instruction%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_L1I_LOADS), measured, hw, 1);
+        C_VAL(IDX_L1I_LOADS), measured, hw, 1,
+        w->v[IDX_L1I_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_L1I_MISSES), measured, hw, 1);
+        C_VAL(IDX_L1I_MISSES), measured, hw, 1, 0);
     {
+        int l1i_mux = hw && (w->v[IDX_L1I_LOADS] == 0)
+                          && (w->v[IDX_L1I_MISSES] > 0);
         double mr_t = miss_rate(
             t->v[IDX_L1I_MISSES],
             t->v[IDX_L1I_LOADS]);
@@ -1931,15 +1987,18 @@ static void print_summary(
             m.v[IDX_L1I_MISSES],
             m.v[IDX_L1I_LOADS]);
         print_rate("        miss rate",
-                   mr_t, mr_w, mr_m, hw);
+                   mr_t, mr_w, mr_m, hw, l1i_mux);
     }
     /* LLC */
     printf("    %sLast Level Cache%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_LLC_LOADS), measured, hw, 1);
+        C_VAL(IDX_LLC_LOADS), measured, hw, 1,
+        w->v[IDX_LLC_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_LLC_MISSES), measured, hw, 1);
+        C_VAL(IDX_LLC_MISSES), measured, hw, 1, 0);
     {
+        int llc_mux = hw && (w->v[IDX_LLC_LOADS] == 0)
+                          && (w->v[IDX_LLC_MISSES] > 0);
         double mr_t = miss_rate(
             t->v[IDX_LLC_MISSES],
             t->v[IDX_LLC_LOADS]);
@@ -1950,17 +2009,20 @@ static void print_summary(
             m.v[IDX_LLC_MISSES],
             m.v[IDX_LLC_LOADS]);
         print_rate("        load miss rate",
-                   mr_t, mr_w, mr_m, hw);
+                   mr_t, mr_w, mr_m, hw, llc_mux);
     }
 
     print_section("TLB");
     print_sep();
     printf("    %sData TLB%s\n", CD, CR);
     print_row("      Loads",
-        C_VAL(IDX_DTLB_LOADS), measured, hw, 1);
+        C_VAL(IDX_DTLB_LOADS), measured, hw, 1,
+        w->v[IDX_DTLB_MISSES]);
     print_row("      Load misses",
-        C_VAL(IDX_DTLB_MISSES), measured, hw, 1);
+        C_VAL(IDX_DTLB_MISSES), measured, hw, 1, 0);
     {
+        int dtlb_mux = hw && (w->v[IDX_DTLB_LOADS] == 0)
+                           && (w->v[IDX_DTLB_MISSES] > 0);
         double mr_t = miss_rate(
             t->v[IDX_DTLB_MISSES],
             t->v[IDX_DTLB_LOADS]);
@@ -1971,22 +2033,22 @@ static void print_summary(
             m.v[IDX_DTLB_MISSES],
             m.v[IDX_DTLB_LOADS]);
         print_rate("        load miss rate",
-                   mr_t, mr_w, mr_m, hw);
+                   mr_t, mr_w, mr_m, hw, dtlb_mux);
     }
     printf("    %sInstruction TLB%s\n", CD, CR);
     print_row("      Load misses",
-        C_VAL(IDX_ITLB_MISSES), measured, hw, 1);
+        C_VAL(IDX_ITLB_MISSES), measured, hw, 1, 0);
 
     print_section("OS Events");
     print_sep();
     print_row("  Page faults (minor)",
-        C_VAL(IDX_MINOR_FAULTS), measured, hw, 6);
+        C_VAL(IDX_MINOR_FAULTS), measured, hw, 6, 0);
     print_row("  Page faults (major)",
-        C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6);
+        C_VAL(IDX_MAJOR_FAULTS), measured, hw, 6, 0);
     print_row("  CPU migrations",
-        C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6);
+        C_VAL(IDX_CPU_MIGRATIONS), measured, hw, 6, 0);
     print_row("  Context switches",
-        C_VAL(IDX_CTX_SWITCHES), measured, hw, 6);
+        C_VAL(IDX_CTX_SWITCHES), measured, hw, 6, 0);
 #undef C_VAL
 
     /* Processinfo timing */
