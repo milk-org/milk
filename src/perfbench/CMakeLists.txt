@@ -3,14 +3,33 @@
 # =======================================
 #
 # Provides:
-#   milk-perfbench              Shell harness script
-#   milk-perfbench-readprocinfo C utility (reads
-#                               processinfo SHM)
+#   milk-perfbench       C benchmark harness (main)
+#   milk-perfbench.sh    Bash harness (kept as ref)
+#   milk-perfbench-readprocinfo  C utility (reads
+#                                processinfo SHM)
 #
 
 set(PERFBENCH_SCRIPTS
     scripts/milk-perfbench
 )
+
+# ──────────────────────────────────────────
+# C harness: milk-perfbench (main program)
+# ──────────────────────────────────────────
+
+add_executable(milk-perfbench
+    milk-perfbench.c)
+
+target_include_directories(milk-perfbench PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/engine/libprocessinfo
+    ${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO)
+
+target_link_libraries(milk-perfbench
+    milkprocessinfo
+    ImageStreamIO)
+
+install(TARGETS milk-perfbench
+    DESTINATION bin)
 
 # ──────────────────────────────────────────
 # C utility: reads processinfo SHM → JSON
@@ -50,11 +69,13 @@ install(TARGETS milk-perfbench-mkstream
     DESTINATION bin)
 
 # ──────────────────────────────────────────
-# Install scripts
+# Install scripts (bash fallback)
 # ──────────────────────────────────────────
 
+# Installed alongside the C binary as .sh
 install(PROGRAMS ${PERFBENCH_SCRIPTS}
-    DESTINATION bin)
+    DESTINATION bin
+    RENAME milk-perfbench.sh)
 
 # ──────────────────────────────────────────
 # CTest benchmarks (label: perf)
