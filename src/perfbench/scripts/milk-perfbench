@@ -252,13 +252,16 @@ for ev in "${PERF_EVENTS[@]}"; do
     PERF_EFLAGS="${PERF_EFLAGS} -e ${ev}"
 done
 
-## run_perf_phase <label> <iters> <perf_outfile>
+## run_perf_phase <label> <iters> <perf_outfile> [capture_procinfo]
 ## Sets loopcntMax, runs under perf stat,
 ## returns wall-clock ns in PHASE_NS.
+## If capture_procinfo=1, reads proc SHM while
+## the benchmark is still alive.
 run_perf_phase() {
     local label="$1"
     local iters="$2"
     local outfile="$3"
+    local capture_procinfo="${4:-0}"
 
     milk-fps-set \
         ${FPSNAME}.procinfo.loopcntMax \
@@ -269,14 +272,54 @@ run_perf_phase() {
     local tstart tend
     tstart=$(date +%s%N)
 
+    # Build the benchmark command
+    local bm_cmd
     if [ ${PERF_CAN_RUN} -eq 1 ]; then
-        eval perf stat -j ${PERF_EFLAGS} \
+        bm_cmd="perf stat -j ${PERF_EFLAGS} \
             -o \"${outfile}\" \
-            -- ${FPSEXEC} ${FPSNAME}:runstart \
-            2\>/dev/null
+            -- ${FPSEXEC} ${FPSNAME}:runstart"
     else
-        ${FPSEXEC} ${FPSNAME}:runstart \
-            >/dev/null 2>&1
+        bm_cmd="${FPSEXEC} ${FPSNAME}:runstart"
+    fi
+
+    if [ "${capture_procinfo}" -eq 1 ]; then
+        # Run benchmark in background; capture
+        # proc SHM while it is alive.
+        eval ${bm_cmd} >/dev/null 2>&1 &
+        local bm_pid=$!
+
+        # Poll proc SHM every 100ms.
+        # Keep re-reading to get the most
+        # recent data (latest = most complete).
+        local proc_captured=0
+        while kill -0 ${bm_pid} 2>/dev/null; do
+            local pf
+            pf=$(find "${PROCDIR}" \
+                -maxdepth 1 \
+                -name "proc.*.shm" \
+                2>/dev/null \
+                | head -1)
+            if [ -n "${pf}" ] \
+                && [ -f "${pf}" ]; then
+                milk-perfbench-readprocinfo \
+                    "${pf}" \
+                    > "${PROCINFO_OUT}.tmp" \
+                    2>/dev/null \
+                && mv "${PROCINFO_OUT}.tmp" \
+                    "${PROCINFO_OUT}" \
+                && proc_captured=1
+            fi
+            sleep 0.01
+        done
+
+        if [ ${proc_captured} -eq 1 ]; then
+            HAVE_PROCINFO=1
+        fi
+
+        # Wait for benchmark to finish
+        wait ${bm_pid}
+    else
+        eval ${bm_cmd} >/dev/null 2>&1
     fi
 
     tend=$(date +%s%N)
@@ -365,12 +408,16 @@ parse_all_counters() {
 
 PERF_OUT_TOTAL=$(mktemp /tmp/pb-total.XXXXXX)
 PERF_OUT_WARMUP=$(mktemp /tmp/pb-warmup.XXXXXX)
+HAVE_PROCINFO=0
 
 if [ "${WARMUP}" -gt 0 ]; then
     echo "[6/7] Running benchmark ..."
     run_perf_phase "warmup" "${WARMUP}" \
-        "${PERF_OUT_WARMUP}"
+        "${PERF_OUT_WARMUP}" 0
     W_NS=${PHASE_NS}
+    # Seed timing estimate for total run
+    PREV_PHASE_NS=${PHASE_NS}
+    PREV_ITERS=${WARMUP}
 
     # Re-init FPS for 2nd run (reset procinfo)
     ${FPSEXEC} ${FPSNAME}:fpsinit -procinfo \
@@ -388,14 +435,14 @@ if [ "${WARMUP}" -gt 0 ]; then
         >/dev/null 2>&1
 
     run_perf_phase "total " "${NBITER}" \
-        "${PERF_OUT_TOTAL}"
+        "${PERF_OUT_TOTAL}" 1
     T_NS=${PHASE_NS}
 
     MEASURED=$(( NBITER - WARMUP ))
 else
     echo "[6/6] Running ${NBITER} iterations ..."
     run_perf_phase "run" "${NBITER}" \
-        "${PERF_OUT_TOTAL}"
+        "${PERF_OUT_TOTAL}" 1
     T_NS=${PHASE_NS}
     W_NS=0
     MEASURED=${NBITER}
@@ -411,34 +458,50 @@ WARMUP_S=$(echo "scale=6; \
     ${WARMUP_NS} / 1000000000" \
     | bc)
 
+# (HAVE_PROCINFO is set by run_perf_phase
+#  if capture_procinfo=1 succeeded)
+
+
 # =========================================
-# READ PROCESSINFO (from total run)
+# EXTRACT PROCESSINFO VARS
 # =========================================
 
-PINFO_FILE=""
-PINFO_FILE=$(find "${PROCDIR}" \
-    -maxdepth 1 \
-    -name "proc.*.shm" \
-    -newer "${PERF_OUT_TOTAL}" \
-    -printf '%T@ %p\n' 2>/dev/null \
-    | sort -rn \
-    | head -1 \
-    | awk '{print $2}')
+extract_json() {
+    # readprocinfo output nests keys inside
+    # "timing": { ... } and "memory": { ... }
+    # so we just grep for the key anywhere.
+    grep "\"$1\"" "${PROCINFO_OUT}" \
+        | head -1 \
+        | sed 's/.*: *\([0-9.-]*\).*/\1/'
+}
 
-HAVE_PROCINFO=0
-if [ -n "${PINFO_FILE}" ] \
-    && [ -f "${PINFO_FILE}" ]; then
-    milk-perfbench-readprocinfo \
-        "${PINFO_FILE}" \
-        > "${PROCINFO_OUT}" 2>/dev/null
-    if [ $? -eq 0 ]; then
-        HAVE_PROCINFO=1
-    fi
+if [ "${HAVE_PROCINFO}" -eq 1 ]; then
+    PI_MED_ITER=$(extract_json "median_iter_ns")
+    PI_MED_EXEC=$(extract_json "median_exec_ns")
+    PI_P50_EXEC=$(extract_json "p50_exec_ns")
+    PI_P95_EXEC=$(extract_json "p95_exec_ns")
+    PI_P99_EXEC=$(extract_json "p99_exec_ns")
+    PI_P50_ITER=$(extract_json "p50_iter_ns")
+    PI_P95_ITER=$(extract_json "p95_iter_ns")
+    PI_P99_ITER=$(extract_json "p99_iter_ns")
+    PI_VMPEAK=$(extract_json "vmpeak_kb")
+    PI_VMHWM=$(extract_json "vmhwm_kb")
+    PI_VMRSS=$(extract_json "vmrss_kb")
+    PI_LOOPCNT=$(extract_json "loopcnt")
 fi
 
-# =========================================
-# PARSE COUNTERS
-# =========================================
+: "${PI_MED_ITER:=0}"
+: "${PI_MED_EXEC:=0}"
+: "${PI_P50_EXEC:=0}"
+: "${PI_P95_EXEC:=0}"
+: "${PI_P99_EXEC:=0}"
+: "${PI_P50_ITER:=0}"
+: "${PI_P95_ITER:=0}"
+: "${PI_P99_ITER:=0}"
+: "${PI_VMPEAK:=-1}"
+: "${PI_VMHWM:=-1}"
+: "${PI_VMRSS:=-1}"
+: "${PI_LOOPCNT:=0}"
 
 parse_all_counters "T" "${PERF_OUT_TOTAL}"
 
@@ -605,37 +668,6 @@ fi
 
 # Processinfo timing (if available)
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
-    extract_json() {
-        grep "\"$1\"" "${PROCINFO_OUT}" \
-            | head -1 \
-            | sed 's/.*: *\([0-9-]*\).*/\1/'
-    }
-    PI_MED_ITER=$(extract_json "median_iter_ns")
-    PI_MED_EXEC=$(extract_json "median_exec_ns")
-    PI_P50_EXEC=$(extract_json "p50_exec_ns")
-    PI_P95_EXEC=$(extract_json "p95_exec_ns")
-    PI_P99_EXEC=$(extract_json "p99_exec_ns")
-    PI_P50_ITER=$(extract_json "p50_iter_ns")
-    PI_P95_ITER=$(extract_json "p95_iter_ns")
-    PI_P99_ITER=$(extract_json "p99_iter_ns")
-    PI_VMPEAK=$(extract_json "vmpeak_kb")
-    PI_VMHWM=$(extract_json "vmhwm_kb")
-    PI_VMRSS=$(extract_json "vmrss_kb")
-    PI_LOOPCNT=$(extract_json "loopcnt")
-
-    : "${PI_MED_ITER:=0}"
-    : "${PI_MED_EXEC:=0}"
-    : "${PI_P50_EXEC:=0}"
-    : "${PI_P95_EXEC:=0}"
-    : "${PI_P99_EXEC:=0}"
-    : "${PI_P50_ITER:=0}"
-    : "${PI_P95_ITER:=0}"
-    : "${PI_P99_ITER:=0}"
-    : "${PI_VMPEAK:=-1}"
-    : "${PI_VMHWM:=-1}"
-    : "${PI_VMRSS:=-1}"
-    : "${PI_LOOPCNT:=0}"
-
     echo "  \"processinfo\": {"
     echo "    \"loopcnt\": ${PI_LOOPCNT},"
     echo "    \"median_iter_ns\": ${PI_MED_ITER},"
@@ -869,19 +901,28 @@ pc6 "Context switches" "CTX_SWITCHES"
 
 if [ "${HAVE_PROCINFO}" -eq 1 ]; then
     echo "${SEP}"
+    echo "  --- Timing (processinfo) ---"
     printf "${FMTS}" \
-        "Median iteration time" \
-        "${PI_MED_ITER} ns"
+        "  Iterations counted" "${PI_LOOPCNT}"
     printf "${FMTS}" \
-        "Median exec time" \
-        "${PI_MED_EXEC} ns"
+        "  Iter time  p50" "${PI_P50_ITER} ns"
     printf "${FMTS}" \
-        "Peak virtual memory" \
-        "${PI_VMPEAK} kB"
+        "  Iter time  p95" "${PI_P95_ITER} ns"
     printf "${FMTS}" \
-        "Peak RSS (VmHWM)" "${PI_VMHWM} kB"
+        "  Iter time  p99" "${PI_P99_ITER} ns"
     printf "${FMTS}" \
-        "Final RSS (VmRSS)" "${PI_VMRSS} kB"
+        "  Exec time  p50" "${PI_P50_EXEC} ns"
+    printf "${FMTS}" \
+        "  Exec time  p95" "${PI_P95_EXEC} ns"
+    printf "${FMTS}" \
+        "  Exec time  p99" "${PI_P99_EXEC} ns"
+    echo "  --- Memory ---"
+    printf "${FMTS}" \
+        "  Peak virtual memory" "${PI_VMPEAK} kB"
+    printf "${FMTS}" \
+        "  Peak RSS (VmHWM)" "${PI_VMHWM} kB"
+    printf "${FMTS}" \
+        "  Final RSS (VmRSS)" "${PI_VMRSS} kB"
 fi
 printf "${FMTS}" \
     "Executable size" "${EXE_SIZE} B"
