@@ -42,3 +42,6 @@ local-install/
 # Documentation build output
 _site/
 docs/doxygen/
+
+# Performance benchmark results
+perfresults/

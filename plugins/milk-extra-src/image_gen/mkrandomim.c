@@ -84,7 +84,7 @@ static imageID make_image_random(
     // 2: truncated gauss
 
     // Create image if needed
-    imcreateIMGID(img);
+    //imcreateIMGID(img);
 
     // openMP is slow when calling gsl random
     // number generator : do not use openMP here
@@ -140,6 +140,15 @@ static MILK_HOT errno_t compute_function()
         outim_name, outim_xsize, outim_ysize);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
+    /*
+     * Connect to existing stream or create it.
+     * This populates img.im so make_image_random
+     * can access img.im->array.F[].
+     */
+    img = stream_connect_create_2D(
+        outim_name, outim_xsize, outim_ysize,
+        _DATATYPE_FLOAT);
 
     make_image_random(&img, distrib_val);
 
