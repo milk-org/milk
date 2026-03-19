@@ -471,6 +471,7 @@ endforeach()
 if(USE_COREMODS)
   add_subdirectory(src/milk_module_example)
   add_subdirectory(src/isio-tools)
+  add_subdirectory(src/perfbench)
 endif()
 
 # add libfps (standalone fps library exploration)

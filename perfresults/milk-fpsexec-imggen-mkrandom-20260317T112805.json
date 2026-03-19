@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-03-17T21:28:09Z",
+  "compute_unit": "milk-fpsexec-imggen-mkrandom",
+  "git_commit": "unknown",
+  "iterations": 10000,
+  "wall_clock_s": 3.455705,
+  "hw_counters": {
+    "cycles": 22879482950.000000,
+    "instructions": 77690655436.000000,
+    "cache_misses": 6796957.000000,
+    "cache_references": 37550049.000000,
+    "branch_misses": 82173143.000000,
+    "branches": 18907522215.000000,
+    "context_switches": 198.000000,
+    "task_clock_ms": 3433765721.000000,
+    "ipc": 3.395
+  },
+  "processinfo": null
+}
