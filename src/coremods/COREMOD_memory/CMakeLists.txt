@@ -194,7 +194,11 @@ target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_
                                               $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
                                               $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
 											  $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
+if(USE_CFITSIO AND CFITSIO_LIBRARIES)
+  target_link_libraries(${LIBNAME} PUBLIC m ${CFITSIO_LIBRARIES} milkfps)
+else()
+  target_link_libraries(${LIBNAME} PUBLIC m milkfps)
+endif()
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
@@ -212,8 +216,12 @@ endif()
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
-    m ${CFITSIO_LIBRARIES} milkfps)
+if(USE_CFITSIO AND CFITSIO_LIBRARIES)
+  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
+      m ${CFITSIO_LIBRARIES} milkfps)
+else()
+  target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
+endif()
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)
 

@@ -179,7 +179,17 @@ target_link_libraries(milk-fpsexec-linalg-SVD PUBLIC ${OPENBLAS_LIBRARIES} lapac
 target_link_directories(milk-fpsexec-linalg-SVD PUBLIC ${OPENBLAS_LIBRARY_DIRS})
 endif()
 add_milk_standalone(linalg-SVDmkM SingularValueDecomp_mkM.c)
+target_link_libraries(milk-fpsexec-linalg-SVDmkM
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-SVDmkU SingularValueDecomp_mkU.c)
+target_link_libraries(milk-fpsexec-linalg-SVDmkU
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-basisrotmatch basis_rotate_match.c)
+target_link_libraries(milk-fpsexec-linalg-basisrotmatch
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-cublasPCA cublas_PCA.c)
+target_link_libraries(milk-fpsexec-linalg-cublasPCA
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linalg-modalremap modalremap.c)
+target_link_libraries(milk-fpsexec-linalg-modalremap
+    PUBLIC ${LIBNAME})
