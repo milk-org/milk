@@ -6,12 +6,16 @@ message("")
 message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
+	mkdisk.c
+	mkspdisk.c
 	mkrandomim.c
 	voronoi.c
 )
 
 
 set(INCLUDEFILES
+	mkdisk.h
+	mkspdisk.h
 	mkrandomim.h
 	voronoi.h
 )
@@ -102,3 +106,9 @@ else()
       ${LIBNAME} milkstatistic_compute)
 endif()
 add_milk_standalone(imggen-voronoi voronoi.c)
+add_milk_standalone(imggen-mkdisk mkdisk.c)
+target_link_libraries(milk-fpsexec-imggen-mkdisk PUBLIC
+    ${LIBNAME})
+add_milk_standalone(imggen-mkspdisk mkspdisk.c)
+target_link_libraries(milk-fpsexec-imggen-mkspdisk PUBLIC
+    ${LIBNAME})
