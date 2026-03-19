@@ -48,7 +48,9 @@
 #ifndef MILK_NO_CLI
 #include "image_gen/image_gen.h"
 
+#include "mkdisk.h"
 #include "mkrandomim.h"
+#include "mkspdisk.h"
 #include "voronoi.h"
 
 #define OMP_NELEMENT_LIMIT 1000000
@@ -77,156 +79,12 @@ INIT_MODULE_LIB(image_gen)
 /* ================================================================== */
 /* ================================================================== */
 
-/* ===== Command: mkdisk ===== */
-imageID make_disk(const char *ID_name,
-    uint32_t l1, uint32_t l2,
-    double x_center, double y_center,
-    double radius);
-
-static char dk_n[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imdisk";
-static int64_t dk_xs = 512;
-static int64_t dk_ys = 512;
-static double dk_xc = 256.0;
-static double dk_yc = 256.0;
-static double dk_r = 100.0;
-static FPS_APP_INFO FPS_app_info_dk = {
-    .fps_name = "mkdisk",
-    .cmdkey   = "mkdisk",
-    .description = "make disk image"
-};
-#define FPS_PARAMS_DK(X) \
-    X(".out_name", dk_n, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, "output") \
-    X(".xsize", &dk_xs, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "xsize") \
-    X(".ysize", &dk_ys, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "ysize") \
-    X(".xcenter", &dk_xc, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "x center") \
-    X(".ycenter", &dk_yc, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "y center") \
-    X(".radius", &dk_r, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "radius")
+/* Placeholder for CLICMD_FIELDS_DEFAULTS macro which
+ * hardcodes 'farg'. The constructor init_xx() functions
+ * below overwrite nbarg and funcfpscliarg at runtime. */
+static CLICMDARGDEF farg[] = {{CLIARG_FLOAT64, 0, 0}};
 
 #include "fps.h"
-
-static FPS_CLI_BINDING dk_b[] = {
-    FPS_PARAMS_DK(FPS_X_BINDING) };
-static const int dk_nb =
-    sizeof(dk_b)/sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg[] = {
-    FPS_PARAMS_DK(FPS_X_FARG) };
-static CLICMDDATA CLIcmddata = {
-    "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS dk_cms = {0};
-static __attribute__((constructor))
-void init_dk(void) {
-    strncpy(CLIcmddata.key,
-        FPS_app_info_dk.cmdkey,
-        sizeof(CLIcmddata.key)-1);
-    strncpy(CLIcmddata.description,
-        FPS_app_info_dk.description,
-        sizeof(CLIcmddata.description)-1);
-    CLIcmddata.nbarg =
-        sizeof(farg)/sizeof(CLICMDARGDEF);
-    CLIcmddata.funcfpscliarg = farg;
-    CLIcmddata.flags = CLICMDFLAG_FPS;
-    if(!CLIcmddata.cmdsettings)
-        CLIcmddata.cmdsettings = &dk_cms;
-}
-static errno_t dk_compute(void) {
-    make_disk(dk_n,
-        (uint32_t)dk_xs, (uint32_t)dk_ys,
-        dk_xc, dk_yc, dk_r);
-    return RETURN_SUCCESS;
-}
-static errno_t CLIfunction(void) {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_dk, farg,
-        &CLIcmddata,
-        dk_b, dk_nb, dk_compute);
-}
-
-/* ===== Command: mkspdisk ===== */
-imageID make_subpixdisk(const char *ID_name,
-    uint32_t l1, uint32_t l2,
-    double x_center, double y_center,
-    double radius);
-
-static char sd_n[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imdisk";
-static int64_t sd_xs = 512;
-static int64_t sd_ys = 512;
-static double sd_xc = 256.0;
-static double sd_yc = 256.0;
-static double sd_r = 100.0;
-static FPS_APP_INFO FPS_app_info_sd = {
-    .fps_name = "mkspdisk",
-    .cmdkey   = "mkspdisk",
-    .description =
-        "make subpixel disk image"
-};
-#define FPS_PARAMS_SD(X) \
-    X(".out_name", sd_n, \
-      FPTYPE_STRING, 1, \
-      FPFLAG_DEFAULT_INPUT, "output") \
-    X(".xsize", &sd_xs, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "xsize") \
-    X(".ysize", &sd_ys, \
-      FPTYPE_INT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "ysize") \
-    X(".xcenter", &sd_xc, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "x center") \
-    X(".ycenter", &sd_yc, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "y center") \
-    X(".radius", &sd_r, \
-      FPTYPE_FLOAT64, 1, \
-      FPFLAG_DEFAULT_INPUT, "radius")
-static FPS_CLI_BINDING sd_b[] = {
-    FPS_PARAMS_SD(FPS_X_BINDING) };
-static const int sd_nb =
-    sizeof(sd_b)/sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF sd_farg[] = {
-    FPS_PARAMS_SD(FPS_X_FARG) };
-static CLICMDDATA sd_d = {
-    "", "", CLICMD_FIELDS_DEFAULTS };
-static CMDSETTINGS sd_cms = {0};
-static __attribute__((constructor))
-void init_sd(void) {
-    strncpy(sd_d.key,
-        FPS_app_info_sd.cmdkey,
-        sizeof(sd_d.key)-1);
-    strncpy(sd_d.description,
-        FPS_app_info_sd.description,
-        sizeof(sd_d.description)-1);
-    sd_d.nbarg =
-        sizeof(sd_farg)/sizeof(CLICMDARGDEF);
-    sd_d.funcfpscliarg = sd_farg;
-    sd_d.flags = CLICMDFLAG_FPS;
-    if(!sd_d.cmdsettings)
-        sd_d.cmdsettings = &sd_cms;
-}
-static errno_t sd_compute(void) {
-    make_subpixdisk(sd_n,
-        (uint32_t)sd_xs, (uint32_t)sd_ys,
-        sd_xc, sd_yc, sd_r);
-    return RETURN_SUCCESS;
-}
-static errno_t sd_CLIfunc(void) {
-    return safe_fps_generic_CLIfunction(
-        &FPS_app_info_sd, sd_farg, &sd_d,
-        sd_b, sd_nb, sd_compute);
-}
 
 /* ===== Command: mkgauss ===== */
 imageID make_gauss(const char *ID_name,
@@ -1106,22 +964,8 @@ static errno_t ic_CLIfunc(void) {
 
 static errno_t init_module_CLI()
 {
-    {
-        safe_fps_fill_farg_examples(
-            farg, dk_b, dk_nb);
-        int cmdi = RegisterCLIcmd(
-            CLIcmddata, CLIfunction);
-        CLIcmddata.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
-    }
-    {
-        safe_fps_fill_farg_examples(
-            sd_farg, sd_b, sd_nb);
-        int cmdi = RegisterCLIcmd(
-            sd_d, sd_CLIfunc);
-        sd_d.cmdsettings =
-            &data.cmd[cmdi].cmdsettings;
-    }
+    CLIADDCMD_image_gen__mkdisk();
+    CLIADDCMD_image_gen__mkspdisk();
     {
         safe_fps_fill_farg_examples(
             gs_farg, gs_b, gs_nb);
