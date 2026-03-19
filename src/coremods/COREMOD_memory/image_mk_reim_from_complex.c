@@ -90,10 +90,16 @@ errno_t mk_reim_from_complex_IMGID(
     if(datatype == _DATATYPE_COMPLEX_FLOAT)
     {
         imgre->mdt->datatype = _DATATYPE_FLOAT;
-        createimagefromIMGID(imgre);
+        if(imgre->ID == -1)
+        {
+            createimagefromIMGID(imgre);
+        }
 
         imgim->mdt->datatype = _DATATYPE_FLOAT;
-        createimagefromIMGID(imgim);
+        if(imgim->ID == -1)
+        {
+            createimagefromIMGID(imgim);
+        }
 
         imgre->md[0].write = 1;
         imgim->md[0].write = 1;
@@ -134,11 +140,17 @@ errno_t mk_reim_from_complex_IMGID(
     {
         imgre->mdt->datatype =
             _DATATYPE_DOUBLE;
-        createimagefromIMGID(imgre);
+        if(imgre->ID == -1)
+        {
+            createimagefromIMGID(imgre);
+        }
 
         imgim->mdt->datatype =
             _DATATYPE_DOUBLE;
-        createimagefromIMGID(imgim);
+        if(imgim->ID == -1)
+        {
+            createimagefromIMGID(imgim);
+        }
 
         imgre->md[0].write = 1;
         imgim->md[0].write = 1;

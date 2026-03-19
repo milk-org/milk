@@ -90,10 +90,16 @@ errno_t mk_amph_from_complex_IMGID(
     if(datatype == _DATATYPE_COMPLEX_FLOAT)
     {
         imgamp->mdt->datatype = _DATATYPE_FLOAT;
-        createimagefromIMGID(imgamp);
+        if(imgamp->ID == -1)
+        {
+            createimagefromIMGID(imgamp);
+        }
 
         imgpha->mdt->datatype = _DATATYPE_FLOAT;
-        createimagefromIMGID(imgpha);
+        if(imgpha->ID == -1)
+        {
+            createimagefromIMGID(imgpha);
+        }
 
         imgamp->md[0].write = 1;
         imgpha->md[0].write = 1;
@@ -140,11 +146,17 @@ errno_t mk_amph_from_complex_IMGID(
     {
         imgamp->mdt->datatype =
             _DATATYPE_DOUBLE;
-        createimagefromIMGID(imgamp);
+        if(imgamp->ID == -1)
+        {
+            createimagefromIMGID(imgamp);
+        }
 
         imgpha->mdt->datatype =
             _DATATYPE_DOUBLE;
-        createimagefromIMGID(imgpha);
+        if(imgpha->ID == -1)
+        {
+            createimagefromIMGID(imgpha);
+        }
 
         imgamp->md[0].write = 1;
         imgpha->md[0].write = 1;
