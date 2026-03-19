@@ -94,7 +94,8 @@ static errno_t extract_slice_to_2D(
             "Slice index out of bounds");
     }
 
-    imcreateIMGID(outimg);
+    // Image is created once before the loop;
+    // do not allocate inside the hot path.
 
     outimg->md->write = 1;
 
@@ -142,6 +143,9 @@ static MILK_HOT errno_t compute_function()
     outimg.mdt->shared = 1;
     outimg.mdt->datatype = inimg.md->datatype;
 
+    // Allocate output image once before the loop.
+    imcreateIMGID(&outimg);
+
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
@@ -159,8 +163,6 @@ static MILK_HOT errno_t compute_function()
                 &inimg, &outimg, slice_index);
         }
 
-        extract_slice_to_2D(
-            &inimg, &outimg, slice_index);
         processinfo_update_output_stream(
             processinfo, outimg.im, NULL);
     }
