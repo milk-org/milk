@@ -31,8 +31,13 @@ EXCEPTIONS=(
     milk-fpsexec-info-imagemon
     milk-fpsexec-linalg-PCAmatch
     milk-fpsexec-linalg-SVD
+    milk-fpsexec-linalg-SVDmkU
+    milk-fpsexec-linalg-SVDmkM
+    milk-fpsexec-linalg-modalremap
     milk-fpsexec-linopt-lin1Dfit
     milk-fpsexec-linopt-linRM
+    milk-fpsexec-linopt-imgFitModes
+    milk-fpsexec-linpred-buildlinPF
     milk-fpsexec-zernike-mkzercube
     cacao-fpsexec-cacaopt-mlat
     cacao-fpsexec-cacaopt-zoptsearch
