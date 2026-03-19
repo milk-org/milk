@@ -27,7 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef USE_CFITSIO
 #include <fitsio.h> /* required by every program that uses CFITSIO  */
+#endif
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
@@ -36,7 +38,9 @@
 #endif
 
 #include "COREMOD_arith/COREMOD_arith.h"
+#ifdef USE_CFITSIO
 #include "COREMOD_iofits/COREMOD_iofits.h"
+#endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #include "statistic/statistic.h"
@@ -2367,7 +2371,9 @@ imageID IMAGE_gen_segments2WFmodes(const char *prefix,
             segyc[seg] /= segsum[seg];
         }
 
+#ifdef USE_CFITSIO
         save_fits("_pupmask", "_pupmask.fits");
+#endif
 
         //IDtmp = create_2Dimage_ID("_seg2wfm_tmp", xsize, ysize);
         create_3Dimage_ID(IDout_name, xsize, ysize, 3 * NBseg, &IDout);

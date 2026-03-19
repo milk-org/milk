@@ -84,4 +84,9 @@ target_link_libraries(${LIBNAME} PRIVATE CLIcore)
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 add_milk_standalone(linpred-applyPF applyPF.c)
+target_link_libraries(milk-fpsexec-linpred-applyPF
+    PUBLIC ${LIBNAME})
 add_milk_standalone(linpred-buildlinPF build_linPF.c)
+target_link_libraries(milk-fpsexec-linpred-buildlinPF
+    PUBLIC ${LIBNAME} milklinalgebra)
+

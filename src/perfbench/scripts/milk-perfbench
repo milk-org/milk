@@ -1,0 +1,940 @@
+#!/usr/bin/env bash
+
+# This script uses milk-argparse
+# See template milk-scriptexample in module
+# milk_module_example for template and instructions
+
+# script 1-line description
+MSdescr="benchmark an FPS compute unit"
+
+# Extended description
+MSextdescr="Runs an FPS standalone executable under
+perf stat to collect hardware counters (cache misses,
+branch mispredictions, IPC), then reads processinfo
+SHM for timing data. Outputs a JSON result file.
+
+Requires: perf (linux-tools)
+"
+
+# standard configuration
+source milk-script-std-config
+
+# prerequisites
+RequiredCommands=( perf )
+RequiredFiles=()
+RequiredDirs=()
+
+# SCRIPT ARGUMENTS (mandatory)
+# syntax: "name:type(s)/test(s):description"
+
+MSarg+=( "fpsexec:string:fpsexec command name" )
+MSarg+=( "nbiter:int:number of iterations" )
+
+# SCRIPT OPTIONS
+# syntax: "short:long:functioncall:args[types]:descr"
+
+OUTDIR="./perfresults"
+MSopt+=( "o:outdir:set_outdir:dir[string]:output directory for results" )
+function set_outdir() {
+    OUTDIR="$1"
+}
+
+FPSARGS=""
+MSopt+=( "a:fpsargs:set_fpsargs:args[string]:extra args passed to fpsexec set" )
+function set_fpsargs() {
+    FPSARGS="$1"
+}
+
+SETUPCMD=""
+MSopt+=( "s:setup:set_setup:cmd[string]:setup command run before benchmark" )
+function set_setup() {
+    SETUPCMD="$1"
+}
+
+WARMUP=0
+MSopt+=( "w:warmup:set_warmup:n[int]:warmup iterations (subtracted from results)" )
+function set_warmup() {
+    WARMUP="$1"
+}
+
+# parse arguments
+source milk-argparse
+
+FPSEXEC="${inputMSargARRAY[0]}"
+NBITER="${inputMSargARRAY[1]}"
+
+# =========================================
+# VALIDATION
+# =========================================
+
+if ! command -v "${FPSEXEC}" &>/dev/null; then
+    echo "ERROR: command '${FPSEXEC}' not found"
+    exit 1
+fi
+
+if ! command -v perf &>/dev/null; then
+    echo "ERROR: 'perf' not found."
+    echo "Install linux-tools for your kernel."
+    exit 1
+fi
+
+# =========================================
+# SETUP
+# =========================================
+
+mkdir -p "${OUTDIR}"
+
+# Unique run ID based on timestamp
+RUNID=$(date +%Y%m%dT%H%M%S)
+RESULT_FILE="${OUTDIR}/${FPSEXEC}-${RUNID}.json"
+
+# Temporary files
+PERF_OUT=$(mktemp /tmp/perfbench-perf.XXXXXX)
+PROCINFO_OUT=$(mktemp /tmp/perfbench-pinfo.XXXXXX)
+
+# Get git commit if available
+GIT_COMMIT="unknown"
+if command -v git &>/dev/null; then
+    GIT_COMMIT=$(git -C "$(dirname "$0")" \
+        rev-parse --short HEAD 2>/dev/null \
+        || echo "unknown")
+fi
+
+# Determine processinfo SHM directory
+if [ -n "${MILK_SHM_DIR}" ]; then
+    PROCDIR="${MILK_SHM_DIR}"
+elif [ -d "/milk/shm" ]; then
+    PROCDIR="/milk/shm"
+else
+    PROCDIR="/tmp"
+fi
+
+# =========================================
+# FPS LIFECYCLE BENCHMARK
+# =========================================
+
+# Unique FPS name to avoid collisions
+FPSNAME="pb$(date +%s%N | tail -c 8)"
+
+# Cleanup function
+cleanup_fps() {
+    local shmdir
+    if [ -n "${MILK_SHM_DIR}" ]; then
+        shmdir="${MILK_SHM_DIR}"
+    elif [ -d "/milk/shm" ]; then
+        shmdir="/milk/shm"
+    else
+        shmdir="/tmp"
+    fi
+    rm -f "${shmdir}/fps.${FPSNAME}"*.shm \
+          2>/dev/null
+    rm -rf "${shmdir}/${FPSNAME}.fps.datadir" \
+           2>/dev/null
+    rm -f /tmp/perfbench-perf.* \
+          /tmp/perfbench-pinfo.* 2>/dev/null
+}
+trap cleanup_fps EXIT
+
+echo ""
+echo "======================================="
+echo "  milk-perfbench"
+echo "======================================="
+echo "  Command   : ${FPSEXEC}"
+echo "  FPS name  : ${FPSNAME}"
+echo "  Iterations: ${NBITER}"
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "  Warmup    : ${WARMUP}"
+    echo "  Measured  : $(( NBITER - WARMUP ))"
+fi
+echo "  Output    : ${RESULT_FILE}"
+echo "======================================="
+echo ""
+
+# Step 1: Create FPS with processinfo enabled
+echo "[1/4] fpsinit -procinfo ..."
+${FPSEXEC} ${FPSNAME}:fpsinit -procinfo
+
+# Step 2: Configuration step
+# This creates the .procinfo.* entries
+echo "[2/4] confstep ..."
+${FPSEXEC} ${FPSNAME}:confstep
+
+# Step 3: Set benchmark parameters
+echo "[3/5] Setting FPS params ..."
+# Enable processinfo
+milk-fps-set \
+    ${FPSNAME}.procinfo.enabled ON
+# Enable timing measurement
+milk-fps-set \
+    ${FPSNAME}.procinfo.MeasureTiming ON
+# triggermode 0 = IMMEDIATE (no wait)
+milk-fps-set \
+    ${FPSNAME}.procinfo.triggermode 0
+# Set max iteration count
+milk-fps-set \
+    ${FPSNAME}.procinfo.loopcntMax ${NBITER}
+
+# Set any extra positional args (stream names)
+if [ -n "${FPSARGS}" ]; then
+    ${FPSEXEC} ${FPSNAME}:set ${FPSARGS}
+fi
+
+# Step 4: Auto-create missing streams
+echo "[4/6] Creating missing streams ..."
+# Query FPS for STREAMNAME parameters and
+# create any streams that don't exist yet.
+# Strip ANSI codes, find STREAMNAME type
+# entries, extract the value (field 4).
+SHMDIR="${MILK_SHM_DIR:-/milk/shm}"
+${FPSEXEC} ${FPSNAME}:fps 2>/dev/null \
+    | sed 's/\x1b\[[0-9;]*m//g' \
+    | awk '$3 == "STREAMNAME" && NF >= 8 \
+           { print $4 }' \
+    | while read -r SNAME; do
+    if [ -z "${SNAME}" ]; then
+        continue
+    fi
+    if [ ! -f "${SHMDIR}/${SNAME}.im.shm" ]; then
+        echo "  Creating stream: ${SNAME} (32x32)"
+        milk-perfbench-mkstream \
+            "${SNAME}" 32 32
+    else
+        echo "  Stream exists: ${SNAME}"
+    fi
+done
+
+# Run user setup command if provided
+if [ -n "${SETUPCMD}" ]; then
+    echo "[5/6] Setup: ${SETUPCMD}"
+    eval "${SETUPCMD}"
+else
+    echo "[5/6] No setup command"
+fi
+
+## =========================================
+# PERF STAT HELPERS
+# =========================================
+
+# Shared list of perf events
+PERF_EVENTS=(
+    cycles instructions bus-cycles
+    L1-dcache-loads L1-dcache-load-misses
+    L1-dcache-stores
+    L1-icache-loads L1-icache-load-misses
+    iTLB-load-misses
+    LLC-loads LLC-load-misses
+    LLC-stores LLC-store-misses
+    dTLB-loads dTLB-load-misses
+    dTLB-store-misses
+    branch-misses branches
+    page-faults minor-faults major-faults
+    cpu-migrations context-switches task-clock
+)
+
+# Temporarily disable set -e and ERR trap:
+# perf stat may fail (permissions), and
+# grep/sed in parsing may return non-zero
+# when perf data is unavailable.
+_SAVED_ERR_TRAP=$(trap -p ERR)
+set +eE
+trap - ERR
+
+# Probe: can perf stat actually run commands?
+PERF_CAN_RUN=0
+perf stat -- true 2>/dev/null
+if [ $? -ne 255 ]; then
+    PERF_CAN_RUN=1
+fi
+
+# Build -e flags string once
+PERF_EFLAGS=""
+for ev in "${PERF_EVENTS[@]}"; do
+    PERF_EFLAGS="${PERF_EFLAGS} -e ${ev}"
+done
+
+## run_perf_phase <label> <iters> <perf_outfile> [capture_procinfo]
+## Sets loopcntMax, runs under perf stat,
+## returns wall-clock ns in PHASE_NS.
+## If capture_procinfo=1, reads proc SHM while
+## the benchmark is still alive.
+run_perf_phase() {
+    local label="$1"
+    local iters="$2"
+    local outfile="$3"
+    local capture_procinfo="${4:-0}"
+
+    milk-fps-set \
+        ${FPSNAME}.procinfo.loopcntMax \
+        "${iters}" >/dev/null 2>&1
+
+    echo "  [${label}] ${iters} iterations ..."
+
+    local tstart tend
+    tstart=$(date +%s%N)
+
+    # Build the benchmark command
+    local bm_cmd
+    if [ ${PERF_CAN_RUN} -eq 1 ]; then
+        bm_cmd="perf stat -j ${PERF_EFLAGS} \
+            -o \"${outfile}\" \
+            -- ${FPSEXEC} ${FPSNAME}:runstart"
+    else
+        bm_cmd="${FPSEXEC} ${FPSNAME}:runstart"
+    fi
+
+    if [ "${capture_procinfo}" -eq 1 ]; then
+        # Run benchmark in background; capture
+        # proc SHM while it is alive.
+        eval ${bm_cmd} >/dev/null 2>&1 &
+        local bm_pid=$!
+
+        # Poll proc SHM every 100ms.
+        # Keep re-reading to get the most
+        # recent data (latest = most complete).
+        local proc_captured=0
+        while kill -0 ${bm_pid} 2>/dev/null; do
+            local pf
+            pf=$(find "${PROCDIR}" \
+                -maxdepth 1 \
+                -name "proc.*.shm" \
+                2>/dev/null \
+                | head -1)
+            if [ -n "${pf}" ] \
+                && [ -f "${pf}" ]; then
+                milk-perfbench-readprocinfo \
+                    "${pf}" \
+                    > "${PROCINFO_OUT}.tmp" \
+                    2>/dev/null \
+                && mv "${PROCINFO_OUT}.tmp" \
+                    "${PROCINFO_OUT}" \
+                && proc_captured=1
+            fi
+            sleep 0.01
+        done
+
+        if [ ${proc_captured} -eq 1 ]; then
+            HAVE_PROCINFO=1
+        fi
+
+        # Wait for benchmark to finish
+        wait ${bm_pid}
+    else
+        eval ${bm_cmd} >/dev/null 2>&1
+    fi
+
+    tend=$(date +%s%N)
+    PHASE_NS=$(( tend - tstart ))
+}
+
+## get_perf_counter <event> <perf_outfile>
+## Extracts a counter value from perf JSON.
+get_perf_counter() {
+    local event="$1"
+    local pfile="$2"
+    local total=0
+    local found=0
+
+    while IFS= read -r line; do
+        val=$(echo "${line}" \
+            | grep -o \
+                '"counter-value" *: *"[^"]*"' \
+            | sed 's/.*: *"\([^"]*\)"/\1/' \
+            | tr -d ',')
+        if echo "${val}" \
+            | grep -qE '^[0-9]+\.?[0-9]*$'
+        then
+            total=$(echo "${total} + ${val}" \
+                | bc)
+            found=1
+        fi
+    done < <(grep -E \
+        "\"(${event}|[^\"]*/${event}/[^\"]*)\"" \
+        "${pfile}" 2>/dev/null)
+
+    if [ ${found} -eq 1 ]; then
+        echo "${total}" | sed 's/\..*//';
+    else
+        echo "0"
+    fi
+}
+
+# Counter names used throughout
+COUNTER_NAMES=(
+    cycles bus_cycles instructions
+    L1D_LOADS L1D_MISSES L1D_STORES
+    L1I_LOADS L1I_MISSES ITLB_MISSES
+    LLC_LOADS LLC_MISSES LLC_STORES
+    LLC_ST_MISSES DTLB_LOADS DTLB_MISSES
+    DTLB_ST_MISSES BRANCH_MISSES BRANCHES
+    PAGE_FAULTS MINOR_FAULTS MAJOR_FAULTS
+    CPU_MIGRATIONS CTX_SWITCHES TASK_CLOCK
+)
+
+# Perf event names matching COUNTER_NAMES
+COUNTER_EVENTS=(
+    cycles bus-cycles instructions
+    L1-dcache-loads L1-dcache-load-misses
+    L1-dcache-stores
+    L1-icache-loads L1-icache-load-misses
+    iTLB-load-misses
+    LLC-loads LLC-load-misses LLC-stores
+    LLC-store-misses dTLB-loads
+    dTLB-load-misses dTLB-store-misses
+    branch-misses branches
+    page-faults minor-faults major-faults
+    cpu-migrations context-switches task-clock
+)
+
+## parse_all_counters <prefix> <perf_outfile>
+## Sets ${prefix}_cycles, ${prefix}_bus_cycles, ...
+parse_all_counters() {
+    local pfx="$1"
+    local pfile="$2"
+    local i=0
+
+    for cname in "${COUNTER_NAMES[@]}"; do
+        local val
+        val=$(get_perf_counter \
+            "${COUNTER_EVENTS[$i]}" "${pfile}")
+        : "${val:=0}"
+        eval "${pfx}_${cname}=${val}"
+        i=$(( i + 1 ))
+    done
+}
+
+# =========================================
+# RUN BENCHMARK PHASE(S)
+# =========================================
+
+PERF_OUT_TOTAL=$(mktemp /tmp/pb-total.XXXXXX)
+PERF_OUT_WARMUP=$(mktemp /tmp/pb-warmup.XXXXXX)
+HAVE_PROCINFO=0
+
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "[6/7] Running benchmark ..."
+    run_perf_phase "warmup" "${WARMUP}" \
+        "${PERF_OUT_WARMUP}" 0
+    W_NS=${PHASE_NS}
+    # Seed timing estimate for total run
+    PREV_PHASE_NS=${PHASE_NS}
+    PREV_ITERS=${WARMUP}
+
+    # Re-init FPS for 2nd run (reset procinfo)
+    ${FPSEXEC} ${FPSNAME}:fpsinit -procinfo \
+        >/dev/null 2>&1
+    ${FPSEXEC} ${FPSNAME}:confstep \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.enabled ON \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.MeasureTiming ON \
+        >/dev/null 2>&1
+    milk-fps-set \
+        ${FPSNAME}.procinfo.triggermode 0 \
+        >/dev/null 2>&1
+
+    run_perf_phase "total " "${NBITER}" \
+        "${PERF_OUT_TOTAL}" 1
+    T_NS=${PHASE_NS}
+
+    MEASURED=$(( NBITER - WARMUP ))
+else
+    echo "[6/6] Running ${NBITER} iterations ..."
+    run_perf_phase "run" "${NBITER}" \
+        "${PERF_OUT_TOTAL}" 1
+    T_NS=${PHASE_NS}
+    W_NS=0
+    MEASURED=${NBITER}
+fi
+
+# Wall-clock times
+ELAPSED_NS=${T_NS}
+ELAPSED_S=$(echo "scale=6; \
+    ${ELAPSED_NS} / 1000000000" \
+    | bc)
+WARMUP_NS=${W_NS}
+WARMUP_S=$(echo "scale=6; \
+    ${WARMUP_NS} / 1000000000" \
+    | bc)
+
+# (HAVE_PROCINFO is set by run_perf_phase
+#  if capture_procinfo=1 succeeded)
+
+
+# =========================================
+# EXTRACT PROCESSINFO VARS
+# =========================================
+
+extract_json() {
+    # readprocinfo output nests keys inside
+    # "timing": { ... } and "memory": { ... }
+    # so we just grep for the key anywhere.
+    grep "\"$1\"" "${PROCINFO_OUT}" \
+        | head -1 \
+        | sed 's/.*: *\([0-9.-]*\).*/\1/'
+}
+
+if [ "${HAVE_PROCINFO}" -eq 1 ]; then
+    PI_MED_ITER=$(extract_json "median_iter_ns")
+    PI_MED_EXEC=$(extract_json "median_exec_ns")
+    PI_P50_EXEC=$(extract_json "p50_exec_ns")
+    PI_P95_EXEC=$(extract_json "p95_exec_ns")
+    PI_P99_EXEC=$(extract_json "p99_exec_ns")
+    PI_P50_ITER=$(extract_json "p50_iter_ns")
+    PI_P95_ITER=$(extract_json "p95_iter_ns")
+    PI_P99_ITER=$(extract_json "p99_iter_ns")
+    PI_VMPEAK=$(extract_json "vmpeak_kb")
+    PI_VMHWM=$(extract_json "vmhwm_kb")
+    PI_VMRSS=$(extract_json "vmrss_kb")
+    PI_LOOPCNT=$(extract_json "loopcnt")
+fi
+
+: "${PI_MED_ITER:=0}"
+: "${PI_MED_EXEC:=0}"
+: "${PI_P50_EXEC:=0}"
+: "${PI_P95_EXEC:=0}"
+: "${PI_P99_EXEC:=0}"
+: "${PI_P50_ITER:=0}"
+: "${PI_P95_ITER:=0}"
+: "${PI_P99_ITER:=0}"
+: "${PI_VMPEAK:=-1}"
+: "${PI_VMHWM:=-1}"
+: "${PI_VMRSS:=-1}"
+: "${PI_LOOPCNT:=0}"
+
+parse_all_counters "T" "${PERF_OUT_TOTAL}"
+
+if [ "${WARMUP}" -gt 0 ]; then
+    parse_all_counters "W" "${PERF_OUT_WARMUP}"
+else
+    for cname in "${COUNTER_NAMES[@]}"; do
+        eval "W_${cname}=0"
+    done
+fi
+
+# Executable file size
+EXE_PATH=$(command -v "${FPSEXEC}" 2>/dev/null)
+EXE_SIZE=0
+if [ -n "${EXE_PATH}" ]; then
+    EXE_SIZE=$(stat --format=%s \
+        "${EXE_PATH}" 2>/dev/null || echo 0)
+fi
+
+# Compute IPC for each phase
+miss_rate() {
+    local misses="$1" loads="$2"
+    if [ "${loads}" != "0" ] \
+       && [ -n "${loads}" ]; then
+        echo "scale=6; \
+            100 * ${misses} / ${loads}" \
+            | bc 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+comp_ipc() {
+    local instr="$1" cyc="$2"
+    if [ "${cyc}" != "0" ] \
+       && [ -n "${cyc}" ]; then
+        echo "scale=3; ${instr} / ${cyc}" \
+            | bc 2>/dev/null || echo "0"
+    else
+        echo "0"
+    fi
+}
+
+# Total IPC
+IPC_T=$(comp_ipc ${T_instructions} ${T_cycles})
+# Warmup IPC
+IPC_W=$(comp_ipc ${W_instructions} ${W_cycles})
+# Measured IPC (total - warmup)
+M_instr=$(( T_instructions - W_instructions ))
+M_cycles=$(( T_cycles - W_cycles ))
+IPC_M=$(comp_ipc ${M_instr} ${M_cycles})
+
+# Miss rates: total / warmup / measured
+L1D_MR_T=$(miss_rate \
+    ${T_L1D_MISSES} ${T_L1D_LOADS})
+L1D_MR_W=$(miss_rate \
+    ${W_L1D_MISSES} ${W_L1D_LOADS})
+L1D_MR_M=$(miss_rate \
+    $(( T_L1D_MISSES - W_L1D_MISSES )) \
+    $(( T_L1D_LOADS - W_L1D_LOADS )))
+
+L1I_MR_T=$(miss_rate \
+    ${T_L1I_MISSES} ${T_L1I_LOADS})
+L1I_MR_W=$(miss_rate \
+    ${W_L1I_MISSES} ${W_L1I_LOADS})
+L1I_MR_M=$(miss_rate \
+    $(( T_L1I_MISSES - W_L1I_MISSES )) \
+    $(( T_L1I_LOADS - W_L1I_LOADS )))
+
+LLC_MR_T=$(miss_rate \
+    ${T_LLC_MISSES} ${T_LLC_LOADS})
+LLC_MR_W=$(miss_rate \
+    ${W_LLC_MISSES} ${W_LLC_LOADS})
+LLC_MR_M=$(miss_rate \
+    $(( T_LLC_MISSES - W_LLC_MISSES )) \
+    $(( T_LLC_LOADS - W_LLC_LOADS )))
+
+LLC_SMR_T=$(miss_rate \
+    ${T_LLC_ST_MISSES} ${T_LLC_STORES})
+LLC_SMR_W=$(miss_rate \
+    ${W_LLC_ST_MISSES} ${W_LLC_STORES})
+LLC_SMR_M=$(miss_rate \
+    $(( T_LLC_ST_MISSES - W_LLC_ST_MISSES )) \
+    $(( T_LLC_STORES - W_LLC_STORES )))
+
+DTLB_MR_T=$(miss_rate \
+    ${T_DTLB_MISSES} ${T_DTLB_LOADS})
+DTLB_MR_W=$(miss_rate \
+    ${W_DTLB_MISSES} ${W_DTLB_LOADS})
+DTLB_MR_M=$(miss_rate \
+    $(( T_DTLB_MISSES - W_DTLB_MISSES )) \
+    $(( T_DTLB_LOADS - W_DTLB_LOADS )))
+
+# Keep backward-compat JSON names
+L1D_MISS_PCT=${L1D_MR_T}
+L1I_MISS_PCT=${L1I_MR_T}
+LLC_MISS_PCT=${LLC_MR_T}
+LLC_ST_MISS_PCT=${LLC_SMR_T}
+DTLB_MISS_PCT=${DTLB_MR_T}
+
+# Re-enable strict error handling
+set -eE
+eval "${_SAVED_ERR_TRAP}"
+
+# =========================================
+# GENERATE JSON OUTPUT
+# =========================================
+
+{
+echo "{"
+echo "  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\","
+echo "  \"compute_unit\": \"${FPSEXEC}\","
+echo "  \"exe_size_bytes\": ${EXE_SIZE},"
+echo "  \"git_commit\": \"${GIT_COMMIT}\","
+echo "  \"iterations\": ${NBITER},"
+echo "  \"warmup_iterations\": ${WARMUP},"
+echo "  \"measured_iterations\": ${MEASURED},"
+echo "  \"wall_clock_s\": ${ELAPSED_S},"
+echo "  \"warmup_s\": ${WARMUP_S},"
+
+echo "  \"hw_counters\": {"
+echo "    \"cycles\": ${T_cycles},"
+echo "    \"bus_cycles\": ${T_bus_cycles},"
+echo "    \"instructions\": ${T_instructions},"
+echo "    \"ipc\": ${IPC_T},"
+echo "    \"L1_dcache_loads\": ${T_L1D_LOADS},"
+echo "    \"L1_dcache_misses\": ${T_L1D_MISSES},"
+echo "    \"L1_dcache_miss_pct\": ${L1D_MISS_PCT},"
+echo "    \"L1_dcache_stores\": ${T_L1D_STORES},"
+echo "    \"L1_icache_loads\": ${T_L1I_LOADS},"
+echo "    \"L1_icache_misses\": ${T_L1I_MISSES},"
+echo "    \"L1_icache_miss_pct\": ${L1I_MISS_PCT},"
+echo "    \"iTLB_misses\": ${T_ITLB_MISSES},"
+echo "    \"LLC_loads\": ${T_LLC_LOADS},"
+echo "    \"LLC_misses\": ${T_LLC_MISSES},"
+echo "    \"LLC_miss_pct\": ${LLC_MISS_PCT},"
+echo "    \"LLC_stores\": ${T_LLC_STORES},"
+echo "    \"LLC_store_misses\": ${T_LLC_ST_MISSES},"
+echo "    \"LLC_store_miss_pct\": ${LLC_ST_MISS_PCT},"
+echo "    \"dTLB_loads\": ${T_DTLB_LOADS},"
+echo "    \"dTLB_misses\": ${T_DTLB_MISSES},"
+echo "    \"dTLB_miss_pct\": ${DTLB_MISS_PCT},"
+echo "    \"dTLB_store_misses\": ${T_DTLB_ST_MISSES},"
+echo "    \"branch_misses\": ${T_BRANCH_MISSES},"
+echo "    \"branches\": ${T_BRANCHES},"
+echo "    \"page_faults\": ${T_PAGE_FAULTS},"
+echo "    \"minor_faults\": ${T_MINOR_FAULTS},"
+echo "    \"major_faults\": ${T_MAJOR_FAULTS},"
+echo "    \"cpu_migrations\": ${T_CPU_MIGRATIONS},"
+echo "    \"context_switches\": ${T_CTX_SWITCHES},"
+echo "    \"task_clock_ms\": ${T_TASK_CLOCK}"
+echo "  },"
+
+if [ "${WARMUP}" -gt 0 ]; then
+    echo "  \"warmup_counters\": {"
+    echo "    \"cycles\": ${W_cycles},"
+    echo "    \"instructions\": ${W_instructions},"
+    echo "    \"L1_dcache_misses\": ${W_L1D_MISSES},"
+    echo "    \"LLC_misses\": ${W_LLC_MISSES},"
+    echo "    \"branch_misses\": ${W_BRANCH_MISSES},"
+    echo "    \"page_faults\": ${W_PAGE_FAULTS}"
+    echo "  },"
+fi
+
+# Processinfo timing (if available)
+if [ "${HAVE_PROCINFO}" -eq 1 ]; then
+    echo "  \"processinfo\": {"
+    echo "    \"loopcnt\": ${PI_LOOPCNT},"
+    echo "    \"median_iter_ns\": ${PI_MED_ITER},"
+    echo "    \"median_exec_ns\": ${PI_MED_EXEC},"
+    echo "    \"p50_exec_ns\": ${PI_P50_EXEC},"
+    echo "    \"p95_exec_ns\": ${PI_P95_EXEC},"
+    echo "    \"p99_exec_ns\": ${PI_P99_EXEC},"
+    echo "    \"p50_iter_ns\": ${PI_P50_ITER},"
+    echo "    \"p95_iter_ns\": ${PI_P95_ITER},"
+    echo "    \"p99_iter_ns\": ${PI_P99_ITER},"
+    echo "    \"vmpeak_kb\": ${PI_VMPEAK},"
+    echo "    \"vmhwm_kb\": ${PI_VMHWM},"
+    echo "    \"vmrss_kb\": ${PI_VMRSS}"
+    echo "  }"
+else
+    echo "  \"processinfo\": null"
+fi
+
+echo "}"
+} > "${RESULT_FILE}"
+
+# =========================================
+# SUMMARY
+# =========================================
+
+# per-measured-iteration helper:
+# (total - warmup) / measured_iters
+pm_iter() {
+    local t="$1" w="$2"
+    local diff=$(( t - w ))
+    if [ "${diff}" -le 0 ] \
+        || [ "${MEASURED}" -le 0 ]; then
+        echo "0"
+    else
+        echo "scale=1; ${diff} / ${MEASURED}" \
+            | bc 2>/dev/null || echo "0"
+    fi
+}
+
+# 6-decimal-place variant for rare events
+pm_iter6() {
+    local t="$1" w="$2"
+    local diff=$(( t - w ))
+    if [ "${diff}" -le 0 ] \
+        || [ "${MEASURED}" -le 0 ]; then
+        echo "0"
+    else
+        echo "scale=6; ${diff} / ${MEASURED}" \
+            | bc 2>/dev/null || echo "0"
+    fi
+}
+
+if [ "${WARMUP}" -gt 0 ]; then
+    FMT="  %-26s %14s %14s %14s/iter\n"
+    FMTHDR="  %-26s %14s %14s %14s\n"
+    FMTS="  %-26s %14s\n"
+    FMTR="  %-26s %14s %14s %14s\n"
+    SEP="  ------------------------------------------------------------------"
+else
+    FMT="  %-26s %14s %14s/iter\n"
+    FMTHDR="  %-26s %14s %14s\n"
+    FMTS="  %-26s %14s\n"
+    FMTR="  %-26s %14s\n"
+    SEP="  ------------------------------------------------------"
+fi
+
+## pc - print a counter row (1 d.p. per-iter)
+pc() {
+    local label="$1"
+    local tvar="$2"
+    local tval wval
+    eval "tval=\${T_${tvar}}"
+    eval "wval=\${W_${tvar}}"
+    : "${tval:=0}" "${wval:=0}"
+
+    if [ "${WARMUP}" -gt 0 ]; then
+        printf "${FMT}" "${label}" \
+            "${tval}" "${wval}" \
+            "$(pm_iter ${tval} ${wval})"
+    else
+        printf "${FMT}" "${label}" \
+            "${tval}" \
+            "$(pm_iter ${tval} 0)"
+    fi
+}
+
+## pc6 - print a counter row (6 d.p. per-iter)
+## Use for rare events like page faults.
+pc6() {
+    local label="$1"
+    local tvar="$2"
+    local tval wval
+    eval "tval=\${T_${tvar}}"
+    eval "wval=\${W_${tvar}}"
+    : "${tval:=0}" "${wval:=0}"
+
+    if [ "${WARMUP}" -gt 0 ]; then
+        printf "${FMT}" "${label}" \
+            "${tval}" "${wval}" \
+            "$(pm_iter6 ${tval} ${wval})"
+    else
+        printf "${FMT}" "${label}" \
+            "${tval}" \
+            "$(pm_iter6 ${tval} 0)"
+    fi
+}
+
+echo ""
+echo "======================================================"
+echo "  Benchmark Results"
+echo "  Total: ${NBITER}  Warmup: ${WARMUP}" \
+    " Measured: ${MEASURED}"
+echo "======================================================"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTHDR}" "" \
+        "Total" "Warmup" "Measured"
+else
+    printf "${FMTHDR}" "" "Total" "Per-iter"
+fi
+echo "${SEP}"
+
+# Wall clock
+if [ "${WARMUP}" -gt 0 ]; then
+    MEAS_NS=$(( ELAPSED_NS - WARMUP_NS ))
+    MEAS_PI=$(echo "scale=1; \
+        ${MEAS_NS} / ${MEASURED}" \
+        | bc 2>/dev/null || echo 0)
+    printf "${FMT}" "Wall clock" \
+        "${ELAPSED_S} s" \
+        "${WARMUP_S} s" \
+        "${MEAS_PI} ns"
+else
+    printf "${FMT}" "Wall clock" \
+        "${ELAPSED_S} s" \
+        "$(echo "scale=1; \
+            ${ELAPSED_NS} / ${MEASURED}" \
+            | bc) ns"
+fi
+
+pc "Cycles" "cycles"
+pc "Bus cycles" "bus_cycles"
+pc "Instructions" "instructions"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "Instr per Cycle (IPC)" \
+        "${IPC_T}" "${IPC_W}" "${IPC_M}"
+else
+    printf "${FMTS}" \
+        "Instr per Cycle (IPC)" "${IPC_T}"
+fi
+
+echo "${SEP}"
+echo "  --- L1 Data Cache ---"
+pc "  Loads" "L1D_LOADS"
+pc "  Load misses" "L1D_MISSES"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" "    Miss rate" \
+        "${L1D_MR_T}%" \
+        "${L1D_MR_W}%" "${L1D_MR_M}%"
+else
+    printf "${FMTS}" "    Miss rate" \
+        "${L1D_MR_T}%"
+fi
+pc "  Stores" "L1D_STORES"
+
+echo "  --- L1 Instruction Cache ---"
+pc "  Loads" "L1I_LOADS"
+pc "  Load misses" "L1I_MISSES"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" "    Miss rate" \
+        "${L1I_MR_T}%" \
+        "${L1I_MR_W}%" "${L1I_MR_M}%"
+else
+    printf "${FMTS}" "    Miss rate" \
+        "${L1I_MR_T}%"
+fi
+
+echo "  --- Instruction TLB ---"
+pc "  Load misses" "ITLB_MISSES"
+
+echo "  --- Last Level Cache (LLC) ---"
+pc "  Loads" "LLC_LOADS"
+pc "  Load misses" "LLC_MISSES"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Load miss rate" \
+        "${LLC_MR_T}%" \
+        "${LLC_MR_W}%" "${LLC_MR_M}%"
+else
+    printf "${FMTS}" \
+        "    Load miss rate" \
+        "${LLC_MR_T}%"
+fi
+pc "  Stores" "LLC_STORES"
+pc "  Store misses" "LLC_ST_MISSES"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Store miss rate" \
+        "${LLC_SMR_T}%" \
+        "${LLC_SMR_W}%" "${LLC_SMR_M}%"
+else
+    printf "${FMTS}" \
+        "    Store miss rate" \
+        "${LLC_SMR_T}%"
+fi
+
+echo "  --- Data TLB ---"
+pc "  Loads" "DTLB_LOADS"
+pc "  Load misses" "DTLB_MISSES"
+if [ "${WARMUP}" -gt 0 ]; then
+    printf "${FMTR}" \
+        "    Load miss rate" \
+        "${DTLB_MR_T}%" \
+        "${DTLB_MR_W}%" "${DTLB_MR_M}%"
+else
+    printf "${FMTS}" \
+        "    Load miss rate" \
+        "${DTLB_MR_T}%"
+fi
+pc "  Store misses" "DTLB_ST_MISSES"
+
+echo "${SEP}"
+pc "Branch misses" "BRANCH_MISSES"
+
+echo "${SEP}"
+pc6 "Page faults" "PAGE_FAULTS"
+pc6 "  Minor (in page cache)" "MINOR_FAULTS"
+pc6 "  Major (disk I/O)" "MAJOR_FAULTS"
+pc6 "CPU core migrations" "CPU_MIGRATIONS"
+pc6 "Context switches" "CTX_SWITCHES"
+
+if [ "${HAVE_PROCINFO}" -eq 1 ]; then
+    echo "${SEP}"
+    echo "  --- Timing (processinfo) ---"
+    printf "${FMTS}" \
+        "  Iterations counted" "${PI_LOOPCNT}"
+    printf "${FMTS}" \
+        "  Iter time  p50" "${PI_P50_ITER} ns"
+    printf "${FMTS}" \
+        "  Iter time  p95" "${PI_P95_ITER} ns"
+    printf "${FMTS}" \
+        "  Iter time  p99" "${PI_P99_ITER} ns"
+    printf "${FMTS}" \
+        "  Exec time  p50" "${PI_P50_EXEC} ns"
+    printf "${FMTS}" \
+        "  Exec time  p95" "${PI_P95_EXEC} ns"
+    printf "${FMTS}" \
+        "  Exec time  p99" "${PI_P99_EXEC} ns"
+    echo "  --- Memory ---"
+    printf "${FMTS}" \
+        "  Peak virtual memory" "${PI_VMPEAK} kB"
+    printf "${FMTS}" \
+        "  Peak RSS (VmHWM)" "${PI_VMHWM} kB"
+    printf "${FMTS}" \
+        "  Final RSS (VmRSS)" "${PI_VMRSS} kB"
+fi
+printf "${FMTS}" \
+    "Executable size" "${EXE_SIZE} B"
+echo "======================================================"
+echo "  Results: ${RESULT_FILE}"
+echo "======================================================"
+echo ""
+
+# =========================================
+# CLEANUP
+# =========================================
+
+rm -f "${PERF_OUT}" "${PROCINFO_OUT}"
+rm -f "${PERF_OUT_TOTAL}" "${PERF_OUT_WARMUP}"
+
