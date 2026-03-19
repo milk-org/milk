@@ -1,7 +1,9 @@
 #ifndef _IOFITS_COMMON_H
 #define _IOFITS_COMMON_H
 
+#ifdef USE_CFITSIO
 #include <fitsio.h>
+#endif
 
 typedef struct
 {
