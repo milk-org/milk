@@ -1,6 +1,5 @@
-# Profile-Guided Optimization (PGO) & Link-Time
+# Profile-Guided Optimization (PGO) & Link-Time Optimization (LTO)
 
-## Optimization (LTO)
 
 The `milk` build system supports two complementary
 compiler optimization techniques for `fpsexec`
@@ -179,18 +178,76 @@ sequentially, and the entire hot loop fits in L1i.
 | Compact hot path | Inlined code is sequential in memory | L1i cache stays warm |
 | Zero startup overhead | No `ld.so` symbol resolution | Faster process launch |
 
-### 1.6. Usage
+### 1.6. Build Modes
+
+Two approaches are available, depending on whether
+you need full static linking or just LTO on the
+executable itself:
+
+#### Option A — Static LTO (recommended)
+
+Builds static archive variants (`.a`) of every
+milk library and links them into standalone
+executables. Gives GCC maximum cross-module
+visibility.
 
 ```bash
-$ mkdir _build_lto && cd _build_lto
-$ cmake .. -DUSE_STATIC_LTO=ON
-$ make -j$(nproc) && sudo make install
+cd /home/oguyon/src/milk-perf/_build
+
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=ON \
+  -DCMAKE_C_FLAGS="-O3 -march=native"
+
+make -j$(nproc)
+sudo make install
 ```
 
-> [!NOTE]
-> Static LTO only affects `fpsexec` standalone
-> executables. Shared libraries and the `milk-cli`
-> binary are unchanged.
+`milk-perfbench` build tag: **`O3 LTO-static [x86_64]`**
+
+#### Option B — Dynamic LTO (manual flags)
+
+Keeps the default dynamic `.so` linking but
+passes `-flto` explicitly. LTO operates only
+within the executable's own compilation units —
+cross-library inlining is **not** available, but
+the executable's hot path is still LTO-optimized.
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="-O3 -march=native -flto=auto" \
+  -DCMAKE_EXE_LINKER_FLAGS="-flto=auto -Wl,-O2" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-flto=auto"
+
+make -j$(nproc)
+sudo make install
+```
+
+`milk-perfbench` build tag: **`O3 LTO [x86_64]`**
+
+> [!IMPORTANT]
+> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+> when switching to Option B. CMake caches values
+> between runs — if `USE_STATIC_LTO=ON` was set
+> previously, it remains active until explicitly
+> cleared. Forgetting this causes a link error:
+> `cannot find -lImageStreamIO_static`.
+
+#### Restore Normal Build
+
+After any optimization build, clear flags so
+subsequent builds are unaffected:
+
+```bash
+cmake .. \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="" \
+  -DCMAKE_EXE_LINKER_FLAGS="" \
+  -DCMAKE_SHARED_LINKER_FLAGS=""
+```
 
 ### 1.7. Verifying Static Linking
 
@@ -202,6 +259,35 @@ $ ldd /usr/local/bin/milk-fpsexec-arith-crop2D
 ## Default:  14 shared libs (milkfps.so, ImageStreamIO.so, ...)
 ## Static LTO:  3 deps (libc, ld-linux, vdso)
 ```
+
+### 1.8. Verifying the Build Mode
+
+Every fpsexec binary embeds a build-tag sentinel
+string that can be inspected with `strings(1)`:
+
+```bash
+$ strings milk-fpsexec-imggen-mkrandom | grep 'MILK_BUILD:'
+MILK_BUILD:VER=1,...,ARCH=x86_64,OPT=3,LTO=STATIC,END
+```
+
+`milk-perfbench` reads and displays this
+automatically in its header line:
+
+```
+  Build     : O3 LTO-static [x86_64]
+```
+
+Possible `Build:` values:
+
+| Shown | Meaning |
+|-------|---------|
+| `default (no PGO/LTO)` | Plain Release build |
+| `O3 [x86_64]` | `-O3`, no LTO |
+| `O3 LTO [x86_64]` | Option B (dynamic LTO) |
+| `O3 LTO-static [x86_64]` | Option A (static LTO) |
+| `O3 PGO [x86_64]` | PGO pass-2, no LTO |
+| `O3 PGO LTO [x86_64]` | PGO + dynamic LTO |
+| `O3 PGO LTO-static [x86_64]` | PGO + static LTO (maximum) |
 
 ***
 
@@ -460,23 +546,62 @@ libCOREMODiofits_compute.a
 Build configurations:
 
 ```bash
-## Default (dynamic, LTO within modules)
-$ cmake ..
+## Default (shared libs, no LTO)
+cmake .. -DUSE_STATIC_LTO=OFF
 
-## Static LTO only
-$ cmake .. -DUSE_STATIC_LTO=ON
+## Option A — Static LTO only
+cmake .. \
+  -DUSE_STATIC_LTO=ON \
+  -DCMAKE_C_FLAGS="-O3 -march=native"
+
+## Option B — Dynamic LTO (manual flags)
+cmake .. \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="-O3 -march=native -flto=auto" \
+  -DCMAKE_EXE_LINKER_FLAGS="-flto=auto -Wl,-O2" \
+  -DCMAKE_SHARED_LINKER_FLAGS="-flto=auto"
 
 ## PGO only
-$ cmake .. -DUSE_PGO=GENERATE   # step 1
-$ cmake .. -DUSE_PGO=USE        # step 3
+cmake .. -DUSE_PGO=GENERATE   # step 1
+cmake .. -DUSE_PGO=USE        # step 3
 
-## Maximum optimization
-$ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
+## Maximum optimization (PGO + static LTO)
+cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
+
+## Restore normal build (clear all flags)
+cmake .. \
+  -DUSE_STATIC_LTO=OFF \
+  -DCMAKE_C_FLAGS="" \
+  -DCMAKE_EXE_LINKER_FLAGS="" \
+  -DCMAKE_SHARED_LINKER_FLAGS=""
 ```
+
+> [!CAUTION]
+> CMake **caches** all `-D` options between runs.
+> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+> when switching away from static LTO. Omitting it
+> leaves `USE_STATIC_LTO=ON` in the cache and
+> causes `cannot find -lImageStreamIO_static`.
+
+### CMake Policy
+
+Add `cmake_policy(SET CMP0069 NEW)` to any
+`CMakeLists.txt` that calls `add_library()` to
+suppress the `INTERPROCEDURAL_OPTIMIZATION`
+policy warning when `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`
+is set. This is already applied to `CLIcore`.
 
 ***
 
-## 6. Notes
+## 6. Manual CMake Flags (Dynamic Libs)
+
+This is **Option B** from section 1.6 — applying
+PGO on top of dynamic-lib LTO when
+`USE_STATIC_LTO` is not used.
+
+***
+
+## 7. Notes
 
 - Profile data (`.gcda` files) is written to
   `PGO_DIR` (default: `_build/pgo/`).
@@ -492,6 +617,180 @@ $ cmake .. -DUSE_STATIC_LTO=ON -DUSE_PGO=USE
   library code is embedded — this is expected.
 - Build time with static LTO is longer due to
   whole-program optimization at link time.
+- **CMake cache:** always pass `-DUSE_STATIC_LTO=OFF`
+  when switching back to dynamic builds. Cached
+  `ON` causes `cannot find -lXxx_static` errors.
+- **Build tag:** every fpsexec embeds a
+  `MILK_BUILD:` sentinel string in `.rodata`
+  readable via `strings | grep MILK_BUILD:`. The
+  `milk-perfbench` header reports this as the
+  `Build:` line, allowing unambiguous verification
+  that the right optimization level was applied.
+
+***
+
+## 8. Fully Static Binaries with musl libc
+
+For maximum portability — deploying a single
+self-contained binary to a target machine without
+installing any runtime libraries — you can build
+`fpsexec` executables against
+[musl libc](https://musl.libc.org/) instead of glibc.
+
+> [!NOTE]
+> The standard static LTO build (section 1.6 Option A)
+> still depends on the system glibc at runtime (3 libs:
+> `libc.so`, `ld-linux.so`, `libm.so`). The musl build
+> here produces a true **zero-dependency** binary.
+
+### 8.1. Prerequisites
+
+```bash
+## Ubuntu / Debian
+sudo apt install musl-tools musl-dev
+```
+
+Verify the toolchain is present:
+
+```bash
+$ musl-gcc --version
+musl-gcc (GCC 11.4.0)
+```
+
+### 8.2. Build a Static musl Binary
+
+```bash
+cd /path/to/milk-perf
+mkdir -p _build_musl && cd _build_musl
+
+cmake .. \
+  -DCMAKE_C_COMPILER=musl-gcc \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-O3 -march=native -D_GNU_SOURCE \
+    -I/path/to/milk-perf/src/coremods \
+    -I/path/to/milk-perf/src" \
+  -DCMAKE_EXE_LINKER_FLAGS="-static" \
+  -DUSE_STATIC_LTO=ON \
+  -DUSE_CFITSIO=OFF \
+  -DUSE_CLI=OFF \
+  -DUSE_NCURSES=OFF \
+  -DUSE_READLINE=OFF \
+  -DUSE_OPENBLAS=OFF \
+  -DBUILD_SHARED_LIBS=OFF
+
+## Build a specific standalone executable
+make milk-fpsexec-imggen-mkrandom -j$(nproc)
+```
+
+Replace `/path/to/milk-perf` with the absolute path
+to your source tree. The `-D_GNU_SOURCE` flag is
+required to expose `cpu_set_t` and thread affinity
+APIs; the extra include paths expose `COREMOD_memory`
+headers needed by plugins built with `-DUSE_CLI=OFF`.
+
+### 8.3. Verify the Binary is Fully Static
+
+```bash
+$ ldd _build_musl/plugins/.../milk-fpsexec-imggen-mkrandom
+    not a dynamic executable
+
+$ file milk-fpsexec-imggen-mkrandom
+ELF 64-bit LSB executable, x86-64,
+statically linked, with debug_info, not stripped
+
+$ ls -lh milk-fpsexec-imggen-mkrandom
+291K
+```
+
+No shared library dependencies — deploy by copying
+the single binary file.
+
+### 8.4. Install
+
+**Copy to system `bin`:**
+
+```bash
+sudo cp _build_musl/plugins/milk-extra-src/image_gen/milk-fpsexec-imggen-mkrandom \
+    /usr/local/bin/
+```
+
+**Copy to user `bin` (no sudo):**
+
+```bash
+cp milk-fpsexec-imggen-mkrandom ~/bin/
+```
+
+**Deploy to a remote machine:**
+
+```bash
+scp milk-fpsexec-imggen-mkrandom user@target-host:/usr/local/bin/
+```
+
+Because the binary is fully self-contained, no
+library installation is needed on the target.
+
+### 8.5. Required CMake Flags and Why
+
+| Flag | Value | Reason |
+|------|-------|--------|
+| `CMAKE_C_COMPILER` | `musl-gcc` | Wrapper that redirects includes/libs to musl |
+| `CMAKE_EXE_LINKER_FLAGS` | `-static` | Tells the linker to produce a static binary |
+| `USE_STATIC_LTO` | `ON` | Builds `.a` archives; required by `-static` |
+| `USE_CFITSIO` | `OFF` | System cfitsio is glibc-linked; incompatible with musl static |
+| `USE_CLI` | `OFF` | CLI requires ncurses/readline dynamic libs |
+| `USE_NCURSES` | `OFF` | ncurses has no musl static variant by default |
+| `USE_READLINE` | `OFF` | Same as ncurses |
+| `USE_OPENBLAS` | `OFF` | System OpenBLAS is glibc-linked |
+| `BUILD_SHARED_LIBS` | `OFF` | Prevents cmake from building `.so` targets that would fail the static link |
+| `-D_GNU_SOURCE` (C flag) | set | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
+
+### 8.6. Known Warnings (Non-Fatal)
+
+**`_GNU_SOURCE` redefined:**
+
+```
+fps_standalone_data.c:6:9: warning: '_GNU_SOURCE' redefined
+```
+
+`fps_standalone_data.c` defines `_GNU_SOURCE`
+internally; passing it as a CMake flag causes a
+harmless redefinition. No action required.
+
+**LTO type mismatch on `copy_image_ID`:**
+
+```
+warning: type of 'copy_image_ID' does not match original declaration [-Wlto-type-mismatch]
+image_copy.h: return value: imageID vs int
+```
+
+`fps_loadmemstream_lite.c` declares `copy_image_ID`
+as `int` while `image_copy.h` uses `typedef imageID`.
+This is a pre-existing mismatch in the codebase (not
+introduced by the musl build). The binary is correct
+because `imageID` is `typedef long` which matches
+GCC's `int` ABI on the return path. No runtime
+impact.
+
+### 8.7. Limitations Compared to Standard Static LTO
+
+| Feature | Standard static LTO | musl static |
+|---------|--------------------|----|
+| CFITSIO support | ✓ | ✗ (glibc-only) |
+| OpenBLAS/MKL | ✓ | ✗ |
+| ncurses TUI | ✓ | ✗ |
+| Dynamic library deps | 3 (libc family) | **0** |
+| Deploy without runtime | ✗ | **✓** |
+| Binary portability | Same glibc version | Any Linux x86-64 |
+| PGO compatible | ✓ | ✓ (same workflow) |
+
+### 8.8. musl vs glibc `strerror_r` ABI
+
+musl implements the POSIX (XSI) variant of
+`strerror_r` which returns `int`, whereas glibc
+defaults to the GNU variant returning `char *`.
+The milk source correctly detects this via
+`#ifndef __GLIBC__` in `ImageStreamIO.c` — no
+user action needed.
 
 ***
 ← [Documentation Index](index.md)

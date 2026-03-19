@@ -317,6 +317,8 @@ typedef struct
     { /* If FPS mode, then FPS settings override defaults*/                    \
         /* dcfpsptr->cmset entries are read by fps_connect */               \
         /*CLIcmddata.cmdsettings->flags = dcfpsptr->cmdset.flags;*/         \
+        CLIcmddata.cmdsettings->flags |= (dcfpsptr->cmdset.flags            \
+            & CLICMDFLAG_PROCINFO);                                          \
         CLIcmddata.cmdsettings->RT_priority = dcfpsptr->cmdset.RT_priority; \
         CLIcmddata.cmdsettings->procinfo_loopcntMax =                          \
             dcfpsptr->cmdset.procinfo_loopcntMax;                           \

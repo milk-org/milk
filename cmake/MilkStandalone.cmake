@@ -47,22 +47,30 @@ set(_MILK_STANDALONE_LIBS
 # references between the archives (e.g. COREMOD
 # functions calling FPS functions and vice versa).
 if(USE_STATIC_LTO)
+  # Core static libs always required
   set(_MILK_STANDALONE_STATIC_LIBS
       -Wl,--start-group
       milkCOREMODmemory_compute_static
       milkCOREMODtools_compute_static
       milkCOREMODarith_compute_static
-      milkCOREMODiofits_compute_static
       milkfpsStandalone_static
       milkfps_static
       milkdata_static
       milkprocessinfo_static
-      ImageStreamIO_static
       -Wl,--end-group
-      ${CFITSIO_LIBRARIES}
       m rt pthread
       -Wl,--allow-shlib-undefined
   )
+  # CFITSIO-dependent libs only when CFITSIO is enabled
+  if(USE_CFITSIO AND CFITSIO_FOUND)
+    list(INSERT _MILK_STANDALONE_STATIC_LIBS 1
+        milkCOREMODiofits_compute_static
+        ImageStreamIO_static
+        ${CFITSIO_LIBRARIES})
+  else()
+    # Link ImageStreamIO static archive when CFITSIO is not used
+    list(APPEND _MILK_STANDALONE_STATIC_LIBS ImageStreamIO_static)
+  endif()
 endif()
 
 
@@ -87,6 +95,68 @@ function(milk_pgo_target EXE_NAME)
         target_link_options(${EXE_NAME} PRIVATE
             -fprofile-use=${PGO_DIR}/${EXE_NAME})
     endif()
+endfunction()
+
+
+# ── milk_build_tag_target ──────────────────────
+#
+# Injects compile-time MILK_BUILD_* defines so that
+# every standalone binary embeds a detectable tag
+# string.  milk-perfbench uses `strings` to extract
+# this tag and report whether the binary was built
+# with PGO or LTO.
+#
+# Defines set:
+#   MILK_BUILD_PGO_GENERATE  — pass-1 (instrument)
+#   MILK_BUILD_PGO_USE       — pass-2 (use profiles)
+#   MILK_BUILD_LTO           — any LTO variant
+#   MILK_BUILD_STATIC        — compiled as static LTO
+#   MILK_BUILD_OPT           — -O2/-O3 detected
+#
+# Called internally by add_*_standalone().
+#
+function(milk_build_tag_target EXE_NAME)
+    # PGO state from the USE_PGO option
+    if(USE_PGO STREQUAL "GENERATE")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_PGO_GENERATE)
+    elseif(USE_PGO STREQUAL "USE")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_PGO_USE)
+    endif()
+
+    # LTO from USE_STATIC_LTO option
+    if(USE_STATIC_LTO)
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_LTO MILK_BUILD_STATIC)
+    endif()
+
+    # Detect manual -flto flag in CMAKE_C_FLAGS
+    if(CMAKE_C_FLAGS MATCHES "-flto")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_LTO)
+    endif()
+
+    # Detect manual PGO flags when USE_PGO not set
+    if(CMAKE_C_FLAGS MATCHES "-fprofile-generate")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_PGO_GENERATE)
+    endif()
+    if(CMAKE_C_FLAGS MATCHES "-fprofile-use")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_PGO_USE)
+    endif()
+
+    # Optimisation tier
+    if(CMAKE_C_FLAGS MATCHES "-O3"
+            OR CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_definitions(${EXE_NAME}
+            PRIVATE MILK_BUILD_OPT)
+    endif()
+
+    # Inject the binary name for the sentinel string
+    target_compile_definitions(${EXE_NAME}
+        PRIVATE MILK_BUILD_BINNAME="${EXE_NAME}")
 endfunction()
 
 
@@ -143,6 +213,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
     endif()
     milk_pgo_target(${EXE_NAME})
     milk_lto_target(${EXE_NAME})
+    milk_build_tag_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
@@ -182,6 +253,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
     endif()
     milk_pgo_target(${EXE_NAME})
     milk_lto_target(${EXE_NAME})
+    milk_build_tag_target(${EXE_NAME})
     install(TARGETS ${EXE_NAME} DESTINATION bin)
 endfunction()
 
