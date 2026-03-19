@@ -8,7 +8,7 @@
  */
 
 #include <stdio.h>
-#include <string.h>
+
 
 #ifndef FPS_STANDALONE
 #include "CLIcore.h"
@@ -21,13 +21,15 @@
 #include "fps_cli_sync.h"
 #include "fps_connect.h"
 #include "fps_disconnect.h"
-#include "fps_GetParamIndex.h"
+
 #include "fps_lifecycle.h"
 #include "fps_local_store.h"
 #include "fps_processinfo_entries.h"
-#include "fps_RUNstart.h"
+
+#include "fps_globals.h"
+
 #include "fps_RUNstop.h"
-#include "fps_CONFstart.h"
+
 #include "fps_CONFstop.h"
 #include "fps_processinfo.h"
 
@@ -153,7 +155,6 @@ int fps_generic_run(
 )
 {
     FUNCTION_PARAMETER_STRUCT fps;
-    PROCESSINFO *processinfo = NULL;
     long loopcnt = 0;
 
     if (fps_name[0] == '_') {
@@ -199,29 +200,39 @@ int fps_generic_run(
 
     fflush(stdout);
 
-    if (functionparameter_GetParamIndex(
-            &fps, ".procinfo.enabled") != -1)
-    {
-        FPS_RUN_PROCESSINFO_SETUP(
-            processinfo, fps_name,
-            app_info->cmdkey,
-            app_info->description,
-            NULL, fps);
+    /*
+     * The compute function (generated with
+     * INSERT_STD_PROCINFO_COMPUTEFUNC_START/END)
+     * manages its own processinfo loop and
+     * loopcntMax termination internally.
+     *
+     * Setting dcfpsptr here allows the macro
+     * to pick up all FPS-derived settings
+     * (triggermode, loopcntMax, MeasureTiming…)
+     * at its own processinfo_setup time.
+     *
+     * Do NOT wrap compute_fn() in a second
+     * FPS_RUN_PROCESSINFO_LOOP: that would
+     * multiply iterations by loopcntMax².
+     */
+    /*
+     * Set FPS_name (the global that dcfpsname
+     * copies from) so processinfo_setup inside
+     * compute_fn() gets a valid process name.
+     */
+    strncpy(FPS_name, fps_name,
+            STRINGMAXLEN_FPS_NAME - 1);
+    FPS_name[STRINGMAXLEN_FPS_NAME - 1] = '\0';
 
-        FPS_RUN_PROCESSINFO_LOOP(
-            processinfo, fps, NULL, NULL, {
-            compute_fn();
-        });
+    dcfpsptr = &fps;
 
-        loopcnt = processinfo->loopcnt;
-    }
-    else {
-        compute_fn();
-        loopcnt = 1;
-        if (fps_name[0] != '_') {
-            function_parameter_struct_disconnect(
-                &fps);
-        }
+    compute_fn();
+    loopcnt = 1; /* reported by compute_fn's procinfo */
+
+    dcfpsptr = NULL;
+    if (fps_name[0] != '_') {
+        function_parameter_struct_disconnect(
+            &fps);
     }
 
     printf("ran as PID %ld for %ld step%s\n",
