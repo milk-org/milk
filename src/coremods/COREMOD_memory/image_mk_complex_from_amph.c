@@ -120,7 +120,10 @@ errno_t mk_complex_from_amph_IMGID(
     {
         imgoutC->mdt->datatype =
             _DATATYPE_COMPLEX_FLOAT;
-        createimagefromIMGID(imgoutC);
+        if(imgoutC->ID == -1)
+        {
+            createimagefromIMGID(imgoutC);
+        }
 
         imgoutC->md->write = 1;
         float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
@@ -162,7 +165,10 @@ errno_t mk_complex_from_amph_IMGID(
     {
         imgoutC->mdt->datatype =
             _DATATYPE_COMPLEX_DOUBLE;
-        createimagefromIMGID(imgoutC);
+        if(imgoutC->ID == -1)
+        {
+            createimagefromIMGID(imgoutC);
+        }
 
         imgoutC->md->write = 1;
         float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
@@ -204,7 +210,10 @@ errno_t mk_complex_from_amph_IMGID(
     {
         imgoutC->mdt->datatype =
             _DATATYPE_COMPLEX_DOUBLE;
-        createimagefromIMGID(imgoutC);
+        if(imgoutC->ID == -1)
+        {
+            createimagefromIMGID(imgoutC);
+        }
 
         imgoutC->md->write = 1;
         double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);
@@ -246,7 +255,10 @@ errno_t mk_complex_from_amph_IMGID(
     {
         imgoutC->mdt->datatype =
             _DATATYPE_COMPLEX_DOUBLE;
-        createimagefromIMGID(imgoutC);
+        if(imgoutC->ID == -1)
+        {
+            createimagefromIMGID(imgoutC);
+        }
 
         imgoutC->md->write = 1;
         double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);

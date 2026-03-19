@@ -282,7 +282,10 @@ errno_t computeSGEMM(
            outimg->mdt->size[1], outimg->mdt->size[2]);
 
     outimg->mdt->datatype = _DATATYPE_FLOAT;
-    createimagefromIMGID(outimg);
+    if(outimg->ID == -1)
+    {
+        createimagefromIMGID(outimg);
+    }
 
 
     float *imarrayA;
