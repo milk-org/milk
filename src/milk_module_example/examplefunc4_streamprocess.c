@@ -163,9 +163,8 @@ static errno_t streamprocess(
     uint32_t ysize  = inimg->mdt->size[1];
     uint64_t xysize = xsize * ysize;
 
-    // Create image if not already done.
-    // Otherwise, just proceed
-    imcreateIMGID(outimg); // Image is created, memory allocated
+    // outimg is pre-created before the loop.
+    // No allocation here.
 
     outimg->md->write = 1;
 
@@ -199,6 +198,8 @@ static MILK_HOT errno_t compute_function()
     // If we are sure we want outimg to be the same format (size, type etc) as inimg, we can use:
     imgid_copy(&inimg, &outimg);
 
+    // Allocate output image once, before the loop.
+    imcreateIMGID(&outimg);
 
     printf(" COMPUTE Flags = %ld\n", CLIcmddata.cmdsettings->flags);
     INSERT_STD_PROCINFO_COMPUTEFUNC_INIT
