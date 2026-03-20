@@ -20,6 +20,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore/cli_calc_parser.h"
+#include "CLIcore_script.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
@@ -2226,7 +2227,10 @@ static void cli_expand_cmdsub(
 
     while(line[i] != '\0' && opos < maxlen - 1)
     {
-        int is_dollar_paren = (line[i] == '$' && line[i + 1] == '(');
+        int is_dollar_paren =
+            (line[i] == '$'
+             && line[i + 1] == '('
+             && line[i + 2] != '(');
         int is_backtick = (line[i] == '`');
 
         if(is_dollar_paren || is_backtick)
@@ -2317,6 +2321,14 @@ static void cli_expand_env(
     {
         if(line[i] == '$')
         {
+            /* Skip $(( — arithmetic token,
+             * handled by cli_expand_arith */
+            if(line[i + 1] == '('
+               && line[i + 2] == '(')
+            {
+                out[opos++] = line[i++];
+                continue;
+            }
             i++;
             int  braced = 0;
             if(line[i] == '{')
@@ -2349,7 +2361,8 @@ static void cli_expand_env(
                 varname[vlen++] = line[i++];
             }
             varname[vlen] = '\0';
-            const char *val = getenv(varname);
+            const char *val =
+                cli_var_lookup(varname);
             if(val != NULL)
             {
                 int vallen = (int) strlen(val);
@@ -2554,12 +2567,31 @@ errno_t CLI_execute_line()
     /* Expand command substitution */
     cli_expand_cmdsub(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
-    /* Expand environment variables ($VAR) */
+    /* Expand @fpsname.param tokens */
+    cli_expand_fpsvar(data.CLIcmdline,
+                      STRINGMAXLEN_CLICMDLINE);
+
+    /* Expand environment variables ($VAR).
+     * Runs before arith so $(( $n + 1 )) works.
+     * cli_expand_env skips $(( tokens. */
     cli_expand_env(data.CLIcmdline,
                    STRINGMAXLEN_CLICMDLINE);
 
+    /* Expand arithmetic $(( expr )) */
+    cli_expand_arith(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE);
+
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
+
+    /* Check for variable assignment (VAR=val) */
+    if(cli_try_var_assign(data.CLIcmdline))
+    {
+        data.CMDexecuted = 1;
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
 
     /*
      * ---- Command chaining: ; && || ----
@@ -2784,6 +2816,36 @@ errno_t CLI_execute_line()
     else if(data.CLIcmdline[0] == '#')
     {
         // do nothing... this is a comment
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "echo ", 5) == 0
+            || strcmp(data.CLIcmdline,
+                      "echo") == 0)
+    {
+        /* Handle echo before tokenization
+         * to avoid image name resolution */
+        const char *args =
+            data.CLIcmdline + 4;
+        while(*args == ' ')
+        {
+            args++;
+        }
+        int nl = 1;
+        if(strncmp(args, "-n ", 3) == 0)
+        {
+            nl = 0;
+            args += 3;
+            while(*args == ' ')
+            {
+                args++;
+            }
+        }
+        printf("%s", args);
+        if(nl)
+        {
+            printf("\n");
+        }
         data.CMDexecuted = 1;
     }
     else

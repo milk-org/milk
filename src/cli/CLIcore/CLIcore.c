@@ -62,6 +62,7 @@
 
 
 #include "CLIcore.h"
+#include "CLIcore_script.h"
 #include "streamCTRL/streamCTRL_TUI.h"
 
 //#include "initmodules.h"
@@ -1312,6 +1313,33 @@ void runCLI_cmd_init()
         "<fpsname>",
         "fparam cnt2push",
         "cli_fparam()");
+
+    RegisterCLIcommand(
+        "echo",
+        __FILE__,
+        cli_cmd_echo,
+        "print arguments",
+        "[-n] <args...>",
+        "echo hello world",
+        "cli_cmd_echo()");
+
+    RegisterCLIcommand(
+        "unset",
+        __FILE__,
+        cli_cmd_unset,
+        "remove a CLI variable",
+        "<varname>",
+        "unset myvar",
+        "cli_cmd_unset()");
+
+    RegisterCLIcommand(
+        "vars",
+        __FILE__,
+        cli_cmd_vars,
+        "list all CLI variables",
+        "",
+        "vars",
+        "cli_cmd_vars()");
 
     //  init_modules();
 
