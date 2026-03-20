@@ -1502,6 +1502,10 @@ void print_milk_cli_help(void)
            "Formatted output\n");
     printf(C_CMD "  read [-p p] var   " C_RST
            "Read line from stdin\n");
+    printf(C_CMD "  exit [N]          " C_RST
+           "Exit with status N\n");
+    printf(C_CMD "  shift [N]         " C_RST
+           "Shift $1..$9 by N\n");
     printf("\n");
     printf(C_HDR "Logical Operators:\n" C_RST);
     printf("  " C_CMD
@@ -1518,6 +1522,30 @@ void print_milk_cli_help(void)
     printf("  " C_CMD
            "{0..10..2}" C_RST
            " → 0 2 4 6 8 10\n");
+    printf("\n");
+    printf(C_HDR "Pipes & Redirection:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd1 | cmd2" C_RST
+           "     pipe stdout → stdin\n");
+    printf("  " C_CMD
+           "cmd > file" C_RST
+           "      write to file\n");
+    printf("  " C_CMD
+           "cmd >> file" C_RST
+           "     append to file\n");
+    printf("  " C_CMD
+           "cmd <<< \"str\"" C_RST
+           "   here-string\n");
+    printf("\n");
+    printf(C_HDR "Glob Expansion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "*.fits" C_RST
+           " expands to matching files\n");
+    printf("  " C_CMD
+           "data_??.bin" C_RST
+           " single-char wildcard\n");
     printf("\n");
     printf(C_HDR "Heredocs:\n" C_RST);
     printf("  " C_CMD "VAR=<<EOF" C_RST

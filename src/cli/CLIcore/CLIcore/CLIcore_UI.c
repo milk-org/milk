@@ -22,6 +22,8 @@
 #include "CLIcore/cli_calc_parser.h"
 #include "CLIcore_script.h"
 
+#include <glob.h>
+
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
@@ -2454,6 +2456,134 @@ static void cli_expand_braces(
 }
 
 
+/**
+ * @brief Expand filename globs (* and ?)
+ *
+ * Tokens containing * or ? that are not inside
+ * quotes are expanded using POSIX glob().
+ * Example: *.fits → file1.fits file2.fits
+ */
+static void cli_expand_globs(
+    char *line,
+    int   maxlen
+)
+{
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+    int  in_sq = 0;
+    int  in_dq = 0;
+
+    while(line[i] != '\0'
+          && opos < maxlen - 1)
+    {
+        char c = line[i];
+        if(c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+            out[opos++] = line[i++];
+            continue;
+        }
+        if(c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+            out[opos++] = line[i++];
+            continue;
+        }
+        if(in_sq || in_dq)
+        {
+            out[opos++] = line[i++];
+            continue;
+        }
+        if(c == ' ' || c == '\t')
+        {
+            out[opos++] = line[i++];
+            continue;
+        }
+        /* Extract token */
+        int tstart = i;
+        int has_glob = 0;
+        while(line[i] != '\0'
+              && line[i] != ' '
+              && line[i] != '\t')
+        {
+            if(line[i] == '*'
+               || line[i] == '?')
+            {
+                has_glob = 1;
+            }
+            i++;
+        }
+        int tlen = i - tstart;
+        if(!has_glob || tlen <= 0)
+        {
+            for(int j = tstart;
+                j < i
+                && opos < maxlen - 1;
+                j++)
+            {
+                out[opos++] = line[j];
+            }
+            continue;
+        }
+        /* Run glob */
+        char pat[512];
+        int plen = tlen;
+        if(plen >= 512)
+        {
+            plen = 511;
+        }
+        memcpy(pat, line + tstart,
+               (size_t) plen);
+        pat[plen] = '\0';
+
+        glob_t gl;
+        int gret = glob(pat,
+                        GLOB_NOCHECK,
+                        NULL, &gl);
+        if(gret == 0
+           && gl.gl_pathc > 0)
+        {
+            for(size_t g = 0;
+                g < gl.gl_pathc; g++)
+            {
+                if(g > 0
+                   && opos < maxlen - 1)
+                {
+                    out[opos++] = ' ';
+                }
+                const char *gp =
+                    gl.gl_pathv[g];
+                while(*gp != '\0'
+                      && opos
+                      < maxlen - 1)
+                {
+                    out[opos++] = *gp++;
+                }
+            }
+            globfree(&gl);
+        }
+        else
+        {
+            if(gret == 0)
+            {
+                globfree(&gl);
+            }
+            for(int j = tstart;
+                j < tstart + tlen
+                && opos < maxlen - 1;
+                j++)
+            {
+                out[opos++] = line[j];
+            }
+        }
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+
 /*
  * ============================================================
  *  Command Substitution
@@ -3262,6 +3392,117 @@ errno_t CLI_execute_line()
         }
     }
 
+    /* Pipe: cmd1 | cmd2
+     * Capture stdout of left command into a
+     * temp file, then feed it as stdin to
+     * the right command. Only matches single
+     * '|', not '||'. */
+    {
+        const char *src = data.CLIcmdline;
+        int depth = 0;
+        int in_sq = 0;
+        int in_dq = 0;
+        int pipe_pos = -1;
+
+        for(int si = 0; src[si] != '\0'; si++)
+        {
+            char c = src[si];
+            if(c == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+            }
+            else if(c == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+            }
+            else if(!in_sq && !in_dq)
+            {
+                if(c == '(')
+                {
+                    depth++;
+                }
+                else if(c == ')'
+                        && depth > 0)
+                {
+                    depth--;
+                }
+                else if(depth == 0
+                        && c == '|'
+                        && src[si + 1]
+                        != '|')
+                {
+                    pipe_pos = si;
+                    break;
+                }
+            }
+        }
+        if(pipe_pos >= 0)
+        {
+            /* Split at pipe */
+            char left[STRINGMAXLEN_CLICMDLINE];
+            strncpy(left, data.CLIcmdline,
+                    (size_t) pipe_pos);
+            left[pipe_pos] = '\0';
+            const char *rp =
+                data.CLIcmdline
+                + pipe_pos + 1;
+            while(*rp == ' ' || *rp == '\t')
+            {
+                rp++;
+            }
+            char right[STRINGMAXLEN_CLICMDLINE];
+            strncpy(right, rp,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+            right[STRINGMAXLEN_CLICMDLINE
+                  - 1] = '\0';
+
+            /* Capture left stdout */
+            FILE *tmpfp = tmpfile();
+            if(tmpfp != NULL)
+            {
+                int saved_stdout =
+                    dup(STDOUT_FILENO);
+                dup2(fileno(tmpfp),
+                     STDOUT_FILENO);
+
+                strncpy(data.CLIcmdline,
+                        left,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                CLI_execute_line();
+
+                fflush(stdout);
+                dup2(saved_stdout,
+                     STDOUT_FILENO);
+                close(saved_stdout);
+
+                /* Feed to right stdin */
+                rewind(tmpfp);
+                int saved_stdin =
+                    dup(STDIN_FILENO);
+                dup2(fileno(tmpfp),
+                     STDIN_FILENO);
+
+                strncpy(data.CLIcmdline,
+                        right,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                errno_t pret =
+                    CLI_execute_line();
+
+                dup2(saved_stdin,
+                     STDIN_FILENO);
+                close(saved_stdin);
+                fclose(tmpfp);
+
+                free(thetime);
+                DEBUG_TRACE_FEXIT();
+                return pret;
+            }
+        }
+    }
+
     /* Dot-sourcing: ". file" → "source file"
      * Must check before script intercept */
     {
@@ -3319,8 +3560,212 @@ errno_t CLI_execute_line()
     cli_expand_arith(data.CLIcmdline,
                      STRINGMAXLEN_CLICMDLINE);
 
+    /* Expand filename globs (*.fits etc) */
+    cli_expand_globs(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE);
+
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
+
+    /* Output redirection: cmd > file,
+     * cmd >> file. Scan from end for
+     * unquoted > or >> and redirect. */
+    {
+        int redir_mode = 0; /* 1=trunc 2=app */
+        int redir_pos = -1;
+        int in_sq2 = 0;
+        int in_dq2 = 0;
+        int depth2 = 0;
+        const char *cl2 = data.CLIcmdline;
+        for(int ri = 0;
+            cl2[ri] != '\0'; ri++)
+        {
+            if(cl2[ri] == '\''
+               && !in_dq2)
+            {
+                in_sq2 = !in_sq2;
+            }
+            else if(cl2[ri] == '"'
+                    && !in_sq2)
+            {
+                in_dq2 = !in_dq2;
+            }
+            else if(!in_sq2
+                    && !in_dq2)
+            {
+                if(cl2[ri] == '(')
+                {
+                    depth2++;
+                }
+                else if(cl2[ri] == ')'
+                        && depth2 > 0)
+                {
+                    depth2--;
+                }
+                else if(depth2 == 0
+                        && cl2[ri] == '>')
+                {
+                    if(cl2[ri + 1] == '>')
+                    {
+                        redir_mode = 2;
+                        redir_pos = ri;
+                    }
+                    else
+                    {
+                        redir_mode = 1;
+                        redir_pos = ri;
+                    }
+                }
+            }
+        }
+        if(redir_pos >= 0)
+        {
+            /* Extract filename */
+            int fstart = redir_pos
+                         + ((redir_mode
+                             == 2) ? 2 : 1);
+            while(data.CLIcmdline[fstart]
+                  == ' '
+                  || data.CLIcmdline[fstart]
+                  == '\t')
+            {
+                fstart++;
+            }
+            char rfile[512];
+            int fi = 0;
+            while(data.CLIcmdline[fstart]
+                  != '\0'
+                  && data.CLIcmdline[fstart]
+                  != ' '
+                  && data.CLIcmdline[fstart]
+                  != '\t'
+                  && fi < 511)
+            {
+                rfile[fi++] =
+                    data.CLIcmdline[
+                        fstart++];
+            }
+            rfile[fi] = '\0';
+
+            /* Truncate cmd at redir */
+            data.CLIcmdline[
+                redir_pos] = '\0';
+            {
+                int cl3 = redir_pos - 1;
+                while(cl3 >= 0
+                      && (data.CLIcmdline[
+                              cl3] == ' '
+                          || data.CLIcmdline[
+                              cl3]
+                          == '\t'))
+                {
+                    data.CLIcmdline[
+                        cl3--] = '\0';
+                }
+            }
+
+            /* Open file and redirect */
+            FILE *rfp = fopen(
+                rfile,
+                (redir_mode == 2)
+                ? "a" : "w");
+            if(rfp != NULL)
+            {
+                int sv_out =
+                    dup(STDOUT_FILENO);
+                dup2(fileno(rfp),
+                     STDOUT_FILENO);
+
+                errno_t rret =
+                    CLI_execute_line();
+
+                fflush(stdout);
+                dup2(sv_out,
+                     STDOUT_FILENO);
+                close(sv_out);
+                fclose(rfp);
+
+                free(thetime);
+                DEBUG_TRACE_FEXIT();
+                return rret;
+            }
+        }
+    }
+
+    /* Here-string: cmd <<< "string"
+     * Provides string as stdin to cmd */
+    {
+        char *hs = strstr(
+            data.CLIcmdline, "<<<");
+        if(hs != NULL)
+        {
+            /* Split at <<< */
+            *hs = '\0';
+            const char *hsval =
+                hs + 3;
+            while(*hsval == ' '
+                  || *hsval == '\t')
+            {
+                hsval++;
+            }
+            /* Strip quotes */
+            int hvlen =
+                (int) strlen(hsval);
+            char hvbuf[STRINGMAXLEN_CLICMDLINE];
+            if(hvlen >= 2
+               && ((hsval[0] == '"'
+                    && hsval[
+                        hvlen - 1]
+                    == '"')
+                   || (hsval[0] == '\''
+                       && hsval[
+                           hvlen - 1]
+                       == '\'')))
+            {
+                memcpy(hvbuf,
+                       hsval + 1,
+                       (size_t)
+                       (hvlen - 2));
+                hvbuf[hvlen - 2] = '\0';
+            }
+            else
+            {
+                strncpy(
+                    hvbuf, hsval,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+                hvbuf[
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1] = '\0';
+            }
+
+            /* Write to tmpfile, feed
+             * as stdin */
+            FILE *hsfp = tmpfile();
+            if(hsfp != NULL)
+            {
+                fprintf(hsfp, "%s\n",
+                        hvbuf);
+                rewind(hsfp);
+                int sv_in =
+                    dup(STDIN_FILENO);
+                dup2(fileno(hsfp),
+                     STDIN_FILENO);
+
+                errno_t hsret =
+                    CLI_execute_line();
+
+                dup2(sv_in,
+                     STDIN_FILENO);
+                close(sv_in);
+                fclose(hsfp);
+
+                free(thetime);
+                DEBUG_TRACE_FEXIT();
+                return hsret;
+            }
+        }
+    }
 
     /* Check for array assignment: arr=(a b c) */
     if(cli_try_array_assign(data.CLIcmdline))

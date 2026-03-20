@@ -170,6 +170,70 @@ milk-cli >     echo item $i
 milk-cli > done
 ```
 
+### Pipes
+
+Pipe the output of one command into another:
+
+```bash
+milk-cli > echo hello | read greeting
+milk-cli > listim | grep wfs
+```
+
+### Output Redirection
+
+Redirect stdout to a file:
+
+```bash
+milk-cli > echo "log entry" > output.txt
+milk-cli > echo "more" >> output.txt  # append
+```
+
+### Here-Strings
+
+Provide a string as stdin to a command:
+
+```bash
+milk-cli > read name <<< "world"
+milk-cli > echo $name            # prints: world
+```
+
+### Glob Expansion
+
+Tokens containing `*` or `?` are expanded to
+matching filenames:
+
+```bash
+milk-cli > echo *.fits           # all FITS files
+milk-cli > echo data_??.bin      # data_01.bin etc.
+```
+
+Quoted globs are not expanded:
+`echo "*.fits"` prints the literal `*.fits`.
+
+### exit
+
+Exit the CLI session with an optional status code:
+
+```bash
+milk-cli > exit          # exit with status 0
+milk-cli > exit 1        # exit with status 1
+```
+
+### shift
+
+Shift positional parameters (`$1`→`$2`, etc.) inside
+functions:
+
+```bash
+milk-cli > function process_all {
+milk-cli >     while [ -n "$1" ]; do
+milk-cli >         echo processing $1
+milk-cli >         shift
+milk-cli >     done
+milk-cli > }
+milk-cli > process_all a b c
+```
+
 ## Flow Control
 
 ### if / elif / else / fi

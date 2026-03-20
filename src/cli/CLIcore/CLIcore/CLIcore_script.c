@@ -2430,6 +2430,82 @@ int cli_script_intercept(const char *line)
         return 1;
     }
 
+    /* exit [N] — exit CLI entirely */
+    if(strcmp(p, "exit") == 0
+       || starts_with(p, "exit ")
+       || starts_with(p, "exit\t"))
+    {
+        int exitcode = 0;
+        if(strlen(p) > 4)
+        {
+            const char *ev = p + 4;
+            while(*ev == ' ' || *ev == '\t')
+            {
+                ev++;
+            }
+            if(*ev != '\0')
+            {
+                exitcode =
+                    (int) strtol(ev,
+                                 NULL, 0);
+            }
+        }
+        exit(exitcode);
+    }
+
+    /* shift [N] — shift positional params */
+    if(strcmp(p, "shift") == 0
+       || starts_with(p, "shift ")
+       || starts_with(p, "shift\t"))
+    {
+        int n = 1;
+        if(strlen(p) > 5)
+        {
+            const char *sv = p + 5;
+            while(*sv == ' ' || *sv == '\t')
+            {
+                sv++;
+            }
+            if(*sv != '\0')
+            {
+                n = (int) strtol(sv,
+                                 NULL, 0);
+            }
+        }
+        if(n < 1)
+        {
+            n = 1;
+        }
+        /* Shift $1..$9 by n positions */
+        for(int i = 1;
+            i < CLI_FUNC_MAXARGS; i++)
+        {
+            char dst[4], src[4];
+            snprintf(dst, sizeof(dst),
+                     "%d", i);
+            snprintf(src, sizeof(src),
+                     "%d", i + n);
+            if(i + n < CLI_FUNC_MAXARGS)
+            {
+                const char *sv2 =
+                    cli_var_get(src);
+                if(sv2 != NULL)
+                {
+                    cli_var_set(dst, sv2);
+                }
+                else
+                {
+                    cli_var_unset(dst);
+                }
+            }
+            else
+            {
+                cli_var_unset(dst);
+            }
+        }
+        return 1;
+    }
+
     /* local VAR=val — set variable (only
      * meaningful inside function, but works
      * anywhere) */
