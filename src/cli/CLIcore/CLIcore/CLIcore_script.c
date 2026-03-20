@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <sys/stat.h>
+#include <signal.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -32,6 +33,78 @@
 
 CLI_VAR cli_vars[CLI_MAX_VARS];
 int     cli_last_retval = 0;
+
+/* ---- set flags ---- */
+int     cli_flag_errexit = 0;  /* set -e */
+int     cli_flag_xtrace  = 0;  /* set -x */
+
+/* ---- Trap Handlers ---- */
+CLI_TRAP cli_traps[CLI_TRAP_MAXSIGS];
+
+/**
+ * @brief Map signal name to number
+ *
+ * @param name  Signal name (EXIT, INT, etc.)
+ * @return signal number, or 0 for EXIT
+ */
+static int cli_trap_signum(const char *name)
+{
+    if(strcasecmp(name, "EXIT") == 0)
+    {
+        return 0;
+    }
+    if(strcasecmp(name, "INT") == 0)
+    {
+        return SIGINT;
+    }
+    if(strcasecmp(name, "TERM") == 0)
+    {
+        return SIGTERM;
+    }
+    if(strcasecmp(name, "HUP") == 0)
+    {
+        return SIGHUP;
+    }
+    if(strcasecmp(name, "USR1") == 0)
+    {
+        return SIGUSR1;
+    }
+    if(strcasecmp(name, "USR2") == 0)
+    {
+        return SIGUSR2;
+    }
+    return (int) strtol(name, NULL, 0);
+}
+
+/**
+ * @brief Execute trap handlers for signal
+ */
+void cli_trap_run(int signum)
+{
+    for(int i = 0;
+        i < CLI_TRAP_MAXSIGS; i++)
+    {
+        if(cli_traps[i].used
+           && cli_traps[i].signum
+           == signum)
+        {
+            strncpy(
+                data.CLIcmdline,
+                cli_traps[i].cmd,
+                STRINGMAXLEN_CLICMDLINE
+                - 1);
+            CLI_execute_line();
+        }
+    }
+}
+
+/**
+ * @brief Run EXIT traps (signal 0)
+ */
+void cli_trap_run_exit(void)
+{
+    cli_trap_run(0);
+}
 
 /* ---- Array Storage ---- */
 CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
@@ -1593,6 +1666,126 @@ static void cli_exec_block_while(
 /* ---- Parse for/do/done block ---- */
 
 /**
+ * @brief Execute select/do/done block
+ *
+ * Syntax:
+ *   select VAR in v1 v2 ...; do
+ *     body
+ *   done
+ */
+static void cli_exec_block_select(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int  nlines
+)
+{
+    if(nlines < 2)
+    {
+        return;
+    }
+    /* Parse: select VAR in v1 v2 ... */
+    const char *hdr = lines[0];
+    while(*hdr == ' '
+          || *hdr == '\t')
+    {
+        hdr++;
+    }
+    hdr += 7; /* skip 'select ' */
+    while(*hdr == ' '
+          || *hdr == '\t')
+    {
+        hdr++;
+    }
+    char vn[CLI_VAR_NAMELEN];
+    {
+        int vi = 0;
+        while(*hdr != '\0'
+              && *hdr != ' '
+              && *hdr != '\t'
+              && vi
+              < CLI_VAR_NAMELEN - 1)
+        {
+            vn[vi++] = *hdr++;
+        }
+        vn[vi] = '\0';
+    }
+    while(*hdr == ' '
+          || *hdr == '\t')
+    {
+        hdr++;
+    }
+    if(starts_with(hdr, "in "))
+    {
+        hdr += 3;
+    }
+    /* Collect values */
+    char sv[256][CLI_VAR_VALLEN];
+    int nsv = 0;
+    while(*hdr != '\0'
+          && nsv < 256)
+    {
+        while(*hdr == ' '
+              || *hdr == '\t')
+        {
+            hdr++;
+        }
+        if(*hdr == ';'
+           || *hdr == '\0')
+        {
+            break;
+        }
+        int vi = 0;
+        while(*hdr != '\0'
+              && *hdr != ' '
+              && *hdr != '\t'
+              && *hdr != ';'
+              && vi
+              < CLI_VAR_VALLEN - 1)
+        {
+            sv[nsv][vi++] = *hdr++;
+        }
+        sv[nsv][vi] = '\0';
+        nsv++;
+    }
+    if(nsv == 0)
+    {
+        return;
+    }
+    /* Loop: print menu, read, exec */
+    for(;;)
+    {
+        for(int i = 0;
+            i < nsv; i++)
+        {
+            printf("%d) %s\n",
+                   i + 1, sv[i]);
+        }
+        printf("#? ");
+        fflush(stdout);
+        char rb[64];
+        if(fgets(rb, sizeof(rb),
+                 stdin) == NULL)
+        {
+            break;
+        }
+        int ch =
+            (int) strtol(rb,
+                         NULL, 10);
+        if(ch >= 1 && ch <= nsv)
+        {
+            cli_var_set(
+                vn, sv[ch - 1]);
+        }
+        else
+        {
+            cli_var_set(vn, "");
+        }
+        cli_exec_lines(
+            lines + 1,
+            nlines - 1);
+    }
+}
+
+/**
  * @brief Execute a for/do/done block
  *
  * Expected format:
@@ -1608,6 +1801,120 @@ static void cli_exec_block_for(
     if(nlines < 2)
     {
         return;
+    }
+
+    /* Check for arithmetic for:
+     * for ((init; cond; step)); do */
+    {
+        const char *af =
+            strip_ws(lines[0]);
+        af += 3; /* skip "for" */
+        af = strip_ws(af);
+        if(af[0] == '(' && af[1] == '(')
+        {
+            af += 2; /* skip "((" */
+            /* Find closing )) */
+            const char *ce =
+                strstr(af, "))");
+            if(ce != NULL)
+            {
+                char abuf[
+                    STRINGMAXLEN_CLICMDLINE
+                ];
+                int alen =
+                    (int)(ce - af);
+                memcpy(abuf, af,
+                       (size_t) alen);
+                abuf[alen] = '\0';
+                /* Split on ; */
+                char ainit[256] = "";
+                char acond[256] = "";
+                char astep[256] = "";
+                char *s1 =
+                    strchr(abuf, ';');
+                if(s1 != NULL)
+                {
+                    *s1 = '\0';
+                    strncpy(ainit,
+                            abuf, 255);
+                    char *s2 =
+                        strchr(
+                            s1 + 1,
+                            ';');
+                    if(s2 != NULL)
+                    {
+                        *s2 = '\0';
+                        strncpy(
+                            acond,
+                            s1 + 1,
+                            255);
+                        strncpy(
+                            astep,
+                            s2 + 1,
+                            255);
+                    }
+                }
+                /* Execute init */
+                {
+                    char einit[
+                        STRINGMAXLEN_CLICMDLINE
+                    ];
+                    snprintf(
+                        einit,
+                        sizeof(einit),
+                        "$(( %s ))",
+                        ainit);
+                    cli_expand_arith(
+                        einit,
+                        STRINGMAXLEN_CLICMDLINE
+                    );
+                }
+                /* Loop: eval cond,
+                 * exec body, eval step */
+                for(;;)
+                {
+                    char econd[
+                        STRINGMAXLEN_CLICMDLINE
+                    ];
+                    snprintf(
+                        econd,
+                        sizeof(econd),
+                        "$(( %s ))",
+                        acond);
+                    cli_expand_arith(
+                        econd,
+                        STRINGMAXLEN_CLICMDLINE
+                    );
+                    long cv =
+                        strtol(econd,
+                               NULL,
+                               10);
+                    if(cv == 0)
+                    {
+                        break;
+                    }
+                    cli_exec_lines(
+                        lines + 1,
+                        nlines - 1);
+                    /* step */
+                    {
+                        char estep[
+                            STRINGMAXLEN_CLICMDLINE
+                        ];
+                        snprintf(
+                            estep,
+                            sizeof(estep),
+                            "$(( %s ))",
+                            astep);
+                        cli_expand_arith(
+                            estep,
+                            STRINGMAXLEN_CLICMDLINE
+                        );
+                    }
+                }
+                return;
+            }
+        }
     }
 
     /* Parse: for VAR in val1 val2 ... */
@@ -2224,6 +2531,9 @@ int cli_script_intercept(const char *line)
            || starts_with(p, "while\t")
            || starts_with(p, "for ")
            || starts_with(p, "for\t")
+           || starts_with(p, "select ")
+           || starts_with(p,
+                          "select\t")
            || starts_with(p, "function ")
            || starts_with(p, "function\t")
            || starts_with(p, "case ")
@@ -2340,6 +2650,15 @@ int cli_script_intercept(const char *line)
                 saved_type == CLI_BLOCK_FOR)
             {
                 cli_exec_block_for(
+                    saved_lines,
+                    saved_nlines);
+            }
+            else if(
+                saved_type
+                ==
+                CLI_BLOCK_SELECT)
+            {
+                cli_exec_block_select(
                     saved_lines,
                     saved_nlines);
             }
@@ -2506,6 +2825,231 @@ int cli_script_intercept(const char *line)
         return 1;
     }
 
+    /* trap 'cmd' SIGNAL [SIGNAL...] */
+    if(starts_with(p, "trap ")
+       || starts_with(p, "trap\t"))
+    {
+        p += 4;
+        p = strip_ws(p);
+        /* Extract quoted command */
+        char tcmd[CLI_TRAP_CMDLEN];
+        tcmd[0] = '\0';
+        if(*p == '\'' || *p == '"')
+        {
+            char q = *p++;
+            int ti = 0;
+            while(*p != '\0' && *p != q
+                  && ti
+                  < CLI_TRAP_CMDLEN - 1)
+            {
+                tcmd[ti++] = *p++;
+            }
+            tcmd[ti] = '\0';
+            if(*p == q)
+            {
+                p++;
+            }
+        }
+        p = strip_ws(p);
+        /* Parse signal names */
+        while(*p != '\0')
+        {
+            char sname[32];
+            int si = 0;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t'
+                  && si < 31)
+            {
+                sname[si++] = *p++;
+            }
+            sname[si] = '\0';
+            p = strip_ws(p);
+            if(si == 0)
+            {
+                break;
+            }
+            int sn =
+                cli_trap_signum(sname);
+            /* Find or alloc slot */
+            int slot = -1;
+            for(int i = 0;
+                i < CLI_TRAP_MAXSIGS;
+                i++)
+            {
+                if(cli_traps[i].used
+                   && cli_traps[i].signum
+                   == sn)
+                {
+                    slot = i;
+                    break;
+                }
+            }
+            if(slot < 0)
+            {
+                for(int i = 0;
+                    i < CLI_TRAP_MAXSIGS;
+                    i++)
+                {
+                    if(!cli_traps[i]
+                        .used)
+                    {
+                        slot = i;
+                        break;
+                    }
+                }
+            }
+            if(slot >= 0)
+            {
+                cli_traps[slot].signum =
+                    sn;
+                strncpy(
+                    cli_traps[slot].cmd,
+                    tcmd,
+                    CLI_TRAP_CMDLEN - 1);
+                cli_traps[slot].used = 1;
+            }
+        }
+        return 1;
+    }
+
+    /* set -e / set -x / set +e / set +x */
+    if(starts_with(p, "set ")
+       || starts_with(p, "set\t"))
+    {
+        p += 3;
+        p = strip_ws(p);
+        while(*p != '\0')
+        {
+            if(*p == '-' || *p == '+')
+            {
+                int on = (*p == '-');
+                p++;
+                while(*p != '\0'
+                      && *p != ' '
+                      && *p != '\t')
+                {
+                    if(*p == 'e')
+                    {
+                        cli_flag_errexit =
+                            on;
+                    }
+                    else if(*p == 'x')
+                    {
+                        cli_flag_xtrace =
+                            on;
+                    }
+                    p++;
+                }
+            }
+            else
+            {
+                p++;
+            }
+            p = strip_ws(p);
+        }
+        return 1;
+    }
+
+    /* export VAR=val — set env variable */
+    if(starts_with(p, "export ")
+       || starts_with(p, "export\t"))
+    {
+        p += 6;
+        p = strip_ws(p);
+        const char *eq = strchr(p, '=');
+        if(eq != NULL)
+        {
+            char ename[CLI_VAR_NAMELEN];
+            int elen = (int)(eq - p);
+            if(elen >= CLI_VAR_NAMELEN)
+            {
+                elen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(ename, p,
+                   (size_t) elen);
+            ename[elen] = '\0';
+            const char *eval = eq + 1;
+            /* Strip quotes */
+            int evlen =
+                (int) strlen(eval);
+            if(evlen >= 2
+               && ((eval[0] == '"'
+                    && eval[evlen - 1]
+                    == '"')
+                   || (eval[0] == '\''
+                       && eval[
+                           evlen - 1]
+                       == '\'')))
+            {
+                char ebuf[
+                    CLI_VAR_VALLEN];
+                memcpy(ebuf,
+                       eval + 1,
+                       (size_t)
+                       (evlen - 2));
+                ebuf[evlen - 2] = '\0';
+                setenv(ename,
+                       ebuf, 1);
+                cli_var_set(ename,
+                            ebuf);
+            }
+            else
+            {
+                setenv(ename,
+                       eval, 1);
+                cli_var_set(ename,
+                            eval);
+            }
+        }
+        else
+        {
+            /* export VAR (no =val):
+             * push current value */
+            const char *eval =
+                cli_var_get(p);
+            if(eval != NULL)
+            {
+                setenv(p, eval, 1);
+            }
+        }
+        return 1;
+    }
+
+    /* [[ expr ]] — extended test */
+    if(starts_with(p, "[[ "))
+    {
+        int plen = (int) strlen(p);
+        if(plen >= 5
+           && p[plen - 1] == ']'
+           && p[plen - 2] == ']')
+        {
+            /* Extract inner expr */
+            char texpr[
+                STRINGMAXLEN_CLICMDLINE];
+            memcpy(texpr, p + 3,
+                   (size_t)(plen - 5));
+            texpr[plen - 5] = '\0';
+            /* Trim whitespace */
+            int tlen =
+                (int) strlen(texpr);
+            while(tlen > 0
+                  && (texpr[tlen - 1]
+                      == ' '
+                      || texpr[tlen - 1]
+                      == '\t'))
+            {
+                texpr[--tlen] = '\0';
+            }
+            int result =
+                cli_eval_test(texpr);
+            cli_last_retval =
+                result ? 0 : 1;
+        }
+        return 1;
+    }
+
     /* local VAR=val — set variable (only
      * meaningful inside function, but works
      * anywhere) */
@@ -2585,6 +3129,32 @@ int cli_script_intercept(const char *line)
         blk->active = 1;
         strncpy(blk->lines[0], p,
                 STRINGMAXLEN_CLICMDLINE - 1);
+        blk->nlines = 1;
+        cli_block_level++;
+        return 1;
+    }
+
+    /* select VAR in val1 val2; do ... */
+    if(starts_with(p, "select ")
+       || starts_with(p, "select\t"))
+    {
+        if(cli_block_level
+           >= CLI_BLOCK_MAXDEPTH)
+        {
+            printf("Error: max block "
+                   "nesting exceeded\n");
+            return 1;
+        }
+        CLI_BLOCK *blk =
+            &cli_block_stack[
+                cli_block_level];
+        memset(blk, 0, sizeof(*blk));
+        blk->type =
+            CLI_BLOCK_SELECT;
+        blk->active = 1;
+        strncpy(blk->lines[0], p,
+                STRINGMAXLEN_CLICMDLINE
+                - 1);
         blk->nlines = 1;
         cli_block_level++;
         return 1;

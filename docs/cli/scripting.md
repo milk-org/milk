@@ -234,6 +234,91 @@ milk-cli > }
 milk-cli > process_all a b c
 ```
 
+### trap
+
+Register signal handlers that execute a
+command when a signal is received:
+
+```bash
+milk-cli > trap 'echo cleanup' EXIT
+milk-cli > trap 'rm /tmp/lockfile' INT TERM
+```
+
+Supported signals: `EXIT`, `INT`, `TERM`,
+`HUP`, `USR1`, `USR2`, or numeric.
+
+### set
+
+Control shell behavior flags:
+
+```bash
+milk-cli > set -e      # exit on error
+milk-cli > set -x      # trace commands (+ prefix)
+milk-cli > set +e      # disable -e
+milk-cli > set +x      # disable -x
+milk-cli > set -ex     # enable both
+```
+
+### export
+
+Set environment variables visible to child
+processes:
+
+```bash
+milk-cli > export DMSHMDIR="/tmp/shm"
+milk-cli > export VERBOSE=1
+milk-cli > export PATH              # push current $PATH
+```
+
+### Extended Test `[[ ]]`
+
+Extended conditional test with regex support:
+
+```bash
+milk-cli > [[ $filename =~ ^data_[0-9]+$ ]]
+milk-cli > [[ -n $myvar ]]
+milk-cli > [[ -f $path ]]
+```
+
+### Tilde Expansion
+
+`~` expands to `$HOME` at the start of tokens:
+
+```bash
+milk-cli > echo ~/data          # /home/user/data
+milk-cli > ls ~/scripts/*.sh
+```
+
+### Input Redirection
+
+Read a file as standard input:
+
+```bash
+milk-cli > read line < config.txt
+milk-cli > cmd < input.dat
+```
+
+### select
+
+Interactive numbered menu loop:
+
+```bash
+milk-cli > select mode in fast normal slow; do
+milk-cli >     echo "Selected: $mode"
+milk-cli >     break
+milk-cli > done
+```
+
+### Arithmetic For
+
+C-style counted loop using `for ((;;))`:
+
+```bash
+milk-cli > for ((i=0; i<5; i++)); do
+milk-cli >     echo "iteration $i"
+milk-cli > done
+```
+
 ## Flow Control
 
 ### if / elif / else / fi

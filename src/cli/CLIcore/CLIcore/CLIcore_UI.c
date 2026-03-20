@@ -2457,6 +2457,80 @@ static void cli_expand_braces(
 
 
 /**
+ * @brief Expand tilde (~) to $HOME
+ *
+ * Replaces ~ or ~/path at start of tokens
+ * with the HOME environment variable value.
+ */
+static void cli_expand_tilde(
+    char *line,
+    int   maxlen
+)
+{
+    const char *home = getenv("HOME");
+    if(home == NULL)
+    {
+        return;
+    }
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+    int  at_tok_start = 1;
+    int  in_sq = 0;
+    int  in_dq = 0;
+
+    while(line[i] != '\0'
+          && opos < maxlen - 1)
+    {
+        char c = line[i];
+        if(c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+            out[opos++] = line[i++];
+            at_tok_start = 0;
+            continue;
+        }
+        if(c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+            out[opos++] = line[i++];
+            at_tok_start = 0;
+            continue;
+        }
+        if(c == ' ' || c == '\t')
+        {
+            out[opos++] = line[i++];
+            at_tok_start = 1;
+            continue;
+        }
+        if(at_tok_start
+           && !in_sq && !in_dq
+           && c == '~'
+           && (line[i + 1] == '/'
+               || line[i + 1] == ' '
+               || line[i + 1] == '\t'
+               || line[i + 1] == '\0'))
+        {
+            /* Replace ~ with $HOME */
+            const char *hp = home;
+            while(*hp != '\0'
+                  && opos < maxlen - 1)
+            {
+                out[opos++] = *hp++;
+            }
+            i++; /* skip ~ */
+            at_tok_start = 0;
+            continue;
+        }
+        out[opos++] = line[i++];
+        at_tok_start = 0;
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+/**
  * @brief Expand filename globs (* and ?)
  *
  * Tokens containing * or ? that are not inside
@@ -3546,6 +3620,10 @@ errno_t CLI_execute_line()
     cli_expand_fpsvar(data.CLIcmdline,
                       STRINGMAXLEN_CLICMDLINE);
 
+    /* Expand tilde (~) to $HOME */
+    cli_expand_tilde(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE);
+
     /* Expand environment variables ($VAR).
      * Runs before arith so $(( $n + 1 )) works.
      * cli_expand_env skips $(( tokens. */
@@ -3566,6 +3644,13 @@ errno_t CLI_execute_line()
 
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
+
+    /* set -x: trace output */
+    if(cli_flag_xtrace)
+    {
+        fprintf(stderr, "+ %s\n",
+                data.CLIcmdline);
+    }
 
     /* Output redirection: cmd > file,
      * cmd >> file. Scan from end for
@@ -3763,6 +3848,117 @@ errno_t CLI_execute_line()
                 free(thetime);
                 DEBUG_TRACE_FEXIT();
                 return hsret;
+            }
+        }
+    }
+
+    /* Input redirection: cmd < file
+     * Scan for unquoted < that is not
+     * << or <<<. */
+    {
+        const char *cl4 =
+            data.CLIcmdline;
+        int in_sq4 = 0, in_dq4 = 0;
+        int depth4 = 0;
+        int inr_pos = -1;
+        for(int ri = 0;
+            cl4[ri] != '\0'; ri++)
+        {
+            if(cl4[ri] == '\''
+               && !in_dq4)
+            {
+                in_sq4 = !in_sq4;
+            }
+            else if(cl4[ri] == '"'
+                    && !in_sq4)
+            {
+                in_dq4 = !in_dq4;
+            }
+            else if(!in_sq4
+                    && !in_dq4)
+            {
+                if(cl4[ri] == '(')
+                {
+                    depth4++;
+                }
+                else if(cl4[ri] == ')'
+                        && depth4 > 0)
+                {
+                    depth4--;
+                }
+                else if(depth4 == 0
+                        && cl4[ri] == '<'
+                        && cl4[ri + 1]
+                        != '<')
+                {
+                    inr_pos = ri;
+                    break;
+                }
+            }
+        }
+        if(inr_pos >= 0)
+        {
+            int fst = inr_pos + 1;
+            while(data.CLIcmdline[fst]
+                  == ' '
+                  || data.CLIcmdline[fst]
+                  == '\t')
+            {
+                fst++;
+            }
+            char infile[512];
+            int ifi = 0;
+            while(data.CLIcmdline[fst]
+                  != '\0'
+                  && data.CLIcmdline[fst]
+                  != ' '
+                  && data.CLIcmdline[fst]
+                  != '\t'
+                  && ifi < 511)
+            {
+                infile[ifi++] =
+                    data.CLIcmdline[
+                        fst++];
+            }
+            infile[ifi] = '\0';
+
+            /* Truncate cmd at < */
+            data.CLIcmdline[
+                inr_pos] = '\0';
+            {
+                int cl5 = inr_pos - 1;
+                while(cl5 >= 0
+                      && (data.CLIcmdline[
+                              cl5] == ' '
+                          || data.CLIcmdline[
+                              cl5]
+                          == '\t'))
+                {
+                    data.CLIcmdline[
+                        cl5--] = '\0';
+                }
+            }
+
+            FILE *ifp =
+                fopen(infile, "r");
+            if(ifp != NULL)
+            {
+                int sv_in =
+                    dup(STDIN_FILENO);
+                dup2(fileno(ifp),
+                     STDIN_FILENO);
+
+                errno_t iret =
+                    CLI_execute_line();
+
+                dup2(sv_in,
+                     STDIN_FILENO);
+                close(sv_in);
+                fclose(ifp);
+
+                free(thetime);
+                DEBUG_TRACE_FEXIT();
+                return iret;
             }
         }
     }

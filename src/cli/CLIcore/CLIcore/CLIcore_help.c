@@ -1557,6 +1557,88 @@ void print_milk_cli_help(void)
     printf("  " C_CMD "EOF" C_RST
            "  → multi-line var\n");
     printf("\n");
+    printf(C_HDR "Signal Traps:\n"
+           C_RST);
+    printf("  " C_CMD
+           "trap 'cmd' EXIT INT"
+           C_RST
+           " handler\n");
+    printf("  " C_CMD
+           "trap 'rm /tmp/f' EXIT"
+           C_RST
+           " cleanup\n");
+    printf("\n");
+    printf(C_HDR "Shell Options:\n"
+           C_RST);
+    printf("  " C_CMD
+           "set -e" C_RST
+           "  exit on error\n");
+    printf("  " C_CMD
+           "set -x" C_RST
+           "  trace commands\n");
+    printf("  " C_CMD
+           "set +e" C_RST
+           "  disable -e\n");
+    printf("  " C_CMD
+           "set +x" C_RST
+           "  disable -x\n");
+    printf("\n");
+    printf(C_HDR
+           "Environment Variables:\n"
+           C_RST);
+    printf("  " C_CMD
+           "export VAR=val" C_RST
+           "  env var\n");
+    printf("  " C_CMD
+           "export VAR" C_RST
+           "     push to env\n");
+    printf("\n");
+    printf(C_HDR
+           "Extended Test:\n" C_RST);
+    printf("  " C_CMD
+           "[[ $s =~ ^[0-9]+$ ]]"
+           C_RST
+           " regex\n");
+    printf("  " C_CMD
+           "[[ -n $s ]]" C_RST
+           "  non-empty\n");
+    printf("\n");
+    printf(C_HDR "Tilde Expansion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "~/path" C_RST
+           " → $HOME/path\n");
+    printf("\n");
+    printf(C_HDR
+           "Input Redirection:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd < file" C_RST
+           "  read stdin from "
+           "file\n");
+    printf("\n");
+    printf(C_HDR "Select Menu:\n"
+           C_RST);
+    printf("  " C_CMD
+           "select x in a b c;"
+           " do" C_RST "\n");
+    printf("  " C_CMD
+           "  echo $x" C_RST "\n");
+    printf("  " C_CMD
+           "done" C_RST
+           "  interactive menu\n");
+    printf("\n");
+    printf(C_HDR "Arithmetic For:\n"
+           C_RST);
+    printf("  " C_CMD
+           "for ((i=0; i<10; i++));"
+           " do" C_RST "\n");
+    printf("  " C_CMD
+           "  echo $i" C_RST "\n");
+    printf("  " C_CMD
+           "done" C_RST
+           "  C-style for\n");
+    printf("\n");
     printf(C_HDR "Stream Events:\n" C_RST);
     printf("  " C_CMD
            "on_update <stream> { cmd }"
