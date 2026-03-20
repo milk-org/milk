@@ -32,6 +32,9 @@
 CLI_VAR cli_vars[CLI_MAX_VARS];
 int     cli_last_retval = 0;
 
+/* ---- Array Storage ---- */
+CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
+
 /**
  * @brief Look up a CLI variable by name
  *
@@ -225,6 +228,123 @@ int cli_try_var_assign(const char *line)
         cli_var_set(tmpname, valbuf);
         return 1;
     }
+}
+
+/**
+ * @brief Check if line is array assignment
+ *
+ * Syntax: arr=(val1 val2 val3)
+ *
+ * @param line  Command line string
+ * @return 1 if handled, 0 otherwise
+ */
+int cli_try_array_assign(const char *line)
+{
+    const char *p = line;
+    while(*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+    if(!isalpha((unsigned char) *p)
+       && *p != '_')
+    {
+        return 0;
+    }
+    const char *ns = p;
+    while(isalnum((unsigned char) *p)
+          || *p == '_')
+    {
+        p++;
+    }
+    if(*p != '=')
+    {
+        return 0;
+    }
+    if(*(p + 1) != '(')
+    {
+        return 0;
+    }
+
+    int nlen = (int)(p - ns);
+    char aname[CLI_VAR_NAMELEN];
+    if(nlen >= CLI_VAR_NAMELEN)
+    {
+        nlen = CLI_VAR_NAMELEN - 1;
+    }
+    memcpy(aname, ns, (size_t) nlen);
+    aname[nlen] = '\0';
+
+    p += 2; /* skip =( */
+
+    /* Find or create array slot */
+    int slot = -1;
+    for(int i = 0;
+        i < CLI_MAX_ARRAYS; i++)
+    {
+        if(cli_arrays[i].used
+           && strcmp(cli_arrays[i].name,
+                    aname) == 0)
+        {
+            slot = i;
+            break;
+        }
+    }
+    if(slot < 0)
+    {
+        for(int i = 0;
+            i < CLI_MAX_ARRAYS; i++)
+        {
+            if(!cli_arrays[i].used)
+            {
+                slot = i;
+                break;
+            }
+        }
+    }
+    if(slot < 0)
+    {
+        printf("Error: array table full\n");
+        return 1;
+    }
+
+    strncpy(cli_arrays[slot].name,
+            aname,
+            CLI_VAR_NAMELEN - 1);
+    cli_arrays[slot].used = 1;
+    cli_arrays[slot].nelem = 0;
+
+    /* Parse elements */
+    while(*p != '\0' && *p != ')')
+    {
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if(*p == ')' || *p == '\0')
+        {
+            break;
+        }
+        int ei = 0;
+        int idx =
+            cli_arrays[slot].nelem;
+        if(idx >= CLI_ARRAY_MAXELEM)
+        {
+            break;
+        }
+        while(*p != '\0'
+              && *p != ' '
+              && *p != '\t'
+              && *p != ')'
+              && ei < CLI_VAR_VALLEN - 1)
+        {
+            cli_arrays[slot]
+                .elem[idx][ei++] = *p++;
+        }
+        cli_arrays[slot]
+            .elem[idx][ei] = '\0';
+        cli_arrays[slot].nelem++;
+    }
+    return 1;
 }
 
 
@@ -1008,9 +1128,10 @@ int cli_eval_test(const char *expr)
 CLI_BLOCK cli_block_stack[CLI_BLOCK_MAXDEPTH];
 int       cli_block_level = 0;
 
-/* Break/continue flags for while/for loops */
+/* Break/continue/return flags */
 static int cli_break_flag = 0;
 static int cli_continue_flag = 0;
+int        cli_return_flag = 0;
 
 /* Forward declaration */
 static void cli_exec_block_if(
@@ -1058,7 +1179,8 @@ void cli_exec_lines(
     for(int i = 0; i < nlines; i++)
     {
         if(cli_break_flag
-           || cli_continue_flag)
+           || cli_continue_flag
+           || cli_return_flag)
         {
             break;
         }
@@ -1067,24 +1189,78 @@ void cli_exec_lines(
         strncpy(data.CLIcmdline, lines[i],
                 STRINGMAXLEN_CLICMDLINE - 1);
         data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+            STRINGMAXLEN_CLICMDLINE - 1]
+            = '\0';
         CLI_execute_line();
     }
 }
 
 
-/* ---- Parse if/then/else/fi block ---- */
+/* ---- Parse if/then/elif/else/fi block ---- */
 
 /**
- * @brief Execute an if/then/else/fi block
+ * @brief Evaluate a condition line
  *
- * Expected format in lines[]:
- *   lines[0]: "if [ condition ]; then"
- *              or "if [ condition ]"
- *   ...then-body...
- *   "else"
- *   ...else-body...
- *   "fi"
+ * Handles "if [ cond ]", "elif [ cond ]",
+ * or bare "if val" forms. The keyword
+ * (if/elif) is skipped before evaluation.
+ *
+ * @param raw   Raw condition line
+ * @param skip  Chars to skip ("if"=2, "elif"=4)
+ * @return 1 = true, 0 = false
+ */
+static int eval_cond_line(
+    const char *raw,
+    int skip
+)
+{
+    char cl[STRINGMAXLEN_CLICMDLINE];
+    strncpy(cl, raw,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    cl[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    cli_expand_fpsvar(
+        cl, STRINGMAXLEN_CLICMDLINE);
+    cli_expand_env(
+        cl, STRINGMAXLEN_CLICMDLINE);
+    cli_expand_arith(
+        cl, STRINGMAXLEN_CLICMDLINE);
+
+    const char *p = strip_ws(cl);
+    p += skip;
+    p = strip_ws(p);
+
+    if(*p == '[')
+    {
+        p++;
+        const char *end = strrchr(p, ']');
+        if(end != NULL)
+        {
+            char cs[512];
+            int clen = (int)(end - p);
+            if(clen >= (int) sizeof(cs))
+            {
+                clen = (int) sizeof(cs) - 1;
+            }
+            memcpy(cs, p, (size_t) clen);
+            cs[clen] = '\0';
+            return cli_eval_test(cs);
+        }
+        return 0;
+    }
+    return (strtod(p, NULL) != 0.0) ? 1 : 0;
+}
+
+/**
+ * @brief Execute an if/then/elif/else/fi block
+ *
+ * Supports cascading elif:
+ *   if [ cond1 ]; then
+ *       body1
+ *   elif [ cond2 ]; then
+ *       body2
+ *   else
+ *       body3
+ *   fi
  */
 static void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
@@ -1096,103 +1272,153 @@ static void cli_exec_block_if(
         return;
     }
 
-    /* Expand variables in condition */
-    char condline[STRINGMAXLEN_CLICMDLINE];
-    strncpy(condline, lines[0],
-            STRINGMAXLEN_CLICMDLINE - 1);
-    condline[
-        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-    cli_expand_fpsvar(
-        condline, STRINGMAXLEN_CLICMDLINE);
-    cli_expand_env(
-        condline, STRINGMAXLEN_CLICMDLINE);
-    cli_expand_arith(
-        condline, STRINGMAXLEN_CLICMDLINE);
+    /* Build a list of branches:
+     * Each branch has a condition line index
+     * and body range [start, end).
+     * The final else has cond_idx = -1. */
 
-    /* Parse condition from first line */
-    const char *first = strip_ws(condline);
-
-    /* Skip "if" */
-    first += 2;
-    first = strip_ws(first);
-
-    /* Find [ ... ] or just evaluate */
-    int cond_result = 0;
-    if(*first == '[')
+    typedef struct
     {
-        first++;
-        /* Find matching ] */
-        const char *end = strrchr(first, ']');
-        if(end != NULL)
-        {
-            char condstr[512];
-            int clen = (int)(end - first);
-            if(clen >= (int) sizeof(condstr))
-            {
-                clen = (int) sizeof(condstr) - 1;
-            }
-            memcpy(condstr, first,
-                   (size_t) clen);
-            condstr[clen] = '\0';
-            cond_result =
-                cli_eval_test(condstr);
-        }
-    }
-    else
-    {
-        /* Arithmetic condition:
-         * treat non-zero as true */
-        cond_result =
-            (strtod(first, NULL) != 0.0)
-            ? 1 : 0;
-    }
+        int cond_idx;
+        int body_start;
+        int body_end;
+    } Branch;
 
-    /* Split body at 'else' */
-    int then_start = 1;
+    Branch branches[64];
+    int nbranch = 0;
 
-    /* Skip standalone 'then' line from
-     * semicolon-split (e.g. "; then") */
-    if(then_start < nlines - 1)
+    /* First branch: the if line */
+    int body_s = 1;
+    /* Skip standalone "then" */
+    if(body_s < nlines)
     {
         const char *ts =
-            strip_ws(lines[then_start]);
+            strip_ws(lines[body_s]);
         if(strcmp(ts, "then") == 0)
         {
-            then_start++;
+            body_s++;
         }
     }
-    int else_start = -1;
 
-    for(int i = 1; i < nlines; i++)
+    branches[0].cond_idx = 0;
+    branches[0].body_start = body_s;
+    nbranch = 1;
+
+    /* Scan for elif/else at depth 0 */
+    int depth = 0;
+    for(int i = body_s; i < nlines; i++)
     {
         const char *ln = strip_ws(lines[i]);
-        if(strcmp(ln, "else") == 0)
+        if(starts_with(ln, "if ")
+           || starts_with(ln, "if\t"))
         {
-            else_start = i + 1;
+            depth++;
+            continue;
+        }
+        if(strcmp(ln, "fi") == 0)
+        {
+            if(depth > 0)
+            {
+                depth--;
+                continue;
+            }
+            /* Close current branch */
+            branches[nbranch - 1].body_end
+                = i;
+            break;
+        }
+        if(depth > 0)
+        {
+            continue;
+        }
+        if(starts_with(ln, "elif ")
+           || starts_with(ln, "elif\t"))
+        {
+            branches[nbranch - 1].body_end
+                = i;
+            int bs = i + 1;
+            if(bs < nlines)
+            {
+                const char *t2 =
+                    strip_ws(lines[bs]);
+                if(strcmp(t2, "then") == 0)
+                {
+                    bs++;
+                }
+            }
+            if(nbranch < 64)
+            {
+                branches[nbranch].cond_idx
+                    = i;
+                branches[nbranch].body_start
+                    = bs;
+                nbranch++;
+            }
+        }
+        else if(strcmp(ln, "else") == 0)
+        {
+            branches[nbranch - 1].body_end
+                = i;
+            if(nbranch < 64)
+            {
+                branches[nbranch].cond_idx
+                    = -1; /* else */
+                branches[nbranch].body_start
+                    = i + 1;
+                branches[nbranch].body_end
+                    = nlines;
+                nbranch++;
+            }
+            /* Find fi to close else */
+            for(int j = i + 1;
+                j < nlines; j++)
+            {
+                const char *l2 =
+                    strip_ws(lines[j]);
+                if(strcmp(l2, "fi") == 0)
+                {
+                    branches[
+                        nbranch - 1]
+                        .body_end = j;
+                    break;
+                }
+            }
             break;
         }
     }
 
-    if(cond_result)
+    /* Evaluate branches in order */
+    for(int b = 0; b < nbranch; b++)
     {
-        int end = (else_start > 0)
-                  ? else_start - 1
-                  : nlines;
-        if(end > then_start)
+        int run = 0;
+        if(branches[b].cond_idx < 0)
         {
-            cli_exec_lines(
-                lines + then_start,
-                end - then_start);
+            /* else — always true */
+            run = 1;
         }
-    }
-    else if(else_start > 0)
-    {
-        int end = nlines;
-        if(end > else_start)
+        else
         {
-            cli_exec_lines(
-                lines + else_start,
-                end - else_start);
+            const char *cl2 = strip_ws(
+                lines[branches[b].cond_idx]);
+            int skip = 2; /* "if" */
+            if(starts_with(cl2, "elif"))
+            {
+                skip = 4;
+            }
+            run = eval_cond_line(
+                lines[branches[b].cond_idx],
+                skip);
+        }
+        if(run)
+        {
+            int bs = branches[b].body_start;
+            int be = branches[b].body_end;
+            if(be > bs)
+            {
+                cli_exec_lines(
+                    lines + bs, be - bs);
+            }
+            break;
         }
     }
 }
@@ -1575,8 +1801,20 @@ int cli_try_func_call(const char *line)
         }
     }
 
+    /* Snapshot variable table for local
+     * scoping — any vars created during
+     * function execution that were NOT
+     * present before will be removed. */
+    int was_used[CLI_MAX_VARS];
+    for(int i = 0; i < CLI_MAX_VARS; i++)
+    {
+        was_used[i] = cli_vars[i].used;
+    }
+
     /* Execute body lines */
+    cli_return_flag = 0;
     cli_exec_lines(func->body, func->nbody);
+    cli_return_flag = 0;
 
     /* Restore old $1..$9 */
     for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
@@ -1591,6 +1829,19 @@ int cli_try_func_call(const char *line)
         else
         {
             cli_var_unset(aname);
+        }
+    }
+
+    /* Remove variables created inside
+     * the function (local scoping) */
+    for(int i = 0; i < CLI_MAX_VARS; i++)
+    {
+        if(cli_vars[i].used
+           && !was_used[i])
+        {
+            cli_vars[i].used = 0;
+            cli_vars[i].name[0] = '\0';
+            cli_vars[i].val[0] = '\0';
         }
     }
 
@@ -1616,6 +1867,76 @@ int cli_try_func_call(const char *line)
 int cli_script_intercept(const char *line)
 {
     const char *p = strip_ws(line);
+
+    /* ---- Heredoc accumulation state ---- */
+    static int  heredoc_active = 0;
+    static char heredoc_var[CLI_VAR_NAMELEN];
+    static char heredoc_delim[64];
+    static char heredoc_buf[16384];
+    static int  heredoc_pos = 0;
+
+    if(heredoc_active)
+    {
+        if(strcmp(p, heredoc_delim) == 0)
+        {
+            /* End of heredoc — assign */
+            heredoc_buf[heredoc_pos] = '\0';
+            cli_var_set(heredoc_var,
+                        heredoc_buf);
+            heredoc_active = 0;
+        }
+        else
+        {
+            /* Append line + newline */
+            int llen = (int) strlen(p);
+            if(heredoc_pos + llen + 1
+               < (int) sizeof(heredoc_buf))
+            {
+                memcpy(
+                    heredoc_buf + heredoc_pos,
+                    p, (size_t) llen);
+                heredoc_pos += llen;
+                heredoc_buf[
+                    heredoc_pos++] = '\n';
+            }
+        }
+        return 1;
+    }
+
+    /* Check if this line starts a heredoc:
+     *   VAR=<<DELIM */
+    if(strchr(p, '=') != NULL)
+    {
+        const char *eq = strchr(p, '=');
+        if(eq[1] == '<' && eq[2] == '<')
+        {
+            int nlen = (int)(eq - p);
+            if(nlen > 0
+               && nlen < CLI_VAR_NAMELEN)
+            {
+                memcpy(heredoc_var, p,
+                       (size_t) nlen);
+                heredoc_var[nlen] = '\0';
+                const char *d = eq + 3;
+                while(*d == ' '
+                      || *d == '\t')
+                {
+                    d++;
+                }
+                int dlen = (int) strlen(d);
+                if(dlen > 0 && dlen < 64)
+                {
+                    strncpy(heredoc_delim,
+                            d, 63);
+                    heredoc_delim[63] = '\0';
+                    heredoc_active = 1;
+                    heredoc_pos = 0;
+                    heredoc_buf[0] = '\0';
+                    return 1;
+                }
+            }
+        }
+    }
 
     /* If we're already accumulating a block,
      * buffer the line */
@@ -1794,7 +2115,7 @@ int cli_script_intercept(const char *line)
 
     /* ---- Not in a block: check openers ---- */
 
-    /* break / continue */
+    /* break / continue / return */
     if(strcmp(p, "break") == 0)
     {
         cli_break_flag = 1;
@@ -1803,6 +2124,23 @@ int cli_script_intercept(const char *line)
     if(strcmp(p, "continue") == 0)
     {
         cli_continue_flag = 1;
+        return 1;
+    }
+    if(strcmp(p, "return") == 0
+       || starts_with(p, "return ")
+       || starts_with(p, "return\t"))
+    {
+        const char *rv = p + 6;
+        while(*rv == ' ' || *rv == '\t')
+        {
+            rv++;
+        }
+        if(*rv != '\0')
+        {
+            cli_last_retval =
+                (int) strtol(rv, NULL, 0);
+        }
+        cli_return_flag = 1;
         return 1;
     }
 
