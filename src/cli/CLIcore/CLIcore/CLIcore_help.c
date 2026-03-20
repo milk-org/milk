@@ -1342,6 +1342,96 @@ void print_milk_cli_help(void)
     printf(C_CMD "  iofits.savefits " C_RST "Save FITS file " C_NOTE "(requires CFITS)\n" C_RST);
     printf(C_CMD "  quit / exit     " C_RST "Exit the milk shell\n");
     printf(C_CMD "  !<syscommand>   " C_RST "Execute shell command\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                 SCRIPTING                              \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Variables:\n" C_RST);
+    printf("  " C_CMD "x=42" C_RST
+           "              Set variable\n");
+    printf("  " C_CMD "echo $x" C_RST
+           "           Print variable\n");
+    printf("  " C_CMD "echo ${x}" C_RST
+           "         Braced form\n");
+    printf("  " C_CMD "unset x" C_RST
+           "           Remove variable\n");
+    printf("  " C_CMD "vars" C_RST
+           "              List all variables\n");
+    printf("\n");
+    printf(C_HDR "Arithmetic:\n" C_RST);
+    printf("  " C_CMD "y=$(( x + 5 ))" C_RST
+           "  Integer +, -, *, /, %%\n");
+    printf("\n");
+    printf(C_HDR "FPS Parameter Access:\n" C_RST);
+    printf("  " C_CMD "@fpsname.param" C_RST
+           "    Read FPS parameter\n");
+    printf("  " C_CMD "fpsset fps p v" C_RST
+           "    Write FPS parameter\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                 FLOW CONTROL                           \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_HDR "Conditionals:\n" C_RST);
+    printf("  " C_CMD
+           "if [ $x -gt 5 ]; then"
+           C_RST "\n");
+    printf("  " C_CMD "    echo big"
+           C_RST "\n");
+    printf("  " C_CMD "else" C_RST "\n");
+    printf("  " C_CMD "    echo small"
+           C_RST "\n");
+    printf("  " C_CMD "fi" C_RST "\n");
+    printf("  Tests: "
+           C_NOTE "-eq -ne -gt -ge -lt -le"
+           C_RST " (numeric), "
+           C_NOTE "= !=" C_RST
+           " (string)\n");
+    printf("\n");
+    printf(C_HDR "Loops:\n" C_RST);
+    printf("  " C_CMD
+           "while [ $n -lt 10 ]; do"
+           C_RST " ... "
+           C_CMD "done" C_RST "\n");
+    printf("  " C_CMD
+           "for x in a b c; do"
+           C_RST " ... "
+           C_CMD "done" C_RST "\n");
+    printf("  " C_CMD "break" C_RST
+           " exits loop early\n");
+    printf("\n");
+    printf(C_HDR "Functions:\n" C_RST);
+    printf("  " C_CMD
+           "function myfunc {" C_RST
+           " ... "
+           C_CMD "}" C_RST "\n");
+    printf("  " C_CMD "myfunc arg1 arg2"
+           C_RST "  call with "
+           C_NOTE "$1..$9" C_RST
+           " inside body\n");
+
+    printf("\n");
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf(C_TITLE "                 SCRIPT FILES                           \n" C_RST);
+    printf(C_TITLE "========================================================\n" C_RST);
+    printf("\n");
+    printf(C_CMD "  source <file>     " C_RST
+           "Execute a script file\n");
+    printf(C_CMD "  . <file>          " C_RST
+           "Same (dot-source)\n");
+    printf(C_CMD "  savescript <file>  " C_RST
+           "Save variables & functions\n");
+    printf(C_CMD "  savehistory <file> " C_RST
+           "Save command history\n");
+    printf("  Startup: "
+           C_CMD "milk-cli -s <file>" C_RST
+           "  run script on launch\n");
+    printf("  Shebang: "
+           C_NOTE "#!/usr/bin/env milk-cli -s"
+           C_RST "\n");
     printf("\n");
 
     return;
