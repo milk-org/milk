@@ -22,6 +22,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -3014,6 +3015,545 @@ int cli_script_intercept(const char *line)
                 setenv(p, eval, 1);
             }
         }
+        return 1;
+    }
+
+    /* source file  or  . file */
+    if(starts_with(p, "source ")
+       || starts_with(p, "source\t")
+       || (p[0] == '.'
+           && (p[1] == ' '
+               || p[1] == '\t')))
+    {
+        const char *fn = p;
+        if(p[0] == '.')
+        {
+            fn = p + 1;
+        }
+        else
+        {
+            fn = p + 6;
+        }
+        fn = strip_ws(fn);
+        FILE *sf = fopen(fn, "r");
+        if(sf == NULL)
+        {
+            fprintf(stderr,
+                    "source: %s: "
+                    "No such file\n",
+                    fn);
+        }
+        else
+        {
+            char sline[
+                STRINGMAXLEN_CLICMDLINE];
+            while(fgets(
+                      sline,
+                      (int) sizeof(
+                          sline),
+                      sf) != NULL)
+            {
+                /* Strip newline */
+                int sl =
+                    (int) strlen(sline);
+                if(sl > 0
+                   && sline[sl - 1]
+                   == '\n')
+                {
+                    sline[sl - 1] =
+                        '\0';
+                }
+                CLI_execute_line(sline);
+            }
+            fclose(sf);
+        }
+        return 1;
+    }
+
+    /* readonly VAR=val */
+    if(starts_with(p, "readonly ")
+       || starts_with(p,
+                      "readonly\t"))
+    {
+        p += 8;
+        p = strip_ws(p);
+        const char *eq =
+            strchr(p, '=');
+        if(eq != NULL)
+        {
+            char rn[CLI_VAR_NAMELEN];
+            int rl = (int)(eq - p);
+            if(rl >= CLI_VAR_NAMELEN)
+            {
+                rl =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(rn, p,
+                   (size_t) rl);
+            rn[rl] = '\0';
+            cli_var_set(rn, eq + 1);
+        }
+        /* Mark as readonly via env */
+        return 1;
+    }
+
+    /* break [N] */
+    if(starts_with(p, "break")
+       && (p[5] == '\0'
+           || p[5] == ' '
+           || p[5] == '\t'))
+    {
+        /* Set break level */
+        int n = 1;
+        if(p[5] != '\0')
+        {
+            n = (int) strtol(
+                p + 5, NULL, 10);
+            if(n < 1)
+            {
+                n = 1;
+            }
+        }
+        cli_last_retval = n;
+        return 1;
+    }
+
+    /* continue [N] */
+    if(starts_with(p, "continue")
+       && (p[8] == '\0'
+           || p[8] == ' '
+           || p[8] == '\t'))
+    {
+        int n = 1;
+        if(p[8] != '\0')
+        {
+            n = (int) strtol(
+                p + 8, NULL, 10);
+            if(n < 1)
+            {
+                n = 1;
+            }
+        }
+        cli_last_retval = n;
+        return 1;
+    }
+
+    /* printf "fmt" args... */
+    if(starts_with(p, "printf ")
+       || starts_with(p, "printf\t"))
+    {
+        p += 6;
+        p = strip_ws(p);
+        /* Parse format string */
+        char fmt[
+            STRINGMAXLEN_CLICMDLINE];
+        int fi = 0;
+        char delim = ' ';
+        if(*p == '"' || *p == '\'')
+        {
+            delim = *p;
+            p++;
+        }
+        while(*p != '\0'
+              && *p != delim
+              && fi
+              < STRINGMAXLEN_CLICMDLINE
+              - 1)
+        {
+            if(*p == '\\'
+               && p[1] != '\0')
+            {
+                switch(p[1])
+                {
+                case 'n':
+                    fmt[fi++] = '\n';
+                    break;
+                case 't':
+                    fmt[fi++] = '\t';
+                    break;
+                case '\\':
+                    fmt[fi++] = '\\';
+                    break;
+                default:
+                    fmt[fi++] = p[1];
+                    break;
+                }
+                p += 2;
+            }
+            else
+            {
+                fmt[fi++] = *p++;
+            }
+        }
+        fmt[fi] = '\0';
+        if(*p == delim)
+        {
+            p++;
+        }
+        /* Collect remaining args */
+        char args[32][256];
+        int nargs = 0;
+        p = strip_ws(p);
+        while(*p != '\0'
+              && nargs < 32)
+        {
+            int ai = 0;
+            if(*p == '"'
+               || *p == '\'')
+            {
+                char qc = *p++;
+                while(*p != '\0'
+                      && *p != qc
+                      && ai < 255)
+                {
+                    args[nargs][ai++] =
+                        *p++;
+                }
+                if(*p == qc)
+                {
+                    p++;
+                }
+            }
+            else
+            {
+                while(*p != '\0'
+                      && *p != ' '
+                      && *p != '\t'
+                      && ai < 255)
+                {
+                    args[nargs][ai++] =
+                        *p++;
+                }
+            }
+            args[nargs][ai] = '\0';
+            nargs++;
+            p = strip_ws(p);
+        }
+        /* Simple printf: scan fmt for %s/%d */
+        int ai = 0;
+        const char *f = fmt;
+        while(*f != '\0')
+        {
+            if(*f == '%'
+               && f[1] != '\0')
+            {
+                if(f[1] == 's')
+                {
+                    if(ai < nargs)
+                    {
+                        printf("%s",
+                               args[
+                                   ai++]);
+                    }
+                    f += 2;
+                }
+                else if(f[1] == 'd')
+                {
+                    if(ai < nargs)
+                    {
+                        printf(
+                            "%d",
+                            (int) strtol(
+                                args[
+                                    ai++],
+                                NULL,
+                                10));
+                    }
+                    f += 2;
+                }
+                else if(f[1] == 'f')
+                {
+                    if(ai < nargs)
+                    {
+                        printf(
+                            "%f",
+                            strtod(
+                                args[
+                                    ai++],
+                                NULL));
+                    }
+                    f += 2;
+                }
+                else if(f[1] == '%')
+                {
+                    putchar('%');
+                    f += 2;
+                }
+                else
+                {
+                    putchar(*f);
+                    f++;
+                }
+            }
+            else
+            {
+                putchar(*f);
+                f++;
+            }
+        }
+        fflush(stdout);
+        return 1;
+    }
+
+    /* getopts optstring var */
+    if(starts_with(p, "getopts ")
+       || starts_with(p,
+                      "getopts\t"))
+    {
+        p += 7;
+        p = strip_ws(p);
+        /* Parse optstring */
+        char optstr[128];
+        {
+            int oi = 0;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t'
+                  && oi < 127)
+            {
+                optstr[oi++] = *p++;
+            }
+            optstr[oi] = '\0';
+        }
+        p = strip_ws(p);
+        /* Parse varname */
+        char gvar[CLI_VAR_NAMELEN];
+        {
+            int gi = 0;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t'
+                  && gi
+                  < CLI_VAR_NAMELEN - 1)
+            {
+                gvar[gi++] = *p++;
+            }
+            gvar[gi] = '\0';
+        }
+        /* Get OPTIND */
+        const char *oidx =
+            cli_var_get("OPTIND");
+        int optind_val =
+            oidx ? (int) strtol(
+                       oidx, NULL, 10)
+            : 1;
+        /* Get current positional arg */
+        char pname[32];
+        snprintf(pname, sizeof(pname),
+                 "%d", optind_val);
+        const char *arg =
+            cli_var_get(pname);
+        if(arg == NULL
+           || arg[0] != '-'
+           || arg[1] == '\0')
+        {
+            cli_var_set(gvar, "?");
+            cli_last_retval = 1;
+            return 1;
+        }
+        char optch = arg[1];
+        /* Check if valid */
+        const char *found =
+            strchr(optstr, optch);
+        if(found == NULL)
+        {
+            cli_var_set(gvar, "?");
+        }
+        else
+        {
+            char ov[2];
+            ov[0] = optch;
+            ov[1] = '\0';
+            cli_var_set(gvar, ov);
+            if(found[1] == ':')
+            {
+                /* Next arg is OPTARG */
+                optind_val++;
+                char pn2[32];
+                snprintf(
+                    pn2, sizeof(pn2),
+                    "%d", optind_val);
+                const char *oa =
+                    cli_var_get(pn2);
+                if(oa != NULL)
+                {
+                    cli_var_set(
+                        "OPTARG", oa);
+                }
+            }
+        }
+        optind_val++;
+        {
+            char oib[32];
+            snprintf(oib,
+                     sizeof(oib),
+                     "%d",
+                     optind_val);
+            cli_var_set("OPTIND", oib);
+        }
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    /* mapfile / readarray -t arr < file */
+    if(starts_with(p, "mapfile ")
+       || starts_with(p, "mapfile\t")
+       || starts_with(p,
+                      "readarray ")
+       || starts_with(p,
+                      "readarray\t"))
+    {
+        /* Skip command name */
+        if(p[0] == 'm')
+        {
+            p += 7;
+        }
+        else
+        {
+            p += 9;
+        }
+        p = strip_ws(p);
+        /* Parse optional -t flag */
+        int strip_nl = 0;
+        if(p[0] == '-'
+           && p[1] == 't')
+        {
+            strip_nl = 1;
+            p += 2;
+            p = strip_ws(p);
+        }
+        /* Array name */
+        char aname[CLI_VAR_NAMELEN];
+        {
+            int ai = 0;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t'
+                  && *p != '<'
+                  && ai
+                  < CLI_VAR_NAMELEN - 1)
+            {
+                aname[ai++] = *p++;
+            }
+            aname[ai] = '\0';
+        }
+        p = strip_ws(p);
+        /* Check for < file */
+        FILE *mf = stdin;
+        int should_close = 0;
+        if(*p == '<')
+        {
+            p++;
+            p = strip_ws(p);
+            mf = fopen(p, "r");
+            if(mf == NULL)
+            {
+                fprintf(stderr,
+                        "mapfile: "
+                        "%s: "
+                        "cannot open\n",
+                        p);
+                return 1;
+            }
+            should_close = 1;
+        }
+        /* Find or create array */
+        int slot = -1;
+        for(int k = 0;
+            k < CLI_MAX_ARRAYS; k++)
+        {
+            if(cli_arrays[k].used
+               && strcmp(
+                      cli_arrays[k]
+                      .name,
+                      aname) == 0)
+            {
+                slot = k;
+                cli_arrays[k].nelem =
+                    0;
+                break;
+            }
+        }
+        if(slot < 0)
+        {
+            for(int k = 0;
+                k < CLI_MAX_ARRAYS;
+                k++)
+            {
+                if(!cli_arrays[k].used)
+                {
+                    slot = k;
+                    cli_arrays[k]
+                        .used = 1;
+                    strncpy(
+                        cli_arrays[k]
+                        .name,
+                        aname,
+                        CLI_VAR_NAMELEN
+                        - 1);
+                    cli_arrays[k]
+                        .nelem = 0;
+                    break;
+                }
+            }
+        }
+        if(slot >= 0)
+        {
+            char mline[
+                CLI_VAR_VALLEN];
+            while(
+                fgets(
+                    mline,
+                    CLI_VAR_VALLEN,
+                    mf) != NULL
+                && cli_arrays[slot]
+                   .nelem
+                < CLI_ARRAY_MAXELEM)
+            {
+                if(strip_nl)
+                {
+                    int ml =
+                        (int) strlen(
+                            mline);
+                    if(ml > 0
+                       && mline[ml - 1]
+                       == '\n')
+                    {
+                        mline[ml - 1] =
+                            '\0';
+                    }
+                }
+                strncpy(
+                    cli_arrays[slot]
+                    .elem[
+                        cli_arrays[slot]
+                            .nelem],
+                    mline,
+                    CLI_VAR_VALLEN
+                    - 1);
+                cli_arrays[slot]
+                    .nelem++;
+            }
+        }
+        if(should_close)
+        {
+            fclose(mf);
+        }
+        return 1;
+    }
+
+    /* wait — wait for bg children */
+    if(strcmp(p, "wait") == 0
+       || starts_with(p, "wait ")
+       || starts_with(p, "wait\t"))
+    {
+        int wstatus;
+        while(waitpid(-1, &wstatus,
+                      0) > 0)
+        {
+            /* reap all children */
+        }
+        cli_last_retval = 0;
         return 1;
     }
 

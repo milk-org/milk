@@ -1646,6 +1646,100 @@ void print_milk_cli_help(void)
     printf("  Waits for stream update,"
            " then runs cmd\n");
     printf("\n");
+    printf(C_HDR
+           "Parameter Defaults:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${v:-def}" C_RST
+           "  default if unset\n");
+    printf("  " C_CMD
+           "${v:=def}" C_RST
+           "  assign if unset\n");
+    printf("  " C_CMD
+           "${v:+alt}" C_RST
+           "  alt if set\n");
+    printf("  " C_CMD
+           "${v:?err}" C_RST
+           "  error if unset\n");
+    printf("\n");
+    printf(C_HDR "String Ops:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${v/pat/rep}" C_RST
+           " replace first\n");
+    printf("  " C_CMD
+           "${v//pat/rep}" C_RST
+           " replace all\n");
+    printf("  " C_CMD
+           "${v#pat}" C_RST
+           "  strip prefix\n");
+    printf("  " C_CMD
+           "${v%%pat}" C_RST
+           "  strip suffix\n");
+    printf("\n");
+    printf(C_HDR
+           "Source / Include:\n"
+           C_RST);
+    printf("  " C_CMD
+           "source file" C_RST
+           "  include script\n");
+    printf("  " C_CMD
+           ". file" C_RST
+           "  alias for source\n");
+    printf("\n");
+    printf(C_HDR "Read-only:\n"
+           C_RST);
+    printf("  " C_CMD
+           "readonly VAR=val"
+           C_RST "\n");
+    printf("\n");
+    printf(C_HDR "Break / Continue:\n"
+           C_RST);
+    printf("  " C_CMD
+           "break 2" C_RST
+           "  exit 2 loops\n");
+    printf("  " C_CMD
+           "continue 2" C_RST
+           "  skip 2 levels\n");
+    printf("\n");
+    printf(C_HDR "Printf:\n" C_RST);
+    printf("  " C_CMD
+           "printf \"%%s=%%d\\n\""
+           " name 42" C_RST "\n");
+    printf("  Supports %%s %%d %%f\n");
+    printf("\n");
+    printf(C_HDR "Getopts:\n" C_RST);
+    printf("  " C_CMD
+           "getopts \"ab:\" opt"
+           C_RST "\n");
+    printf("  Parses options,"
+           " OPTARG / OPTIND\n");
+    printf("\n");
+    printf(C_HDR "Mapfile:\n" C_RST);
+    printf("  " C_CMD
+           "mapfile -t arr < file"
+           C_RST "\n");
+    printf("  " C_CMD
+           "readarray -t arr < file"
+           C_RST "\n");
+    printf("  Read lines into array\n");
+    printf("\n");
+    printf(C_HDR
+           "Background / Wait:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd &" C_RST
+           "  run in background\n");
+    printf("  " C_CMD
+           "wait" C_RST
+           "  wait for bg jobs\n");
+    printf("  $! = last bg PID\n");
+    printf("\n");
+    printf(C_HDR "Subshell:\n" C_RST);
+    printf("  " C_CMD
+           "(cmd1; cmd2)" C_RST
+           "  isolated env\n");
+    printf("\n");
 
     return;
 }

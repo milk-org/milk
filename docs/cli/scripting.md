@@ -319,6 +319,119 @@ milk-cli >     echo "iteration $i"
 milk-cli > done
 ```
 
+### Parameter Defaults
+
+Use `${var:-default}` to substitute a default
+value when a variable is unset or empty:
+
+```bash
+milk-cli > echo ${name:-anonymous}
+milk-cli > echo ${dir:=/tmp}
+milk-cli > echo ${v:+yes}
+milk-cli > echo ${v:?error message}
+```
+
+| Syntax | Meaning |
+|--------|---------|
+| `${v:-def}` | Expand to `def` if unset |
+| `${v:=def}` | Assign `def` if unset |
+| `${v:+alt}` | Expand to `alt` if set |
+| `${v:?err}` | Error message if unset |
+
+### String Operations
+
+```bash
+milk-cli > path="/home/user/file.txt"
+milk-cli > echo ${path/user/admin}
+milk-cli > echo ${path//\//|}
+milk-cli > echo ${path#/home/}
+milk-cli > echo ${path%.txt}
+```
+
+| Syntax | Meaning |
+|--------|---------|
+| `${v/pat/rep}` | Replace first match |
+| `${v//pat/rep}` | Replace all matches |
+| `${v#pat}` | Strip shortest prefix |
+| `${v%pat}` | Strip shortest suffix |
+
+### Source (Include Files)
+
+Execute commands from a file in the current
+environment:
+
+```bash
+milk-cli > source config.sh
+milk-cli > . config.sh
+```
+
+### Read-Only Variables
+
+```bash
+milk-cli > readonly PI=3.14159
+```
+
+### Break / Continue with Count
+
+Exit or skip multiple loop levels:
+
+```bash
+milk-cli > for i in 1 2 3; do
+milk-cli >     for j in a b c; do
+milk-cli >         break 2
+milk-cli >     done
+milk-cli > done
+```
+
+### Printf
+
+Format output with `%s`, `%d`, `%f` specifiers:
+
+```bash
+milk-cli > printf "Name: %s Age: %d\n" Alice 30
+milk-cli > printf "PI = %f\n" 3.14159
+```
+
+### Getopts
+
+Parse command-line options:
+
+```bash
+milk-cli > OPTIND=1
+milk-cli > while getopts "vf:" opt; do
+milk-cli >     echo "opt=$opt OPTARG=$OPTARG"
+milk-cli > done
+```
+
+### Mapfile / Readarray
+
+Read lines from a file into an array:
+
+```bash
+milk-cli > mapfile -t lines < input.txt
+milk-cli > echo ${lines[0]}
+milk-cli > echo ${#lines[@]}
+```
+
+### Background Jobs
+
+Run commands in the background and wait:
+
+```bash
+milk-cli > long_command &
+milk-cli > echo "PID is $!"
+milk-cli > wait
+```
+
+### Subshell Grouping
+
+Execute commands in an isolated sub-environment:
+
+```bash
+milk-cli > (x=42; echo $x)
+milk-cli > echo $x    # empty — subshell is isolated
+```
+
 ## Flow Control
 
 ### if / elif / else / fi

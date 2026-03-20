@@ -23,6 +23,7 @@
 #include "CLIcore_script.h"
 
 #include <glob.h>
+#include <sys/wait.h>
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
@@ -2778,9 +2779,17 @@ static void emit_str(
  * Supports:
  *   ${var}          plain lookup
  *   ${#var}         string length
+ *   ${var:-default} default if unset
+ *   ${var:=default} assign if unset
+ *   ${var:+alt}     alt if set
+ *   ${var:?error}   error if unset
  *   ${var:off:len}  substring
  *   ${var%%pat}     strip longest suffix
  *   ${var##pat}     strip longest prefix
+ *   ${var%pat}      strip shortest suffix
+ *   ${var#pat}      strip shortest prefix
+ *   ${var/find/rep} replace first
+ *   ${var//find/rep} replace all
  *   ${arr[N]}       array element
  *   ${arr[@]}       all array elements
  *   ${#arr[@]}      array element count
@@ -2837,21 +2846,24 @@ static void expand_braced(
             cli_var_lookup(nm);
         char lb[32];
         snprintf(lb, sizeof(lb), "%d",
-                 val ? (int) strlen(val) : 0);
+                 val ? (int) strlen(val)
+                 : 0);
         emit_str(out, opos, maxlen, lb);
         return;
     }
 
     /* ${arr[N]} or ${arr[@]} */
     {
-        const char *br = strchr(inner, '[');
+        const char *br =
+            strchr(inner, '[');
         if(br != NULL)
         {
             char aname[CLI_VAR_NAMELEN];
             int alen = (int)(br - inner);
             if(alen >= CLI_VAR_NAMELEN)
             {
-                alen = CLI_VAR_NAMELEN - 1;
+                alen =
+                    CLI_VAR_NAMELEN - 1;
             }
             memcpy(aname, inner,
                    (size_t) alen);
@@ -2870,21 +2882,25 @@ static void expand_braced(
                            aname) == 0)
                     {
                         for(int e = 0;
-                            e < cli_arrays[k]
-                                .nelem;
+                            e
+                            < cli_arrays[k]
+                            .nelem;
                             e++)
                         {
                             if(e > 0)
                             {
                                 emit_str(
-                                    out, opos,
+                                    out,
+                                    opos,
                                     maxlen,
                                     " ");
                             }
                             emit_str(
-                                out, opos,
+                                out,
+                                opos,
                                 maxlen,
-                                cli_arrays[k]
+                                cli_arrays
+                                [k]
                                 .elem[e]);
                         }
                         return;
@@ -2895,11 +2911,13 @@ static void expand_braced(
             int idx = (int) strtol(
                 idx_s, NULL, 0);
             for(int k = 0;
-                k < CLI_MAX_ARRAYS; k++)
+                k < CLI_MAX_ARRAYS;
+                k++)
             {
                 if(cli_arrays[k].used
                    && strcmp(
-                       cli_arrays[k].name,
+                       cli_arrays[k]
+                       .name,
                        aname) == 0)
                 {
                     if(idx >= 0
@@ -2920,6 +2938,167 @@ static void expand_braced(
         }
     }
 
+    /* ${var//find/rep} — replace all */
+    {
+        const char *ds =
+            strstr(inner, "//");
+        if(ds != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nlen = (int)(ds - inner);
+            if(nlen >= CLI_VAR_NAMELEN)
+            {
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, inner,
+                   (size_t) nlen);
+            vn[nlen] = '\0';
+            const char *find =
+                ds + 2;
+            const char *sl2 =
+                strchr(find, '/');
+            char fp[256] = "";
+            char rp[256] = "";
+            if(sl2 != NULL)
+            {
+                int fl2 =
+                    (int)(sl2 - find);
+                if(fl2 > 255)
+                {
+                    fl2 = 255;
+                }
+                memcpy(fp, find,
+                       (size_t) fl2);
+                fp[fl2] = '\0';
+                strncpy(rp,
+                        sl2 + 1, 255);
+            }
+            else
+            {
+                strncpy(fp, find, 255);
+            }
+            const char *val =
+                cli_var_lookup(vn);
+            if(val != NULL
+               && fp[0] != '\0')
+            {
+                int fplen =
+                    (int) strlen(fp);
+                int rplen =
+                    (int) strlen(rp);
+                const char *s = val;
+                while(*s != '\0'
+                      && *opos
+                      < maxlen - 1)
+                {
+                    if(strncmp(s, fp,
+                               (size_t)
+                               fplen)
+                       == 0)
+                    {
+                        emit_str(
+                            out, opos,
+                            maxlen, rp);
+                        s += fplen;
+                    }
+                    else
+                    {
+                        out[(*opos)++] =
+                            *s++;
+                    }
+                }
+            }
+            else if(val != NULL)
+            {
+                emit_str(out, opos,
+                         maxlen, val);
+            }
+            return;
+        }
+    }
+
+    /* ${var/find/rep} — replace first */
+    {
+        const char *sl =
+            strchr(inner, '/');
+        if(sl != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nlen = (int)(sl - inner);
+            if(nlen >= CLI_VAR_NAMELEN)
+            {
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, inner,
+                   (size_t) nlen);
+            vn[nlen] = '\0';
+            const char *find = sl + 1;
+            const char *sl2 =
+                strchr(find, '/');
+            char fp[256] = "";
+            char rp[256] = "";
+            if(sl2 != NULL)
+            {
+                int fl2 =
+                    (int)(sl2 - find);
+                if(fl2 > 255)
+                {
+                    fl2 = 255;
+                }
+                memcpy(fp, find,
+                       (size_t) fl2);
+                fp[fl2] = '\0';
+                strncpy(rp,
+                        sl2 + 1, 255);
+            }
+            else
+            {
+                strncpy(fp, find, 255);
+            }
+            const char *val =
+                cli_var_lookup(vn);
+            if(val != NULL
+               && fp[0] != '\0')
+            {
+                const char *m =
+                    strstr(val, fp);
+                if(m != NULL)
+                {
+                    int pre =
+                        (int)(m - val);
+                    int avail =
+                        maxlen - 1
+                        - *opos;
+                    if(pre > avail)
+                    {
+                        pre = avail;
+                    }
+                    memcpy(
+                        out + *opos,
+                        val,
+                        (size_t) pre);
+                    *opos += pre;
+                    emit_str(
+                        out, opos,
+                        maxlen, rp);
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        m + strlen(fp));
+                }
+                else
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+            }
+            return;
+        }
+    }
+
     /* ${var%%pattern} — strip suffix */
     {
         const char *pp =
@@ -2927,12 +3106,15 @@ static void expand_braced(
         if(pp != NULL)
         {
             char vn[CLI_VAR_NAMELEN];
-            int nlen = (int)(pp - inner);
+            int nlen =
+                (int)(pp - inner);
             if(nlen >= CLI_VAR_NAMELEN)
             {
-                nlen = CLI_VAR_NAMELEN - 1;
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
             }
-            memcpy(vn, inner, (size_t) nlen);
+            memcpy(vn, inner,
+                   (size_t) nlen);
             vn[nlen] = '\0';
             const char *pat = pp + 2;
             const char *val =
@@ -2946,19 +3128,23 @@ static void expand_braced(
                     int clen =
                         (int)(m - val);
                     int avail =
-                        maxlen - 1 - *opos;
+                        maxlen - 1
+                        - *opos;
                     if(clen > avail)
                     {
                         clen = avail;
                     }
-                    memcpy(out + *opos, val,
-                           (size_t) clen);
+                    memcpy(
+                        out + *opos,
+                        val,
+                        (size_t) clen);
                     *opos += clen;
                 }
                 else
                 {
-                    emit_str(out, opos,
-                             maxlen, val);
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
                 }
             }
             return;
@@ -2972,12 +3158,15 @@ static void expand_braced(
         if(pp != NULL)
         {
             char vn[CLI_VAR_NAMELEN];
-            int nlen = (int)(pp - inner);
+            int nlen =
+                (int)(pp - inner);
             if(nlen >= CLI_VAR_NAMELEN)
             {
-                nlen = CLI_VAR_NAMELEN - 1;
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
             }
-            memcpy(vn, inner, (size_t) nlen);
+            memcpy(vn, inner,
+                   (size_t) nlen);
             vn[nlen] = '\0';
             const char *pat = pp + 2;
             const char *val =
@@ -2988,34 +3177,237 @@ static void expand_braced(
                     strstr(val, pat);
                 if(m != NULL)
                 {
-                    emit_str(out, opos,
-                             maxlen,
-                             m + strlen(pat));
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        m + strlen(pat));
                 }
                 else
                 {
-                    emit_str(out, opos,
-                             maxlen, val);
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
                 }
             }
             return;
         }
     }
 
-    /* ${var:offset:length} — substring */
+    /* ${var%pat} — strip shortest suffix */
+    {
+        const char *pp =
+            strchr(inner, '%');
+        if(pp != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nlen =
+                (int)(pp - inner);
+            if(nlen >= CLI_VAR_NAMELEN)
+            {
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, inner,
+                   (size_t) nlen);
+            vn[nlen] = '\0';
+            const char *pat = pp + 1;
+            const char *val =
+                cli_var_lookup(vn);
+            if(val != NULL)
+            {
+                int vl =
+                    (int) strlen(val);
+                int pl =
+                    (int) strlen(pat);
+                /* Find last occurrence */
+                const char *last =
+                    NULL;
+                const char *s = val;
+                while((s = strstr(
+                           s, pat))
+                      != NULL)
+                {
+                    last = s;
+                    s++;
+                }
+                if(last != NULL
+                   && (last + pl)
+                   == (val + vl))
+                {
+                    int clen =
+                        (int)(last
+                              - val);
+                    int avail =
+                        maxlen - 1
+                        - *opos;
+                    if(clen > avail)
+                    {
+                        clen = avail;
+                    }
+                    memcpy(
+                        out + *opos,
+                        val,
+                        (size_t) clen);
+                    *opos += clen;
+                }
+                else
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+            }
+            return;
+        }
+    }
+
+    /* ${var#pat} — strip shortest prefix */
+    {
+        const char *pp =
+            strchr(inner, '#');
+        if(pp != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nlen =
+                (int)(pp - inner);
+            if(nlen >= CLI_VAR_NAMELEN)
+            {
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, inner,
+                   (size_t) nlen);
+            vn[nlen] = '\0';
+            const char *pat = pp + 1;
+            const char *val =
+                cli_var_lookup(vn);
+            if(val != NULL)
+            {
+                int pl =
+                    (int) strlen(pat);
+                if(strncmp(val, pat,
+                           (size_t) pl)
+                   == 0)
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        val + pl);
+                }
+                else
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+            }
+            return;
+        }
+    }
+
+    /* ${var:-default} ${var:=default}
+     * ${var:+alt} ${var:?error}
+     * ${var:offset:length} */
     {
         const char *col =
             strchr(inner, ':');
         if(col != NULL)
         {
             char vn[CLI_VAR_NAMELEN];
-            int nlen = (int)(col - inner);
+            int nlen =
+                (int)(col - inner);
             if(nlen >= CLI_VAR_NAMELEN)
             {
-                nlen = CLI_VAR_NAMELEN - 1;
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
             }
-            memcpy(vn, inner, (size_t) nlen);
+            memcpy(vn, inner,
+                   (size_t) nlen);
             vn[nlen] = '\0';
+            char op = col[1];
+
+            /* ${var:-default} */
+            if(op == '-')
+            {
+                const char *val =
+                    cli_var_lookup(vn);
+                if(val != NULL
+                   && val[0] != '\0')
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+                else
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        col + 2);
+                }
+                return;
+            }
+            /* ${var:=default} */
+            if(op == '=')
+            {
+                const char *val =
+                    cli_var_lookup(vn);
+                if(val != NULL
+                   && val[0] != '\0')
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+                else
+                {
+                    cli_var_set(
+                        vn, col + 2);
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        col + 2);
+                }
+                return;
+            }
+            /* ${var:+alt} */
+            if(op == '+')
+            {
+                const char *val =
+                    cli_var_lookup(vn);
+                if(val != NULL
+                   && val[0] != '\0')
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen,
+                        col + 2);
+                }
+                return;
+            }
+            /* ${var:?error} */
+            if(op == '?')
+            {
+                const char *val =
+                    cli_var_lookup(vn);
+                if(val == NULL
+                   || val[0] == '\0')
+                {
+                    fprintf(stderr,
+                            "%s: %s\n",
+                            vn,
+                            col + 2);
+                }
+                else
+                {
+                    emit_str(
+                        out, opos,
+                        maxlen, val);
+                }
+                return;
+            }
+
+            /* ${var:offset:length} */
             int offset = (int) strtol(
                 col + 1, NULL, 0);
             int slen = -1;
@@ -3034,7 +3426,8 @@ static void expand_braced(
                     (int) strlen(val);
                 if(offset < 0)
                 {
-                    offset = vl + offset;
+                    offset =
+                        vl + offset;
                 }
                 if(offset < 0)
                 {
@@ -3044,21 +3437,24 @@ static void expand_braced(
                 {
                     return;
                 }
-                int rem = vl - offset;
+                int rem =
+                    vl - offset;
                 if(slen < 0
                    || slen > rem)
                 {
                     slen = rem;
                 }
                 int avail =
-                    maxlen - 1 - *opos;
+                    maxlen - 1
+                    - *opos;
                 if(slen > avail)
                 {
                     slen = avail;
                 }
-                memcpy(out + *opos,
-                       val + offset,
-                       (size_t) slen);
+                memcpy(
+                    out + *opos,
+                    val + offset,
+                    (size_t) slen);
                 *opos += slen;
             }
             return;
@@ -3070,7 +3466,8 @@ static void expand_braced(
         cli_var_lookup(inner);
     if(val != NULL)
     {
-        emit_str(out, opos, maxlen, val);
+        emit_str(out, opos, maxlen,
+                 val);
     }
 }
 
@@ -3849,6 +4246,118 @@ errno_t CLI_execute_line()
                 DEBUG_TRACE_FEXIT();
                 return hsret;
             }
+        }
+    }
+
+    /* Background: cmd & */
+    {
+        int ll =
+            (int) strlen(
+                data.CLIcmdline);
+        /* Scan backward for & */
+        int bi = ll - 1;
+        while(bi >= 0
+              && (data.CLIcmdline[bi]
+                  == ' '
+                  || data.CLIcmdline[
+                      bi]
+                  == '\t'))
+        {
+            bi--;
+        }
+        if(bi >= 0
+           && data.CLIcmdline[bi]
+           == '&'
+           && (bi == 0
+               || data.CLIcmdline[
+                      bi - 1]
+               != '&'))
+        {
+            /* Strip trailing & */
+            data.CLIcmdline[bi] =
+                '\0';
+            pid_t cpid = fork();
+            if(cpid == 0)
+            {
+                /* Child */
+                CLI_execute_line(
+                    data.CLIcmdline);
+                _exit(0);
+            }
+            else if(cpid > 0)
+            {
+                printf("[bg] %d\n",
+                       (int) cpid);
+                char pb[32];
+                snprintf(
+                    pb, sizeof(pb),
+                    "%d",
+                    (int) cpid);
+                cli_var_set("!", pb);
+            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return 0;
+        }
+    }
+
+    /* Subshell: (cmd1; cmd2) */
+    {
+        const char *sp =
+            data.CLIcmdline;
+        int spl =
+            (int) strlen(sp);
+        if(spl >= 3
+           && sp[0] == '('
+           && sp[spl - 1] == ')')
+        {
+            char sbuf[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            memcpy(sbuf, sp + 1,
+                   (size_t)(spl - 2));
+            sbuf[spl - 2] = '\0';
+            pid_t spid = fork();
+            if(spid == 0)
+            {
+                /* Execute in child */
+                /* Split on ; */
+                char *tok =
+                    strtok(sbuf, ";");
+                while(tok != NULL)
+                {
+                    const char *st =
+                        tok;
+                    while(*st == ' '
+                          || *st
+                          == '\t')
+                    {
+                        st++;
+                    }
+                    if(*st != '\0')
+                    {
+                        CLI_execute_line(
+                            (char *) st
+                        );
+                    }
+                    tok =
+                        strtok(
+                            NULL,
+                            ";");
+                }
+                _exit(0);
+            }
+            else if(spid > 0)
+            {
+                int wst;
+                waitpid(spid,
+                        &wst, 0);
+                cli_last_retval =
+                    WEXITSTATUS(wst);
+            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return 0;
         }
     }
 
