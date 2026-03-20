@@ -61,6 +61,12 @@ void cli_history_save(void);
 /* Script execution */
 errno_t cli_source(void);
 
+/* Script save */
+errno_t cli_savescript(void);
+
+/* History save */
+errno_t cli_savehistory(void);
+
 /* Configurable prompt */
 errno_t cli_setprompt(void);
 void cli_build_prompt(
