@@ -268,28 +268,32 @@ synhl on
 
 ```text
 milk-cli > source myscript.milk  # run commands from file
+milk-cli > . myscript.milk       # same thing (dot-source)
 ```
 
 Blank lines and `#` comments are skipped. On error, the
 filename and line number are printed in red.
 
+The CLI supports bash-like scripting constructs including
+variables, arithmetic, flow control (`if`/`while`/`for`),
+and user-defined functions. See the
+[Scripting](scripting.md) page for full documentation.
+
+| Command | Description |
+|---------|-------------|
+| `source <file>` | Execute a script file |
+| `. <file>` | Same as `source` (dot-source) |
+| `savescript <file>` | Save variables and functions to file |
+| `savehistory <file>` | Save command history to file |
+
 **Example `myscript.milk`:**
 
 ```bash
 # This is a sample milk script
-!echo "Starting image processing..."
-
-# Create a 100x100 image named 'myimg'
-mem.mk2Dim myimg 100 100
-
-# Perform some basic arithmetic
-im1=myimg+5.0
-
-# Save to FITS using an environment variable
-iofits.saveFITS im1 ${HOME}/im1_test.fits
-
-# Print current images in memory
-mem.listim
+x=10
+if [ $x -gt 5 ]; then
+    echo x is big
+fi
 ```
 
 ## 16. Command Timing
