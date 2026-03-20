@@ -1360,6 +1360,26 @@ void print_milk_cli_help(void)
     printf("  " C_CMD "vars" C_RST
            "              List all variables\n");
     printf("\n");
+    printf(C_HDR "String Operations:\n" C_RST);
+    printf("  " C_CMD "${#var}" C_RST
+           "          String length\n");
+    printf("  " C_CMD "${var:2:3}" C_RST
+           "       Substring (offset:len)\n");
+    printf("  " C_CMD "${var%%%%pat}" C_RST
+           "     Strip longest suffix\n");
+    printf("  " C_CMD "${var##pat}" C_RST
+           "      Strip longest prefix\n");
+    printf("\n");
+    printf(C_HDR "Arrays:\n" C_RST);
+    printf("  " C_CMD "arr=(a b c)" C_RST
+           "      Create array\n");
+    printf("  " C_CMD "${arr[0]}" C_RST
+           "        Access element\n");
+    printf("  " C_CMD "${arr[@]}" C_RST
+           "        All elements\n");
+    printf("  " C_CMD "${#arr[@]}" C_RST
+           "       Array length\n");
+    printf("\n");
     printf(C_HDR "Arithmetic:\n" C_RST);
     printf("  " C_CMD "y=$(( x + 5 ))" C_RST
            "  Integer +, -, *, /, %%\n");
@@ -1381,6 +1401,10 @@ void print_milk_cli_help(void)
            C_RST "\n");
     printf("  " C_CMD "    echo big"
            C_RST "\n");
+    printf("  " C_CMD "elif [ $x -gt 2 ]; then"
+           C_RST "  ← cascading branch\n");
+    printf("  " C_CMD "    echo medium"
+           C_RST "\n");
     printf("  " C_CMD "else" C_RST "\n");
     printf("  " C_CMD "    echo small"
            C_RST "\n");
@@ -1401,7 +1425,9 @@ void print_milk_cli_help(void)
            C_RST " ... "
            C_CMD "done" C_RST "\n");
     printf("  " C_CMD "break" C_RST
-           " exits loop early\n");
+           " exits loop, "
+           C_CMD "continue" C_RST
+           " next iter\n");
     printf("\n");
     printf(C_HDR "Functions:\n" C_RST);
     printf("  " C_CMD
@@ -1412,6 +1438,12 @@ void print_milk_cli_help(void)
            C_RST "  call with "
            C_NOTE "$1..$9" C_RST
            " inside body\n");
+    printf("  " C_CMD "return [val]" C_RST
+           "      exit function, optionally"
+           " set $?\n");
+    printf("  Variables created inside a"
+           " function are " C_NOTE "local"
+           C_RST "\n");
 
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
@@ -1422,6 +1454,8 @@ void print_milk_cli_help(void)
            "Execute a script file\n");
     printf(C_CMD "  . <file>          " C_RST
            "Same (dot-source)\n");
+    printf(C_CMD "  include_once <f>  " C_RST
+           "Source only once\n");
     printf(C_CMD "  savescript <file>  " C_RST
            "Save variables & functions\n");
     printf(C_CMD "  savehistory <file> " C_RST
@@ -1429,9 +1463,35 @@ void print_milk_cli_help(void)
     printf("  Startup: "
            C_CMD "milk-cli -s <file>" C_RST
            "  run script on launch\n");
+    printf("  Auto-load: "
+           C_CMD "~/.milkrc" C_RST
+           " sourced at startup\n");
     printf("  Shebang: "
            C_NOTE "#!/usr/bin/env milk-cli -s"
            C_RST "\n");
+    printf("\n");
+    printf(C_HDR "Built-in Commands:\n" C_RST);
+    printf(C_CMD "  sleep <sec>       " C_RST
+           "Pause (float-capable)\n");
+    printf(C_CMD "  printf \"fmt\" a.. " C_RST
+           "Formatted output\n");
+    printf("\n");
+    printf(C_HDR "Heredocs:\n" C_RST);
+    printf("  " C_CMD "VAR=<<EOF" C_RST
+           "\n");
+    printf("  " C_CMD "  line 1" C_RST
+           "\n");
+    printf("  " C_CMD "  line 2" C_RST
+           "\n");
+    printf("  " C_CMD "EOF" C_RST
+           "  → multi-line var\n");
+    printf("\n");
+    printf(C_HDR "Stream Events:\n" C_RST);
+    printf("  " C_CMD
+           "on_update <stream> { cmd }"
+           C_RST "\n");
+    printf("  Waits for stream update,"
+           " then runs cmd\n");
     printf("\n");
 
     return;
