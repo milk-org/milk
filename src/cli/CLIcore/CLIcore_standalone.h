@@ -726,9 +726,13 @@ typedef struct
             abort();                     \
         }                                \
         if (dcfpsptr != NULL) {         \
+            const char *_piname =        \
+                (dcfpsname[0] != '\0')   \
+                ? dcfpsname              \
+                : dcfpsptr->md->name;    \
             processinfo =                \
                 processinfo_setup(       \
-                    dcfpsname,          \
+                    (char*)_piname,      \
                     pinfodescr,          \
                     "startup",           \
                     __FUNCTION__,        \

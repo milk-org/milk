@@ -353,7 +353,11 @@ typedef struct
         }                                                                      \
         if (dcfpsptr != NULL)                                               \
         {                                                                      \
-            processinfo = processinfo_setup(dcfpsname,                     \
+            /* dcfpsname may be empty when called via fps_generic_run     */   \
+            /* which bypasses CLI arg parsing. Fall back to FPS SHM name. */   \
+            const char *_piname_ =                                             \
+                (dcfpsname[0] != '\0') ? dcfpsname : dcfpsptr->md->name;    \
+            processinfo = processinfo_setup((char*)_piname_,              \
                                             pinfodescr,                        \
                                             "startup",                         \
                                             __FUNCTION__,                      \
