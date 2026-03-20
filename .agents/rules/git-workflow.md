@@ -60,6 +60,29 @@ user approval. Before calling any PR-creation tool:
 > **strictly forbidden**, even if the changes
 > seem trivial.
 
+## PR Body — Required Content
+
+Every PR body **must** include:
+
+### Prompt Summary
+
+A concise summary of the user prompts/requests
+that led to the PR. Focus on **what** was asked
+to be implemented, not the detailed steps or
+back-and-forth discussions. If multiple design
+options were considered, briefly explain why the
+chosen approach was selected over the alternatives.
+
+### AI Authorship
+
+- **Model(s) used** — e.g. "Opus 4.6 thinking",
+  "Gemini 2.5 Pro". List every model that
+  contributed code in this PR.
+- **User edits** — state whether the user made
+  direct edits to source code alongside the
+  agent work, and if so, summarize what was
+  edited manually.
+
 ## Parallel Development (Git Worktrees)
 
 To work on multiple feature tracks simultaneously (e.g., CLI, Performance, Documentation), use **Git Worktrees** rather than switching branches in a single directory.
