@@ -1252,6 +1252,25 @@ void runCLI_cmd_init()
                        "cli_source()");
 
     RegisterCLIcommand(
+        "savescript",
+        __FILE__,
+        cli_savescript,
+        "save variables and functions "
+        "to a script file",
+        "<filename>",
+        "savescript state.milk",
+        "cli_savescript()");
+
+    RegisterCLIcommand(
+        "savehistory",
+        __FILE__,
+        cli_savehistory,
+        "save command history to a file",
+        "<filename>",
+        "savehistory cmds.milk",
+        "cli_savehistory()");
+
+    RegisterCLIcommand(
         "setprompt",
         __FILE__,
         cli_setprompt,
@@ -1340,6 +1359,15 @@ void runCLI_cmd_init()
         "",
         "vars",
         "cli_cmd_vars()");
+
+    RegisterCLIcommand(
+        "fpsset",
+        __FILE__,
+        cli_cmd_fpsset,
+        "set FPS parameter value",
+        "<fpsname.param> <value>",
+        "fpsset loopctrl.gain 0.3",
+        "cli_cmd_fpsset()");
 
     //  init_modules();
 
