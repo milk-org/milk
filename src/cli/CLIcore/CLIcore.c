@@ -62,6 +62,7 @@
 
 
 #include "CLIcore.h"
+#include "CLIcore_script.h"
 #include "streamCTRL/streamCTRL_TUI.h"
 
 //#include "initmodules.h"
@@ -1251,6 +1252,25 @@ void runCLI_cmd_init()
                        "cli_source()");
 
     RegisterCLIcommand(
+        "savescript",
+        __FILE__,
+        cli_savescript,
+        "save variables and functions "
+        "to a script file",
+        "<filename>",
+        "savescript state.milk",
+        "cli_savescript()");
+
+    RegisterCLIcommand(
+        "savehistory",
+        __FILE__,
+        cli_savehistory,
+        "save command history to a file",
+        "<filename>",
+        "savehistory cmds.milk",
+        "cli_savehistory()");
+
+    RegisterCLIcommand(
         "setprompt",
         __FILE__,
         cli_setprompt,
@@ -1312,6 +1332,42 @@ void runCLI_cmd_init()
         "<fpsname>",
         "fparam cnt2push",
         "cli_fparam()");
+
+    RegisterCLIcommand(
+        "echo",
+        __FILE__,
+        cli_cmd_echo,
+        "print arguments",
+        "[-n] <args...>",
+        "echo hello world",
+        "cli_cmd_echo()");
+
+    RegisterCLIcommand(
+        "unset",
+        __FILE__,
+        cli_cmd_unset,
+        "remove a CLI variable",
+        "<varname>",
+        "unset myvar",
+        "cli_cmd_unset()");
+
+    RegisterCLIcommand(
+        "vars",
+        __FILE__,
+        cli_cmd_vars,
+        "list all CLI variables",
+        "",
+        "vars",
+        "cli_cmd_vars()");
+
+    RegisterCLIcommand(
+        "fpsset",
+        __FILE__,
+        cli_cmd_fpsset,
+        "set FPS parameter value",
+        "<fpsname.param> <value>",
+        "fpsset loopctrl.gain 0.3",
+        "cli_cmd_fpsset()");
 
     //  init_modules();
 
