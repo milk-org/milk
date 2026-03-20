@@ -49,6 +49,7 @@
 #include "image_gen/image_gen.h"
 
 #include "mkdisk.h"
+#include "mkpolygon.h"
 #include "mkrandomim.h"
 #include "mkspdisk.h"
 #include "voronoi.h"
@@ -965,6 +966,7 @@ static errno_t ic_CLIfunc(void) {
 static errno_t init_module_CLI()
 {
     CLIADDCMD_image_gen__mkdisk();
+    CLIADDCMD_image_gen__mkpolygon();
     CLIADDCMD_image_gen__mkspdisk();
     {
         safe_fps_fill_farg_examples(
@@ -2097,6 +2099,125 @@ imageID make_hexagon(const char *IDname,
 #ifdef HAVE_LIBGOMP
     }
 #endif
+
+    return (ID);
+}
+
+/**
+ * @brief Create a regular polygon mask image.
+ *
+ * Generates a binary mask for a regular N-sided polygon
+ * inscribed in a circle of the given radius.  The
+ * geometry uses half-plane intersection: a pixel is
+ * inside the polygon iff it lies on the interior side
+ * of every edge.
+ *
+ * @param ID_name       Output image name
+ * @param l1            Image width (pixels)
+ * @param l2            Image height (pixels)
+ * @param x_center      Polygon center X coordinate
+ * @param y_center      Polygon center Y coordinate
+ * @param radius        Circumscribed circle radius
+ * @param nsides        Number of sides (>= 3)
+ * @param rotation_angle Rotation angle in radians
+ *
+ * @return Image ID of the created image
+ */
+imageID make_polygon(
+    const char *ID_name,
+    uint32_t    l1,
+    uint32_t    l2,
+    double      x_center,
+    double      y_center,
+    double      radius,
+    int32_t     nsides,
+    double      rotation_angle)
+{
+    imageID  ID;
+    uint32_t naxes[2];
+
+    if (nsides < 3)
+    {
+        nsides = 3;
+    }
+
+    create_2Dimage_ID(ID_name, l1, l2, &ID);
+    naxes[0] = dcimg[ID].md[0].size[0];
+    naxes[1] = dcimg[ID].md[0].size[1];
+
+    /* Pre-compute edge normals and apothem.
+     * For a regular N-gon inscribed in a circle of
+     * radius R, each edge k has an outward normal at
+     * angle = rotation + 2*pi*k/N.  The perpendicular
+     * distance from center to each edge (apothem) is
+     * R * cos(pi/N). */
+    double apothem = radius * cos(M_PI / nsides);
+
+    double *nx = (double *) malloc(
+        (size_t) nsides * sizeof(double));
+    double *ny = (double *) malloc(
+        (size_t) nsides * sizeof(double));
+
+    {
+        double dangle = 2.0 * M_PI / nsides;
+        for (int32_t k = 0; k < nsides; k++)
+        {
+            double a = rotation_angle + dangle * k;
+            nx[k] = cos(a);
+            ny[k] = sin(a);
+        }
+    }
+
+    /* Bounding box: circumscribed circle + 1 pixel */
+    long iimin = (long)(x_center - radius - 1.0);
+    long iimax = (long)(x_center + radius + 1.0);
+    long jjmin = (long)(y_center - radius - 1.0);
+    long jjmax = (long)(y_center + radius + 1.0);
+
+    if (iimin < 0)
+    {
+        iimin = 0;
+    }
+    if (iimax > (long) naxes[0] - 1)
+    {
+        iimax = (long) naxes[0] - 1;
+    }
+    if (jjmin < 0)
+    {
+        jjmin = 0;
+    }
+    if (jjmax > (long) naxes[1] - 1)
+    {
+        jjmax = (long) naxes[1] - 1;
+    }
+
+    for (long jj = jjmin; jj <= jjmax; jj++)
+    {
+        double dy = (double) jj - y_center;
+        for (long ii = iimin; ii <= iimax; ii++)
+        {
+            double dx = (double) ii - x_center;
+            int inside = 1;
+            for (int32_t k = 0; k < nsides; k++)
+            {
+                double dot =
+                    nx[k] * dx + ny[k] * dy;
+                if (dot > apothem)
+                {
+                    inside = 0;
+                    break;
+                }
+            }
+            if (inside)
+            {
+                dcimg[ID].array.F[
+                    jj * naxes[0] + ii] = 1.0f;
+            }
+        }
+    }
+
+    free(nx);
+    free(ny);
 
     return (ID);
 }
