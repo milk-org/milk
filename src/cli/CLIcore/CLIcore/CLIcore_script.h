@@ -22,9 +22,25 @@ typedef struct
     int  used;
 } CLI_VAR;
 
-/* Global variable table */
 extern CLI_VAR cli_vars[CLI_MAX_VARS];
 extern int     cli_last_retval;
+extern int     cli_return_flag;
+
+/* ---- Array Variables ---- */
+
+#define CLI_MAX_ARRAYS    64
+#define CLI_ARRAY_MAXELEM 256
+
+typedef struct
+{
+    char name[CLI_VAR_NAMELEN];
+    char elem[CLI_ARRAY_MAXELEM][
+        CLI_VAR_VALLEN];
+    int  nelem;
+    int  used;
+} CLI_ARRAY;
+
+extern CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 
 /* ---- Variable Functions ---- */
 
@@ -39,6 +55,9 @@ void cli_var_set(
 
 /** Remove a CLI variable. */
 void cli_var_unset(const char *name);
+
+/** Array assignment: arr=(val1 val2 ...) */
+int cli_try_array_assign(const char *line);
 
 /* ---- CLI Commands ---- */
 

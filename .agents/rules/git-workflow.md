@@ -75,9 +75,10 @@ chosen approach was selected over the alternatives.
 
 ### AI Authorship
 
-- **Model(s) used** — e.g. "Opus 4.6 thinking",
-  "Gemini 2.5 Pro". List every model that
-  contributed code in this PR.
+- **Model(s) used** — list every model that
+  contributed code in this PR with exact version.
+  The current agent model is **Claude Opus 4**
+  (`claude-opus-4-20250514`, Anthropic).
 - **User edits** — state whether the user made
   direct edits to source code alongside the
   agent work, and if so, summarize what was
