@@ -80,6 +80,17 @@ imageID make_hexagon(const char *IDname,
                      double      y_center,
                      double      radius);
 
+/** @brief Create a regular N-sided polygon mask */
+imageID make_polygon(
+    const char *ID_name,
+    uint32_t    l1,
+    uint32_t    l2,
+    double      x_center,
+    double      y_center,
+    double      radius,
+    int32_t     nsides,
+    double      rotation_angle);
+
 imageID IMAGE_gen_segments2WFmodes(const char *prefix,
                                    long        ndigit,
                                    const char *IDout_name);

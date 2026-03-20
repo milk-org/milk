@@ -1,9 +1,10 @@
 /**
- * @file    mkdisk.c
- * @brief   Create a disk image (fpsexec standalone)
+ * @file    mkpolygon.c
+ * @brief   Create a regular polygon image (fpsexec)
  *
- * Generate a 2D float image containing a disk
- * (binary mask) at specified center + radius.
+ * Generate a 2D float image containing a regular
+ * N-sided polygon (binary mask) at specified center,
+ * radius, number of sides, and rotation angle.
  */
 
 /* ================================================================
@@ -18,10 +19,11 @@
 
 #include "image_gen/image_gen.h"
 
+
 static FPS_APP_INFO FPS_app_info = {
-    .fps_name    = "mkdisk",
-    .cmdkey      = "mkdisk",
-    .description = "make disk image"
+    .fps_name    = "mkpolygon",
+    .cmdkey      = "mkpolygon",
+    .description = "make regular polygon image"
 };
 
 
@@ -29,13 +31,15 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char    outim_name[FUNCTION_PARAMETER_STRMAXLEN]
-    = "imdisk";
-static int64_t outim_xsize  = 512;
-static int64_t outim_ysize  = 512;
+static char outim_name[FUNCTION_PARAMETER_STRMAXLEN]
+    = "impoly";
+static int64_t outim_xsize   = 512;
+static int64_t outim_ysize   = 512;
 static double  outim_xcenter = 256.0;
 static double  outim_ycenter = 256.0;
 static double  outim_radius  = 100.0;
+static int32_t outim_nsides  = 8;
+static double  outim_rotangle = 0.0;
 
 
 /* ================================================================
@@ -66,7 +70,15 @@ static double  outim_radius  = 100.0;
     X(".radius", &outim_radius, \
       FPTYPE_FLOAT64, 1, \
       FPFLAG_DEFAULT_INPUT, \
-      "radius")
+      "radius") \
+    X(".nsides", &outim_nsides, \
+      FPTYPE_INT32, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "number of sides") \
+    X(".rotangle", &outim_rotangle, \
+      FPTYPE_FLOAT64, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "rotation angle [rad]")
 
 
 /* ================================================================
@@ -83,8 +95,8 @@ FPS_V2_SECTION5(FPS_PARAMS)
 static errno_t compute_function(void)
 {
     /* Pre-create output as shared memory stream.
-     * make_disk() calls create_2Dimage_ID() which
-     * reuses this existing shared image. */
+     * make_polygon() calls create_2Dimage_ID()
+     * which reuses this existing shared image. */
     IMGID img = stream_connect_create_2D(
         outim_name,
         (uint32_t) outim_xsize,
@@ -93,13 +105,15 @@ static errno_t compute_function(void)
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    make_disk(
+    make_polygon(
         outim_name,
         (uint32_t) outim_xsize,
         (uint32_t) outim_ysize,
         outim_xcenter,
         outim_ycenter,
-        outim_radius);
+        outim_radius,
+        outim_nsides,
+        outim_rotangle);
 
     processinfo_update_output_stream(
         processinfo, img.im, NULL);
@@ -124,7 +138,7 @@ static errno_t CLIfunction(void)
 }
 
 errno_t
-CLIADDCMD_image_gen__mkdisk(void)
+CLIADDCMD_image_gen__mkpolygon(void)
 {
     safe_fps_fill_farg_examples(
         farg, my_bindings, nb_bindings);
