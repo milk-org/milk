@@ -168,6 +168,74 @@ If you start the executable with the "-l" option,  the file "imlist.txt" contain
 Note that if you launch several instances of the executable in the same directory, they will share the same fifo - this is generally a bad idea, as there is no easy way to control wich of the programs will read and execute the fifo commands.
 
 -----------------------------------------------------------------------------------
+SCRIPTING — VARIABLES & ARITHMETIC
+
+> x=42
+	# set variable x to 42
+> echo $x
+	# print variable value
+> echo ${x}
+	# braced variable form
+> unset x
+	# remove variable
+> vars
+	# list all defined variables
+> y=$(( x + 5 ))
+	# integer arithmetic: + - * / %
+> echo @fpsname.param
+	# read FPS parameter value
+> fpsset fpsname param value
+	# write FPS parameter
+
+-----------------------------------------------------------------------------------
+FLOW CONTROL
+
+> if [ $x -gt 5 ]; then
+>     echo big
+> else
+>     echo small
+> fi
+	# conditionals: -eq -ne -gt -ge -lt -le (numeric), = != (string)
+
+> while [ $n -lt 10 ]; do
+>     n=$(( n + 1 ))
+>     echo $n
+> done
+	# while loop
+
+> for item in a b c; do
+>     echo $item
+> done
+	# for loop
+
+> break
+	# exit loop early
+
+> function myfunc {
+>     echo Hello $1
+> }
+> myfunc world
+	# user-defined functions with $1..$9 arguments
+
+-----------------------------------------------------------------------------------
+SCRIPT FILES
+
+> source myscript.milk
+	# execute commands from a script file
+> . myscript.milk
+	# same as source (dot-sourcing)
+> savescript state.milk
+	# export variables and functions to file
+> savehistory replay.milk
+	# save command history to file
+
+Startup script:
+	milk-cli -s myscript.milk
+
+Shebang for executable scripts:
+	#!/usr/bin/env milk-cli -s
+
+-----------------------------------------------------------------------------------
 ARITHMETIC OPERATIONS
 
 > im1=sqrt(im+2.0)
