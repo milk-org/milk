@@ -35,6 +35,7 @@ set(CORE_FILES
     CLIcore/CLIcore_memory.c
     CLIcore/CLIcore_modules.c
     CLIcore/CLIcore_setSHMdir.c
+    CLIcore/CLIcore_script.c
     CLIcore/CLIcore_signals.c
     cli_calc_tokenizer.c
     cli_calc_parser.c)
@@ -148,6 +149,7 @@ install(FILES CLIcore/CLIcore_UI.h
               CLIcore/CLIcore_memory.h
               CLIcore/CLIcore_modules.h
               CLIcore/CLIcore_setSHMdir.h
+              CLIcore/CLIcore_script.h
               CLIcore/CLIcore_signals.h
               CLIcore/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
