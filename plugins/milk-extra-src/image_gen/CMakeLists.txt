@@ -7,6 +7,7 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
 	mkdisk.c
+	mkpolygon.c
 	mkspdisk.c
 	mkrandomim.c
 	voronoi.c
@@ -15,6 +16,7 @@ set(SOURCEFILES
 
 set(INCLUDEFILES
 	mkdisk.h
+	mkpolygon.h
 	mkspdisk.h
 	mkrandomim.h
 	voronoi.h
@@ -111,4 +113,7 @@ target_link_libraries(milk-fpsexec-imggen-mkdisk PUBLIC
     ${LIBNAME})
 add_milk_standalone(imggen-mkspdisk mkspdisk.c)
 target_link_libraries(milk-fpsexec-imggen-mkspdisk PUBLIC
+    ${LIBNAME})
+add_milk_standalone(imggen-mkpolygon mkpolygon.c)
+target_link_libraries(milk-fpsexec-imggen-mkpolygon PUBLIC
     ${LIBNAME})

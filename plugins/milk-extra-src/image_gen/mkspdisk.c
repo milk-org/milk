@@ -44,7 +44,7 @@ static double  outim_radius  = 100.0;
 
 #define FPS_PARAMS(X) \
     X(".out_name", outim_name, \
-      FPTYPE_STRING, 1, \
+      FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "output image name") \
     X(".xsize", &outim_xsize, \
@@ -82,6 +82,17 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 static errno_t compute_function(void)
 {
+    /* Pre-create output as shared memory stream.
+     * make_subpixdisk() calls create_2Dimage_ID()
+     * which reuses this existing shared image. */
+    IMGID img = stream_connect_create_2D(
+        outim_name,
+        (uint32_t) outim_xsize,
+        (uint32_t) outim_ysize,
+        _DATATYPE_FLOAT);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_START
+
     make_subpixdisk(
         outim_name,
         (uint32_t) outim_xsize,
@@ -89,6 +100,11 @@ static errno_t compute_function(void)
         outim_xcenter,
         outim_ycenter,
         outim_radius);
+
+    processinfo_update_output_stream(
+        processinfo, img.im, NULL);
+
+    INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
     return RETURN_SUCCESS;
 }
