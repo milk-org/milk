@@ -34,6 +34,32 @@ request. Never commit directly to `framework-dev`
 5. **Do not merge** — let the maintainer review
    and merge.
 
+## PR Submission — User Confirmation Required
+
+**Never** submit a pull request without explicit
+user approval. Before calling any PR-creation tool:
+
+1. **Draft the PR text** and present it to the
+   user via `notify_user`, including:
+   - **Title** — concise summary of the change.
+   - **Body** — full description (motivation,
+     what changed, testing done, etc.).
+   - **Target branch** (normally `framework-dev`).
+   - **Source branch**.
+   - **Draft status** (draft or ready for review).
+
+2. **Wait for the user to confirm or edit.**
+   The user may revise the title, body, or any
+   other field. Apply all requested changes.
+
+3. **Only after explicit approval**, call the
+   PR-creation tool with the finalized text.
+
+> [!CAUTION]
+> Submitting a PR without user confirmation is
+> **strictly forbidden**, even if the changes
+> seem trivial.
+
 ## Parallel Development (Git Worktrees)
 
 To work on multiple feature tracks simultaneously (e.g., CLI, Performance, Documentation), use **Git Worktrees** rather than switching branches in a single directory.
