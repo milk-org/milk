@@ -110,10 +110,10 @@ endif()
 add_milk_standalone(imggen-voronoi voronoi.c)
 add_milk_standalone(imggen-mkdisk mkdisk.c)
 target_link_libraries(milk-fpsexec-imggen-mkdisk PUBLIC
-    ${LIBNAME})
+    ${LIBNAME_COMPUTE})
 add_milk_standalone(imggen-mkspdisk mkspdisk.c)
 target_link_libraries(milk-fpsexec-imggen-mkspdisk PUBLIC
-    ${LIBNAME})
+    ${LIBNAME_COMPUTE})
 add_milk_standalone(imggen-mkpolygon mkpolygon.c)
 target_link_libraries(milk-fpsexec-imggen-mkpolygon PUBLIC
-    ${LIBNAME})
+    ${LIBNAME_COMPUTE})
