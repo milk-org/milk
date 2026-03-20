@@ -20,6 +20,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore/cli_calc_parser.h"
+#include "CLIcore_script.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
@@ -1724,6 +1725,122 @@ errno_t cli_source(void)
 
 /*
  * ============================================================
+ *  Save Script — export variables and functions
+ * ============================================================
+ */
+
+/**
+ * @brief Write all CLI variables and user functions
+ *        to a file that can be sourced later.
+ *
+ * Usage: savescript <filename>
+ */
+errno_t cli_savescript(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: savescript <filename>\n");
+        return RETURN_FAILURE;
+    }
+    const char *fname =
+        data.cmdargtoken[1].val.string;
+    FILE *fp = fopen(fname, "w");
+    if(fp == NULL)
+    {
+        printf("savescript: cannot open "
+               "'%s' for writing\n", fname);
+        return RETURN_FAILURE;
+    }
+
+    fprintf(fp, "# milk-cli script\n");
+    fprintf(fp,
+            "# saved by savescript command\n\n");
+
+    /* Export variables */
+    int nv = 0;
+    for(int i = 0; i < CLI_MAX_VARS; i++)
+    {
+        if(cli_vars[i].used)
+        {
+            fprintf(fp, "%s=%s\n",
+                    cli_vars[i].name,
+                    cli_vars[i].val);
+            nv++;
+        }
+    }
+    if(nv > 0)
+    {
+        fprintf(fp, "\n");
+    }
+
+    /* Export user-defined functions */
+    int nf = 0;
+    for(int i = 0; i < CLI_MAX_FUNCS; i++)
+    {
+        if(cli_funcs[i].used)
+        {
+            fprintf(fp, "function %s {\n",
+                    cli_funcs[i].name);
+            for(int j = 0;
+                j < cli_funcs[i].nbody; j++)
+            {
+                fprintf(fp, "%s\n",
+                        cli_funcs[i].body[j]);
+            }
+            fprintf(fp, "}\n\n");
+            nf++;
+        }
+    }
+
+    fclose(fp);
+    printf("Saved %d variables, %d functions "
+           "to '%s'\n", nv, nf, fname);
+    return RETURN_SUCCESS;
+}
+
+
+/*
+ * ============================================================
+ *  Save History — export readline history
+ * ============================================================
+ */
+
+/**
+ * @brief Write readline command history to a file.
+ *
+ * Usage: savehistory <filename>
+ */
+errno_t cli_savehistory(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: savehistory "
+               "<filename>\n");
+        return RETURN_FAILURE;
+    }
+    const char *fname =
+        data.cmdargtoken[1].val.string;
+
+#ifdef USE_READLINE
+    if(write_history(fname) != 0)
+    {
+        printf("savehistory: failed to write "
+               "'%s'\n", fname);
+        return RETURN_FAILURE;
+    }
+    printf("History saved to '%s'\n", fname);
+    return RETURN_SUCCESS;
+#else
+    printf("savehistory: readline not "
+           "available\n");
+    (void) fname;
+    return RETURN_FAILURE;
+#endif
+}
+
+
+/*
+ * ============================================================
  *  Configurable Prompt — setprompt command
  * ============================================================
  *
@@ -2226,7 +2343,10 @@ static void cli_expand_cmdsub(
 
     while(line[i] != '\0' && opos < maxlen - 1)
     {
-        int is_dollar_paren = (line[i] == '$' && line[i + 1] == '(');
+        int is_dollar_paren =
+            (line[i] == '$'
+             && line[i + 1] == '('
+             && line[i + 2] != '(');
         int is_backtick = (line[i] == '`');
 
         if(is_dollar_paren || is_backtick)
@@ -2303,7 +2423,7 @@ static void cli_expand_cmdsub(
 /**
  * @brief Expand $VAR and ${VAR} in place
  */
-static void cli_expand_env(
+void cli_expand_env(
     char *line,
     int   maxlen
 )
@@ -2317,6 +2437,14 @@ static void cli_expand_env(
     {
         if(line[i] == '$')
         {
+            /* Skip $(( — arithmetic token,
+             * handled by cli_expand_arith */
+            if(line[i + 1] == '('
+               && line[i + 2] == '(')
+            {
+                out[opos++] = line[i++];
+                continue;
+            }
             i++;
             int  braced = 0;
             if(line[i] == '{')
@@ -2349,7 +2477,8 @@ static void cli_expand_env(
                 varname[vlen++] = line[i++];
             }
             varname[vlen] = '\0';
-            const char *val = getenv(varname);
+            const char *val =
+                cli_var_lookup(varname);
             if(val != NULL)
             {
                 int vallen = (int) strlen(val);
@@ -2551,15 +2680,70 @@ errno_t CLI_execute_line()
     /* Expand aliases before anything else */
     cli_alias_expand();
 
+    /* Dot-sourcing: ". file" → "source file"
+     * Must check before script intercept */
+    {
+        const char *p = data.CLIcmdline;
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if(p[0] == '.' && p[1] == ' ')
+        {
+            char tmp[STRINGMAXLEN_CLICMDLINE];
+            snprintf(tmp,
+                     STRINGMAXLEN_CLICMDLINE,
+                     "source %s", p + 2);
+            strncpy(data.CLIcmdline, tmp,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE
+                - 1] = '\0';
+        }
+    }
+
+    /* Flow control: if/while/for/function
+     * and user-defined function calls.
+     * Must run BEFORE expansion so block
+     * accumulator stores raw lines with
+     * $VAR unexpanded. */
+    if(cli_script_intercept(data.CLIcmdline))
+    {
+        data.CMDexecuted = 1;
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
+
     /* Expand command substitution */
     cli_expand_cmdsub(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
 
-    /* Expand environment variables ($VAR) */
+    /* Expand @fpsname.param tokens */
+    cli_expand_fpsvar(data.CLIcmdline,
+                      STRINGMAXLEN_CLICMDLINE);
+
+    /* Expand environment variables ($VAR).
+     * Runs before arith so $(( $n + 1 )) works.
+     * cli_expand_env skips $(( tokens. */
     cli_expand_env(data.CLIcmdline,
                    STRINGMAXLEN_CLICMDLINE);
 
+    /* Expand arithmetic $(( expr )) */
+    cli_expand_arith(data.CLIcmdline,
+                     STRINGMAXLEN_CLICMDLINE);
+
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
+
+    /* Check for variable assignment (VAR=val) */
+    if(cli_try_var_assign(data.CLIcmdline))
+    {
+        data.CMDexecuted = 1;
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
 
     /*
      * ---- Command chaining: ; && || ----
@@ -2784,6 +2968,128 @@ errno_t CLI_execute_line()
     else if(data.CLIcmdline[0] == '#')
     {
         // do nothing... this is a comment
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "echo ", 5) == 0
+            || strcmp(data.CLIcmdline,
+                      "echo") == 0)
+    {
+        /* Handle echo before tokenization
+         * to avoid image name resolution */
+        const char *args =
+            data.CLIcmdline + 4;
+        while(*args == ' ')
+        {
+            args++;
+        }
+        int nl = 1;
+        if(strncmp(args, "-n ", 3) == 0)
+        {
+            nl = 0;
+            args += 3;
+            while(*args == ' ')
+            {
+                args++;
+            }
+        }
+        printf("%s", args);
+        if(nl)
+        {
+            printf("\n");
+        }
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "source ", 7) == 0)
+    {
+        /* Handle before tokenization so
+         * file paths with dots are not
+         * misinterpreted by the parser */
+        const char *arg =
+            data.CLIcmdline + 7;
+        while(*arg == ' ' || *arg == '\t')
+        {
+            arg++;
+        }
+        if(*arg == '\0')
+        {
+            printf("Usage: source "
+                   "<filename>\n");
+        }
+        else
+        {
+            data.cmdNBarg = 2;
+            strncpy(
+                data.cmdargtoken[1]
+                .val.string,
+                arg,
+                sizeof(
+                    data.cmdargtoken[1]
+                    .val.string) - 1);
+            cli_source();
+        }
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "savescript ", 11) == 0)
+    {
+        /* Handle before tokenization so
+         * file paths with dots etc. are
+         * not misinterpreted */
+        const char *arg =
+            data.CLIcmdline + 11;
+        while(*arg == ' ' || *arg == '\t')
+        {
+            arg++;
+        }
+        if(*arg == '\0')
+        {
+            printf("Usage: savescript "
+                   "<filename>\n");
+        }
+        else
+        {
+            /* Temporarily set cmdNBarg and
+             * token for cli_savescript() */
+            data.cmdNBarg = 2;
+            strncpy(
+                data.cmdargtoken[1]
+                .val.string,
+                arg,
+                sizeof(
+                    data.cmdargtoken[1]
+                    .val.string) - 1);
+            cli_savescript();
+        }
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "savehistory ", 12) == 0)
+    {
+        const char *arg =
+            data.CLIcmdline + 12;
+        while(*arg == ' ' || *arg == '\t')
+        {
+            arg++;
+        }
+        if(*arg == '\0')
+        {
+            printf("Usage: savehistory "
+                   "<filename>\n");
+        }
+        else
+        {
+            data.cmdNBarg = 2;
+            strncpy(
+                data.cmdargtoken[1]
+                .val.string,
+                arg,
+                sizeof(
+                    data.cmdargtoken[1]
+                    .val.string) - 1);
+            cli_savehistory();
+        }
         data.CMDexecuted = 1;
     }
     else
