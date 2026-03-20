@@ -113,7 +113,8 @@ enum
     CLI_BLOCK_IF,
     CLI_BLOCK_WHILE,
     CLI_BLOCK_FOR,
-    CLI_BLOCK_FUNC
+    CLI_BLOCK_FUNC,
+    CLI_BLOCK_CASE
 };
 
 /** Block accumulator state */

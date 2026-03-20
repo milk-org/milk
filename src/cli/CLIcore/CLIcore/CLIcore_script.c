@@ -20,6 +20,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <sys/stat.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -997,6 +998,11 @@ void cli_expand_arith(
  *   [ str1 != str2 ]    string not equal
  *   [ -n str ]          string not empty
  *   [ -z str ]          string empty
+ *   [ -f path ]         regular file exists
+ *   [ -d path ]         directory exists
+ *   [ -e path ]         path exists
+ *   [ -s path ]         file exists, non-empty
+ *   [ ! expr ]          logical NOT
  */
 
 /**
@@ -1056,6 +1062,63 @@ int cli_eval_test(const char *expr)
        && strcmp(tokens[0], "-z") == 0)
     {
         return strlen(tokens[1]) == 0 ? 1 : 0;
+    }
+
+    /* File tests: -f, -d, -e, -s */
+    if(ntok == 2
+       && strcmp(tokens[0], "-f") == 0)
+    {
+        struct stat sb;
+        return (stat(tokens[1], &sb) == 0
+                && S_ISREG(sb.st_mode))
+               ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-d") == 0)
+    {
+        struct stat sb;
+        return (stat(tokens[1], &sb) == 0
+                && S_ISDIR(sb.st_mode))
+               ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-e") == 0)
+    {
+        struct stat sb;
+        return stat(tokens[1], &sb) == 0
+               ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-s") == 0)
+    {
+        struct stat sb;
+        return (stat(tokens[1], &sb) == 0
+                && sb.st_size > 0)
+               ? 1 : 0;
+    }
+
+    /* Logical NOT: ! expr */
+    if(ntok >= 2
+       && strcmp(tokens[0], "!") == 0)
+    {
+        /* Rebuild sub-expression */
+        char subexpr[512];
+        subexpr[0] = '\0';
+        for(int i = 1; i < ntok; i++)
+        {
+            if(i > 1)
+            {
+                strncat(subexpr, " ",
+                        sizeof(subexpr)
+                        - strlen(subexpr)
+                        - 1);
+            }
+            strncat(subexpr, tokens[i],
+                    sizeof(subexpr)
+                    - strlen(subexpr) - 1);
+        }
+        return cli_eval_test(subexpr)
+               ? 0 : 1;
     }
 
     /* Single value: true if non-empty */
@@ -1864,6 +1927,214 @@ int cli_try_func_call(const char *line)
  * @param line  The raw command line
  * @return 1 if consumed, 0 if not
  */
+/* ============================================================
+ *  Case/esac Evaluator
+ * ============================================================
+ *
+ * Syntax:
+ *   case <word> in
+ *     pattern1) cmd1 ;;
+ *     pat2|pat3) cmd2 ;;
+ *     *) default ;;
+ *   esac
+ */
+static void cli_exec_block_case(
+    char (*lines)[STRINGMAXLEN_CLICMDLINE],
+    int    nlines
+)
+{
+    /* Line 0 = "case <word> in" */
+    const char *hdr = strip_ws(lines[0]);
+    hdr += 4; /* skip "case" */
+    hdr = strip_ws(hdr);
+    char word[256];
+    {
+        int wi = 0;
+        while(*hdr != '\0'
+              && *hdr != ' '
+              && *hdr != '\t'
+              && wi < 255)
+        {
+            word[wi++] = *hdr++;
+        }
+        word[wi] = '\0';
+    }
+    /* Expand word */
+    cli_expand_env(word, 256);
+
+    /* Scan patterns: "pat) body ;;" */
+    for(int i = 1; i < nlines; i++)
+    {
+        const char *lp =
+            strip_ws(lines[i]);
+        /* Find closing ')' */
+        const char *cp = strchr(lp, ')');
+        if(cp == NULL)
+        {
+            continue;
+        }
+        /* Extract pattern(s) */
+        char pat[256];
+        int plen = (int)(cp - lp);
+        if(plen >= 256)
+        {
+            plen = 255;
+        }
+        memcpy(pat, lp, (size_t) plen);
+        pat[plen] = '\0';
+
+        /* Check match (supports pat1|pat2
+         * and * wildcard) */
+        int matched = 0;
+        {
+            char ptmp[256];
+            strncpy(ptmp, pat,
+                    sizeof(ptmp) - 1);
+            ptmp[sizeof(ptmp) - 1] = '\0';
+            char *psave = NULL;
+            char *pp =
+                strtok_r(ptmp, "|",
+                         &psave);
+            while(pp != NULL)
+            {
+                /* strip ws */
+                while(*pp == ' '
+                      || *pp == '\t')
+                {
+                    pp++;
+                }
+                if(strcmp(pp, "*") == 0
+                   || strcmp(pp, word)
+                   == 0)
+                {
+                    matched = 1;
+                    break;
+                }
+                pp = strtok_r(NULL,
+                              "|",
+                              &psave);
+            }
+        }
+        if(!matched)
+        {
+            continue;
+        }
+
+        /* Collect body lines until ;; */
+        const char *body_start = cp + 1;
+        while(*body_start == ' '
+              || *body_start == '\t')
+        {
+            body_start++;
+        }
+        /* If body is on same line */
+        if(*body_start != '\0')
+        {
+            /* Strip ;; from end */
+            char cmdline[STRINGMAXLEN_CLICMDLINE];
+            strncpy(cmdline, body_start,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+            cmdline[STRINGMAXLEN_CLICMDLINE
+                    - 1] = '\0';
+            {
+                int cl =
+                    (int) strlen(cmdline);
+                while(cl > 1
+                      && cmdline[cl - 1]
+                      == ';'
+                      && cmdline[cl - 2]
+                      == ';')
+                {
+                    cmdline[cl - 2] = '\0';
+                    cl -= 2;
+                }
+                /* Trim trailing ws */
+                while(cl > 0
+                      && (cmdline[cl - 1]
+                          == ' '
+                          || cmdline[cl - 1]
+                          == '\t'))
+                {
+                    cmdline[--cl] = '\0';
+                }
+            }
+            if(strlen(cmdline) > 0)
+            {
+                strncpy(
+                    data.CLIcmdline,
+                    cmdline,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+                CLI_execute_line();
+            }
+        }
+        else
+        {
+            /* Multi-line body */
+            for(int j = i + 1;
+                j < nlines; j++)
+            {
+                const char *bl =
+                    strip_ws(lines[j]);
+                if(strcmp(bl, ";;") == 0)
+                {
+                    break;
+                }
+                /* Strip trailing ;; */
+                char cmd2[
+                    STRINGMAXLEN_CLICMDLINE];
+                strncpy(cmd2, bl,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                cmd2[
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1] = '\0';
+                {
+                    int c2l =
+                        (int) strlen(cmd2);
+                    int ends_dsemi = 0;
+                    while(c2l > 1
+                          && cmd2[c2l - 1]
+                          == ';'
+                          && cmd2[c2l - 2]
+                          == ';')
+                    {
+                        cmd2[c2l - 2] =
+                            '\0';
+                        c2l -= 2;
+                        ends_dsemi = 1;
+                    }
+                    while(c2l > 0
+                          && (cmd2[c2l - 1]
+                              == ' '
+                              || cmd2[
+                                  c2l - 1]
+                              == '\t'))
+                    {
+                        cmd2[--c2l] = '\0';
+                    }
+                    if(strlen(cmd2) > 0)
+                    {
+                        strncpy(
+                            data.CLIcmdline,
+                            cmd2,
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1);
+                        CLI_execute_line();
+                    }
+                    if(ends_dsemi)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+        return; /* first match only */
+    }
+}
+
+
 int cli_script_intercept(const char *line)
 {
     const char *p = strip_ws(line);
@@ -1954,7 +2225,9 @@ int cli_script_intercept(const char *line)
            || starts_with(p, "for ")
            || starts_with(p, "for\t")
            || starts_with(p, "function ")
-           || starts_with(p, "function\t"))
+           || starts_with(p, "function\t")
+           || starts_with(p, "case ")
+           || starts_with(p, "case\t"))
         {
             blk->depth++;
         }
@@ -1969,7 +2242,8 @@ int cli_script_intercept(const char *line)
         int is_any_close =
             (strcmp(p, "fi") == 0
              || strcmp(p, "done") == 0
-             || strcmp(p, "}") == 0);
+             || strcmp(p, "}") == 0
+             || strcmp(p, "esac") == 0);
 
         if(is_any_close && blk->depth > 0)
         {
@@ -2004,6 +2278,11 @@ int cli_script_intercept(const char *line)
         }
         if(blk->type == CLI_BLOCK_FUNC
            && strcmp(p, "}") == 0)
+        {
+            is_close = 1;
+        }
+        if(blk->type == CLI_BLOCK_CASE
+           && strcmp(p, "esac") == 0)
         {
             is_close = 1;
         }
@@ -2095,6 +2374,13 @@ int cli_script_intercept(const char *line)
                     fname,
                     saved_lines + 1,
                     saved_nlines - 1);
+            }
+            else if(
+                saved_type == CLI_BLOCK_CASE)
+            {
+                cli_exec_block_case(
+                    saved_lines,
+                    saved_nlines);
             }
 
             free(saved_lines);
@@ -2244,6 +2530,30 @@ int cli_script_intercept(const char *line)
                 cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_FUNC;
+        blk->active = 1;
+        strncpy(blk->lines[0], p,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        blk->nlines = 1;
+        cli_block_level++;
+        return 1;
+    }
+
+    /* case <word> in ... esac */
+    if(starts_with(p, "case ")
+       || starts_with(p, "case\t"))
+    {
+        if(cli_block_level
+           >= CLI_BLOCK_MAXDEPTH)
+        {
+            printf("Error: max block "
+                   "nesting exceeded\n");
+            return 1;
+        }
+        CLI_BLOCK *blk =
+            &cli_block_stack[
+                cli_block_level];
+        memset(blk, 0, sizeof(*blk));
+        blk->type = CLI_BLOCK_CASE;
         blk->active = 1;
         strncpy(blk->lines[0], p,
                 STRINGMAXLEN_CLICMDLINE - 1);

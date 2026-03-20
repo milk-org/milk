@@ -1414,6 +1414,18 @@ void print_milk_cli_help(void)
            C_RST " (numeric), "
            C_NOTE "= !=" C_RST
            " (string)\n");
+    printf("  File tests: "
+           C_NOTE "-f" C_RST
+           " (file), "
+           C_NOTE "-d" C_RST
+           " (dir), "
+           C_NOTE "-e" C_RST
+           " (exists), "
+           C_NOTE "-s" C_RST
+           " (non-empty)\n");
+    printf("  Negate: "
+           C_CMD "[ ! expr ]" C_RST
+           " logical NOT\n");
     printf("\n");
     printf(C_HDR "Loops:\n" C_RST);
     printf("  " C_CMD
@@ -1428,6 +1440,19 @@ void print_milk_cli_help(void)
            " exits loop, "
            C_CMD "continue" C_RST
            " next iter\n");
+    printf("\n");
+    printf(C_HDR "Case statement:\n" C_RST);
+    printf("  " C_CMD
+           "case $var in" C_RST "\n");
+    printf("  " C_CMD
+           "  yes) echo ok ;;" C_RST "\n");
+    printf("  " C_CMD
+           "  a|b) echo ab ;;" C_RST
+           "  ← alternation\n");
+    printf("  " C_CMD
+           "  *) echo default ;;"
+           C_RST "\n");
+    printf("  " C_CMD "esac" C_RST "\n");
     printf("\n");
     printf(C_HDR "Functions:\n" C_RST);
     printf("  " C_CMD
@@ -1475,6 +1500,24 @@ void print_milk_cli_help(void)
            "Pause (float-capable)\n");
     printf(C_CMD "  printf \"fmt\" a.. " C_RST
            "Formatted output\n");
+    printf(C_CMD "  read [-p p] var   " C_RST
+           "Read line from stdin\n");
+    printf("\n");
+    printf(C_HDR "Logical Operators:\n" C_RST);
+    printf("  " C_CMD
+           "cmd1 && cmd2" C_RST
+           "  run cmd2 if cmd1 succeeds\n");
+    printf("  " C_CMD
+           "cmd1 || cmd2" C_RST
+           "  run cmd2 if cmd1 fails\n");
+    printf("\n");
+    printf(C_HDR "Brace Expansion:\n" C_RST);
+    printf("  " C_CMD
+           "{1..5}" C_RST
+           " → 1 2 3 4 5\n");
+    printf("  " C_CMD
+           "{0..10..2}" C_RST
+           " → 0 2 4 6 8 10\n");
     printf("\n");
     printf(C_HDR "Heredocs:\n" C_RST);
     printf("  " C_CMD "VAR=<<EOF" C_RST

@@ -2325,6 +2325,137 @@ static void cli_session_log_cmd(
 
 /*
  * ============================================================
+ *  Brace Expansion
+ * ============================================================
+ *
+ * Expand {N..M} into space-separated integers,
+ * and {N..M..S} with step S.
+ */
+
+/**
+ * @brief Expand {N..M} and {N..M..S} brace ranges
+ *
+ * Replaces tokens like {1..5} with "1 2 3 4 5"
+ * and {0..10..2} with "0 2 4 6 8 10".
+ */
+static void emit_str(
+    char       *out,
+    int        *opos,
+    int         maxlen,
+    const char *s
+);
+static void cli_expand_braces(
+    char *line,
+    int   maxlen
+)
+{
+    char out[STRINGMAXLEN_CLICMDLINE];
+    int  opos = 0;
+    int  i = 0;
+
+    while(line[i] != '\0'
+          && opos < maxlen - 1)
+    {
+        if(line[i] == '{')
+        {
+            /* Try {N..M} or {N..M..S} */
+            char *endp = NULL;
+            long sv =
+                strtol(line + i + 1,
+                       &endp, 10);
+            if(endp != NULL
+               && endp[0] == '.'
+               && endp[1] == '.')
+            {
+                char *endp2 = NULL;
+                long ev =
+                    strtol(endp + 2,
+                           &endp2, 10);
+                long step = 1;
+                if(endp2 != NULL
+                   && endp2[0] == '.'
+                   && endp2[1] == '.')
+                {
+                    char *endp3 = NULL;
+                    step =
+                        strtol(endp2 + 2,
+                               &endp3,
+                               10);
+                    endp2 = endp3;
+                }
+                if(endp2 != NULL
+                   && *endp2 == '}'
+                   && step != 0)
+                {
+                    int first = 1;
+                    if(sv <= ev)
+                    {
+                        if(step < 0)
+                        {
+                            step = -step;
+                        }
+                        for(long v = sv;
+                            v <= ev;
+                            v += step)
+                        {
+                            char nb[32];
+                            snprintf(
+                                nb,
+                                sizeof(nb),
+                                "%s%ld",
+                                first
+                                ? "" : " ",
+                                v);
+                            first = 0;
+                            emit_str(
+                                out, &opos,
+                                maxlen, nb);
+                        }
+                    }
+                    else
+                    {
+                        if(step > 0)
+                        {
+                            step = -step;
+                        }
+                        for(long v = sv;
+                            v >= ev;
+                            v += step)
+                        {
+                            char nb[32];
+                            snprintf(
+                                nb,
+                                sizeof(nb),
+                                "%s%ld",
+                                first
+                                ? "" : " ",
+                                v);
+                            first = 0;
+                            emit_str(
+                                out, &opos,
+                                maxlen, nb);
+                        }
+                    }
+                    i = (int)(endp2
+                              - line) + 1;
+                    continue;
+                }
+            }
+            out[opos++] = line[i++];
+        }
+        else
+        {
+            out[opos++] = line[i++];
+        }
+    }
+    out[opos] = '\0';
+    strncpy(line, out, (size_t) maxlen);
+    line[maxlen - 1] = '\0';
+}
+
+
+/*
+ * ============================================================
  *  Command Substitution
  * ============================================================
  *
@@ -3028,6 +3159,109 @@ errno_t CLI_execute_line()
     /* Expand aliases before anything else */
     cli_alias_expand();
 
+    /* Logical operators: && and ||
+     * Split line at top-level && / || and
+     * execute segments conditionally.
+     * Skip && / || inside quotes or $(). */
+    {
+        const char *src = data.CLIcmdline;
+        int depth = 0;   /* () nesting */
+        int in_sq = 0;   /* single quote */
+        int in_dq = 0;   /* double quote */
+        int found = 0;
+        int split_pos = -1;
+        int op_len = 0;  /* 2 for && or || */
+        int op_is_and = 0;
+
+        for(int si = 0; src[si] != '\0'; si++)
+        {
+            char c = src[si];
+            if(c == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+            }
+            else if(c == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+            }
+            else if(!in_sq && !in_dq)
+            {
+                if(c == '(')
+                {
+                    depth++;
+                }
+                else if(c == ')' && depth > 0)
+                {
+                    depth--;
+                }
+                else if(depth == 0
+                        && c == '&'
+                        && src[si + 1] == '&')
+                {
+                    found = 1;
+                    split_pos = si;
+                    op_len = 2;
+                    op_is_and = 1;
+                    break;
+                }
+                else if(depth == 0
+                        && c == '|'
+                        && src[si + 1] == '|')
+                {
+                    found = 1;
+                    split_pos = si;
+                    op_len = 2;
+                    op_is_and = 0;
+                    break;
+                }
+            }
+        }
+        if(found && split_pos >= 0)
+        {
+            /* Execute left side */
+            char left[STRINGMAXLEN_CLICMDLINE];
+            strncpy(left, data.CLIcmdline,
+                    (size_t) split_pos);
+            left[split_pos] = '\0';
+            strncpy(data.CLIcmdline, left,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE
+                - 1] = '\0';
+            errno_t lret = CLI_execute_line();
+            int ok = (lret == RETURN_SUCCESS);
+            /* Decide whether to run right */
+            int run_right =
+                (op_is_and && ok)
+                || (!op_is_and && !ok);
+            if(run_right)
+            {
+                const char *rp =
+                    src + split_pos + op_len;
+                while(*rp == ' '
+                      || *rp == '\t')
+                {
+                    rp++;
+                }
+                strncpy(data.CLIcmdline, rp,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                data.CLIcmdline[
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1] = '\0';
+                errno_t rret =
+                    CLI_execute_line();
+                free(thetime);
+                DEBUG_TRACE_FEXIT();
+                return rret;
+            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return lret;
+        }
+    }
+
     /* Dot-sourcing: ". file" → "source file"
      * Must check before script intercept */
     {
@@ -3076,6 +3310,10 @@ errno_t CLI_execute_line()
      * cli_expand_env skips $(( tokens. */
     cli_expand_env(data.CLIcmdline,
                    STRINGMAXLEN_CLICMDLINE);
+
+    /* Expand brace ranges {N..M} {N..M..S} */
+    cli_expand_braces(data.CLIcmdline,
+                      STRINGMAXLEN_CLICMDLINE);
 
     /* Expand arithmetic $(( expr )) */
     cli_expand_arith(data.CLIcmdline,
@@ -3817,6 +4055,87 @@ errno_t CLI_execute_line()
         for(int k = 0; k < nargs; k++)
         {
             free(args[k]);
+        }
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "read ", 5) == 0
+            || strcmp(data.CLIcmdline,
+                     "read") == 0)
+    {
+        /* read [-p "prompt"] varname
+         * Read line from stdin into var */
+        const char *p =
+            data.CLIcmdline + 4;
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        /* Optional -p "prompt" */
+        if(strncmp(p, "-p ", 3) == 0)
+        {
+            p += 3;
+            while(*p == ' ' || *p == '\t')
+            {
+                p++;
+            }
+            /* Extract prompt string */
+            if(*p == '"' || *p == '\'')
+            {
+                char delim = *p++;
+                while(*p != '\0'
+                      && *p != delim)
+                {
+                    putchar(*p++);
+                }
+                if(*p == delim)
+                {
+                    p++;
+                }
+            }
+            fflush(stdout);
+            while(*p == ' ' || *p == '\t')
+            {
+                p++;
+            }
+        }
+        if(*p == '\0')
+        {
+            printf("Usage: read [-p "
+                   "\"prompt\"] "
+                   "<varname>\n");
+        }
+        else
+        {
+            /* p now points at varname */
+            char vname[CLI_VAR_NAMELEN];
+            int vi = 0;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t'
+                  && vi < CLI_VAR_NAMELEN
+                  - 1)
+            {
+                vname[vi++] = *p++;
+            }
+            vname[vi] = '\0';
+            /* Read line from stdin */
+            char rbuf[1024];
+            if(fgets(rbuf, sizeof(rbuf),
+                     stdin) != NULL)
+            {
+                /* Strip trailing newline */
+                size_t rlen = strlen(rbuf);
+                while(rlen > 0
+                      && (rbuf[rlen - 1]
+                          == '\n'
+                          || rbuf[rlen - 1]
+                          == '\r'))
+                {
+                    rbuf[--rlen] = '\0';
+                }
+                cli_var_set(vname, rbuf);
+            }
         }
         data.CMDexecuted = 1;
     }

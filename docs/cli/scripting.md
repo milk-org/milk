@@ -124,6 +124,52 @@ milk-cli > printf "value = %d\n" 42
 milk-cli > printf "%s has %d items\n" list 5
 ```
 
+### read
+
+Read a line from standard input into a variable:
+
+```bash
+milk-cli > read name
+hello world
+milk-cli > echo $name         # prints: hello world
+```
+
+Use `-p "prompt"` to display a prompt first:
+
+```bash
+milk-cli > read -p "Enter value: " val
+Enter value: 42
+milk-cli > echo $val           # prints: 42
+```
+
+### Logical Operators
+
+Chain commands with `&&` (AND) and `||` (OR):
+
+```bash
+milk-cli > cmd1 && cmd2        # cmd2 runs if cmd1 succeeds
+milk-cli > cmd1 || cmd2        # cmd2 runs if cmd1 fails
+```
+
+### Brace Expansion
+
+Expand `{N..M}` and `{N..M..S}` into integer
+sequences:
+
+```bash
+milk-cli > echo {1..5}         # prints: 1 2 3 4 5
+milk-cli > echo {0..10..2}     # prints: 0 2 4 6 8 10
+milk-cli > echo {5..1}         # prints: 5 4 3 2 1
+```
+
+Useful with `for` loops:
+
+```bash
+milk-cli > for i in {1..5}; do
+milk-cli >     echo item $i
+milk-cli > done
+```
+
 ## Flow Control
 
 ### if / elif / else / fi
@@ -155,6 +201,13 @@ The `[ ... ]` syntax supports these test operators:
 | `-le` | less or equal |
 | `=` | string equal |
 | `!=` | string not equal |
+| `-n str` | string is non-empty |
+| `-z str` | string is empty |
+| `-f path` | regular file exists |
+| `-d path` | directory exists |
+| `-e path` | path exists (any type) |
+| `-s path` | file exists and is non-empty |
+| `! expr` | logical NOT (negate result) |
 
 ### while / do / done
 
@@ -205,6 +258,23 @@ milk-cli >     fi
 milk-cli >     echo n=$n
 milk-cli > done
 ```
+
+### case / esac
+
+Multi-way branching by pattern matching:
+
+```bash
+milk-cli > mode=fast
+milk-cli > case $mode in
+milk-cli >   fast) echo speed ;;
+milk-cli >   safe|careful) echo caution ;;
+milk-cli >   *) echo unknown ;;
+milk-cli > esac
+# prints: speed
+```
+
+Patterns support `|` alternation and `*` wildcard.
+Only the first matching pattern's body is executed.
 
 ## Functions
 
