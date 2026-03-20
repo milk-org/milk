@@ -42,6 +42,38 @@ milk-cli > unset x           # remove variable x
 | `$?` | Exit status of last command (0=success) |
 | `$HOME`, `$PATH`, … | Environment variables |
 
+### String Operations
+
+The `${...}` expansion supports bash-like string
+manipulation:
+
+| Syntax | Description |
+|--------|-------------|
+| `${#var}` | String length |
+| `${var:offset:length}` | Substring extraction |
+| `${var%%pattern}` | Strip longest suffix match |
+| `${var##pattern}` | Strip longest prefix match |
+
+```bash
+milk-cli > path=/home/user/file.txt
+milk-cli > echo ${#path}           # prints: 19
+milk-cli > echo ${path:6:4}        # prints: user
+milk-cli > echo ${path%%/*}        # prints: (empty)
+milk-cli > echo ${path##*/}        # prints: file.txt
+```
+
+### Array Variables
+
+Arrays store multiple values indexed by integer:
+
+```bash
+milk-cli > colors=(red green blue)
+milk-cli > echo ${colors[0]}       # prints: red
+milk-cli > echo ${colors[2]}       # prints: blue
+milk-cli > echo ${colors[@]}       # prints: red green blue
+milk-cli > echo ${#colors[@]}      # prints: 3
+```
+
 ### FPS Parameter Access
 
 Read FPS parameters using `@fpsname.param` syntax:
@@ -70,18 +102,46 @@ milk-cli > z=$(( y * 2 - x ))    # z = 20
 milk-cli > echo $y $z            # prints: 15 20
 ```
 
+## Built-in Commands
+
+### sleep
+
+Pause execution for a given number of seconds
+(float-capable):
+
+```bash
+milk-cli > sleep 1.5             # pause 1.5 seconds
+milk-cli > sleep 0.01            # 10 ms pause
+```
+
+### printf
+
+Formatted output supporting `%s`, `%d`, `%f`, `%%`,
+and `\n`, `\t` escape sequences:
+
+```bash
+milk-cli > printf "value = %d\n" 42
+milk-cli > printf "%s has %d items\n" list 5
+```
+
 ## Flow Control
 
-### if / then / else / fi
+### if / elif / else / fi
 
 ```bash
 milk-cli > x=10
-milk-cli > if [ $x -gt 5 ]; then
-milk-cli >     echo x is big
+milk-cli > if [ $x -gt 100 ]; then
+milk-cli >     echo big
+milk-cli > elif [ $x -gt 5 ]; then
+milk-cli >     echo medium
 milk-cli > else
-milk-cli >     echo x is small
+milk-cli >     echo small
 milk-cli > fi
+# prints: medium
 ```
+
+`elif` branches are evaluated in order. The first
+matching condition executes its body.
 
 The `[ ... ]` syntax supports these test operators:
 
@@ -106,17 +166,21 @@ milk-cli >     n=$(( n + 1 ))
 milk-cli > done
 ```
 
-Use `break` to exit early:
+Use `break` to exit early, `continue` to skip to the
+next iteration:
 
 ```bash
 milk-cli > n=0
-milk-cli > while [ $n -lt 100 ]; do
+milk-cli > while [ $n -lt 10 ]; do
 milk-cli >     n=$(( n + 1 ))
-milk-cli >     if [ $n -eq 5 ]; then
+milk-cli >     if [ $n -eq 3 ]; then
+milk-cli >         continue
+milk-cli >     fi
+milk-cli >     if [ $n -eq 7 ]; then
 milk-cli >         break
 milk-cli >     fi
+milk-cli >     echo $n
 milk-cli > done
-milk-cli > echo stopped at $n    # prints: stopped at 5
 ```
 
 ### for / do / done
@@ -125,16 +189,6 @@ milk-cli > echo stopped at $n    # prints: stopped at 5
 milk-cli > for item in alpha beta gamma; do
 milk-cli >     echo processing $item
 milk-cli > done
-```
-
-For loops with arithmetic:
-
-```bash
-milk-cli > sum=0
-milk-cli > for val in 10 20 30; do
-milk-cli >     sum=$(( sum + val ))
-milk-cli > done
-milk-cli > echo total=$sum       # prints: total=60
 ```
 
 ### Nesting
@@ -163,22 +217,72 @@ milk-cli > function greet {
 milk-cli >     echo Hello $1
 milk-cli > }
 milk-cli > greet world           # prints: Hello world
-milk-cli > greet milk            # prints: Hello milk
 ```
 
-Functions can contain flow control:
+### Return Values
+
+Use `return` to exit a function early. An optional
+integer argument sets `$?`:
 
 ```bash
-milk-cli > function classify {
-milk-cli >     if [ $1 -gt 100 ]; then
-milk-cli >         echo big
-milk-cli >     else
-milk-cli >         echo small
+milk-cli > function check {
+milk-cli >     if [ $1 -gt 10 ]; then
+milk-cli >         return 0
 milk-cli >     fi
+milk-cli >     return 1
 milk-cli > }
-milk-cli > classify 200          # prints: big
-milk-cli > classify 5            # prints: small
+milk-cli > check 20
+milk-cli > echo $?               # prints: 0
 ```
+
+### Local Variable Scoping
+
+Variables created inside a function are automatically
+local — they are removed when the function returns.
+Variables that existed before the call are restored to
+their original values:
+
+```bash
+milk-cli > x=outer
+milk-cli > function test {
+milk-cli >     x=inner
+milk-cli >     y=local_only
+milk-cli > }
+milk-cli > test
+milk-cli > echo $x               # prints: outer
+milk-cli > echo $y               # prints: (empty)
+```
+
+## Heredocs
+
+Assign multi-line text to a variable using heredoc
+syntax:
+
+```bash
+milk-cli > config=<<EOF
+milk-cli > gain=0.5
+milk-cli > nframes=100
+milk-cli > mode=closed
+milk-cli > EOF
+milk-cli > echo $config
+```
+
+Lines between `=<<DELIM` and `DELIM` are concatenated
+with newlines and stored in the variable.
+
+## Stream Event Triggers
+
+The `on_update` command waits for a shared-memory
+stream to be updated, then runs a command:
+
+```bash
+milk-cli > on_update wfs { echo frame received }
+```
+
+This blocks until the stream's semaphore is posted
+(i.e., a new frame arrives), then executes the
+command body. Useful for event-driven processing
+in scripts.
 
 ## Script Files
 
@@ -194,6 +298,22 @@ milk-cli > . myscript.milk        # same thing
 
 Blank lines and `#` comments are skipped. On error,
 the filename and line number are printed.
+
+### Include Guard
+
+`include_once` sources a file only once per session,
+even if called multiple times. Uses resolved paths:
+
+```bash
+milk-cli > include_once helpers.milk
+milk-cli > include_once helpers.milk   # no-op
+```
+
+### Startup Profile
+
+`~/.milkrc` is automatically sourced at startup if
+it exists. Use this for persistent aliases, variables,
+and function definitions.
 
 ### Saving State
 
@@ -253,6 +373,7 @@ echo "Processing complete"
 | Comments | Lines starting with `#` |
 | Shebang | `#!/usr/bin/env milk-cli -s` |
 | Startup | `-s FILE` flag on command line |
+| Auto-load | `~/.milkrc` at startup |
 
 ## Command Reference
 
@@ -260,12 +381,19 @@ echo "Processing complete"
 |---------|-------------|
 | `source <file>` | Execute a script file |
 | `. <file>` | Same as `source` |
+| `include_once <file>` | Source only once |
 | `savescript <file>` | Save variables and functions |
 | `savehistory <file>` | Save command history |
 | `echo <args>` | Print arguments |
+| `printf "fmt" args` | Formatted output |
+| `sleep <seconds>` | Pause (float-capable) |
 | `vars` | List all variables |
 | `unset <var>` | Remove a variable |
 | `fpsset <fps> <param> <val>` | Write FPS parameter |
+| `return [val]` | Exit function, set `$?` |
+| `break` | Exit loop |
+| `continue` | Skip to next iteration |
+| `on_update <stream> { cmd }` | Run cmd on stream update |
 
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
