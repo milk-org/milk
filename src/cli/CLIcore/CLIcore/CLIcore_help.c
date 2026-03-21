@@ -1414,6 +1414,18 @@ void print_milk_cli_help(void)
            C_RST " (numeric), "
            C_NOTE "= !=" C_RST
            " (string)\n");
+    printf("  File tests: "
+           C_NOTE "-f" C_RST
+           " (file), "
+           C_NOTE "-d" C_RST
+           " (dir), "
+           C_NOTE "-e" C_RST
+           " (exists), "
+           C_NOTE "-s" C_RST
+           " (non-empty)\n");
+    printf("  Negate: "
+           C_CMD "[ ! expr ]" C_RST
+           " logical NOT\n");
     printf("\n");
     printf(C_HDR "Loops:\n" C_RST);
     printf("  " C_CMD
@@ -1428,6 +1440,19 @@ void print_milk_cli_help(void)
            " exits loop, "
            C_CMD "continue" C_RST
            " next iter\n");
+    printf("\n");
+    printf(C_HDR "Case statement:\n" C_RST);
+    printf("  " C_CMD
+           "case $var in" C_RST "\n");
+    printf("  " C_CMD
+           "  yes) echo ok ;;" C_RST "\n");
+    printf("  " C_CMD
+           "  a|b) echo ab ;;" C_RST
+           "  ← alternation\n");
+    printf("  " C_CMD
+           "  *) echo default ;;"
+           C_RST "\n");
+    printf("  " C_CMD "esac" C_RST "\n");
     printf("\n");
     printf(C_HDR "Functions:\n" C_RST);
     printf("  " C_CMD
@@ -1475,6 +1500,52 @@ void print_milk_cli_help(void)
            "Pause (float-capable)\n");
     printf(C_CMD "  printf \"fmt\" a.. " C_RST
            "Formatted output\n");
+    printf(C_CMD "  read [-p p] var   " C_RST
+           "Read line from stdin\n");
+    printf(C_CMD "  exit [N]          " C_RST
+           "Exit with status N\n");
+    printf(C_CMD "  shift [N]         " C_RST
+           "Shift $1..$9 by N\n");
+    printf("\n");
+    printf(C_HDR "Logical Operators:\n" C_RST);
+    printf("  " C_CMD
+           "cmd1 && cmd2" C_RST
+           "  run cmd2 if cmd1 succeeds\n");
+    printf("  " C_CMD
+           "cmd1 || cmd2" C_RST
+           "  run cmd2 if cmd1 fails\n");
+    printf("\n");
+    printf(C_HDR "Brace Expansion:\n" C_RST);
+    printf("  " C_CMD
+           "{1..5}" C_RST
+           " → 1 2 3 4 5\n");
+    printf("  " C_CMD
+           "{0..10..2}" C_RST
+           " → 0 2 4 6 8 10\n");
+    printf("\n");
+    printf(C_HDR "Pipes & Redirection:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd1 | cmd2" C_RST
+           "     pipe stdout → stdin\n");
+    printf("  " C_CMD
+           "cmd > file" C_RST
+           "      write to file\n");
+    printf("  " C_CMD
+           "cmd >> file" C_RST
+           "     append to file\n");
+    printf("  " C_CMD
+           "cmd <<< \"str\"" C_RST
+           "   here-string\n");
+    printf("\n");
+    printf(C_HDR "Glob Expansion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "*.fits" C_RST
+           " expands to matching files\n");
+    printf("  " C_CMD
+           "data_??.bin" C_RST
+           " single-char wildcard\n");
     printf("\n");
     printf(C_HDR "Heredocs:\n" C_RST);
     printf("  " C_CMD "VAR=<<EOF" C_RST
@@ -1486,12 +1557,299 @@ void print_milk_cli_help(void)
     printf("  " C_CMD "EOF" C_RST
            "  → multi-line var\n");
     printf("\n");
+    printf(C_HDR "Signal Traps:\n"
+           C_RST);
+    printf("  " C_CMD
+           "trap 'cmd' EXIT INT"
+           C_RST
+           " handler\n");
+    printf("  " C_CMD
+           "trap 'rm /tmp/f' EXIT"
+           C_RST
+           " cleanup\n");
+    printf("\n");
+    printf(C_HDR "Shell Options:\n"
+           C_RST);
+    printf("  " C_CMD
+           "set -e" C_RST
+           "  exit on error\n");
+    printf("  " C_CMD
+           "set -x" C_RST
+           "  trace commands\n");
+    printf("  " C_CMD
+           "set +e" C_RST
+           "  disable -e\n");
+    printf("  " C_CMD
+           "set +x" C_RST
+           "  disable -x\n");
+    printf("\n");
+    printf(C_HDR
+           "Environment Variables:\n"
+           C_RST);
+    printf("  " C_CMD
+           "export VAR=val" C_RST
+           "  env var\n");
+    printf("  " C_CMD
+           "export VAR" C_RST
+           "     push to env\n");
+    printf("\n");
+    printf(C_HDR
+           "Extended Test:\n" C_RST);
+    printf("  " C_CMD
+           "[[ $s =~ ^[0-9]+$ ]]"
+           C_RST
+           " regex\n");
+    printf("  " C_CMD
+           "[[ -n $s ]]" C_RST
+           "  non-empty\n");
+    printf("\n");
+    printf(C_HDR "Tilde Expansion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "~/path" C_RST
+           " → $HOME/path\n");
+    printf("\n");
+    printf(C_HDR
+           "Input Redirection:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd < file" C_RST
+           "  read stdin from "
+           "file\n");
+    printf("\n");
+    printf(C_HDR "Select Menu:\n"
+           C_RST);
+    printf("  " C_CMD
+           "select x in a b c;"
+           " do" C_RST "\n");
+    printf("  " C_CMD
+           "  echo $x" C_RST "\n");
+    printf("  " C_CMD
+           "done" C_RST
+           "  interactive menu\n");
+    printf("\n");
+    printf(C_HDR "Arithmetic For:\n"
+           C_RST);
+    printf("  " C_CMD
+           "for ((i=0; i<10; i++));"
+           " do" C_RST "\n");
+    printf("  " C_CMD
+           "  echo $i" C_RST "\n");
+    printf("  " C_CMD
+           "done" C_RST
+           "  C-style for\n");
+    printf("\n");
     printf(C_HDR "Stream Events:\n" C_RST);
     printf("  " C_CMD
            "on_update <stream> { cmd }"
            C_RST "\n");
     printf("  Waits for stream update,"
            " then runs cmd\n");
+    printf("\n");
+    printf(C_HDR
+           "Parameter Defaults:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${v:-def}" C_RST
+           "  default if unset\n");
+    printf("  " C_CMD
+           "${v:=def}" C_RST
+           "  assign if unset\n");
+    printf("  " C_CMD
+           "${v:+alt}" C_RST
+           "  alt if set\n");
+    printf("  " C_CMD
+           "${v:?err}" C_RST
+           "  error if unset\n");
+    printf("\n");
+    printf(C_HDR "String Ops:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${v/pat/rep}" C_RST
+           " replace first\n");
+    printf("  " C_CMD
+           "${v//pat/rep}" C_RST
+           " replace all\n");
+    printf("  " C_CMD
+           "${v#pat}" C_RST
+           "  strip prefix\n");
+    printf("  " C_CMD
+           "${v%%pat}" C_RST
+           "  strip suffix\n");
+    printf("\n");
+    printf(C_HDR
+           "Source / Include:\n"
+           C_RST);
+    printf("  " C_CMD
+           "source file" C_RST
+           "  include script\n");
+    printf("  " C_CMD
+           ". file" C_RST
+           "  alias for source\n");
+    printf("\n");
+    printf(C_HDR "Read-only:\n"
+           C_RST);
+    printf("  " C_CMD
+           "readonly VAR=val"
+           C_RST "\n");
+    printf("\n");
+    printf(C_HDR "Function Scope:\n"
+           C_RST);
+    printf("  " C_CMD
+           "local VAR=val" C_RST
+           "  declare local var\n");
+    printf("  " C_CMD
+           "return [n]" C_RST
+           "     exit function\n");
+    printf("\n");
+    printf(C_HDR "Break / Continue:\n"
+           C_RST);
+    printf("  " C_CMD
+           "break 2" C_RST
+           "  exit 2 loops\n");
+    printf("  " C_CMD
+           "continue 2" C_RST
+           "  skip 2 levels\n");
+    printf("\n");
+    printf(C_HDR "Printf:\n" C_RST);
+    printf("  " C_CMD
+           "printf \"%%s=%%d\\n\""
+           " name 42" C_RST "\n");
+    printf("  Supports %%s %%d %%f\n");
+    printf("\n");
+    printf(C_HDR "Getopts:\n" C_RST);
+    printf("  " C_CMD
+           "getopts \"ab:\" opt"
+           C_RST "\n");
+    printf("  Parses options,"
+           " OPTARG / OPTIND\n");
+    printf("\n");
+    printf(C_HDR "Mapfile:\n" C_RST);
+    printf("  " C_CMD
+           "mapfile -t arr < file"
+           C_RST "\n");
+    printf("  " C_CMD
+           "readarray -t arr < file"
+           C_RST "\n");
+    printf("  Read lines into array\n");
+    printf("\n");
+    printf(C_HDR
+           "Background / Wait:\n"
+           C_RST);
+    printf("  " C_CMD
+           "cmd &" C_RST
+           "  run in background\n");
+    printf("  " C_CMD
+           "wait" C_RST
+           "  wait for bg jobs\n");
+    printf("  $! = last bg PID\n");
+    printf("\n");
+    printf(C_HDR "Subshell:\n" C_RST);
+    printf("  " C_CMD
+           "(cmd1; cmd2)" C_RST
+           "  isolated env\n");
+    printf("\n");
+    printf(C_HDR "I/O Enhancements:\n"
+           C_RST);
+    printf("  " C_CMD
+           "read -t N VAR" C_RST
+           "  timed read (sec)\n");
+    printf("  " C_CMD
+           "read -a ARR" C_RST
+           "  read words to array\n");
+    printf("  " C_CMD
+           "cmd <<< \"text\"" C_RST
+           "  here-string\n");
+    printf("  " C_CMD
+           "cmd 2>&1" C_RST
+           "  stderr to stdout\n");
+    printf("  " C_CMD
+           "cmd 2>/dev/null" C_RST
+           "  discard stderr\n");
+    printf("  " C_CMD
+           "cmd 2>file" C_RST
+           "  stderr to file\n");
+    printf("\n");
+    printf(C_HDR "Case Conversion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${var^^}" C_RST
+           "  uppercase all\n");
+    printf("  " C_CMD
+           "${var,,}" C_RST
+           "  lowercase all\n");
+    printf("  " C_CMD
+           "${var^}" C_RST
+           "  capitalize first\n");
+    printf("  " C_CMD
+           "${var,}" C_RST
+           "  lowercase first\n");
+    printf("\n");
+
+    printf(C_HDR "Scripting Usability:\n"
+           C_RST);
+    printf("  " C_CMD
+           "true / false" C_RST
+           "  builtins set $?=0/1\n");
+    printf("  " C_CMD
+           "(( expr ))" C_RST
+           "  arith conditional\n");
+    printf("  " C_CMD
+           "alias n='cmd'" C_RST
+           "  create alias\n");
+    printf("  " C_CMD
+           "unalias n" C_RST
+           "  remove alias\n");
+    printf("  " C_CMD
+           "declare -A m" C_RST
+           "  assoc array\n");
+    printf("  " C_CMD
+           "${!var}" C_RST
+           "  indirect expansion\n");
+    printf("  " C_CMD
+           "${m[key]}" C_RST
+           "  assoc lookup\n");
+    printf("  " C_CMD
+           "test -v VAR" C_RST
+           "  variable is set\n");
+    printf("\n");
+    printf(C_HDR "Path & Shell:\n"
+           C_RST);
+    printf("  " C_CMD
+           "basename path" C_RST
+           "  filename part\n");
+    printf("  " C_CMD
+           "dirname path" C_RST
+           "  directory part\n");
+    printf("  " C_CMD
+           "pushd / popd / dirs"
+           C_RST
+           "  dir stack\n");
+    printf("  " C_CMD
+           "seq [s] [step] e" C_RST
+           "  number sequence\n");
+    printf("\n");
+    printf(C_HDR "Milk Specific:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${s.xsize}" C_RST
+           "  stream dim X\n");
+    printf("  " C_CMD
+           "${s.ysize}" C_RST
+           "  stream dim Y\n");
+    printf("  " C_CMD
+           "${s.type}" C_RST
+           "  stream datatype\n");
+    printf("  " C_CMD
+           "${s.cnt0}" C_RST
+           "  stream counter\n");
+    printf("  " C_CMD
+           "waitfor_stream s T"
+           C_RST
+           "  wait for SHM\n");
+    printf("  " C_CMD
+           "waitfor_fps f T"
+           C_RST "  wait for FPS\n");
     printf("\n");
 
     return;
