@@ -68,7 +68,7 @@ INPUT
 GNU readline used to read input. See GNU readline documentation on http://tiswww.case.edu/php/chet/readline/rltop.html. For a quick help on readline input, type:
 > helprl
 
-The command line interpreter (CLI) will take input from file cmdfile.txt if it exists. If file cmdfile.txt exists commands will be read one by one from top to bottom, and will be removed from the file as they are read, until the file is empty
+The CLI can also receive commands from external processes via a named pipe (FIFO). Start milk-cli with the -f flag to enable FIFO input. See FIFO INPUT section below for details.
 
 -----------------------------------------------------------------------------------
 HELP COMMANDS
@@ -145,27 +145,33 @@ INTEGRATION WITH STANDARD LINUX TOOLS AND COMMANDS
 
 FIFO INPUT TO EXECUTABLE:
 
-You can control the executable through a named pipe (fifo), which is created by default when the executable is started, and removed when it is cleanly stopped. Note that starting the program will erase the content of the fifo upon startup even if it was previously created.
+You can control the executable through a named pipe (FIFO). To enable FIFO input, start milk-cli with the -f flag (auto-generated path) or -F <path> (custom path). The FIFO is removed when the process cleanly exits.
 
-By default, the fifo is created in the local directory, with the name "clififo", to pipe commands into the command line interface. You can opt out of the fifo feature by adding the option --nofifo to the command line executable, or rename the fifo with the -f option :
-<executable> -f "/tmp/fifo145.txt"
-This will create a fifo named /tmp/fifo145.txt.
+The auto-generated FIFO path follows the template:
+$SHMDIR/.<processname>.fifo.<PID>
 
-Other programs can write to the fifo to issue commands to the executable, such as:
-cat myscript.txt > clififo
-More complex commands can be issued within the executable using the fifo.
-For example, to load all im*.fits files in memory, you can type within the executable:
+Use -n to give the process a friendlier name:
+  milk-cli -n myctl -f    # creates /dev/shm/.myctl.fifo.<PID>
 
-> !ls im*.fits | xargs -I {} echo loadfits {} >> clififo
+Or specify a custom FIFO path:
+  milk-cli -F /tmp/myfifo
+
+Other programs can write to the FIFO to issue commands to the running session:
+  echo "mem.listim" > /dev/shm/.myctl.fifo.0012345
+
+More complex commands can be issued within the executable using the FIFO.
+For example, to load all im*.fits files in memory, you can type within the executable (replace the fifo path with the actual path for your session):
+
+> !ls im*.fits | xargs -I {} echo loadfits {} >> /dev/shm/.myctl.fifo.0012345
 
 
-USING "imlist.txt" AND fifo
+USING "imlist.txt" AND FIFO
 
-If you start the executable with the "-l" option,  the file "imlist.txt" contains the list of images currently in memory in a ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files :
+If you start the executable with the "-l" option, the file "imlist.txt" contains the list of images currently in memory in an ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files:
 
-> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo saveflfits {} {}_tmp.fits >> clififo
+> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo saveflfits {} {}_tmp.fits >> /dev/shm/.myctl.fifo.0012345
 
-Note that if you launch several instances of the executable in the same directory, they will share the same fifo - this is generally a bad idea, as there is no easy way to control wich of the programs will read and execute the fifo commands.
+Note: each milk-cli session has its own unique FIFO path. Use -n to give sessions distinct names and avoid ambiguity.
 
 -----------------------------------------------------------------------------------
 SCRIPTING — VARIABLES & ARITHMETIC
