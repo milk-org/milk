@@ -6572,8 +6572,8 @@ void CLI_setup_hint_area(void)
      * (the reserved hint line) before we save its position. */
     printf("\n\033[1A");
 
-    /* Save the current cursor position */
-    printf("\0337");
+    /* Save the current cursor position using ANSI */
+    printf("\033[s");
 
     /* Set scroll region to rows 1..(rows-1)
      * NOTE: DECSTBM moves cursor to home (1, 1) */
@@ -6582,9 +6582,8 @@ void CLI_setup_hint_area(void)
     /* Clear the hint line (outside scroll region) */
     printf("\033[%d;1H\033[2K", cached_term_rows);
 
-    /* Restore cursor to where it was (properly placed below the
-     * startup banner, instead of jumping to the bottom!) */
-    printf("\0338");
+    /* Restore cursor to where it was using ANSI */
+    printf("\033[u");
     fflush(stdout);
 
     hint_area_active = 1;
@@ -6634,9 +6633,9 @@ static void update_hint_area(void)
         return;
     }
 
-    /* Single DEC save cursor for the whole
+    /* Single ANSI save cursor for the whole
      * operation (resize + hint painting) */
-    printf("\0337");
+    printf("\033[s");
 
     /* Check for terminal resize */
     {
@@ -6801,8 +6800,8 @@ static void update_hint_area(void)
         }
     }
 
-    /* DEC restore cursor */
-    printf("\0338");
+    /* ANSI restore cursor */
+    printf("\033[u");
     fflush(stdout);
 }
 
