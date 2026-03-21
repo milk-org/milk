@@ -53,6 +53,10 @@ manipulation:
 | `${var:offset:length}` | Substring extraction |
 | `${var%%pattern}` | Strip longest suffix match |
 | `${var##pattern}` | Strip longest prefix match |
+| `${var^^}` | Uppercase all characters |
+| `${var,,}` | Lowercase all characters |
+| `${var^}` | Capitalize first character |
+| `${var,}` | Lowercase first character |
 
 ```bash
 milk-cli > path=/home/user/file.txt
@@ -60,6 +64,10 @@ milk-cli > echo ${#path}           # prints: 19
 milk-cli > echo ${path:6:4}        # prints: user
 milk-cli > echo ${path%%/*}        # prints: (empty)
 milk-cli > echo ${path##*/}        # prints: file.txt
+milk-cli > name=hello
+milk-cli > echo ${name^^}          # prints: HELLO
+milk-cli > name=WORLD
+milk-cli > echo ${name,,}          # prints: world
 ```
 
 ### Array Variables
@@ -134,12 +142,22 @@ hello world
 milk-cli > echo $name         # prints: hello world
 ```
 
-Use `-p "prompt"` to display a prompt first:
+Flags:
+
+| Flag | Description |
+|------|-------------|
+| `-p "prompt"` | Display a prompt before reading |
+| `-t N` | Timeout after N seconds |
+| `-a arrayname` | Split words into an array |
 
 ```bash
 milk-cli > read -p "Enter value: " val
 Enter value: 42
 milk-cli > echo $val           # prints: 42
+milk-cli > read -t 5 response  # wait up to 5 sec
+milk-cli > read -a words       # split into array
+hello world
+milk-cli > echo ${words[0]}    # prints: hello
 ```
 
 ### Logical Operators
@@ -186,6 +204,16 @@ Redirect stdout to a file:
 ```bash
 milk-cli > echo "log entry" > output.txt
 milk-cli > echo "more" >> output.txt  # append
+```
+
+### Stderr Redirection
+
+Redirect stderr independently:
+
+```bash
+milk-cli > cmd 2>&1          # stderr to stdout
+milk-cli > cmd 2>/dev/null    # discard stderr
+milk-cli > cmd 2>errors.txt   # stderr to file
 ```
 
 ### Here-Strings
@@ -431,6 +459,68 @@ Execute commands in an isolated sub-environment:
 milk-cli > (x=42; echo $x)
 milk-cli > echo $x    # empty — subshell is isolated
 ```
+
+### declare / typeset
+
+Declare variable attributes:
+
+```bash
+milk-cli > declare -i count=0    # integer
+milk-cli > declare -r PI=3.14    # read-only
+milk-cli > declare -a arr        # array
+milk-cli > declare -x MYVAR=val  # export
+milk-cli > typeset -i x=5        # alias
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-i` | Integer variable |
+| `-a` | Array variable |
+| `-r` | Read-only |
+| `-x` | Export to environment |
+
+### let
+
+Evaluate arithmetic expressions:
+
+```bash
+milk-cli > let "x=5+3"       # x = 8
+milk-cli > let "y=x*2"       # y = 16
+milk-cli > let "x++"         # x = 9
+```
+
+### eval
+
+Construct and execute a command string:
+
+```bash
+milk-cli > cmd="echo hello"
+milk-cli > eval $cmd          # prints: hello
+milk-cli > vname=foo
+milk-cli > eval "$vname=42"
+milk-cli > echo $foo           # prints: 42
+```
+
+### type / command -v
+
+Check whether a command exists:
+
+```bash
+milk-cli > type echo           # echo is a builtin
+milk-cli > command -v ls        # /usr/bin/ls
+milk-cli > type nonexistent     # not found
+```
+
+### timeout
+
+Run a command with a deadline:
+
+```bash
+milk-cli > timeout 5 long_running_cmd
+```
+
+If the command does not finish within N seconds,
+it is terminated with `$?` set to 124.
 
 ## Flow Control
 
@@ -721,10 +811,22 @@ echo "Processing complete"
 | `sleep <seconds>` | Pause (float-capable) |
 | `vars` | List all variables |
 | `unset <var>` | Remove a variable |
+| `readonly VAR=val` | Mark variable read-only |
+| `declare [-i\|-a\|-r\|-x] VAR` | Typed declaration |
+| `typeset` | Alias for `declare` |
+| `local VAR=val` | Set variable in current scope |
+| `let "expr"` | Arithmetic evaluation |
+| `eval "cmd"` | Execute string as command |
+| `type <cmd>` | Check command existence |
+| `command -v <cmd>` | Print command path |
+| `timeout N cmd` | Run cmd with deadline |
 | `fpsset <fps> <param> <val>` | Write FPS parameter |
 | `return [val]` | Exit function, set `$?` |
-| `break` | Exit loop |
-| `continue` | Skip to next iteration |
+| `break [N]` | Exit N loop levels |
+| `continue [N]` | Skip N loop levels |
+| `read [-p\|-t\|-a] VAR` | Read input |
+| `getopts spec opt` | Parse options |
+| `mapfile -t arr < file` | Read lines to array |
 | `on_update <stream> { cmd }` | Run cmd on stream update |
 
 ---
