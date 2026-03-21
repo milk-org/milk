@@ -165,11 +165,19 @@ For example, to load all im*.fits files in memory, you can type within the execu
 > !ls im*.fits | xargs -I {} echo loadfits {} >> /dev/shm/.myctl.fifo.0012345
 
 
-USING "imlist.txt" AND FIFO
+USING "imlist.txt"
 
-If you start the executable with the "-l" option, the file "imlist.txt" contains the list of images currently in memory in an ASCII table. You can use standard unix tools to process this list and issue commands. For example, if you want to save all images with x size > 200 onto disk as single precision FITS files:
+Start milk-cli with -l (or --listimf) to maintain "imlist.txt" -- an ASCII table of all images currently in memory. Standard unix tools can filter this list and generate commands.
 
-> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo saveflfits {} {}_tmp.fits >> /dev/shm/.myctl.fifo.0012345
+The -l flag works independently of FIFO mode. You can feed the generated commands back into the CLI via cmdfile.txt or via a FIFO.
+
+Via cmdfile.txt (no -f flag needed):
+
+> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo iofits.save_fl {} {}_tmp.fits > cmdfile.txt
+
+Via FIFO (requires -f or -F; start with milk-cli -l -n myctl -f):
+
+> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo iofits.save_fl {} {}_tmp.fits >> /dev/shm/.myctl.fifo.0012345
 
 Note: each milk-cli session has its own unique FIFO path. Use -n to give sessions distinct names and avoid ambiguity.
 

@@ -506,11 +506,26 @@ is running):
 $ ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.0012345
 ```
 
-### Using `imlist.txt` and the FIFO
+### Using `imlist.txt`
 
-Start `milk-cli` with `-l -f` (or `-l -n myctl -f`) to
-maintain `imlist.txt` and enable FIFO input. Then filter
-and act on the list:
+Start `milk-cli` with `-l` (or `--listimf`) to maintain
+`imlist.txt` — an ASCII table of all images currently in
+memory. Standard Unix tools can filter this list and
+generate commands.
+
+The `-l` flag works independently of FIFO mode. You can
+feed the generated commands back into the CLI via
+`cmdfile.txt` or via a FIFO:
+
+**Via `cmdfile.txt`** (no `-f` flag needed):
+
+```text
+milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
+        | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > cmdfile.txt
+```
+
+**Via FIFO** (requires `-f` or `-F`; start with
+`milk-cli -l -n myctl -f`):
 
 ```text
 milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
