@@ -273,7 +273,7 @@ MILK_BUILD:VER=1,...,ARCH=x86_64,OPT=3,LTO=STATIC,END
 `milk-perfbench` reads and displays this
 automatically in its header line:
 
-```
+```text
   Build     : O3 LTO-static [x86_64]
 ```
 
@@ -748,7 +748,7 @@ library installation is needed on the target.
 
 **`_GNU_SOURCE` redefined:**
 
-```
+```text
 fps_standalone_data.c:6:9: warning: '_GNU_SOURCE' redefined
 ```
 
@@ -758,7 +758,7 @@ harmless redefinition. No action required.
 
 **LTO type mismatch on `copy_image_ID`:**
 
-```
+```text
 warning: type of 'copy_image_ID' does not match original declaration [-Wlto-type-mismatch]
 image_copy.h: return value: imageID vs int
 ```
