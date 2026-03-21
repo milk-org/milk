@@ -15,11 +15,8 @@
 #endif
 #include "CLIcore.h"
 #include "CLIcore_UI.h"
-#include "CLIcore_script.h"
-#include "CLIcore/cli_calc_parser.h"
 #include <glob.h>
 #include <sys/wait.h>
-#include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
 
@@ -163,6 +160,28 @@ void cli_history_log_cmd(
     if(cmd == NULL || cmd[0] == '\0')
     {
         return;
+    }
+
+    /* Do not log history-display commands —
+     * they would pollute the log they read. */
+    {
+        static const char *const skip[] =
+        {
+            "ghistory",
+            "lhistory",
+            NULL
+        };
+        for(int k = 0; skip[k] != NULL; k++)
+        {
+            size_t n = strlen(skip[k]);
+            if(strncmp(cmd, skip[k], n) == 0
+               && (cmd[n] == '\0'
+                   || cmd[n] == ' '
+                   || cmd[n] == '\t'))
+            {
+                return;
+            }
+        }
     }
 
     FILE *fp = fopen(CLI_history_log_file(), "a");
