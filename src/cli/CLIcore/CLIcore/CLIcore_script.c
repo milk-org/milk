@@ -48,7 +48,7 @@ CLI_TRAP cli_traps[CLI_TRAP_MAXSIGS];
  * @param name  Signal name (EXIT, INT, etc.)
  * @return signal number, or 0 for EXIT
  */
-static int cli_trap_signum(const char *name)
+int cli_trap_signum(const char *name)
 {
     if(strcasecmp(name, "EXIT") == 0)
     {
@@ -77,36 +77,6 @@ static int cli_trap_signum(const char *name)
     return (int) strtol(name, NULL, 0);
 }
 
-/**
- * @brief Execute trap handlers for signal
- */
-void cli_trap_run(int signum)
-{
-    for(int i = 0;
-        i < CLI_TRAP_MAXSIGS; i++)
-    {
-        if(cli_traps[i].used
-           && cli_traps[i].signum
-           == signum)
-        {
-            strncpy(
-                data.CLIcmdline,
-                cli_traps[i].cmd,
-                STRINGMAXLEN_CLICMDLINE
-                - 1);
-            CLI_execute_line();
-        }
-    }
-}
-
-/**
- * @brief Run EXIT traps (signal 0)
- */
-void cli_trap_run_exit(void)
-{
-    cli_trap_run(0);
-}
-
 /* ---- Array Storage ---- */
 CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 
@@ -114,17 +84,11 @@ CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 CLI_ASSOC_ARRAY cli_assoc[CLI_MAX_ASSOC];
 
 /* Local variable scoping stack for functions */
-#define CLI_MAX_LOCAL_DEPTH 32
-#define CLI_MAX_LOCALS_PER_FUNC 64
-typedef struct {
-    char name[CLI_VAR_NAMELEN];
-    char val[CLI_VAR_VALLEN];
-    int  was_used;
-} CLI_LOCAL_SHADOW;
+// externs are defined in CLIcore_script.h
+CLI_LOCAL_SHADOW cli_local_shadows[CLI_MAX_LOCAL_DEPTH][CLI_MAX_LOCALS_PER_FUNC];
+int cli_local_shadow_count[CLI_MAX_LOCAL_DEPTH];
+int cli_local_depth = 0;
 
-static CLI_LOCAL_SHADOW cli_local_shadows[CLI_MAX_LOCAL_DEPTH][CLI_MAX_LOCALS_PER_FUNC];
-static int cli_local_shadow_count[CLI_MAX_LOCAL_DEPTH];
-static int cli_local_depth = 0;
 
 /**
  * @brief Look up a CLI variable by name
@@ -144,73 +108,6 @@ const char *cli_var_get(const char *name)
         }
     }
     return NULL;
-}
-
-/**
- * @brief Set a CLI variable (create or update)
- *
- * @param name  Variable name
- * @param val   Value string
- */
-void cli_var_set(
-    const char *name,
-    const char *val
-)
-{
-    /* Update existing */
-    for(int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if(cli_vars[i].used
-                && strcmp(cli_vars[i].name, name)
-                == 0)
-        {
-            strncpy(cli_vars[i].val, val,
-                    CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[
-                CLI_VAR_VALLEN - 1] = '\0';
-            return;
-        }
-    }
-    /* Find empty slot */
-    for(int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if(!cli_vars[i].used)
-        {
-            strncpy(cli_vars[i].name, name,
-                    CLI_VAR_NAMELEN - 1);
-            cli_vars[i].name[
-                CLI_VAR_NAMELEN - 1] = '\0';
-            strncpy(cli_vars[i].val, val,
-                    CLI_VAR_VALLEN - 1);
-            cli_vars[i].val[
-                CLI_VAR_VALLEN - 1] = '\0';
-            cli_vars[i].used = 1;
-            return;
-        }
-    }
-    printf("Error: variable table full "
-           "(max %d)\n", CLI_MAX_VARS);
-}
-
-/**
- * @brief Remove a CLI variable
- *
- * @param name  Variable name
- */
-void cli_var_unset(const char *name)
-{
-    for(int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if(cli_vars[i].used
-                && strcmp(cli_vars[i].name, name)
-                == 0)
-        {
-            cli_vars[i].used = 0;
-            cli_vars[i].name[0] = '\0';
-            cli_vars[i].val[0] = '\0';
-            return;
-        }
-    }
 }
 
 /**
@@ -408,1042 +305,10 @@ const char *cli_var_lookup(const char *name)
 
 
 /* ============================================================
- *  Variable Assignment Detection
- * ============================================================
- */
-
-/**
- * @brief Check if line is VAR=val assignment
- *
- * @param line  Command line string
- * @return 1 if handled as assignment, 0 otherwise
- */
-int cli_try_var_assign(const char *line)
-{
-    const char *p = line;
-
-    /* Skip leading whitespace */
-    while(*p == ' ' || *p == '\t')
-    {
-        p++;
-    }
-
-    /* Must start with alpha or underscore */
-    if(!isalpha((unsigned char) *p)
-            && *p != '_')
-    {
-        return 0;
-    }
-
-    /* Scan variable name */
-    const char *name_start = p;
-    while(isalnum((unsigned char) *p)
-            || *p == '_')
-    {
-        p++;
-    }
-
-    /* Must hit '=' immediately */
-    if(*p != '=')
-    {
-        return 0;
-    }
-
-    {
-        int namelen = (int)(p - name_start);
-        char tmpname[CLI_VAR_NAMELEN];
-        if(namelen >= CLI_VAR_NAMELEN)
-        {
-            namelen = CLI_VAR_NAMELEN - 1;
-        }
-        memcpy(tmpname, name_start,
-               (size_t) namelen);
-        tmpname[namelen] = '\0';
-
-        /* Extract value (everything after '=') */
-        const char *val = p + 1;
-
-        /* Strip trailing whitespace/newline */
-        char valbuf[CLI_VAR_VALLEN];
-        strncpy(valbuf, val,
-                CLI_VAR_VALLEN - 1);
-        valbuf[CLI_VAR_VALLEN - 1] = '\0';
-        {
-            size_t vl = strlen(valbuf);
-            while(vl > 0
-                    && (valbuf[vl - 1] == ' '
-                        || valbuf[vl - 1] == '\t'
-                        || valbuf[vl - 1] == '\n'))
-            {
-                valbuf[--vl] = '\0';
-            }
-        }
-
-        cli_var_set(tmpname, valbuf);
-        return 1;
-    }
-}
-
-/**
- * @brief Check if line is array assignment
- *
- * Syntax: arr=(val1 val2 val3)
- *
- * @param line  Command line string
- * @return 1 if handled, 0 otherwise
- */
-int cli_try_array_assign(const char *line)
-{
-    const char *p = line;
-    while(*p == ' ' || *p == '\t')
-    {
-        p++;
-    }
-    if(!isalpha((unsigned char) *p)
-       && *p != '_')
-    {
-        return 0;
-    }
-    const char *ns = p;
-    while(isalnum((unsigned char) *p)
-          || *p == '_')
-    {
-        p++;
-    }
-    if(*p != '=')
-    {
-        return 0;
-    }
-    if(*(p + 1) != '(')
-    {
-        return 0;
-    }
-
-    int nlen = (int)(p - ns);
-    char aname[CLI_VAR_NAMELEN];
-    if(nlen >= CLI_VAR_NAMELEN)
-    {
-        nlen = CLI_VAR_NAMELEN - 1;
-    }
-    memcpy(aname, ns, (size_t) nlen);
-    aname[nlen] = '\0';
-
-    p += 2; /* skip =( */
-
-    /* Find or create array slot */
-    int slot = -1;
-    for(int i = 0;
-        i < CLI_MAX_ARRAYS; i++)
-    {
-        if(cli_arrays[i].used
-           && strcmp(cli_arrays[i].name,
-                    aname) == 0)
-        {
-            slot = i;
-            break;
-        }
-    }
-    if(slot < 0)
-    {
-        for(int i = 0;
-            i < CLI_MAX_ARRAYS; i++)
-        {
-            if(!cli_arrays[i].used)
-            {
-                slot = i;
-                break;
-            }
-        }
-    }
-    if(slot < 0)
-    {
-        printf("Error: array table full\n");
-        return 1;
-    }
-
-    strncpy(cli_arrays[slot].name,
-            aname,
-            CLI_VAR_NAMELEN - 1);
-    cli_arrays[slot].used = 1;
-    cli_arrays[slot].nelem = 0;
-
-    /* Parse elements */
-    while(*p != '\0' && *p != ')')
-    {
-        while(*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if(*p == ')' || *p == '\0')
-        {
-            break;
-        }
-        int ei = 0;
-        int idx =
-            cli_arrays[slot].nelem;
-        if(idx >= CLI_ARRAY_MAXELEM)
-        {
-            break;
-        }
-        while(*p != '\0'
-              && *p != ' '
-              && *p != '\t'
-              && *p != ')'
-              && ei < CLI_VAR_VALLEN - 1)
-        {
-            cli_arrays[slot]
-                .elem[idx][ei++] = *p++;
-        }
-        cli_arrays[slot]
-            .elem[idx][ei] = '\0';
-        cli_arrays[slot].nelem++;
-    }
-    return 1;
-}
-
-
-/* ============================================================
- *  CLI Commands: unset, vars, echo, fpsset
- * ============================================================
- */
-
-/**
- * @brief unset command — remove a variable
- */
-errno_t cli_cmd_unset(void)
-{
-    if(data.cmdNBarg < 2)
-    {
-        printf("Usage: unset <varname>\n");
-        return RETURN_FAILURE;
-    }
-    cli_var_unset(
-        data.cmdargtoken[1].val.string);
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief vars command — list all CLI variables
- */
-errno_t cli_cmd_vars(void)
-{
-    int count = 0;
-    printf("\n  CLI Variables:\n");
-    printf("  %-20s  %s\n",
-           "NAME", "VALUE");
-    printf("  %-20s  %s\n",
-           "----", "-----");
-    for(int i = 0; i < CLI_MAX_VARS; i++)
-    {
-        if(cli_vars[i].used)
-        {
-            printf("  %-20s  %s\n",
-                   cli_vars[i].name,
-                   cli_vars[i].val);
-            count++;
-        }
-    }
-    if(count == 0)
-    {
-        printf("  (none)\n");
-    }
-    printf("  $? = %d\n\n", cli_last_retval);
-    return RETURN_SUCCESS;
-}
-
-/**
- * @brief echo command — print arguments
- *
- * Note: echo is intercepted before tokenization
- * in CLIcore_UI.c. This registered version is a
- * fallback that should rarely be called.
- */
-errno_t cli_cmd_echo(void)
-{
-    int start = 1;
-    int newline = 1;
-
-    if(data.cmdNBarg >= 2
-            && strcmp(
-                data.cmdargtoken[1].val.string,
-                "-n") == 0)
-    {
-        newline = 0;
-        start = 2;
-    }
-
-    for(int i = start; i < data.cmdNBarg; i++)
-    {
-        if(i > start)
-        {
-            printf(" ");
-        }
-        printf("%s",
-               data.cmdargtoken[i].val.string);
-    }
-    if(newline)
-    {
-        printf("\n");
-    }
-    return RETURN_SUCCESS;
-}
-
-
-/* ============================================================
- *  FPS Write — fpsset command
- * ============================================================
- */
-
-#include "fps.h"
-#include "fps_GetParamIndex.h"
-#include "fps_printparameter_valuestring.h"
-#include "fps_connect.h"
-
-/**
- * @brief fpsset command — write FPS parameter
- *
- * Usage: fpsset fpsname.param value
- */
-errno_t cli_cmd_fpsset(void)
-{
-    if(data.cmdNBarg < 3)
-    {
-        printf("Usage: fpsset "
-               "<fpsname.param> <value>\n");
-        return RETURN_FAILURE;
-    }
-
-    const char *fullname =
-        data.cmdargtoken[1].val.string;
-    const char *valstr =
-        data.cmdargtoken[2].val.string;
-
-    /* Split fpsname.param at first dot */
-    char fpsname[256];
-    strncpy(fpsname, fullname,
-            sizeof(fpsname) - 1);
-    fpsname[sizeof(fpsname) - 1] = '\0';
-
-    char *dot = strchr(fpsname, '.');
-    if(dot == NULL)
-    {
-        printf("Error: fpsset requires "
-               "fpsname.paramname\n");
-        return RETURN_FAILURE;
-    }
-    *dot = '\0';
-    const char *pname = dot + 1;
-
-    /* Connect to FPS */
-    FUNCTION_PARAMETER_STRUCT fps;
-    int fpsconn =
-        function_parameter_struct_connect(
-            fpsname, &fps, FPSCONNECT_SIMPLE);
-
-    if(fpsconn == -1 || fps.parray == NULL)
-    {
-        printf("Error: cannot connect to "
-               "FPS '%s'\n", fpsname);
-        return RETURN_FAILURE;
-    }
-
-    /* Find parameter index */
-    int pindex =
-        functionparameter_GetParamIndex(
-            &fps, pname);
-
-    if(pindex < 0)
-    {
-        char dotname[512];
-        snprintf(dotname, sizeof(dotname),
-                 ".%s", pname);
-        pindex =
-            functionparameter_GetParamIndex(
-                &fps, dotname);
-    }
-
-    if(pindex < 0)
-    {
-        printf("Error: parameter '%s' not "
-               "found in FPS '%s'\n",
-               pname, fpsname);
-        function_parameter_struct_disconnect(
-            &fps);
-        return RETURN_FAILURE;
-    }
-
-    /* Set value based on parameter type */
-    uint32_t ptype =
-        fps.parray[pindex].type;
-
-    if(ptype & FPTYPE_INT64)
-    {
-        fps.parray[pindex].val.i64[0] =
-            (int64_t) strtol(valstr, NULL, 0);
-        fps.parray[pindex].cnt0++;
-    }
-    else if(ptype & FPTYPE_FLOAT64)
-    {
-        fps.parray[pindex].val.f64[0] =
-            strtod(valstr, NULL);
-        fps.parray[pindex].cnt0++;
-    }
-    else if(ptype & FPTYPE_FLOAT32)
-    {
-        fps.parray[pindex].val.f32[0] =
-            (float) strtod(valstr, NULL);
-        fps.parray[pindex].cnt0++;
-    }
-    else if(ptype & FPTYPE_ONOFF)
-    {
-        if(strcmp(valstr, "ON") == 0
-           || strcmp(valstr, "on") == 0
-           || strcmp(valstr, "1") == 0)
-        {
-            fps.parray[pindex].val.i64[0] = 1;
-        }
-        else
-        {
-            fps.parray[pindex].val.i64[0] = 0;
-        }
-        fps.parray[pindex].cnt0++;
-    }
-    else if(ptype & FPTYPE_STRING)
-    {
-        strncpy(
-            fps.parray[pindex].val.string[0],
-            valstr,
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fps.parray[pindex].val.string[0][
-            FUNCTION_PARAMETER_STRMAXLEN - 1]
-            = '\0';
-        fps.parray[pindex].cnt0++;
-    }
-    else
-    {
-        printf("Warning: unsupported param "
-               "type 0x%x\n", ptype);
-    }
-
-    function_parameter_struct_disconnect(&fps);
-    return RETURN_SUCCESS;
-}
-
-
-/* ============================================================
- *  FPS Variable Expansion — @fpsname.param
- * ============================================================
- */
-
-/**
- * @brief Expand @fpsname.param tokens in place
- *
- * @param line   Command line buffer
- * @param maxlen Buffer size
- */
-void cli_expand_fpsvar(
-    char *line,
-    int   maxlen
-)
-{
-    char out[STRINGMAXLEN_CLICMDLINE];
-    int  opos = 0;
-    int  i = 0;
-
-    while(line[i] != '\0'
-            && opos < maxlen - 1)
-    {
-        if(line[i] == '@')
-        {
-            i++; /* skip @ */
-            char token[512];
-            int  tlen = 0;
-            while(line[i] != '\0'
-                    && tlen < 511
-                    && (isalnum(
-                            (unsigned char)
-                            line[i])
-                        || line[i] == '_'
-                        || line[i] == '.'
-                        || line[i] == '-'))
-            {
-                token[tlen++] = line[i++];
-            }
-            token[tlen] = '\0';
-
-            char *dot = strchr(token, '.');
-            if(dot == NULL)
-            {
-                if(opos < maxlen - 1)
-                {
-                    out[opos++] = '@';
-                }
-                int clen = tlen;
-                if(opos + clen > maxlen - 1)
-                {
-                    clen = maxlen - 1 - opos;
-                }
-                memcpy(out + opos, token,
-                       (size_t) clen);
-                opos += clen;
-                continue;
-            }
-
-            *dot = '\0';
-            const char *fpsname = token;
-            const char *pname = dot + 1;
-
-            FUNCTION_PARAMETER_STRUCT fps;
-            int fpsconn =
-                function_parameter_struct_connect(
-                    fpsname, &fps,
-                    FPSCONNECT_SIMPLE);
-
-            if(fpsconn == -1
-                    || fps.parray == NULL)
-            {
-                continue;
-            }
-
-            int pindex =
-                functionparameter_GetParamIndex(
-                    &fps, pname);
-
-            if(pindex < 0)
-            {
-                char dotname[512];
-                snprintf(dotname,
-                         sizeof(dotname),
-                         ".%s", pname);
-                pindex =
-                    functionparameter_GetParamIndex(
-                        &fps, dotname);
-            }
-
-            if(pindex >= 0)
-            {
-                char vstr[512];
-                functionparameter_GetParamValueString(
-                    &fps.parray[pindex],
-                    vstr,
-                    (int) sizeof(vstr));
-
-                int vlen = (int) strlen(vstr);
-                int avail = maxlen - 1 - opos;
-                int clen = vlen < avail
-                           ? vlen : avail;
-                memcpy(out + opos, vstr,
-                       (size_t) clen);
-                opos += clen;
-            }
-
-            function_parameter_struct_disconnect(
-                &fps);
-        }
-        else
-        {
-            out[opos++] = line[i++];
-        }
-    }
-    out[opos] = '\0';
-    strncpy(line, out, (size_t) maxlen);
-    line[maxlen - 1] = '\0';
-}
-
-
-/* ============================================================
  *  Arithmetic Expansion — $(( expr ))
  * ============================================================
+ * Functions moved to CLIcore_script_expand.c
  */
-
-typedef struct
-{
-    const char *s;
-    int         pos;
-} ArithParser;
-
-static double arith_expr(ArithParser *p);
-
-static void arith_skip_ws(ArithParser *p)
-{
-    while(p->s[p->pos] == ' '
-            || p->s[p->pos] == '\t')
-    {
-        p->pos++;
-    }
-}
-
-static double arith_atom(ArithParser *p)
-{
-    arith_skip_ws(p);
-
-    /* Unary minus */
-    if(p->s[p->pos] == '-')
-    {
-        p->pos++;
-        return -arith_atom(p);
-    }
-
-    /* Parenthesized sub-expression */
-    if(p->s[p->pos] == '(')
-    {
-        p->pos++;
-        double v = arith_expr(p);
-        arith_skip_ws(p);
-        if(p->s[p->pos] == ')')
-        {
-            p->pos++;
-        }
-        return v;
-    }
-
-    /* Variable name (bare identifier) */
-    if(isalpha((unsigned char) p->s[p->pos])
-       || p->s[p->pos] == '_')
-    {
-        char vname[256];
-        int vn = 0;
-        while(vn < 255
-              && (isalnum(
-                      (unsigned char)
-                      p->s[p->pos])
-                  || p->s[p->pos] == '_'))
-        {
-            vname[vn++] = p->s[p->pos++];
-        }
-        vname[vn] = '\0';
-        const char *vv = cli_var_lookup(vname);
-        if(vv != NULL)
-        {
-            return strtod(vv, NULL);
-        }
-        return 0.0;
-    }
-
-    /* Number */
-    arith_skip_ws(p);
-    const char *start = p->s + p->pos;
-    char *end = NULL;
-    double v = strtod(start, &end);
-    if(end > start)
-    {
-        p->pos += (int)(end - start);
-        return v;
-    }
-
-    return 0.0;
-}
-
-static double arith_factor(ArithParser *p)
-{
-    double left = arith_atom(p);
-    arith_skip_ws(p);
-
-    while(p->s[p->pos] == '*'
-            || p->s[p->pos] == '/'
-            || p->s[p->pos] == '%')
-    {
-        char op = p->s[p->pos];
-        p->pos++;
-        double right = arith_atom(p);
-        arith_skip_ws(p);
-        if(op == '*')
-        {
-            left *= right;
-        }
-        else if(op == '/')
-        {
-            if(right != 0.0)
-            {
-                left /= right;
-            }
-        }
-        else if(op == '%')
-        {
-            if(right != 0.0)
-            {
-                left = fmod(left, right);
-            }
-        }
-    }
-    return left;
-}
-
-static double arith_term(ArithParser *p)
-{
-    double left = arith_factor(p);
-    arith_skip_ws(p);
-
-    while(p->s[p->pos] == '+'
-            || p->s[p->pos] == '-')
-    {
-        char op = p->s[p->pos];
-        p->pos++;
-        double right = arith_factor(p);
-        arith_skip_ws(p);
-        if(op == '+')
-        {
-            left += right;
-        }
-        else
-        {
-            left -= right;
-        }
-    }
-    return left;
-}
-
-static double arith_compare(ArithParser *p)
-{
-    double left = arith_term(p);
-    arith_skip_ws(p);
-
-    if(p->s[p->pos] == '<'
-            && p->s[p->pos + 1] == '=')
-    {
-        p->pos += 2;
-        double right = arith_term(p);
-        return (left <= right) ? 1.0 : 0.0;
-    }
-    if(p->s[p->pos] == '>'
-            && p->s[p->pos + 1] == '=')
-    {
-        p->pos += 2;
-        double right = arith_term(p);
-        return (left >= right) ? 1.0 : 0.0;
-    }
-    if(p->s[p->pos] == '<')
-    {
-        p->pos++;
-        double right = arith_term(p);
-        return (left < right) ? 1.0 : 0.0;
-    }
-    if(p->s[p->pos] == '>')
-    {
-        p->pos++;
-        double right = arith_term(p);
-        return (left > right) ? 1.0 : 0.0;
-    }
-    if(p->s[p->pos] == '='
-            && p->s[p->pos + 1] == '=')
-    {
-        p->pos += 2;
-        double right = arith_term(p);
-        return (left == right) ? 1.0 : 0.0;
-    }
-    if(p->s[p->pos] == '!'
-            && p->s[p->pos + 1] == '=')
-    {
-        p->pos += 2;
-        double right = arith_term(p);
-        return (left != right) ? 1.0 : 0.0;
-    }
-    return left;
-}
-
-static double arith_expr(ArithParser *p)
-{
-    return arith_compare(p);
-}
-
-
-/**
- * @brief Expand $(( expr )) in place
- */
-void cli_expand_arith(
-    char *line,
-    int   maxlen
-)
-{
-    char out[STRINGMAXLEN_CLICMDLINE];
-    int  opos = 0;
-    int  i = 0;
-
-    while(line[i] != '\0'
-            && opos < maxlen - 1)
-    {
-        if(line[i] == '$'
-                && line[i + 1] == '('
-                && line[i + 2] == '(')
-        {
-            i += 3;
-
-            char expr[512];
-            int  elen = 0;
-            int  depth = 1;
-            while(line[i] != '\0'
-                    && elen < 511)
-            {
-                if(line[i] == '('
-                        && line[i + 1] == '(')
-                {
-                    depth++;
-                    expr[elen++] = line[i++];
-                    expr[elen++] = line[i++];
-                    continue;
-                }
-                if(line[i] == ')'
-                        && line[i + 1] == ')')
-                {
-                    depth--;
-                    if(depth == 0)
-                    {
-                        i += 2;
-                        break;
-                    }
-                    expr[elen++] = line[i++];
-                    expr[elen++] = line[i++];
-                    continue;
-                }
-                expr[elen++] = line[i++];
-            }
-            expr[elen] = '\0';
-
-            ArithParser parser;
-            parser.s = expr;
-            parser.pos = 0;
-            double result = arith_expr(&parser);
-
-            char rbuf[64];
-            if(result == floor(result)
-                    && fabs(result) < 1e15)
-            {
-                snprintf(rbuf, sizeof(rbuf),
-                         "%ld", (long) result);
-            }
-            else
-            {
-                snprintf(rbuf, sizeof(rbuf),
-                         "%g", result);
-            }
-
-            int rlen = (int) strlen(rbuf);
-            int avail = maxlen - 1 - opos;
-            int clen = rlen < avail
-                       ? rlen : avail;
-            memcpy(out + opos, rbuf,
-                   (size_t) clen);
-            opos += clen;
-        }
-        else
-        {
-            out[opos++] = line[i++];
-        }
-    }
-    out[opos] = '\0';
-    strncpy(line, out, (size_t) maxlen);
-    line[maxlen - 1] = '\0';
-}
-
-
-/* ============================================================
- *  Test Condition Evaluator — [ expr ]
- * ============================================================
- *
- * Evaluates bash-style test expressions:
- *   [ val1 -eq val2 ]   numeric equal
- *   [ val1 -ne val2 ]   numeric not equal
- *   [ val1 -lt val2 ]   numeric less than
- *   [ val1 -gt val2 ]   numeric greater than
- *   [ val1 -le val2 ]   numeric less or equal
- *   [ val1 -ge val2 ]   numeric greater or equal
- *   [ str1 == str2 ]    string equal
- *   [ str1 != str2 ]    string not equal
- *   [ -n str ]          string not empty
- *   [ -z str ]          string empty
- *   [ -f path ]         regular file exists
- *   [ -d path ]         directory exists
- *   [ -e path ]         path exists
- *   [ -s path ]         file exists, non-empty
- *   [ ! expr ]          logical NOT
- */
-
-/**
- * @brief Evaluate [ ... ] test expression
- *
- * @param expr   The content between [ and ]
- * @return 1 = true, 0 = false
- */
-int cli_eval_test(const char *expr)
-{
-    /* Tokenize expression */
-    char buf[512];
-    strncpy(buf, expr, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
-
-    /* Strip leading/trailing whitespace */
-    char *p = buf;
-    while(*p == ' ' || *p == '\t')
-    {
-        p++;
-    }
-    {
-        size_t len = strlen(p);
-        while(len > 0
-              && (p[len - 1] == ' '
-                  || p[len - 1] == '\t'))
-        {
-            p[--len] = '\0';
-        }
-    }
-
-    /* Tokenize into words */
-    char *tokens[16];
-    int ntok = 0;
-    {
-        char *saveptr = NULL;
-        char *tok = strtok_r(p, " \t", &saveptr);
-        while(tok != NULL && ntok < 16)
-        {
-            tokens[ntok++] = tok;
-            tok = strtok_r(NULL, " \t", &saveptr);
-        }
-    }
-
-    if(ntok == 0)
-    {
-        return 0;
-    }
-
-    /* Unary: -n str, -z str */
-    if(ntok == 2
-       && strcmp(tokens[0], "-n") == 0)
-    {
-        return strlen(tokens[1]) > 0 ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-z") == 0)
-    {
-        return strlen(tokens[1]) == 0 ? 1 : 0;
-    }
-
-    /* File tests: -f, -d, -e, -s */
-    if(ntok == 2
-       && strcmp(tokens[0], "-f") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && S_ISREG(sb.st_mode))
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-d") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && S_ISDIR(sb.st_mode))
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-e") == 0)
-    {
-        struct stat sb;
-        return stat(tokens[1], &sb) == 0
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-s") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && sb.st_size > 0)
-               ? 1 : 0;
-    }
-
-    /* Variable test: -v VAR */
-    if(ntok == 2
-       && strcmp(tokens[0], "-v") == 0)
-    {
-        const char *vv =
-            cli_var_get(tokens[1]);
-        if(vv != NULL)
-        {
-            return 1;
-        }
-        const char *ev =
-            getenv(tokens[1]);
-        return ev != NULL ? 1 : 0;
-    }
-
-    /* Logical NOT: ! expr */
-    if(ntok >= 2
-       && strcmp(tokens[0], "!") == 0)
-    {
-        /* Rebuild sub-expression */
-        char subexpr[512];
-        subexpr[0] = '\0';
-        for(int i = 1; i < ntok; i++)
-        {
-            if(i > 1)
-            {
-                strncat(subexpr, " ",
-                        sizeof(subexpr)
-                        - strlen(subexpr)
-                        - 1);
-            }
-            strncat(subexpr, tokens[i],
-                    sizeof(subexpr)
-                    - strlen(subexpr) - 1);
-        }
-        return cli_eval_test(subexpr)
-               ? 0 : 1;
-    }
-
-    /* Single value: true if non-empty */
-    if(ntok == 1)
-    {
-        return strlen(tokens[0]) > 0 ? 1 : 0;
-    }
-
-    /* Binary: val1 op val2 */
-    if(ntok >= 3)
-    {
-        const char *lhs = tokens[0];
-        const char *op = tokens[1];
-        const char *rhs = tokens[2];
-
-        double lv = strtod(lhs, NULL);
-        double rv = strtod(rhs, NULL);
-
-        if(strcmp(op, "-eq") == 0)
-        {
-            return (lv == rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-ne") == 0)
-        {
-            return (lv != rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-lt") == 0)
-        {
-            return (lv < rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-gt") == 0)
-        {
-            return (lv > rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-le") == 0)
-        {
-            return (lv <= rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-ge") == 0)
-        {
-            return (lv >= rv) ? 1 : 0;
-        }
-        if(strcmp(op, "==") == 0)
-        {
-            return strcmp(lhs, rhs) == 0
-                   ? 1 : 0;
-        }
-        if(strcmp(op, "!=") == 0)
-        {
-            return strcmp(lhs, rhs) != 0
-                   ? 1 : 0;
-        }
-    }
-
-    printf("Error: invalid test expression\n");
-    return 0;
-}
 
 
 /* ============================================================
@@ -1460,20 +325,21 @@ CLI_BLOCK cli_block_stack[CLI_BLOCK_MAXDEPTH];
 int       cli_block_level = 0;
 
 /* Break/continue/return flags */
-static int cli_break_flag = 0;
-static int cli_continue_flag = 0;
-int        cli_return_flag = 0;
+// defined in CLIcore_script.h
+int cli_break_flag = 0;
+int cli_continue_flag = 0;
+int cli_return_flag = 0;
 
 /* Forward declaration */
-static void cli_exec_block_if(
+void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 );
-static void cli_exec_block_while(
+void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 );
-static void cli_exec_block_for(
+void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 );
@@ -1481,7 +347,7 @@ static void cli_exec_block_for(
 
 /* ---- Helper: strip whitespace ---- */
 
-static const char *strip_ws(const char *s)
+const char *strip_ws(const char *s)
 {
     while(*s == ' ' || *s == '\t')
     {
@@ -1490,40 +356,13 @@ static const char *strip_ws(const char *s)
     return s;
 }
 
-static int starts_with(
+int starts_with(
     const char *line,
     const char *prefix
 )
 {
     return strncmp(line, prefix,
                    strlen(prefix)) == 0;
-}
-
-/**
- * @brief Execute lines through CLI_execute_line
- */
-void cli_exec_lines(
-    char lines[][STRINGMAXLEN_CLICMDLINE],
-    int  nlines
-)
-{
-    for(int i = 0; i < nlines; i++)
-    {
-        if(cli_break_flag
-           || cli_continue_flag
-           || cli_return_flag)
-        {
-            break;
-        }
-
-        /* Copy to cmdline and execute */
-        strncpy(data.CLIcmdline, lines[i],
-                STRINGMAXLEN_CLICMDLINE - 1);
-        data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
-        CLI_execute_line();
-    }
 }
 
 
@@ -1540,7 +379,7 @@ void cli_exec_lines(
  * @param skip  Chars to skip ("if"=2, "elif"=4)
  * @return 1 = true, 0 = false
  */
-static int eval_cond_line(
+int eval_cond_line(
     const char *raw,
     int skip
 )
@@ -1593,7 +432,7 @@ static int eval_cond_line(
  *       body3
  *   fi
  */
-static void cli_exec_block_if(
+void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 )
@@ -1765,7 +604,7 @@ static void cli_exec_block_if(
  *   ...body...
  *   "done"
  */
-static void cli_exec_block_while(
+void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 )
@@ -1868,7 +707,7 @@ static void cli_exec_block_while(
  *     body
  *   done
  */
-static void cli_exec_block_select(
+void cli_exec_block_select(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int  nlines
 )
@@ -1983,7 +822,7 @@ static void cli_exec_block_select(
  *   ...body...
  *   "done"
  */
-static void cli_exec_block_for(
+void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 )
@@ -2208,26 +1047,9 @@ static void cli_exec_block_for(
 CLI_FUNC cli_funcs[CLI_MAX_FUNCS];
 
 /**
- * @brief Find a user-defined function by name
- */
-CLI_FUNC *cli_func_find(const char *name)
-{
-    for(int i = 0; i < CLI_MAX_FUNCS; i++)
-    {
-        if(cli_funcs[i].used
-           && strcmp(cli_funcs[i].name, name)
-              == 0)
-        {
-            return &cli_funcs[i];
-        }
-    }
-    return NULL;
-}
-
-/**
  * @brief Register a new user function
  */
-static void cli_func_define(
+void cli_func_define(
     const char *name,
     char body[][STRINGMAXLEN_CLICMDLINE],
     int nbody
@@ -2279,139 +1101,6 @@ static void cli_func_define(
 }
 
 
-/**
- * @brief Try to call a user-defined function
- *
- * Syntax: funcname arg1 arg2 ...
- * Inside the function body, $1..$9 are args.
- *
- * @return 1 if matched, 0 if not
- */
-int cli_try_func_call(const char *line)
-{
-    const char *p = strip_ws(line);
-
-    /* Extract first word (function name) */
-    char fname[CLI_FUNC_NAMELEN];
-    {
-        int fn = 0;
-        while(*p != '\0' && *p != ' '
-              && *p != '\t'
-              && fn < CLI_FUNC_NAMELEN - 1)
-        {
-            fname[fn++] = *p++;
-        }
-        fname[fn] = '\0';
-    }
-
-    CLI_FUNC *func = cli_func_find(fname);
-    if(func == NULL)
-    {
-        return 0;
-    }
-
-    /* Parse arguments */
-    p = strip_ws(p);
-    char *args[CLI_FUNC_MAXARGS];
-    char argbuf[CLI_FUNC_MAXARGS][
-        CLI_VAR_VALLEN];
-    int nargs = 0;
-
-    while(*p != '\0'
-          && nargs < CLI_FUNC_MAXARGS)
-    {
-        int ai = 0;
-        while(*p != '\0' && *p != ' '
-              && *p != '\t'
-              && ai < CLI_VAR_VALLEN - 1)
-        {
-            argbuf[nargs][ai++] = *p++;
-        }
-        argbuf[nargs][ai] = '\0';
-        args[nargs] = argbuf[nargs];
-        nargs++;
-        p = strip_ws(p);
-    }
-
-    /* Save old $1..$9, set new ones */
-    char old_args[CLI_FUNC_MAXARGS][
-        CLI_VAR_VALLEN];
-    int old_used[CLI_FUNC_MAXARGS];
-    for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
-    {
-        char aname[4];
-        snprintf(aname, sizeof(aname),
-                 "%d", i + 1);
-        const char *ov = cli_var_get(aname);
-        old_used[i] = (ov != NULL) ? 1 : 0;
-        if(ov != NULL)
-        {
-            strncpy(old_args[i], ov,
-                    CLI_VAR_VALLEN - 1);
-            old_args[i][
-                CLI_VAR_VALLEN - 1] = '\0';
-        }
-        if(i < nargs)
-        {
-            cli_var_set(aname, args[i]);
-        }
-        else
-        {
-            cli_var_unset(aname);
-        }
-    }
-
-    /* Push local variable scope */
-    if(cli_local_depth < CLI_MAX_LOCAL_DEPTH - 1)
-    {
-        cli_local_depth++;
-        cli_local_shadow_count[cli_local_depth] = 0;
-    }
-
-    /* Execute body lines */
-    cli_return_flag = 0;
-    cli_exec_lines(func->body, func->nbody);
-    cli_return_flag = 0;
-
-    /* Restore old $1..$9 */
-    for(int i = 0; i < CLI_FUNC_MAXARGS; i++)
-    {
-        char aname[4];
-        snprintf(aname, sizeof(aname),
-                 "%d", i + 1);
-        if(old_used[i])
-        {
-            cli_var_set(aname, old_args[i]);
-        }
-        else
-        {
-            cli_var_unset(aname);
-        }
-    }
-
-    /* Restore variables shadowed by 'local' */
-    if(cli_local_depth > 0)
-    {
-        int scount = cli_local_shadow_count[cli_local_depth];
-        for(int i = 0; i < scount; i++)
-        {
-            CLI_LOCAL_SHADOW *sh = &cli_local_shadows[cli_local_depth][i];
-            if(sh->was_used)
-            {
-                cli_var_set(sh->name, sh->val);
-            }
-            else
-            {
-                cli_var_unset(sh->name);
-            }
-        }
-        cli_local_depth--;
-    }
-
-    return 1;
-}
-
-
 /* ============================================================
  *  Block Intercept — main entry point
  * ============================================================
@@ -2438,7 +1127,7 @@ int cli_try_func_call(const char *line)
  *     *) default ;;
  *   esac
  */
-static void cli_exec_block_case(
+void cli_exec_block_case(
     char (*lines)[STRINGMAXLEN_CLICMDLINE],
     int    nlines
 )
