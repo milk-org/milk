@@ -2903,8 +2903,37 @@ errno_t CLI_execute_line()
                 {
                     // printf("\t processing -- %s\n", cmdargstring);
 
-                    snprintf(str, strmaxlen, "%s\n", cmdargstring);
-                    cli_parse(str);
+                    /* When a CLI command has already been
+                     * identified and the current argument
+                     * starts with '-', treat it as a raw
+                     * string rather than running it through
+                     * the arithmetic expression parser.
+                     * This prevents flags like -n, -g, --since
+                     * from triggering a parse error that would
+                     * block the command from being called. */
+                    if(data.cmdNBarg > 0
+                       && data.cmdargtoken[0].type
+                          == CMDARGTOKEN_TYPE_COMMAND
+                       && cmdargstring[0] == '-')
+                    {
+                        strncpy(
+                            data.cmdargtoken[data.cmdNBarg]
+                                .val.string,
+                            cmdargstring,
+                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                        data.cmdargtoken[data.cmdNBarg]
+                            .val.string[
+                                STRINGMAXLEN_CMDARGTOKEN_VAL
+                                - 1] = '\0';
+                        data.cmdargtoken[data.cmdNBarg]
+                            .type = CMDARGTOKEN_TYPE_RAWSTRING;
+                    }
+                    else
+                    {
+                        snprintf(str, strmaxlen,
+                                 "%s\n", cmdargstring);
+                        cli_parse(str);
+                    }
 
                     cmdargstring = strtok(NULL, " ");
                     data.cmdNBarg++;
