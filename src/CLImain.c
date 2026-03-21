@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 
@@ -148,6 +150,47 @@ int main(int argc, char *argv[])
     dctestptinit = 0;
     free(dctestptarr);
 #endif
+
+    /* Final terminal cleanup.
+     * The scroll region may still be restricted
+     * (rows 1..N-1) with hint text stuck on row N.
+     * The most reliable fix: reset the scroll region
+     * to include ALL rows, then scroll the screen
+     * enough to push the ghost text off the top. */
+    {
+        struct winsize ws;
+        if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0
+                && ws.ws_row > 0)
+        {
+            int r = ws.ws_row;
+            char esc[128];
+            int n;
+
+            /* 1. Reset scroll region (include hint row) */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[1;%dr", r);
+            fflush(stdout);
+            write(STDOUT_FILENO, esc, n);
+
+            /* 2. Move cursor to absolute bottom row */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[%d;1H", r);
+            write(STDOUT_FILENO, esc, n);
+
+            /* 3. Print 2 newlines: these scroll the
+             * entire terminal (including the old hint
+             * row) up, pushing it into scrollback.
+             * New blank rows appear at the bottom. */
+            write(STDOUT_FILENO, "\n\n", 2);
+
+            /* 4. Move cursor up from the bottom so
+             * bash prints its prompt at a sensible
+             * position */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[%dA", 2);
+            write(STDOUT_FILENO, esc, n);
+        }
+    }
 
     return dcexitcode;
 }

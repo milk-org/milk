@@ -1476,7 +1476,7 @@ static void cli_highlight_redisplay(void)
      * column) to avoid prompt-width errors from
      * invisible escape sequences in the prompt.
      */
-    fprintf(rl_outstream, "\0337");  /* save */
+    fprintf(rl_outstream, "\033[s");  /* ANSI save */
     {
         int back = rl_point - ws;
         if(back > 0)
@@ -1487,7 +1487,7 @@ static void cli_highlight_redisplay(void)
     }
     fprintf(rl_outstream, "%s%s\033[0m",
             col, firstword);
-    fprintf(rl_outstream, "\0338");  /* restore */
+    fprintf(rl_outstream, "\033[u");  /* ANSI restore */
     fflush(rl_outstream);
 }
 
@@ -6602,19 +6602,22 @@ void CLI_cleanup_scroll_region(void)
         return;
     }
 
-    /* Save cursor before scroll region reset using ANSI */
+    /* Save cursor position (ANSI — does NOT
+     * touch scroll margins) */
     printf("\033[s");
 
-    /* Reset scroll region to full terminal */
+    /* Move to hint line and erase it BEFORE
+     * resetting scroll region, while the row
+     * is still addressable at its cached pos */
+    printf("\033[%d;1H\033[2K", cached_term_rows);
+
+    /* Reset scroll region to full terminal.
+     * This also moves cursor to (1,1). */
     printf("\033[r");
 
-    /* Restore cursor using ANSI */
+    /* Restore cursor to where it was before */
     printf("\033[u");
 
-    /* Unconditionally wipe everything below the prompt line to 
-     * absolutely guarantee the hint line and any ghost artifacts are destroyed */
-    printf("\033[J");
-    
     fflush(stdout);
 
     hint_area_active = 0;

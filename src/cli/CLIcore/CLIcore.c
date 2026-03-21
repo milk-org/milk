@@ -130,6 +130,10 @@ static int exitCLI();
 
 errno_t exitCLI()
 {
+    /* Clean up hint area FIRST, before any output
+     * that would scroll within the restricted
+     * scroll region and desync row positions. */
+    CLI_cleanup_scroll_region();
 
     if(data.fifoON == 1)
     {
