@@ -521,6 +521,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Load persistent command history
     cli_history_load();
 
+    // Initialize structured history log
+    cli_history_log_init();
+
     // Load persistent bookmarks
     cli_bookmark_load();
 
@@ -1347,6 +1350,24 @@ void runCLI_cmd_init()
         "",
         "fhist",
         "cli_fhist()");
+
+    RegisterCLIcommand(
+        "ghistory",
+        __FILE__,
+        cli_ghistory,
+        "global history (all sessions)",
+        "[N] [-s <session_id>]",
+        "ghistory 50",
+        "cli_ghistory()");
+
+    RegisterCLIcommand(
+        "lhistory",
+        __FILE__,
+        cli_lhistory,
+        "local history (current session)",
+        "[N]",
+        "lhistory",
+        "cli_lhistory()");
 
     RegisterCLIcommand(
         "fparam",
