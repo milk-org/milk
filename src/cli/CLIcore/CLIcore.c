@@ -979,6 +979,49 @@ static errno_t print_session_name()
     return RETURN_SUCCESS;
 }
 
+/* Thin wrappers for per-topic help CLI commands -------------------- */
+static errno_t help_cmdopts_cmd(void)
+{
+    help_topic_cmdopts();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_syntax_cmd(void)
+{
+    help_topic_syntax();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_commands_cmd(void)
+{
+    help_topic_commands();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_variables_cmd(void)
+{
+    help_topic_variables();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_flowcontrol_cmd(void)
+{
+    help_topic_flowcontrol();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_scripting_cmd(void)
+{
+    help_topic_scripting();
+    return RETURN_SUCCESS;
+}
+
+static errno_t help_milk_cmd(void)
+{
+    help_topic_milk();
+    return RETURN_SUCCESS;
+}
+
 void runCLI_cmd_init()
 {
     // ensure that commands below belong to root/MAIN module
@@ -1047,6 +1090,71 @@ void runCLI_cmd_init()
                        "no argument",
                        "helprl",
                        "int help()");
+
+    /* per-topic help commands --------------------------------------- */
+    RegisterCLIcommand(
+        "help-cmdopts",
+        __FILE__,
+        help_cmdopts_cmd,
+        "help: command-line flags",
+        "no argument",
+        "help-cmdopts",
+        "help_topic_cmdopts()");
+
+    RegisterCLIcommand(
+        "help-syntax",
+        __FILE__,
+        help_syntax_cmd,
+        "help: syntax & interactive features",
+        "no argument",
+        "help-syntax",
+        "help_topic_syntax()");
+
+    RegisterCLIcommand(
+        "help-commands",
+        __FILE__,
+        help_commands_cmd,
+        "help: built-in CLI commands",
+        "no argument",
+        "help-commands",
+        "help_topic_commands()");
+
+    RegisterCLIcommand(
+        "help-variables",
+        __FILE__,
+        help_variables_cmd,
+        "help: variables, arrays and arithmetic",
+        "no argument",
+        "help-variables",
+        "help_topic_variables()");
+
+    RegisterCLIcommand(
+        "help-flowcontrol",
+        __FILE__,
+        help_flowcontrol_cmd,
+        "help: if/for/while/case/functions",
+        "no argument",
+        "help-flowcontrol",
+        "help_topic_flowcontrol()");
+
+    RegisterCLIcommand(
+        "help-scripting",
+        __FILE__,
+        help_scripting_cmd,
+        "help: script files, I/O, builtins, traps",
+        "no argument",
+        "help-scripting",
+        "help_topic_scripting()");
+
+    RegisterCLIcommand(
+        "help-milk",
+        __FILE__,
+        help_milk_cmd,
+        "help: milk streams, FPS, and milk-specific",
+        "no argument",
+        "help-milk",
+        "help_topic_milk()");
+
 
     RegisterCLIcommand("cmd?",
                        __FILE__,
