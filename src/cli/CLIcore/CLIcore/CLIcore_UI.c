@@ -6603,19 +6603,18 @@ void CLI_cleanup_scroll_region(void)
         return;
     }
 
-    /* Save cursor before scroll region reset */
-    printf("\0337");
-
-    /* Clear hint line */
-    printf("\033[%d;1H\033[2K",
-           cached_term_rows);
+    /* Save cursor before scroll region reset using ANSI */
+    printf("\033[s");
 
     /* Reset scroll region to full terminal
      * (also moves cursor to home) */
     printf("\033[r");
 
-    /* Restore cursor */
-    printf("\0338");
+    /* Clear hint line (now inside the full region) */
+    printf("\033[%d;1H\033[2K", cached_term_rows);
+
+    /* Restore cursor using ANSI */
+    printf("\033[u");
     fflush(stdout);
 
     hint_area_active = 0;
