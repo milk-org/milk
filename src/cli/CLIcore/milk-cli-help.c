@@ -26,10 +26,9 @@ int main(int argc, char *argv[])
         if (ret != 0)
         {
             fprintf(stderr,
-                    "milk-cli-help: unknown topic \"%s\"\n"
-                    "Available topics: cmdopts  syntax  commands"
-                    "  variables  flowcontrol  scripting  milk\n",
+                    "milk-cli-help: unknown topic \"%s\"\n\n",
                     topic);
+            print_milk_cli_help();
             return 1;
         }
     }
