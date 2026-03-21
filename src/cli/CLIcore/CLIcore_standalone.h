@@ -327,6 +327,11 @@ typedef struct
     int     CMDexecuted;
     errno_t CMDerrstatus;
 
+    // SESSION IDENTITY
+    char            session_id[64];
+    char            session_tty[64];
+    struct timespec session_start;
+
     long    NBmodule;
     MODULE  module[DATA_NB_MAX_MODULE];
 

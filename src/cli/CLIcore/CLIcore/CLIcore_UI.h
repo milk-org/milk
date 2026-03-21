@@ -93,4 +93,9 @@ errno_t cli_fhist(void);
 errno_t cli_cd(void);
 errno_t cli_pwd(void);
 
+/* Structured history log */
+void    cli_history_log_init(void);
+errno_t cli_ghistory(void);
+errno_t cli_lhistory(void);
+
 #endif
