@@ -2015,7 +2015,7 @@ int cli_fhelp(void)
     // Setup raw terminal mode
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     while (1) {
@@ -2062,14 +2062,21 @@ int cli_fhelp(void)
         // Input loop
         char c = getchar();
         if (c == 27) { // Escape seq
-            char seq[2];
-            seq[0] = getchar();
-            seq[1] = getchar();
-            if (seq[0] == '[') {
-                if (seq[1] == 'A') selected--; // Up
-                else if (seq[1] == 'B') selected++; // Down
-                else if (seq[1] == '5') { selected -= 10; getchar(); } // PgUp
-                else if (seq[1] == '6') { selected += 10; getchar(); } // PgDn
+            int byteswaiting;
+            ioctl(STDIN_FILENO, FIONREAD, &byteswaiting);
+            if (byteswaiting > 0) {
+                char seq[2];
+                seq[0] = getchar();
+                seq[1] = getchar();
+                if (seq[0] == '[') {
+                    if (seq[1] == 'A') selected--; // Up
+                    else if (seq[1] == 'B') selected++; // Down
+                    else if (seq[1] == '5') { selected -= 10; getchar(); } // PgUp
+                    else if (seq[1] == '6') { selected += 10; getchar(); } // PgDn
+                }
+            } else {
+                selected = -1;
+                break; // Escape key alone
             }
         } else if (c == 10 || c == 13) { // Enter
             break; // Select
@@ -2139,7 +2146,7 @@ int cli_fhist(void)
     // Setup raw terminal mode
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     while (1) {
@@ -2292,7 +2299,7 @@ int cli_fparam(void)
 
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     char error_msg[200] = {0};
