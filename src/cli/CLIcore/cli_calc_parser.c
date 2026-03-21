@@ -90,12 +90,15 @@ static inline cli_token *advance(void)
  */
 static void parse_errmsg(const char *msg)
 {
-    printf(
-        "\033[31mPARSING ERROR ON COMMAND LINE "
-        "ARG %ld: %s\033[0m\n",
-        data.cmdNBarg,
-        msg
-    );
+    if (data.core.Debug > 0)
+    {
+        printf(
+            "\033[31mPARSING ERROR ON COMMAND LINE "
+            "ARG %ld: %s\033[0m\n",
+            data.cmdNBarg,
+            msg
+        );
+    }
     data.parseerror = 1;
     parse_error = 1;
 }

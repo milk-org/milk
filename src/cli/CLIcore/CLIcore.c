@@ -130,6 +130,10 @@ static int exitCLI();
 
 errno_t exitCLI()
 {
+    /* Clean up hint area FIRST, before any output
+     * that would scroll within the restricted
+     * scroll region and desync row positions. */
+    CLI_cleanup_scroll_region();
 
     if(data.fifoON == 1)
     {
@@ -707,6 +711,26 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 {
                     printf("[%s -> %s]\n", CLIstartupfilename, data.fifoname);
                     printf("IMPORTING FILE %s ... \n", CLIstartupfilename);
+                }
+            }
+            else
+            {
+                // Native OS execution (typically from shebang -s)
+                FILE *fp = fopen(CLIstartupfilename, "r");
+                if(fp != NULL)
+                {
+                    fclose(fp);
+                    strncpy(data.cmdargtoken[0].val.string, "source", STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    strncpy(data.cmdargtoken[1].val.string, CLIstartupfilename, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdNBarg = 2;
+                    cli_source();
+                    
+                    // Exit the interactive loop, as shebang scripts should terminate upon completion
+                    if(strcmp(CLIstartupfilename, "CLIstartup.txt") != 0)
+                    {
+                        data.CLIloopON = 0;
+                        break;
+                    }
                 }
             }
         }
