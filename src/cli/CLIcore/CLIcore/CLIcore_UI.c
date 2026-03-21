@@ -55,6 +55,13 @@ void rl_cb_linehandler(char *linein)
         return;
     }
 
+    /* Erase any ghost suggestion text that was
+     * rendered after the cursor on this line.
+     * This keeps the accepted line clean for
+     * copy/paste from terminal scrollback. */
+    printf("\033[K");
+    fflush(stdout);
+
     data.CLIexecuteCMDready = 1;
 
     // copy input into data.CLIcmdline
