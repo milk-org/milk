@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 
@@ -81,7 +83,7 @@ int main(int argc, char *argv[])
     if(dcquiet == 0)
     {
         printf(STYLE_BOLD);
-        printf("\n        milk-cli  v %s\n", versionstring);
+        printf("\n        milk-cli  v %s  (compiled %s %s)\n", versionstring, __DATE__, __TIME__);
 #ifndef NDEBUG
         printf(
             "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
@@ -148,6 +150,61 @@ int main(int argc, char *argv[])
     dctestptinit = 0;
     free(dctestptarr);
 #endif
+
+    /* Final terminal cleanup.
+     * The scroll region may still be restricted
+     * (rows 1..N-1) with hint text stuck on row N.
+     * Escape codes like ESC[2K and ESC[r have no
+     * effect in some VTE terminals. But cursor
+     * positioning (ESC[r;1H) DOES work — the hint
+     * area rendering proves it. So we overwrite
+     * the hint text with plain space characters. */
+    {
+        struct winsize ws;
+        if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) >= 0
+                && ws.ws_row > 0)
+        {
+            int r = ws.ws_row;
+            int c = ws.ws_col;
+            char esc[128];
+            int n;
+
+            fflush(stdout);
+
+            /* 1. Move cursor to bottom row col 1 */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[%d;1H", r);
+            write(STDOUT_FILENO, esc, n);
+
+            /* 2. Overwrite entire row with spaces */
+            {
+                char spaces[256];
+                int remain = c;
+                memset(spaces, ' ', sizeof(spaces));
+                while(remain > 0)
+                {
+                    int chunk = remain;
+                    if(chunk > (int) sizeof(spaces))
+                    {
+                        chunk = (int) sizeof(spaces);
+                    }
+                    write(STDOUT_FILENO, spaces,
+                          chunk);
+                    remain -= chunk;
+                }
+            }
+
+            /* 3. Reset scroll region to full */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[1;%dr", r);
+            write(STDOUT_FILENO, esc, n);
+
+            /* 4. Position cursor for bash prompt */
+            n = snprintf(esc, sizeof(esc),
+                         "\033[%d;1H", r - 1);
+            write(STDOUT_FILENO, esc, n);
+        }
+    }
 
     return dcexitcode;
 }
