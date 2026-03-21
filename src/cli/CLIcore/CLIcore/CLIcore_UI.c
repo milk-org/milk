@@ -1071,6 +1071,35 @@ errno_t CLI_execute_line()
             right[STRINGMAXLEN_CLICMDLINE
                   - 1] = '\0';
 
+            /* Check whether the right side is
+             * a registered milk command.  If
+             * not, fall through so the popen-
+             * based handler can pipe to a shell
+             * command (e.g. grep, sort, wc). */
+            {
+                char rword[200];
+                int  rw = 0;
+                const char *rr = right;
+                while(*rr == ' '
+                      || *rr == '\t')
+                {
+                    rr++;
+                }
+                while(*rr != '\0'
+                      && *rr != ' '
+                      && *rr != '\t'
+                      && rw < (int)
+                         sizeof(rword) - 1)
+                {
+                    rword[rw++] = *rr++;
+                }
+                rword[rw] = '\0';
+                if(!cli_is_command(rword))
+                {
+                    goto pipe_fallthrough;
+                }
+            }
+
             /* Capture left stdout */
             FILE *tmpfp = tmpfile();
             if(tmpfp != NULL)
@@ -1117,6 +1146,8 @@ errno_t CLI_execute_line()
             }
         }
     }
+pipe_fallthrough:
+    (void) 0;
 
     /* Dot-sourcing: ". file" → "source file"
      * Must check before script intercept */
