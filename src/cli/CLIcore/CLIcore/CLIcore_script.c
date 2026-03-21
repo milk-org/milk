@@ -113,6 +113,19 @@ CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 /* ---- Associative Array Storage ---- */
 CLI_ASSOC_ARRAY cli_assoc[CLI_MAX_ASSOC];
 
+/* Local variable scoping stack for functions */
+#define CLI_MAX_LOCAL_DEPTH 32
+#define CLI_MAX_LOCALS_PER_FUNC 64
+typedef struct {
+    char name[CLI_VAR_NAMELEN];
+    char val[CLI_VAR_VALLEN];
+    int  was_used;
+} CLI_LOCAL_SHADOW;
+
+static CLI_LOCAL_SHADOW cli_local_shadows[CLI_MAX_LOCAL_DEPTH][CLI_MAX_LOCALS_PER_FUNC];
+static int cli_local_shadow_count[CLI_MAX_LOCAL_DEPTH];
+static int cli_local_depth = 0;
+
 /**
  * @brief Look up a CLI variable by name
  *
@@ -1865,12 +1878,7 @@ static void cli_exec_block_select(
         return;
     }
     /* Parse: select VAR in v1 v2 ... */
-    const char *hdr = lines[0];
-    while(*hdr == ' '
-          || *hdr == '\t')
-    {
-        hdr++;
-    }
+    const char *hdr = strip_ws(lines[0]);
     hdr += 7; /* skip 'select ' */
     while(*hdr == ' '
           || *hdr == '\t')
@@ -2353,14 +2361,11 @@ int cli_try_func_call(const char *line)
         }
     }
 
-    /* Snapshot variable table for local
-     * scoping — any vars created during
-     * function execution that were NOT
-     * present before will be removed. */
-    int was_used[CLI_MAX_VARS];
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    /* Push local variable scope */
+    if(cli_local_depth < CLI_MAX_LOCAL_DEPTH - 1)
     {
-        was_used[i] = cli_vars[i].used;
+        cli_local_depth++;
+        cli_local_shadow_count[cli_local_depth] = 0;
     }
 
     /* Execute body lines */
@@ -2384,17 +2389,23 @@ int cli_try_func_call(const char *line)
         }
     }
 
-    /* Remove variables created inside
-     * the function (local scoping) */
-    for(int i = 0; i < CLI_MAX_VARS; i++)
+    /* Restore variables shadowed by 'local' */
+    if(cli_local_depth > 0)
     {
-        if(cli_vars[i].used
-           && !was_used[i])
+        int scount = cli_local_shadow_count[cli_local_depth];
+        for(int i = 0; i < scount; i++)
         {
-            cli_vars[i].used = 0;
-            cli_vars[i].name[0] = '\0';
-            cli_vars[i].val[0] = '\0';
+            CLI_LOCAL_SHADOW *sh = &cli_local_shadows[cli_local_depth][i];
+            if(sh->was_used)
+            {
+                cli_var_set(sh->name, sh->val);
+            }
+            else
+            {
+                cli_var_unset(sh->name);
+            }
         }
+        cli_local_depth--;
     }
 
     return 1;
@@ -3577,88 +3588,68 @@ int cli_script_intercept(const char *line)
     }
 
     /* local VAR=val — set variable in
-     * current scope (same as assignment
-     * for our flat variable model) */
+     * current scope (true shadowing) */
     if(starts_with(p, "local ")
        || starts_with(p, "local\t"))
     {
         p += 5;
         p = strip_ws(p);
-        const char *eq =
-            strchr(p, '=');
+        
+        char vn[CLI_VAR_NAMELEN];
+        const char *eq = strchr(p, '=');
         if(eq != NULL)
         {
-            char vn[CLI_VAR_NAMELEN];
             int nl = (int)(eq - p);
-            if(nl >= CLI_VAR_NAMELEN)
-            {
-                nl =
-                    CLI_VAR_NAMELEN - 1;
-            }
-            memcpy(vn, p,
-                   (size_t) nl);
+            if(nl >= CLI_VAR_NAMELEN) nl = CLI_VAR_NAMELEN - 1;
+            memcpy(vn, p, (size_t) nl);
             vn[nl] = '\0';
+        }
+        else
+        {
+            strncpy(vn, p, CLI_VAR_NAMELEN - 1);
+            vn[CLI_VAR_NAMELEN - 1] = '\0';
+        }
+        
+        /* Save shadow if in function scope and not already shadowed */
+        if(cli_local_depth > 0)
+        {
+            int scount = cli_local_shadow_count[cli_local_depth];
+            int already_shadowed = 0;
+            for(int i = 0; i < scount; i++)
+            {
+                if(strcmp(cli_local_shadows[cli_local_depth][i].name, vn) == 0)
+                {
+                    already_shadowed = 1;
+                    break;
+                }
+            }
+            if(!already_shadowed && scount < CLI_MAX_LOCALS_PER_FUNC)
+            {
+                CLI_LOCAL_SHADOW *sh = &cli_local_shadows[cli_local_depth][scount];
+                strncpy(sh->name, vn, CLI_VAR_NAMELEN - 1);
+                sh->name[CLI_VAR_NAMELEN - 1] = '\0';
+                const char *ov = cli_var_get(vn);
+                sh->was_used = (ov != NULL) ? 1 : 0;
+                if(ov != NULL)
+                {
+                    strncpy(sh->val, ov, CLI_VAR_VALLEN - 1);
+                    sh->val[CLI_VAR_VALLEN - 1] = '\0';
+                }
+                cli_local_shadow_count[cli_local_depth]++;
+            }
+        }
+
+        if(eq != NULL)
+        {
             cli_var_set(vn, eq + 1);
         }
         else
         {
-            /* local VAR — declare only */
-            char vn[CLI_VAR_NAMELEN];
-            strncpy(vn, p,
-                    CLI_VAR_NAMELEN
-                    - 1);
-            vn[CLI_VAR_NAMELEN - 1] =
-                '\0';
             if(cli_var_get(vn) == NULL)
             {
                 cli_var_set(vn, "");
             }
         }
-        return 1;
-    }
-
-    /* return [N] */
-    if(strcmp(p, "return") == 0
-       || starts_with(p, "return ")
-       || starts_with(p,
-                      "return\t"))
-    {
-        int rv = 0;
-        if(p[6] != '\0')
-        {
-            rv = (int) strtol(
-                p + 6, NULL, 10);
-        }
-        cli_last_retval = rv;
-        return 1;
-    }
-
-    /* unset VAR */
-    if(starts_with(p, "unset ")
-       || starts_with(p, "unset\t"))
-    {
-        p += 5;
-        p = strip_ws(p);
-        /* Check if it's an array */
-        for(int k = 0;
-            k < CLI_MAX_ARRAYS; k++)
-        {
-            if(cli_arrays[k].used
-               && strcmp(
-                      cli_arrays[k]
-                      .name,
-                      p) == 0)
-            {
-                cli_arrays[k].used = 0;
-                cli_arrays[k]
-                    .nelem = 0;
-                cli_arrays[k]
-                    .name[0] = '\0';
-                return 1;
-            }
-        }
-        /* Remove scalar */
-        cli_var_unset(p);
         return 1;
     }
 
