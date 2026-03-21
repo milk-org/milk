@@ -51,9 +51,10 @@ extern int  yylex_destroy(void);
 /**
  * @brief Custom getc wrapper for readline
  *
- * Intercepts Enter key to erase ghost suggestion
  * text (printed after the cursor by print_ghost)
- * BEFORE readline processes the newline. This
+ * BEFORE readline processes the newline.
+ */
+
 /**
  * Number of ghost chars rendered on current line.
  * Set by print_ghost(), read by cli_accept_line().
@@ -239,14 +240,12 @@ int generator_fuzzy_pass = 0;
 char *CLI_generator(const char *text, int state)
 {
     static unsigned int list_index;
-    static unsigned int list_index1;
     static unsigned int len;
     char               *name;
 
     if(!state)
     {
         list_index  = 0;
-        list_index1 = 0;
         len         = strlen(text);
         generator_fuzzy_pass = 0;
     }
@@ -523,7 +522,6 @@ retry_fuzzy:
     {
         generator_fuzzy_pass = 1;
         list_index  = 0;
-        list_index1 = 0;
         goto retry_fuzzy;
     }
 
@@ -864,6 +862,17 @@ void cli_highlight_redisplay(void)
 
 
 
+errno_t CLI_execute_string(const char *cmd)
+{
+    char save_cmdline[STRINGMAXLEN_CLICMDLINE];
+    strncpy(save_cmdline, data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
+    strncpy(data.CLIcmdline, cmd, STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    errno_t ret = CLI_execute_line();
+    strncpy(data.CLIcmdline, save_cmdline, STRINGMAXLEN_CLICMDLINE);
+    return ret;
+}
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -949,7 +958,17 @@ errno_t CLI_execute_line()
         }
         if(found && split_pos >= 0)
         {
-            /* Execute left side */
+            char right[STRINGMAXLEN_CLICMDLINE];
+            const char *rp =
+                src + split_pos + op_len;
+            while(*rp == ' '
+                  || *rp == '\t')
+            {
+                rp++;
+            }
+            strncpy(right, rp, STRINGMAXLEN_CLICMDLINE - 1);
+            right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+
             char left[STRINGMAXLEN_CLICMDLINE];
             strncpy(left, data.CLIcmdline,
                     (size_t) split_pos);
@@ -960,22 +979,16 @@ errno_t CLI_execute_line()
             data.CLIcmdline[
                 STRINGMAXLEN_CLICMDLINE
                 - 1] = '\0';
+
             errno_t lret = CLI_execute_line();
-            int ok = (lret == RETURN_SUCCESS);
+            int ok = (cli_last_retval == 0);
             /* Decide whether to run right */
             int run_right =
                 (op_is_and && ok)
                 || (!op_is_and && !ok);
             if(run_right)
             {
-                const char *rp =
-                    src + split_pos + op_len;
-                while(*rp == ' '
-                      || *rp == '\t')
-                {
-                    rp++;
-                }
-                strncpy(data.CLIcmdline, rp,
+                strncpy(data.CLIcmdline, right,
                         STRINGMAXLEN_CLICMDLINE
                         - 1);
                 data.CLIcmdline[
@@ -1062,6 +1075,7 @@ errno_t CLI_execute_line()
             FILE *tmpfp = tmpfile();
             if(tmpfp != NULL)
             {
+                fflush(stdout);
                 int saved_stdout =
                     dup(STDOUT_FILENO);
                 dup2(fileno(tmpfp),
@@ -1283,6 +1297,7 @@ errno_t CLI_execute_line()
                 ? "a" : "w");
             if(rfp != NULL)
             {
+                fflush(stdout);
                 int sv_out =
                     dup(STDOUT_FILENO);
                 dup2(fileno(rfp),
@@ -1410,7 +1425,7 @@ errno_t CLI_execute_line()
             if(cpid == 0)
             {
                 /* Child */
-                CLI_execute_line(
+                CLI_execute_string(
                     data.CLIcmdline);
                 _exit(0);
             }
@@ -1466,7 +1481,7 @@ errno_t CLI_execute_line()
                     }
                     if(*st != '\0')
                     {
-                        CLI_execute_line(
+                        CLI_execute_string(
                             (char *) st
                         );
                     }
@@ -1575,7 +1590,7 @@ errno_t CLI_execute_line()
                 dup2(pfd[0],
                      STDIN_FILENO);
                 close(pfd[0]);
-                CLI_execute_line(hcmd);
+                CLI_execute_string(hcmd);
                 dup2(sv,
                      STDIN_FILENO);
                 close(sv);
@@ -1662,7 +1677,7 @@ errno_t CLI_execute_line()
                     fclose(ef);
                 }
             }
-            CLI_execute_line(scmd);
+            CLI_execute_string(scmd);
             dup2(sv_err,
                  STDERR_FILENO);
             close(sv_err);
@@ -3092,6 +3107,7 @@ errno_t CLI_execute_line()
         /* system() returns 127 << 8 if command not found by sh */
         if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) == 127)
         {
+            /// printf("SYSTEM FALLBACK %s -> 127\n", data.CLIcmdline);
             os_not_found = 1;
         }
         else
