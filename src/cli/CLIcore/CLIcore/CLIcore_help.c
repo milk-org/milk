@@ -1693,6 +1693,15 @@ void print_milk_cli_help(void)
            "readonly VAR=val"
            C_RST "\n");
     printf("\n");
+    printf(C_HDR "Function Scope:\n"
+           C_RST);
+    printf("  " C_CMD
+           "local VAR=val" C_RST
+           "  declare local var\n");
+    printf("  " C_CMD
+           "return [n]" C_RST
+           "     exit function\n");
+    printf("\n");
     printf(C_HDR "Break / Continue:\n"
            C_RST);
     printf("  " C_CMD

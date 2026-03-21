@@ -659,20 +659,21 @@ milk-cli > echo $?               # prints: 0
 
 ### Local Variable Scoping
 
-Variables created inside a function are automatically
-local — they are removed when the function returns.
-Variables that existed before the call are restored to
-their original values:
+By default, variables assigned within a function are global.
+Use the `local` keyword to explicitly bound a variable
+to the function's scope. The `local` keyword safely shadows
+any existing global variables, restoring them when returning.
 
 ```bash
-milk-cli > x=outer
+milk-cli > x=global
+milk-cli > y=global
 milk-cli > function test {
-milk-cli >     x=inner
-milk-cli >     y=local_only
+milk-cli >     x=modified
+milk-cli >     local y=localized
 milk-cli > }
 milk-cli > test
-milk-cli > echo $x               # prints: outer
-milk-cli > echo $y               # prints: (empty)
+milk-cli > echo $x               # prints: modified
+milk-cli > echo $y               # prints: global
 ```
 
 ## Heredocs
