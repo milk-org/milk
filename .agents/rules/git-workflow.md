@@ -77,8 +77,9 @@ chosen approach was selected over the alternatives.
 
 - **Model(s) used** — list every model that
   contributed code in this PR with exact version.
-  The current agent model is **Claude Opus 4**
-  (`claude-opus-4-20250514`, Anthropic).
+  The current agent model is **Gemini 3.1 Pro**
+  (Google DeepMind). Ensure you report the
+  correct model you are currently running as.
 - **User edits** — state whether the user made
   direct edits to source code alongside the
   agent work, and if so, summarize what was

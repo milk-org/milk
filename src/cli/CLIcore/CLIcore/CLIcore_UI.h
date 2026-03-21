@@ -20,6 +20,7 @@ errno_t runCLI_prompt(char *promptstring, char *prompt);
 char **CLI_completion(const char *, int, int);
 #endif
 
+errno_t CLI_execute_string(const char *cmd);
 errno_t CLI_execute_line();
 
 errno_t write_tracedebugfile();
