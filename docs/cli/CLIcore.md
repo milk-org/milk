@@ -105,9 +105,9 @@ Key bindings include `Ctrl+A` (start of line), `Ctrl+E`
 (end of line), `Ctrl+R` (reverse history search), and
 arrow keys for navigation.
 
-The CLI also reads commands from `cmdfile.txt` if it exists,
-executing them top-to-bottom and removing each line as it
-is read.
+The CLI can also receive commands from external processes
+via a named pipe (FIFO). See [FIFO Input Mode](#7-fifo-input-mode)
+below.
 
 ## 7. FIFO Input Mode
 
@@ -486,32 +486,35 @@ milk-cli > mload COREMOD_arith     # load module by name
 
 ## 34. Integration with Standard Linux Tools
 
-### Using `cmdfile.txt` to drive milk-cli
+### Driving milk-cli via FIFO
 
-`milk-cli` executes commands from `cmdfile.txt` if the file
-exists. This enables scripting from both inside and outside
-the CLI.
+Start `milk-cli` with the `-f` flag to enable FIFO input
+(see [FIFO Input Mode](#7-fifo-input-mode)). External
+processes can then send commands through the named pipe.
 
-**From inside `milk-cli`:**
+**From inside `milk-cli`** (assuming FIFO is at
+`/dev/shm/.myctl.fifo.<PID>`):
 
 ```text
-milk-cli > !ls im*.fits | xargs -I {} echo iofits.loadfits {} > cmdfile.txt
+milk-cli > !ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.0012345
 ```
 
-**From a separate shell (while `milk-cli` is running):**
+**From a separate shell** (while `milk-cli -n myctl -f`
+is running):
 
 ```bash
-$ ls im*.fits | xargs -I {} echo iofits.loadfits {} > cmdfile.txt
+$ ls im*.fits | xargs -I {} echo iofits.loadfits {} > /dev/shm/.myctl.fifo.0012345
 ```
 
-### Using `imlist.txt` and `cmdfile.txt`
+### Using `imlist.txt` and the FIFO
 
-Start `milk-cli` with `-l` to maintain `imlist.txt`. Then
-filter and act on the list:
+Start `milk-cli` with `-l -f` (or `-l -n myctl -f`) to
+maintain `imlist.txt` and enable FIFO input. Then filter
+and act on the list:
 
 ```text
 milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
-        | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > cmdfile.txt
+        | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > /dev/shm/.myctl.fifo.0012345
 ```
 
 ---
