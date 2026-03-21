@@ -613,7 +613,7 @@ int cli_eval_test(const char *expr)
         {
             return (lv >= rv) ? 1 : 0;
         }
-        if(strcmp(op, "==") == 0)
+        if(strcmp(op, "==") == 0 || strcmp(op, "=") == 0)
         {
             return strcmp(lhs, rhs) == 0
                    ? 1 : 0;
