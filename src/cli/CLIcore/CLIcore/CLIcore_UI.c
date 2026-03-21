@@ -58,19 +58,7 @@ extern int  yylex_destroy(void);
  */
 static int cli_getc(FILE *stream)
 {
-    int c = rl_getc(stream);
-
-    if(c == '\n' || c == '\r')
-    {
-        /* Erase ghost text: positioned at rl_point,
-         * ghost text sits between cursor and EOL.
-         * Use write() to avoid stdio buffering
-         * conflicts with later cleanup code. */
-        fflush(stdout);
-        write(STDOUT_FILENO, "\033[K", 3);
-    }
-
-    return c;
+    return rl_getc(stream);
 }
 
 void rl_cb_linehandler(char *linein)
@@ -6561,7 +6549,7 @@ static int print_ghost(
         return 0;
     }
 
-    printf("%s%.*s\033[0m", style, plen, text);
+    printf("%s%.*s\033[0m\033[K", style, plen, text);
     return plen;
 }
 
