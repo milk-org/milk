@@ -963,5 +963,100 @@ if [ $? -eq 0 ]; then
 fi
 ```
 
+
+## Scripting Showcase
+
+Here are several advanced examples demonstrating the combined capabilities of `milk-cli`'s built-in scripting engine.
+
+<details markdown="1">
+<summary><b>Example 1: Parameter Defaults and String Manipulation</b></summary>
+
+Safely provide defaults for arguments and cleanly parse paths:
+
+```bash
+milk-cli > function process_image {
+milk-cli >     local img_path=${1:-/data/default.fits}
+milk-cli >     local filename=${img_path##*/}  # strip everything up to the last '/'
+milk-cli >     local basename=${filename%.*}   # strip the file extension
+milk-cli >     
+milk-cli >     echo "Processing \${basename}..."
+milk-cli > }
+milk-cli > 
+milk-cli > process_image
+Processing default...
+milk-cli > process_image /tmp/test_image.fits
+Processing test_image...
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 2: Local Variables and Recursion</b></summary>
+
+Use `local` variables and `return` to safely write recursive bash-style functions in `milk-cli`:
+
+```bash
+milk-cli > function factorial {
+milk-cli >     local n=$1
+milk-cli >     if [ $n -le 1 ]; then
+milk-cli >         return 1
+milk-cli >     else
+milk-cli >         local prev=$(( n - 1 ))
+milk-cli >         factorial $prev
+milk-cli >         return $(( n * $? ))
+milk-cli >     fi
+milk-cli > }
+milk-cli > 
+milk-cli > factorial 5
+milk-cli > echo "5! = $?"
+5! = 120
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 3: Transparent OS Fallback & Command Substitution</b></summary>
+
+Combine Linux utilities seamlessly with native `milk-cli` variables:
+
+```bash
+milk-cli > prefix="output_"
+milk-cli > ext=".fits"
+milk-cli > 
+milk-cli > # Use native 'ls' and pipe to 'wc' without needing '!' prefix
+milk-cli > count=$(ls -1 | grep -c "\${ext}")
+milk-cli > echo "Found $count fits files."
+milk-cli > 
+milk-cli > # Write a sequence to a file
+milk-cli > seq 1 5 > iter.txt
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 4: Waiting for High-Performance Resources</b></summary>
+
+Script startup sequences that robustly block until streams and FPS engines are ready:
+
+```bash
+milk-cli > function wait_and_monitor {
+milk-cli >     local stream=$1
+milk-cli >     echo "Waiting for stream \${stream}..."
+milk-cli >     
+milk-cli >     waitfor_stream $stream 60
+milk-cli >     if [ $? -ne 0 ]; then
+milk-cli >         echo "Error: Stream timeout."
+milk-cli >         return 1
+milk-cli >     fi
+milk-cli >     
+milk-cli >     # Use dot expansion to read the stream's metadata directly from shared memory!
+milk-cli >     echo "Ready! Shape: \${${stream}.xsize}x\${${stream}.ysize}"
+milk-cli > }
+milk-cli > 
+milk-cli > wait_and_monitor wfs_cam
+```
+
+</details>
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
