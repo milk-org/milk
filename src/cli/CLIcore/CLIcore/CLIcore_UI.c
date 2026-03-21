@@ -3261,6 +3261,120 @@ static void expand_braced(
         }
     }
 
+    /* ${var^^} uppercase / ${var,,} lowercase
+     * ${var^}  first char upper
+     * ${var,}  first char lower */
+    {
+        /* Find ^ or , in inner */
+        const char *cp =
+            strchr(inner, '^');
+        const char *cl =
+            strchr(inner, ',');
+        /* Pick the earlier one */
+        const char *op = NULL;
+        if(cp != NULL && cl != NULL)
+        {
+            op = (cp < cl) ? cp : cl;
+        }
+        else if(cp != NULL)
+        {
+            op = cp;
+        }
+        else if(cl != NULL)
+        {
+            op = cl;
+        }
+        if(op != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nlen =
+                (int)(op - inner);
+            if(nlen >= CLI_VAR_NAMELEN)
+            {
+                nlen =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, inner,
+                   (size_t) nlen);
+            vn[nlen] = '\0';
+            const char *val =
+                cli_var_lookup(vn);
+            if(val != NULL)
+            {
+                char tmp[
+                    CLI_VAR_VALLEN];
+                strncpy(tmp, val,
+                        CLI_VAR_VALLEN
+                        - 1);
+                tmp[CLI_VAR_VALLEN
+                    - 1] = '\0';
+                if(op[0] == '^'
+                   && op[1] == '^')
+                {
+                    /* Uppercase all */
+                    for(int k = 0;
+                        tmp[k]
+                        != '\0'; k++)
+                    {
+                        tmp[k] =
+                            (char)
+                            toupper(
+                                (unsigned
+                                 char)
+                                tmp[k]);
+                    }
+                }
+                else if(op[0] == '^')
+                {
+                    /* First char */
+                    if(tmp[0] != '\0')
+                    {
+                        tmp[0] =
+                            (char)
+                            toupper(
+                                (unsigned
+                                 char)
+                                tmp[0]);
+                    }
+                }
+                else if(op[0] == ','
+                        && op[1]
+                        == ',')
+                {
+                    /* Lowercase all */
+                    for(int k = 0;
+                        tmp[k]
+                        != '\0'; k++)
+                    {
+                        tmp[k] =
+                            (char)
+                            tolower(
+                                (unsigned
+                                 char)
+                                tmp[k]);
+                    }
+                }
+                else if(op[0] == ',')
+                {
+                    /* First char */
+                    if(tmp[0] != '\0')
+                    {
+                        tmp[0] =
+                            (char)
+                            tolower(
+                                (unsigned
+                                 char)
+                                tmp[0]);
+                    }
+                }
+                emit_str(out, opos,
+                         maxlen,
+                         tmp);
+            }
+            return;
+        }
+    }
+
     /* ${var#pat} — strip shortest prefix */
     {
         const char *pp =
@@ -4361,6 +4475,187 @@ errno_t CLI_execute_line()
         }
     }
 
+    /* Here-string: cmd <<< "text" */
+    {
+        const char *hs =
+            strstr(data.CLIcmdline,
+                   "<<<");
+        if(hs != NULL)
+        {
+            /* Extract command before
+             * <<< */
+            char hcmd[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            int hcl =
+                (int)(hs
+                      - data.CLIcmdline);
+            if(hcl
+               >= STRINGMAXLEN_CLICMDLINE)
+            {
+                hcl =
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1;
+            }
+            memcpy(hcmd,
+                   data.CLIcmdline,
+                   (size_t) hcl);
+            hcmd[hcl] = '\0';
+            /* Trim trailing ws */
+            while(hcl > 0
+                  && (hcmd[hcl - 1]
+                      == ' '
+                      || hcmd[hcl - 1]
+                      == '\t'))
+            {
+                hcmd[--hcl] = '\0';
+            }
+            /* Get the text */
+            const char *tp = hs + 3;
+            while(*tp == ' '
+                  || *tp == '\t')
+            {
+                tp++;
+            }
+            /* Strip quotes */
+            char htxt[1024];
+            strncpy(htxt, tp,
+                    sizeof(htxt) - 1);
+            htxt[sizeof(htxt) - 1] =
+                '\0';
+            int htl =
+                (int) strlen(htxt);
+            if(htl >= 2
+               && ((htxt[0] == '"'
+                    && htxt[htl - 1]
+                    == '"')
+                   || (htxt[0] == '\''
+                       && htxt[
+                           htl - 1]
+                       == '\'')))
+            {
+                htxt[htl - 1] = '\0';
+                memmove(htxt,
+                        htxt + 1,
+                        (size_t)
+                        (htl - 1));
+            }
+            /* Create pipe */
+            int pfd[2];
+            if(pipe(pfd) == 0)
+            {
+                /* Write text to pipe */
+                ssize_t wr_ignore;
+                wr_ignore =
+                write(pfd[1], htxt,
+                      strlen(htxt));
+                wr_ignore =
+                write(pfd[1], "\n", 1);
+                (void) wr_ignore;
+                close(pfd[1]);
+                /* Redirect stdin */
+                int sv =
+                    dup(STDIN_FILENO);
+                dup2(pfd[0],
+                     STDIN_FILENO);
+                close(pfd[0]);
+                CLI_execute_line(hcmd);
+                dup2(sv,
+                     STDIN_FILENO);
+                close(sv);
+            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return 0;
+        }
+    }
+
+    /* Stderr redirect: 2>&1, 2>/dev/null,
+     * 2>file */
+    {
+        const char *se =
+            strstr(data.CLIcmdline,
+                   "2>");
+        if(se != NULL)
+        {
+            /* Extract cmd before 2> */
+            char scmd[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            int scl =
+                (int)(se
+                      - data.CLIcmdline);
+            if(scl
+               >= STRINGMAXLEN_CLICMDLINE)
+            {
+                scl =
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1;
+            }
+            memcpy(scmd,
+                   data.CLIcmdline,
+                   (size_t) scl);
+            scmd[scl] = '\0';
+            while(scl > 0
+                  && (scmd[scl - 1]
+                      == ' '
+                      || scmd[scl - 1]
+                      == '\t'))
+            {
+                scmd[--scl] = '\0';
+            }
+            const char *target =
+                se + 2;
+            while(*target == ' '
+                  || *target == '\t')
+            {
+                target++;
+            }
+            int sv_err =
+                dup(STDERR_FILENO);
+            if(strncmp(target, "&1",
+                       2) == 0)
+            {
+                dup2(STDOUT_FILENO,
+                     STDERR_FILENO);
+            }
+            else
+            {
+                /* Strip trailing ws */
+                char fname[256];
+                int fi = 0;
+                while(target[fi]
+                      != '\0'
+                      && target[fi]
+                      != ' '
+                      && target[fi]
+                      != '\t'
+                      && fi < 254)
+                {
+                    fname[fi] =
+                        target[fi];
+                    fi++;
+                }
+                fname[fi] = '\0';
+                FILE *ef =
+                    fopen(fname, "w");
+                if(ef != NULL)
+                {
+                    dup2(fileno(ef),
+                         STDERR_FILENO);
+                    fclose(ef);
+                }
+            }
+            CLI_execute_line(scmd);
+            dup2(sv_err,
+                 STDERR_FILENO);
+            close(sv_err);
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return 0;
+        }
+    }
+
     /* Input redirection: cmd < file
      * Scan for unquoted < that is not
      * << or <<<. */
@@ -5213,78 +5508,269 @@ errno_t CLI_execute_line()
             || strcmp(data.CLIcmdline,
                      "read") == 0)
     {
-        /* read [-p "prompt"] varname
-         * Read line from stdin into var */
+        /* read [-p "prompt"] [-t N]
+         * [-a arr] varname
+         * Read line from stdin */
         const char *p =
             data.CLIcmdline + 4;
         while(*p == ' ' || *p == '\t')
         {
             p++;
         }
-        /* Optional -p "prompt" */
-        if(strncmp(p, "-p ", 3) == 0)
+        /* Parse flags */
+        int rd_timeout = -1;
+        int rd_array = 0;
+        char rd_prompt[256] = {'\0'};
+        char rd_aname[CLI_VAR_NAMELEN]
+            = {'\0'};
+        while(p[0] == '-')
         {
-            p += 3;
-            while(*p == ' ' || *p == '\t')
+            if(strncmp(p, "-p ", 3)
+               == 0)
             {
-                p++;
-            }
-            /* Extract prompt string */
-            if(*p == '"' || *p == '\'')
-            {
-                char delim = *p++;
-                while(*p != '\0'
-                      && *p != delim)
+                p += 3;
+                while(*p == ' '
+                      || *p == '\t')
                 {
-                    putchar(*p++);
+                    p++;
                 }
-                if(*p == delim)
+                if(*p == '"'
+                   || *p == '\'')
+                {
+                    char delim = *p++;
+                    int pi = 0;
+                    while(*p != '\0'
+                          && *p
+                          != delim
+                          && pi < 254)
+                    {
+                        rd_prompt[pi++]
+                            = *p++;
+                    }
+                    rd_prompt[pi] =
+                        '\0';
+                    if(*p == delim)
+                    {
+                        p++;
+                    }
+                }
+                else
+                {
+                    int pi = 0;
+                    while(*p != '\0'
+                          && *p != ' '
+                          && *p
+                          != '\t'
+                          && pi < 254)
+                    {
+                        rd_prompt[pi++]
+                            = *p++;
+                    }
+                    rd_prompt[pi] =
+                        '\0';
+                }
+            }
+            else if(strncmp(
+                        p, "-t ", 3)
+                    == 0)
+            {
+                p += 3;
+                while(*p == ' '
+                      || *p == '\t')
+                {
+                    p++;
+                }
+                rd_timeout = (int)
+                    strtol(p, NULL,
+                           10);
+                while(*p != '\0'
+                      && *p != ' '
+                      && *p != '\t')
                 {
                     p++;
                 }
             }
-            fflush(stdout);
-            while(*p == ' ' || *p == '\t')
+            else if(strncmp(
+                        p, "-a ", 3)
+                    == 0)
+            {
+                p += 3;
+                while(*p == ' '
+                      || *p == '\t')
+                {
+                    p++;
+                }
+                rd_array = 1;
+                {
+                    int ni = 0;
+                    while(*p != '\0'
+                          && *p != ' '
+                          && *p
+                          != '\t'
+                          && ni
+                          < CLI_VAR_NAMELEN
+                          - 1)
+                    {
+                        rd_aname[ni++]
+                            = *p++;
+                    }
+                    rd_aname[ni] =
+                        '\0';
+                }
+            }
+            else
+            {
+                /* Unknown flag */
+                p++;
+                while(*p != '\0'
+                      && *p != ' '
+                      && *p != '\t')
+                {
+                    p++;
+                }
+            }
+            while(*p == ' '
+                  || *p == '\t')
             {
                 p++;
             }
         }
-        if(*p == '\0')
+        /* Print prompt */
+        if(rd_prompt[0] != '\0')
         {
-            printf("Usage: read [-p "
-                   "\"prompt\"] "
-                   "<varname>\n");
+            printf("%s", rd_prompt);
+            fflush(stdout);
         }
-        else
+        /* Timeout with select() */
+        int rd_ok = 1;
+        if(rd_timeout >= 0)
         {
-            /* p now points at varname */
-            char vname[CLI_VAR_NAMELEN];
-            int vi = 0;
-            while(*p != '\0'
-                  && *p != ' '
-                  && *p != '\t'
-                  && vi < CLI_VAR_NAMELEN
-                  - 1)
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(STDIN_FILENO,
+                   &fds);
+            struct timeval tv;
+            tv.tv_sec = rd_timeout;
+            tv.tv_usec = 0;
+            int sr = select(
+                STDIN_FILENO + 1,
+                &fds, NULL, NULL,
+                &tv);
+            if(sr <= 0)
             {
-                vname[vi++] = *p++;
+                rd_ok = 0;
+                cli_last_retval = 1;
             }
-            vname[vi] = '\0';
-            /* Read line from stdin */
+        }
+        if(rd_ok)
+        {
             char rbuf[1024];
-            if(fgets(rbuf, sizeof(rbuf),
-                     stdin) != NULL)
+            if(fgets(rbuf,
+                     sizeof(rbuf),
+                     stdin)
+               != NULL)
             {
-                /* Strip trailing newline */
-                size_t rlen = strlen(rbuf);
+                /* Strip trailing
+                 * newline */
+                size_t rlen =
+                    strlen(rbuf);
                 while(rlen > 0
-                      && (rbuf[rlen - 1]
+                      && (rbuf[
+                              rlen - 1]
                           == '\n'
-                          || rbuf[rlen - 1]
+                          || rbuf[
+                              rlen - 1]
                           == '\r'))
                 {
-                    rbuf[--rlen] = '\0';
+                    rbuf[--rlen] =
+                        '\0';
                 }
-                cli_var_set(vname, rbuf);
+                if(rd_array)
+                {
+                    /* Split into array
+                     * elements */
+                    for(int k = 0;
+                        k
+                        < CLI_MAX_ARRAYS;
+                        k++)
+                    {
+                        if(!cli_arrays[
+                            k].used)
+                        {
+                            cli_arrays[
+                                k]
+                                .used = 1;
+                            strncpy(
+                                cli_arrays[
+                                    k]
+                                .name,
+                                rd_aname,
+                                CLI_VAR_NAMELEN
+                                - 1);
+                            cli_arrays[
+                                k]
+                                .nelem
+                                = 0;
+                            char *tok
+                                = strtok(
+                                    rbuf,
+                                    " \t");
+                            while(tok
+                                  != NULL
+                                  && cli_arrays[
+                                      k]
+                                  .nelem
+                                  < CLI_ARRAY_MAXELEM)
+                            {
+                                strncpy(
+                                    cli_arrays[
+                                        k]
+                                    .elem[
+                                        cli_arrays[
+                                            k]
+                                        .nelem],
+                                    tok,
+                                    CLI_VAR_VALLEN
+                                    - 1);
+                                cli_arrays[
+                                    k]
+                                    .nelem++;
+                                tok
+                                    = strtok(
+                                        NULL,
+                                        " \t");
+                            }
+                            break;
+                        }
+                    }
+                }
+                else if(*p != '\0')
+                {
+                    /* Scalar var */
+                    char vname[
+                        CLI_VAR_NAMELEN
+                    ];
+                    int vi = 0;
+                    while(*p != '\0'
+                          && *p != ' '
+                          && *p
+                          != '\t'
+                          && vi
+                          < CLI_VAR_NAMELEN
+                          - 1)
+                    {
+                        vname[vi++] =
+                            *p++;
+                    }
+                    vname[vi] = '\0';
+                    cli_var_set(
+                        vname, rbuf);
+                }
+                cli_last_retval = 0;
+            }
+            else
+            {
+                cli_last_retval = 1;
             }
         }
         data.CMDexecuted = 1;

@@ -1740,6 +1740,42 @@ void print_milk_cli_help(void)
            "(cmd1; cmd2)" C_RST
            "  isolated env\n");
     printf("\n");
+    printf(C_HDR "I/O Enhancements:\n"
+           C_RST);
+    printf("  " C_CMD
+           "read -t N VAR" C_RST
+           "  timed read (sec)\n");
+    printf("  " C_CMD
+           "read -a ARR" C_RST
+           "  read words to array\n");
+    printf("  " C_CMD
+           "cmd <<< \"text\"" C_RST
+           "  here-string\n");
+    printf("  " C_CMD
+           "cmd 2>&1" C_RST
+           "  stderr to stdout\n");
+    printf("  " C_CMD
+           "cmd 2>/dev/null" C_RST
+           "  discard stderr\n");
+    printf("  " C_CMD
+           "cmd 2>file" C_RST
+           "  stderr to file\n");
+    printf("\n");
+    printf(C_HDR "Case Conversion:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${var^^}" C_RST
+           "  uppercase all\n");
+    printf("  " C_CMD
+           "${var,,}" C_RST
+           "  lowercase all\n");
+    printf("  " C_CMD
+           "${var^}" C_RST
+           "  capitalize first\n");
+    printf("  " C_CMD
+           "${var,}" C_RST
+           "  lowercase first\n");
+    printf("\n");
 
     return;
 }

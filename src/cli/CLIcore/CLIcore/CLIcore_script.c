@@ -3395,6 +3395,521 @@ int cli_script_intercept(const char *line)
         return 1;
     }
 
+    /* local VAR=val — set variable in
+     * current scope (same as assignment
+     * for our flat variable model) */
+    if(starts_with(p, "local ")
+       || starts_with(p, "local\t"))
+    {
+        p += 5;
+        p = strip_ws(p);
+        const char *eq =
+            strchr(p, '=');
+        if(eq != NULL)
+        {
+            char vn[CLI_VAR_NAMELEN];
+            int nl = (int)(eq - p);
+            if(nl >= CLI_VAR_NAMELEN)
+            {
+                nl =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, p,
+                   (size_t) nl);
+            vn[nl] = '\0';
+            cli_var_set(vn, eq + 1);
+        }
+        else
+        {
+            /* local VAR — declare only */
+            char vn[CLI_VAR_NAMELEN];
+            strncpy(vn, p,
+                    CLI_VAR_NAMELEN
+                    - 1);
+            vn[CLI_VAR_NAMELEN - 1] =
+                '\0';
+            if(cli_var_get(vn) == NULL)
+            {
+                cli_var_set(vn, "");
+            }
+        }
+        return 1;
+    }
+
+    /* return [N] */
+    if(strcmp(p, "return") == 0
+       || starts_with(p, "return ")
+       || starts_with(p,
+                      "return\t"))
+    {
+        int rv = 0;
+        if(p[6] != '\0')
+        {
+            rv = (int) strtol(
+                p + 6, NULL, 10);
+        }
+        cli_last_retval = rv;
+        return 1;
+    }
+
+    /* unset VAR */
+    if(starts_with(p, "unset ")
+       || starts_with(p, "unset\t"))
+    {
+        p += 5;
+        p = strip_ws(p);
+        /* Check if it's an array */
+        for(int k = 0;
+            k < CLI_MAX_ARRAYS; k++)
+        {
+            if(cli_arrays[k].used
+               && strcmp(
+                      cli_arrays[k]
+                      .name,
+                      p) == 0)
+            {
+                cli_arrays[k].used = 0;
+                cli_arrays[k]
+                    .nelem = 0;
+                cli_arrays[k]
+                    .name[0] = '\0';
+                return 1;
+            }
+        }
+        /* Remove scalar */
+        cli_var_unset(p);
+        return 1;
+    }
+
+    /* declare [-i|-a|-r|-x] VAR[=val] */
+    if(starts_with(p, "declare ")
+       || starts_with(p,
+                      "declare\t")
+       || starts_with(p, "typeset ")
+       || starts_with(p,
+                      "typeset\t"))
+    {
+        p += 7;
+        if(p[0] == ' ' || p[0] == '\t')
+        {
+            p++;
+        }
+        p = strip_ws(p);
+        /* Parse flags */
+        int fl_int = 0;
+        int fl_arr = 0;
+        int fl_ro = 0;
+        int fl_exp = 0;
+        while(p[0] == '-')
+        {
+            p++;
+            while(*p != '\0'
+                  && *p != ' '
+                  && *p != '\t')
+            {
+                if(*p == 'i')
+                {
+                    fl_int = 1;
+                }
+                else if(*p == 'a')
+                {
+                    fl_arr = 1;
+                }
+                else if(*p == 'r')
+                {
+                    fl_ro = 1;
+                }
+                else if(*p == 'x')
+                {
+                    fl_exp = 1;
+                }
+                p++;
+            }
+            p = strip_ws(p);
+        }
+        /* Parse VAR=val */
+        const char *eq =
+            strchr(p, '=');
+        char vn[CLI_VAR_NAMELEN];
+        if(eq != NULL)
+        {
+            int nl = (int)(eq - p);
+            if(nl >= CLI_VAR_NAMELEN)
+            {
+                nl =
+                    CLI_VAR_NAMELEN - 1;
+            }
+            memcpy(vn, p,
+                   (size_t) nl);
+            vn[nl] = '\0';
+            if(fl_arr)
+            {
+                /* declare -a arr */
+                for(int k = 0;
+                    k < CLI_MAX_ARRAYS;
+                    k++)
+                {
+                    if(!cli_arrays[k]
+                        .used)
+                    {
+                        cli_arrays[k]
+                            .used = 1;
+                        strncpy(
+                            cli_arrays[k]
+                            .name,
+                            vn,
+                            CLI_VAR_NAMELEN
+                            - 1);
+                        cli_arrays[k]
+                            .nelem = 0;
+                        break;
+                    }
+                }
+            }
+            else if(fl_int)
+            {
+                /* Integer eval */
+                long iv = strtol(
+                    eq + 1, NULL, 0);
+                char ib[32];
+                snprintf(ib,
+                         sizeof(ib),
+                         "%ld", iv);
+                cli_var_set(vn, ib);
+            }
+            else
+            {
+                cli_var_set(
+                    vn, eq + 1);
+            }
+            if(fl_exp)
+            {
+                const char *v =
+                    cli_var_get(vn);
+                if(v != NULL)
+                {
+                    setenv(vn, v, 1);
+                }
+            }
+        }
+        else
+        {
+            strncpy(vn, p,
+                    CLI_VAR_NAMELEN
+                    - 1);
+            vn[CLI_VAR_NAMELEN - 1] =
+                '\0';
+            if(cli_var_get(vn) == NULL)
+            {
+                cli_var_set(vn, "");
+            }
+        }
+        (void) fl_ro; /* TODO: track */
+        return 1;
+    }
+
+    /* let "expr" or let expr */
+    if(starts_with(p, "let ")
+       || starts_with(p, "let\t"))
+    {
+        p += 3;
+        p = strip_ws(p);
+        /* Strip optional quotes */
+        char lexpr[
+            STRINGMAXLEN_CLICMDLINE];
+        strncpy(lexpr, p,
+                STRINGMAXLEN_CLICMDLINE
+                - 1);
+        lexpr[STRINGMAXLEN_CLICMDLINE
+              - 1] = '\0';
+        int ll = (int) strlen(lexpr);
+        if(ll >= 2
+           && ((lexpr[0] == '"'
+                && lexpr[ll - 1]
+                == '"')
+               || (lexpr[0] == '\''
+                   && lexpr[ll - 1]
+                   == '\'')))
+        {
+            lexpr[ll - 1] = '\0';
+            memmove(lexpr,
+                    lexpr + 1,
+                    (size_t)(ll - 1));
+        }
+        /* Build $(( )) expression */
+        char ecmd[
+            STRINGMAXLEN_CLICMDLINE];
+        snprintf(ecmd, sizeof(ecmd),
+                 "$((%s))", lexpr);
+        /* Find assignment target */
+        char *aeq =
+            strchr(lexpr, '=');
+        if(aeq != NULL
+           && aeq != lexpr
+           && aeq[-1] != '!'
+           && aeq[-1] != '<'
+           && aeq[-1] != '>')
+        {
+            /* Has assignment, e.g.
+             * let "x = 1 + 2" */
+            *aeq = '\0';
+            /* Trim target var */
+            char tvar[
+                CLI_VAR_NAMELEN];
+            {
+                const char *ts =
+                    lexpr;
+                while(*ts == ' '
+                      || *ts == '\t')
+                {
+                    ts++;
+                }
+                int ti = 0;
+                while(*ts != '\0'
+                      && *ts != ' '
+                      && *ts != '\t'
+                      && ti
+                      < CLI_VAR_NAMELEN
+                      - 1)
+                {
+                    tvar[ti++] =
+                        *ts++;
+                }
+                tvar[ti] = '\0';
+            }
+            /* Eval RHS */
+            const char *rhs =
+                aeq + 1;
+            while(*rhs == ' '
+                  || *rhs == '\t')
+            {
+                rhs++;
+            }
+            char arith[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            snprintf(arith,
+                     sizeof(arith),
+                     "$((%s))", rhs);
+            cli_expand_env(
+                arith,
+                STRINGMAXLEN_CLICMDLINE
+            );
+            cli_var_set(
+                tvar, arith);
+        }
+        else
+        {
+            /* No assignment, just
+             * evaluate */
+            cli_expand_env(
+                ecmd,
+                STRINGMAXLEN_CLICMDLINE
+            );
+            cli_last_retval =
+                (strtol(ecmd, NULL,
+                        10) == 0) ? 1
+                : 0;
+        }
+        return 1;
+    }
+
+    /* eval "cmd" — execute string */
+    if(starts_with(p, "eval ")
+       || starts_with(p, "eval\t"))
+    {
+        p += 4;
+        p = strip_ws(p);
+        /* Strip outer quotes */
+        char ecmd[
+            STRINGMAXLEN_CLICMDLINE];
+        strncpy(ecmd, p,
+                STRINGMAXLEN_CLICMDLINE
+                - 1);
+        ecmd[STRINGMAXLEN_CLICMDLINE
+             - 1] = '\0';
+        int el = (int) strlen(ecmd);
+        if(el >= 2
+           && ((ecmd[0] == '"'
+                && ecmd[el - 1]
+                == '"')
+               || (ecmd[0] == '\''
+                   && ecmd[el - 1]
+                   == '\'')))
+        {
+            ecmd[el - 1] = '\0';
+            memmove(ecmd, ecmd + 1,
+                    (size_t)(el - 1));
+        }
+        CLI_execute_line(ecmd);
+        return 1;
+    }
+
+    /* type / command -v — check cmd */
+    if(starts_with(p, "type ")
+       || starts_with(p, "type\t"))
+    {
+        p += 4;
+        p = strip_ws(p);
+        /* Search registered commands */
+        int found = 0;
+        for(int ci = 0;
+            ci < data.NBcmd; ci++)
+        {
+            if(strcmp(
+                   data.cmd[ci].key,
+                   p) == 0)
+            {
+                printf("%s is a "
+                       "CLI command\n",
+                       p);
+                found = 1;
+                break;
+            }
+        }
+        if(!found)
+        {
+            printf("%s: not found\n",
+                   p);
+            cli_last_retval = 1;
+        }
+        else
+        {
+            cli_last_retval = 0;
+        }
+        return 1;
+    }
+    if(starts_with(p, "command ")
+       || starts_with(p,
+                      "command\t"))
+    {
+        p += 7;
+        p = strip_ws(p);
+        /* command -v cmd */
+        if(starts_with(p, "-v "))
+        {
+            p += 3;
+            p = strip_ws(p);
+            int found = 0;
+            for(int ci = 0;
+                ci < data.NBcmd; ci++)
+            {
+                if(strcmp(
+                       data.cmd[ci]
+                       .key,
+                       p) == 0)
+                {
+                    printf("%s\n", p);
+                    found = 1;
+                    break;
+                }
+            }
+            cli_last_retval =
+                found ? 0 : 1;
+            return 1;
+        }
+        /* command cmd — run directly */
+        CLI_execute_line((char *) p);
+        return 1;
+    }
+
+    /* timeout N cmd */
+    if(starts_with(p, "timeout ")
+       || starts_with(p,
+                      "timeout\t"))
+    {
+        p += 7;
+        p = strip_ws(p);
+        /* Parse timeout seconds */
+        char *endp;
+        double tsec =
+            strtod(p, &endp);
+        if(endp == p)
+        {
+            fprintf(stderr,
+                    "timeout: "
+                    "invalid time\n");
+            cli_last_retval = 1;
+            return 1;
+        }
+        const char *cmd_start =
+            endp;
+        while(*cmd_start == ' '
+              || *cmd_start == '\t')
+        {
+            cmd_start++;
+        }
+        pid_t tpid = fork();
+        if(tpid == 0)
+        {
+            /* Child: run cmd */
+            CLI_execute_line(
+                (char *) cmd_start);
+            _exit(cli_last_retval);
+        }
+        else if(tpid > 0)
+        {
+            /* Parent: wait with
+             * timeout */
+            struct timespec ts;
+            ts.tv_sec =
+                (time_t) tsec;
+            ts.tv_nsec =
+                (long)((tsec
+                        - (double)
+                        ts.tv_sec)
+                       * 1e9);
+            int wst = 0;
+            struct timespec start;
+            clock_gettime(
+                CLOCK_MONOTONIC,
+                &start);
+            while(1)
+            {
+                int wr =
+                    waitpid(tpid,
+                            &wst,
+                            WNOHANG);
+                if(wr > 0)
+                {
+                    cli_last_retval =
+                        WEXITSTATUS(
+                            wst);
+                    break;
+                }
+                struct timespec now;
+                clock_gettime(
+                    CLOCK_MONOTONIC,
+                    &now);
+                double elapsed =
+                    (double)(
+                        now.tv_sec
+                        - start
+                        .tv_sec)
+                    + (double)(
+                        now.tv_nsec
+                        - start
+                        .tv_nsec)
+                    / 1e9;
+                if(elapsed >= tsec)
+                {
+                    kill(tpid,
+                         SIGTERM);
+                    usleep(100000);
+                    kill(tpid,
+                         SIGKILL);
+                    waitpid(tpid,
+                            &wst, 0);
+                    cli_last_retval =
+                        124;
+                    break;
+                }
+                usleep(10000);
+            }
+        }
+        return 1;
+    }
+
     /* mapfile / readarray -t arr < file */
     if(starts_with(p, "mapfile ")
        || starts_with(p, "mapfile\t")
