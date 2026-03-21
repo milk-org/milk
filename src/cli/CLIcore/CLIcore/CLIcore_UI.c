@@ -63,9 +63,11 @@ static int cli_getc(FILE *stream)
     if(c == '\n' || c == '\r')
     {
         /* Erase ghost text: positioned at rl_point,
-         * ghost text sits between cursor and EOL */
-        printf("\033[K");
+         * ghost text sits between cursor and EOL.
+         * Use write() to avoid stdio buffering
+         * conflicts with later cleanup code. */
         fflush(stdout);
+        write(STDOUT_FILENO, "\033[K", 3);
     }
 
     return c;
