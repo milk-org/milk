@@ -16,8 +16,10 @@ When creating or editing markdown documentation in the
    language specifier (CI enforces MD040). Common languages:
    `bash`, `c`, `python`, `cmake`, `text` (for plain output,
    compiler warnings, directory trees, etc.).
-4. **Shell prompts:** Use `$` prefix for shell commands.
-   Use `milk-cli>` for CLI prompts.
+4. **Shell prompts:** Do NOT use `$` or `milk-cli >`
+   prompts in code blocks — they prevent copy-paste.
+   Instead, start milk-cli code blocks with
+   `#!/usr/bin/env milk-cli -s` (the shebang line).
    Use `#` for comments inside code blocks.
 5. **No V1 macros:** Do not reference `FPS_MAIN_STANDALONE`
    (the V1 macro). Always use `FPS_MAIN_STANDALONE_V2` or
