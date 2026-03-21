@@ -1968,6 +1968,28 @@ errno_t help_module()
 #include <readline/history.h>
 #endif
 
+#include <sys/select.h>
+
+/**
+ * @brief Wait up to ms milliseconds for stdin to have data.
+ *
+ * Returns 1 if data is ready, 0 on timeout.
+ * Used to disambiguate a bare ESC from ESC-sequence prefixes
+ * (arrow keys, PgUp/PgDn) inside raw-mode TUI prompts.
+ */
+static int tui_stdin_wait_ms(int ms)
+{
+    fd_set fds;
+    struct timeval tv;
+
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    tv.tv_sec  = 0;
+    tv.tv_usec = ms * 1000;
+    return select(STDIN_FILENO + 1,
+                  &fds, NULL, NULL, &tv) > 0;
+}
+
 // Simple Levenshtein distance for fuzzy matching
 static int fuzzy_match_score(const char *query, const char *target)
 {
@@ -2062,9 +2084,7 @@ int cli_fhelp(void)
         // Input loop
         char c = getchar();
         if (c == 27) { // Escape seq
-            int byteswaiting;
-            ioctl(STDIN_FILENO, FIONREAD, &byteswaiting);
-            if (byteswaiting > 0) {
+            if (tui_stdin_wait_ms(50)) {
                 char seq[2];
                 seq[0] = getchar();
                 seq[1] = getchar();
@@ -2207,10 +2227,7 @@ int cli_fhist(void)
         // Input loop
         char c = getchar();
         if (c == 27) { // Escape seq
-            // check if there is an escape sequence waiting
-            int byteswaiting;
-            ioctl(STDIN_FILENO, FIONREAD, &byteswaiting);
-            if (byteswaiting > 0) {
+            if (tui_stdin_wait_ms(50)) {
                 char seq[2];
                 seq[0] = getchar();
                 seq[1] = getchar();
@@ -2350,10 +2367,7 @@ int cli_fparam(void)
         // Input loop
         char c = getchar();
         if (c == 27) { // Escape seq
-            // check if there is an escape sequence waiting
-            int byteswaiting;
-            ioctl(STDIN_FILENO, FIONREAD, &byteswaiting);
-            if (byteswaiting > 0) {
+            if (tui_stdin_wait_ms(50)) {
                 char seq[2];
                 seq[0] = getchar();
                 seq[1] = getchar();
