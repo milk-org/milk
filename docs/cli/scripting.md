@@ -16,6 +16,8 @@ See also: [CLI Syntax](CLIcore.md) ·
 
 ## Variables
 
+<details markdown="1"><summary><b>Click to expand</b></summary>
+
 ### Setting and Reading
 
 ```bash
@@ -103,7 +105,12 @@ Write FPS parameters with `fpsset`:
 fpsset myloop loopgain 0.5
 ```
 
+
+</details>
+
 ## Arithmetic
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 `$(( expr ))` evaluates integer arithmetic with
 `+`, `-`, `*`, `/`, `%` operators. Variables and FPS
@@ -117,7 +124,12 @@ z=$(( y * 2 - x ))    # z = 20
 echo $y $z            # prints: 15 20
 ```
 
+
+</details>
+
 ## Built-in Commands
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ### sleep
 
@@ -566,7 +578,12 @@ timeout 5 long_running_cmd
 If the command does not finish within N seconds,
 it is terminated with `$?` set to 124.
 
+
+</details>
+
 ## Flow Control
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ### if / elif / else / fi
 
@@ -678,7 +695,12 @@ esac
 Patterns support `|` alternation and `*` wildcard.
 Only the first matching pattern's body is executed.
 
+
+</details>
+
 ## Functions
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Define reusable functions with `function name { ... }`.
 Inside the body, `$1` through `$9` are the call
@@ -729,7 +751,12 @@ echo $x               # prints: modified
 echo $y               # prints: global
 ```
 
+
+</details>
+
 ## Heredocs
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Assign multi-line text to a variable using heredoc
 syntax:
@@ -747,7 +774,12 @@ echo $config
 Lines between `=<<DELIM` and `DELIM` are concatenated
 with newlines and stored in the variable.
 
+
+</details>
+
 ## Stream Event Triggers
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 The `on_update` command waits for a shared-memory
 stream to be updated, then runs a command:
@@ -762,7 +794,12 @@ This blocks until the stream's semaphore is posted
 command body. Useful for event-driven processing
 in scripts.
 
+
+</details>
+
 ## Script Files
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ### Running Scripts
 
@@ -857,7 +894,12 @@ echo "Processing complete"
 | Startup | `-s FILE` flag on command line |
 | Auto-load | `~/.milkrc` at startup |
 
+
+</details>
+
 ## Command Reference
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 | Command | Description |
 |---------|-------------|
@@ -900,7 +942,12 @@ echo "Processing complete"
 | `waitfor_stream s [T]` | Wait for SHM stream |
 | `waitfor_fps name [T]` | Wait for FPS SHM |
 
+
+</details>
+
 ## Associative Arrays
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Associative arrays store key-value pairs:
 
@@ -915,7 +962,12 @@ echo ${config[host]}   # localhost
 Assignment uses `map[key]=value` syntax. Lookup
 uses `${map[key]}` expansion.
 
+
+</details>
+
 ## Indirect Expansion
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 `${!var}` expands to the value of the variable
 whose *name* is stored in `var`:
@@ -927,7 +979,12 @@ myval=42
 echo ${!target}   # 42
 ```
 
+
+</details>
+
 ## Aliases
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -940,7 +997,12 @@ unalias ll            # remove alias
 
 Aliases are expanded before command dispatch.
 
+
+</details>
+
 ## Path Utilities
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -948,7 +1010,12 @@ basename /data/img.fits   # img.fits
 dirname /data/img.fits    # /data
 ```
 
+
+</details>
+
 ## Directory Stack
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -959,7 +1026,12 @@ popd                  # back to /data
 popd                  # back to original
 ```
 
+
+</details>
+
 ## Number Sequences
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -971,7 +1043,12 @@ seq 10 -2 0           # 10 8 6 4 2 0
 
 Supports floating-point steps.
 
+
+</details>
+
 ## Builtins
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -980,7 +1057,12 @@ false                 # $? = 1
 if (( x > 5 )); then echo big; fi
 ```
 
+
+</details>
+
 ## Variable Testing
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 `test -v VAR` checks if a variable is set:
 
@@ -990,7 +1072,12 @@ x=1
 if [ -v x ]; then echo set; fi
 ```
 
+
+</details>
+
 ## Stream & FPS Metadata
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Access shared memory stream properties via
 dot-syntax variable expansion:
@@ -1012,7 +1099,12 @@ FPS status can be checked:
 echo ${myfps.status}     # 1 if exists
 ```
 
+
+</details>
+
 ## Wait for Resources
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Wait for shared memory streams or FPS to appear:
 
@@ -1035,7 +1127,12 @@ fi
 ```
 
 
+
+</details>
+
 ## Scripting Showcase
+
+<details markdown="1"><summary><b>Click to expand</b></summary>
 
 Here are several advanced examples demonstrating the combined capabilities of `milk-cli`'s built-in scripting engine.
 
@@ -1130,6 +1227,9 @@ function wait_and_monitor {
 
 wait_and_monitor wfs_cam
 ```
+
+</details>
+
 
 </details>
 
