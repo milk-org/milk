@@ -2014,11 +2014,31 @@ errno_t help_module()
 #include <sys/select.h>
 
 /**
- * @brief Wait up to ms milliseconds for stdin to have data.
+ * @brief Read one byte from stdin using read(), bypassing stdio buffering.
+ *
+ * All TUI input loops must use this instead of getchar() so that
+ * select() and read() operate on the same file-descriptor buffer.
+ * When getchar() is used, stdio pre-reads multiple bytes into its
+ * internal buffer, leaving the kernel fd empty; select() then sees
+ * no data and incorrectly treats an arrow-key ESC sequence as a
+ * bare ESC press.
+ *
+ * Returns the byte read (0-255 as unsigned char cast to int),
+ * or -1 on error / EOF.
+ */
+static int tui_readchar(void)
+{
+    unsigned char ch;
+    ssize_t n = read(STDIN_FILENO, &ch, 1);
+    return (n == 1) ? (int)ch : -1;
+}
+
+/**
+ * @brief Wait up to ms milliseconds for stdin fd to have data.
  *
  * Returns 1 if data is ready, 0 on timeout.
- * Used to disambiguate a bare ESC from ESC-sequence prefixes
- * (arrow keys, PgUp/PgDn) inside raw-mode TUI prompts.
+ * Must be paired with tui_readchar() (not getchar()) so that
+ * select() and read() both observe the same kernel buffer.
  */
 static int tui_stdin_wait_ms(int ms)
 {
@@ -2080,7 +2100,7 @@ int cli_fhelp(void)
     // Setup raw terminal mode
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     while (1) {
@@ -2125,16 +2145,20 @@ int cli_fhelp(void)
         printf("\n\033[2m[Up/Down/PgUp/PgDn] Navigate  [Enter] Select  [Esc/Ctrl+C] Cancel\033[0m\n");
 
         // Input loop
-        char c = getchar();
+        int c = tui_readchar();
         if (c == 27) { // Escape seq
-            char seq[2];
-            seq[0] = getchar();
-            seq[1] = getchar();
-            if (seq[0] == '[') {
-                if (seq[1] == 'A') selected--; // Up
-                else if (seq[1] == 'B') selected++; // Down
-                else if (seq[1] == '5') { selected -= 10; getchar(); } // PgUp
-                else if (seq[1] == '6') { selected += 10; getchar(); } // PgDn
+            if (tui_stdin_wait_ms(50)) {
+                int b1 = tui_readchar();
+                int b2 = tui_readchar();
+                if (b1 == '[') {
+                    if (b2 == 'A') selected--; // Up
+                    else if (b2 == 'B') selected++; // Down
+                    else if (b2 == '5') { tui_readchar(); selected -= 10; } // PgUp
+                    else if (b2 == '6') { tui_readchar(); selected += 10; } // PgDn
+                }
+            } else {
+                selected = -1;
+                break; // Bare ESC — cancel
             }
         } else if (c == 10 || c == 13) { // Enter
             break; // Select
@@ -2147,8 +2171,8 @@ int cli_fhelp(void)
                 query[query_len] = '\0';
                 selected = 0;
             }
-        } else if (c >= 32 && c <= 126 && query_len < 127) { // Printable chars
-            query[query_len++] = c;
+        } else if (c >= 32 && c <= 126 && query_len < 127) { // Printable
+            query[query_len++] = (char)c;
             query[query_len] = '\0';
             selected = 0;
         }
@@ -2204,7 +2228,7 @@ int cli_fhist(void)
     // Setup raw terminal mode
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     while (1) {
@@ -2263,21 +2287,20 @@ int cli_fhist(void)
         printf("\n\033[2m[Up/Down/PgUp/PgDn] Navigate  [Enter] Select  [Esc/Ctrl+C] Cancel\033[0m\n");
 
         // Input loop
-        char c = getchar();
+        int c = tui_readchar();
         if (c == 27) { // Escape seq
             if (tui_stdin_wait_ms(50)) {
-                char seq[2];
-                seq[0] = getchar();
-                seq[1] = getchar();
-                if (seq[0] == '[') {
-                    if (seq[1] == 'A') selected--; // Up
-                    else if (seq[1] == 'B') selected++; // Down
-                    else if (seq[1] == '5') { selected -= 10; getchar(); } // PgUp
-                    else if (seq[1] == '6') { selected += 10; getchar(); } // PgDn
+                int b1 = tui_readchar();
+                int b2 = tui_readchar();
+                if (b1 == '[') {
+                    if (b2 == 'A') selected--; // Up
+                    else if (b2 == 'B') selected++; // Down
+                    else if (b2 == '5') { tui_readchar(); selected -= 10; } // PgUp
+                    else if (b2 == '6') { tui_readchar(); selected += 10; } // PgDn
                 }
             } else {
                 selected = -1;
-                break; // Escape key alone
+                break; // Bare ESC — cancel
             }
         } else if (c == 10 || c == 13) { // Enter
             break; // Select
@@ -2290,8 +2313,8 @@ int cli_fhist(void)
                 query[query_len] = '\0';
                 selected = 0;
             }
-        } else if (c >= 32 && c <= 126 && query_len < 127) { // Printable chars
-            query[query_len++] = c;
+        } else if (c >= 32 && c <= 126 && query_len < 127) { // Printable
+            query[query_len++] = (char)c;
             query[query_len] = '\0';
             selected = 0;
         }
@@ -2354,7 +2377,7 @@ int cli_fparam(void)
 
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
     char error_msg[200] = {0};
@@ -2403,20 +2426,19 @@ int cli_fparam(void)
         }
         
         // Input loop
-        char c = getchar();
+        int c = tui_readchar();
         if (c == 27) { // Escape seq
             if (tui_stdin_wait_ms(50)) {
-                char seq[2];
-                seq[0] = getchar();
-                seq[1] = getchar();
-                if (seq[0] == '[') {
-                    if (seq[1] == 'A') selected--; // Up
-                    else if (seq[1] == 'B') selected++; // Down
-                    else if (seq[1] == '5') { selected -= 10; getchar(); } // PgUp
-                    else if (seq[1] == '6') { selected += 10; getchar(); } // PgDn
+                int b1 = tui_readchar();
+                int b2 = tui_readchar();
+                if (b1 == '[') {
+                    if (b2 == 'A') selected--; // Up
+                    else if (b2 == 'B') selected++; // Down
+                    else if (b2 == '5') { tui_readchar(); selected -= 10; } // PgUp
+                    else if (b2 == '6') { tui_readchar(); selected += 10; } // PgDn
                 }
             } else {
-                break; // Escape key alone
+                break; // Bare ESC — quit
             }
         } else if (c == 'q' || c == 'Q') {
             break;
