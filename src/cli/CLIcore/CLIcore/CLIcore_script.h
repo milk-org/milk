@@ -26,6 +26,10 @@ extern CLI_VAR cli_vars[CLI_MAX_VARS];
 extern int     cli_last_retval;
 extern int     cli_return_flag;
 
+/* ---- set flags ---- */
+extern int     cli_flag_errexit;  /* set -e */
+extern int     cli_flag_xtrace;   /* set -x */
+
 /* ---- Array Variables ---- */
 
 #define CLI_MAX_ARRAYS    64
@@ -42,7 +46,28 @@ typedef struct
 
 extern CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 
-/* ---- Variable Functions ---- */
+/* ---- Associative Array Variables ---- */
+
+#define CLI_ASSOC_MAXELEM 128
+#define CLI_MAX_ASSOC      32
+
+typedef struct
+{
+    char name[CLI_VAR_NAMELEN];
+    char keys[CLI_ASSOC_MAXELEM][
+        CLI_VAR_NAMELEN];
+    char vals[CLI_ASSOC_MAXELEM][
+        CLI_VAR_VALLEN];
+    int  nelem;
+    int  used;
+} CLI_ASSOC_ARRAY;
+
+extern CLI_ASSOC_ARRAY
+    cli_assoc[CLI_MAX_ASSOC];
+
+/* Aliases use CLI_ALIAS from CLIcore.h
+ * stored in data.alias[] */
+
 
 /** Look up a CLI variable by name. */
 const char *cli_var_get(const char *name);
@@ -113,7 +138,9 @@ enum
     CLI_BLOCK_IF,
     CLI_BLOCK_WHILE,
     CLI_BLOCK_FOR,
-    CLI_BLOCK_FUNC
+    CLI_BLOCK_FUNC,
+    CLI_BLOCK_CASE,
+    CLI_BLOCK_SELECT
 };
 
 /** Block accumulator state */
@@ -167,5 +194,25 @@ CLI_FUNC *cli_func_find(const char *name);
 /** Try to call a user-defined function.
  *  Returns 1 if matched and called. */
 int cli_try_func_call(const char *line);
+
+/* ---- Trap Handlers ---- */
+
+#define CLI_TRAP_MAXSIGS 8
+#define CLI_TRAP_CMDLEN  512
+
+typedef struct
+{
+    int  signum;
+    char cmd[CLI_TRAP_CMDLEN];
+    int  used;
+} CLI_TRAP;
+
+extern CLI_TRAP cli_traps[CLI_TRAP_MAXSIGS];
+
+/** Execute trap handlers for given signal. */
+void cli_trap_run(int signum);
+
+/** Run EXIT traps (called at script end). */
+void cli_trap_run_exit(void);
 
 #endif /* CLICORE_SCRIPT_H */
