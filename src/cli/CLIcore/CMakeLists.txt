@@ -36,7 +36,17 @@ set(CORE_FILES
     CLIcore/CLIcore_modules.c
     CLIcore/CLIcore_setSHMdir.c
     CLIcore/CLIcore_script.c
+    CLIcore/CLIcore_script_builtin.c
+    CLIcore/CLIcore_script_expand.c
+    CLIcore/CLIcore_script_func.c
+    CLIcore/CLIcore_script_var.c
     CLIcore/CLIcore_signals.c
+    CLIcore/CLIcore_UI.c
+    CLIcore/CLIcore_UI_alias.c
+    CLIcore/CLIcore_UI_bookmark.c
+    CLIcore/CLIcore_UI_builtins.c
+    CLIcore/CLIcore_UI_history.c
+    CLIcore/CLIcore_UI_prompt.c
     cli_calc_tokenizer.c
     cli_calc_parser.c)
     
