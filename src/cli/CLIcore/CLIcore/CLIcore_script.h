@@ -25,6 +25,8 @@ typedef struct
 extern CLI_VAR cli_vars[CLI_MAX_VARS];
 extern int     cli_last_retval;
 extern int     cli_return_flag;
+extern int     cli_break_flag;
+extern int     cli_continue_flag;
 
 /* ---- set flags ---- */
 extern int     cli_flag_errexit;  /* set -e */
@@ -64,6 +66,21 @@ typedef struct
 
 extern CLI_ASSOC_ARRAY
     cli_assoc[CLI_MAX_ASSOC];
+
+/* ---- Local Variable Scope Stack ---- */
+
+#define CLI_MAX_LOCAL_DEPTH 32
+#define CLI_MAX_LOCALS_PER_FUNC 64
+
+typedef struct {
+    char name[CLI_VAR_NAMELEN];
+    char val[CLI_VAR_VALLEN];
+    int  was_used;
+} CLI_LOCAL_SHADOW;
+
+extern CLI_LOCAL_SHADOW cli_local_shadows[CLI_MAX_LOCAL_DEPTH][CLI_MAX_LOCALS_PER_FUNC];
+extern int cli_local_shadow_count[CLI_MAX_LOCAL_DEPTH];
+extern int cli_local_depth;
 
 /* Aliases use CLI_ALIAS from CLIcore.h
  * stored in data.alias[] */
