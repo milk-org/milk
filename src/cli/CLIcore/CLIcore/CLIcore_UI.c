@@ -2852,7 +2852,29 @@ static void expand_braced(
         return;
     }
 
-    /* ${arr[N]} or ${arr[@]} */
+    /* ${!var} — indirect expansion */
+    if(inner[0] == '!')
+    {
+        const char *iname =
+            inner + 1;
+        const char *iref =
+            cli_var_lookup(iname);
+        if(iref != NULL)
+        {
+            const char *ival =
+                cli_var_lookup(iref);
+            if(ival != NULL)
+            {
+                emit_str(out, opos,
+                         maxlen,
+                         ival);
+            }
+        }
+        return;
+    }
+
+    /* ${arr[N]} or ${arr[@]} or
+     * ${assoc[key]} */
     {
         const char *br =
             strchr(inner, '[');
@@ -2935,6 +2957,94 @@ static void expand_braced(
                 }
             }
             return;
+        }
+    }
+
+    /* ${assoc[key]} — associative
+     * array lookup */
+    {
+        const char *br =
+            strchr(inner, '[');
+        if(br != NULL)
+        {
+            const char *brend =
+                strchr(br, ']');
+            if(brend != NULL)
+            {
+                char aname[
+                    CLI_VAR_NAMELEN];
+                int nl =
+                    (int)(br
+                          - inner);
+                if(nl
+                   >= CLI_VAR_NAMELEN)
+                {
+                    nl =
+                        CLI_VAR_NAMELEN
+                        - 1;
+                }
+                memcpy(aname,
+                       inner,
+                       (size_t) nl);
+                aname[nl] = '\0';
+                char key[
+                    CLI_VAR_NAMELEN];
+                int kl =
+                    (int)(brend
+                          - br - 1);
+                if(kl
+                   >= CLI_VAR_NAMELEN)
+                {
+                    kl =
+                        CLI_VAR_NAMELEN
+                        - 1;
+                }
+                memcpy(key, br + 1,
+                       (size_t) kl);
+                key[kl] = '\0';
+                for(int k = 0;
+                    k
+                    < CLI_MAX_ASSOC;
+                    k++)
+                {
+                    if(cli_assoc[k]
+                        .used
+                       && strcmp(
+                           cli_assoc[
+                               k]
+                           .name,
+                           aname)
+                       == 0)
+                    {
+                        for(int e = 0;
+                            e
+                            < cli_assoc[
+                                k]
+                            .nelem;
+                            e++)
+                        {
+                            if(strcmp(
+                                cli_assoc[
+                                    k]
+                                .keys[e],
+                                key)
+                               == 0)
+                            {
+                                emit_str(
+                                    out,
+                                    opos,
+                                    maxlen,
+                                    cli_assoc[
+                                        k]
+                                    .vals[
+                                        e]);
+                                return;
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
         }
     }
 

@@ -1777,6 +1777,72 @@ void print_milk_cli_help(void)
            "  lowercase first\n");
     printf("\n");
 
+    printf(C_HDR "Scripting Usability:\n"
+           C_RST);
+    printf("  " C_CMD
+           "true / false" C_RST
+           "  builtins set $?=0/1\n");
+    printf("  " C_CMD
+           "(( expr ))" C_RST
+           "  arith conditional\n");
+    printf("  " C_CMD
+           "alias n='cmd'" C_RST
+           "  create alias\n");
+    printf("  " C_CMD
+           "unalias n" C_RST
+           "  remove alias\n");
+    printf("  " C_CMD
+           "declare -A m" C_RST
+           "  assoc array\n");
+    printf("  " C_CMD
+           "${!var}" C_RST
+           "  indirect expansion\n");
+    printf("  " C_CMD
+           "${m[key]}" C_RST
+           "  assoc lookup\n");
+    printf("  " C_CMD
+           "test -v VAR" C_RST
+           "  variable is set\n");
+    printf("\n");
+    printf(C_HDR "Path & Shell:\n"
+           C_RST);
+    printf("  " C_CMD
+           "basename path" C_RST
+           "  filename part\n");
+    printf("  " C_CMD
+           "dirname path" C_RST
+           "  directory part\n");
+    printf("  " C_CMD
+           "pushd / popd / dirs"
+           C_RST
+           "  dir stack\n");
+    printf("  " C_CMD
+           "seq [s] [step] e" C_RST
+           "  number sequence\n");
+    printf("\n");
+    printf(C_HDR "Milk Specific:\n"
+           C_RST);
+    printf("  " C_CMD
+           "${s.xsize}" C_RST
+           "  stream dim X\n");
+    printf("  " C_CMD
+           "${s.ysize}" C_RST
+           "  stream dim Y\n");
+    printf("  " C_CMD
+           "${s.type}" C_RST
+           "  stream datatype\n");
+    printf("  " C_CMD
+           "${s.cnt0}" C_RST
+           "  stream counter\n");
+    printf("  " C_CMD
+           "waitfor_stream s T"
+           C_RST
+           "  wait for SHM\n");
+    printf("  " C_CMD
+           "waitfor_fps f T"
+           C_RST "  wait for FPS\n");
+    printf("\n");
+
     return;
 }
 

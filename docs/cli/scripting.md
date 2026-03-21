@@ -812,7 +812,7 @@ echo "Processing complete"
 | `vars` | List all variables |
 | `unset <var>` | Remove a variable |
 | `readonly VAR=val` | Mark variable read-only |
-| `declare [-i\|-a\|-r\|-x] VAR` | Typed declaration |
+| `declare [-i\|-a\|-r\|-x\|-A]` | Typed declaration |
 | `typeset` | Alias for `declare` |
 | `local VAR=val` | Set variable in current scope |
 | `let "expr"` | Arithmetic evaluation |
@@ -828,6 +828,139 @@ echo "Processing complete"
 | `getopts spec opt` | Parse options |
 | `mapfile -t arr < file` | Read lines to array |
 | `on_update <stream> { cmd }` | Run cmd on stream update |
+| `true` / `false` | Set `$?` to 0 / 1 |
+| `alias name='cmd'` | Create alias |
+| `unalias name` | Remove alias |
+| `basename path` | Extract filename |
+| `dirname path` | Extract directory |
+| `pushd dir` | Push dir and cd |
+| `popd` | Pop dir and cd back |
+| `dirs` | Show directory stack |
+| `seq [start] [step] end` | Print number sequence |
+| `waitfor_stream s [T]` | Wait for SHM stream |
+| `waitfor_fps name [T]` | Wait for FPS SHM |
+
+## Associative Arrays
+
+Associative arrays store key-value pairs:
+
+```bash
+milk-cli > declare -A config
+milk-cli > config[host]=localhost
+milk-cli > config[port]=8080
+milk-cli > echo ${config[host]}   # localhost
+```
+
+Assignment uses `map[key]=value` syntax. Lookup
+uses `${map[key]}` expansion.
+
+## Indirect Expansion
+
+`${!var}` expands to the value of the variable
+whose *name* is stored in `var`:
+
+```bash
+milk-cli > target=myval
+milk-cli > myval=42
+milk-cli > echo ${!target}   # 42
+```
+
+## Aliases
+
+```bash
+milk-cli > alias ll='listim'
+milk-cli > alias s='readshmim'
+milk-cli > ll                    # runs: listim
+milk-cli > alias                 # list all aliases
+milk-cli > unalias ll            # remove alias
+```
+
+Aliases are expanded before command dispatch.
+
+## Path Utilities
+
+```bash
+milk-cli > basename /data/img.fits   # img.fits
+milk-cli > dirname /data/img.fits    # /data
+```
+
+## Directory Stack
+
+```bash
+milk-cli > pushd /data           # cd to /data
+milk-cli > pushd /tmp            # cd to /tmp
+milk-cli > dirs                  # show stack
+milk-cli > popd                  # back to /data
+milk-cli > popd                  # back to original
+```
+
+## Number Sequences
+
+```bash
+milk-cli > seq 5                 # 1 2 3 4 5
+milk-cli > seq 2 5               # 2 3 4 5
+milk-cli > seq 0 0.1 1.0         # 0 0.1 ... 1.0
+milk-cli > seq 10 -2 0           # 10 8 6 4 2 0
+```
+
+Supports floating-point steps.
+
+## Builtins
+
+```bash
+milk-cli > true                  # $? = 0
+milk-cli > false                 # $? = 1
+milk-cli > if (( x > 5 )); then echo big; fi
+```
+
+## Variable Testing
+
+`test -v VAR` checks if a variable is set:
+
+```bash
+milk-cli > x=1
+milk-cli > if [ -v x ]; then echo set; fi
+```
+
+## Stream & FPS Metadata
+
+Access shared memory stream properties via
+dot-syntax variable expansion:
+
+```bash
+milk-cli > echo ${mystream.xsize}   # X dimension
+milk-cli > echo ${mystream.ysize}   # Y dimension
+milk-cli > echo ${mystream.zsize}   # Z dimension
+milk-cli > echo ${mystream.type}    # datatype code
+milk-cli > echo ${mystream.cnt0}    # frame counter
+milk-cli > echo ${mystream.naxis}   # number of axes
+```
+
+FPS status can be checked:
+
+```bash
+milk-cli > echo ${myfps.status}     # 1 if exists
+```
+
+## Wait for Resources
+
+Wait for shared memory streams or FPS to appear:
+
+```bash
+milk-cli > waitfor_stream wfs 30    # wait up to 30s
+milk-cli > waitfor_fps dmcomb 10    # wait up to 10s
+```
+
+Returns 0 on success, 1 on timeout. Default timeout:
+10 seconds.
+
+```bash
+# Pattern: wait for stream, then process
+waitfor_stream wfs 60
+if [ $? -eq 0 ]; then
+    echo "Stream ready: ${wfs.xsize}x${wfs.ysize}"
+fi
+```
 
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)

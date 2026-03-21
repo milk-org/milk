@@ -46,7 +46,28 @@ typedef struct
 
 extern CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 
-/* ---- Variable Functions ---- */
+/* ---- Associative Array Variables ---- */
+
+#define CLI_ASSOC_MAXELEM 128
+#define CLI_MAX_ASSOC      32
+
+typedef struct
+{
+    char name[CLI_VAR_NAMELEN];
+    char keys[CLI_ASSOC_MAXELEM][
+        CLI_VAR_NAMELEN];
+    char vals[CLI_ASSOC_MAXELEM][
+        CLI_VAR_VALLEN];
+    int  nelem;
+    int  used;
+} CLI_ASSOC_ARRAY;
+
+extern CLI_ASSOC_ARRAY
+    cli_assoc[CLI_MAX_ASSOC];
+
+/* Aliases use CLI_ALIAS from CLIcore.h
+ * stored in data.alias[] */
+
 
 /** Look up a CLI variable by name. */
 const char *cli_var_get(const char *name);

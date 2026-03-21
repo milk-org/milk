@@ -110,6 +110,9 @@ void cli_trap_run_exit(void)
 /* ---- Array Storage ---- */
 CLI_ARRAY cli_arrays[CLI_MAX_ARRAYS];
 
+/* ---- Associative Array Storage ---- */
+CLI_ASSOC_ARRAY cli_assoc[CLI_MAX_ASSOC];
+
 /**
  * @brief Look up a CLI variable by name
  *
@@ -221,6 +224,169 @@ const char *cli_var_lookup(const char *name)
     if(v != NULL)
     {
         return v;
+    }
+
+    /* stream.prop — shared memory
+     * stream metadata */
+    {
+        const char *dot =
+            strchr(name, '.');
+        if(dot != NULL)
+        {
+            char sname[128];
+            int sn = (int)(dot - name);
+            if(sn >= (int) sizeof(sname))
+            {
+                sn =
+                    (int) sizeof(sname)
+                    - 1;
+            }
+            memcpy(sname, name,
+                   (size_t) sn);
+            sname[sn] = '\0';
+            const char *prop = dot + 1;
+
+            /* Try stream SHM */
+            char spath[256];
+            snprintf(spath,
+                     sizeof(spath),
+                     "/dev/shm/%s"
+                     ".im.shm",
+                     sname);
+            if(access(spath,
+                      F_OK) == 0)
+            {
+                IMAGE img;
+                if(ImageStreamIO_read_sharedmem_image_toIMAGE(
+                    sname, &img) == 0)
+                {
+                    if(strcmp(prop,
+                        "xsize") == 0
+                       && img.md != NULL
+                       && img.md->naxis
+                       >= 1)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%u",
+                            img.md
+                            ->size[0]);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "ysize") == 0
+                       && img.md != NULL
+                       && img.md->naxis
+                       >= 2)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%u",
+                            img.md
+                            ->size[1]);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "zsize") == 0
+                       && img.md != NULL
+                       && img.md->naxis
+                       >= 3)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%u",
+                            img.md
+                            ->size[2]);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "type") == 0
+                       && img.md != NULL)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%d",
+                            (int)
+                            img.md
+                            ->datatype);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "cnt0") == 0
+                       && img.md != NULL)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%lu",
+                            (unsigned
+                            long)
+                            img.md
+                            ->cnt0);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "cnt1") == 0
+                       && img.md != NULL)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%lu",
+                            (unsigned
+                            long)
+                            img.md
+                            ->cnt1);
+                        return retbuf;
+                    }
+                    if(strcmp(prop,
+                        "naxis") == 0
+                       && img.md != NULL)
+                    {
+                        snprintf(
+                            retbuf,
+                            sizeof(
+                                retbuf),
+                            "%d",
+                            (int)
+                            img.md
+                            ->naxis);
+                        return retbuf;
+                    }
+                }
+            }
+
+            /* Try FPS SHM */
+            char fpath[256];
+            snprintf(fpath,
+                     sizeof(fpath),
+                     "/dev/shm/"
+                     "fps.%s.shm",
+                     sname);
+            if(access(fpath,
+                      F_OK) == 0)
+            {
+                if(strcmp(prop,
+                    "status") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "1");
+                    return retbuf;
+                }
+            }
+        }
     }
 
     /* Fall through to environment */
@@ -1169,6 +1335,21 @@ int cli_eval_test(const char *expr)
         return (stat(tokens[1], &sb) == 0
                 && sb.st_size > 0)
                ? 1 : 0;
+    }
+
+    /* Variable test: -v VAR */
+    if(ntok == 2
+       && strcmp(tokens[0], "-v") == 0)
+    {
+        const char *vv =
+            cli_var_get(tokens[1]);
+        if(vv != NULL)
+        {
+            return 1;
+        }
+        const char *ev =
+            getenv(tokens[1]);
+        return ev != NULL ? 1 : 0;
     }
 
     /* Logical NOT: ! expr */
@@ -4263,19 +4444,777 @@ int cli_script_intercept(const char *line)
         return 1;
     }
 
-    /* Try user-defined function call */
+    /* ==============================
+     * Tier 9: true / false
+     * ============================== */
+
+    if(strcmp(p, "true") == 0)
     {
-        char firstword[CLI_FUNC_NAMELEN];
-        int fw = 0;
-        while(*p != '\0' && *p != ' '
-              && *p != '\t'
-              && fw < CLI_FUNC_NAMELEN - 1)
+        cli_last_retval = 0;
+        return 1;
+    }
+    if(strcmp(p, "false") == 0)
+    {
+        cli_last_retval = 1;
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 9: (( expr )) conditional
+     * ============================== */
+
+    if(starts_with(p, "((")
+       && strlen(p) >= 5)
+    {
+        int plen = (int) strlen(p);
+        if(p[plen - 1] == ')'
+           && p[plen - 2] == ')')
         {
-            firstword[fw++] = *p++;
+            char aexpr[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            int elen = plen - 4;
+            if(elen
+               >= STRINGMAXLEN_CLICMDLINE)
+            {
+                elen =
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1;
+            }
+            memcpy(aexpr, p + 2,
+                   (size_t) elen);
+            aexpr[elen] = '\0';
+            /* Wrap in $(( )) and
+             * expand */
+            char wrap[
+                STRINGMAXLEN_CLICMDLINE
+            ];
+            snprintf(wrap,
+                     sizeof(wrap),
+                     "$((%s))",
+                     aexpr);
+            cli_expand_env(
+                wrap,
+                STRINGMAXLEN_CLICMDLINE
+            );
+            long val =
+                strtol(wrap, NULL, 10);
+            cli_last_retval =
+                (val != 0) ? 0 : 1;
+            return 1;
+        }
+    }
+
+    /* ==============================
+     * Tier 9: alias / unalias
+     * ============================== */
+
+    if(starts_with(p, "alias ")
+       || starts_with(p, "alias\t")
+       || strcmp(p, "alias") == 0)
+    {
+        p += 5;
+        p = strip_ws(p);
+        if(*p == '\0')
+        {
+            /* List all aliases */
+            for(int k = 0;
+                k < data.NBalias;
+                k++)
+            {
+                printf("alias %s="
+                       "'%s'\n",
+                       data.alias[
+                           k].name,
+                       data.alias[
+                           k].cmd);
+            }
+        }
+        else
+        {
+            /* alias name='cmd' or
+             * alias name=cmd */
+            char *eq = strchr(p, '=');
+            if(eq != NULL)
+            {
+                char aname[
+                    CLI_ALIAS_NAMELEN
+                ];
+                int nl =
+                    (int)(eq - p);
+                if(nl
+                   >= CLI_ALIAS_NAMELEN)
+                {
+                    nl =
+                        CLI_ALIAS_NAMELEN
+                        - 1;
+                }
+                memcpy(aname, p,
+                       (size_t) nl);
+                aname[nl] = '\0';
+                const char *av =
+                    eq + 1;
+                /* Strip quotes */
+                int avl =
+                    (int) strlen(av);
+                if(avl >= 2
+                   && ((av[0] == '\''
+                        && av[avl - 1]
+                        == '\'')
+                       || (av[0] == '"'
+                           && av[
+                               avl - 1]
+                           == '"')))
+                {
+                    av++;
+                    avl -= 2;
+                }
+                /* Update existing? */
+                int slot = -1;
+                for(int k = 0;
+                    k < data.NBalias;
+                    k++)
+                {
+                    if(strcmp(
+                        data.alias[k]
+                        .name,
+                        aname) == 0)
+                    {
+                        slot = k;
+                        break;
+                    }
+                }
+                if(slot < 0
+                   && data.NBalias
+                   < CLI_MAX_ALIASES)
+                {
+                    slot =
+                        data.NBalias++;
+                }
+                if(slot >= 0)
+                {
+                    strncpy(
+                        data.alias[
+                            slot].name,
+                        aname,
+                        CLI_ALIAS_NAMELEN
+                        - 1);
+                    data.alias[slot]
+                        .name[
+                        CLI_ALIAS_NAMELEN
+                        - 1] = '\0';
+                    int cl =
+                        avl
+                        < CLI_ALIAS_CMDLEN
+                        - 1
+                        ? avl
+                        : CLI_ALIAS_CMDLEN
+                        - 1;
+                    memcpy(
+                        data.alias[
+                            slot].cmd,
+                        av,
+                        (size_t) cl);
+                    data.alias[slot]
+                        .cmd[cl] = '\0';
+                }
+            }
+        }
+        return 1;
+    }
+
+    if(starts_with(p, "unalias ")
+       || starts_with(p, "unalias\t"))
+    {
+        p += 7;
+        p = strip_ws(p);
+        for(int k = 0;
+            k < data.NBalias; k++)
+        {
+            if(strcmp(
+                data.alias[k].name,
+                p) == 0)
+            {
+                /* Shift remaining */
+                for(int j = k;
+                    j < data.NBalias
+                    - 1; j++)
+                {
+                    data.alias[j] =
+                        data.alias[
+                            j + 1];
+                }
+                data.NBalias--;
+                break;
+            }
+        }
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 9: assoc array map[k]=v
+     * ============================== */
+
+    {
+        const char *br =
+            strchr(p, '[');
+        if(br != NULL)
+        {
+            const char *brend =
+                strchr(br, ']');
+            if(brend != NULL
+               && *(brend + 1) == '=')
+            {
+                char aname[
+                    CLI_VAR_NAMELEN];
+                int nl =
+                    (int)(br - p);
+                if(nl
+                   >= CLI_VAR_NAMELEN)
+                {
+                    nl =
+                        CLI_VAR_NAMELEN
+                        - 1;
+                }
+                memcpy(aname, p,
+                       (size_t) nl);
+                aname[nl] = '\0';
+                char key[
+                    CLI_VAR_NAMELEN];
+                int kl =
+                    (int)(brend
+                          - br - 1);
+                if(kl
+                   >= CLI_VAR_NAMELEN)
+                {
+                    kl =
+                        CLI_VAR_NAMELEN
+                        - 1;
+                }
+                memcpy(key, br + 1,
+                       (size_t) kl);
+                key[kl] = '\0';
+                const char *val =
+                    brend + 2;
+                /* Find or create
+                 * assoc array */
+                int slot = -1;
+                for(int k = 0;
+                    k < CLI_MAX_ASSOC;
+                    k++)
+                {
+                    if(cli_assoc[k]
+                        .used
+                       && strcmp(
+                           cli_assoc[k]
+                           .name,
+                           aname)
+                       == 0)
+                    {
+                        slot = k;
+                        break;
+                    }
+                }
+                if(slot < 0)
+                {
+                    for(int k = 0;
+                        k
+                        < CLI_MAX_ASSOC;
+                        k++)
+                    {
+                        if(!cli_assoc[
+                            k].used)
+                        {
+                            slot = k;
+                            cli_assoc[k]
+                                .used
+                                = 1;
+                            strncpy(
+                                cli_assoc[
+                                    k]
+                                .name,
+                                aname,
+                                CLI_VAR_NAMELEN
+                                - 1);
+                            cli_assoc[k]
+                                .nelem
+                                = 0;
+                            break;
+                        }
+                    }
+                }
+                if(slot >= 0)
+                {
+                    /* Find existing
+                     * key or add */
+                    int ki = -1;
+                    for(int k = 0;
+                        k
+                        < cli_assoc[
+                            slot]
+                        .nelem;
+                        k++)
+                    {
+                        if(strcmp(
+                            cli_assoc[
+                                slot]
+                            .keys[k],
+                            key) == 0)
+                        {
+                            ki = k;
+                            break;
+                        }
+                    }
+                    if(ki < 0
+                       && cli_assoc[
+                           slot]
+                       .nelem
+                       < CLI_ASSOC_MAXELEM)
+                    {
+                        ki =
+                            cli_assoc[
+                                slot]
+                            .nelem++;
+                        strncpy(
+                            cli_assoc[
+                                slot]
+                            .keys[ki],
+                            key,
+                            CLI_VAR_NAMELEN
+                            - 1);
+                    }
+                    if(ki >= 0)
+                    {
+                        strncpy(
+                            cli_assoc[
+                                slot]
+                            .vals[ki],
+                            val,
+                            CLI_VAR_VALLEN
+                            - 1);
+                    }
+                }
+                return 1;
+            }
+        }
+    }
+
+    /* ==============================
+     * Tier 10: basename / dirname
+     * ============================== */
+
+    if(starts_with(p, "basename "))
+    {
+        p += 8;
+        p = strip_ws(p);
+        /* Find last / */
+        const char *sl =
+            strrchr(p, '/');
+        if(sl != NULL)
+        {
+            printf("%s\n", sl + 1);
+        }
+        else
+        {
+            printf("%s\n", p);
+        }
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    if(starts_with(p, "dirname "))
+    {
+        p += 7;
+        p = strip_ws(p);
+        const char *sl =
+            strrchr(p, '/');
+        if(sl != NULL && sl != p)
+        {
+            printf("%.*s\n",
+                   (int)(sl - p), p);
+        }
+        else if(sl == p)
+        {
+            printf("/\n");
+        }
+        else
+        {
+            printf(".\n");
+        }
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 10: pushd / popd / dirs
+     * ============================== */
+
+    if(starts_with(p, "pushd ")
+       || starts_with(p, "pushd\t"))
+    {
+        p += 5;
+        p = strip_ws(p);
+        char cwd[1024];
+        if(getcwd(cwd, sizeof(cwd))
+           != NULL)
+        {
+            /* Push current dir as
+             * cli var */
+            char idx[32];
+            /* Count existing
+             * _dirstack entries */
+            int dcnt = 0;
+            for(int k = 0;
+                k < CLI_MAX_VARS; k++)
+            {
+                if(cli_vars[k].used
+                   && strncmp(
+                       cli_vars[k]
+                       .name,
+                       "_ds_",
+                       4) == 0)
+                {
+                    dcnt++;
+                }
+            }
+            snprintf(idx,
+                     sizeof(idx),
+                     "_ds_%d", dcnt);
+            cli_var_set(idx, cwd);
+        }
+        if(chdir(p) != 0)
+        {
+            printf("pushd: %s: %s\n",
+                   p,
+                   strerror(errno));
+            cli_last_retval = 1;
+        }
+        else
+        {
+            cli_last_retval = 0;
+        }
+        return 1;
+    }
+
+    if(strcmp(p, "popd") == 0)
+    {
+        /* Find highest _ds_N */
+        int maxn = -1;
+        int maxk = -1;
+        for(int k = 0;
+            k < CLI_MAX_VARS; k++)
+        {
+            if(cli_vars[k].used
+               && strncmp(
+                   cli_vars[k].name,
+                   "_ds_", 4) == 0)
+            {
+                int n = atoi(
+                    cli_vars[k].name
+                    + 4);
+                if(n > maxn)
+                {
+                    maxn = n;
+                    maxk = k;
+                }
+            }
+        }
+        if(maxk >= 0)
+        {
+            if(chdir(
+                cli_vars[maxk].val)
+               != 0)
+            {
+                printf("popd: %s\n",
+                       strerror(
+                           errno));
+            }
+            cli_vars[maxk].used = 0;
+        }
+        else
+        {
+            printf("popd: directory "
+                   "stack empty\n");
+        }
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    if(strcmp(p, "dirs") == 0)
+    {
+        char cwd[1024];
+        if(getcwd(cwd, sizeof(cwd))
+           != NULL)
+        {
+            printf("%s", cwd);
+        }
+        for(int n = 0;
+            n < CLI_MAX_VARS; n++)
+        {
+            char idx[32];
+            snprintf(idx,
+                     sizeof(idx),
+                     "_ds_%d", n);
+            const char *dv =
+                cli_var_get(idx);
+            if(dv == NULL)
+            {
+                break;
+            }
+            printf(" %s", dv);
+        }
+        printf("\n");
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 10: seq START [STEP] END
+     * ============================== */
+
+    if(starts_with(p, "seq "))
+    {
+        p += 3;
+        p = strip_ws(p);
+        double s1 = 0.0;
+        double step = 1.0;
+        double s2 = 0.0;
+        /* Parse up to 3 numbers */
+        char *end1 = NULL;
+        s1 = strtod(p, &end1);
+        if(end1 != NULL
+           && *end1 != '\0')
+        {
+            const char *p2 =
+                strip_ws(end1);
+            char *end2 = NULL;
+            double v2 =
+                strtod(p2, &end2);
+            if(end2 != NULL
+               && *end2 != '\0')
+            {
+                const char *p3 =
+                    strip_ws(end2);
+                double v3 =
+                    strtod(p3, NULL);
+                /* 3-arg: s1 step s2 */
+                step = v2;
+                s2 = v3;
+            }
+            else
+            {
+                /* 2-arg: s1 s2 */
+                s2 = v2;
+            }
+        }
+        else
+        {
+            /* 1-arg: 1..s1 */
+            s2 = s1;
+            s1 = 1.0;
+        }
+        if(step > 0.0)
+        {
+            for(double v = s1;
+                v <= s2 + 1e-12;
+                v += step)
+            {
+                printf("%g\n", v);
+            }
+        }
+        else if(step < 0.0)
+        {
+            for(double v = s1;
+                v >= s2 - 1e-12;
+                v += step)
+            {
+                printf("%g\n", v);
+            }
+        }
+        cli_last_retval = 0;
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 11: waitfor_stream
+     * ============================== */
+
+    if(starts_with(p, "waitfor_stream "))
+    {
+        p += 14;
+        p = strip_ws(p);
+        char sname[CLI_VAR_NAMELEN];
+        int si = 0;
+        while(*p != '\0'
+              && *p != ' '
+              && *p != '\t'
+              && si
+              < CLI_VAR_NAMELEN - 1)
+        {
+            sname[si++] = *p++;
+        }
+        sname[si] = '\0';
+        p = strip_ws(p);
+        double tout = 10.0;
+        if(*p != '\0')
+        {
+            tout = strtod(p, NULL);
+        }
+        struct timespec wstart;
+        clock_gettime(
+            CLOCK_MONOTONIC,
+            &wstart);
+        int found = 0;
+        while(1)
+        {
+            /* Check if SHM exists */
+            char shmpath[256];
+            snprintf(shmpath,
+                     sizeof(shmpath),
+                     "/dev/shm/%s"
+                     ".im.shm",
+                     sname);
+            if(access(shmpath,
+                      F_OK) == 0)
+            {
+                found = 1;
+                break;
+            }
+            struct timespec wnow;
+            clock_gettime(
+                CLOCK_MONOTONIC,
+                &wnow);
+            double elapsed =
+                (double)(wnow.tv_sec
+                    - wstart.tv_sec)
+                + (double)(
+                    wnow.tv_nsec
+                    - wstart.tv_nsec)
+                / 1e9;
+            if(elapsed >= tout)
+            {
+                break;
+            }
+            usleep(50000);
+        }
+        cli_last_retval =
+            found ? 0 : 1;
+        return 1;
+    }
+
+    /* ==============================
+     * Tier 11: waitfor_fps
+     * ============================== */
+
+    if(starts_with(p, "waitfor_fps "))
+    {
+        p += 11;
+        p = strip_ws(p);
+        char fname[CLI_VAR_NAMELEN];
+        int fi = 0;
+        while(*p != '\0'
+              && *p != ' '
+              && *p != '\t'
+              && fi
+              < CLI_VAR_NAMELEN - 1)
+        {
+            fname[fi++] = *p++;
+        }
+        fname[fi] = '\0';
+        p = strip_ws(p);
+        double tout = 10.0;
+        if(*p != '\0')
+        {
+            tout = strtod(p, NULL);
+        }
+        struct timespec wstart;
+        clock_gettime(
+            CLOCK_MONOTONIC,
+            &wstart);
+        int found = 0;
+        while(1)
+        {
+            char fpath[256];
+            snprintf(fpath,
+                     sizeof(fpath),
+                     "/dev/shm/"
+                     "fps.%s.shm",
+                     fname);
+            if(access(fpath,
+                      F_OK) == 0)
+            {
+                found = 1;
+                break;
+            }
+            struct timespec wnow;
+            clock_gettime(
+                CLOCK_MONOTONIC,
+                &wnow);
+            double elapsed =
+                (double)(wnow.tv_sec
+                    - wstart.tv_sec)
+                + (double)(
+                    wnow.tv_nsec
+                    - wstart.tv_nsec)
+                / 1e9;
+            if(elapsed >= tout)
+            {
+                break;
+            }
+            usleep(50000);
+        }
+        cli_last_retval =
+            found ? 0 : 1;
+        return 1;
+    }
+
+    /* Try alias expansion before
+     * user-defined function call */
+    {
+        char firstword[
+            CLI_FUNC_NAMELEN];
+        int fw = 0;
+        const char *pp = p;
+        while(*pp != '\0'
+              && *pp != ' '
+              && *pp != '\t'
+              && fw
+              < CLI_FUNC_NAMELEN - 1)
+        {
+            firstword[fw++] = *pp++;
         }
         firstword[fw] = '\0';
 
-        if(cli_func_find(firstword) != NULL)
+        /* Check aliases first */
+        for(int k = 0;
+            k < data.NBalias;
+            k++)
+        {
+            if(strcmp(
+                   data.alias[k]
+                   .name,
+                   firstword) == 0)
+            {
+                /* Build expanded
+                 * command */
+                char expanded[
+                    STRINGMAXLEN_CLICMDLINE
+                ];
+                snprintf(
+                    expanded,
+                    sizeof(expanded),
+                    "%s%s",
+                    data.alias[k].cmd,
+                    pp);
+                CLI_execute_line(
+                    expanded);
+                return 1;
+            }
+        }
+
+        /* Then try user function */
+        if(cli_func_find(firstword)
+           != NULL)
         {
             p = strip_ws(line);
             cli_try_func_call(p);
