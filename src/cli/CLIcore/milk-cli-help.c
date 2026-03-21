@@ -26,9 +26,10 @@ int main(int argc, char *argv[])
         if (ret != 0)
         {
             fprintf(stderr,
-                    "milk-cli-help: unknown topic \"%s\"\n\n",
+                    "\033[1;31mmilk-cli-help: unknown topic"
+                    " \"%s\"\033[0m\n\n",
                     topic);
-            print_milk_cli_help();
+            print_help_topic_list();
             return 1;
         }
     }
