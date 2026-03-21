@@ -47,6 +47,30 @@ extern int  yylex_destroy(void);
  * @brief Readline callback
  *
  **/
+/**
+ * @brief Custom getc wrapper for readline
+ *
+ * Intercepts Enter key to erase ghost suggestion
+ * text (printed after the cursor by print_ghost)
+ * BEFORE readline processes the newline. This
+ * ensures the accepted line in terminal scrollback
+ * is clean for copy/paste.
+ */
+static int cli_getc(FILE *stream)
+{
+    int c = rl_getc(stream);
+
+    if(c == '\n' || c == '\r')
+    {
+        /* Erase ghost text: positioned at rl_point,
+         * ghost text sits between cursor and EOL */
+        printf("\033[K");
+        fflush(stdout);
+    }
+
+    return c;
+}
+
 void rl_cb_linehandler(char *linein)
 {
     if(NULL == linein)
@@ -54,13 +78,6 @@ void rl_cb_linehandler(char *linein)
         data.CLIloopON = 0;
         return;
     }
-
-    /* Erase any ghost suggestion text that was
-     * rendered after the cursor on this line.
-     * This keeps the accepted line clean for
-     * copy/paste from terminal scrollback. */
-    printf("\033[K");
-    fflush(stdout);
 
     data.CLIexecuteCMDready = 1;
 
@@ -7013,6 +7030,7 @@ static void CLI_redisplay(void)
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
+    rl_getc_function = cli_getc;
 
     if(data.autocomplete_history)
     {
