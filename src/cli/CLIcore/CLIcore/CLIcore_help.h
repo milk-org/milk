@@ -41,6 +41,21 @@ void print_milk_framework_help(void);
 /** @brief Print milk CLI-specific help */
 void print_milk_cli_help(void);
 
+/* Per-topic help functions */
+void help_topic_cmdopts(void);
+void help_topic_syntax(void);
+void help_topic_commands(void);
+void help_topic_variables(void);
+void help_topic_flowcontrol(void);
+void help_topic_scripting(void);
+void help_topic_milk(void);
+
+/**
+ * @brief Dispatch help to a named topic.
+ * @return 0 on success, 1 if topic unknown.
+ */
+int help_topic_dispatch(const char *topic);
+
 
 
 errno_t list_commands();
