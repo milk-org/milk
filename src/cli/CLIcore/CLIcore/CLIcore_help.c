@@ -30,6 +30,7 @@
 #define C_CMD    "\033[32m"
 #define C_BOLD   "\033[1m"
 #define C_NOTE   "\033[33m"
+#define C_ERR    "\033[1;31m"
 
 // Compatibility aliases
 #ifndef COLORRESET
@@ -1840,32 +1841,43 @@ int help_topic_dispatch(const char *topic)
  * The full content for each topic is obtained via help-<topic> CLI
  * commands or  milk-cli-help <topic>  from the shell.
  */
+/**
+ * @brief Print only the available-topics list.
+ *
+ * Shown both in the full help index and as a concise
+ * hint when an unknown topic is supplied.
+ */
+void print_help_topic_list(void)
+{
+    printf(C_HDR "Available help topics:\n" C_RST);
+    printf("  " C_CMD "cmdopts     " C_RST
+           "Command-line flags (-h, -s, -n\xe2\x80\xa6)\n");
+    printf("  " C_CMD "syntax      " C_RST
+           "Syntax, tab completion, piping\n");
+    printf("  " C_CMD "commands    " C_RST
+           "Built-in CLI commands (?, cmd?\xe2\x80\xa6)\n");
+    printf("  " C_CMD "variables   " C_RST
+           "Variables, arrays, arithmetic\n");
+    printf("  " C_CMD "flowcontrol " C_RST
+           "if/while/for/case/function\n");
+    printf("  " C_CMD "scripting   " C_RST
+           "Script files, I/O, builtins\n");
+    printf("  " C_CMD "milk        " C_RST
+           "Streams, FPS, milk-specific\n");
+    printf("\n");
+}
+
 void print_milk_cli_help(void)
 {
     printf("\n");
     printf(C_TITLE
            "========================================\n" C_RST);
     printf(C_TITLE
-           "           milk-cli — HELP INDEX\n" C_RST);
+           "           milk-cli \xe2\x80\x94 HELP INDEX\n" C_RST);
     printf(C_TITLE
            "========================================\n" C_RST);
     printf("\n");
-    printf(C_HDR "Available help topics:\n" C_RST);
-    printf("  " C_CMD "help-cmdopts     " C_RST
-           "Command-line flags (-h, -s, -n…)\n");
-    printf("  " C_CMD "help-syntax      " C_RST
-           "Syntax, tab completion, piping\n");
-    printf("  " C_CMD "help-commands    " C_RST
-           "Built-in CLI commands (?, cmd?…)\n");
-    printf("  " C_CMD "help-variables   " C_RST
-           "Variables, arrays, arithmetic\n");
-    printf("  " C_CMD "help-flowcontrol " C_RST
-           "if/while/for/case/function\n");
-    printf("  " C_CMD "help-scripting   " C_RST
-           "Script files, I/O, builtins\n");
-    printf("  " C_CMD "help-milk        " C_RST
-           "Streams, FPS, milk-specific\n");
-    printf("\n");
+    print_help_topic_list();
     printf(C_NOTE "From the shell:\n" C_RST);
     printf("  $ " C_CMD "milk-cli-help <topic>\n" C_RST);
     printf("\n");
@@ -1892,9 +1904,9 @@ errno_t help()
         const char *topic = data.cmdargtoken[1].val.string;
         if (help_topic_dispatch(topic) != 0)
         {
-            printf("Unknown help topic: \"%s\"\n", topic);
-            printf("Run " C_CMD "help" C_RST
-                   " for the list of available topics.\n");
+            printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n",
+                   topic);
+            print_help_topic_list();
         }
     }
     else
