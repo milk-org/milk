@@ -231,10 +231,10 @@ We assume here that you have created a module and you would like to push it to t
 	git commit -m "First commit"
 	git remote add origin https://github.com/milk-org/MyModuleName
 	git config credential.helper store       # For convenience
-	git push --set-upstream origin master
-	# Now we create dev branch
-	git checkout -b dev
-	git push --set-upstream origin dev
+	git push --set-upstream origin main
+	# Now we create framework-dev branch
+	git checkout -b framework-dev
+	git push --set-upstream origin framework-dev
 
 
 
