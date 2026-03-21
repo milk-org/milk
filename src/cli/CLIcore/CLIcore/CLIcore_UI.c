@@ -56,9 +56,37 @@ extern int  yylex_destroy(void);
  * ensures the accepted line in terminal scrollback
  * is clean for copy/paste.
  */
+/**
+ * Number of ghost chars rendered on current line.
+ * Set by print_ghost(), read by cli_getc().
+ */
+static int ghost_chars_on_line = 0;
+
 static int cli_getc(FILE *stream)
 {
-    return rl_getc(stream);
+    int c = rl_getc(stream);
+
+    if((c == '\n' || c == '\r')
+            && ghost_chars_on_line > 0)
+    {
+        /* Overwrite ghost text with spaces,
+         * then backspace to restore cursor.
+         * Uses no escape codes — avoids any
+         * scroll-region interference. */
+        int n = ghost_chars_on_line;
+        for(int i = 0; i < n; i++)
+        {
+            putchar(' ');
+        }
+        for(int i = 0; i < n; i++)
+        {
+            putchar('\b');
+        }
+        fflush(stdout);
+        ghost_chars_on_line = 0;
+    }
+
+    return c;
 }
 
 void rl_cb_linehandler(char *linein)
@@ -6549,7 +6577,8 @@ static int print_ghost(
         return 0;
     }
 
-    printf("%s%.*s\033[0m\033[K", style, plen, text);
+    printf("%s%.*s\033[0m", style, plen, text);
+    ghost_chars_on_line = plen;
     return plen;
 }
 
