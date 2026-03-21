@@ -77,7 +77,7 @@ sudo yum install doxygen graphviz
 
 ### 3.2 Generating the Documentation
 
-A tracked `Doxyfile` is maintained at the repository root. It is also used by CI (`.github/workflows/doxygen.yml`) to deploy the API reference to GitHub Pages on every push to `main` or `dev`.
+A tracked `Doxyfile` is maintained at the repository root. It is also used by CI (`.github/workflows/docs.yml`) to deploy the API reference to GitHub Pages on every push to `main` or `framework-dev`.
 
 To generate the documentation locally:
 
