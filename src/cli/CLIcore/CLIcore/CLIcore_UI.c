@@ -53,26 +53,26 @@ extern int  yylex_destroy(void);
  * Intercepts Enter key to erase ghost suggestion
  * text (printed after the cursor by print_ghost)
  * BEFORE readline processes the newline. This
- * ensures the accepted line in terminal scrollback
- * is clean for copy/paste.
- */
 /**
  * Number of ghost chars rendered on current line.
- * Set by print_ghost(), read by cli_getc().
+ * Set by print_ghost(), read by cli_accept_line().
  */
 static int ghost_chars_on_line = 0;
 
-static int cli_getc(FILE *stream)
+/**
+ * @brief Custom accept-line handler for readline
+ *
+ * Bound to Enter key. Overwrites ghost suggestion
+ * text with spaces before accepting the line, so
+ * the terminal scrollback entry is clean.
+ */
+static int cli_accept_line(
+    int count,
+    int key
+)
 {
-    int c = rl_getc(stream);
-
-    if((c == '\n' || c == '\r')
-            && ghost_chars_on_line > 0)
+    if(ghost_chars_on_line > 0)
     {
-        /* Overwrite ghost text with spaces,
-         * then backspace to restore cursor.
-         * Uses no escape codes — avoids any
-         * scroll-region interference. */
         int n = ghost_chars_on_line;
         for(int i = 0; i < n; i++)
         {
@@ -86,7 +86,7 @@ static int cli_getc(FILE *stream)
         ghost_chars_on_line = 0;
     }
 
-    return c;
+    return rl_newline(count, key);
 }
 
 void rl_cb_linehandler(char *linein)
@@ -7049,7 +7049,6 @@ static void CLI_redisplay(void)
 void CLI_configure_readline()
 {
     rl_redisplay_function = CLI_redisplay;
-    rl_getc_function = cli_getc;
 
     if(data.autocomplete_history)
     {
@@ -7059,6 +7058,11 @@ void CLI_configure_readline()
     /* Bind Right Arrow to accept suggestion
      * when at end-of-line */
     rl_bind_keyseq("\\e[C", accept_suggestion);
+
+    /* Bind Enter to custom handler that clears
+     * ghost text before accepting the line */
+    rl_bind_key('\r', cli_accept_line);
+    rl_bind_key('\n', cli_accept_line);
 }
 #else
 void CLI_configure_readline() {}
