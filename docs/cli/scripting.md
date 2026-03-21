@@ -1134,10 +1134,130 @@ fi
 
 <details markdown="1"><summary><b>Click to expand</b></summary>
 
-Here are several advanced examples demonstrating the combined capabilities of `milk-cli`'s built-in scripting engine.
+Here are examples demonstrating the combined capabilities of `milk-cli`'s
+built-in scripting engine, ordered from simple to complex.
+
+---
+
+### Simple
 
 <details markdown="1">
-<summary><b>Example 1: Parameter Defaults and String Manipulation</b></summary>
+<summary><b>Example 1: Hello World and Variables</b></summary>
+
+The simplest possible script — setting variables and printing them:
+
+```bash
+#!/usr/bin/env milk-cli -s
+name=world
+echo "Hello, ${name}!"
+x=42
+echo "The answer is $x"
+```
+
+Expected output:
+
+```text
+Hello, world!
+The answer is 42
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 2: Arithmetic and String Length</b></summary>
+
+Use `$(( ))` for integer arithmetic and `${#var}` for string length:
+
+```bash
+#!/usr/bin/env milk-cli -s
+a=8
+b=3
+echo "Sum:     $(( a + b ))"
+echo "Product: $(( a * b ))"
+echo "Division: $(( a / b ))"
+echo "Modulo:  $(( a % b ))"
+
+word=spectral
+echo "Length of '${word}': ${#word}"
+```
+
+Expected output:
+
+```text
+Sum:     11
+Product: 24
+Division: 2
+Modulo:  2
+Length of 'spectral': 8
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 3: Conditional Logic</b></summary>
+
+Branch on exit status or integer comparisons:
+
+```bash
+#!/usr/bin/env milk-cli -s
+temp=72
+
+if [ $temp -lt 60 ]; then
+    echo "Cold"
+elif [ $temp -lt 80 ]; then
+    echo "Comfortable"
+else
+    echo "Hot"
+fi
+```
+
+Expected output:
+
+```text
+Comfortable
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 4: Looping Over a Range</b></summary>
+
+`for` loops over sequences with `seq`, or literal lists:
+
+```bash
+#!/usr/bin/env milk-cli -s
+# Loop over a numeric sequence
+for i in $(seq 1 5); do
+    echo "Frame $i"
+done
+
+# Loop over a literal list
+for color in red green blue; do
+    echo "Channel: $color"
+done
+```
+
+Expected output:
+
+```text
+Frame 1
+Frame 2
+Frame 3
+Frame 4
+Frame 5
+Channel: red
+Channel: green
+Channel: blue
+```
+
+</details>
+
+---
+
+### Intermediate
+
+<details markdown="1">
+<summary><b>Example 5: Parameter Defaults and String Manipulation</b></summary>
 
 Safely provide defaults for arguments and cleanly parse paths:
 
@@ -1145,24 +1265,118 @@ Safely provide defaults for arguments and cleanly parse paths:
 #!/usr/bin/env milk-cli -s
 function process_image {
     local img_path=${1:-/data/default.fits}
-    local filename=${img_path##*/}  # strip everything up to the last '/'
-    local basename=${filename%.*}   # strip the file extension
-    
-    echo "Processing \${basename}..."
+    local filename=${img_path##*/}   # strip path prefix
+    local basename=${filename%.*}    # strip extension
+
+    echo "Processing ${basename}..."
 }
 
 process_image
-Processing default...
 process_image /tmp/test_image.fits
+```
+
+Expected output:
+
+```text
+Processing default...
 Processing test_image...
 ```
 
 </details>
 
 <details markdown="1">
-<summary><b>Example 2: Local Variables and Recursion</b></summary>
+<summary><b>Example 6: Functions and Return Values</b></summary>
 
-Use `local` variables and `return` to safely write recursive bash-style functions in `milk-cli`:
+Functions use `return` to pass integer exit status back to `$?`.
+Use command substitution `$(...)` to capture printed output:
+
+```bash
+#!/usr/bin/env milk-cli -s
+function clamp {
+    local val=$1 lo=$2 hi=$3
+    if [ $val -lt $lo ]; then
+        echo $lo
+    elif [ $val -gt $hi ]; then
+        echo $hi
+    else
+        echo $val
+    fi
+}
+
+result=$(clamp 150 0 100)
+echo "Clamped: $result"
+
+result=$(clamp -5 0 100)
+echo "Clamped: $result"
+```
+
+Expected output:
+
+```text
+Clamped: 100
+Clamped: 0
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 7: Arrays and Iteration</b></summary>
+
+Build an array and iterate over its elements:
+
+```bash
+#!/usr/bin/env milk-cli -s
+streams=(wfs_cam dm_disp tt_disp)
+
+echo "Registered streams: ${#streams[@]}"
+
+for i in $(seq 0 $(( ${#streams[@]} - 1 ))); do
+    echo "  [$i] ${streams[$i]}"
+done
+```
+
+Expected output:
+
+```text
+Registered streams: 3
+  [0] wfs_cam
+  [1] dm_disp
+  [2] tt_disp
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 8: While Loop and Counter</b></summary>
+
+Accumulate a running sum with a `while` loop:
+
+```bash
+#!/usr/bin/env milk-cli -s
+total=0
+count=0
+max=10
+
+while [ $count -lt $max ]; do
+    total=$(( total + count ))
+    count=$(( count + 1 ))
+done
+
+echo "Sum 0..$(( max - 1 )) = $total"
+```
+
+Expected output:
+
+```text
+Sum 0..9 = 45
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 9: Local Variables and Recursion</b></summary>
+
+Use `local` variables and `return` to safely write recursive functions:
 
 ```bash
 #!/usr/bin/env milk-cli -s
@@ -1179,53 +1393,182 @@ function factorial {
 
 factorial 5
 echo "5! = $?"
+```
+
+Expected output:
+
+```text
 5! = 120
 ```
 
 </details>
 
 <details markdown="1">
-<summary><b>Example 3: Transparent OS Fallback & Command Substitution</b></summary>
+<summary><b>Example 10: Transparent OS Fallback and Command Substitution</b></summary>
 
-Combine Linux utilities seamlessly with native `milk-cli` variables:
+Combine Linux shell utilities with native `milk-cli` variables
+without the `!` prefix required for interactive mode:
 
 ```bash
 #!/usr/bin/env milk-cli -s
 prefix="output_"
 ext=".fits"
 
-# Use native 'ls' and pipe to 'wc' without needing '!' prefix
-count=$(ls -1 | grep -c "\${ext}")
-echo "Found $count fits files."
+# Count FITS files in the current directory
+count=$(ls -1 | grep -c "${ext}")
+echo "Found $count FITS files."
 
-# Write a sequence to a file
-seq 1 5 > iter.txt
+# Timestamp tag for unique filenames
+tag=$(date +%Y%m%d_%H%M%S)
+echo "Saving to: ${prefix}${tag}${ext}"
 ```
 
 </details>
 
-<details markdown="1">
-<summary><b>Example 4: Waiting for High-Performance Resources</b></summary>
+---
 
-Script startup sequences that robustly block until streams and FPS engines are ready:
+### Advanced
+
+<details markdown="1">
+<summary><b>Example 11: Waiting for Streams</b></summary>
+
+Block until shared-memory streams become available, then
+read their geometry via dot-expansion:
 
 ```bash
 #!/usr/bin/env milk-cli -s
 function wait_and_monitor {
     local stream=$1
-    echo "Waiting for stream \${stream}..."
-    
+    echo "Waiting for stream ${stream}..."
+
     waitfor_stream $stream 60
     if [ $? -ne 0 ]; then
-        echo "Error: Stream timeout."
+        echo "Error: Stream ${stream} timed out."
         return 1
     fi
-    
-    # Use dot expansion to read the stream's metadata directly from shared memory!
-    echo "Ready! Shape: \${${stream}.xsize}x\${${stream}.ysize}"
+
+    # Read stream metadata via dot-expansion
+    echo "Ready! Shape: ${${stream}.xsize}x${${stream}.ysize}"
 }
 
 wait_and_monitor wfs_cam
+wait_and_monitor dm_disp
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 12: FPS Parameter Manipulation</b></summary>
+
+Read and write FPS parameters from a script to automate
+configuration changes across multiple compute units:
+
+```bash
+#!/usr/bin/env milk-cli -s
+# Set loop gain on the DM combiner FPS
+milk-fps-set dmcomb.loopgain 0.05
+
+# Retrieve current value and log it
+gain=$(milk-fps-set dmcomb.loopgain)
+echo "DM combiner gain set to: $gain"
+
+# Apply identical gain to all modal channels
+nmodes=50
+for m in $(seq 0 $(( nmodes - 1 ))); do
+    milk-fps-set dmcomb.modesgain[$m] 0.1
+done
+
+echo "Set $nmodes modal gains to 0.1"
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 13: Stream Diagnostic Report</b></summary>
+
+Collect live metadata from multiple streams and format a
+compact diagnostic table:
+
+```bash
+#!/usr/bin/env milk-cli -s
+streams=(wfs_cam dm_disp wfs_ref)
+
+echo "--------------------------------------------"
+echo "  Stream           XSize  YSize  Frame"
+echo "--------------------------------------------"
+
+for s in ${streams[@]}; do
+    waitfor_stream $s 5
+    if [ $? -ne 0 ]; then
+        printf "  %-18s OFFLINE\n" $s
+        continue
+    fi
+
+    xs=${${s}.xsize}
+    ys=${${s}.ysize}
+    cnt=${${s}.cnt0}
+    printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
+done
+
+echo "--------------------------------------------"
+```
+
+</details>
+
+<details markdown="1">
+<summary><b>Example 14: AO Loop Startup Orchestration</b></summary>
+
+A complete startup script that initialises an AO loop step by
+step, verifies each stage, and aborts cleanly on failure:
+
+```bash
+#!/usr/bin/env milk-cli -s
+
+# ---------- helpers ----------
+function die {
+    echo "FATAL: $1"
+    exit 1
+}
+
+function wait_stream {
+    local s=$1 timeout=${2:-30}
+    waitfor_stream $s $timeout
+    [ $? -ne 0 ] && die "Stream '$s' not available after ${timeout}s"
+    echo "  [OK] $s  ${${s}.xsize}x${${s}.ysize}"
+}
+
+# ---------- 1. verify hardware streams ----------
+echo "=== 1. Checking hardware streams ==="
+wait_stream wfs_cam 60
+wait_stream dm_volt
+
+# ---------- 2. load reference PSF ----------
+echo "=== 2. Loading WFS reference ==="
+milk-FITS2shm wfs_ref.fits wfs_ref
+wait_stream wfs_ref
+
+# ---------- 3. start modal decomposition FPS ----------
+echo "=== 3. Starting modal decomposition ==="
+milk-fpsexec-cacaoloop-WFS -n wfs01 -tmux
+sleep 2
+waitfor_stream wfs_modes 20
+[ $? -ne 0 ] && die "Modal decomposition failed to produce wfs_modes"
+
+# ---------- 4. configure loop gains ----------
+echo "=== 4. Configuring loop gains ==="
+nmodes=100
+for m in $(seq 0 $(( nmodes - 1 ))); do
+    milk-fps-set dmcomb.modesgain[$m] 0.05
+done
+milk-fps-set dmcomb.loopgain 1.0
+milk-fps-set dmcomb.loopON 1
+
+# ---------- 5. confirm loop is running ----------
+echo "=== 5. Loop status ==="
+sleep 1
+fpsgain=$(milk-fps-set dmcomb.loopgain)
+echo "  loopgain = $fpsgain"
+echo "AO loop started successfully."
 ```
 
 </details>
