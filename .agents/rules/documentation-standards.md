@@ -12,8 +12,10 @@ When creating or editing markdown documentation in the
    and code blocks may exceed this limit.
 2. **Headings:** Use ATX-style headings (`#`). Do not
    skip heading levels (e.g., `##` → `####`).
-3. **Code blocks:** Always specify the language.
-   Use `bash` for shell, `c` for C, `python` for Python.
+3. **Code blocks:** Every fenced code block MUST have a
+   language specifier (CI enforces MD040). Common languages:
+   `bash`, `c`, `python`, `cmake`, `text` (for plain output,
+   compiler warnings, directory trees, etc.).
 4. **Shell prompts:** Use `$` prefix for shell commands.
    Use `milk-cli>` for CLI prompts.
    Use `#` for comments inside code blocks.
