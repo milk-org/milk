@@ -18,14 +18,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include <math.h>
 #include <sys/stat.h>
 #include <signal.h>
 #include <sys/wait.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
+#include "CLIcore_UI.h"
 
 /* ============================================================
  *  CLI Variable Storage
@@ -417,7 +416,21 @@ int eval_cond_line(
         }
         return 0;
     }
-    return (strtod(p, NULL) != 0.0) ? 1 : 0;
+    
+    char pcopy[STRINGMAXLEN_CLICMDLINE];
+    strncpy(pcopy, p, STRINGMAXLEN_CLICMDLINE - 1);
+    pcopy[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    char *sc = strchr(pcopy, ';');
+    if (sc != NULL) {
+        *sc = '\0';
+    }
+    int len = (int) strlen(pcopy);
+    while(len > 0 && (pcopy[len-1] == ' ' || pcopy[len-1] == '\t')) {
+        pcopy[--len] = '\0';
+    }
+
+    CLI_execute_string(pcopy);
+    return (cli_last_retval == 0) ? 1 : 0;
 }
 
 /**
@@ -472,6 +485,7 @@ void cli_exec_block_if(
 
     branches[0].cond_idx = 0;
     branches[0].body_start = body_s;
+    branches[0].body_end = nlines; /* Will be updated if elif/else found */
     nbranch = 1;
 
     /* Scan for elif/else at depth 0 */
@@ -492,9 +506,8 @@ void cli_exec_block_if(
                 depth--;
                 continue;
             }
-            /* Close current branch */
-            branches[nbranch - 1].body_end
-                = i;
+            /* Should not happen since fi is not appended */
+            branches[nbranch - 1].body_end = i;
             break;
         }
         if(depth > 0)
@@ -522,6 +535,8 @@ void cli_exec_block_if(
                     = i;
                 branches[nbranch].body_start
                     = bs;
+                branches[nbranch].body_end
+                    = nlines; /* Will be updated if else found */
                 nbranch++;
             }
         }
@@ -538,20 +553,6 @@ void cli_exec_block_if(
                 branches[nbranch].body_end
                     = nlines;
                 nbranch++;
-            }
-            /* Find fi to close else */
-            for(int j = i + 1;
-                j < nlines; j++)
-            {
-                const char *l2 =
-                    strip_ws(lines[j]);
-                if(strcmp(l2, "fi") == 0)
-                {
-                    branches[
-                        nbranch - 1]
-                        .body_end = j;
-                    break;
-                }
             }
             break;
         }
@@ -675,6 +676,32 @@ void cli_exec_block_while(
                 cond_result =
                     cli_eval_test(cs);
             }
+        }
+        else
+        {
+            /* Check command exit status */
+            char ccmd[STRINGMAXLEN_CLICMDLINE];
+            strncpy(ccmd, cl, sizeof(ccmd) - 1);
+            ccmd[sizeof(ccmd) - 1] = '\0';
+            
+            char *semicolon = strstr(ccmd, ";");
+            if(semicolon)
+            {
+                char *do_ptr = strstr(semicolon, "do");
+                if(do_ptr)
+                {
+                    *semicolon = '\0';
+                }
+            }
+            
+            /* Strip trailing whitespace/semicolon */
+            int len = (int)strlen(ccmd);
+            while(len > 0 && (ccmd[len - 1] == ';' || ccmd[len - 1] == ' ' || ccmd[len - 1] == '\t'))
+            {
+                ccmd[--len] = '\0';
+            }
+            CLI_execute_string(ccmd);
+            cond_result = (cli_last_retval == 0) ? 1 : 0;
         }
 
         if(!cond_result)
@@ -1944,7 +1971,7 @@ int cli_script_intercept(const char *line)
                     sline[sl - 1] =
                         '\0';
                 }
-                CLI_execute_line(sline);
+                CLI_execute_string(sline);
             }
             fclose(sf);
         }
@@ -2602,7 +2629,7 @@ int cli_script_intercept(const char *line)
             memmove(ecmd, ecmd + 1,
                     (size_t)(el - 1));
         }
-        CLI_execute_line(ecmd);
+        CLI_execute_string(ecmd);
         return 1;
     }
 
@@ -2670,7 +2697,7 @@ int cli_script_intercept(const char *line)
             return 1;
         }
         /* command cmd — run directly */
-        CLI_execute_line((char *) p);
+        CLI_execute_string((char *) p);
         return 1;
     }
 
@@ -2704,7 +2731,7 @@ int cli_script_intercept(const char *line)
         if(tpid == 0)
         {
             /* Child: run cmd */
-            CLI_execute_line(
+            CLI_execute_string(
                 (char *) cmd_start);
             _exit(cli_last_retval);
         }
@@ -3886,7 +3913,7 @@ int cli_script_intercept(const char *line)
                     "%s%s",
                     data.alias[k].cmd,
                     pp);
-                CLI_execute_line(
+                CLI_execute_string(
                     expanded);
                 return 1;
             }
