@@ -19,10 +19,11 @@ See also: [CLI Syntax](CLIcore.md) ·
 ### Setting and Reading
 
 ```bash
-milk-cli > x=42
-milk-cli > name=hello
-milk-cli > echo $x          # prints: 42
-milk-cli > echo ${name}     # prints: hello
+#!/usr/bin/env milk-cli -s
+x=42
+name=hello
+echo $x          # prints: 42
+echo ${name}     # prints: hello
 ```
 
 Variable names are case-sensitive and may contain
@@ -31,8 +32,9 @@ letters, digits, and underscores. No spaces around `=`.
 ### Listing and Removing
 
 ```bash
-milk-cli > vars              # list all variables
-milk-cli > unset x           # remove variable x
+#!/usr/bin/env milk-cli -s
+vars              # list all variables
+unset x           # remove variable x
 ```
 
 ### Special Variables
@@ -59,15 +61,16 @@ manipulation:
 | `${var,}` | Lowercase first character |
 
 ```bash
-milk-cli > path=/home/user/file.txt
-milk-cli > echo ${#path}           # prints: 19
-milk-cli > echo ${path:6:4}        # prints: user
-milk-cli > echo ${path%%/*}        # prints: (empty)
-milk-cli > echo ${path##*/}        # prints: file.txt
-milk-cli > name=hello
-milk-cli > echo ${name^^}          # prints: HELLO
-milk-cli > name=WORLD
-milk-cli > echo ${name,,}          # prints: world
+#!/usr/bin/env milk-cli -s
+path=/home/user/file.txt
+echo ${#path}           # prints: 19
+echo ${path:6:4}        # prints: user
+echo ${path%%/*}        # prints: (empty)
+echo ${path##*/}        # prints: file.txt
+name=hello
+echo ${name^^}          # prints: HELLO
+name=WORLD
+echo ${name,,}          # prints: world
 ```
 
 ### Array Variables
@@ -75,11 +78,12 @@ milk-cli > echo ${name,,}          # prints: world
 Arrays store multiple values indexed by integer:
 
 ```bash
-milk-cli > colors=(red green blue)
-milk-cli > echo ${colors[0]}       # prints: red
-milk-cli > echo ${colors[2]}       # prints: blue
-milk-cli > echo ${colors[@]}       # prints: red green blue
-milk-cli > echo ${#colors[@]}      # prints: 3
+#!/usr/bin/env milk-cli -s
+colors=(red green blue)
+echo ${colors[0]}       # prints: red
+echo ${colors[2]}       # prints: blue
+echo ${colors[@]}       # prints: red green blue
+echo ${#colors[@]}      # prints: 3
 ```
 
 ### FPS Parameter Access
@@ -87,14 +91,16 @@ milk-cli > echo ${#colors[@]}      # prints: 3
 Read FPS parameters using `@fpsname.param` syntax:
 
 ```bash
-milk-cli > echo @myloop.loopgain      # read FPS param
-milk-cli > g=@myloop.loopgain         # store in variable
+#!/usr/bin/env milk-cli -s
+echo @myloop.loopgain      # read FPS param
+g=@myloop.loopgain         # store in variable
 ```
 
 Write FPS parameters with `fpsset`:
 
 ```bash
-milk-cli > fpsset myloop loopgain 0.5
+#!/usr/bin/env milk-cli -s
+fpsset myloop loopgain 0.5
 ```
 
 ## Arithmetic
@@ -104,10 +110,11 @@ milk-cli > fpsset myloop loopgain 0.5
 parameters are expanded inside the expression:
 
 ```bash
-milk-cli > x=10
-milk-cli > y=$(( x + 5 ))        # y = 15
-milk-cli > z=$(( y * 2 - x ))    # z = 20
-milk-cli > echo $y $z            # prints: 15 20
+#!/usr/bin/env milk-cli -s
+x=10
+y=$(( x + 5 ))        # y = 15
+z=$(( y * 2 - x ))    # z = 20
+echo $y $z            # prints: 15 20
 ```
 
 ## Built-in Commands
@@ -118,8 +125,9 @@ Pause execution for a given number of seconds
 (float-capable):
 
 ```bash
-milk-cli > sleep 1.5             # pause 1.5 seconds
-milk-cli > sleep 0.01            # 10 ms pause
+#!/usr/bin/env milk-cli -s
+sleep 1.5             # pause 1.5 seconds
+sleep 0.01            # 10 ms pause
 ```
 
 ### printf
@@ -128,8 +136,9 @@ Formatted output supporting `%s`, `%d`, `%f`, `%%`,
 and `\n`, `\t` escape sequences:
 
 ```bash
-milk-cli > printf "value = %d\n" 42
-milk-cli > printf "%s has %d items\n" list 5
+#!/usr/bin/env milk-cli -s
+printf "value = %d\n" 42
+printf "%s has %d items\n" list 5
 ```
 
 ### read
@@ -137,9 +146,10 @@ milk-cli > printf "%s has %d items\n" list 5
 Read a line from standard input into a variable:
 
 ```bash
-milk-cli > read name
+#!/usr/bin/env milk-cli -s
+read name
 hello world
-milk-cli > echo $name         # prints: hello world
+echo $name         # prints: hello world
 ```
 
 Flags:
@@ -151,13 +161,14 @@ Flags:
 | `-a arrayname` | Split words into an array |
 
 ```bash
-milk-cli > read -p "Enter value: " val
+#!/usr/bin/env milk-cli -s
+read -p "Enter value: " val
 Enter value: 42
-milk-cli > echo $val           # prints: 42
-milk-cli > read -t 5 response  # wait up to 5 sec
-milk-cli > read -a words       # split into array
+echo $val           # prints: 42
+read -t 5 response  # wait up to 5 sec
+read -a words       # split into array
 hello world
-milk-cli > echo ${words[0]}    # prints: hello
+echo ${words[0]}    # prints: hello
 ```
 
 ### Logical Operators
@@ -165,8 +176,9 @@ milk-cli > echo ${words[0]}    # prints: hello
 Chain commands with `&&` (AND) and `||` (OR):
 
 ```bash
-milk-cli > cmd1 && cmd2        # cmd2 runs if cmd1 succeeds
-milk-cli > cmd1 || cmd2        # cmd2 runs if cmd1 fails
+#!/usr/bin/env milk-cli -s
+cmd1 && cmd2        # cmd2 runs if cmd1 succeeds
+cmd1 || cmd2        # cmd2 runs if cmd1 fails
 ```
 
 ### Brace Expansion
@@ -175,17 +187,19 @@ Expand `{N..M}` and `{N..M..S}` into integer
 sequences:
 
 ```bash
-milk-cli > echo {1..5}         # prints: 1 2 3 4 5
-milk-cli > echo {0..10..2}     # prints: 0 2 4 6 8 10
-milk-cli > echo {5..1}         # prints: 5 4 3 2 1
+#!/usr/bin/env milk-cli -s
+echo {1..5}         # prints: 1 2 3 4 5
+echo {0..10..2}     # prints: 0 2 4 6 8 10
+echo {5..1}         # prints: 5 4 3 2 1
 ```
 
 Useful with `for` loops:
 
 ```bash
-milk-cli > for i in {1..5}; do
-milk-cli >     echo item $i
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+for i in {1..5}; do
+    echo item $i
+done
 ```
 
 ### Pipes
@@ -193,8 +207,9 @@ milk-cli > done
 Pipe the output of one command into another:
 
 ```bash
-milk-cli > echo hello | read greeting
-milk-cli > listim | grep wfs
+#!/usr/bin/env milk-cli -s
+echo hello | read greeting
+listim | grep wfs
 ```
 
 ### Output Redirection
@@ -202,8 +217,9 @@ milk-cli > listim | grep wfs
 Redirect stdout to a file:
 
 ```bash
-milk-cli > echo "log entry" > output.txt
-milk-cli > echo "more" >> output.txt  # append
+#!/usr/bin/env milk-cli -s
+echo "log entry" > output.txt
+echo "more" >> output.txt  # append
 ```
 
 ### Stderr Redirection
@@ -211,9 +227,10 @@ milk-cli > echo "more" >> output.txt  # append
 Redirect stderr independently:
 
 ```bash
-milk-cli > cmd 2>&1          # stderr to stdout
-milk-cli > cmd 2>/dev/null    # discard stderr
-milk-cli > cmd 2>errors.txt   # stderr to file
+#!/usr/bin/env milk-cli -s
+cmd 2>&1          # stderr to stdout
+cmd 2>/dev/null    # discard stderr
+cmd 2>errors.txt   # stderr to file
 ```
 
 ### Here-Strings
@@ -221,8 +238,9 @@ milk-cli > cmd 2>errors.txt   # stderr to file
 Provide a string as stdin to a command:
 
 ```bash
-milk-cli > read name <<< "world"
-milk-cli > echo $name            # prints: world
+#!/usr/bin/env milk-cli -s
+read name <<< "world"
+echo $name            # prints: world
 ```
 
 ### Glob Expansion
@@ -231,8 +249,9 @@ Tokens containing `*` or `?` are expanded to
 matching filenames:
 
 ```bash
-milk-cli > echo *.fits           # all FITS files
-milk-cli > echo data_??.bin      # data_01.bin etc.
+#!/usr/bin/env milk-cli -s
+echo *.fits           # all FITS files
+echo data_??.bin      # data_01.bin etc.
 ```
 
 Quoted globs are not expanded:
@@ -243,8 +262,9 @@ Quoted globs are not expanded:
 Exit the CLI session with an optional status code:
 
 ```bash
-milk-cli > exit          # exit with status 0
-milk-cli > exit 1        # exit with status 1
+#!/usr/bin/env milk-cli -s
+exit          # exit with status 0
+exit 1        # exit with status 1
 ```
 
 ### shift
@@ -253,13 +273,14 @@ Shift positional parameters (`$1`→`$2`, etc.) inside
 functions:
 
 ```bash
-milk-cli > function process_all {
-milk-cli >     while [ -n "$1" ]; do
-milk-cli >         echo processing $1
-milk-cli >         shift
-milk-cli >     done
-milk-cli > }
-milk-cli > process_all a b c
+#!/usr/bin/env milk-cli -s
+function process_all {
+    while [ -n "$1" ]; do
+        echo processing $1
+        shift
+    done
+}
+process_all a b c
 ```
 
 ### trap
@@ -268,8 +289,9 @@ Register signal handlers that execute a
 command when a signal is received:
 
 ```bash
-milk-cli > trap 'echo cleanup' EXIT
-milk-cli > trap 'rm /tmp/lockfile' INT TERM
+#!/usr/bin/env milk-cli -s
+trap 'echo cleanup' EXIT
+trap 'rm /tmp/lockfile' INT TERM
 ```
 
 Supported signals: `EXIT`, `INT`, `TERM`,
@@ -280,11 +302,12 @@ Supported signals: `EXIT`, `INT`, `TERM`,
 Control shell behavior flags:
 
 ```bash
-milk-cli > set -e      # exit on error
-milk-cli > set -x      # trace commands (+ prefix)
-milk-cli > set +e      # disable -e
-milk-cli > set +x      # disable -x
-milk-cli > set -ex     # enable both
+#!/usr/bin/env milk-cli -s
+set -e      # exit on error
+set -x      # trace commands (+ prefix)
+set +e      # disable -e
+set +x      # disable -x
+set -ex     # enable both
 ```
 
 ### export
@@ -293,9 +316,10 @@ Set environment variables visible to child
 processes:
 
 ```bash
-milk-cli > export DMSHMDIR="/tmp/shm"
-milk-cli > export VERBOSE=1
-milk-cli > export PATH              # push current $PATH
+#!/usr/bin/env milk-cli -s
+export DMSHMDIR="/tmp/shm"
+export VERBOSE=1
+export PATH              # push current $PATH
 ```
 
 ### Extended Test `[[ ]]`
@@ -303,9 +327,10 @@ milk-cli > export PATH              # push current $PATH
 Extended conditional test with regex support:
 
 ```bash
-milk-cli > [[ $filename =~ ^data_[0-9]+$ ]]
-milk-cli > [[ -n $myvar ]]
-milk-cli > [[ -f $path ]]
+#!/usr/bin/env milk-cli -s
+[[ $filename =~ ^data_[0-9]+$ ]]
+[[ -n $myvar ]]
+[[ -f $path ]]
 ```
 
 ### Tilde Expansion
@@ -313,8 +338,9 @@ milk-cli > [[ -f $path ]]
 `~` expands to `$HOME` at the start of tokens:
 
 ```bash
-milk-cli > echo ~/data          # /home/user/data
-milk-cli > ls ~/scripts/*.sh
+#!/usr/bin/env milk-cli -s
+echo ~/data          # /home/user/data
+ls ~/scripts/*.sh
 ```
 
 ### Input Redirection
@@ -322,8 +348,9 @@ milk-cli > ls ~/scripts/*.sh
 Read a file as standard input:
 
 ```bash
-milk-cli > read line < config.txt
-milk-cli > cmd < input.dat
+#!/usr/bin/env milk-cli -s
+read line < config.txt
+cmd < input.dat
 ```
 
 ### select
@@ -331,10 +358,11 @@ milk-cli > cmd < input.dat
 Interactive numbered menu loop:
 
 ```bash
-milk-cli > select mode in fast normal slow; do
-milk-cli >     echo "Selected: $mode"
-milk-cli >     break
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+select mode in fast normal slow; do
+    echo "Selected: $mode"
+    break
+done
 ```
 
 ### Arithmetic For
@@ -342,9 +370,10 @@ milk-cli > done
 C-style counted loop using `for ((;;))`:
 
 ```bash
-milk-cli > for ((i=0; i<5; i++)); do
-milk-cli >     echo "iteration $i"
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+for ((i=0; i<5; i++)); do
+    echo "iteration $i"
+done
 ```
 
 ### Parameter Defaults
@@ -353,10 +382,11 @@ Use `${var:-default}` to substitute a default
 value when a variable is unset or empty:
 
 ```bash
-milk-cli > echo ${name:-anonymous}
-milk-cli > echo ${dir:=/tmp}
-milk-cli > echo ${v:+yes}
-milk-cli > echo ${v:?error message}
+#!/usr/bin/env milk-cli -s
+echo ${name:-anonymous}
+echo ${dir:=/tmp}
+echo ${v:+yes}
+echo ${v:?error message}
 ```
 
 | Syntax | Meaning |
@@ -369,11 +399,12 @@ milk-cli > echo ${v:?error message}
 ### String Operations
 
 ```bash
-milk-cli > path="/home/user/file.txt"
-milk-cli > echo ${path/user/admin}
-milk-cli > echo ${path//\//|}
-milk-cli > echo ${path#/home/}
-milk-cli > echo ${path%.txt}
+#!/usr/bin/env milk-cli -s
+path="/home/user/file.txt"
+echo ${path/user/admin}
+echo ${path//\//|}
+echo ${path#/home/}
+echo ${path%.txt}
 ```
 
 | Syntax | Meaning |
@@ -389,14 +420,16 @@ Execute commands from a file in the current
 environment:
 
 ```bash
-milk-cli > source config.sh
-milk-cli > . config.sh
+#!/usr/bin/env milk-cli -s
+source config.sh
+. config.sh
 ```
 
 ### Read-Only Variables
 
 ```bash
-milk-cli > readonly PI=3.14159
+#!/usr/bin/env milk-cli -s
+readonly PI=3.14159
 ```
 
 ### Break / Continue with Count
@@ -404,11 +437,12 @@ milk-cli > readonly PI=3.14159
 Exit or skip multiple loop levels:
 
 ```bash
-milk-cli > for i in 1 2 3; do
-milk-cli >     for j in a b c; do
-milk-cli >         break 2
-milk-cli >     done
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+for i in 1 2 3; do
+    for j in a b c; do
+        break 2
+    done
+done
 ```
 
 ### Printf
@@ -416,8 +450,9 @@ milk-cli > done
 Format output with `%s`, `%d`, `%f` specifiers:
 
 ```bash
-milk-cli > printf "Name: %s Age: %d\n" Alice 30
-milk-cli > printf "PI = %f\n" 3.14159
+#!/usr/bin/env milk-cli -s
+printf "Name: %s Age: %d\n" Alice 30
+printf "PI = %f\n" 3.14159
 ```
 
 ### Getopts
@@ -425,10 +460,11 @@ milk-cli > printf "PI = %f\n" 3.14159
 Parse command-line options:
 
 ```bash
-milk-cli > OPTIND=1
-milk-cli > while getopts "vf:" opt; do
-milk-cli >     echo "opt=$opt OPTARG=$OPTARG"
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+OPTIND=1
+while getopts "vf:" opt; do
+    echo "opt=$opt OPTARG=$OPTARG"
+done
 ```
 
 ### Mapfile / Readarray
@@ -436,9 +472,10 @@ milk-cli > done
 Read lines from a file into an array:
 
 ```bash
-milk-cli > mapfile -t lines < input.txt
-milk-cli > echo ${lines[0]}
-milk-cli > echo ${#lines[@]}
+#!/usr/bin/env milk-cli -s
+mapfile -t lines < input.txt
+echo ${lines[0]}
+echo ${#lines[@]}
 ```
 
 ### Background Jobs
@@ -446,9 +483,10 @@ milk-cli > echo ${#lines[@]}
 Run commands in the background and wait:
 
 ```bash
-milk-cli > long_command &
-milk-cli > echo "PID is $!"
-milk-cli > wait
+#!/usr/bin/env milk-cli -s
+long_command &
+echo "PID is $!"
+wait
 ```
 
 ### Subshell Grouping
@@ -456,8 +494,9 @@ milk-cli > wait
 Execute commands in an isolated sub-environment:
 
 ```bash
-milk-cli > (x=42; echo $x)
-milk-cli > echo $x    # empty — subshell is isolated
+#!/usr/bin/env milk-cli -s
+(x=42; echo $x)
+echo $x    # empty — subshell is isolated
 ```
 
 ### declare / typeset
@@ -465,11 +504,12 @@ milk-cli > echo $x    # empty — subshell is isolated
 Declare variable attributes:
 
 ```bash
-milk-cli > declare -i count=0    # integer
-milk-cli > declare -r PI=3.14    # read-only
-milk-cli > declare -a arr        # array
-milk-cli > declare -x MYVAR=val  # export
-milk-cli > typeset -i x=5        # alias
+#!/usr/bin/env milk-cli -s
+declare -i count=0    # integer
+declare -r PI=3.14    # read-only
+declare -a arr        # array
+declare -x MYVAR=val  # export
+typeset -i x=5        # alias
 ```
 
 | Flag | Meaning |
@@ -484,9 +524,10 @@ milk-cli > typeset -i x=5        # alias
 Evaluate arithmetic expressions:
 
 ```bash
-milk-cli > let "x=5+3"       # x = 8
-milk-cli > let "y=x*2"       # y = 16
-milk-cli > let "x++"         # x = 9
+#!/usr/bin/env milk-cli -s
+let "x=5+3"       # x = 8
+let "y=x*2"       # y = 16
+let "x++"         # x = 9
 ```
 
 ### eval
@@ -494,11 +535,12 @@ milk-cli > let "x++"         # x = 9
 Construct and execute a command string:
 
 ```bash
-milk-cli > cmd="echo hello"
-milk-cli > eval $cmd          # prints: hello
-milk-cli > vname=foo
-milk-cli > eval "$vname=42"
-milk-cli > echo $foo           # prints: 42
+#!/usr/bin/env milk-cli -s
+cmd="echo hello"
+eval $cmd          # prints: hello
+vname=foo
+eval "$vname=42"
+echo $foo           # prints: 42
 ```
 
 ### type / command -v
@@ -506,9 +548,10 @@ milk-cli > echo $foo           # prints: 42
 Check whether a command exists:
 
 ```bash
-milk-cli > type echo           # echo is a builtin
-milk-cli > command -v ls        # /usr/bin/ls
-milk-cli > type nonexistent     # not found
+#!/usr/bin/env milk-cli -s
+type echo           # echo is a builtin
+command -v ls        # /usr/bin/ls
+type nonexistent     # not found
 ```
 
 ### timeout
@@ -516,7 +559,8 @@ milk-cli > type nonexistent     # not found
 Run a command with a deadline:
 
 ```bash
-milk-cli > timeout 5 long_running_cmd
+#!/usr/bin/env milk-cli -s
+timeout 5 long_running_cmd
 ```
 
 If the command does not finish within N seconds,
@@ -527,14 +571,15 @@ it is terminated with `$?` set to 124.
 ### if / elif / else / fi
 
 ```bash
-milk-cli > x=10
-milk-cli > if [ $x -gt 100 ]; then
-milk-cli >     echo big
-milk-cli > elif [ $x -gt 5 ]; then
-milk-cli >     echo medium
-milk-cli > else
-milk-cli >     echo small
-milk-cli > fi
+#!/usr/bin/env milk-cli -s
+x=10
+if [ $x -gt 100 ]; then
+    echo big
+elif [ $x -gt 5 ]; then
+    echo medium
+else
+    echo small
+fi
 # prints: medium
 ```
 
@@ -564,36 +609,39 @@ The `[ ... ]` syntax supports these test operators:
 ### while / do / done
 
 ```bash
-milk-cli > n=1
-milk-cli > while [ $n -le 5 ]; do
-milk-cli >     echo iteration $n
-milk-cli >     n=$(( n + 1 ))
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+n=1
+while [ $n -le 5 ]; do
+    echo iteration $n
+    n=$(( n + 1 ))
+done
 ```
 
 Use `break` to exit early, `continue` to skip to the
 next iteration:
 
 ```bash
-milk-cli > n=0
-milk-cli > while [ $n -lt 10 ]; do
-milk-cli >     n=$(( n + 1 ))
-milk-cli >     if [ $n -eq 3 ]; then
-milk-cli >         continue
-milk-cli >     fi
-milk-cli >     if [ $n -eq 7 ]; then
-milk-cli >         break
-milk-cli >     fi
-milk-cli >     echo $n
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+n=0
+while [ $n -lt 10 ]; do
+    n=$(( n + 1 ))
+    if [ $n -eq 3 ]; then
+        continue
+    fi
+    if [ $n -eq 7 ]; then
+        break
+    fi
+    echo $n
+done
 ```
 
 ### for / do / done
 
 ```bash
-milk-cli > for item in alpha beta gamma; do
-milk-cli >     echo processing $item
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+for item in alpha beta gamma; do
+    echo processing $item
+done
 ```
 
 ### Nesting
@@ -601,14 +649,15 @@ milk-cli > done
 All flow control constructs can be nested:
 
 ```bash
-milk-cli > n=0
-milk-cli > while [ $n -lt 3 ]; do
-milk-cli >     n=$(( n + 1 ))
-milk-cli >     if [ $n -eq 2 ]; then
-milk-cli >         echo found two
-milk-cli >     fi
-milk-cli >     echo n=$n
-milk-cli > done
+#!/usr/bin/env milk-cli -s
+n=0
+while [ $n -lt 3 ]; do
+    n=$(( n + 1 ))
+    if [ $n -eq 2 ]; then
+        echo found two
+    fi
+    echo n=$n
+done
 ```
 
 ### case / esac
@@ -616,12 +665,13 @@ milk-cli > done
 Multi-way branching by pattern matching:
 
 ```bash
-milk-cli > mode=fast
-milk-cli > case $mode in
-milk-cli >   fast) echo speed ;;
-milk-cli >   safe|careful) echo caution ;;
-milk-cli >   *) echo unknown ;;
-milk-cli > esac
+#!/usr/bin/env milk-cli -s
+mode=fast
+case $mode in
+  fast) echo speed ;;
+  safe|careful) echo caution ;;
+  *) echo unknown ;;
+esac
 # prints: speed
 ```
 
@@ -635,10 +685,11 @@ Inside the body, `$1` through `$9` are the call
 arguments:
 
 ```bash
-milk-cli > function greet {
-milk-cli >     echo Hello $1
-milk-cli > }
-milk-cli > greet world           # prints: Hello world
+#!/usr/bin/env milk-cli -s
+function greet {
+    echo Hello $1
+}
+greet world           # prints: Hello world
 ```
 
 ### Return Values
@@ -647,14 +698,15 @@ Use `return` to exit a function early. An optional
 integer argument sets `$?`:
 
 ```bash
-milk-cli > function check {
-milk-cli >     if [ $1 -gt 10 ]; then
-milk-cli >         return 0
-milk-cli >     fi
-milk-cli >     return 1
-milk-cli > }
-milk-cli > check 20
-milk-cli > echo $?               # prints: 0
+#!/usr/bin/env milk-cli -s
+function check {
+    if [ $1 -gt 10 ]; then
+        return 0
+    fi
+    return 1
+}
+check 20
+echo $?               # prints: 0
 ```
 
 ### Local Variable Scoping
@@ -665,15 +717,16 @@ to the function's scope. The `local` keyword safely shadows
 any existing global variables, restoring them when returning.
 
 ```bash
-milk-cli > x=global
-milk-cli > y=global
-milk-cli > function test {
-milk-cli >     x=modified
-milk-cli >     local y=localized
-milk-cli > }
-milk-cli > test
-milk-cli > echo $x               # prints: modified
-milk-cli > echo $y               # prints: global
+#!/usr/bin/env milk-cli -s
+x=global
+y=global
+function test {
+    x=modified
+    local y=localized
+}
+test
+echo $x               # prints: modified
+echo $y               # prints: global
 ```
 
 ## Heredocs
@@ -682,12 +735,13 @@ Assign multi-line text to a variable using heredoc
 syntax:
 
 ```bash
-milk-cli > config=<<EOF
-milk-cli > gain=0.5
-milk-cli > nframes=100
-milk-cli > mode=closed
-milk-cli > EOF
-milk-cli > echo $config
+#!/usr/bin/env milk-cli -s
+config=<<EOF
+gain=0.5
+nframes=100
+mode=closed
+EOF
+echo $config
 ```
 
 Lines between `=<<DELIM` and `DELIM` are concatenated
@@ -699,7 +753,8 @@ The `on_update` command waits for a shared-memory
 stream to be updated, then runs a command:
 
 ```bash
-milk-cli > on_update wfs { echo frame received }
+#!/usr/bin/env milk-cli -s
+on_update wfs { echo frame received }
 ```
 
 This blocks until the stream's semaphore is posted
@@ -715,8 +770,9 @@ Use `source` (or the shorthand `.`) to execute a
 script file:
 
 ```bash
-milk-cli > source myscript.milk
-milk-cli > . myscript.milk        # same thing
+#!/usr/bin/env milk-cli -s
+source myscript.milk
+. myscript.milk        # same thing
 ```
 
 Blank lines and `#` comments are skipped. On error,
@@ -728,8 +784,9 @@ the filename and line number are printed.
 even if called multiple times. Uses resolved paths:
 
 ```bash
-milk-cli > include_once helpers.milk
-milk-cli > include_once helpers.milk   # no-op
+#!/usr/bin/env milk-cli -s
+include_once helpers.milk
+include_once helpers.milk   # no-op
 ```
 
 ### Startup Profile
@@ -744,7 +801,8 @@ Export all current variables and function definitions
 to a file:
 
 ```bash
-milk-cli > savescript state.milk
+#!/usr/bin/env milk-cli -s
+savescript state.milk
 ```
 
 The saved file can be loaded later with `source`.
@@ -754,7 +812,8 @@ The saved file can be loaded later with `source`.
 Write the readline command history to a file:
 
 ```bash
-milk-cli > savehistory replay.milk
+#!/usr/bin/env milk-cli -s
+savehistory replay.milk
 ```
 
 This creates a script that replays your interactive
@@ -846,10 +905,11 @@ echo "Processing complete"
 Associative arrays store key-value pairs:
 
 ```bash
-milk-cli > declare -A config
-milk-cli > config[host]=localhost
-milk-cli > config[port]=8080
-milk-cli > echo ${config[host]}   # localhost
+#!/usr/bin/env milk-cli -s
+declare -A config
+config[host]=localhost
+config[port]=8080
+echo ${config[host]}   # localhost
 ```
 
 Assignment uses `map[key]=value` syntax. Lookup
@@ -861,19 +921,21 @@ uses `${map[key]}` expansion.
 whose *name* is stored in `var`:
 
 ```bash
-milk-cli > target=myval
-milk-cli > myval=42
-milk-cli > echo ${!target}   # 42
+#!/usr/bin/env milk-cli -s
+target=myval
+myval=42
+echo ${!target}   # 42
 ```
 
 ## Aliases
 
 ```bash
-milk-cli > alias ll='listim'
-milk-cli > alias s='readshmim'
-milk-cli > ll                    # runs: listim
-milk-cli > alias                 # list all aliases
-milk-cli > unalias ll            # remove alias
+#!/usr/bin/env milk-cli -s
+alias ll='listim'
+alias s='readshmim'
+ll                    # runs: listim
+alias                 # list all aliases
+unalias ll            # remove alias
 ```
 
 Aliases are expanded before command dispatch.
@@ -881,27 +943,30 @@ Aliases are expanded before command dispatch.
 ## Path Utilities
 
 ```bash
-milk-cli > basename /data/img.fits   # img.fits
-milk-cli > dirname /data/img.fits    # /data
+#!/usr/bin/env milk-cli -s
+basename /data/img.fits   # img.fits
+dirname /data/img.fits    # /data
 ```
 
 ## Directory Stack
 
 ```bash
-milk-cli > pushd /data           # cd to /data
-milk-cli > pushd /tmp            # cd to /tmp
-milk-cli > dirs                  # show stack
-milk-cli > popd                  # back to /data
-milk-cli > popd                  # back to original
+#!/usr/bin/env milk-cli -s
+pushd /data           # cd to /data
+pushd /tmp            # cd to /tmp
+dirs                  # show stack
+popd                  # back to /data
+popd                  # back to original
 ```
 
 ## Number Sequences
 
 ```bash
-milk-cli > seq 5                 # 1 2 3 4 5
-milk-cli > seq 2 5               # 2 3 4 5
-milk-cli > seq 0 0.1 1.0         # 0 0.1 ... 1.0
-milk-cli > seq 10 -2 0           # 10 8 6 4 2 0
+#!/usr/bin/env milk-cli -s
+seq 5                 # 1 2 3 4 5
+seq 2 5               # 2 3 4 5
+seq 0 0.1 1.0         # 0 0.1 ... 1.0
+seq 10 -2 0           # 10 8 6 4 2 0
 ```
 
 Supports floating-point steps.
@@ -909,9 +974,10 @@ Supports floating-point steps.
 ## Builtins
 
 ```bash
-milk-cli > true                  # $? = 0
-milk-cli > false                 # $? = 1
-milk-cli > if (( x > 5 )); then echo big; fi
+#!/usr/bin/env milk-cli -s
+true                  # $? = 0
+false                 # $? = 1
+if (( x > 5 )); then echo big; fi
 ```
 
 ## Variable Testing
@@ -919,8 +985,9 @@ milk-cli > if (( x > 5 )); then echo big; fi
 `test -v VAR` checks if a variable is set:
 
 ```bash
-milk-cli > x=1
-milk-cli > if [ -v x ]; then echo set; fi
+#!/usr/bin/env milk-cli -s
+x=1
+if [ -v x ]; then echo set; fi
 ```
 
 ## Stream & FPS Metadata
@@ -929,18 +996,20 @@ Access shared memory stream properties via
 dot-syntax variable expansion:
 
 ```bash
-milk-cli > echo ${mystream.xsize}   # X dimension
-milk-cli > echo ${mystream.ysize}   # Y dimension
-milk-cli > echo ${mystream.zsize}   # Z dimension
-milk-cli > echo ${mystream.type}    # datatype code
-milk-cli > echo ${mystream.cnt0}    # frame counter
-milk-cli > echo ${mystream.naxis}   # number of axes
+#!/usr/bin/env milk-cli -s
+echo ${mystream.xsize}   # X dimension
+echo ${mystream.ysize}   # Y dimension
+echo ${mystream.zsize}   # Z dimension
+echo ${mystream.type}    # datatype code
+echo ${mystream.cnt0}    # frame counter
+echo ${mystream.naxis}   # number of axes
 ```
 
 FPS status can be checked:
 
 ```bash
-milk-cli > echo ${myfps.status}     # 1 if exists
+#!/usr/bin/env milk-cli -s
+echo ${myfps.status}     # 1 if exists
 ```
 
 ## Wait for Resources
@@ -948,14 +1017,16 @@ milk-cli > echo ${myfps.status}     # 1 if exists
 Wait for shared memory streams or FPS to appear:
 
 ```bash
-milk-cli > waitfor_stream wfs 30    # wait up to 30s
-milk-cli > waitfor_fps dmcomb 10    # wait up to 10s
+#!/usr/bin/env milk-cli -s
+waitfor_stream wfs 30    # wait up to 30s
+waitfor_fps dmcomb 10    # wait up to 10s
 ```
 
 Returns 0 on success, 1 on timeout. Default timeout:
 10 seconds.
 
 ```bash
+#!/usr/bin/env milk-cli -s
 # Pattern: wait for stream, then process
 waitfor_stream wfs 60
 if [ $? -eq 0 ]; then
@@ -974,17 +1045,18 @@ Here are several advanced examples demonstrating the combined capabilities of `m
 Safely provide defaults for arguments and cleanly parse paths:
 
 ```bash
-milk-cli > function process_image {
-milk-cli >     local img_path=${1:-/data/default.fits}
-milk-cli >     local filename=${img_path##*/}  # strip everything up to the last '/'
-milk-cli >     local basename=${filename%.*}   # strip the file extension
-milk-cli >     
-milk-cli >     echo "Processing \${basename}..."
-milk-cli > }
-milk-cli > 
-milk-cli > process_image
+#!/usr/bin/env milk-cli -s
+function process_image {
+    local img_path=${1:-/data/default.fits}
+    local filename=${img_path##*/}  # strip everything up to the last '/'
+    local basename=${filename%.*}   # strip the file extension
+    
+    echo "Processing \${basename}..."
+}
+
+process_image
 Processing default...
-milk-cli > process_image /tmp/test_image.fits
+process_image /tmp/test_image.fits
 Processing test_image...
 ```
 
@@ -996,19 +1068,20 @@ Processing test_image...
 Use `local` variables and `return` to safely write recursive bash-style functions in `milk-cli`:
 
 ```bash
-milk-cli > function factorial {
-milk-cli >     local n=$1
-milk-cli >     if [ $n -le 1 ]; then
-milk-cli >         return 1
-milk-cli >     else
-milk-cli >         local prev=$(( n - 1 ))
-milk-cli >         factorial $prev
-milk-cli >         return $(( n * $? ))
-milk-cli >     fi
-milk-cli > }
-milk-cli > 
-milk-cli > factorial 5
-milk-cli > echo "5! = $?"
+#!/usr/bin/env milk-cli -s
+function factorial {
+    local n=$1
+    if [ $n -le 1 ]; then
+        return 1
+    else
+        local prev=$(( n - 1 ))
+        factorial $prev
+        return $(( n * $? ))
+    fi
+}
+
+factorial 5
+echo "5! = $?"
 5! = 120
 ```
 
@@ -1020,15 +1093,16 @@ milk-cli > echo "5! = $?"
 Combine Linux utilities seamlessly with native `milk-cli` variables:
 
 ```bash
-milk-cli > prefix="output_"
-milk-cli > ext=".fits"
-milk-cli > 
-milk-cli > # Use native 'ls' and pipe to 'wc' without needing '!' prefix
-milk-cli > count=$(ls -1 | grep -c "\${ext}")
-milk-cli > echo "Found $count fits files."
-milk-cli > 
-milk-cli > # Write a sequence to a file
-milk-cli > seq 1 5 > iter.txt
+#!/usr/bin/env milk-cli -s
+prefix="output_"
+ext=".fits"
+
+# Use native 'ls' and pipe to 'wc' without needing '!' prefix
+count=$(ls -1 | grep -c "\${ext}")
+echo "Found $count fits files."
+
+# Write a sequence to a file
+seq 1 5 > iter.txt
 ```
 
 </details>
@@ -1039,21 +1113,22 @@ milk-cli > seq 1 5 > iter.txt
 Script startup sequences that robustly block until streams and FPS engines are ready:
 
 ```bash
-milk-cli > function wait_and_monitor {
-milk-cli >     local stream=$1
-milk-cli >     echo "Waiting for stream \${stream}..."
-milk-cli >     
-milk-cli >     waitfor_stream $stream 60
-milk-cli >     if [ $? -ne 0 ]; then
-milk-cli >         echo "Error: Stream timeout."
-milk-cli >         return 1
-milk-cli >     fi
-milk-cli >     
-milk-cli >     # Use dot expansion to read the stream's metadata directly from shared memory!
-milk-cli >     echo "Ready! Shape: \${${stream}.xsize}x\${${stream}.ysize}"
-milk-cli > }
-milk-cli > 
-milk-cli > wait_and_monitor wfs_cam
+#!/usr/bin/env milk-cli -s
+function wait_and_monitor {
+    local stream=$1
+    echo "Waiting for stream \${stream}..."
+    
+    waitfor_stream $stream 60
+    if [ $? -ne 0 ]; then
+        echo "Error: Stream timeout."
+        return 1
+    fi
+    
+    # Use dot expansion to read the stream's metadata directly from shared memory!
+    echo "Ready! Shape: \${${stream}.xsize}x\${${stream}.ysize}"
+}
+
+wait_and_monitor wfs_cam
 ```
 
 </details>
