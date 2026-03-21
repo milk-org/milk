@@ -3713,6 +3713,51 @@ void cli_expand_env(
     while(line[i] != '\0'
             && opos < maxlen - 1)
     {
+        if(line[i] == '`')
+        {
+            i++; /* skip ` */
+            char cmdsub[STRINGMAXLEN_CLICMDLINE];
+            int  clen = 0;
+            while(line[i] != '\0' && line[i] != '`' && clen < STRINGMAXLEN_CLICMDLINE - 1)
+            {
+                cmdsub[clen++] = line[i++];
+            }
+            if(line[i] == '`')
+            {
+                i++;
+            }
+            cmdsub[clen] = '\0';
+
+            FILE *fp = popen(cmdsub, "r");
+            if(fp)
+            {
+                char   resbuf[4096];
+                size_t bytes_read = fread(resbuf, 1, sizeof(resbuf) - 1, fp);
+                resbuf[bytes_read] = '\0';
+
+                while(bytes_read > 0 &&
+                      (resbuf[bytes_read - 1] == '\n' || resbuf[bytes_read - 1] == '\r'))
+                {
+                    resbuf[--bytes_read] = '\0';
+                }
+
+                for(size_t k = 0; k < bytes_read; k++)
+                {
+                    if(resbuf[k] == '\n' || resbuf[k] == '\r')
+                    {
+                        resbuf[k] = ' ';
+                    }
+                }
+
+                for(size_t k = 0; k < bytes_read && opos < maxlen - 1; k++)
+                {
+                    out[opos++] = resbuf[k];
+                }
+                pclose(fp);
+            }
+            continue;
+        }
+
         if(line[i] == '$')
         {
             /* Skip $(( — arithmetic */
@@ -3722,10 +3767,61 @@ void cli_expand_env(
                 out[opos++] = line[i++];
                 continue;
             }
-            /* Skip $( — command subst */
+            /* Handle $( — command subst */
             if(line[i + 1] == '(')
             {
-                out[opos++] = line[i++];
+                i += 2; /* skip $( */
+                char cmdsub[STRINGMAXLEN_CLICMDLINE];
+                int  clen = 0;
+                int  cdepth = 1;
+                while(line[i] != '\0' && clen < STRINGMAXLEN_CLICMDLINE - 1)
+                {
+                    if(line[i] == '(')
+                    {
+                        cdepth++;
+                    }
+                    else if(line[i] == ')')
+                    {
+                        cdepth--;
+                        if(cdepth == 0)
+                        {
+                            i++;
+                            break;
+                        }
+                    }
+                    cmdsub[clen++] = line[i++];
+                }
+                cmdsub[clen] = '\0';
+
+                FILE *fp = popen(cmdsub, "r");
+                if(fp)
+                {
+                    char   resbuf[4096];
+                    size_t bytes_read = fread(resbuf, 1, sizeof(resbuf) - 1, fp);
+                    resbuf[bytes_read] = '\0';
+
+                    /* Trim trailing newlines */
+                    while(bytes_read > 0 &&
+                          (resbuf[bytes_read - 1] == '\n' || resbuf[bytes_read - 1] == '\r'))
+                    {
+                        resbuf[--bytes_read] = '\0';
+                    }
+
+                    /* Replace internal newlines with space */
+                    for(size_t k = 0; k < bytes_read; k++)
+                    {
+                        if(resbuf[k] == '\n' || resbuf[k] == '\r')
+                        {
+                            resbuf[k] = ' ';
+                        }
+                    }
+
+                    for(size_t k = 0; k < bytes_read && opos < maxlen - 1; k++)
+                    {
+                        out[opos++] = resbuf[k];
+                    }
+                    pclose(fp);
+                }
                 continue;
             }
             i++;
@@ -6178,56 +6274,75 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-#ifdef USE_READLINE
-        if(data.cmdNBarg > 0 && strlen(data.cmdargtoken[0].val.string) > 0)
+        /* Attempt transparent OS shell fallback */
+        int sys_ret = system(data.CLIcmdline);
+        int os_not_found = 0;
+        
+        /* system() returns 127 << 8 if command not found by sh */
+        if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) == 127)
         {
-            const char *input_cmd = data.cmdargtoken[0].val.string;
-            
-            struct MatchNode {
-                int dist;
-                const char *cmd;
-            } matches[3] = { {9999, NULL}, {9999, NULL}, {9999, NULL} };
-
-            for(unsigned int i = 0; i < data.NBcmd; i++) {
-                int d = levenshtein_distance((const char*)input_cmd,
-                    (const char*)data.cmd[i].key);
-                
-                // Keep top 3 smallest distances
-                if (d < matches[2].dist) {
-                    matches[2].dist = d;
-                    matches[2].cmd = data.cmd[i].key;
-                    
-                    // Bubble up
-                    if (matches[2].dist < matches[1].dist) {
-                        struct MatchNode tmp = matches[1];
-                        matches[1] = matches[2];
-                        matches[2] = tmp;
-                    }
-                    if (matches[1].dist < matches[0].dist) {
-                        struct MatchNode tmp = matches[0];
-                        matches[0] = matches[1];
-                        matches[1] = tmp;
-                    }
-                }
-            }
-
-            if(matches[0].dist <= 4 && matches[0].cmd != NULL) {
-                printf(COLORRED "Command '%s' not found. " COLORRESET
-                       "Did you mean:\n", input_cmd);
-                for (int m = 0; m < 3; m++) {
-                    if (matches[m].cmd && matches[m].dist <= 4 && matches[m].dist < 9999) {
-                        printf("  - " COLORHBOLDCYAN "%s" COLORRESET "\n", matches[m].cmd);
-                    }
-                }
-            } else {
-                printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
-            }
+            os_not_found = 1;
         }
         else
-#endif
         {
-            printf(COLORRED
-                   "Command not found, or command with no effect\n" COLORRESET);
+            /* OS processed it (success, or other error), update ret val */
+            if(sys_ret != -1)
+            {
+                cli_last_retval = (sys_ret >> 8) & 0xff;
+            }
+        }
+
+        if(os_not_found)
+        {
+#ifdef USE_READLINE
+            if(data.cmdNBarg > 0 && strlen(data.cmdargtoken[0].val.string) > 0)
+            {
+                const char *input_cmd = data.cmdargtoken[0].val.string;
+                
+                struct MatchNode {
+                    int dist;
+                    const char *cmd;
+                } matches[3] = { {9999, NULL}, {9999, NULL}, {9999, NULL} };
+
+                for(unsigned int i = 0; i < data.NBcmd; i++) {
+                    int d = levenshtein_distance((const char*)input_cmd,
+                        (const char*)data.cmd[i].key);
+                    
+                    if (d < matches[2].dist) {
+                        matches[2].dist = d;
+                        matches[2].cmd = data.cmd[i].key;
+                        
+                        if (matches[2].dist < matches[1].dist) {
+                            struct MatchNode tmp = matches[1];
+                            matches[1] = matches[2];
+                            matches[2] = tmp;
+                        }
+                        if (matches[1].dist < matches[0].dist) {
+                            struct MatchNode tmp = matches[0];
+                            matches[0] = matches[1];
+                            matches[1] = tmp;
+                        }
+                    }
+                }
+
+                if(matches[0].dist <= 4 && matches[0].cmd != NULL) {
+                    printf(COLORRED "Command '%s' not found. " COLORRESET
+                           "Did you mean:\n", input_cmd);
+                    for (int m = 0; m < 3; m++) {
+                        if (matches[m].cmd && matches[m].dist <= 4 && matches[m].dist < 9999) {
+                            printf("  - " COLORHBOLDCYAN "%s" COLORRESET "\n", matches[m].cmd);
+                        }
+                    }
+                } else {
+                    printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
+                }
+            }
+            else
+#endif
+            {
+                printf(COLORRED
+                       "Command not found, or command with no effect\n" COLORRESET);
+            }
         }
     }
 
