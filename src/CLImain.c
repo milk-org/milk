@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     if(dcquiet == 0)
     {
         printf(STYLE_BOLD);
-        printf("\n        milk-cli  v %s\n", versionstring);
+        printf("\n        milk-cli  v %s  (compiled %s %s)\n", versionstring, __DATE__, __TIME__);
 #ifndef NDEBUG
         printf(
             "        === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled "
