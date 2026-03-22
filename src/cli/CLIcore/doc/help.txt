@@ -5,6 +5,8 @@ COMMAND LINE OPTIONS
 
   -h, --help
 	print this message and exit
+  -v, --version
+	Print version and exit
   -i, --info
 	Print version, settings, info and exit
   --verbose
@@ -13,10 +15,12 @@ COMMAND LINE OPTIONS
 	Set debug level at startup
   -o, --overwrite
 	Automatically overwrite files if necessary (USE WITH CAUTION - WILL OVERWRITE EXISTING FITS FILES)
-  -e, --idle
+  -e, --errorexit
+	Exit on command error
+  -Z, --idle
 	Only run process when X is idle (WARNING: PREVENTS INTERACTIVE USER INPUT)
 	Requires script runidle
-  --listimfile
+  --listimf
 	Keeps a list of images in file imlist.txt
   -m, --mmon=TTYDEVICE
 	open memory monitor on tty device
@@ -30,14 +34,23 @@ COMMAND LINE OPTIONS
 	note: by default, fifo name is <processname>.fifo
   -p, --priority=<PR>
 	set process priority to PR (0-99)
-  -f, --fifo==FIFONAME
-	specify fifo name
-	example
-	<executable> -f /tmp/fifo24
-	<executable> --fifo=/tmp/fifo24
+  -f, --fifoflag
+	Enable fifo input; auto-generate fifo path
+  -F, --fifoname=PATH
+	Enable fifo input; use custom fifo path
   -s, --startup=STARTUPFILE
 	execute specified script on startup
-	requires the -f option, as the script is loaded into fifo
+	requires the -f or -F option, as the script is loaded into fifo
+  -A, --autocomplete
+	Enable autocomplete preview
+  --no-autocomplete
+	Disable autocomplete
+  --no-history-suggest
+	Disable ghost history suggestions
+  --no-arg-hints
+	Disable argument hint bar
+  --no-fuzzy
+	Disable fuzzy matching in completions
 
 -----------------------------------------------------------------------------------
 ENVIRONMENT VARIABLES
