@@ -118,7 +118,7 @@ errno_t load_module_shared(
         {
             int slen = snprintf(libname,
                                 STRINGMAXLEN_MODULE_SOFILENAME,
-                                "%s/lib/lib%s.so",
+                                "%.100s/lib/lib%.50s.so",
                                 dcinstalldir,
                                 modulenameLC);
             if(slen < 1)
@@ -420,7 +420,7 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
             // otherwise, construct call key as <shortname>.<CLIkey>
             snprintf(data.cmd[data.NBcmd].key,
                      STRINGMAXLEN_CMD_KEY,
-                     "%s.%s",
+                     "%.30s.%.30s",
                      data.module[data.moduleindex].shortname,
                      CLIkey);
         }
@@ -509,7 +509,7 @@ uint32_t RegisterCLIcmd(
             // otherwise, construct call key as <shortname>.<CLIkey>
             int slen = snprintf(data.cmd[data.NBcmd].key,
                                 STRINGMAXLEN_CMD_KEY,
-                                "%s.%s",
+                                "%.30s.%.30s",
                                 data.module[data.moduleindex].shortname,
                                 CLIcmddata.key);
             if(slen < 1)

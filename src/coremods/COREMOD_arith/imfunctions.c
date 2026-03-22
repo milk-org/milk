@@ -16,8 +16,16 @@
 #endif
 
 #include "libmilkdata/milk_compiler.h"
-
 #include "COREMOD_memory/COREMOD_memory.h"
+
+// Suppress -Wunknown-pragmas for _Pragma("omp ...") expansions
+// when OpenMP is globally disabled in the build.
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
+
+#include "image_arith__im_f__im.h"
 #include "mathfuncs.h"
 
 #ifdef _OPENMP
