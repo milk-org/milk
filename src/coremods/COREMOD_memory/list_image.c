@@ -48,6 +48,8 @@ void close_list_image_ID_ncurses();
 errno_t list_image_ID_ncurses();
 errno_t list_image_ID_ofp(FILE *fo);
 errno_t list_image_ID_ofp_simple(FILE *fo);
+errno_t list_image_ID_ofp_json(FILE *fo);
+errno_t list_image_ID_ofp_porcelain(FILE *fo);
 errno_t list_image_ID();
 errno_t list_image_ID_file(
     const char *fname);
@@ -160,7 +162,39 @@ void init_cms_listim(void)
 
 static errno_t compute_listim()
 {
-    list_image_ID();
+    int json_mode = 0;
+    int porcelain_mode = 0;
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+    long arg;
+    for(arg = 1; arg < data.cmdNBarg; arg++)
+    {
+        if(data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+        {
+            if(strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
+            {
+                json_mode = 1;
+            }
+            if(strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
+            {
+                porcelain_mode = 1;
+            }
+        }
+    }
+#endif
+
+    if(json_mode)
+    {
+        list_image_ID_ofp_json(stdout);
+    }
+    else if(porcelain_mode)
+    {
+        list_image_ID_ofp_porcelain(stdout);
+    }
+    else
+    {
+        list_image_ID();
+    }
     return RETURN_SUCCESS;
 }
 
@@ -618,6 +652,90 @@ errno_t list_image_ID()
 {
     list_image_ID_ofp(stdout);
     //malloc_stats();
+    return RETURN_SUCCESS;
+}
+
+errno_t list_image_ID_ofp_json(FILE *fo)
+{
+    long i, j;
+    long long   tmp_long;
+    uint8_t datatype;
+    unsigned long long sizeb = compute_image_memory();
+    struct timespec timenow;
+    clock_gettime(CLOCK_MILK, &timenow);
+
+    fprintf(fo, "{\n  \"images\": [\n");
+    int first = 1;
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
+        {
+            if (!first) {
+                fprintf(fo, ",\n");
+            }
+            first = 0;
+            datatype = dcimg[i].md[0].datatype;
+            tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+
+            fprintf(fo, "    {\n");
+            fprintf(fo, "      \"index\": %ld,\n", i);
+            fprintf(fo, "      \"name\": \"%s\",\n", dcimg[i].name);
+            fprintf(fo, "      \"naxis\": %ld,\n", (long) dcimg[i].md[0].naxis);
+            fprintf(fo, "      \"size\": [");
+            for(j = 0; j < dcimg[i].md[0].naxis; j++)
+            {
+                fprintf(fo, "%ld%s", (long) dcimg[i].md[0].size[j], (j < dcimg[i].md[0].naxis - 1) ? ", " : "");
+            }
+            fprintf(fo, "],\n");
+            fprintf(fo, "      \"type\": \"%s\",\n", ImageStreamIO_typename_7(datatype));
+            fprintf(fo, "      \"shared\": %ld,\n", (long) dcimg[i].md[0].shared);
+            fprintf(fo, "      \"size_kb\": %ld,\n", (long)(tmp_long / 1024));
+
+            double timediff = (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
+                              (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
+                               0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
+            fprintf(fo, "      \"last_access_dt\": %.9f\n", timediff);
+            fprintf(fo, "    }");
+        }
+    fprintf(fo, "\n  ],\n");
+    fprintf(fo, "  \"summary\": {\n");
+    fprintf(fo, "    \"total_images\": %ld,\n", compute_nb_image());
+    fprintf(fo, "    \"total_size_b\": %llu\n", (unsigned long long)sizeb);
+    fprintf(fo, "  }\n}\n");
+
+    return RETURN_SUCCESS;
+}
+
+errno_t list_image_ID_ofp_porcelain(FILE *fo)
+{
+    long i, j;
+    long long   tmp_long;
+    uint8_t datatype;
+    struct timespec timenow;
+    clock_gettime(CLOCK_MILK, &timenow);
+
+    fprintf(fo, "INDEX\tNAME\tNAXIS\tSIZE\tTYPE\tSHARED\tSIZE_KB\tLAST_ACCESS_DT\n");
+
+    for(i = 0; i < dcnimg; i++)
+        if(dcimg[i].used == 1)
+        {
+            datatype = dcimg[i].md[0].datatype;
+            tmp_long = ((long long) (dcimg[i].md[0].nelement)) * ImageStreamIO_typesize(datatype);
+
+            fprintf(fo, "%ld\t%s\t%ld\t", i, dcimg[i].name, (long) dcimg[i].md[0].naxis);
+            for(j = 0; j < dcimg[i].md[0].naxis; j++)
+            {
+                fprintf(fo, "%ld%s", (long) dcimg[i].md[0].size[j], (j < dcimg[i].md[0].naxis - 1) ? "x" : "");
+            }
+            double timediff = (1.0 * timenow.tv_sec + 0.000000001 * timenow.tv_nsec) -
+                              (1.0 * dcimg[i].md[0].lastaccesstime.tv_sec +
+                               0.000000001 * dcimg[i].md[0].lastaccesstime.tv_nsec);
+            fprintf(fo, "\t%s\t%ld\t%ld\t%.9f\n",
+                    ImageStreamIO_typename_7(datatype),
+                    (long) dcimg[i].md[0].shared,
+                    (long)(tmp_long / 1024),
+                    timediff);
+        }
+
     return RETURN_SUCCESS;
 }
 
