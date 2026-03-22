@@ -110,6 +110,21 @@ const char *cli_var_get(const char *name)
 }
 
 /**
+ * @brief Export CLI variables to environment for wordexp
+ */
+void cli_export_vars_for_wordexp(void)
+{
+    /* Export scalar variables */
+    for(int i = 0; i < CLI_MAX_VARS; i++)
+    {
+        if(cli_vars[i].used)
+        {
+            setenv(cli_vars[i].name, cli_vars[i].val, 1);
+        }
+    }
+}
+
+/**
  * @brief Unified variable lookup: CLI vars,
  *        then special vars ($?), then env vars
  *
