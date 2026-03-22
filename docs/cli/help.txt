@@ -72,6 +72,10 @@ HELP COMMANDS
 > ?
 > help
 	# print this help file
+> help --json
+	# print help index in JSON format
+> help --porcelain
+	# print help index in TSV format
 > helprl
 	# print readline quick help
 > m? <module>
@@ -92,6 +96,10 @@ IMPORTANT COMMANDS
 	# compilation time and memory usage
 > mem.listim
 	# list all images in memory
+> mem.listim --json
+	# list all images in JSON format
+> mem.listim --porcelain
+	# list all images in TSV format
 > listimf <filename>
 	# list all images in memory and write output to file <filename>
 > !<syscommand>
