@@ -13,7 +13,7 @@ See also: [Programmer's Guide](../programmers_guide.md) ·
 
 General instructional documentation, architectural overviews, and tutorials should be placed in the `docs/` folder in standard GitHub Flavored Markdown (`.md`).
 
-- Use `> [!NOTE]`, `> [!WARNING]`, and `> [!TIP]` to call out important information.
+- Use MkDocs admonitions (`!!! note`, `!!! warning`, `!!! tip`) to call out important information. Indent the body by four spaces.
 - Use Markdown tables for data and parameter lists.
 - When referencing other files, use standard relative markdown links (e.g., `[Coding Standards](coding_standards.md)`).
 
@@ -94,8 +94,8 @@ doxygen Doxyfile
 xdg-open docs/doxygen/html/index.html
 ```
 
-> [!TIP]
-> The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the live URL.
+!!! tip
+    The CI workflow automatically deploys to GitHub Pages. Check the repository's Pages settings for the live URL.
 
 
 ---

@@ -10,9 +10,9 @@ The milk CLI uses the
 library for line editing. This page lists the most
 useful keybindings.
 
-> [!TIP]
-> For the complete reference, see the official
-> [Readline User Manual](https://tiswww.case.edu/php/chet/readline/readline.html).
+!!! tip
+    For the complete reference, see the official
+    [Readline User Manual](https://tiswww.case.edu/php/chet/readline/readline.html).
 
 See also: [CLI Overview](CLI_Overview.md) ·
 [CLI Syntax](CLIcore.md) · [Scripting](scripting.md)
