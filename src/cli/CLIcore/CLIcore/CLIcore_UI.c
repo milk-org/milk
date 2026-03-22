@@ -38,6 +38,8 @@
 // COLORRESET removed to prevent redefinition with fps.h
 #define COLORRED       "\001\033[31m\002" /* Red */
 #define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
+#define COLORDIMYELLOW "\033[2;33m" /* Dim Yellow (no RL wrap) */
+#define COLORRST       "\033[0m"    /* Reset (no RL wrap) */
 #define RL_COLORRESET  "\001\033[0m\002"
 
 extern void yy_scan_string(const char *);
@@ -1987,6 +1989,9 @@ pipe_fallthrough:
             }
             if(*rhs != '\0')
             {
+                printf(COLORDIMYELLOW
+                       "[shell pipe] %s"
+                       COLORRST "\n", rhs);
                 pipe_fp = popen(rhs, "w");
                 if(pipe_fp != NULL)
                 {
@@ -2061,6 +2066,9 @@ pipe_fallthrough:
     if(data.CLIcmdline[0] == '!')
     {
         data.CLIcmdline[0] = ' ';
+        printf(COLORDIMYELLOW
+               "[shell] %s" COLORRST "\n",
+               data.CLIcmdline);
         if(system(data.CLIcmdline) != 0)
         {
             PRINT_ERROR("system call error");
@@ -3167,12 +3175,14 @@ pipe_fallthrough:
         /* system() returns 127 << 8 if command not found by sh */
         if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) == 127)
         {
-            /// printf("SYSTEM FALLBACK %s -> 127\n", data.CLIcmdline);
             os_not_found = 1;
         }
         else
         {
-            /* OS processed it (success, or other error), update ret val */
+            /* OS processed it — print shell tag */
+            printf(COLORDIMYELLOW
+                   "[shell] %s" COLORRST "\n",
+                   data.CLIcmdline);
             if(sys_ret != -1)
             {
                 cli_last_retval = (sys_ret >> 8) & 0xff;
