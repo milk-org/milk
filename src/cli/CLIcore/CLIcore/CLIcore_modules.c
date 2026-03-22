@@ -327,7 +327,7 @@ errno_t RegisterModule(const char *__restrict FileName,
     if(dcprogstatus == 0)
     {
         OKmsg = 1;
-        if(!getenv("MILK_QUIET"))
+        if(!getenv("MILK_QUIET") && dcquiet == 0)
         {
             printf(".");
         }
