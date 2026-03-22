@@ -146,8 +146,8 @@ mem.rm _clitest_im1
 # SECTION 4: Missing / Wrong Arguments
 # ============================================
 
-#DESC: mem.mk2Dim with no arguments
-#EXPECT:ERR
+#DESC: mem.mk2Dim with no arguments (FPS default)
+#EXPECT:OK
 mem.mk2Dim
 
 #DESC: mem.mk2Dim with only 1 argument
@@ -158,8 +158,8 @@ mem.mk2Dim _clitest_partial
 #EXPECT:ERR
 mem.mk2Dim _clitest_partial 32
 
-#DESC: mem.rm with no arguments
-#EXPECT:ERR
+#DESC: mem.rm with no arguments (FPS default)
+#EXPECT:OK
 mem.rm
 
 #DESC: source with no arguments

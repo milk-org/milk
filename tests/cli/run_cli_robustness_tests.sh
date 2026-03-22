@@ -201,7 +201,7 @@ run_one_test() {
         combined="$(cat "$out_file" "$err_file")"
         if echo "$combined" | \
             grep -qiE \
-            '(error|usage|missing|cannot|not found|wrong|invalid|did you mean|unknown|no such)'; then
+            '(error|usage|missing|cannot|not found|does not exist|wrong|invalid|did you mean|unknown|no such)'; then
             PASS=$((PASS + 1))
         else
             if [[ $exit_code -eq 0 ]]; then

@@ -2944,16 +2944,21 @@ pipe_fallthrough:
 
                     /* When a CLI command has already been
                      * identified and the current argument
-                     * starts with '-', treat it as a raw
-                     * string rather than running it through
-                     * the arithmetic expression parser.
-                     * This prevents flags like -n, -g, --since
-                     * from triggering a parse error that would
-                     * block the command from being called. */
+                     * starts with '-' or '/', treat it as
+                     * a raw string rather than running it
+                     * through the arithmetic expression
+                     * parser.
+                     * '-' prevents flags like -n, -g,
+                     * --since from triggering a parse
+                     * error.
+                     * '/' prevents absolute paths from
+                     * being misinterpreted as division
+                     * (e.g. cd /tmp). */
                     if(data.cmdNBarg > 0
                        && data.cmdargtoken[0].type
                           == CMDARGTOKEN_TYPE_COMMAND
-                       && cmdargstring[0] == '-')
+                       && (cmdargstring[0] == '-'
+                           || cmdargstring[0] == '/'))
                     {
                         strncpy(
                             data.cmdargtoken[data.cmdNBarg]
