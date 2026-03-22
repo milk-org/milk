@@ -98,7 +98,7 @@ static uint64_t statuskkout    = 0;
  * 4.  COMPUTATION LOGIC
  * ============================================================= */
 
-static MILK_COLD errno_t customCONFcheck()
+static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     if(dcfpsptr != NULL)
     {
@@ -253,7 +253,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 

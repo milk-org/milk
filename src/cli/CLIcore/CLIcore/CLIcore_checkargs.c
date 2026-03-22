@@ -1235,7 +1235,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
 {
     DEBUG_TRACE_FSTART();
 
-    int  INIT_MODE = 0;
+    int  INIT_MODE __attribute__((unused)) = 0;
     dcfpscode = 0;
     char FPS_name[STRINGMAXLEN_FPS_NAME];
     int FPS_name_set = 0;
@@ -1299,7 +1299,7 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
     }
 
 
-    int printinfo = 0;
+    int printinfo __attribute__((unused)) = 0;
     // if using FPS implementation, FPSCMDCODE will be set to != 0
     DEBUG_TRACEPOINT("pre-processing CLI arg");
 

@@ -197,8 +197,8 @@ int get_singlechar_block();
         curs_set(0);                                                           \
     }                                                                          \
                                                                            \
-    int       TUIpause = 0;                                                    \
-    TUISCREEN TUIscreenarray[10];
+    int       TUIpause __attribute__((unused)) = 0;                                                    \
+    TUISCREEN __attribute__((unused)) TUIscreenarray[10];
 
 #define INSTERT_TUI_KEYCONTROLS                                                \
     int TUIinputkch  = -1;                                                     \

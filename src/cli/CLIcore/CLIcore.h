@@ -383,7 +383,7 @@ typedef struct
     // SESSION IDENTITY
     // =================================================
 
-    char            session_id[64];
+    char            session_id[128];
     char            session_tty[64];
     struct timespec session_start;
 

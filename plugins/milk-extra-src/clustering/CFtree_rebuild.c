@@ -102,7 +102,7 @@ errno_t CFtree_rebuild(
     }
 
     long nodeCFi_cnt     = 0;
-    long nodeleafCFi_cnt = 0;
+    long nodeleafCFi_cnt __attribute__((unused)) = 0;
     long leafCFi_cnt     = 0;
     for(long cfi = 0; cfi < ctree->NBCF; cfi++)
     {

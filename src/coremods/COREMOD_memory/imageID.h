@@ -96,8 +96,8 @@ static inline imageID RegisterIMGID(
 static inline imageID resolveIMGID(
     IMGID *img,
     int ERRMODE,
-    IMAGE *imagearray,
-    long NB_images
+    IMAGE *imagearray __attribute__((unused)),
+    long NB_images __attribute__((unused))
 )
 {
     // IF:

@@ -59,17 +59,17 @@ static inline errno_t CLI_startup(void)
 /* These are normally extern in CLIcore.h,
  * but standalone builds don't link CLIcore,
  * so we provide local storage. */
-static pid_t CLIPID;
-static char  DocDir[200];
-static char  SrcDir[200];
-static char  BuildFile[200];
-static char  BuildDate[200];
-static char  BuildTime[200];
-static int   C_ERRNO;
-static uid_t euid_real;
-static uid_t euid_called;
-static uid_t suid;
-static uint8_t TYPESIZE[32];
+static pid_t CLIPID __attribute__((unused));
+static char  DocDir[200] __attribute__((unused));
+static char  SrcDir[200] __attribute__((unused));
+static char  BuildFile[200] __attribute__((unused));
+static char  BuildDate[200] __attribute__((unused));
+static char  BuildTime[200] __attribute__((unused));
+static int   C_ERRNO __attribute__((unused));
+static uid_t euid_real __attribute__((unused));
+static uid_t euid_called __attribute__((unused));
+static uid_t suid __attribute__((unused));
+static uint8_t TYPESIZE[32] __attribute__((unused));
 
 
 /* =====================================
@@ -637,7 +637,7 @@ typedef struct
  * reference CLI functions. */
 
 #define INSERT_STD_CLIfunction            \
-    static errno_t CLIfunction(void)     \
+    static errno_t __attribute__((unused)) CLIfunction(void)     \
     {                                    \
         (void) farg;                     \
         (void) CLIcmddata;               \

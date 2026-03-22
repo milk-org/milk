@@ -120,7 +120,7 @@ void init_cms_tsem(void)
     }
 }
 
-static errno_t compute_tsem()
+static errno_t __attribute__((unused)) compute_tsem()
 {
     COREMOD_MEMORY_testfunction_semaphore(
         p_imname, p_semtrig_tcp,
@@ -166,7 +166,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -195,7 +195,7 @@ void init_cms_tx(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -257,7 +257,7 @@ void init_cms_rx(void)
     }
 }
 
-static errno_t compute_rx()
+static errno_t __attribute__((unused)) compute_rx()
 {
     COREMOD_MEMORY_image_NETWORKreceive(
         p_port, p_mode, p_rtprio);
@@ -844,8 +844,8 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     char           *ptr0; // source
     long            NBslices;
     int             socketOpen = 1; // 0 if socket is closed
-    int             semval;
-    int             semnb;
+    int             semval __attribute__((unused));
+    int             semnb __attribute__((unused));
     int             OKim;
     int             axis;
 

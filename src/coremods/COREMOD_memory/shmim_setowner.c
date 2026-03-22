@@ -119,7 +119,7 @@ void init_cms_creator(void)
     }
 }
 
-static errno_t compute_creator()
+static errno_t __attribute__((unused)) compute_creator()
 {
     shmim_setowner_creator(p_sname);
     return RETURN_SUCCESS;
@@ -140,7 +140,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS_1STREAM(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
@@ -170,7 +170,7 @@ void init_cms_current(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -218,7 +218,7 @@ void init_cms_init(void)
     }
 }
 
-static errno_t compute_init()
+static errno_t __attribute__((unused)) compute_init()
 {
     shmim_setowner_init(p_sname);
     return RETURN_SUCCESS;

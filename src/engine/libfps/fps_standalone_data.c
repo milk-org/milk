@@ -52,39 +52,39 @@ pid_t CLIPID;
 
 #ifndef FPS_STANDALONE_SKIP_STUBS
 errno_t RegisterModule(
-    const char *restrict FileName,
-    const char *restrict PackageName,
-    const char *restrict InfoString,
-    int versionmajor,
-    int versionminor,
-    int versionpatch
+    const char *restrict FileName __attribute__((unused)),
+    const char *restrict PackageName __attribute__((unused)),
+    const char *restrict InfoString __attribute__((unused)),
+    int versionmajor __attribute__((unused)),
+    int versionminor __attribute__((unused)),
+    int versionpatch __attribute__((unused))
 ) {
     return RETURN_SUCCESS;
 }
 
 uint32_t RegisterCLIcommand(
-    const char *restrict CLIkey,
-    const char *restrict CLImodulesrc,
-    errno_t (*CLIfptr)(),
-    const char *restrict CLIinfo,
-    const char *restrict CLIsyntax,
-    const char *restrict CLIexample,
-    const char *restrict CLICcall
+    const char *restrict CLIkey __attribute__((unused)),
+    const char *restrict CLImodulesrc __attribute__((unused)),
+    errno_t (*CLIfptr)() __attribute__((unused)),
+    const char *restrict CLIinfo __attribute__((unused)),
+    const char *restrict CLIsyntax __attribute__((unused)),
+    const char *restrict CLIexample __attribute__((unused)),
+    const char *restrict CLICcall __attribute__((unused))
 ) {
     return 0;
 }
 
 uint32_t RegisterCLIcmd(
-    CLICMDDATA CLIcmddata,
-    errno_t (*CLIfptr)()
+    CLICMDDATA CLIcmddata __attribute__((unused)),
+    errno_t (*CLIfptr)() __attribute__((unused))
 ) {
     return 0;
 }
 
 imageID image_ID(
     const char *name,
-    IMAGE      *imagearray,
-    long        NB_images
+    IMAGE      *imagearray __attribute__((unused)),
+    long        NB_images __attribute__((unused))
 )
 {
     for (long i = 0; i < NB_images; i++)

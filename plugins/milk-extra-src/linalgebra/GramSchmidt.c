@@ -59,7 +59,7 @@ errno_t GramSchmidt(
     IMGID imginm,
     IMGID *imgoutm,
     IMGID imgaux,
-    int GPUdev
+    int GPUdev __attribute__((unused))
 )
 {
     DEBUG_TRACE_FSTART();
@@ -123,9 +123,6 @@ errno_t GramSchmidt(
             // square sum v0
             double sqrsum0 = 0.0;
 
-            // square sum v1
-            double sqrsum1 = 0.0;
-
             for( uint32_t ii=0; ii<xysize; ii++)
             {
                 float v0 = imgoutm->im->array.F[ kk0*xysize + ii];
@@ -133,7 +130,6 @@ errno_t GramSchmidt(
 
                 xpval += v0*v1;
                 sqrsum0 += v0*v0;
-                sqrsum1 += v1*v1;
             }
 
             float vcoeff = xpval / sqrsum0;
