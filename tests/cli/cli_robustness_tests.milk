@@ -758,3 +758,17 @@ _calc_err = abs(1, 2)
 #DESC: Final echo
 #EXPECT:OK
 echo CLI_ROBUSTNESS_TESTS_COMPLETE
+
+# ============================================
+# SECTION 20: Environment Variable Sync
+# ============================================
+
+#DESC: Inward env sync: standard OS variable expands natively
+#EXPECT:OK
+echo $PATH
+
+#DESC: Outward env sync: local var exported to spawned shell
+#EXPECT:OK
+BDIR_SYNC_VAR="hello_frommilk"
+!test "$BDIR_SYNC_VAR" = "hello_frommilk"
+
