@@ -54,6 +54,8 @@
 #endif
 
 
+int help_format_mode = 0;
+
 errno_t printInfo()
 {
     float f1;
@@ -1871,8 +1873,55 @@ void print_help_topic_list(void)
     printf("\n");
 }
 
+void print_milk_cli_help_json(void)
+{
+    printf("{\n");
+    printf("  \"topics\": [\n");
+    printf("    {\"name\": \"cmdopts\", \"description\": \"Command-line flags (-h, -s, -n...)\"},\n");
+    printf("    {\"name\": \"syntax\", \"description\": \"Syntax, tab completion, piping\"},\n");
+    printf("    {\"name\": \"commands\", \"description\": \"Built-in CLI commands (?, cmd?...)\"},\n");
+    printf("    {\"name\": \"variables\", \"description\": \"Variables, arrays, arithmetic\"},\n");
+    printf("    {\"name\": \"flowcontrol\", \"description\": \"if/while/for/case/function\"},\n");
+    printf("    {\"name\": \"scripting\", \"description\": \"Script files, I/O, builtins\"},\n");
+    printf("    {\"name\": \"milk\", \"description\": \"Streams, FPS, milk-specific\"}\n");
+    printf("  ],\n");
+    printf("  \"quick_reference\": [\n");
+    printf("    {\"command\": \"cmd?\", \"args\": \"[name]\", \"description\": \"Help for a specific command\"},\n");
+    printf("    {\"command\": \"m?\", \"args\": \"[module]\", \"description\": \"List commands in a module\"},\n");
+    printf("    {\"command\": \"h?\", \"args\": \"[string]\", \"description\": \"Search command descriptions\"},\n");
+    printf("    {\"command\": \"fhelp\", \"args\": \"\", \"description\": \"Interactive fuzzy command search\"},\n");
+    printf("    {\"command\": \"quit / exit\", \"args\": \"\", \"description\": \"Exit the milk shell\"}\n");
+    printf("  ]\n");
+    printf("}\n");
+}
+
+void print_milk_cli_help_porcelain(void)
+{
+    printf("TYPE\tNAME\tARGS\tDESCRIPTION\n");
+    printf("TOPIC\tcmdopts\t\tCommand-line flags (-h, -s, -n...)\n");
+    printf("TOPIC\tsyntax\t\tSyntax, tab completion, piping\n");
+    printf("TOPIC\tcommands\t\tBuilt-in CLI commands (?, cmd?...)\n");
+    printf("TOPIC\tvariables\t\tVariables, arrays, arithmetic\n");
+    printf("TOPIC\tflowcontrol\t\tif/while/for/case/function\n");
+    printf("TOPIC\tscripting\t\tScript files, I/O, builtins\n");
+    printf("TOPIC\tmilk\t\tStreams, FPS, milk-specific\n");
+    printf("QUICKREF\tcmd?\t[name]\tHelp for a specific command\n");
+    printf("QUICKREF\tm?\t[module]\tList commands in a module\n");
+    printf("QUICKREF\th?\t[string]\tSearch command descriptions\n");
+    printf("QUICKREF\tfhelp\t\tInteractive fuzzy command search\n");
+    printf("QUICKREF\tquit / exit\t\tExit the milk shell\n");
+}
+
 void print_milk_cli_help(void)
 {
+    if (help_format_mode == 1) {
+        print_milk_cli_help_json();
+        return;
+    } else if (help_format_mode == 2) {
+        print_milk_cli_help_porcelain();
+        return;
+    }
+
     printf("\n");
     printf(C_TITLE
            "========================================\n" C_RST);
@@ -1902,15 +1951,39 @@ void print_milk_cli_help(void)
 
 errno_t help()
 {
-    if ((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
-            (data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_RAWSTRING))
+    int json_mode = 0;
+    int porcelain_mode = 0;
+    const char *topic = NULL;
+
+    for (int arg = 1; arg < data.cmdNBarg; arg++)
     {
-        const char *topic = data.cmdargtoken[1].val.string;
+        if (data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_STRING || data.cmdargtoken[arg].type == CMDARGTOKEN_TYPE_RAWSTRING)
+        {
+            if (strcmp(data.cmdargtoken[arg].val.string, "--json") == 0)
+            {
+                json_mode = 1;
+            }
+            else if (strcmp(data.cmdargtoken[arg].val.string, "--porcelain") == 0)
+            {
+                porcelain_mode = 1;
+            }
+            else
+            {
+                topic = data.cmdargtoken[arg].val.string;
+            }
+        }
+    }
+
+    help_format_mode = json_mode ? 1 : (porcelain_mode ? 2 : 0);
+
+    if (topic != NULL)
+    {
         if (help_topic_dispatch(topic) != 0)
         {
-            printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n",
-                   topic);
-            print_help_topic_list();
+            if (help_format_mode == 0) {
+                printf(C_ERR "Unknown help topic: \"%s\"" C_RST "\n\n", topic);
+                print_help_topic_list();
+            }
         }
     }
     else

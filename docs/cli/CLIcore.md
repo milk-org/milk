@@ -205,6 +205,8 @@ and modules.
 ```text
 milk-cli > ?                       # print help
 milk-cli > help                    # same as ?
+milk-cli > help --json             # print help index in JSON format
+milk-cli > help --porcelain        # print help index in TSV format
 milk-cli > helprl                  # readline quick reference
 milk-cli > lm?                     # list all loaded modules
 milk-cli > m? <module>             # list commands for a module
@@ -223,6 +225,8 @@ dim for source file paths.
 ```text
 milk-cli > ci                      # compilation info & memory usage
 milk-cli > mem.listim              # list all images in memory
+milk-cli > mem.listim --json       # list all images in JSON format
+milk-cli > mem.listim --porcelain  # list all images in TSV format
 milk-cli > listimf <file>          # list images, write to file
 milk-cli > !<syscmd>               # execute system command
 milk-cli > quit                    # exit (or: exit, exitCLI)
