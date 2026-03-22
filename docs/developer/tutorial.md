@@ -27,7 +27,7 @@ Open `CMakeLists.txt` in your new directory. You need to identify your module an
 
 Change the `LIBNAME` to your module's name:
 
-```cmake
+```cmake title="CMakeLists.txt"
 # Change this:
 # set(LIBNAME milk_module_example)
 set(LIBNAME my_first_module)
@@ -35,7 +35,7 @@ set(LIBNAME my_first_module)
 
 Define your source files and the standalone executables you want to build:
 
-```cmake
+```cmake title="CMakeLists.txt"
 set(SOURCEFILES
     examplefunc.c
     examplefunc2_FPS.c
@@ -57,7 +57,7 @@ Let's look at a basic FPS setup in `my_first_module_fps.c`. You need an info str
 
 Every `fpsexec` program needs an ID string, a command key, and a short description:
 
-```c
+```c title="my_first_module_fps.c"
 #include "fps.h"
 
 FPS_APP_INFO FPS_app_info = {
@@ -71,7 +71,7 @@ FPS_APP_INFO FPS_app_info = {
 
 Use the `FPS_PARAMS` X-Macro to define the configuration parameters you want to expose:
 
-```c
+```c title="my_first_module_fps.c"
 // Local Variables
 static int32_t param_iterations = 100;
 static float   param_gain = 0.5f;
@@ -90,7 +90,7 @@ static float   param_gain = 0.5f;
 
 This is the core compute function. It is called after parameters are synced from FPS shared memory.
 
-```c
+```c title="my_first_module_fps.c"
 static errno_t fpsexec(void) {
     printf("Running with gain %f, %d iterations\n",
            param_gain, param_iterations);
@@ -107,7 +107,7 @@ static errno_t fpsexec(void) {
 
 The V2 macro generates the standalone `main()` function that handles the FPS lifecycle (create, exec, confstart, runstart, etc.):
 
-```c
+```c title="my_first_module_fps.c"
 // Processinfo-wrapped entry point
 static errno_t compute_function() {
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
