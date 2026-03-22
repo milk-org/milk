@@ -462,12 +462,15 @@ int cli_tokenize(
         }
 
         /* unrecognized character */
-        printf(
-            "DEBUG: TOKENIZER: unrecognised char"
-            " [hex %02X] length 1\n",
-            (unsigned char) *p
-        );
-        p++;
+        if (data.core.Debug > 0)
+        {
+            printf(
+                "DEBUG: TOKENIZER: unrecognised char"
+                " [hex %02X] length 1\n",
+                (unsigned char) *p
+            );
+        }
+        return -1;
     }
 
     /* sentinel */

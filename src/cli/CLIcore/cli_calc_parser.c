@@ -1228,6 +1228,10 @@ static val_t parse_primary(void)
             }
             if (v.type == VAL_STRING)
             {
+                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1) {
+                    parse_errmsg("Source image does not exist");
+                    return mk_double(0);
+                }
                 chname_image_ID(
                     v.sval, t->sval
                 );
@@ -1293,6 +1297,10 @@ static val_t parse_primary(void)
             }
             if (v.type == VAL_STRING)
             {
+                if (image_ID(v.sval, data.core.image, data.core.NB_MAX_IMAGE) == -1) {
+                    parse_errmsg("Source image does not exist");
+                    return mk_double(0);
+                }
                 delete_image_ID(
                     t->sval,
                     1
