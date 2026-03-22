@@ -772,3 +772,12 @@ echo $PATH
 BDIR_SYNC_VAR="hello_frommilk"
 !test "$BDIR_SYNC_VAR" = "hello_frommilk"
 
+# ============================================
+# SECTION 21: Command Substitution in Variables
+# ============================================
+
+#DESC: Assign a subshell output to a variable
+#EXPECT:OK
+test_subshell_var=$(echo "success_from_subshell")
+!test "$test_subshell_var" = "success_from_subshell"
+
