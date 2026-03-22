@@ -1,0 +1,630 @@
+#!/usr/bin/env milk-cli -s
+#
+# CLI Robustness Test Suite
+# =========================
+#
+# Comprehensive test cases for milk-cli command
+# parsing, scripting, and error handling.
+#
+# Each test line is annotated with:
+#   #EXPECT:OK   — command should succeed
+#   #EXPECT:ERR  — command should fail with a
+#                  clear error message
+#   #DESC: ...   — short description
+#
+# This file is sourced by the test runner
+# (run_cli_robustness_tests.sh) which feeds
+# commands one-by-one and checks outcomes.
+#
+# When CLI syntax changes, update this file
+# to match. Keep tests grouped by section.
+#
+# ============================================
+# SECTION 1: Basic Parsing
+# ============================================
+
+#DESC: Empty line (should be ignored)
+#EXPECT:OK
+
+#DESC: Comment-only line
+#EXPECT:OK
+# This is a comment
+
+#DESC: Multiple spaces before command
+#EXPECT:OK
+   echo hello
+
+#DESC: Echo with no arguments
+#EXPECT:OK
+echo
+
+#DESC: Echo with arguments
+#EXPECT:OK
+echo hello world
+
+#DESC: Echo with -n flag (no newline)
+#EXPECT:OK
+echo -n test
+
+#DESC: Echo with quoted string
+#EXPECT:OK
+echo "hello world"
+
+#DESC: Echo with single-quoted string
+#EXPECT:OK
+echo 'hello world'
+
+#DESC: Inline comment after command
+#EXPECT:OK
+echo test_value # this is a comment
+
+# ============================================
+# SECTION 2: Help and Discovery
+# ============================================
+
+#DESC: Question mark help
+#EXPECT:OK
+?
+
+#DESC: help command
+#EXPECT:OK
+help
+
+#DESC: List loaded modules
+#EXPECT:OK
+lm?
+
+#DESC: List all commands
+#EXPECT:OK
+m?
+
+#DESC: Compilation info
+#EXPECT:OK
+ci
+
+#DESC: Command help with cmd?
+#EXPECT:OK
+cmd? echo
+
+#DESC: Command help for mem.listim
+#EXPECT:OK
+cmd? mem.listim
+
+#DESC: Command help for unknown command
+#EXPECT:ERR
+cmd? nonexistent_command_xyz
+
+# ============================================
+# SECTION 3: Built-in Commands
+# ============================================
+
+#DESC: List images in memory
+#EXPECT:OK
+mem.listim
+
+#DESC: Print working directory
+#EXPECT:OK
+pwd
+
+#DESC: Change directory to /tmp
+#EXPECT:OK
+cd /tmp
+
+#DESC: Change directory back to home
+#EXPECT:OK
+cd
+
+#DESC: Change to non-existent directory
+#EXPECT:ERR
+cd /nonexistent_directory_xyz_123
+
+#DESC: Usleep command
+#EXPECT:OK
+usleep 1000
+
+#DESC: Set default precision to float
+#EXPECT:OK
+dpsingle
+
+#DESC: Set default precision to double
+#EXPECT:OK
+dpdouble
+
+#DESC: Create 2D image
+#EXPECT:OK
+mem.mk2Dim _clitest_im1 32 32
+
+#DESC: List images - should show _clitest_im1
+#EXPECT:OK
+mem.listim
+
+#DESC: Delete test image
+#EXPECT:OK
+mem.rm _clitest_im1
+
+# ============================================
+# SECTION 4: Missing / Wrong Arguments
+# ============================================
+
+#DESC: mem.mk2Dim with no arguments (FPS default)
+#EXPECT:OK
+mem.mk2Dim
+
+#DESC: mem.mk2Dim with only 1 argument
+#EXPECT:ERR
+mem.mk2Dim _clitest_partial
+
+#DESC: mem.mk2Dim with only 2 arguments
+#EXPECT:ERR
+mem.mk2Dim _clitest_partial 32
+
+#DESC: mem.rm with no arguments (FPS default)
+#EXPECT:OK
+mem.rm
+
+#DESC: source with no arguments
+#EXPECT:ERR
+source
+
+#DESC: source with nonexistent file
+#EXPECT:ERR
+source /tmp/nonexistent_file_xyz_456.milk
+
+#DESC: savescript with no arguments
+#EXPECT:ERR
+savescript
+
+#DESC: time with no arguments
+#EXPECT:ERR
+time
+
+#DESC: watch with no arguments
+#EXPECT:ERR
+watch
+
+#DESC: watch with only interval
+#EXPECT:ERR
+watch 1000
+
+# ============================================
+# SECTION 5: Variables
+# ============================================
+
+#DESC: Set a simple variable
+#EXPECT:OK
+_testvar1=hello
+
+#DESC: Echo a variable
+#EXPECT:OK
+echo $_testvar1
+
+#DESC: Set numeric variable
+#EXPECT:OK
+_testvar2=42
+
+#DESC: Echo numeric variable
+#EXPECT:OK
+echo $_testvar2
+
+#DESC: Variable with braces
+#EXPECT:OK
+echo ${_testvar1}
+
+#DESC: Unset a variable
+#EXPECT:OK
+unset _testvar1
+
+#DESC: Echo unset variable (should be empty)
+#EXPECT:OK
+echo $_testvar1
+
+#DESC: Last return value ($?)
+#EXPECT:OK
+echo $?
+
+#DESC: List variables
+#EXPECT:OK
+vars
+
+#DESC: String length ${#var}
+#EXPECT:OK
+_teststr=hello
+echo ${#_teststr}
+
+#DESC: Substring extraction ${var:0:3}
+#EXPECT:OK
+echo ${_teststr:0:3}
+
+#DESC: Uppercase ${var^^}
+#EXPECT:OK
+echo ${_teststr^^}
+
+#DESC: Lowercase ${var,,}
+#EXPECT:OK
+_TESTUP=HELLO
+echo ${_TESTUP,,}
+
+#DESC: Default value ${var:-default}
+#EXPECT:OK
+echo ${_unsetvar:-fallback}
+
+#DESC: Assign default ${var:=default}
+#EXPECT:OK
+echo ${_defvar:=assigned}
+
+#DESC: Clean up test variables
+#EXPECT:OK
+unset _testvar2
+unset _teststr
+unset _TESTUP
+unset _defvar
+
+# ============================================
+# SECTION 6: Arithmetic
+# ============================================
+
+#DESC: Simple addition
+#EXPECT:OK
+_arith_a=10
+_arith_b=$(( _arith_a + 5 ))
+echo $_arith_b
+
+#DESC: Multiplication and subtraction
+#EXPECT:OK
+_arith_c=$(( _arith_b * 2 - 3 ))
+echo $_arith_c
+
+#DESC: Modulo
+#EXPECT:OK
+_arith_d=$(( 17 % 3 ))
+echo $_arith_d
+
+#DESC: Nested arithmetic
+#EXPECT:OK
+_arith_e=$(( (_arith_a + 5) * 2 ))
+echo $_arith_e
+
+#DESC: Arithmetic in echo
+#EXPECT:OK
+echo $(( 100 + 200 ))
+
+#DESC: Clean up arithmetic vars
+#EXPECT:OK
+unset _arith_a
+unset _arith_b
+unset _arith_c
+unset _arith_d
+unset _arith_e
+
+# ============================================
+# SECTION 7: Flow Control
+# ============================================
+
+#DESC: Simple if/then/fi (true branch)
+#EXPECT:OK
+_fc_x=10
+if [ $_fc_x -gt 5 ]; then
+    echo big
+fi
+
+#DESC: Simple if/else (false branch)
+#EXPECT:OK
+if [ $_fc_x -lt 5 ]; then
+    echo small
+else
+    echo not_small
+fi
+
+#DESC: If/elif/else chain
+#EXPECT:OK
+if [ $_fc_x -gt 100 ]; then
+    echo huge
+elif [ $_fc_x -gt 5 ]; then
+    echo medium
+else
+    echo small
+fi
+
+#DESC: While loop
+#EXPECT:OK
+_fc_n=0
+while [ $_fc_n -lt 3 ]; do
+    _fc_n=$(( _fc_n + 1 ))
+done
+echo $_fc_n
+
+#DESC: For loop with word list
+#EXPECT:OK
+for _fc_item in alpha beta gamma; do
+    echo $_fc_item
+done
+
+#DESC: For loop with brace expansion
+#EXPECT:OK
+for _fc_i in {1..3}; do
+    echo iter_$_fc_i
+done
+
+#DESC: Nested if inside while
+#EXPECT:OK
+_fc_m=0
+while [ $_fc_m -lt 3 ]; do
+    _fc_m=$(( _fc_m + 1 ))
+    if [ $_fc_m -eq 2 ]; then
+        echo found_two
+    fi
+done
+
+#DESC: Break in while loop
+#EXPECT:OK
+_fc_k=0
+while [ $_fc_k -lt 100 ]; do
+    _fc_k=$(( _fc_k + 1 ))
+    if [ $_fc_k -eq 3 ]; then
+        break
+    fi
+done
+echo $_fc_k
+
+#DESC: Continue in while loop
+#EXPECT:OK
+_fc_sum=0
+_fc_j=0
+while [ $_fc_j -lt 5 ]; do
+    _fc_j=$(( _fc_j + 1 ))
+    if [ $_fc_j -eq 3 ]; then
+        continue
+    fi
+    _fc_sum=$(( _fc_sum + _fc_j ))
+done
+echo $_fc_sum
+
+#DESC: Case/esac statement
+#EXPECT:OK
+_fc_mode=fast
+case $_fc_mode in
+    fast) echo speed ;;
+    safe) echo caution ;;
+    *) echo unknown ;;
+esac
+
+#DESC: String comparison in test
+#EXPECT:OK
+_fc_s=hello
+if [ $_fc_s = hello ]; then
+    echo match
+fi
+
+#DESC: String inequality
+#EXPECT:OK
+if [ $_fc_s != world ]; then
+    echo differ
+fi
+
+#DESC: Test -n (non-empty string)
+#EXPECT:OK
+if [ -n $_fc_s ]; then
+    echo nonempty
+fi
+
+#DESC: Test -z (empty string)
+#EXPECT:OK
+_fc_empty=
+if [ -z $_fc_empty ]; then
+    echo empty
+fi
+
+#DESC: Test -d (directory exists)
+#EXPECT:OK
+if [ -d /tmp ]; then
+    echo dir_exists
+fi
+
+#DESC: Test -f (file exists)
+#EXPECT:OK
+if [ -f /etc/hostname ]; then
+    echo file_exists
+fi
+
+#DESC: Negation with !
+#EXPECT:OK
+if [ ! -f /tmp/no_such_file_xyz ]; then
+    echo not_found
+fi
+
+#DESC: Clean up flow control vars
+#EXPECT:OK
+unset _fc_x
+unset _fc_n
+unset _fc_m
+unset _fc_k
+unset _fc_sum
+unset _fc_j
+unset _fc_mode
+unset _fc_s
+unset _fc_empty
+
+# ============================================
+# SECTION 8: User Functions
+# ============================================
+
+#DESC: Define a simple function
+#EXPECT:OK
+function _testfunc_greet {
+    echo greeting_$1
+}
+
+#DESC: Call user function
+#EXPECT:OK
+_testfunc_greet world
+
+#DESC: Function with return value
+#EXPECT:OK
+function _testfunc_check {
+    if [ $1 -gt 10 ]; then
+        return 0
+    fi
+    return 1
+}
+_testfunc_check 20
+echo $?
+
+#DESC: Function with local variable
+#EXPECT:OK
+_gvar=global
+function _testfunc_local {
+    local _gvar=localized
+    echo $_gvar
+}
+_testfunc_local
+echo $_gvar
+
+#DESC: Function with multiple arguments
+#EXPECT:OK
+function _testfunc_add {
+    _result=$(( $1 + $2 ))
+    echo $_result
+}
+_testfunc_add 3 7
+
+#DESC: Call undefined function
+#EXPECT:ERR
+_nonexistent_function_xyz
+
+#DESC: Clean up function vars
+#EXPECT:OK
+unset _gvar
+unset _result
+
+# ============================================
+# SECTION 9: Command Chaining
+# ============================================
+
+#DESC: Semicolon chaining
+#EXPECT:OK
+echo first ; echo second
+
+#DESC: AND chaining (first succeeds)
+#EXPECT:OK
+echo ok_cmd && echo and_ran
+
+#DESC: OR chaining (first succeeds)
+#EXPECT:OK
+echo ok_cmd || echo or_skipped
+
+# ============================================
+# SECTION 10: Shell Features
+# ============================================
+
+#DESC: Output redirect to file
+#EXPECT:OK
+echo redirect_test > /tmp/_clitest_redir.txt
+
+#DESC: Append redirect
+#EXPECT:OK
+echo append_line >> /tmp/_clitest_redir.txt
+
+#DESC: Command substitution
+#EXPECT:OK
+_subst_val=$(echo hello_sub)
+echo $_subst_val
+
+#DESC: Environment variable expansion
+#EXPECT:OK
+echo $HOME
+
+#DESC: Tilde expansion
+#EXPECT:OK
+echo ~
+
+#DESC: Brace expansion
+#EXPECT:OK
+echo {1..5}
+
+#DESC: Brace expansion with step
+#EXPECT:OK
+echo {0..10..2}
+
+#DESC: Here-string
+#EXPECT:OK
+read _hs_val <<< "here_string_test"
+echo $_hs_val
+
+#DESC: Pipe to shell grep
+#EXPECT:OK
+echo searchable_text | grep searchable
+
+#DESC: Clean up shell feature vars
+#EXPECT:OK
+unset _subst_val
+unset _hs_val
+
+# ============================================
+# SECTION 11: Error Conditions
+# ============================================
+
+#DESC: Unknown command (should suggest)
+#EXPECT:ERR
+mem.lisim
+
+#DESC: Completely unknown command
+#EXPECT:ERR
+xyzzy_nonexistent_command
+
+#DESC: Syntax highlighting toggle
+#EXPECT:OK
+synhl off
+synhl on
+
+#DESC: Nonexistent file in source
+#EXPECT:ERR
+source /tmp/_clitest_no_such_file.milk
+
+#DESC: Include_once nonexistent file
+#EXPECT:ERR
+include_once /tmp/_clitest_no_such_f2.milk
+
+# ============================================
+# SECTION 12: Set Flags
+# ============================================
+
+#DESC: set -x (trace on)
+#EXPECT:OK
+set -x
+
+#DESC: set +x (trace off)
+#EXPECT:OK
+set +x
+
+# ============================================
+# SECTION 13: Readonly and Declare
+# ============================================
+
+#DESC: Readonly variable
+#EXPECT:OK
+readonly _RO_PI=3
+
+#DESC: Declare integer
+#EXPECT:OK
+declare -i _decl_count=0
+
+#DESC: Let arithmetic
+#EXPECT:OK
+let "_decl_count=5+3"
+echo $_decl_count
+
+#DESC: Clean up
+#EXPECT:OK
+unset _decl_count
+
+# ============================================
+# SECTION 14: Cleanup
+# ============================================
+
+#DESC: Remove temp redirect file
+#EXPECT:OK
+!rm -f /tmp/_clitest_redir.txt
+
+#DESC: Final echo
+#EXPECT:OK
+echo CLI_ROBUSTNESS_TESTS_COMPLETE

@@ -1100,9 +1100,13 @@ errno_t help_command(
         {
             if(foundregexmatch == 0)
             {
-                printf("\tNo substring or regex match to \"%s\"\n", cmdkey);
+                printf(
+                    "\tNo substring or regex "
+                    "match to \"%s\"\n",
+                    cmdkey);
             }
         }
+        return RETURN_FAILURE;
     }
 
     return RETURN_SUCCESS;
