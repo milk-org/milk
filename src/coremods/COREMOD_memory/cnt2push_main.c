@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
     int mode_abs = 0;
     int mode_inc = 0;
 
-    int opt;
     // Simple argument parsing loop (since getopt might not handle non-option arg first easily if strict posix)
     // We assume first arg is streamname if it doesn't start with -
     int arg_idx = 1;
@@ -79,6 +78,9 @@ int main(int argc, char *argv[]) {
             mode_abs = 1;
         } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--inc") == 0) {
             mode_inc = 1;
+        } else if (strcmp(argv[i], "-h1") == 0 || strcmp(argv[i], "--help-oneline") == 0) {
+            printf("update stream cnt2 flow control counter\n");
+            return 0;
         } else {
             if (streamname == NULL && argv[i][0] != '-') {
                 streamname = argv[i];
