@@ -1,7 +1,7 @@
 # Working with git
 
-> [!NOTE]
-> This file: `docs/developer/WorkingWithGit.md`
+!!! note
+    This file: `docs/developer/WorkingWithGit.md`
 
 See also: [Documenting Code](DocumentingCode.md) ·
 [Adding Plugins](plugins.md) ·
@@ -71,8 +71,8 @@ Git worktrees allow you to have multiple isolated working directories that share
    git checkout -b feat/my-next-cli-task
    ```
 
-> [!TIP]
-> A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
+!!! tip
+    A helper script `milk-setup-worktrees` is available to automatically scaffold this directory layout and initialize the build directories for you.
 
 ## 4. Releasing a New Version
 
@@ -90,10 +90,10 @@ $ git tag -a vX.YY.ZZ -m "milk version X.YY.ZZ"
 $ git push origin main --tags
 ```
 
-> [!NOTE]
-> Modules that are shared between packages (e.g., `milk` and `cacao`) can have
-> parallel version number histories. Any new version, regardless of which
-> package it is associated with, includes all previous changes.
+!!! note
+    Modules that are shared between packages (e.g., `milk` and `cacao`) can have
+    parallel version number histories. Any new version, regardless of which
+    package it is associated with, includes all previous changes.
 
 ***
 
