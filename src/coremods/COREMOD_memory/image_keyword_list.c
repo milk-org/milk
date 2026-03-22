@@ -73,7 +73,7 @@ errno_t image_keywords_list(IMGID img)
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     image_keywords_list(imgid_make_from_name(inimname));
     return RETURN_SUCCESS;

@@ -46,6 +46,19 @@ int arith_image_csttestlt_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 int arith_image_csttestmt(const char *ID_name, double f1, const char *ID_out);
 int arith_image_csttestmt_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 
+int arith_image_cstteste(const char *ID_name, double f1, const char *ID_out);
+int arith_image_cstteste_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+int arith_image_csttestne(const char *ID_name, double f1, const char *ID_out);
+int arith_image_csttestne_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+int arith_image_csttestle(const char *ID_name, double f1, const char *ID_out);
+int arith_image_csttestle_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+int arith_image_csttestge(const char *ID_name, double f1, const char *ID_out);
+int arith_image_csttestge_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+int arith_image_cstand(const char *ID_name, double f1, const char *ID_out);
+int arith_image_cstand_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+int arith_image_cstor(const char *ID_name, double f1, const char *ID_out);
+int arith_image_cstor_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+
 int arith_image_cstfmod_inplace(const char *ID_name, double f1);
 
 int arith_image_cstadd_inplace(const char *ID_name, double f1);

@@ -184,7 +184,6 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 
     char *pch;
     char *pch1;
-    int   nbword = 0;
 
     char  namestring[200];
     strncpy(namestring, effective_name, 199);
@@ -273,7 +272,6 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
                         }
             */
             pch = strtok(NULL, ">");
-            nbword++;
         }
     }
 
@@ -401,7 +399,7 @@ static inline uint64_t imgid_compare(
         }
     }
 
-    if(imgtemplate.mdt->naxis != -1)
+    if((int8_t)imgtemplate.mdt->naxis != -1)
     {
         printf("Checking naxis  %d %d    ", imgtemplate.mdt->naxis, img.mdt->naxis);
         if(imgtemplate.mdt->naxis != img.mdt->naxis)

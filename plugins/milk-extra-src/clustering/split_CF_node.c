@@ -47,7 +47,7 @@ errno_t split_CF_node(
         DEBUG_TRACEPOINT("Dropping tree: new root is %ld", ctree->rootindex);
     }
 
-    long parentCFindex = ctree->CFarray[CFindex].parentindex;
+    long parentCFindex __attribute__((unused)) = ctree->CFarray[CFindex].parentindex;
     DEBUG_TRACEPOINT("Parent node : %ld, ssq = %g, pathcnt = %g",
                      parentCFindex,
                      (double) ctree->CFarray[parentCFindex].datassq,
@@ -171,8 +171,8 @@ errno_t split_CF_node(
     // look for CF with highest number of points in each of the 2 sets
     long maxN0 = 0;
     long maxN1 = 0;
-    long maxNccf0 = -1;
-    long maxNccf1 = -1;
+    long maxNccf0 __attribute__((unused)) = -1;
+    long maxNccf1 __attribute__((unused)) = -1;
 
     for(int ccf = 0; ccf < nCF; ccf++)
     {

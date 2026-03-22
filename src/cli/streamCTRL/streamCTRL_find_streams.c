@@ -74,10 +74,10 @@ int find_streams(
                 int         retv;
                 char        fullname[STRINGMAXLEN_FULLFILENAME];
 
-                WRITE_FULLFILENAME(fullname,
-                                   "%s/%s",
-                                   SHAREDSHMDIR,
-                                   dir->d_name);
+                snprintf(fullname, STRINGMAXLEN_FULLFILENAME,
+                         "%.700s/%.255s",
+                         SHAREDSHMDIR,
+                         dir->d_name);
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
@@ -97,8 +97,8 @@ int find_streams(
                     int   pathOK = 1;
 
                     streaminfo[sindex].SymLink = 1;
-                    WRITE_FULLFILENAME(fullname,
-                                       "%s/%s",
+                    snprintf(fullname, STRINGMAXLEN_FULLFILENAME,
+                                       "%.700s/%.255s",
                                        SHAREDSHMDIR,
                                        dir->d_name);
                     linknamefull = realpath(fullname, NULL);

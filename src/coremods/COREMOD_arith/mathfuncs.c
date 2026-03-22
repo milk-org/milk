@@ -175,6 +175,78 @@ double Ptestmt(double a, double b)
     }
 }
 
+double Pteste(double a, double b)
+{
+    if(a == b)
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
+double Ptestne(double a, double b)
+{
+    if(a != b)
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
+double Ptestle(double a, double b)
+{
+    if(a <= b)
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
+double Ptestge(double a, double b)
+{
+    if(a >= b)
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
+double Pand(double a, double b)
+{
+    if((a != 0.0) && (b != 0.0))
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
+double Por(double a, double b)
+{
+    if((a != 0.0) || (b != 0.0))
+    {
+        return ((double) 1.0);
+    }
+    else
+    {
+        return ((double) 0.0);
+    }
+}
+
 double Ptrunc(double a, double b, double c)
 {
     double value;

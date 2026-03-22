@@ -90,7 +90,7 @@ void init_cms_cp(void)
     }
 }
 
-static errno_t compute_cp()
+static errno_t __attribute__((unused)) compute_cp()
 {
     copy_image_ID(p_srcname, p_dstname, 0);
     return RETURN_SUCCESS;
@@ -129,7 +129,7 @@ void init_cms_mv(void)
     }
 }
 
-static errno_t compute_mv()
+static errno_t __attribute__((unused)) compute_mv()
 {
     chname_image_ID(p_srcname, p_dstname);
     return RETURN_SUCCESS;
@@ -151,7 +151,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS_2STR(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -180,7 +180,7 @@ void init_cms_shm(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

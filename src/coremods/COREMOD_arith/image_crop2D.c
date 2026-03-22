@@ -113,7 +113,7 @@ static MILK_HOT errno_t fpsexec(
  * @brief Validate crop parameters against
  *        input stream dimensions.
  */
-static errno_t crop2D_validate()
+static errno_t __attribute__((unused)) crop2D_validate()
 {
     if (!cropinsname || !cropxstart
         || !cropxsize || !cropystart
@@ -160,7 +160,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID iin =
         imgid_make_from_name(cropinsname);

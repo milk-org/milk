@@ -351,5 +351,37 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     done
     ```
 
+??? example "Example 8: Advanced Native Math and Image Calculus"
+
+    You can run mathematical expressions natively, manipulate image values directly with constants, and calculate norms and conditions efficiently without needing external parsing like `bc` or `awk`.
+
+    ```bash
+    #!/usr/bin/env milk-cli -s
+    
+    # 1. Provide an initial constant to initialize variables
+    a = 2 + 3 * 4
+    echo "Variable 'a' evaluates natively to: $a"
+    
+    # 2. Utilize mathematical functions like abs, max, min natively
+    e = min(abs(-5), max(3, fmod(17, 5)))
+    echo "Compound math 'e' limits safely to: $e"
+
+    # 3. Quickly generate and fill a virtual flat dummy space.
+    mem.mk2Dim imtest 10 10 
+    imtest = imtest * 0.0 + 5.0
+
+    # 4. Use vector constraints natively over memory blocks
+    d_im_im = dot(imtest, imtest)
+    n_im = norm(imtest)
+    echo "Dot product: $d_im_im | Norm vector length: $n_im"
+    
+    # 5. Native Ternary Mask mapping limits logic cleanly:
+    imtest_plus = imtest + 3
+    imtest_mask = (imtest_plus == 8)
+    im_where = where(imtest_mask, imtest, -imtest)
+    h = imean(im_where)
+    echo "Filtered conditionally merged mean of masked image: $h"
+    ```
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)

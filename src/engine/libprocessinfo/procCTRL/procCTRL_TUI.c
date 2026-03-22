@@ -77,10 +77,10 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
 {
     if(has_cset == 0) return 0;
     
-    char fname[STRINGMAXLEN_FILENAME];
-    WRITE_FILENAME(fname, "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
+    char fname[STRINGMAXLEN_FULLFILENAME];
+    snprintf(fname, sizeof(fname), "%s/.csetlist.%ld", SHAREDPROCDIR, (long) getpid());
     
-    char cmd[1024];
+    char cmd[2048];
     snprintf(cmd, sizeof(cmd), "cset set -l | awk '/root/{stop=1} stop==1{print $0}' > %s", fname);
     if(system(cmd) != 0) {
         return 0;
@@ -106,7 +106,7 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
     return NBset;
 }
 
-static int processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
+static int __attribute__((unused)) processinfo_SelectFromList(STRINGLISTENTRY *StringList, int NBelem)
 {
     int selected = 0;
     int inputOK = 0;
@@ -360,7 +360,7 @@ errno_t processinfo_CTRLscreen()
     procinfoproc->selected_col = 1;
 
     STRINGLISTENTRY *CPUsetList = (STRINGLISTENTRY *) malloc(sizeof(STRINGLISTENTRY) * 1000);
-    int NBCPUset = processinfo_CPUsets_List(CPUsetList, procinfoproc->has_cset);
+    int NBCPUset __attribute__((unused)) = processinfo_CPUsets_List(CPUsetList, procinfoproc->has_cset);
 
     if (flog) { fprintf(flog, "Connecting to process list...\n"); fflush(flog); }
     if(processinfo_shm_list_create() == -1) {
@@ -416,7 +416,7 @@ errno_t processinfo_CTRLscreen()
     long doffsetindex = 0;
     int freeze = 0;
     int loopOK = 1;
-    int Xexit = 0;
+    int Xexit __attribute__((unused)) = 0;
     char monstring[200];
     int monstringlen = 200;
     int last_ch = -1;
@@ -490,12 +490,12 @@ errno_t processinfo_CTRLscreen()
         if (ch != -1) {
             last_ch = ch;
             if (flog) {
-                char tbuf[30];
+                char tbuf[64];
                 struct timespec ts;
                 clock_gettime(CLOCK_REALTIME, &ts);
                 struct tm *tm_info = gmtime(&ts.tv_sec);
-                strftime(tbuf, 20, "%Y%m%dT%H:%M:%S", tm_info);
-                sprintf(tbuf + 19, ".%06ld", ts.tv_nsec / 1000);
+                size_t len = strftime(tbuf, sizeof(tbuf), "%Y%m%dT%H:%M:%S", tm_info);
+                snprintf(tbuf + len, sizeof(tbuf) - len, ".%06ld", ts.tv_nsec / 1000);
                 fprintf(flog, "%s Input: %d\n", tbuf, ch);
                 fflush(flog);
             }

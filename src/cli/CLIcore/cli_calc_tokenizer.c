@@ -59,9 +59,15 @@ static const builtin_func builtins[] =
     {"asin(",  (double(*)()) asin,  TOK_FUNC_D_D},
     {"acos(",  (double(*)()) acos,  TOK_FUNC_D_D},
     {"posi(",  (double(*)()) Ppositive, TOK_FUNC_D_D},
+    {"abs(",   (double(*)()) fabs,  TOK_FUNC_D_D},
+    {"fabs(",  (double(*)()) fabs,  TOK_FUNC_D_D},
+    {"round(", (double(*)()) round, TOK_FUNC_D_D},
 
     /* double, double -> double */
     {"atan2(", (double(*)()) atan2, TOK_FUNC_DD_D},
+    {"fmod(",  (double(*)()) fmod,  TOK_FUNC_DD_D},
+    {"min(",   (double(*)()) fmin,  TOK_FUNC_DD_D},
+    {"max(",   (double(*)()) fmax,  TOK_FUNC_DD_D},
 
     /* double, double, double -> double */
     {"trunc(", (double(*)()) Ptrunc, TOK_FUNC_DDD_D},
@@ -79,6 +85,11 @@ static const builtin_func builtins[] =
     /* image, double -> double */
     {"perc(",  (double(*)()) arith_image_percentile,
         TOK_FUNC_IMD_D},
+
+    /* special -> parser handles manually */
+    {"where(", NULL, TOK_FUNC_WHERE},
+    {"dot(",   (double(*)()) arith_image_dot, TOK_FUNC_IMIM_D},
+    {"norm(",  (double(*)()) arith_image_norm, TOK_FUNC_IM_D},
 
     {NULL, NULL, TOK_EOF}
 };
@@ -104,7 +115,7 @@ static inline int is_ident_char(int c)
  */
 static inline int is_ident_start(int c)
 {
-    return isalpha(c) || c == '?' || c == '.';
+    return isalpha(c) || c == '_' || c == '?' || c == '.';
 }
 
 /**
@@ -155,38 +166,33 @@ int cli_tokenize(
         /* operators and punctuation */
         {
             cli_token_type optype = TOK_EOF;
+            int oplen = 1;
 
-            switch (*p)
+            if (*p == '<' && *(p+1) == '=') { optype = TOK_OP_LE; oplen = 2; }
+            else if (*p == '>' && *(p+1) == '=') { optype = TOK_OP_GE; oplen = 2; }
+            else if (*p == '=' && *(p+1) == '=') { optype = TOK_OP_EQ; oplen = 2; }
+            else if (*p == '!' && *(p+1) == '=') { optype = TOK_OP_NEQ; oplen = 2; }
+            else if (*p == '&' && *(p+1) == '&') { optype = TOK_OP_AND; oplen = 2; }
+            else if (*p == '|' && *(p+1) == '|') { optype = TOK_OP_OR; oplen = 2; }
+            else
             {
-                case '+':
-                    optype = TOK_OP_PLUS;
-                    break;
-                case '-':
-                    optype = TOK_OP_MINUS;
-                    break;
-                case '*':
-                    optype = TOK_OP_STAR;
-                    break;
-                case '/':
-                    optype = TOK_OP_SLASH;
-                    break;
-                case '^':
-                    optype = TOK_OP_CARET;
-                    break;
-                case '(':
-                    optype = TOK_LPAREN;
-                    break;
-                case ')':
-                    optype = TOK_RPAREN;
-                    break;
-                case ',':
-                    optype = TOK_COMMA;
-                    break;
-                case '=':
-                    optype = TOK_EQUAL;
-                    break;
-                default:
-                    break;
+                switch (*p)
+                {
+                    case '+': optype = TOK_OP_PLUS; break;
+                    case '-': optype = TOK_OP_MINUS; break;
+                    case '*': optype = TOK_OP_STAR; break;
+                    case '/': optype = TOK_OP_SLASH; break;
+                    case '^': optype = TOK_OP_CARET; break;
+                    case '%': optype = TOK_OP_MOD; break;
+                    case '<': optype = TOK_OP_LT; break;
+                    case '>': optype = TOK_OP_GT; break;
+                    case '!': optype = TOK_OP_NOT; break;
+                    case '(': optype = TOK_LPAREN; break;
+                    case ')': optype = TOK_RPAREN; break;
+                    case ',': optype = TOK_COMMA; break;
+                    case '=': optype = TOK_EQUAL; break;
+                    default: break;
+                }
             }
 
             if (optype != TOK_EOF)
@@ -194,14 +200,14 @@ int cli_tokenize(
                 if (data.core.Debug > 0)
                 {
                     printf(
-                        "DEBUG: TOKENIZER: \"%c\" "
+                        "DEBUG: TOKENIZER: \"%.*s\" "
                         "is an operator/punct\n",
-                        *p
+                        oplen, p
                     );
                 }
                 tokens[nt].type = optype;
                 nt++;
-                p++;
+                p += oplen;
                 continue;
             }
         }
@@ -456,12 +462,15 @@ int cli_tokenize(
         }
 
         /* unrecognized character */
-        printf(
-            "DEBUG: TOKENIZER: unrecognised char"
-            " [hex %02X] length 1\n",
-            (unsigned char) *p
-        );
-        p++;
+        if (data.core.Debug > 0)
+        {
+            printf(
+                "DEBUG: TOKENIZER: unrecognised char"
+                " [hex %02X] length 1\n",
+                (unsigned char) *p
+            );
+        }
+        return -1;
     }
 
     /* sentinel */

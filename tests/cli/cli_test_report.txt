@@ -1,0 +1,3963 @@
+--- Test 1: Multiple spaces before command ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+   echo hello
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_0.milk: ASCII text
+   echo hello
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321336
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_0.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321336
+[/tmp/clitest.hXRIa0/cmd_0.milk -> /milk/shm/.milk-cli.fifo.0321336]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_0.milk ... 
+hello
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 2: Echo with no arguments ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_1.milk: ASCII text
+echo
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321350
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_1.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321350
+[/tmp/clitest.hXRIa0/cmd_1.milk -> /milk/shm/.milk-cli.fifo.0321350]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_1.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 3: Echo with arguments ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo hello world
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_2.milk: ASCII text
+echo hello world
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321364
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_2.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321364
+[/tmp/clitest.hXRIa0/cmd_2.milk -> /milk/shm/.milk-cli.fifo.0321364]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_2.milk ... 
+hello world
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 4: Echo with -n flag (no newline) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo -n test
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_3.milk: ASCII text
+echo -n test
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321378
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_3.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321378
+[/tmp/clitest.hXRIa0/cmd_3.milk -> /milk/shm/.milk-cli.fifo.0321378]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_3.milk ... 
+test[0;96mmilk-cli > [0mStderr:
+
+--- Test 5: Echo with quoted string ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo "hello world"
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_4.milk: ASCII text
+echo "hello world"
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321392
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_4.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321392
+[/tmp/clitest.hXRIa0/cmd_4.milk -> /milk/shm/.milk-cli.fifo.0321392]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_4.milk ... 
+"hello world"
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 6: Echo with single-quoted string ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo 'hello world'
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_5.milk: ASCII text
+echo 'hello world'
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321406
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_5.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321406
+[/tmp/clitest.hXRIa0/cmd_5.milk -> /milk/shm/.milk-cli.fifo.0321406]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_5.milk ... 
+'hello world'
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 7: Inline comment after command ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo test_value # this is a comment
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_6.milk: ASCII text
+echo test_value # this is a comment
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321420
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_6.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321420
+[/tmp/clitest.hXRIa0/cmd_6.milk -> /milk/shm/.milk-cli.fifo.0321420]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_6.milk ... 
+test_value # this is a comment
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 8: Question mark help ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+?
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_7.milk: ASCII text
+?
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321434
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_7.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321434
+[/tmp/clitest.hXRIa0/cmd_7.milk -> /milk/shm/.milk-cli.fifo.0321434]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_7.milk ... 
+
+[1;36m========================================
+[0m[1;36m           milk-cli — HELP INDEX
+[0m[1;36m========================================
+[0m
+[1;35mAvailable help topics:
+[0m  [32mcmdopts     [0mCommand-line flags (-h, -s, -n…)
+  [32msyntax      [0mSyntax, tab completion, piping
+  [32mcommands    [0mBuilt-in CLI commands (?, cmd?…)
+  [32mvariables   [0mVariables, arrays, arithmetic
+  [32mflowcontrol [0mif/while/for/case/function
+  [32mscripting   [0mScript files, I/O, builtins
+  [32mmilk        [0mStreams, FPS, milk-specific
+
+[33mFrom the shell:
+[0m  $ [32mmilk-cli-help <topic>
+[0m
+[1;35mQuick reference:
+[0m  [32mcmd? [name]   [0mHelp for a specific command
+  [32mm? [module]   [0mList commands in a module
+  [32mh? [string]   [0mSearch command descriptions
+  [32mfhelp         [0mInteractive fuzzy command search
+  [32mquit / exit   [0mExit the milk shell
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 9: help command ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+help
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_8.milk: ASCII text
+help
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321448
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_8.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321448
+[/tmp/clitest.hXRIa0/cmd_8.milk -> /milk/shm/.milk-cli.fifo.0321448]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_8.milk ... 
+
+[1;36m========================================
+[0m[1;36m           milk-cli — HELP INDEX
+[0m[1;36m========================================
+[0m
+[1;35mAvailable help topics:
+[0m  [32mcmdopts     [0mCommand-line flags (-h, -s, -n…)
+  [32msyntax      [0mSyntax, tab completion, piping
+  [32mcommands    [0mBuilt-in CLI commands (?, cmd?…)
+  [32mvariables   [0mVariables, arrays, arithmetic
+  [32mflowcontrol [0mif/while/for/case/function
+  [32mscripting   [0mScript files, I/O, builtins
+  [32mmilk        [0mStreams, FPS, milk-specific
+
+[33mFrom the shell:
+[0m  $ [32mmilk-cli-help <topic>
+[0m
+[1;35mQuick reference:
+[0m  [32mcmd? [name]   [0mHelp for a specific command
+  [32mm? [module]   [0mList commands in a module
+  [32mh? [string]   [0mSearch command descriptions
+  [32mfhelp         [0mInteractive fuzzy command search
+  [32mquit / exit   [0mExit the milk shell
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 10: List loaded modules ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+lm?
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_9.milk: ASCII text
+lm?
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321462
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_9.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321462
+[/tmp/clitest.hXRIa0/cmd_9.milk -> /milk/shm/.milk-cli.fifo.0321462]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_9.milk ... 
+[31mCommand 'lm?' not found. [0mDid you mean:
+  - [0;96mm?[0m
+  - [0;96m?[0m
+  - [0;96mcmd?[0m
+[0;96mmilk-cli > [0mStderr:
+sh: 1: lm?: not found
+
+--- Test 11: List all commands ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+m?
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_10.milk: ASCII text
+m?
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321477
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_10.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321477
+[/tmp/clitest.hXRIa0/cmd_10.milk -> /milk/shm/.milk-cli.fifo.0321477]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_10.milk ... 
+
+ #   shortname                             Name    Package Version           last compiled description
+--------------------------------------------------------------------------------------------------------------
+ 0      tools [1m                   COREMOD_tools[0m       milk  1.03.00    Mar 21 2026 14:43:44  misc tools
+ 1        mem [1m                  COREMOD_memory[0m       milk  1.03.00    Mar 21 2026 14:43:44  Memory management for images and variables
+ 2     iofits [1m                  COREMOD_iofits[0m       milk  1.03.00    Mar 21 2026 14:43:44  Read/Write FITS files
+ 3      arith [1m                   COREMOD_arith[0m       milk  1.03.00    Mar 21 2026 14:43:45  Image arithmetic operations
+-------------------------------------------------------------------------------------------------------
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 12: Compilation info ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+ci
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_11.milk: ASCII text
+ci
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321491
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_11.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321491
+[/tmp/clitest.hXRIa0/cmd_11.milk -> /milk/shm/.milk-cli.fifo.0321491]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_11.milk ... 
+
+  PID = 321491
+--------------- GENERAL ----------------------
+milk  1.03.00
+IMAGESTRUCT_VERSION 2.00
+/home/oguyon/src/milk/src/cli/CLIcore/CLIcore/CLIcore_help.c BUILT   Mar 21 2026 14:43:50
+
+--------------- SETTINGS ---------------------
+procinfo status = 1
+Default precision upon startup : float
+sizeof(struct timespec)        =  128 bit
+sizeof(pid_t)                  =   32 bit
+sizeof(short int)              =   16 bit
+sizeof(int)                    =   32 bit
+sizeof(long)                   =   64 bit
+sizeof(long long)              =   64 bit
+sizeof(int_fast8_t)            =    8 bit
+sizeof(int_fast16_t)           =   64 bit
+sizeof(int_fast32_t)           =   64 bit
+sizeof(int_fast64_t)           =   64 bit
+sizeof(uint_fast8_t)           =    8 bit
+sizeof(uint_fast16_t)          =   64 bit
+sizeof(uint_fast32_t)          =   64 bit
+sizeof(uint_fast64_t)          =   64 bit
+sizeof(IMAGE_KEYWORD)          = 1024 bit
+sizeof(IMAGE_METADATA)         = 3072 bit  =  384 byte ------------------
+   version                     offset =    0 bit  =    0 byte     [  32 byte]
+   name                        offset =  256 bit  =   32 byte     [  80 byte]
+   naxis                       offset =  896 bit  =  112 byte     [   4 byte]
+   size                        offset =  928 bit  =  116 byte     [  12 byte]
+   nelement                    offset = 1024 bit  =  128 byte     [   8 byte]
+   datatype                    offset = 1088 bit  =  136 byte     [   8 byte]
+   imagetype                   offset = 1152 bit  =  144 byte     [   8 byte]
+   creationtime                offset = 1216 bit  =  152 byte     [  16 byte]
+   lastaccesstime              offset = 1344 bit  =  168 byte     [  16 byte]
+   atime                       offset = 1472 bit  =  184 byte     [  16 byte]
+   writetime                   offset = 1600 bit  =  200 byte     [  40 byte]
+   shared                      offset = 1920 bit  =  240 byte     [   0 byte]
+   location                    offset = 1920 bit  =  240 byte     [   1 byte]
+   status                      offset = 1928 bit  =  241 byte     [   7 byte]
+   flag                        offset = 1984 bit  =  248 byte     [  10 byte]
+   logflag                     offset = 2064 bit  =  258 byte     [   0 byte]
+   sem                         offset = 2064 bit  =  258 byte     [   6 byte]
+   cnt0                        offset = 2112 bit  =  264 byte     [   8 byte]
+   cnt1                        offset = 2176 bit  =  272 byte     [   8 byte]
+   cnt2                        offset = 2240 bit  =  280 byte     [   8 byte]
+   write                       offset = 2304 bit  =  290 byte     [   2 byte]
+   NBkw                        offset = 2320 bit  =  290 byte     [  30 byte]
+   cudaMemHandle               offset = 2560 bit  =  320 byte
+sizeof(IMAGE)                  offset = 1984 bit  =  248 byte ------------------
+   name                        offset =    0 bit  =    0 byte
+   used                        offset =  640 bit  =   80 byte
+   shmfd                       offset =  768 bit  =   96 byte
+   memsize                     offset =  832 bit  =  104 byte
+   semlog                      offset =  896 bit  =  112 byte
+   md                          offset =  960 bit  =  120 byte
+   atimearray                  offset = 1728 bit  =  216 byte
+   writetimearray              offset = 1792 bit  =  224 byte
+   flagarray                   offset = 1600 bit  =  200 byte
+   cntarray                    offset = 1664 bit  =  208 byte
+   array                       offset = 1024 bit  =  128 byte
+   semptr                      offset = 1088 bit  =  136 byte
+   kw                          offset = 1152 bit  =  144 byte
+sizeof(IMAGE_KEYWORD)          offset = 1024 bit  =  128 byte ------------------
+   name                        offset =    0 bit  =    0 byte
+   type                        offset =  128 bit  =   16 byte
+   value                       offset =  192 bit  =   24 byte
+   comment                     offset =  384 bit  =   48 byte
+
+--------------- LIBRARIES --------------------
+READLINE : version 803
+OPENMP   : Compiled by an OpenMP-compliant implementation.
+CFITSIO  : version 4.060200
+
+--------------- DIRECTORIES ------------------
+CONFIGDIR = /config
+SOURCEDIR = /home/oguyon/src/milk
+
+--------------- MALLOC INFO ------------------
+
+[0;96mmilk-cli > [0mStderr:
+Arena 0:
+system bytes     =     569344
+in use bytes     =     467824
+Total (incl. mmap):
+system bytes     =    2494464
+in use bytes     =    2392944
+max mmap regions =          1
+max mmap bytes   =    1925120
+
+--- Test 13: Command help with cmd? ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+cmd? echo
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_12.milk: ASCII text
+cmd? echo
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321505
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_12.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321505
+[/tmp/clitest.hXRIa0/cmd_12.milk -> /milk/shm/.milk-cli.fifo.0321505]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_12.milk ... 
+
+[32mecho[0m in unknown []
+	[32mprint arguments
+[0m	[33mexample>[0m [1mecho hello world[0m
+	[2msrc: /home/oguyon/src/milk/src/cli/CLIcore/CLIcore.c[0m
+    [[1;31mOFF[0m]  FPS support
+
+  CLI call arguments:
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 14: Command help for mem.listim ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+cmd? mem.listim
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_13.milk: ASCII text
+cmd? mem.listim
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321519
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_13.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321519
+[/tmp/clitest.hXRIa0/cmd_13.milk -> /milk/shm/.milk-cli.fifo.0321519]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_13.milk ... 
+
+[32mmem.listim[0m in COREMOD_memory [mem]
+	[32mlist images in memory
+[0m	[33mexample>[0m [1mlistim[0m
+	[2msrc: /home/oguyon/src/milk/src/coremods/COREMOD_memory/list_image.c[0m
+    [[1;32m ON[0m]  FPS support
+    [[1;31mOFF[0m]  processinfo support (..procinfo 0/1)
+
+  CLI call arguments:
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 15: Command help for unknown command ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+cmd? nonexistent_command_xyz
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_14.milk: ASCII text
+cmd? nonexistent_command_xyz
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321533
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_14.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321533
+[/tmp/clitest.hXRIa0/cmd_14.milk -> /milk/shm/.milk-cli.fifo.0321533]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_14.milk ... 
+Command "nonexistent_command_xyz" does not exist. Partial matches:
+	No substring or regex match to "nonexistent_command_xyz"
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 16: List images in memory ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.listim
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_15.milk: ASCII text
+mem.listim
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321550
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_15.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321550
+[/tmp/clitest.hXRIa0/cmd_15.milk -> /milk/shm/.milk-cli.fifo.0321550]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_15.milk ... 
+[36mFPS [1m_listim[22m [33m[LOCAL][0m
+
+INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS
+
+
+0 image(s)   
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 17: Print working directory ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+pwd
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_16.milk: ASCII text
+pwd
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321564
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_16.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321564
+[/tmp/clitest.hXRIa0/cmd_16.milk -> /milk/shm/.milk-cli.fifo.0321564]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_16.milk ... 
+/home/oguyon/src/milk
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 18: Change directory to /tmp ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+cd /tmp
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_17.milk: ASCII text
+cd /tmp
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321578
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_17.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321578
+[/tmp/clitest.hXRIa0/cmd_17.milk -> /milk/shm/.milk-cli.fifo.0321578]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_17.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 19: Change directory back to home ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+cd
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_18.milk: ASCII text
+cd
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321592
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_18.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321592
+[/tmp/clitest.hXRIa0/cmd_18.milk -> /milk/shm/.milk-cli.fifo.0321592]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_18.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 20: Change to non-existent directory ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+cd /nonexistent_directory_xyz_123
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_19.milk: ASCII text
+cd /nonexistent_directory_xyz_123
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321606
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_19.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321606
+[/tmp/clitest.hXRIa0/cmd_19.milk -> /milk/shm/.milk-cli.fifo.0321606]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_19.milk ... 
+cd: /nonexistent_directory_xyz_123: No such file or directory
+
+[1;31m ERROR [0;m CLI function cd returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 21: Usleep command ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+usleep 1000
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_20.milk: ASCII text
+usleep 1000
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321623
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_20.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321623
+[/tmp/clitest.hXRIa0/cmd_20.milk -> /milk/shm/.milk-cli.fifo.0321623]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_20.milk ... 
+	 long:   1000
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 22: Set default precision to float ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+dpsingle
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_21.milk: ASCII text
+dpsingle
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321637
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_21.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321637
+[/tmp/clitest.hXRIa0/cmd_21.milk -> /milk/shm/.milk-cli.fifo.0321637]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_21.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 23: Set default precision to double ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+dpdouble
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_22.milk: ASCII text
+dpdouble
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321651
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_22.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321651
+[/tmp/clitest.hXRIa0/cmd_22.milk -> /milk/shm/.milk-cli.fifo.0321651]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_22.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 24: Create 2D image ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.mk2Dim _clitest_im1 32 32
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_23.milk: ASCII text
+mem.mk2Dim _clitest_im1 32 32
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321665
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_23.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321665
+[/tmp/clitest.hXRIa0/cmd_23.milk -> /milk/shm/.milk-cli.fifo.0321665]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_23.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+	 long:   32
+	 long:   32
+[36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
+  [33mCreating[0m shared=1, kw=10
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 25: List images - should show _clitest_im1 ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.listim
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_24.milk: ASCII text
+mem.listim
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321679
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_24.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321679
+[/tmp/clitest.hXRIa0/cmd_24.milk -> /milk/shm/.milk-cli.fifo.0321679]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_24.milk ... 
+[36mFPS [1m_listim[22m [33m[LOCAL][0m
+
+INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS
+
+
+0 image(s)   
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 26: Delete test image ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.rm _clitest_im1
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_25.milk: ASCII text
+mem.rm _clitest_im1
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321693
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_25.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321693
+[/tmp/clitest.hXRIa0/cmd_25.milk -> /milk/shm/.milk-cli.fifo.0321693]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_25.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[36mFPS [1m_rmimg[22m [33m[LOCAL][0m
+Error: Missing mandatory argument 1 (.errmode: errors mode (0:ign 1:warn 2:err 3:exit))
+
+[32mmem.rm[0m in COREMOD_memory [mem]
+	[32mremove image
+[0m	[33mexample>[0m [1mrm  [0m
+	[2msrc: /home/oguyon/src/milk/src/coremods/COREMOD_memory/delete_image.c[0m
+    [[1;32m ON[0m]  FPS support
+    [[1;31mOFF[0m]  processinfo support (..procinfo 0/1)
+
+  CLI call arguments:
+     0   [36m .imname         [0m [ STREAM]  clitest_im1   image name
+     1   [36m .errmode        [0m [ int64 ]  0             errors mode (0:ign 1:warn 2:err 3:exit)
+
+
+[1;31m ERROR [0;m CLI function mem.rm returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 27: mem.mk2Dim with no arguments (FPS default) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.mk2Dim
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_26.milk: ASCII text
+mem.mk2Dim
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321707
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_26.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321707
+[/tmp/clitest.hXRIa0/cmd_26.milk -> /milk/shm/.milk-cli.fifo.0321707]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_26.milk ... 
+[36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
+  [33mCreating[0m shared=1, kw=10
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 28: mem.mk2Dim with only 1 argument ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+mem.mk2Dim _clitest_partial
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_27.milk: ASCII text
+mem.mk2Dim _clitest_partial
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321721
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_27.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321721
+[/tmp/clitest.hXRIa0/cmd_27.milk -> /milk/shm/.milk-cli.fifo.0321721]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_27.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
+Error: Missing mandatory argument 1 (.xsize: x size)
+
+[32mmem.mk2Dim[0m in COREMOD_memory [mem]
+	[32mmake 2D image
+[0m	[33mexample>[0m [1mmk2Dim   [0m
+	[2msrc: /home/oguyon/src/milk/src/coremods/COREMOD_memory/image_make2D.c[0m
+    [[1;32m ON[0m]  FPS support
+    [[1;31mOFF[0m]  processinfo support (..procinfo 0/1)
+
+  CLI call arguments:
+     0   [36m .out_name       [0m [STRING ]  clitest_partial output image
+     1   [36m .xsize          [0m [uint32 ]  256           x size
+     2   [36m .ysize          [0m [uint32 ]  256           y size
+
+
+[1;31m ERROR [0;m CLI function mem.mk2Dim returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 29: mem.mk2Dim with only 2 arguments ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+mem.mk2Dim _clitest_partial 32
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_28.milk: ASCII text
+mem.mk2Dim _clitest_partial 32
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321738
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_28.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321738
+[/tmp/clitest.hXRIa0/cmd_28.milk -> /milk/shm/.milk-cli.fifo.0321738]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_28.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+	 long:   32
+[36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
+Error: Missing mandatory argument 2 (.ysize: y size)
+
+[32mmem.mk2Dim[0m in COREMOD_memory [mem]
+	[32mmake 2D image
+[0m	[33mexample>[0m [1mmk2Dim   [0m
+	[2msrc: /home/oguyon/src/milk/src/coremods/COREMOD_memory/image_make2D.c[0m
+    [[1;32m ON[0m]  FPS support
+    [[1;31mOFF[0m]  processinfo support (..procinfo 0/1)
+
+  CLI call arguments:
+     0   [36m .out_name       [0m [STRING ]  clitest_partial output image
+     1   [36m .xsize          [0m [uint32 ]  32            x size
+     2   [36m .ysize          [0m [uint32 ]  256           y size
+
+
+[1;31m ERROR [0;m CLI function mem.mk2Dim returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 30: mem.rm with no arguments (FPS default) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+mem.rm
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_29.milk: ASCII text
+mem.rm
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321755
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_29.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321755
+[/tmp/clitest.hXRIa0/cmd_29.milk -> /milk/shm/.milk-cli.fifo.0321755]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_29.milk ... 
+[36mFPS [1m_rmimg[22m [33m[LOCAL][0m
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 31: source with no arguments ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+source
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_30.milk: ASCII text
+source
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321769
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_30.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321769
+[/tmp/clitest.hXRIa0/cmd_30.milk -> /milk/shm/.milk-cli.fifo.0321769]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_30.milk ... 
+Usage: source <filename>
+
+[1;31m ERROR [0;m CLI function source returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 32: source with nonexistent file ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+source /tmp/nonexistent_file_xyz_456.milk
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_31.milk: ASCII text
+source /tmp/nonexistent_file_xyz_456.milk
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321786
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_31.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321786
+[/tmp/clitest.hXRIa0/cmd_31.milk -> /milk/shm/.milk-cli.fifo.0321786]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_31.milk ... 
+[0;96mmilk-cli > [0mStderr:
+source: /tmp/nonexistent_file_xyz_456.milk: No such file
+
+--- Test 33: savescript with no arguments ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+savescript
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_32.milk: ASCII text
+savescript
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321803
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_32.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321803
+[/tmp/clitest.hXRIa0/cmd_32.milk -> /milk/shm/.milk-cli.fifo.0321803]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_32.milk ... 
+Usage: savescript <filename>
+
+[1;31m ERROR [0;m CLI function savescript returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 34: time with no arguments ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+time
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_33.milk: ASCII text
+time
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321820
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_33.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321820
+[/tmp/clitest.hXRIa0/cmd_33.milk -> /milk/shm/.milk-cli.fifo.0321820]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_33.milk ... 
+Usage: time <command...>
+
+[1;31m ERROR [0;m CLI function time returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 35: watch with no arguments ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+watch
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_34.milk: ASCII text
+watch
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321837
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_34.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321837
+[/tmp/clitest.hXRIa0/cmd_34.milk -> /milk/shm/.milk-cli.fifo.0321837]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_34.milk ... 
+Usage: watch <interval_ms> <command...>
+
+[1;31m ERROR [0;m CLI function watch returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 36: watch with only interval ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+watch 1000
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_35.milk: ASCII text
+watch 1000
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321854
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_35.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321854
+[/tmp/clitest.hXRIa0/cmd_35.milk -> /milk/shm/.milk-cli.fifo.0321854]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_35.milk ... 
+	 long:   1000
+Usage: watch <interval_ms> <command...>
+
+[1;31m ERROR [0;m CLI function watch returns 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 37: Set a simple variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_testvar1=hello
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_36.milk: ASCII text
+_testvar1=hello
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321871
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_36.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321871
+[/tmp/clitest.hXRIa0/cmd_36.milk -> /milk/shm/.milk-cli.fifo.0321871]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_36.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 38: Echo a variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $_testvar1
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_37.milk: ASCII text
+echo $_testvar1
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321885
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_37.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321885
+[/tmp/clitest.hXRIa0/cmd_37.milk -> /milk/shm/.milk-cli.fifo.0321885]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_37.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 39: Set numeric variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_testvar2=42
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_38.milk: ASCII text
+_testvar2=42
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321899
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_38.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321899
+[/tmp/clitest.hXRIa0/cmd_38.milk -> /milk/shm/.milk-cli.fifo.0321899]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_38.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 40: Echo numeric variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $_testvar2
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_39.milk: ASCII text
+echo $_testvar2
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321913
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_39.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321913
+[/tmp/clitest.hXRIa0/cmd_39.milk -> /milk/shm/.milk-cli.fifo.0321913]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_39.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 41: Variable with braces ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ${_testvar1}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_40.milk: ASCII text
+echo ${_testvar1}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321927
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_40.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321927
+[/tmp/clitest.hXRIa0/cmd_40.milk -> /milk/shm/.milk-cli.fifo.0321927]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_40.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 42: Unset a variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _testvar1
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_41.milk: ASCII text
+unset _testvar1
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321941
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_41.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321941
+[/tmp/clitest.hXRIa0/cmd_41.milk -> /milk/shm/.milk-cli.fifo.0321941]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_41.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 43: Echo unset variable (should be empty) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $_testvar1
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_42.milk: ASCII text
+echo $_testvar1
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321957
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_42.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321957
+[/tmp/clitest.hXRIa0/cmd_42.milk -> /milk/shm/.milk-cli.fifo.0321957]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_42.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 44: Last return value ($?) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $?
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_43.milk: ASCII text
+echo $?
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321971
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_43.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321971
+[/tmp/clitest.hXRIa0/cmd_43.milk -> /milk/shm/.milk-cli.fifo.0321971]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_43.milk ... 
+0
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 45: List variables ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+vars
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_44.milk: ASCII text
+vars
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321985
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_44.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321985
+[/tmp/clitest.hXRIa0/cmd_44.milk -> /milk/shm/.milk-cli.fifo.0321985]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_44.milk ... 
+
+  CLI Variables:
+  NAME                  VALUE
+  ----                  -----
+  (none)
+  $? = 0
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 46: String length ${#var} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_teststr=hello
+echo ${#_teststr}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_45.milk: ASCII text
+_teststr=hello
+echo ${#_teststr}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 321999
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_45.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0321999
+[/tmp/clitest.hXRIa0/cmd_45.milk -> /milk/shm/.milk-cli.fifo.0321999]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_45.milk ... 
+[0;96mmilk-cli > [0m5
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 47: Substring extraction ${var:0:3} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ${_teststr:0:3}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_46.milk: ASCII text
+echo ${_teststr:0:3}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322013
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_46.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322013
+[/tmp/clitest.hXRIa0/cmd_46.milk -> /milk/shm/.milk-cli.fifo.0322013]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_46.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 48: Uppercase ${var^^} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ${_teststr^^}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_47.milk: ASCII text
+echo ${_teststr^^}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322027
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_47.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322027
+[/tmp/clitest.hXRIa0/cmd_47.milk -> /milk/shm/.milk-cli.fifo.0322027]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_47.milk ... 
+
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 49: Lowercase ${var,,} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_TESTUP=HELLO
+echo ${_TESTUP,,}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_48.milk: ASCII text
+_TESTUP=HELLO
+echo ${_TESTUP,,}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322041
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_48.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322041
+[/tmp/clitest.hXRIa0/cmd_48.milk -> /milk/shm/.milk-cli.fifo.0322041]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_48.milk ... 
+[0;96mmilk-cli > [0mhello
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 50: Default value ${var:-default} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ${_unsetvar:-fallback}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_49.milk: ASCII text
+echo ${_unsetvar:-fallback}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322055
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_49.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322055
+[/tmp/clitest.hXRIa0/cmd_49.milk -> /milk/shm/.milk-cli.fifo.0322055]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_49.milk ... 
+fallback
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 51: Assign default ${var:=default} ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ${_defvar:=assigned}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_50.milk: ASCII text
+echo ${_defvar:=assigned}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322069
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_50.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322069
+[/tmp/clitest.hXRIa0/cmd_50.milk -> /milk/shm/.milk-cli.fifo.0322069]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_50.milk ... 
+assigned
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 52: Clean up test variables ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _testvar2
+unset _teststr
+unset _TESTUP
+unset _defvar
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_51.milk: ASCII text
+unset _testvar2
+unset _teststr
+unset _TESTUP
+unset _defvar
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322083
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_51.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322083
+[/tmp/clitest.hXRIa0/cmd_51.milk -> /milk/shm/.milk-cli.fifo.0322083]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_51.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 53: Simple addition ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_arith_a=10
+_arith_b=$(( _arith_a + 5 ))
+echo $_arith_b
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_52.milk: ASCII text
+_arith_a=10
+_arith_b=$(( _arith_a + 5 ))
+echo $_arith_b
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322097
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_52.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322097
+[/tmp/clitest.hXRIa0/cmd_52.milk -> /milk/shm/.milk-cli.fifo.0322097]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_52.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m15
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 54: Multiplication and subtraction ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_arith_c=$(( _arith_b * 2 - 3 ))
+echo $_arith_c
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_53.milk: ASCII text
+_arith_c=$(( _arith_b * 2 - 3 ))
+echo $_arith_c
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322111
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_53.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322111
+[/tmp/clitest.hXRIa0/cmd_53.milk -> /milk/shm/.milk-cli.fifo.0322111]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_53.milk ... 
+[0;96mmilk-cli > [0m-3
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 55: Modulo ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_arith_d=$(( 17 % 3 ))
+echo $_arith_d
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_54.milk: ASCII text
+_arith_d=$(( 17 % 3 ))
+echo $_arith_d
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322125
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_54.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322125
+[/tmp/clitest.hXRIa0/cmd_54.milk -> /milk/shm/.milk-cli.fifo.0322125]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_54.milk ... 
+[0;96mmilk-cli > [0m2
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 56: Nested arithmetic ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_arith_e=$(( (_arith_a + 5) * 2 ))
+echo $_arith_e
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_55.milk: ASCII text
+_arith_e=$(( (_arith_a + 5) * 2 ))
+echo $_arith_e
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322139
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_55.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322139
+[/tmp/clitest.hXRIa0/cmd_55.milk -> /milk/shm/.milk-cli.fifo.0322139]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_55.milk ... 
+[0;96mmilk-cli > [0m10
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 57: Arithmetic in echo ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $(( 100 + 200 ))
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_56.milk: ASCII text
+echo $(( 100 + 200 ))
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322153
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_56.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322153
+[/tmp/clitest.hXRIa0/cmd_56.milk -> /milk/shm/.milk-cli.fifo.0322153]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_56.milk ... 
+300
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 58: Clean up arithmetic vars ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _arith_a
+unset _arith_b
+unset _arith_c
+unset _arith_d
+unset _arith_e
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_57.milk: ASCII text
+unset _arith_a
+unset _arith_b
+unset _arith_c
+unset _arith_d
+unset _arith_e
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322167
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_57.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322167
+[/tmp/clitest.hXRIa0/cmd_57.milk -> /milk/shm/.milk-cli.fifo.0322167]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_57.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 59: Simple if/then/fi (true branch) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_x=10
+if [ $_fc_x -gt 5 ]; then
+    echo big
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_58.milk: ASCII text
+_fc_x=10
+if [ $_fc_x -gt 5 ]; then
+    echo big
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322181
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_58.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322181
+[/tmp/clitest.hXRIa0/cmd_58.milk -> /milk/shm/.milk-cli.fifo.0322181]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_58.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mbig
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 60: Simple if/else (false branch) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ $_fc_x -lt 5 ]; then
+    echo small
+else
+    echo not_small
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_59.milk: ASCII text
+if [ $_fc_x -lt 5 ]; then
+    echo small
+else
+    echo not_small
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322195
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_59.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322195
+[/tmp/clitest.hXRIa0/cmd_59.milk -> /milk/shm/.milk-cli.fifo.0322195]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_59.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mError: invalid test expression
+not_small
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 61: If/elif/else chain ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ $_fc_x -gt 100 ]; then
+    echo huge
+elif [ $_fc_x -gt 5 ]; then
+    echo medium
+else
+    echo small
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_60.milk: ASCII text
+if [ $_fc_x -gt 100 ]; then
+    echo huge
+elif [ $_fc_x -gt 5 ]; then
+    echo medium
+else
+    echo small
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322209
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_60.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322209
+[/tmp/clitest.hXRIa0/cmd_60.milk -> /milk/shm/.milk-cli.fifo.0322209]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_60.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mError: invalid test expression
+Error: invalid test expression
+small
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 62: While loop ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_n=0
+while [ $_fc_n -lt 3 ]; do
+    _fc_n=$(( _fc_n + 1 ))
+done
+echo $_fc_n
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_61.milk: ASCII text
+_fc_n=0
+while [ $_fc_n -lt 3 ]; do
+    _fc_n=$(( _fc_n + 1 ))
+done
+echo $_fc_n
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322223
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_61.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322223
+[/tmp/clitest.hXRIa0/cmd_61.milk -> /milk/shm/.milk-cli.fifo.0322223]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_61.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m3
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 63: For loop with word list ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+for _fc_item in alpha beta gamma; do
+    echo $_fc_item
+done
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_62.milk: ASCII text
+for _fc_item in alpha beta gamma; do
+    echo $_fc_item
+done
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322237
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_62.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322237
+[/tmp/clitest.hXRIa0/cmd_62.milk -> /milk/shm/.milk-cli.fifo.0322237]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_62.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0malpha
+beta
+gamma
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 64: For loop with brace expansion ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+for _fc_i in {1..3}; do
+    echo iter_$_fc_i
+done
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_63.milk: ASCII text
+for _fc_i in {1..3}; do
+    echo iter_$_fc_i
+done
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322251
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_63.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322251
+[/tmp/clitest.hXRIa0/cmd_63.milk -> /milk/shm/.milk-cli.fifo.0322251]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_63.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0miter_1 2 3
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 65: Nested if inside while ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_m=0
+while [ $_fc_m -lt 3 ]; do
+    _fc_m=$(( _fc_m + 1 ))
+    if [ $_fc_m -eq 2 ]; then
+        echo found_two
+    fi
+done
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_64.milk: ASCII text
+_fc_m=0
+while [ $_fc_m -lt 3 ]; do
+    _fc_m=$(( _fc_m + 1 ))
+    if [ $_fc_m -eq 2 ]; then
+        echo found_two
+    fi
+done
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322265
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_64.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322265
+[/tmp/clitest.hXRIa0/cmd_64.milk -> /milk/shm/.milk-cli.fifo.0322265]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_64.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mfound_two
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 66: Break in while loop ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_k=0
+while [ $_fc_k -lt 100 ]; do
+    _fc_k=$(( _fc_k + 1 ))
+    if [ $_fc_k -eq 3 ]; then
+        break
+    fi
+done
+echo $_fc_k
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_65.milk: ASCII text
+_fc_k=0
+while [ $_fc_k -lt 100 ]; do
+    _fc_k=$(( _fc_k + 1 ))
+    if [ $_fc_k -eq 3 ]; then
+        break
+    fi
+done
+echo $_fc_k
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322279
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_65.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322279
+[/tmp/clitest.hXRIa0/cmd_65.milk -> /milk/shm/.milk-cli.fifo.0322279]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_65.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m3
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 67: Continue in while loop ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_sum=0
+_fc_j=0
+while [ $_fc_j -lt 5 ]; do
+    _fc_j=$(( _fc_j + 1 ))
+    if [ $_fc_j -eq 3 ]; then
+        continue
+    fi
+    _fc_sum=$(( _fc_sum + _fc_j ))
+done
+echo $_fc_sum
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_66.milk: ASCII text
+_fc_sum=0
+_fc_j=0
+while [ $_fc_j -lt 5 ]; do
+    _fc_j=$(( _fc_j + 1 ))
+    if [ $_fc_j -eq 3 ]; then
+        continue
+    fi
+    _fc_sum=$(( _fc_sum + _fc_j ))
+done
+echo $_fc_sum
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322293
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_66.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322293
+[/tmp/clitest.hXRIa0/cmd_66.milk -> /milk/shm/.milk-cli.fifo.0322293]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_66.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m12
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 68: Case/esac statement ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_mode=fast
+case $_fc_mode in
+    fast) echo speed ;;
+    safe) echo caution ;;
+    *) echo unknown ;;
+esac
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_67.milk: ASCII text
+_fc_mode=fast
+case $_fc_mode in
+    fast) echo speed ;;
+    safe) echo caution ;;
+    *) echo unknown ;;
+esac
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322307
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_67.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322307
+[/tmp/clitest.hXRIa0/cmd_67.milk -> /milk/shm/.milk-cli.fifo.0322307]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_67.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mspeed
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 69: String comparison in test ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_s=hello
+if [ $_fc_s = hello ]; then
+    echo match
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_68.milk: ASCII text
+_fc_s=hello
+if [ $_fc_s = hello ]; then
+    echo match
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322321
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_68.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322321
+[/tmp/clitest.hXRIa0/cmd_68.milk -> /milk/shm/.milk-cli.fifo.0322321]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_68.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mmatch
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 70: String inequality ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ $_fc_s != world ]; then
+    echo differ
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_69.milk: ASCII text
+if [ $_fc_s != world ]; then
+    echo differ
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322335
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_69.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322335
+[/tmp/clitest.hXRIa0/cmd_69.milk -> /milk/shm/.milk-cli.fifo.0322335]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_69.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mError: invalid test expression
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 71: Test -n (non-empty string) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ -n $_fc_s ]; then
+    echo nonempty
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_70.milk: ASCII text
+if [ -n $_fc_s ]; then
+    echo nonempty
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322349
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_70.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322349
+[/tmp/clitest.hXRIa0/cmd_70.milk -> /milk/shm/.milk-cli.fifo.0322349]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_70.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mnonempty
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 72: Test -z (empty string) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_fc_empty=
+if [ -z $_fc_empty ]; then
+    echo empty
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_71.milk: ASCII text
+_fc_empty=
+if [ -z $_fc_empty ]; then
+    echo empty
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322363
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_71.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322363
+[/tmp/clitest.hXRIa0/cmd_71.milk -> /milk/shm/.milk-cli.fifo.0322363]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_71.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mempty
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 73: Test -d (directory exists) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ -d /tmp ]; then
+    echo dir_exists
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_72.milk: ASCII text
+if [ -d /tmp ]; then
+    echo dir_exists
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322377
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_72.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322377
+[/tmp/clitest.hXRIa0/cmd_72.milk -> /milk/shm/.milk-cli.fifo.0322377]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_72.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mdir_exists
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 74: Test -f (file exists) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ -f /etc/hostname ]; then
+    echo file_exists
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_73.milk: ASCII text
+if [ -f /etc/hostname ]; then
+    echo file_exists
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322391
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_73.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322391
+[/tmp/clitest.hXRIa0/cmd_73.milk -> /milk/shm/.milk-cli.fifo.0322391]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_73.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mfile_exists
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 75: Negation with ! ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+if [ ! -f /tmp/no_such_file_xyz ]; then
+    echo not_found
+fi
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_74.milk: ASCII text
+if [ ! -f /tmp/no_such_file_xyz ]; then
+    echo not_found
+fi
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322405
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_74.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322405
+[/tmp/clitest.hXRIa0/cmd_74.milk -> /milk/shm/.milk-cli.fifo.0322405]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_74.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mnot_found
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 76: Clean up flow control vars ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _fc_x
+unset _fc_n
+unset _fc_m
+unset _fc_k
+unset _fc_sum
+unset _fc_j
+unset _fc_mode
+unset _fc_s
+unset _fc_empty
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_75.milk: ASCII text
+unset _fc_x
+unset _fc_n
+unset _fc_m
+unset _fc_k
+unset _fc_sum
+unset _fc_j
+unset _fc_mode
+unset _fc_s
+unset _fc_empty
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322419
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_75.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322419
+[/tmp/clitest.hXRIa0/cmd_75.milk -> /milk/shm/.milk-cli.fifo.0322419]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_75.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 77: Define a simple function ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+function _testfunc_greet {
+    echo greeting_$1
+}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_76.milk: ASCII text
+function _testfunc_greet {
+    echo greeting_$1
+}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322433
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_76.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322433
+[/tmp/clitest.hXRIa0/cmd_76.milk -> /milk/shm/.milk-cli.fifo.0322433]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_76.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
+
+--- Test 78: Call user function ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_testfunc_greet world
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_77.milk: ASCII text
+_testfunc_greet world
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322447
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_77.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322447
+[/tmp/clitest.hXRIa0/cmd_77.milk -> /milk/shm/.milk-cli.fifo.0322447]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_77.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[31mCommand not found, or command with no effect
+[0m[0;96mmilk-cli > [0mStderr:
+sh: 1: _testfunc_greet: not found
+
+--- Test 79: Function with return value ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+function _testfunc_check {
+    if [ $1 -gt 10 ]; then
+        return 0
+    fi
+    return 1
+}
+_testfunc_check 20
+echo $?
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_78.milk: ASCII text
+function _testfunc_check {
+    if [ $1 -gt 10 ]; then
+        return 0
+    fi
+    return 1
+}
+_testfunc_check 20
+echo $?
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322462
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_78.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322462
+[/tmp/clitest.hXRIa0/cmd_78.milk -> /milk/shm/.milk-cli.fifo.0322462]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_78.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m0
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 80: Function with local variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_gvar=global
+function _testfunc_local {
+    local _gvar=localized
+    echo $_gvar
+}
+_testfunc_local
+echo $_gvar
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_79.milk: ASCII text
+_gvar=global
+function _testfunc_local {
+    local _gvar=localized
+    echo $_gvar
+}
+_testfunc_local
+echo $_gvar
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322476
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_79.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322476
+[/tmp/clitest.hXRIa0/cmd_79.milk -> /milk/shm/.milk-cli.fifo.0322476]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_79.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mlocalized
+[0;96mmilk-cli > [0mglobal
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 81: Function with multiple arguments ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+function _testfunc_add {
+    _result=$(( $1 + $2 ))
+    echo $_result
+}
+_testfunc_add 3 7
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_80.milk: ASCII text
+function _testfunc_add {
+    _result=$(( $1 + $2 ))
+    echo $_result
+}
+_testfunc_add 3 7
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322490
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_80.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322490
+[/tmp/clitest.hXRIa0/cmd_80.milk -> /milk/shm/.milk-cli.fifo.0322490]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_80.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m10
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 82: Call undefined function ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+_nonexistent_function_xyz
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_81.milk: ASCII text
+_nonexistent_function_xyz
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322504
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_81.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322504
+[/tmp/clitest.hXRIa0/cmd_81.milk -> /milk/shm/.milk-cli.fifo.0322504]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_81.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[31mCommand not found, or command with no effect
+[0m[0;96mmilk-cli > [0mStderr:
+sh: 1: _nonexistent_function_xyz: not found
+
+--- Test 83: Clean up function vars ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _gvar
+unset _result
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_82.milk: ASCII text
+unset _gvar
+unset _result
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322522
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_82.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322522
+[/tmp/clitest.hXRIa0/cmd_82.milk -> /milk/shm/.milk-cli.fifo.0322522]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_82.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 84: Semicolon chaining ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo first ; echo second
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_83.milk: ASCII text
+echo first ; echo second
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322536
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_83.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322536
+[/tmp/clitest.hXRIa0/cmd_83.milk -> /milk/shm/.milk-cli.fifo.0322536]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_83.milk ... 
+first 
+second
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 85: AND chaining (first succeeds) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ok_cmd && echo and_ran
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_84.milk: ASCII text
+echo ok_cmd && echo and_ran
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322550
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_84.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322550
+[/tmp/clitest.hXRIa0/cmd_84.milk -> /milk/shm/.milk-cli.fifo.0322550]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_84.milk ... 
+ok_cmd 
+and_ran
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 86: OR chaining (first succeeds) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ok_cmd || echo or_skipped
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_85.milk: ASCII text
+echo ok_cmd || echo or_skipped
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322564
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_85.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322564
+[/tmp/clitest.hXRIa0/cmd_85.milk -> /milk/shm/.milk-cli.fifo.0322564]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_85.milk ... 
+ok_cmd 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 87: Output redirect to file ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo redirect_test > /tmp/_clitest_redir.txt
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_86.milk: ASCII text
+echo redirect_test > /tmp/_clitest_redir.txt
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322578
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_86.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322578
+[/tmp/clitest.hXRIa0/cmd_86.milk -> /milk/shm/.milk-cli.fifo.0322578]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_86.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 88: Append redirect ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo append_line >> /tmp/_clitest_redir.txt
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_87.milk: ASCII text
+echo append_line >> /tmp/_clitest_redir.txt
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322592
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_87.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322592
+[/tmp/clitest.hXRIa0/cmd_87.milk -> /milk/shm/.milk-cli.fifo.0322592]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_87.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 89: Command substitution ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+_subst_val=$(echo hello_sub)
+echo $_subst_val
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_88.milk: ASCII text
+_subst_val=$(echo hello_sub)
+echo $_subst_val
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322606
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_88.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322606
+[/tmp/clitest.hXRIa0/cmd_88.milk -> /milk/shm/.milk-cli.fifo.0322606]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_88.milk ... 
+[0;96mmilk-cli > [0mhello_sub
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 90: Environment variable expansion ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo $HOME
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_89.milk: ASCII text
+echo $HOME
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322621
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_89.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322621
+[/tmp/clitest.hXRIa0/cmd_89.milk -> /milk/shm/.milk-cli.fifo.0322621]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_89.milk ... 
+/home/oguyon
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 91: Tilde expansion ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo ~
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_90.milk: ASCII text
+echo ~
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322635
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_90.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322635
+[/tmp/clitest.hXRIa0/cmd_90.milk -> /milk/shm/.milk-cli.fifo.0322635]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_90.milk ... 
+/home/oguyon
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 92: Brace expansion ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo {1..5}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_91.milk: ASCII text
+echo {1..5}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322649
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_91.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322649
+[/tmp/clitest.hXRIa0/cmd_91.milk -> /milk/shm/.milk-cli.fifo.0322649]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_91.milk ... 
+1 2 3 4 5
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 93: Brace expansion with step ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo {0..10..2}
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_92.milk: ASCII text
+echo {0..10..2}
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322693
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_92.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322693
+[/tmp/clitest.hXRIa0/cmd_92.milk -> /milk/shm/.milk-cli.fifo.0322693]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_92.milk ... 
+0 2 4 6 8 10
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 94: Here-string ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+read _hs_val <<< "here_string_test"
+echo $_hs_val
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_93.milk: ASCII text
+read _hs_val <<< "here_string_test"
+echo $_hs_val
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322707
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_93.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322707
+[/tmp/clitest.hXRIa0/cmd_93.milk -> /milk/shm/.milk-cli.fifo.0322707]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_93.milk ... 
+[0;96mmilk-cli > [0mhere_string_test
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 95: Pipe to shell grep ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo searchable_text | grep searchable
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_94.milk: ASCII text
+echo searchable_text | grep searchable
+exit
+[2;33m[shell pipe] grep searchable[0m
+searchable_text 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 96: Clean up shell feature vars ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _subst_val
+unset _hs_val
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_95.milk: ASCII text
+unset _subst_val
+unset _hs_val
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322737
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_95.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322737
+[/tmp/clitest.hXRIa0/cmd_95.milk -> /milk/shm/.milk-cli.fifo.0322737]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_95.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mDEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 97: Unknown command (should suggest) ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+mem.lisim
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_96.milk: ASCII text
+mem.lisim
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322751
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_96.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322751
+[/tmp/clitest.hXRIa0/cmd_96.milk -> /milk/shm/.milk-cli.fifo.0322751]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_96.milk ... 
+[31mCommand 'mem.lisim' not found. [0mDid you mean:
+  - [0;96mmem.listim[0m
+  - [0;96mmem.mk2Dim[0m
+  - [0;96mmem.mk3Dim[0m
+[0;96mmilk-cli > [0mStderr:
+sh: 1: mem.lisim: not found
+
+--- Test 98: Completely unknown command ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+xyzzy_nonexistent_command
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_97.milk: ASCII text
+xyzzy_nonexistent_command
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322769
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_97.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322769
+[/tmp/clitest.hXRIa0/cmd_97.milk -> /milk/shm/.milk-cli.fifo.0322769]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_97.milk ... 
+[31mCommand not found, or command with no effect
+[0m[0;96mmilk-cli > [0mStderr:
+sh: 1: xyzzy_nonexistent_command: not found
+
+--- Test 99: Syntax highlighting toggle ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+synhl off
+synhl on
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_98.milk: ASCII text
+synhl off
+synhl on
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322787
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_98.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322787
+[/tmp/clitest.hXRIa0/cmd_98.milk -> /milk/shm/.milk-cli.fifo.0322787]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_98.milk ... 
+Syntax highlighting OFF
+[0;96mmilk-cli > [0mSyntax highlighting ON
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 100: Nonexistent file in source ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+source /tmp/_clitest_no_such_file.milk
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_99.milk: ASCII text
+source /tmp/_clitest_no_such_file.milk
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322801
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_99.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322801
+[/tmp/clitest.hXRIa0/cmd_99.milk -> /milk/shm/.milk-cli.fifo.0322801]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_99.milk ... 
+[0;96mmilk-cli > [0mStderr:
+source: /tmp/_clitest_no_such_file.milk: No such file
+
+--- Test 101: Include_once nonexistent file ---
+Expect: ERR
+Result: PASS
+Exit:   0
+Command:
+include_once /tmp/_clitest_no_such_f2.milk
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_100.milk: ASCII text
+include_once /tmp/_clitest_no_such_f2.milk
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322818
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_100.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322818
+[/tmp/clitest.hXRIa0/cmd_100.milk -> /milk/shm/.milk-cli.fifo.0322818]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_100.milk ... 
+include_once: /tmp/_clitest_no_such_f2.milk: No such file or directory
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 102: set -x (trace on) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+set -x
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_101.milk: ASCII text
+set -x
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322835
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_101.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322835
+[/tmp/clitest.hXRIa0/cmd_101.milk -> /milk/shm/.milk-cli.fifo.0322835]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_101.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 103: set +x (trace off) ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+set +x
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_102.milk: ASCII text
+set +x
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322849
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_102.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322849
+[/tmp/clitest.hXRIa0/cmd_102.milk -> /milk/shm/.milk-cli.fifo.0322849]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_102.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 104: Readonly variable ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+readonly _RO_PI=3
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_103.milk: ASCII text
+readonly _RO_PI=3
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322863
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_103.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322863
+[/tmp/clitest.hXRIa0/cmd_103.milk -> /milk/shm/.milk-cli.fifo.0322863]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_103.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 105: Declare integer ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+declare -i _decl_count=0
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_104.milk: ASCII text
+declare -i _decl_count=0
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322877
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_104.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322877
+[/tmp/clitest.hXRIa0/cmd_104.milk -> /milk/shm/.milk-cli.fifo.0322877]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_104.milk ... 
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 106: Let arithmetic ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+let "_decl_count=5+3"
+echo $_decl_count
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_105.milk: ASCII text
+let "_decl_count=5+3"
+echo $_decl_count
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322891
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_105.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322891
+[/tmp/clitest.hXRIa0/cmd_105.milk -> /milk/shm/.milk-cli.fifo.0322891]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_105.milk ... 
+[0;96mmilk-cli > [0m8
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 107: Clean up ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+unset _decl_count
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_106.milk: ASCII text
+unset _decl_count
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322905
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_106.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322905
+[/tmp/clitest.hXRIa0/cmd_106.milk -> /milk/shm/.milk-cli.fifo.0322905]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_106.milk ... 
+DEBUG: TOKENIZER: unrecognised char [hex 5F] length 1
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 108: Remove temp redirect file ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+!rm -f /tmp/_clitest_redir.txt
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_107.milk: ASCII text
+!rm -f /tmp/_clitest_redir.txt
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322919
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_107.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322919
+[/tmp/clitest.hXRIa0/cmd_107.milk -> /milk/shm/.milk-cli.fifo.0322919]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_107.milk ... 
+!rm -f /tmp/_clitest_redir.txt: event not found
+[0;96mmilk-cli > [0mStderr:
+
+--- Test 109: Final echo ---
+Expect: OK
+Result: PASS
+Exit:   0
+Command:
+echo CLI_ROBUSTNESS_TESTS_COMPLETE
+exit
+Stdout:
+        Cpus_allowed_list:	0-23
+/tmp/clitest.hXRIa0/cmd_108.milk: ASCII text
+echo CLI_ROBUSTNESS_TESTS_COMPLETE
+exit
+....[1m
+        milk-cli  v 1.03.00  (compiled Mar 21 2026 14:43:54)
+[22m        
+        CLI PID = 322933
+        Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
+        MILK_SHM_DIR: /milk/shm
+Startup file : /tmp/clitest.hXRIa0/cmd_108.milk
+fifo input ON
+
+[32m   LOADED : libmilkfpsCLI.so
+[0mload modules from directory ./milklib
+        MILKCLI_ADD_LIBS not set -> no additional module loaded
+        Loaded 4 modules, 149 commands
+        
+Creating fifo /milk/shm/.milk-cli.fifo.0322933
+[/tmp/clitest.hXRIa0/cmd_108.milk -> /milk/shm/.milk-cli.fifo.0322933]
+IMPORTING FILE /tmp/clitest.hXRIa0/cmd_108.milk ... 
+CLI_ROBUSTNESS_TESTS_COMPLETE
+[0;96mmilk-cli > [0mStderr:
+
