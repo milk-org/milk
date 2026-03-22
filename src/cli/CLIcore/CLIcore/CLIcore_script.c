@@ -110,9 +110,9 @@ const char *cli_var_get(const char *name)
 }
 
 /**
- * @brief Export CLI variables to environment for wordexp
+ * @brief Export CLI variables to environment (for wordexp and shell sync)
  */
-void cli_export_vars_for_wordexp(void)
+void cli_export_vars_to_env(void)
 {
     /* Export scalar variables */
     for(int i = 0; i < CLI_MAX_VARS; i++)
