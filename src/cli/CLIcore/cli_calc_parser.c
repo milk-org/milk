@@ -118,12 +118,7 @@ static inline cli_token *advance_eval(void)
  */
 static void parse_errmsg(const char *msg)
 {
-    if (data.core.Debug > 0)
-    {
-        printf(
-            "   [CALC_PARSER_ERROR] %s\n", msg
-        );
-    }
+    fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
     data.parseerror = 1;
     parse_error = 1;
     if (parse_mode == 1) {
@@ -576,8 +571,16 @@ static val_t eval_binop(
             case TOK_OP_STAR:
                 return mk_double(lv * rv);
             case TOK_OP_SLASH:
+                if (rv == 0.0) {
+                    parse_errmsg("Division by zero");
+                    return mk_double(0);
+                }
                 return mk_double(lv / rv);
             case TOK_OP_MOD:
+                if (rv == 0.0) {
+                    parse_errmsg("Modulo by zero");
+                    return mk_double(0);
+                }
                 return mk_double(fmod(lv, rv));
             case TOK_OP_CARET:
                 return mk_double(pow(lv, rv));

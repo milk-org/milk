@@ -684,7 +684,71 @@ mem.rm _calc_imtest_mask
 mem.rm _calc_im_where
 
 # ============================================
-# SECTION 15: Cleanup
+# SECTION 16: Bad Syntax & Malformed Input
+# ============================================
+
+#DESC: Unclosed single quote
+#EXPECT:ERR
+ls 'unclosed
+
+#DESC: Unclosed double quote
+#EXPECT:ERR
+ls "unclosed
+
+#DESC: Unclosed command substitution
+#EXPECT:ERR
+ls $( ls
+
+#DESC: Syntax error (unexpected token)
+#EXPECT:ERR
+( ls
+
+# ============================================
+# SECTION 17: Extreme Arguments
+# ============================================
+
+#DESC: Extremely long command length
+#EXPECT:OK
+echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+#DESC: Huge number of arguments
+#EXPECT:OK
+echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
+
+#DESC: Command given invalid option flag
+#EXPECT:ERR
+pwd --invalid-option-xyz
+
+# ============================================
+# SECTION 18: Invalid Calculator Math
+# ============================================
+
+#DESC: Division by zero
+#EXPECT:ERR
+_calc_err = 1 / 0
+
+#DESC: Mismatched parentheses
+#EXPECT:ERR
+_calc_err = ( 2 + 3 
+
+#DESC: Missing operand 
+#EXPECT:ERR
+_calc_err = 2 + 
+
+#DESC: Invalid mathematical function
+#EXPECT:ERR
+_calc_err = non_existent_function(5)
+
+#DESC: Missing math function argument
+#EXPECT:ERR
+_calc_err = min(5)
+
+#DESC: Too many math function arguments
+#EXPECT:ERR
+_calc_err = abs(1, 2)
+
+# ============================================
+# SECTION 19: Cleanup
 # ============================================
 
 #DESC: Remove temp redirect file

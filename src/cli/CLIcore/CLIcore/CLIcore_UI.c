@@ -3168,7 +3168,8 @@ pipe_fallthrough:
         }
 
         if(!((data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_STRING) ||
-                (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING)))
+                (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_RAWSTRING) ||
+                (data.cmdargtoken[0].type == CMDARGTOKEN_TYPE_UNSOLVED)))
         {
             data.CMDexecuted = 1;
         }
