@@ -39,6 +39,7 @@
 #define COLORRED       "\001\033[31m\002" /* Red */
 #define COLORHBOLDCYAN "\001\e[0;96m\002" /* High Intensity Bold Cyan */
 #define COLORDIMYELLOW "\033[2;33m" /* Dim Yellow (no RL wrap) */
+#include <wordexp.h>
 #define COLORRST       "\033[0m"    /* Reset (no RL wrap) */
 #define RL_COLORRESET  "\001\033[0m\002"
 
@@ -1187,34 +1188,18 @@ pipe_fallthrough:
         return RETURN_SUCCESS;
     }
 
-    /* Expand command substitution */
-    cli_expand_cmdsub(data.CLIcmdline, STRINGMAXLEN_CLICMDLINE);
-
     /* Expand @fpsname.param tokens */
     cli_expand_fpsvar(data.CLIcmdline,
                       STRINGMAXLEN_CLICMDLINE);
 
-    /* Expand tilde (~) to $HOME */
-    cli_expand_tilde(data.CLIcmdline,
-                     STRINGMAXLEN_CLICMDLINE);
-
-    /* Expand environment variables ($VAR).
-     * Runs before arith so $(( $n + 1 )) works.
-     * cli_expand_env skips $(( tokens. */
+    /* Expand milk variables ($VAR, $cam.xsize).
+     * Leaves other expansions $(...), $((...)) for wordexp. */
     cli_expand_env(data.CLIcmdline,
                    STRINGMAXLEN_CLICMDLINE);
 
-    /* Expand brace ranges {N..M} {N..M..S} */
+    /* Expand brace ranges {N..M} {N..M..S} (wordexp does not support) */
     cli_expand_braces(data.CLIcmdline,
                       STRINGMAXLEN_CLICMDLINE);
-
-    /* Expand arithmetic $(( expr )) */
-    cli_expand_arith(data.CLIcmdline,
-                     STRINGMAXLEN_CLICMDLINE);
-
-    /* Expand filename globs (*.fits etc) */
-    cli_expand_globs(data.CLIcmdline,
-                     STRINGMAXLEN_CLICMDLINE);
 
     /* Log command to session log if active */
     cli_session_log_cmd(data.CLIcmdline);
@@ -1970,6 +1955,45 @@ pipe_fallthrough:
             free(thetime);
             DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
+        }
+    }
+    /* ---- Smart Shell Fallback Bypass ---- */
+    /* If the command does not start with an internal milk command, alias, or script keyword,
+     * bypass manual pipe/redirect parsing and instantly delegate the full pipeline to bash.
+     */
+    if (data.CLIcmdline[0] != '\0' && data.CLIcmdline[0] != '!' && data.CLIloopON == 1) {
+        char firstword[2048];
+        if (sscanf(data.CLIcmdline, " %2047s", firstword) == 1) {
+            int is_internal = 0;
+            if (strcmp(firstword, "if") == 0 || strcmp(firstword, "elif") == 0 ||
+                strcmp(firstword, "else") == 0 || strcmp(firstword, "fi") == 0 ||
+                strcmp(firstword, "for") == 0 || strcmp(firstword, "while") == 0 ||
+                strcmp(firstword, "do") == 0 || strcmp(firstword, "done") == 0 ||
+                strcmp(firstword, ".") == 0 || strcmp(firstword, "source") == 0) {
+                is_internal = 1;
+            }
+            if (!is_internal && strchr(firstword, '=') != NULL) {
+                is_internal = 1;
+            }
+
+            if (!is_internal) {
+                for (long i = 0; i < (long) data.NBcmd; i++) {
+                    size_t cmdlen = strlen(data.cmd[i].key);
+                    if (strncmp(firstword, data.cmd[i].key, cmdlen) == 0 && 
+                        (firstword[cmdlen] == '\0' || firstword[cmdlen] == ':' || firstword[cmdlen] == ' ')) {
+                        is_internal = 1;
+                        break;
+                    }
+                }
+            }
+            if (!is_internal) {
+                int sys_ret = system(data.CLIcmdline);
+                if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) != 127) {
+                    printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
+                }
+                free(thetime);
+                return RETURN_SUCCESS;
+            }
         }
     }
 
@@ -2914,85 +2938,58 @@ pipe_fallthrough:
         }
 
         // extract first word
-
-        // First, split double-quote strings out
-        // strings inside double quotes are not processed, and will be given type CMDARGTOKEN_TYPE_RAWSTRING
-        int  rawstringmode = 0;
-        char str1[500];
-        strcpy(str1, data.CLIcmdline);
-
-        char *tokengroup;
-        char *rest = str1;
-        if(str1[0] == '\"')
+        // Replaced internal tokenization with POSIX wordexp to handle nested quotes safely
+        
+        cli_export_vars_for_wordexp(); // export variables prior to wordexp evaluation
+        
+        wordexp_t p;
+        int we_ret = wordexp(data.CLIcmdline, &p, WRDE_SHOWERR | WRDE_UNDEF);
+        if(we_ret == 0)
         {
-            rawstringmode = 1;
-        }
-
-        while((tokengroup = strtok_r(rest, "\"", &rest)))
-        {
-            //printf(" TOKEN [%d]:  %s\n", rawstringmode, tokengroup);
-
-            // always copy word in string, so that arg can be processed as string if needed
-            //strcpy(data.cmdargtoken[data.cmdNBarg].val.string, cmdargstring);
-
-            if(rawstringmode == 0)  // not in a raw string, process tokengroup
+            for(size_t i = 0; i < p.we_wordc; i++)
             {
-                cmdargstring = strtok(tokengroup, " ");
-                while(cmdargstring != NULL)  // iterate on words
+                if (data.cmdNBarg >= NB_ARG_MAX - 1) break;
+                
+                char *cmdargstring = p.we_wordv[i];
+                
+                if(data.cmdNBarg > 0
+                   && data.cmdargtoken[0].type
+                      == CMDARGTOKEN_TYPE_COMMAND
+                   && (cmdargstring[0] == '-'
+                       || cmdargstring[0] == '/'))
                 {
-                    // printf("\t processing -- %s\n", cmdargstring);
-
-                    /* When a CLI command has already been
-                     * identified and the current argument
-                     * starts with '-' or '/', treat it as
-                     * a raw string rather than running it
-                     * through the arithmetic expression
-                     * parser.
-                     * '-' prevents flags like -n, -g,
-                     * --since from triggering a parse
-                     * error.
-                     * '/' prevents absolute paths from
-                     * being misinterpreted as division
-                     * (e.g. cd /tmp). */
-                    if(data.cmdNBarg > 0
-                       && data.cmdargtoken[0].type
-                          == CMDARGTOKEN_TYPE_COMMAND
-                       && (cmdargstring[0] == '-'
-                           || cmdargstring[0] == '/'))
-                    {
-                        strncpy(
-                            data.cmdargtoken[data.cmdNBarg]
-                                .val.string,
-                            cmdargstring,
-                            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    strncpy(
                         data.cmdargtoken[data.cmdNBarg]
-                            .val.string[
-                                STRINGMAXLEN_CMDARGTOKEN_VAL
-                                - 1] = '\0';
-                        data.cmdargtoken[data.cmdNBarg]
-                            .type = CMDARGTOKEN_TYPE_RAWSTRING;
-                    }
-                    else
-                    {
-                        snprintf(str, strmaxlen,
-                                 "%s\n", cmdargstring);
-                        cli_parse(str);
-                    }
-
-                    cmdargstring = strtok(NULL, " ");
-                    data.cmdNBarg++;
+                            .val.string,
+                        cmdargstring,
+                        STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdargtoken[data.cmdNBarg]
+                        .val.string[
+                            STRINGMAXLEN_CMDARGTOKEN_VAL
+                            - 1] = '\0';
+                    data.cmdargtoken[data.cmdNBarg]
+                        .type = CMDARGTOKEN_TYPE_RAWSTRING;
                 }
-                rawstringmode = 1;
-            }
-            else
-            {
-                strcpy(data.cmdargtoken[data.cmdNBarg].val.string, tokengroup);
-                data.cmdargtoken[data.cmdNBarg].type =
-                    CMDARGTOKEN_TYPE_RAWSTRING;
+                else
+                {
+                    snprintf(str, strmaxlen,
+                             "%s\n", cmdargstring);
+                    cli_parse(str);
+                }
                 data.cmdNBarg++;
-                rawstringmode = 0;
             }
+            wordfree(&p);
         }
+        else
+        {
+            // Fallback if wordexp fails (e.g. WRDE_SYNTAX due to unmatched quotes)
+            // It will trigger CMDARGTOKEN_TYPE_UNSOLVED which then correctly routes to bash transparently!
+            strncpy(data.cmdargtoken[0].val.string, data.CLIcmdline, STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+            data.cmdargtoken[0].val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] = '\0';
+            data.cmdargtoken[0].type = CMDARGTOKEN_TYPE_RAWSTRING;
+            data.cmdNBarg = 1;
+        }
+
         data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_UNSOLVED;
 
 
