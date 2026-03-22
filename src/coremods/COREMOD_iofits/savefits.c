@@ -73,9 +73,9 @@ errno_t saveFITS_opt_trunc_IMGID(
     int             truncate,
     const char     *outputFITSname,
     int             outputbitpix,
-    const char     *importheaderfile,
-    IMAGE_KEYWORD  *kwarray,
-    int             kwarraysize,
+    const char     *importheaderfile __attribute__((unused)),
+    IMAGE_KEYWORD  *kwarray __attribute__((unused)),
+    int             kwarraysize __attribute__((unused)),
     const char     *FITSIOext
 )
 {
@@ -252,7 +252,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings)
     / sizeof(FPS_CLI_BINDING);
 
@@ -292,7 +292,7 @@ void init_cmdsettings(void)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID in =
         imgid_make_from_name(

@@ -1,0 +1,1 @@
+run < ../tests/cli/test_calculator.milk

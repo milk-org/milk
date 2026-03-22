@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
                 continue;
             }
 
-            char status_str[128] = "";
+            char status_str[256] = "";
             char conf_pid_str[32] = "";
             char run_pid_str[32] = "";
             char tmux_str[32] = "";
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
                 snprintf(proc_str, 32, "%s-%s", C_DIM, C_RST);
             }
 
-            snprintf(status_str, 128, "%s %s %s  %s ", conf_pid_str, run_pid_str, tmux_str, proc_str);
+            snprintf(status_str, 256, "%s %s %s  %s ", conf_pid_str, run_pid_str, tmux_str, proc_str);
 
             
             if (show_exec) {

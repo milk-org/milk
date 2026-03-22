@@ -276,8 +276,8 @@ errno_t printstatus(imageID ID)
 
     {
         // Image name, type and size
-        char str[STRINGMAXLEN_DEFAULT];
-        char str1[STRINGMAXLEN_DEFAULT];
+        char str[4096];
+        char str1[4096];
 
         TUI_printfw("%s  ", image->name);
         datatype = image->md->datatype;
@@ -289,15 +289,15 @@ errno_t printstatus(imageID ID)
         for(j = 1; j < image->md->naxis; j++)
         {
             snprintf(str1,
-                     STRINGMAXLEN_DEFAULT,
-                     "%s x %6ld",
+                     sizeof(str1),
+                     "%.4000s x %6ld",
                      str,
                      (long) image->md->size[j]);
 
             strcpy(str, str1);
         }
 
-        snprintf(str1, STRINGMAXLEN_DEFAULT, "%s]", str);
+        snprintf(str1, sizeof(str1), "%.4000s]", str);
         strcpy(str, str1);
 
         TUI_printfw("%-28s\n", str);

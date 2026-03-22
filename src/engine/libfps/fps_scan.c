@@ -205,11 +205,11 @@ errno_t functionparameter_scan_fps(
                 // is file sym link ?
                 struct stat buf;
                 int         retv;
-                char        fullname[STRINGMAXLEN_FULLFILENAME];
+                char        fullname[STRINGMAXLEN_FULLFILENAME + 256];
                 char        shmdname[STRINGMAXLEN_DIRNAME];
                 function_parameter_struct_shmdirname(shmdname);
 
-                WRITE_FULLFILENAME(fullname, "%s/%s", shmdname, dir->d_name);
+                snprintf(fullname, sizeof(fullname), "%s/%s", shmdname, dir->d_name);
 
                 retv = lstat(fullname, &buf);
                 if(retv == -1)

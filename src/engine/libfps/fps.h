@@ -1028,13 +1028,13 @@ int main(int argc, char *argv[]) { \
  * @endcode
  */
 #define FPS_V2_SECTION5(PARAMS_MACRO)               \
-    static FPS_CLI_BINDING my_bindings[] = {         \
+    static __attribute__((unused)) FPS_CLI_BINDING my_bindings[] = {         \
         PARAMS_MACRO(FPS_X_BINDING)                  \
     };                                               \
-    static const int nb_bindings =                   \
+    static const int __attribute__((unused)) nb_bindings =                   \
         (int)(sizeof(my_bindings)                     \
             / sizeof(FPS_CLI_BINDING));              \
-    static CLICMDARGDEF farg[] = {                   \
+    static __attribute__((unused)) CLICMDARGDEF farg[] = {                   \
         PARAMS_MACRO(FPS_X_FARG)                     \
     };                                               \
     FPS_V2_CLICMDDATA_DECL_                          \

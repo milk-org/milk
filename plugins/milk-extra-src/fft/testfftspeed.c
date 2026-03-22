@@ -73,7 +73,7 @@ static MILK_HOT errno_t compute_function()
 }
 
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
+static errno_t __attribute__((unused)) CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info, farg, &CLIcmddata,

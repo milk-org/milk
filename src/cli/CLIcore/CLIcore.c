@@ -1533,7 +1533,7 @@ void runCLI_cmd_init()
     }
 }
 
-static void runCLI_free()
+static void __attribute__((unused)) runCLI_free()
 {
 #ifndef DATA_STATIC_ALLOC
     // Free

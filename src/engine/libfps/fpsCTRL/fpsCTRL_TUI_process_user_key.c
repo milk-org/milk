@@ -35,8 +35,8 @@ int fpsCTRL_TUI_process_user_key(
     int                        ch,
     FUNCTION_PARAMETER_STRUCT *fps,
     KEYWORD_TREE_NODE         *keywnode,
-    FPSCTRL_TASK_ENTRY        *fpsctrltasklist,
-    FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist,
+    FPSCTRL_TASK_ENTRY        *fpsctrltasklist __attribute__((unused)),
+    FPSCTRL_TASK_QUEUE        *fpsctrlqueuelist __attribute__((unused)),
     FPSCTRL_PROCESS_VARS      *fpsCTRLvar
 )
 {
@@ -433,7 +433,7 @@ int fpsCTRL_TUI_process_user_key(
             }
             printf("  TOTAL :  %d nodes\n\n", fpsCTRLvar->NBkwn);
             printf("Press Enter to Continue\n");
-            while(getchar() != '\n');
+            while(getchar() != '\n') {}
             {
                 short unsigned int wrow = 0, wcol = 0;
                 TUI_initncurses(&wrow, &wcol);

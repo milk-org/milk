@@ -51,7 +51,7 @@ static uint32_t cropysize  = 64;
       FPTYPE_UINT32, 1, \
       FPFLAG_DEFAULT_INPUT, "crop y coord size")
 
-static MILK_COLD errno_t customCONFsetup()
+static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
 {
     if(dcfpsptr != NULL)
     {
@@ -65,7 +65,7 @@ static MILK_COLD errno_t customCONFsetup()
     return RETURN_SUCCESS;
 }
 
-static MILK_COLD errno_t customCONFcheck()
+static MILK_COLD errno_t __attribute__((unused)) customCONFcheck()
 {
     return RETURN_SUCCESS;
 }
@@ -73,7 +73,7 @@ static MILK_COLD errno_t customCONFcheck()
 FPS_V2_SECTION5(FPS_PARAMS)
 
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
