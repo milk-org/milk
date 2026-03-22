@@ -1535,7 +1535,6 @@ void cli_parse(const char *input)
  */
 int cli_calc_eval_line(const char *input)
 {
-    data.core.Debug = 1;
     parse_mode = 1;
     /* Use tokenizer but ensure it handles everything */
     char tbuf[8192];
