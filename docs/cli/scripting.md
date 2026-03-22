@@ -9,6 +9,7 @@ tags:
 The `milk-cli` interpreter is designed to provide a seamless scripting experience by transparently integrating with your system's `bash` shell. Any command that is not a native `milk-cli` command is automatically evaluated by the underlying OS shell using `wordexp()`.
 
 This means **all standard Bash scripting features are fully supported** inside `milk-cli`, including:
+
 - Variables (`$var`), Arithmetic (`$(( ))`), and String Manipulation
 - Flow Control (`if`, `for`, `while`, `case`)
 - Built-ins (`sleep`, `read`, `printf`, `trap`, `shift`)
