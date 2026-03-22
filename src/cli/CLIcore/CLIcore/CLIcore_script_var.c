@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <wordexp.h>
 #include "CLIcore.h"
 #include "CLIcore_UI.h"
 #include "CLIcore_script.h"
@@ -150,7 +151,27 @@ int cli_try_var_assign(const char *line)
             }
         }
 
-        cli_var_set(tmpname, valbuf);
+        /* Use wordexp to evaluate command substitution, variables, and quotes natively. */
+        wordexp_t p;
+        cli_export_vars_to_env();
+        if(wordexp(valbuf, &p, 0) == 0)
+        {
+            char expanded_val[CLI_VAR_VALLEN] = "";
+            for(size_t i = 0; i < p.we_wordc; i++)
+            {
+                if(i > 0)
+                {
+                    strncat(expanded_val, " ", CLI_VAR_VALLEN - strlen(expanded_val) - 1);
+                }
+                strncat(expanded_val, p.we_wordv[i], CLI_VAR_VALLEN - strlen(expanded_val) - 1);
+            }
+            wordfree(&p);
+            cli_var_set(tmpname, expanded_val);
+        }
+        else
+        {
+            cli_var_set(tmpname, valbuf);
+        }
         return 1;
     }
 }
