@@ -21,8 +21,8 @@ Typically, plugins are placed inside an intermediate group folder such as:
 - `plugins/milk-extra-src/<your_plugin>`
 - `plugins/cacao-src/<your_plugin>` (For `cacao` AO loop modules)
 
-> [!NOTE]
-> Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
+!!! note
+    Because plugins are decoupled, it's very common for them to be their own isolated git repositories. You can add them under `plugins/` via standard copying, as a git submodule, or even via symbolic links.
 
 ### Standalone Executables Relation to Core
 

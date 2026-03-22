@@ -11,12 +11,12 @@ standalone executables:
 | **LTO** | `-DUSE_STATIC_LTO=ON` | 5–15% |
 | **PGO + LTO** | Both | **15–40%** |
 
-> [!TIP]
-> For maximum performance on production AO systems,
-> enable **both** PGO and static LTO. The techniques
-> are complementary — LTO exposes cross-library code
-> to GCC, and PGO then trains the optimizer with
-> real branch/call data across that larger scope.
+!!! tip
+    For maximum performance on production AO systems,
+    enable **both** PGO and static LTO. The techniques
+    are complementary — LTO exposes cross-library code
+    to GCC, and PGO then trains the optimizer with
+    real branch/call data across that larger scope.
 
 ***
 
@@ -159,13 +159,13 @@ compiled into a single contiguous code region. The
 CPU's instruction prefetcher can stream this code
 sequentially, and the entire hot loop fits in L1i.
 
-> [!IMPORTANT]
-> For real-time AO loops running at 1–10 kHz,
-> icache pressure is the dominant performance
-> bottleneck after algorithmic optimization.
-> Reducing the hot-path footprint from scattered
-> `.so` pages to a compact inlined binary is one
-> of the most impactful optimizations available.
+!!! important
+    For real-time AO loops running at 1–10 kHz,
+    icache pressure is the dominant performance
+    bottleneck after algorithmic optimization.
+    Reducing the hot-path footprint from scattered
+    `.so` pages to a compact inlined binary is one
+    of the most impactful optimizations available.
 
 ### 1.5. Summary: Static LTO Benefits
 
@@ -227,13 +227,13 @@ sudo make install
 
 `milk-perfbench` build tag: **`O3 LTO [x86_64]`**
 
-> [!IMPORTANT]
-> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-> when switching to Option B. CMake caches values
-> between runs — if `USE_STATIC_LTO=ON` was set
-> previously, it remains active until explicitly
-> cleared. Forgetting this causes a link error:
-> `cannot find -lImageStreamIO_static`.
+!!! important
+    Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+    when switching to Option B. CMake caches values
+    between runs — if `USE_STATIC_LTO=ON` was set
+    previously, it remains active until explicitly
+    cleared. Forgetting this causes a link error:
+    `cannot find -lImageStreamIO_static`.
 
 #### Restore Normal Build
 
@@ -374,12 +374,12 @@ silently ignores missing profiles when
 | Standalone `.c` | `pgo/<exe-name>/` | Independent per executable |
 | Shared libraries | `pgo/shared/` | Aggregated across all runs |
 
-> [!TIP]
-> For the best results, run each fpsexec with a
-> workload that closely matches production use:
-> same stream sizes, same number of modes, same
-> loop rate. The more representative the
-> training run, the better the optimization.
+!!! tip
+    For the best results, run each fpsexec with a
+    workload that closely matches production use:
+    same stream sizes, same number of modes, same
+    loop rate. The more representative the
+    training run, the better the optimization.
 
 ***
 
@@ -576,12 +576,12 @@ cmake .. \
   -DCMAKE_SHARED_LINKER_FLAGS=""
 ```
 
-> [!CAUTION]
-> CMake **caches** all `-D` options between runs.
-> Always pass `-DUSE_STATIC_LTO=OFF` explicitly
-> when switching away from static LTO. Omitting it
-> leaves `USE_STATIC_LTO=ON` in the cache and
-> causes `cannot find -lImageStreamIO_static`.
+!!! danger
+    CMake **caches** all `-D` options between runs.
+    Always pass `-DUSE_STATIC_LTO=OFF` explicitly
+    when switching away from static LTO. Omitting it
+    leaves `USE_STATIC_LTO=ON` in the cache and
+    causes `cannot find -lImageStreamIO_static`.
 
 ### CMake Policy
 
@@ -637,11 +637,11 @@ installing any runtime libraries — you can build
 `fpsexec` executables against
 [musl libc](https://musl.libc.org/) instead of glibc.
 
-> [!NOTE]
-> The standard static LTO build (section 1.6 Option A)
-> still depends on the system glibc at runtime (3 libs:
-> `libc.so`, `ld-linux.so`, `libm.so`). The musl build
-> here produces a true **zero-dependency** binary.
+!!! note
+    The standard static LTO build (section 1.6 Option A)
+    still depends on the system glibc at runtime (3 libs:
+    `libc.so`, `ld-linux.so`, `libm.so`). The musl build
+    here produces a true **zero-dependency** binary.
 
 ### 8.1. Prerequisites
 

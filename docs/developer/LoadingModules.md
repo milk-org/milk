@@ -1,7 +1,7 @@
 # Loading, Creating Additional Modules
 
-> [!NOTE]
-> This file: `docs/developer/LoadingModules.md`
+!!! note
+    This file: `docs/developer/LoadingModules.md`
 
 
 
@@ -155,8 +155,8 @@ Upon startup, milk will read the CLI_ADD_LIBS environment variable to link share
 
 will link modules `MyFirstModule` and `MySecondModule`.
 
-> [!NOTE]
-> Shared object names can be separated by space, semicolon, or comma.
+!!! note
+    Shared object names can be separated by space, semicolon, or comma.
 
 
 
@@ -195,8 +195,8 @@ The `EXTRAMODULES` option is then used to add entry(ies) to the list of compiled
 will compile modules `WFpropagate` and `OpticsMaterials` in addition to default modules. The extra modules shared objects will be `/usr/local/lib/libWFpropagate.so` and `/usr/local/lib/libOpticsMaterials.so`, and can be loaded with any of the methods described in the linking section.
 
 
-> [!WARNING]
-> Adding entries with the EXTRAMODULES option will compile the corresponding shared objects, but will not have them loaded upon execution of the main executable by default. See section below on Automatic loading.
+!!! warning
+    Adding entries with the EXTRAMODULES option will compile the corresponding shared objects, but will not have them loaded upon execution of the main executable by default. See section below on Automatic loading.
 
 
 
@@ -213,8 +213,8 @@ For example:
 
 - Create a system-wide environment variable CLI_ADD_LIBS in `~/.bashrc`.
 
-> [!NOTE]
-> Several versions of the executable can also be defined, each with its own set of automatically loaded modules. For example, the following line can be saved as an executable script:
+!!! note
+    Several versions of the executable can also be defined, each with its own set of automatically loaded modules. For example, the following line can be saved as an executable script:
 
 	CLI_ADD_LIBS="/usr/local/libs/libWFpropagate.so" milk-cli
 
