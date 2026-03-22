@@ -151,8 +151,8 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 `milk` provides both an interactive prompt (`milk-cli`) and independent executable programs known as standalone executables (`milk-fpsexec-*` and `cacao-fpsexec-*`).
 Standalones are specifically designed to execute one compute unit in isolation without relying on the broader CLI environment, linking securely to only the `_compute` variants of libraries. They act as native Linux processes managed via `tmux` and `fpsCTRL`.
 
-> [!TIP]
-> **Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
+!!! tip
+    **Writing a custom plugin?** See [plugins.md](developer/plugins.md) for a complete guide on how to integrate custom plugins into the build system.
 
 ## 5. Dependency Architecture
 
