@@ -105,10 +105,7 @@ errno_t cli_lhistory(void);
 
 void cli_history_expand(void);
 void cli_alias_expand(void);
-void cli_expand_cmdsub(char *line, int maxlen);
-void cli_expand_tilde(char *line, int maxlen);
 void cli_expand_braces(char *line, int maxlen);
-void cli_expand_globs(char *line, int maxlen);
 void cli_session_log_cmd(const char *cmd);
 void cli_history_log_cmd(const char *cmd);
 const char *CLI_history_file(void);
