@@ -322,5 +322,34 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     echo "AO loop started successfully."
     ```
 
+??? example "Example 7: Real-Time Process Triggering & Monitoring"
+
+    Use FPS parameters to configure `procinfo` settings, binding a compute unit to trigger automatically on a stream and monitoring its health from the script.
+
+    ```bash
+    #!/usr/bin/env milk-cli -s
+    
+    # 1. Start the compute unit process
+    milk-fpsexec-examplefunc2_FPS -tmux &
+    sleep 1
+
+    # 2. Configure it to be triggered by a stream (Mode 3 = SEMAPHORE)
+    fpsset examplefunc2_FPS procinfo.triggermode 3
+    fpsset examplefunc2_FPS procinfo.triggersname wfs_cam
+    
+    # 3. Enable the background loop
+    fpsset examplefunc2_FPS procinfo.enabled 1
+    
+    # 4. Monitor its execution natively
+    for i in {1..5}; do
+        # Dot-expansion accesses the live telemetry via procinfo
+        status=${examplefunc2_FPS.procinfo.status}
+        loopcnt=${examplefunc2_FPS.procinfo.loopcnt}
+        
+        echo "Check $i: Status=$status, Iterations=$loopcnt"
+        sleep 2
+    done
+    ```
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
