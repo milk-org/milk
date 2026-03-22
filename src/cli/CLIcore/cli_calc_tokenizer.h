@@ -33,6 +33,8 @@ typedef enum
     TOK_FUNC_DDD_D,  /**< func(d,d,d)->double       */
     TOK_FUNC_IM_D,   /**< func(image)->double        */
     TOK_FUNC_IMD_D,  /**< func(image,double)->double */
+    TOK_FUNC_IMIM_D, /**< func(im,im)->double        */
+    TOK_FUNC_WHERE,  /**< where(cond, a, b)          */
     TOK_VAR,         /**< existing variable          */
     TOK_IMAGE,       /**< existing image             */
     TOK_COMMAND,     /**< registered CLI command     */
@@ -42,6 +44,16 @@ typedef enum
     TOK_OP_STAR,
     TOK_OP_SLASH,
     TOK_OP_CARET,
+    TOK_OP_MOD,
+    TOK_OP_LT,
+    TOK_OP_LE,
+    TOK_OP_GT,
+    TOK_OP_GE,
+    TOK_OP_EQ,
+    TOK_OP_NEQ,
+    TOK_OP_AND,
+    TOK_OP_OR,
+    TOK_OP_NOT,
     TOK_LPAREN,
     TOK_RPAREN,
     TOK_COMMA,

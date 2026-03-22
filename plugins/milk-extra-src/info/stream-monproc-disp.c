@@ -241,7 +241,7 @@ int main(int argc, char *argv[]) {
 
         for (int p = 0; p < 10; p++) { // Check powers of 2 up to 512
             int bin = 1 << p;
-            char fname[512];
+            char fname[4096];
             struct stat st;
 
             snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", dcshmdir, streamname, bin);

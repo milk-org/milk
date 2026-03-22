@@ -1,0 +1,8 @@
+Found string b
+DEBUG: TOKENIZER: "b" IS A NEW VARIABLE
+DEBUG: TOKENIZER: "=" is an operator/punct
+Found string a
+DEBUG: TOKENIZER: "a" IS A VARIABLE
+creating double
+[DEBUG] Eval succeeded!
+    double: 14

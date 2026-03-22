@@ -72,9 +72,12 @@ static inline double get_pixel_value(IMAGE *img, int x, int y) {
 
 // Convert normalized RGB to 256-color index (6x6x6 cube starts at 16)
 static inline int rgb_to_256(float r, float g, float b) {
-    if (r < 0.0f) r = 0.0f; if (r > 1.0f) r = 1.0f;
-    if (g < 0.0f) g = 0.0f; if (g > 1.0f) g = 1.0f;
-    if (b < 0.0f) b = 0.0f; if (b > 1.0f) b = 1.0f;
+    if (r < 0.0f) r = 0.0f; 
+    if (r > 1.0f) r = 1.0f;
+    if (g < 0.0f) g = 0.0f; 
+    if (g > 1.0f) g = 1.0f;
+    if (b < 0.0f) b = 0.0f; 
+    if (b > 1.0f) b = 1.0f;
 
     int ir = (int)(r * 5.0 + 0.5);
     int ig = (int)(g * 5.0 + 0.5);
@@ -89,7 +92,8 @@ static inline int rgb_to_256(float r, float g, float b) {
 
 static inline void get_heat_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
-    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+    if (v < 0.0) v = 0.0; 
+    if (v > 1.0) v = 1.0;
     
     if (v < 0.25) { // Black to Blue
         *b = v * 4.0;
@@ -108,7 +112,8 @@ static inline void get_heat_color(float v, float *r, float *g, float *b) {
 
 static inline void get_cold_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
-    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+    if (v < 0.0) v = 0.0; 
+    if (v > 1.0) v = 1.0;
 
     // Black -> Blue -> Cyan -> White
     if (v < 0.33) {
@@ -125,7 +130,8 @@ static inline void get_cold_color(float v, float *r, float *g, float *b) {
 
 static inline void get_jet_color(float v, float *r, float *g, float *b) {
     *r = *g = *b = 0.0;
-    if (v < 0.0) v = 0.0; if (v > 1.0) v = 1.0;
+    if (v < 0.0) v = 0.0; 
+    if (v > 1.0) v = 1.0;
 
     // Blue -> Cyan -> Green -> Yellow -> Red
     if (v < 0.25) {

@@ -59,7 +59,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
 
 
 static errno_t
-imcube_mindiffscan(IMGID img, const char *__restrict outdname, uint32_t kNNsize)
+imcube_mindiffscan(IMGID img, const char *__restrict outdname __attribute__((unused)), uint32_t kNNsize)
 {
     // entering function, updating trace accordingly
     DEBUG_TRACE_FSTART();

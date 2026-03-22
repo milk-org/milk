@@ -71,7 +71,7 @@ static double * reglambda = NULL;
 static char * outPFname = NULL;
 static float * loopgain = NULL;
 static uint64_t * out3Dwrite = NULL;
-static int32_t * GPUdevice = NULL;
+static int32_t * GPUdevice __attribute__((unused)) = NULL;
 
 
 /* ================================================================

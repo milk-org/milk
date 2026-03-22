@@ -111,7 +111,7 @@ void init_cms_status(void)
     }
 }
 
-static errno_t compute_status()
+static errno_t __attribute__((unused)) compute_status()
 {
     COREMOD_MEMORY_image_set_status(
         p_imname, p_value);
@@ -134,7 +134,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS_IMGINT(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -165,7 +165,7 @@ void init_cms_cnt0(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -215,7 +215,7 @@ void init_cms_cnt1(void)
     }
 }
 
-static errno_t compute_cnt1()
+static errno_t __attribute__((unused)) compute_cnt1()
 {
     COREMOD_MEMORY_image_set_cnt1(
         p_imname, p_value);

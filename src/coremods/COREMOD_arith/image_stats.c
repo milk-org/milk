@@ -11,6 +11,7 @@
 #include "libmilkdata/milkdata.h"
 #include "milkDebugTools.h"
 #endif
+#include <math.h>
 #include "image_stats.h"
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -673,4 +674,98 @@ double arith_image_median(const char *ID_name)
 {
     IMGID imgin = imgid_make_from_name(ID_name);
     return arith_image_median_IMGID(&imgin);
+}
+
+double MILK_HOT arith_image_dot_IMGID(IMGID *imgin1, IMGID *imgin2)
+{
+    uint64_t nelement;
+    uint8_t  datatype1, datatype2;
+    double   value = 0.0;
+    int      OK = 0;
+
+    resolveIMGID(imgin1, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(imgin2, ERRMODE_ABORT, dcimg, dcnimg);
+
+    datatype1 = imgin1->md[0].datatype;
+    datatype2 = imgin2->md[0].datatype;
+    nelement  = imgin1->md[0].nelement;
+
+    if(datatype1 != datatype2 || nelement != imgin2->md[0].nelement)
+    {
+        printf("Error: Incompatible sizes or types for arith_image_dot\n");
+        return 0.0;
+    }
+
+    if(datatype1 == _DATATYPE_FLOAT)
+    {
+        float * MILK_RESTRICT ptr1 = MILK_ASSUME_ALIGNED(imgin1->im->array.F);
+        float * MILK_RESTRICT ptr2 = MILK_ASSUME_ALIGNED(imgin2->im->array.F);
+#ifdef _OPENMP
+        #pragma omp parallel for simd reduction(+:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
+        {
+            value += (double)ptr1[ii] * (double)ptr2[ii];
+        }
+        OK = 1;
+    }
+    else if(datatype1 == _DATATYPE_DOUBLE)
+    {
+        double * MILK_RESTRICT ptr1 = MILK_ASSUME_ALIGNED(imgin1->im->array.D);
+        double * MILK_RESTRICT ptr2 = MILK_ASSUME_ALIGNED(imgin2->im->array.D);
+#ifdef _OPENMP
+        #pragma omp parallel for simd reduction(+:value) if (nelement > OMP_NELEMENT_LIMIT)
+#endif
+        for(uint64_t ii = 0; ii < nelement; ii++)
+        {
+            value += (double)ptr1[ii] * (double)ptr2[ii];
+        }
+        OK = 1;
+    }
+    else
+    {
+        /* Fallback for other datatypes using floatcast (not optimal but handles rare types) */
+        for(uint64_t ii = 0; ii < nelement; ii++)
+        {
+            float v1, v2;
+            switch(datatype1) {
+                case _DATATYPE_UINT8:  v1 = (float)imgin1->im->array.UI8[ii];  v2 = (float)imgin2->im->array.UI8[ii]; break;
+                case _DATATYPE_UINT16: v1 = (float)imgin1->im->array.UI16[ii]; v2 = (float)imgin2->im->array.UI16[ii]; break;
+                case _DATATYPE_UINT32: v1 = (float)imgin1->im->array.UI32[ii]; v2 = (float)imgin2->im->array.UI32[ii]; break;
+                case _DATATYPE_UINT64: v1 = (float)imgin1->im->array.UI64[ii]; v2 = (float)imgin2->im->array.UI64[ii]; break;
+                case _DATATYPE_INT8:   v1 = (float)imgin1->im->array.SI8[ii];  v2 = (float)imgin2->im->array.SI8[ii]; break;
+                case _DATATYPE_INT16:  v1 = (float)imgin1->im->array.SI16[ii]; v2 = (float)imgin2->im->array.SI16[ii]; break;
+                case _DATATYPE_INT32:  v1 = (float)imgin1->im->array.SI32[ii]; v2 = (float)imgin2->im->array.SI32[ii]; break;
+                case _DATATYPE_INT64:  v1 = (float)imgin1->im->array.SI64[ii]; v2 = (float)imgin2->im->array.SI64[ii]; break;
+                default: v1=0; v2=0; break;
+            }
+            value += (double)v1 * (double)v2;
+        }
+        OK = 1;
+    }
+
+    if(OK == 0)
+    {
+        printf("Error: Invalid data format for arith_image_dot\n");
+    }
+
+    return value;
+}
+
+double arith_image_dot(const char *ID1_name, const char *ID2_name)
+{
+    IMGID imgin1 = imgid_make_from_name(ID1_name);
+    IMGID imgin2 = imgid_make_from_name(ID2_name);
+    return arith_image_dot_IMGID(&imgin1, &imgin2);
+}
+
+double MILK_HOT arith_image_norm_IMGID(IMGID *imgin)
+{
+    return sqrt(arith_image_dot_IMGID(imgin, imgin));
+}
+
+double arith_image_norm(const char *ID_name)
+{
+    IMGID imgin = imgid_make_from_name(ID_name);
+    return arith_image_norm_IMGID(&imgin);
 }

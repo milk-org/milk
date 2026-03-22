@@ -149,12 +149,12 @@ errno_t compute_SVD(
     enum matrix_shape {inMshape_tall, inMshape_wide} mshape;
 
     uint32_t Mdim = 0;
-    uint32_t Mdim0 = 0;
-    uint32_t Mdim1 = 0;
+    uint32_t Mdim0 __attribute__((unused)) = 0;
+    uint32_t Mdim1 __attribute__((unused)) = 0;
 
     uint32_t Ndim = 0;
-    uint32_t Ndim0 = 0;
-    uint32_t Ndim1 = 0;
+    uint32_t Ndim0 __attribute__((unused)) = 0;
+    uint32_t Ndim1 __attribute__((unused)) = 0;
 
     if(inNdim < inMdim)
     {

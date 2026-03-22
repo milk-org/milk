@@ -96,7 +96,7 @@ static MILK_HOT errno_t compute_function()
 }
 
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
+static errno_t __attribute__((unused)) CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info, farg, &CLIcmddata,
@@ -144,12 +144,12 @@ imageID fft_correlation(const char *ID_name1,
     WRITE_IMAGENAME(ft2name, "_ft2_%d", (int) getpid());
     do2drfft(ID_name2, ft2name);
 
-    WRITE_IMAGENAME(fta1name, "_%s_a_%d", ft1name, (int) getpid());
-    WRITE_IMAGENAME(ftp1name, "_%s_p_%d", ft1name, (int) getpid());
-    WRITE_IMAGENAME(fta2name, "_%s_a_%d", ft2name, (int) getpid());
-    WRITE_IMAGENAME(ftp2name, "_%s_p_%d", ft2name, (int) getpid());
-    WRITE_IMAGENAME(fta12name, "_%s_12a_%d", ft1name, (int) getpid());
-    WRITE_IMAGENAME(ftp12name, "_%s_12p_%d", ft1name, (int) getpid());
+    WRITE_IMAGENAME(fta1name, "_%.60s_a_%d", ft1name, (int) getpid());
+    WRITE_IMAGENAME(ftp1name, "_%.60s_p_%d", ft1name, (int) getpid());
+    WRITE_IMAGENAME(fta2name, "_%.60s_a_%d", ft2name, (int) getpid());
+    WRITE_IMAGENAME(ftp2name, "_%.60s_p_%d", ft2name, (int) getpid());
+    WRITE_IMAGENAME(fta12name, "_%.60s_12a_%d", ft1name, (int) getpid());
+    WRITE_IMAGENAME(ftp12name, "_%.60s_12p_%d", ft1name, (int) getpid());
 
     mk_amph_from_complex(ft1name, fta1name, ftp1name, 0);
     mk_amph_from_complex(ft2name, fta2name, ftp2name, 0);

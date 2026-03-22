@@ -49,7 +49,7 @@ static int64_t *ex1mode;
       FPFLAG_DEFAULT_INPUT, "toggle1 conditional on toggle0")
 
 // Optional custom configuration setup
-static MILK_COLD errno_t customCONFsetup()
+static MILK_COLD errno_t __attribute__((unused)) customCONFsetup()
 {
     // increment counter at every configuration check
     *cntindex = *cntindex + 1;
@@ -102,7 +102,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {

@@ -120,7 +120,7 @@ errno_t linopt_imtools_makeCPAmodes(
 
 
     long    NBfrequ;
-    float   eps;
+    float   eps __attribute__((unused));
     FILE   *fp;
 
     long IDfreq;

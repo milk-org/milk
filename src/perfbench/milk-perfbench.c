@@ -54,7 +54,7 @@
  * ============================================================= */
 
 #define MAX_CMD           2048
-#define MAX_PATH          512
+#define MAX_PATH          2048
 #define MAX_LABEL         64
 #define POLL_INTERVAL_MS  10
 #define POLL_TIMEOUT_MS   30000
