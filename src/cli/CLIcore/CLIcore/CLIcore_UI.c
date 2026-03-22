@@ -1993,6 +1993,7 @@ pipe_fallthrough:
                     return RETURN_SUCCESS;
                 }
 
+                cli_export_vars_to_env();
                 int sys_ret = system(data.CLIcmdline);
                 if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) != 127) {
                     printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
@@ -2022,6 +2023,7 @@ pipe_fallthrough:
                 printf(COLORDIMYELLOW
                        "[shell pipe] %s"
                        COLORRST "\n", rhs);
+                cli_export_vars_to_env();
                 pipe_fp = popen(rhs, "w");
                 if(pipe_fp != NULL)
                 {
@@ -2099,6 +2101,7 @@ pipe_fallthrough:
         printf(COLORDIMYELLOW
                "[shell] %s" COLORRST "\n",
                data.CLIcmdline);
+        cli_export_vars_to_env();
         if(system(data.CLIcmdline) != 0)
         {
             PRINT_ERROR("system call error");
@@ -2946,7 +2949,7 @@ pipe_fallthrough:
         // extract first word
         // Replaced internal tokenization with POSIX wordexp to handle nested quotes safely
         
-        cli_export_vars_for_wordexp(); // export variables prior to wordexp evaluation
+        cli_export_vars_to_env(); // export variables prior to wordexp evaluation
         
         wordexp_t p;
         int we_ret = wordexp(data.CLIcmdline, &p, WRDE_SHOWERR | WRDE_UNDEF);
@@ -3178,6 +3181,7 @@ pipe_fallthrough:
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
         /* Attempt transparent OS shell fallback */
+        cli_export_vars_to_env();
         int sys_ret = system(data.CLIcmdline);
         int os_not_found = 0;
         

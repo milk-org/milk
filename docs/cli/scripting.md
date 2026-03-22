@@ -383,5 +383,23 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     echo "Filtered conditionally merged mean of masked image: $h"
     ```
 
+??? example "Example 9: Bi-Directional Environment Variable Sync"
+
+    `milk-cli` natively exports all active workspace variables to the underlying POSIX environment when dispatching shell commands (like `!cmd` or pipes), and can concurrently read standard Linux environment variables without requiring manual exports.
+
+    ```bash
+    #!/usr/bin/env milk-cli -s
+
+    # 1. Read standard OS variables natively (Inward Sync)
+    echo "Operating as user: $USER in home directory: $HOME"
+
+    # 2. Define a milk-cli local variable
+    PREFIX="WFS_DATA"
+
+    # 3. Use it transparently inside a dispatched shell command (Outward Sync)
+    !echo "Saving to prefix: $PREFIX" > /tmp/${PREFIX}_log.txt
+    !cat /tmp/${PREFIX}_log.txt
+    ```
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
