@@ -143,8 +143,8 @@ void cli_expand_env(
  *  (VAR=val). Returns 1 if handled. */
 int cli_try_var_assign(const char *line);
 
-/** Export CLI variables to environment for wordexp */
-void cli_export_vars_for_wordexp(void);
+/** Export CLI variables to environment (for wordexp and shell sync) */
+void cli_export_vars_to_env(void);
 
 /* ---- Block Accumulator (flow control) ---- */
 
