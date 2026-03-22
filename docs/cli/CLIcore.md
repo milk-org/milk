@@ -35,12 +35,14 @@ available:
 | Option | Description |
 |--------|-------------|
 | `-h`, `--help` | Print help and exit |
+| `-v`, `--version` | Print version and exit |
 | `-i`, `--info` | Print version, settings, info and exit |
 | `--verbose` | Be verbose |
 | `-d`, `--debug=LEVEL` | Set debug level at startup |
 | `-o`, `--overwrite` | Auto-overwrite FITS files (**use with caution**) |
 | `-e`, `--errorexit` | Exit on command error |
-| `-l`, `--listimf` | Write image list to `imlist.txt` |
+| `-Z`, `--idle` | Only run process when X is idle |
+| `--listimf` | Write image list to `imlist.txt` |
 | `-m`, `--mmon=TTY` | Open memory monitor on tty device |
 | `-n`, `--pname=NAME` | Rename process |
 | `-p`, `--priority=PR` | Set RT priority (0–99, higher = higher) |
