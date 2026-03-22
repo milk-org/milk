@@ -1,0 +1,2 @@
+run < ./tests/cli/test_calculator.milk
+bt full

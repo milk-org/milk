@@ -99,7 +99,7 @@ void init_cms1(void)
     }
 }
 
-static errno_t compute_seminfo()
+static errno_t __attribute__((unused)) compute_seminfo()
 {
     COREMOD_MEMORY_image_seminfo(p_imname);
     return RETURN_SUCCESS;
@@ -142,7 +142,7 @@ void init_cms2(void)
     }
 }
 
-static errno_t compute_sempost()
+static errno_t __attribute__((unused)) compute_sempost()
 {
     COREMOD_MEMORY_image_set_sempost(
         p_imname, p_semindex);
@@ -174,7 +174,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -203,7 +203,7 @@ void init_cms3(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -251,7 +251,7 @@ void init_cms4(void)
     }
 }
 
-static errno_t compute_semwait()
+static errno_t __attribute__((unused)) compute_semwait()
 {
     COREMOD_MEMORY_image_set_semwait(
         p_imname, p_semindex);
@@ -295,7 +295,7 @@ void init_cms5(void)
     }
 }
 
-static errno_t compute_semflush()
+static errno_t __attribute__((unused)) compute_semflush()
 {
     COREMOD_MEMORY_image_set_semflush(
         p_imname, p_semindex);

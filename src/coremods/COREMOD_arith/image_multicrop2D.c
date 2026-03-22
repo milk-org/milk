@@ -238,7 +238,7 @@ static MILK_HOT errno_t fpsexec(
     return RETURN_SUCCESS;
 }
 
-static errno_t multicrop2D_validate()
+static errno_t __attribute__((unused)) multicrop2D_validate()
 {
     if (multicrop_outxsize
         && *multicrop_outxsize < 1)
@@ -265,7 +265,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID in = imgid_make_from_name(
         multicrop_insname);

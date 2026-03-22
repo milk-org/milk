@@ -85,7 +85,7 @@ void init_cms_rtp(void)
     }
 }
 
-static errno_t compute_rtp()
+static errno_t __attribute__((unused)) compute_rtp()
 {
     COREMOD_TOOLS_mvProcRTPrio(p_rtprio);
     return RETURN_SUCCESS;
@@ -134,7 +134,7 @@ void init_cms_tset(void)
     }
 }
 
-static errno_t compute_tset()
+static errno_t __attribute__((unused)) compute_tset()
 {
     COREMOD_TOOLS_mvProcTset(p_name);
     return RETURN_SUCCESS;
@@ -187,7 +187,7 @@ void init_cms_tsete(void)
     }
 }
 
-static errno_t compute_tsete()
+static errno_t __attribute__((unused)) compute_tsete()
 {
     COREMOD_TOOLS_mvProcTsetExt(
         p_pid, p_name);
@@ -231,7 +231,7 @@ void init_cms_cset(void)
     }
 }
 
-static errno_t compute_cset()
+static errno_t __attribute__((unused)) compute_cset()
 {
     COREMOD_TOOLS_mvProcCPUset(p_name);
     return RETURN_SUCCESS;
@@ -268,7 +268,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -298,7 +298,7 @@ void init_cms_main(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

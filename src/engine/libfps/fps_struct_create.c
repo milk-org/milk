@@ -207,10 +207,10 @@ errno_t function_parameter_struct_realloc(
     int NBparamMAX_new
 )
 {
-    char shmdname[200];
-    char SM_fname[200];
+    char shmdname[STRINGMAXLEN_DIRNAME];
+    char SM_fname[STRINGMAXLEN_FULLFILENAME];
     function_parameter_struct_shmdirname(shmdname);
-    snprintf(SM_fname, 200, "%s/%s.fps.shm", shmdname, fps->md->name);
+    snprintf(SM_fname, sizeof(SM_fname), "%s/%s.fps.shm", shmdname, fps->md->name);
 
     size_t sharedsize_old = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * fps->md->NBparamMAX;
     size_t sharedsize_new = sizeof(FUNCTION_PARAMETER_STRUCT_MD) + sizeof(FUNCTION_PARAMETER) * NBparamMAX_new;

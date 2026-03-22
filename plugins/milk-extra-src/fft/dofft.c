@@ -129,7 +129,7 @@ void init_cms_1dfft(void)
     }
 }
 
-static errno_t compute_1dfft()
+static errno_t __attribute__((unused)) compute_1dfft()
 {
     do1dfft(p_1dfft_in, p_1dfft_out);
     return RETURN_SUCCESS;
@@ -189,7 +189,7 @@ void init_cms_1drfft(void)
     }
 }
 
-static errno_t compute_1drfft()
+static errno_t __attribute__((unused)) compute_1drfft()
 {
     do1drfft(p_1drfft_in, p_1drfft_out);
     return RETURN_SUCCESS;
@@ -221,7 +221,7 @@ static MILK_HOT errno_t compute_function()
  * ============================================================= */
 
 #ifndef FPS_STANDALONE
-static errno_t CLIfunction(void)
+static errno_t __attribute__((unused)) CLIfunction(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info, farg, &CLIcmddata,
@@ -1934,7 +1934,7 @@ imageID do2drffti(const char *in_name, const char *out_name)
  * 4b. Standalone-friendly FFT step
  * ============================================================= */
 
-static void MILK_HOT fpsexec(
+static void MILK_HOT __attribute__((unused)) fpsexec(
     IMAGE *imgin,
     IMAGE *imgout,
     int dir)

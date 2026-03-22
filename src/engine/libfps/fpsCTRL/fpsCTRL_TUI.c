@@ -302,7 +302,7 @@ errno_t functionparameter_CTRLscreen(
     uint32_t mode,
     char    *fpsnamemask,
     char    *fpsCTRLfifoname,
-    double  timeout_sec
+    double  timeout_sec __attribute__((unused))
 )
 {
     DEBUG_TRACE_FSTART();

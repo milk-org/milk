@@ -53,21 +53,21 @@ static FPS_APP_INFO FPS_app_info = {
  * ============================================================= */
 
 static int32_t * GPUindex = NULL;
-static uint32_t * mmax = NULL;
-static uint32_t * nmax = NULL;
+static uint32_t * __attribute__((unused)) mmax = NULL;
+static uint32_t * __attribute__((unused)) nmax = NULL;
 static char * insname = NULL;
 static char * inmasksname = NULL;
 static char * immodes = NULL;
 static char * outcoeff = NULL;
-static int64_t * outinit = NULL;
+static int64_t * __attribute__((unused)) outinit = NULL;
 static uint32_t * axmode = NULL;
 static int64_t * PROCESS = NULL;
 static int64_t * TRACEMODE = NULL;
 static int64_t * MODENORM = NULL;
-static char * intot_stream = NULL;
+static char * __attribute__((unused)) intot_stream = NULL;
 static char * inrefsname = NULL;
 static char * outrefsname = NULL;
-static uint64_t * twait = NULL;
+static uint64_t * __attribute__((unused)) twait = NULL;
 
 
 /* ================================================================
@@ -125,15 +125,15 @@ static MILK_HOT errno_t compute_function()
     struct cudaDeviceProp deviceProp;
 #endif
 
-    float *d_modes = NULL; // linear memory of GPU
-    float *d_in = NULL;
-    float *d_modeval = NULL;
+    float *d_modes __attribute__((unused)) = NULL; // linear memory of GPU
+    float *d_in __attribute__((unused)) = NULL;
+    float *d_modeval __attribute__((unused)) = NULL;
 
 
     // each step is 2x longer average than previous step
     uint32_t NBaveSTEP = 10;
 
-    int initref = 0; // 1 when reference has been processed
+    int initref __attribute__((unused)) = 0; // 1 when reference has been processed
 
     // CONNECT TO INPUT STREAM
     IMGID imgin = imgid_make_from_name(insname);
@@ -268,7 +268,7 @@ static MILK_HOT errno_t compute_function()
 
     long n;
     long NBmodes = 1;
-    imageID IDmodes = -1;
+    imageID IDmodes __attribute__((unused)) = -1;
 
 
     if((*axmode) == 0)
@@ -587,7 +587,7 @@ static MILK_HOT errno_t compute_function()
     {
         char traceim_name[STRINGMAXLEN_IMGNAME];
         long TRACEsize = 2000;
-        imageID IDtrace;
+        imageID IDtrace __attribute__((unused));
 
         uint32_t *sizearraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
 
@@ -655,8 +655,8 @@ static MILK_HOT errno_t compute_function()
     {
         char process_ave_name[STRINGMAXLEN_IMGNAME];
         char process_rms_name[STRINGMAXLEN_IMGNAME];
-        imageID IDprocave;
-        imageID IDprocrms;
+        imageID IDprocave __attribute__((unused));
+        imageID IDprocrms __attribute__((unused));
 
         uint32_t *sizearraytmp = (uint32_t *)malloc(sizeof(uint32_t) * 2);
 
@@ -825,8 +825,8 @@ static MILK_HOT errno_t compute_function()
     printf(" n       = %ld\n", n);
     printf(" NBmodes = %ld\n", NBmodes);
 
-    float alpha = 1.0;
-    float beta = 0.0;
+    float alpha __attribute__((unused)) = 1.0;
+    float beta __attribute__((unused)) = 0.0;
     uint64_t refindex = 0;
 
 #ifdef HAVE_OPENBLAS

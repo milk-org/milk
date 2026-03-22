@@ -1,0 +1,60 @@
+# test_calculator.milk
+# Tests for the new CLI calculator syntax and math features
+
+
+
+
+echo "Testing basic arithmetic natively..."
+a = 2 + 3 * 4
+# a should be 14
+echo "a = " $a
+
+echo "Testing relational and logical operators natively..."
+b = a > 10
+c = (a == 14)
+d = b && c
+# d should be 1
+echo "d = " $d
+
+echo "Testing built-in mathematical functions natively..."
+e = min(abs(-5), max(3, fmod(17, 5)))
+# fmod(17, 5) = 2
+# max(3, 2) = 3
+# abs(-5) = 5
+# min(5, 3) = 3
+echo "e = " $e
+
+echo "Testing ternary conditional (where)..."
+f = where(e > 2, 100, -100)
+# e > 2 is true, so f should be 100
+echo "f = " $f
+
+echo "Testing image arithmetic and masking..."
+# create an image
+mem.mk2Dim imtest 10 10 
+imtest = imtest * 0.0 + 5.0
+# do arithmetic
+imtest_plus = imtest + 3
+imtest_mask = (imtest_plus == 8)
+# mask is 1 everywhere
+g = itot(imtest_mask)
+# g should be 100
+echo "g = " $g
+
+echo "Testing image ternary conditional (where)..."
+im_where = where(imtest_mask, imtest, -imtest)
+h = imean(im_where)
+# h should be 5
+echo "h = " $h
+
+echo "Testing vector operations (dot/norm)..."
+d_im_im = dot(imtest, imtest)
+# 5 * 5 * 100 = 2500
+echo "dot(imtest,imtest) = " $d_im_im
+
+n_im = norm(imtest)
+# sqrt(2500) = 50
+echo "norm(imtest) = " $n_im
+
+echo "CALCULATOR TESTS COMPLETE"
+exit

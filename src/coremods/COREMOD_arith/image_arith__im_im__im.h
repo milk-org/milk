@@ -75,6 +75,19 @@ int arith_image_testmt(const char *ID1_name,
                        const char *ID_out);
 int arith_image_testmt_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 
+int arith_image_teste(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_teste_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+int arith_image_testne(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_testne_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+int arith_image_testle(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_testle_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+int arith_image_testge(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_testge_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+int arith_image_and(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_and_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+int arith_image_or(const char *ID1_name, const char *ID2_name, const char *ID_out);
+int arith_image_or_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
+
 int arith_image_fmod_inplace_byID(long ID1, long ID2);
 int arith_image_pow_inplace_byID(long ID1, long ID2);
 int arith_image_add_inplace_byID(long ID1, long ID2);
