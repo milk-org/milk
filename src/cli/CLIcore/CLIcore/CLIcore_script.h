@@ -143,6 +143,9 @@ void cli_expand_env(
  *  (VAR=val). Returns 1 if handled. */
 int cli_try_var_assign(const char *line);
 
+/** Export CLI variables to environment for wordexp */
+void cli_export_vars_for_wordexp(void);
+
 /* ---- Block Accumulator (flow control) ---- */
 
 #define CLI_BLOCK_MAXLINES  1024
