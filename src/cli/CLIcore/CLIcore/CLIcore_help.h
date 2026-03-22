@@ -39,6 +39,7 @@ errno_t printInfo();
 void print_milk_framework_help(void);
 
 /** @brief Print milk CLI-specific help */
+extern int help_format_mode;
 void print_milk_cli_help(void);
 
 /** @brief Print only the available-topics list */

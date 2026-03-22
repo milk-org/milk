@@ -11,6 +11,7 @@
  *                   flowcontrol  scripting  milk
  */
 
+#include <string.h>
 #include <stdio.h>
 #include "CLIcore.h"
 
@@ -19,17 +20,36 @@ int main(int argc, char *argv[])
     dcquiet = 1;
     CLI_startup();
 
-    if (argc >= 2)
+    const char *topic = NULL;
+
+    for (int i = 1; i < argc; i++)
     {
-        const char *topic = argv[1];
+        if (strcmp(argv[i], "--json") == 0)
+        {
+            help_format_mode = 1;
+        }
+        else if (strcmp(argv[i], "--porcelain") == 0)
+        {
+            help_format_mode = 2;
+        }
+        else
+        {
+            topic = argv[i];
+        }
+    }
+
+    if (topic != NULL)
+    {
         int ret = help_topic_dispatch(topic);
         if (ret != 0)
         {
-            fprintf(stderr,
-                    "\033[1;31mmilk-cli-help: unknown topic"
-                    " \"%s\"\033[0m\n\n",
-                    topic);
-            print_help_topic_list();
+            if (help_format_mode == 0) {
+                fprintf(stderr,
+                        "\033[1;31mmilk-cli-help: unknown topic"
+                        " \"%s\"\033[0m\n\n",
+                        topic);
+                print_help_topic_list();
+            }
             return 1;
         }
     }
