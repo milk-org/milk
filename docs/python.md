@@ -166,11 +166,11 @@ while True:
               f"mean={np.mean(running_mean):.2f}")
 ```
 
-> [!WARNING]
-> Python's GIL limits true parallel performance.
-> For latency-critical loops (>1 kHz), use C modules.
-> Python is best suited for monitoring, scripting,
-> and offline analysis.
+!!! warning
+    Python's GIL limits true parallel performance.
+    For latency-critical loops (>1 kHz), use C modules.
+    Python is best suited for monitoring, scripting,
+    and offline analysis.
 
 ---
 

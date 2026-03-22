@@ -73,11 +73,11 @@ $ tmux attach -t <session-name>
 # Scroll up in tmux (Ctrl-b [, then PgUp)
 ```
 
-> [!TIP]
-> Each tmux session typically has three windows:
-> `ctrl` (control commands), `run` (the main loop),
-> and `conf` (the configuration loop). Switch windows
-> with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
+!!! tip
+    Each tmux session typically has three windows:
+    `ctrl` (control commands), `run` (the main loop),
+    and `conf` (the configuration loop). Switch windows
+    with `Ctrl-b 0`, `Ctrl-b 1`, `Ctrl-b 2`.
 
 ---
 
@@ -181,10 +181,10 @@ $ make -j$(nproc)
 $ sudo make install
 ```
 
-> [!IMPORTANT]
-> Remember to switch back to `Release` or
-> `RelWithDebInfo` for production use — `Debug` builds
-> disable optimizations and are significantly slower.
+!!! important
+    Remember to switch back to `Release` or
+    `RelWithDebInfo` for production use — `Debug` builds
+    disable optimizations and are significantly slower.
 
 ---
 ← [Documentation Index](index.md)
