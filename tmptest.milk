@@ -1,5 +1,0 @@
-# Test $?
-unknowncommand
-echo $?
-mem.listim
-echo $?
