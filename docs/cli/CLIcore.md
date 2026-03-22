@@ -123,9 +123,9 @@ milk-cli > <command> <arg1> <arg2>   # comment
 - **First argument:** matches command → image → filename
 - **Additional arguments:** context-aware based on
   command's parameter types:
-    - `FILENAME` / `FITSFILENAME` args → filesystem paths
-    - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
-    - Other args → match image stream names
+  - `FILENAME` / `FITSFILENAME` args → filesystem paths
+  - `FPSNAME` args → scan `/dev/shm/fps.*.shm` entries
+  - Other args → match image stream names
 - Fuzzy (substring) matching automatically kicks in when
   prefix matching finds nothing
 

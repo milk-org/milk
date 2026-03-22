@@ -51,7 +51,7 @@
 
 !!! important
     **Dependency chain:**
-    
+
     - `USE_CLI=ON` automatically enables `USE_COREMODS`
     - Plugins are only built when `USE_COREMODS=ON`
     - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles
