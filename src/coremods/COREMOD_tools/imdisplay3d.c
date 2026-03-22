@@ -53,7 +53,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -82,7 +82,7 @@ void init_cms(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     COREMOD_TOOLS_imgdisplay3D(
         p_imname, p_step);

@@ -5,36 +5,43 @@
  * Replaces the bison-generated parser (calc_bison.y).
  *
  * Approach:
- * Uses precedence-climbing (Pratt parsing) to handle
- * operator precedence for +, -, *, /, ^ with three
- * value types: long, double, and string (image name).
- * The parser tokenizes the input, then recursively
- * evaluates expressions, populating
- * data.cmdargtoken[data.cmdNBarg] with the result.
+ * Uses precedence-climbing (Pratt parsing) to evaluate
+ * expressions. It supports +, -, *, /, ^, % arithmetic, 
+ * logical/relational operators (<, <=, >, >=, ==, !=, &&, ||, !),
+ * and dynamic variable assignments (=). Supports three value
+ * types: long, double, and string (image name). Includes functions
+ * like round, min, max, abs, dot, norm, and ternary conditionals (where).
+ * Evaluates expressions immediately, supporting math on images as well
+ * as per-pixel masking. Populates data.cmdargtoken[data.cmdNBarg].
  */
 
 #include <math.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "COREMOD_iofits/COREMOD_iofits.h"
 #include "COREMOD_arith/COREMOD_arith.h"
 
 #include "cli_calc_tokenizer.h"
 #include "cli_calc_parser.h"
+#include "CLIcore_script.h"
 
 /* --------------------------------------------------------
  * Parser state
  * -------------------------------------------------------- */
 
-/** token stream and current index */
+/** token stream and current index for cli_parse */
 static cli_token  parse_tokens[CLI_CALC_MAX_TOKENS];
 static int        parse_pos;
 static int        parse_ntok;
 static int        parse_error;
+
+/** token stream and current index for cli_calc_eval_line */
+static cli_token  eval_tokens[CLI_CALC_MAX_TOKENS];
+static int        eval_pos;
+static int        eval_ntok;
+static int        eval_error;
+
 
 static char calctmpimname[200];
 
@@ -47,7 +54,8 @@ typedef enum
 {
     VAL_LONG,
     VAL_DOUBLE,
-    VAL_STRING
+    VAL_STRING,
+    VAL_GENERIC // For functions that don't return a specific value type
 } val_type;
 
 /** Expression result value */
@@ -70,12 +78,15 @@ static val_t parse_primary(void);
  * Token stream helpers
  * -------------------------------------------------------- */
 
-static inline cli_token *cur(void)
+static int parse_mode = 0; // 0 for cli_parse, 1 for cli_calc_eval_line
+
+// Helper functions for cli_parse
+static inline cli_token *cur_parse(void)
 {
     return &parse_tokens[parse_pos];
 }
 
-static inline cli_token *advance(void)
+static inline cli_token *advance_parse(void)
 {
     cli_token *t = &parse_tokens[parse_pos];
     if (parse_pos < parse_ntok)
@@ -85,6 +96,23 @@ static inline cli_token *advance(void)
     return t;
 }
 
+// Helper functions for cli_calc_eval_line
+static inline cli_token *cur_eval(void)
+{
+    return &eval_tokens[eval_pos];
+}
+
+static inline cli_token *advance_eval(void)
+{
+    cli_token *t = &eval_tokens[eval_pos];
+    if (eval_pos < eval_ntok)
+    {
+        eval_pos++;
+    }
+    return t;
+}
+
+
 /**
  * @brief Report a parse error and set error flag
  */
@@ -93,14 +121,14 @@ static void parse_errmsg(const char *msg)
     if (data.core.Debug > 0)
     {
         printf(
-            "\033[31mPARSING ERROR ON COMMAND LINE "
-            "ARG %ld: %s\033[0m\n",
-            data.cmdNBarg,
-            msg
+            "   [CALC_PARSER_ERROR] %s\n", msg
         );
     }
     data.parseerror = 1;
     parse_error = 1;
+    if (parse_mode == 1) {
+        eval_error = 1;
+    }
 }
 
 /* --------------------------------------------------------
@@ -119,14 +147,29 @@ static inline int get_prec(cli_token_type t)
 {
     switch (t)
     {
+        case TOK_OP_OR:
+            return 1;
+        case TOK_OP_AND:
+            return 2;
+        case TOK_OP_EQ:
+        case TOK_OP_NEQ:
+            return 3;
+        case TOK_OP_LT:
+        case TOK_OP_LE:
+        case TOK_OP_GT:
+        case TOK_OP_GE:
+            return 4;
         case TOK_OP_PLUS:
         case TOK_OP_MINUS:
-            return 1;
+            return 5;
         case TOK_OP_STAR:
         case TOK_OP_SLASH:
-            return 2;
+        case TOK_OP_MOD:
+            return 6;
         case TOK_OP_CARET:
-            return 3;
+            return 7;
+        case TOK_EQUAL:
+            return 0;
         default:
             return -1;
     }
@@ -134,7 +177,7 @@ static inline int get_prec(cli_token_type t)
 
 static inline int is_right_assoc(cli_token_type t)
 {
-    return t == TOK_OP_CARET;
+    return (t == TOK_OP_CARET) || (t == TOK_EQUAL);
 }
 
 /* --------------------------------------------------------
@@ -196,6 +239,7 @@ static inline val_t mk_string(const char *s)
              "%s", s);
     return r;
 }
+
 
 /**
  * @brief Check if an image name is valid
@@ -295,6 +339,36 @@ static val_t eval_binop(
                         tmpn
                     );
                     break;
+                case TOK_OP_MOD:
+                    arith_image_fmod(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_CARET:
+                    arith_image_pow(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_LT:
+                    arith_image_testlt(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_LE:
+                    arith_image_testle(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_GT:
+                    arith_image_testmt(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_GE:
+                    arith_image_testge(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_EQ:
+                    arith_image_teste(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_NEQ:
+                    arith_image_testne(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_AND:
+                    arith_image_and(left.sval, right.sval, tmpn);
+                    break;
+                case TOK_OP_OR:
+                    arith_image_or(left.sval, right.sval, tmpn);
+                    break;
                 default:
                     parse_errmsg(
                         "Unsupported image op"
@@ -331,9 +405,37 @@ static val_t eval_binop(
                     arith_image_cstdiv(
                         left.sval, rv, tmpn);
                     break;
+                case TOK_OP_MOD:
+                    arith_image_cstfmod(
+                        left.sval, rv, tmpn);
+                    break;
                 case TOK_OP_CARET:
                     arith_image_cstpow(
                         left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_LT:
+                    arith_image_csttestlt(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_LE:
+                    arith_image_csttestle(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_GT:
+                    arith_image_csttestmt(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_GE:
+                    arith_image_csttestge(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_EQ:
+                    arith_image_cstteste(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_NEQ:
+                    arith_image_csttestne(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_AND:
+                    arith_image_cstand(left.sval, rv, tmpn);
+                    break;
+                case TOK_OP_OR:
+                    arith_image_cstor(left.sval, rv, tmpn);
                     break;
                 default:
                     parse_errmsg(
@@ -371,6 +473,30 @@ static val_t eval_binop(
                     arith_image_cstdiv1(
                         right.sval, lv, tmpn);
                     break;
+                case TOK_OP_LT:
+                    arith_image_csttestmt(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_LE:
+                    arith_image_csttestge(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_GT:
+                    arith_image_csttestlt(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_GE:
+                    arith_image_csttestle(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_EQ:
+                    arith_image_cstteste(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_NEQ:
+                    arith_image_csttestne(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_AND:
+                    arith_image_cstand(right.sval, lv, tmpn);
+                    break;
+                case TOK_OP_OR:
+                    arith_image_cstor(right.sval, lv, tmpn);
+                    break;
                 default:
                     parse_errmsg(
                         "Unsupported image op"
@@ -402,11 +528,35 @@ static val_t eval_binop(
                 return mk_long(
                     left.lval * right.lval
                 );
+            case TOK_OP_MOD:
+                if (right.lval == 0) {
+                    parse_errmsg("Modulo by zero");
+                    return mk_long(0);
+                }
+                return mk_long(
+                    left.lval % right.lval
+                );
             case TOK_OP_CARET:
                 return mk_long(
                     (long) pow(
                         left.lval, right.lval)
                 );
+            case TOK_OP_LT:
+                return mk_long(left.lval < right.lval ? 1 : 0);
+            case TOK_OP_LE:
+                return mk_long(left.lval <= right.lval ? 1 : 0);
+            case TOK_OP_GT:
+                return mk_long(left.lval > right.lval ? 1 : 0);
+            case TOK_OP_GE:
+                return mk_long(left.lval >= right.lval ? 1 : 0);
+            case TOK_OP_EQ:
+                return mk_long(left.lval == right.lval ? 1 : 0);
+            case TOK_OP_NEQ:
+                return mk_long(left.lval != right.lval ? 1 : 0);
+            case TOK_OP_AND:
+                return mk_long((left.lval && right.lval) ? 1 : 0);
+            case TOK_OP_OR:
+                return mk_long((left.lval || right.lval) ? 1 : 0);
             default:
                 break;
         }
@@ -427,8 +577,26 @@ static val_t eval_binop(
                 return mk_double(lv * rv);
             case TOK_OP_SLASH:
                 return mk_double(lv / rv);
+            case TOK_OP_MOD:
+                return mk_double(fmod(lv, rv));
             case TOK_OP_CARET:
                 return mk_double(pow(lv, rv));
+            case TOK_OP_LT:
+                return mk_long(lv < rv ? 1 : 0);
+            case TOK_OP_LE:
+                return mk_long(lv <= rv ? 1 : 0);
+            case TOK_OP_GT:
+                return mk_long(lv > rv ? 1 : 0);
+            case TOK_OP_GE:
+                return mk_long(lv >= rv ? 1 : 0);
+            case TOK_OP_EQ:
+                return mk_long(lv == rv ? 1 : 0);
+            case TOK_OP_NEQ:
+                return mk_long(lv != rv ? 1 : 0);
+            case TOK_OP_AND:
+                return mk_long((lv != 0 && rv != 0) ? 1 : 0);
+            case TOK_OP_OR:
+                return mk_long((lv != 0 || rv != 0) ? 1 : 0);
             default:
                 break;
         }
@@ -457,6 +625,24 @@ static val_t eval_binop(
  */
 static val_t parse_funccall(cli_token *ftok)
 {
+    cli_token *(*cur_func)(void);
+    cli_token *(*advance_func)(void);
+
+    if (parse_error || eval_error) { // Check both error flags
+        return mk_double(0);
+    }
+
+    // Determine which token stream to use based on which error flag is active
+    // This is a bit of a hack, ideally the parser state would be passed explicitly
+    if (parse_mode == 0) { // cli_parse is active
+        cur_func = cur_parse;
+        advance_func = advance_parse;
+    } else { // cli_calc_eval_line is active
+        cur_func = cur_eval;
+        advance_func = advance_eval;
+    }
+
+
     if (ftok->type == TOK_FUNC_D_D)
     {
         /*
@@ -464,17 +650,17 @@ static val_t parse_funccall(cli_token *ftok)
          * Also handles image -> image
          */
         val_t arg = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         if (arg.type == VAL_STRING)
         {
@@ -495,7 +681,7 @@ static val_t parse_funccall(cli_token *ftok)
         }
 
         double darg = to_double(arg);
-        double res  = ftok->fnctptr(darg);
+        double res  = ((double (*)(double)) ftok->fnctptr)(darg);
         if (data.core.Debug > 0)
         {
             printf("double=func(double)\n");
@@ -508,32 +694,64 @@ static val_t parse_funccall(cli_token *ftok)
         /*
          * Function: (double, double) -> double
          * Also handles (image, double) -> image
+         * Also handles (image, image) -> image for specific functions
          */
         val_t arg1 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_COMMA)
+        if (cur_func()->type != TOK_COMMA)
         {
             parse_errmsg("Expected ','");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         val_t arg2 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_double(0);
         }
-        advance();
+        advance_func();
+
+        if (arg1.type == VAL_STRING && arg2.type == VAL_STRING)
+        {
+            if (!check_image(arg1.sval) || !check_image(arg2.sval))
+            {
+                return mk_string("");
+            }
+            const char *tmpn = alloc_tmpname();
+            if (ftok->fnctptr == fmin)
+            {
+                arith_image_minv(arg1.sval, arg2.sval, tmpn);
+            }
+            else if (ftok->fnctptr == fmax)
+            {
+                arith_image_maxv(arg1.sval, arg2.sval, tmpn);
+            }
+            else if (ftok->fnctptr == fmod)
+            {
+                arith_image_fmod(arg1.sval, arg2.sval, tmpn);
+            }
+            else if (ftok->fnctptr == pow)
+            {
+                arith_image_pow(arg1.sval, arg2.sval, tmpn);
+            }
+            else
+            {
+                parse_errmsg("Unsupported (image, image) function");
+                return mk_string("");
+            }
+            return mk_string(tmpn);
+        }
 
         if (arg1.type == VAL_STRING)
         {
@@ -553,7 +771,7 @@ static val_t parse_funccall(cli_token *ftok)
 
         double d1 = to_double(arg1);
         double d2 = to_double(arg2);
-        return mk_double(ftok->fnctptr(d1, d2));
+        return mk_double(((double (*)(double, double)) ftok->fnctptr)(d1, d2));
     }
 
     if (ftok->type == TOK_FUNC_DDD_D)
@@ -563,43 +781,43 @@ static val_t parse_funccall(cli_token *ftok)
          * Also handles (image, d, d) -> image
          */
         val_t arg1 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_COMMA)
+        if (cur_func()->type != TOK_COMMA)
         {
             parse_errmsg("Expected ','");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         val_t arg2 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_COMMA)
+        if (cur_func()->type != TOK_COMMA)
         {
             parse_errmsg("Expected ','");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         val_t arg3 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         if (arg1.type == VAL_STRING)
         {
@@ -622,25 +840,130 @@ static val_t parse_funccall(cli_token *ftok)
         double d2 = to_double(arg2);
         double d3 = to_double(arg3);
         return mk_double(
-            ftok->fnctptr(d1, d2, d3)
+            ((double (*)(double, double, double)) ftok->fnctptr)(d1, d2, d3)
         );
+    }
+
+    if (ftok->type == TOK_FUNC_WHERE)
+    {
+        val_t cond = parse_expr(0);
+        if (parse_error || eval_error)
+            return mk_double(0);
+
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("Expected ','");
+            return mk_double(0);
+        }
+        advance_func();
+
+        val_t argT = parse_expr(0);
+        if (parse_error || eval_error)
+            return mk_double(0);
+
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("Expected ','");
+            return mk_double(0);
+        }
+        advance_func();
+
+        val_t argF = parse_expr(0);
+        if (parse_error || eval_error)
+            return mk_double(0);
+
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        /* If cond is scalar */
+        if (cond.type != VAL_STRING)
+        {
+            double c = to_double(cond);
+            if (c != 0) return argT;
+            else return argF;
+        }
+
+        /* cond is an image. Handle T/F types */
+        char tmp_mask[200], tmp_imask[200], tmp_tpart[200], tmp_fpart[200], tmpn[200];
+        snprintf(tmp_mask, 200, "%s", alloc_tmpname());
+        snprintf(tmp_imask, 200, "%s", alloc_tmpname());
+        snprintf(tmp_tpart, 200, "%s", alloc_tmpname());
+        snprintf(tmp_fpart, 200, "%s", alloc_tmpname());
+        snprintf(tmpn, 200, "%s", alloc_tmpname());
+
+        if (!check_image(cond.sval))
+            return mk_string("");
+
+        /* mask = (cond != 0) */
+        arith_image_csttestne(cond.sval, 0.0, tmp_mask);
+        /* imask = (cond == 0) */
+        arith_image_cstteste(cond.sval, 0.0, tmp_imask);
+
+        if (argT.type == VAL_STRING)
+        {
+            if (!check_image(argT.sval)) return mk_string("");
+            arith_image_mult(argT.sval, tmp_mask, tmp_tpart);
+        }
+        else
+        {
+            arith_image_cstmult(tmp_mask, to_double(argT), tmp_tpart);
+        }
+
+        if (argF.type == VAL_STRING)
+        {
+            if (!check_image(argF.sval)) return mk_string("");
+            arith_image_mult(argF.sval, tmp_imask, tmp_fpart);
+        }
+        else
+        {
+            arith_image_cstmult(tmp_imask, to_double(argF), tmp_fpart);
+        }
+
+        arith_image_add(tmp_tpart, tmp_fpart, tmpn);
+        return mk_string(tmpn);
+    }
+
+    if (ftok->type == TOK_FUNC_IMIM_D)
+    {
+        val_t arg1 = parse_expr(0);
+        if (parse_error || eval_error) return mk_double(0);
+        if (cur_func()->type != TOK_COMMA) { parse_errmsg("Expected ','"); return mk_double(0); }
+        advance_func();
+        val_t arg2 = parse_expr(0);
+        if (parse_error || eval_error) return mk_double(0);
+        if (cur_func()->type != TOK_RPAREN) { parse_errmsg("Expected ')'"); return mk_double(0); }
+        advance_func();
+
+        if (arg1.type != VAL_STRING || arg2.type != VAL_STRING) {
+            parse_errmsg("Expected two image arguments");
+            return mk_double(0);
+        }
+        if (!check_image(arg1.sval) || !check_image(arg2.sval)) return mk_double(0);
+
+        // Call ftok->fnctptr for vector operation (e.g. dot())
+        double res = ((double (*)(const char *, const char *)) ftok->fnctptr)(arg1.sval, arg2.sval);
+        return mk_double(res);
     }
 
     if (ftok->type == TOK_FUNC_IM_D)
     {
         /* Function: image -> double */
         val_t arg = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         if (arg.type != VAL_STRING)
         {
@@ -654,7 +977,7 @@ static val_t parse_funccall(cli_token *ftok)
             return mk_double(0);
         }
 
-        double res = ftok->fnctptr(arg.sval);
+        double res = ((double (*)(const char *)) ftok->fnctptr)(arg.sval);
         if (data.core.Debug > 0)
         {
             printf("double=func(image)\n");
@@ -666,30 +989,30 @@ static val_t parse_funccall(cli_token *ftok)
     {
         /* Function: (image, double) -> double */
         val_t arg1 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_COMMA)
+        if (cur_func()->type != TOK_COMMA)
         {
             parse_errmsg("Expected ','");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         val_t arg2 = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_double(0);
         }
 
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_double(0);
         }
-        advance();
+        advance_func();
 
         if (arg1.type != VAL_STRING)
         {
@@ -703,7 +1026,7 @@ static val_t parse_funccall(cli_token *ftok)
             return mk_double(0);
         }
 
-        double res = ftok->fnctptr(
+        double res = ((double (*)(const char *, double)) ftok->fnctptr)(
             arg1.sval, to_double(arg2)
         );
         return mk_double(res);
@@ -726,12 +1049,29 @@ static val_t parse_funccall(cli_token *ftok)
  */
 static val_t parse_primary(void)
 {
-    cli_token *t = cur();
+    cli_token *t;
+    cli_token *(*cur_func)(void);
+    cli_token *(*advance_func)(void);
+
+    if (parse_error || eval_error) { // Check both error flags
+        return mk_long(0);
+    }
+
+    // Determine which token stream to use based on which error flag is active
+    if (parse_mode == 0) { // cli_parse is active
+        cur_func = cur_parse;
+        advance_func = advance_parse;
+    } else { // cli_calc_eval_line is active
+        cur_func = cur_eval;
+        advance_func = advance_eval;
+    }
+
+    t = cur_func();
 
     /* number literals */
     if (t->type == TOK_LONG)
     {
-        advance();
+        advance_func();
         if (data.core.Debug > 0)
         {
             printf("this is a long\n");
@@ -741,7 +1081,7 @@ static val_t parse_primary(void)
 
     if (t->type == TOK_DOUBLE)
     {
-        advance();
+        advance_func();
         if (data.core.Debug > 0)
         {
             printf("this is a double\n");
@@ -752,9 +1092,9 @@ static val_t parse_primary(void)
     /* unary minus */
     if (t->type == TOK_OP_MINUS)
     {
-        advance();
+        advance_func();
         val_t v = parse_primary();
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return mk_long(0);
         }
@@ -774,8 +1114,22 @@ static val_t parse_primary(void)
             }
             return mk_double(-v.dval);
         }
+        if (v.type == VAL_STRING)
+        {
+            if (data.core.Debug > 0)
+            {
+                printf("-image\n");
+            }
+            if (!check_image(v.sval))
+            {
+                return mk_double(0);
+            }
+            const char *tmpn = alloc_tmpname();
+            arith_image_cstsubm(v.sval, 0.0, tmpn);
+            return mk_string(tmpn);
+        }
         parse_errmsg(
-            "Cannot negate image expression"
+            "Cannot negate expression"
         );
         return mk_double(0);
     }
@@ -783,18 +1137,18 @@ static val_t parse_primary(void)
     /* parenthesized expression */
     if (t->type == TOK_LPAREN)
     {
-        advance();
+        advance_func();
         val_t v = parse_expr(0);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return v;
         }
-        if (cur()->type != TOK_RPAREN)
+        if (cur_func()->type != TOK_RPAREN)
         {
             parse_errmsg("Expected ')'");
             return mk_long(0);
         }
-        advance();
+        advance_func();
         return v;
     }
 
@@ -803,21 +1157,23 @@ static val_t parse_primary(void)
         || t->type == TOK_FUNC_DD_D
         || t->type == TOK_FUNC_DDD_D
         || t->type == TOK_FUNC_IM_D
-        || t->type == TOK_FUNC_IMD_D)
+        || t->type == TOK_FUNC_IMD_D
+        || t->type == TOK_FUNC_WHERE
+        || t->type == TOK_FUNC_IMIM_D) // Added TOK_FUNC_IMIM_D and TOK_FUNC_WHERE
     {
-        advance();
+        advance_func();
         return parse_funccall(t);
     }
 
     /* existing variable: might be assignment */
     if (t->type == TOK_VAR)
     {
-        advance();
-        if (cur()->type == TOK_EQUAL)
+        advance_func();
+        if (cur_func()->type == TOK_EQUAL)
         {
-            advance();
+            advance_func();
             val_t v = parse_expr(0);
-            if (parse_error)
+            if (parse_error || eval_error)
             {
                 return v;
             }
@@ -842,8 +1198,8 @@ static val_t parse_primary(void)
         long vID = variable_ID(t->sval);
         if (vID == -1)
         {
-            char msg[200];
-            snprintf(msg, 200,
+            char msg[2048];
+            snprintf(msg, sizeof(msg),
                      "Variable '%s' not found",
                      t->sval);
             parse_errmsg(msg);
@@ -858,12 +1214,12 @@ static val_t parse_primary(void)
      * a new string/image name */
     if (t->type == TOK_NVAR)
     {
-        advance();
-        if (cur()->type == TOK_EQUAL)
+        advance_func();
+        if (cur_func()->type == TOK_EQUAL)
         {
-            advance();
+            advance_func();
             val_t v = parse_expr(0);
-            if (parse_error)
+            if (parse_error || eval_error)
             {
                 return v;
             }
@@ -895,17 +1251,27 @@ static val_t parse_primary(void)
             create_variable_ID(
                 t->sval, to_double(v)
             );
+            
+            char numv[64];
+            snprintf(numv, 64, "%g", to_double(v));
+            if (parse_mode == 1) {
+                cli_var_set(t->sval, numv);
+            }
+            
             return mk_double(to_double(v));
         }
         /* standalone new variable/image name */
-        data.cmdargtoken[data.cmdNBarg].type =
-            CMDARGTOKEN_TYPE_STRING;
-        if (data.core.Debug > 0)
-        {
-            printf(
-                "this is a string "
-                "(new variable/image)\n"
-            );
+        // This path is only for cli_parse, not cli_calc_eval_line
+        if (parse_mode == 0) { // If not in eval_line context
+            data.cmdargtoken[data.cmdNBarg].type =
+                CMDARGTOKEN_TYPE_STRING;
+            if (data.core.Debug > 0)
+            {
+                printf(
+                    "this is a string "
+                    "(new variable/image)\n"
+                );
+            }
         }
         return mk_string(t->sval);
     }
@@ -913,12 +1279,12 @@ static val_t parse_primary(void)
     /* existing image: might be assignment */
     if (t->type == TOK_IMAGE)
     {
-        advance();
-        if (cur()->type == TOK_EQUAL)
+        advance_func();
+        if (cur_func()->type == TOK_EQUAL)
         {
-            advance();
+            advance_func();
             val_t v = parse_expr(0);
-            if (parse_error)
+            if (parse_error || eval_error)
             {
                 return v;
             }
@@ -942,14 +1308,17 @@ static val_t parse_primary(void)
             );
             return mk_double(0);
         }
-        data.cmdargtoken[data.cmdNBarg].type =
-            CMDARGTOKEN_TYPE_EXISTINGIMAGE;
-        if (data.core.Debug > 0)
-        {
-            printf(
-                "this is a string "
-                "(existing image)\n"
-            );
+        // This path is only for cli_parse, not cli_calc_eval_line
+        if (!eval_error) { // If not in eval_line context
+            data.cmdargtoken[data.cmdNBarg].type =
+                CMDARGTOKEN_TYPE_EXISTINGIMAGE;
+            if (data.core.Debug > 0)
+            {
+                printf(
+                    "this is a string "
+                    "(existing image)\n"
+                );
+            }
         }
         return mk_string(t->sval);
     }
@@ -957,14 +1326,17 @@ static val_t parse_primary(void)
     /* command */
     if (t->type == TOK_COMMAND)
     {
-        advance();
-        data.cmdargtoken[data.cmdNBarg].type =
-            CMDARGTOKEN_TYPE_COMMAND;
-        if (data.core.Debug > 0)
-        {
-            printf(
-                "this is a string (command)\n"
-            );
+        advance_func();
+        // This path is only for cli_parse, not cli_calc_eval_line
+        if (parse_mode == 0) { // If not in eval_line context
+            data.cmdargtoken[data.cmdNBarg].type =
+                CMDARGTOKEN_TYPE_COMMAND;
+            if (data.core.Debug > 0)
+            {
+                printf(
+                    "this is a string (command)\n"
+                );
+            }
         }
         return mk_string(t->sval);
     }
@@ -988,15 +1360,32 @@ static val_t parse_primary(void)
  */
 static val_t parse_expr(int min_prec)
 {
+    cli_token *(*cur_func)(void);
+    cli_token *(*advance_func)(void);
+
+    if (parse_error || eval_error) { // Check both error flags
+        return mk_long(0);
+    }
+
+    // Determine which token stream to use based on which error flag is active
+    if (parse_mode == 0) { // cli_parse is active
+        cur_func = cur_parse;
+        advance_func = advance_parse;
+    } else { // cli_calc_eval_line is active
+        cur_func = cur_eval;
+        advance_func = advance_eval;
+    }
+
+
     val_t left = parse_primary();
-    if (parse_error)
+    if (parse_error || eval_error)
     {
         return left;
     }
 
     for (;;)
     {
-        cli_token_type op = cur()->type;
+        cli_token_type op = cur_func()->type;
         int prec = get_prec(op);
 
         if (prec < min_prec)
@@ -1004,19 +1393,19 @@ static val_t parse_expr(int min_prec)
             break;
         }
 
-        advance();
+        advance_func();
 
         int next_min = is_right_assoc(op)
                        ? prec
                        : prec + 1;
         val_t right = parse_expr(next_min);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return left;
         }
 
         left = eval_binop(op, left, right);
-        if (parse_error)
+        if (parse_error || eval_error)
         {
             return left;
         }
@@ -1046,7 +1435,10 @@ static val_t parse_expr(int min_prec)
  */
 void cli_parse(const char *input)
 {
-    parse_error = 0;
+    parse_mode = 0;
+    parse_error = 0; // Reset parse_error for cli_parse
+    eval_error = 0; // Do not trip error abortion logic
+
 
     parse_ntok = cli_tokenize(
         input,
@@ -1075,45 +1467,115 @@ void cli_parse(const char *input)
     }
 
     /* consume the trailing newline if present */
-    if (cur()->type == TOK_NEWLINE)
+    if (cur_parse()->type == TOK_NEWLINE)
     {
-        advance();
+        advance_parse();
     }
 
     /* store result in data.cmdargtoken */
-    switch (result.type)
+    if (result.type == VAL_DOUBLE)
     {
-        case VAL_DOUBLE:
+        if (data.core.Debug > 0)
+        {
             printf("\t double: %.10g\n",
                    result.dval);
-            data.cmdargtoken[data.cmdNBarg].type =
-                CMDARGTOKEN_TYPE_FLOAT;
-            data.cmdargtoken[data.cmdNBarg].val
-                .numf = result.dval;
-            break;
-
-        case VAL_LONG:
+        }
+        data.cmdargtoken[data.cmdNBarg].type =
+            CMDARGTOKEN_TYPE_FLOAT;
+        data.cmdargtoken[data.cmdNBarg]
+            .val.numf = result.dval;
+    }
+    else if (result.type == VAL_LONG)
+    {
+        if (data.core.Debug > 0)
+        {
             printf("\t long:   %ld\n",
                    result.lval);
-            data.cmdargtoken[data.cmdNBarg].type =
-                CMDARGTOKEN_TYPE_LONG;
-            data.cmdargtoken[data.cmdNBarg].val
-                .numl = result.lval;
-            break;
-
-        case VAL_STRING:
-            if (data.core.Debug > 0)
-            {
-                printf("\t string: %s\n",
-                       result.sval);
-            }
-            snprintf(
-                data.cmdargtoken[data.cmdNBarg]
-                    .val.string,
-                STRINGMAXLEN_CMDARGTOKEN_VAL,
-                "%s",
-                result.sval
-            );
-            break;
+        }
+        data.cmdargtoken[data.cmdNBarg].type =
+            CMDARGTOKEN_TYPE_LONG;
+        data.cmdargtoken[data.cmdNBarg].val
+            .numl = result.lval;
     }
+    else if (result.type == VAL_STRING)
+    {
+        if (data.core.Debug > 0)
+        {
+            printf("\t string: %s\n",
+                   result.sval);
+        }
+        snprintf(
+            data.cmdargtoken[data.cmdNBarg]
+                .val.string,
+            STRINGMAXLEN_CMDARGTOKEN_VAL,
+            "%s",
+            result.sval
+        );
+        // The type for STRING was already set by AST logic
+    }
+}
+
+/**
+ * @brief Evaluate an entire line as a math expression.
+ *
+ * If the line successfully evaluates as a generic math
+ * expression, print the result and return 1.
+ * If it contains syntax errors, return 0.
+ */
+int cli_calc_eval_line(const char *input)
+{
+    data.core.Debug = 1;
+    parse_mode = 1;
+    /* Use tokenizer but ensure it handles everything */
+    char tbuf[8192];
+    snprintf(tbuf, 8192, "%s\n", input);
+
+    eval_ntok = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+
+    parse_error = 0;
+    eval_error  = 0;
+    eval_pos    = 0;
+
+    if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
+    {
+        return 0; // empty expression
+    }
+
+    val_t result = parse_expr(0);
+
+    /* if there is any parse error or trailing garbage */
+    if (parse_error || eval_error || (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
+    {
+        return 0; /* not a pure math expression */
+    }
+
+    /* Success! Print output and return 1 */
+    if (result.type == VAL_LONG)
+    {
+        printf("    long: %ld\n", result.lval);
+    }
+    else if (result.type == VAL_DOUBLE)
+    {
+        printf("    double: %g\n", result.dval);
+    }
+    else if (result.type == VAL_STRING)
+    {
+        /* Just string returned, maybe "ls" etc */
+        /* To prevent capturing generic shell commands that happen to be single string tokens */
+        if (eval_ntok > 2)
+        {   /* it took operators to combine them into string? Rare... */
+            printf("    string: %s\n", result.sval);
+        }
+        else
+        {
+            return 0; /* It was probably a generic 1-word shell command like `ls` */
+        }
+    }
+    else if (result.type == VAL_GENERIC)
+    {
+         /* generic usually means function evaluated but no specific printable value returned */
+         //printf("    generic\n");
+    }
+    
+    return 1;
 }

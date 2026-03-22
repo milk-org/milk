@@ -81,7 +81,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     IMSETZERO_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) / sizeof(FPS_CLI_BINDING);
 
 static CLICMDARGDEF farg[] = {
@@ -133,7 +133,7 @@ void init_cmdsettings(void)
  * calls the computation and updates the output stream
  * on each iteration.
  */
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     IMGID in =
         imgid_make_from_name(imsetzero_imname);

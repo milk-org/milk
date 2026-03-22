@@ -57,7 +57,7 @@ typedef long variableID;
 #define STRINGMAXLEN_FPSPROCESSTYPE 64
 #define STRINGMAXLEN_SHMDIRNAME   200
 #define STRINGMAXLEN_PROCESSNAME  100
-#define STRINGMAXLEN_COMMAND      1000
+#define STRINGMAXLEN_COMMAND      2048
 
 #ifndef CLOCK_MILK
 #define CLOCK_MILK CLOCK_REALTIME
@@ -136,8 +136,8 @@ typedef long variableID;
 #define EXECUTE_SYSTEM_COMMAND(format, ...) \
     do \
     {\
-        char syscommandstring[STRINGMAXLEN_DEFAULT]; \
-        snprintf(syscommandstring, STRINGMAXLEN_DEFAULT, format, ##__VA_ARGS__); \
+        char syscommandstring[STRINGMAXLEN_COMMAND]; \
+        snprintf(syscommandstring, STRINGMAXLEN_COMMAND, format, ##__VA_ARGS__); \
         int _ret = system(syscommandstring); \
         (void)_ret; \
     } while (0)
@@ -145,8 +145,8 @@ typedef long variableID;
 #define EXECUTE_SYSTEM_COMMAND_ERRCHECK(format, ...) \
     do \
     {\
-        char syscommandstring[STRINGMAXLEN_DEFAULT]; \
-        snprintf(syscommandstring, STRINGMAXLEN_DEFAULT, format, ##__VA_ARGS__); \
+        char syscommandstring[STRINGMAXLEN_COMMAND]; \
+        snprintf(syscommandstring, STRINGMAXLEN_COMMAND, format, ##__VA_ARGS__); \
         int _ret = system(syscommandstring); \
         if (_ret != 0) \
         {\

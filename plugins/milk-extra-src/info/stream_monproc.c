@@ -211,7 +211,7 @@ errno_t stream_monitor_run(
     uint64_t tbinflag_arg,
     uint32_t cbbuffersize_arg,
     int procinfo_flag,
-    int fps_flag
+    int fps_flag __attribute__((unused))
 )
 {
     DEBUG_TRACE_FSTART();

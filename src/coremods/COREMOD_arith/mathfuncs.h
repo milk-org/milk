@@ -70,6 +70,12 @@ double Pmaxv(double a, double b);
 double Ptestlt(double a, double b);
 
 double Ptestmt(double a, double b);
+double Pteste(double a, double b);
+double Ptestne(double a, double b);
+double Ptestle(double a, double b);
+double Ptestge(double a, double b);
+double Pand(double a, double b);
+double Por(double a, double b);
 
 double Ptrunc(double a, double b, double c);
 

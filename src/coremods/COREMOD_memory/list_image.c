@@ -30,14 +30,14 @@
 #define STYPESIZE 10
 
 // MEMORY MONITOR
-static FILE   *listim_scr_fpo;
-static FILE   *listim_scr_fpi;
+static FILE   *__attribute__((unused)) listim_scr_fpo;
+static FILE   *__attribute__((unused)) listim_scr_fpi;
 #ifdef USE_NCURSES
 static SCREEN *listim_scr;
 #endif
 
-static int listim_scr_wrow;
-static int listim_scr_wcol;
+static int __attribute__((unused)) listim_scr_wrow;
+static int __attribute__((unused)) listim_scr_wcol;
 
 /* forward decls */
 errno_t memory_monitor(
@@ -81,7 +81,7 @@ static FPS_CLI_BINDING my_bindings[] = {
     FPS_PARAMS(FPS_X_BINDING)
 };
 
-static const int nb_bindings =
+static const int __attribute__((unused)) nb_bindings =
     sizeof(my_bindings) /
     sizeof(FPS_CLI_BINDING);
 
@@ -110,7 +110,7 @@ void init_cms_mmon(void)
     }
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -158,7 +158,7 @@ void init_cms_listim(void)
     }
 }
 
-static errno_t compute_listim()
+static errno_t __attribute__((unused)) compute_listim()
 {
     list_image_ID();
     return RETURN_SUCCESS;

@@ -93,7 +93,7 @@ errno_t image_keyword_addS(
     return RETURN_SUCCESS;
 }
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     image_keyword_addS(imgid_make_from_name(inimname), kwname, kwval, comment);
     return RETURN_SUCCESS;

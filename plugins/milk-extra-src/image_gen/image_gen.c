@@ -83,7 +83,9 @@ INIT_MODULE_LIB(image_gen)
 /* Placeholder for CLICMD_FIELDS_DEFAULTS macro which
  * hardcodes 'farg'. The constructor init_xx() functions
  * below overwrite nbarg and funcfpscliarg at runtime. */
-static CLICMDARGDEF farg[] = {{CLIARG_FLOAT64, 0, 0}};
+static CLICMDARGDEF farg[] = {
+    {CLIARG_FLOAT64, "", "", "", 0, NULL, NULL}
+};
 
 #include "fps.h"
 
@@ -2810,7 +2812,7 @@ imageID make_hexsegpupil(
                 for(jj = 0; jj < size; jj++)
                 {
                     if(fabsf(dcimg[ID].array.F[jj * size + ii] -
-                            (seg + 1.0)) < 0.01)
+                            (seg + 1.0f)) < 0.01f)
                     {
                         dcimg[IDif].array.F[kk * size2 + jj * size + ii] =
                             1.0;
@@ -2829,7 +2831,7 @@ imageID make_hexsegpupil(
                 for(jj = 0; jj < size; jj++)
                 {
                     if(fabsf(dcimg[ID].array.F[jj * size + ii] -
-                            (seg + 1.0)) < 0.01)
+                            (seg + 1.0f)) < 0.01f)
                     {
                         vx = 1.0 * ii - xc;
                         dcimg[IDif]

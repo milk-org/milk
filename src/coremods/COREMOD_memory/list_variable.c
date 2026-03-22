@@ -91,7 +91,7 @@ void init_cmdsettings_listvar(void)
     }
 }
 
-static errno_t compute_listvar()
+static errno_t __attribute__((unused)) compute_listvar()
 {
     FUNC_CHECK_RETURN(list_variable_ID());
     return RETURN_SUCCESS;
@@ -122,7 +122,7 @@ static FPS_CLI_BINDING my_bindings2[] = {
     FPS_PARAMS_listvarf(FPS_X_BINDING)
 };
 
-static const int nb_bindings2 =
+static const int __attribute__((unused)) nb_bindings2 =
     sizeof(my_bindings2) /
     sizeof(FPS_CLI_BINDING);
 
@@ -155,7 +155,7 @@ void init_cmdsettings_listvarf(void)
     }
 }
 
-static errno_t compute_listvarf()
+static errno_t __attribute__((unused)) compute_listvarf()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START

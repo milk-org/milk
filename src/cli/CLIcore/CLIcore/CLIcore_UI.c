@@ -880,7 +880,7 @@ errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
 
-    char            *cmdargstring;
+    char            *cmdargstring __attribute__((unused));
     int strmaxlen   = 200;
     char             str[strmaxlen];
     FILE            *fp;
@@ -1987,6 +1987,12 @@ pipe_fallthrough:
                 }
             }
             if (!is_internal) {
+                // Attempt native mathematical evaluation first (returns 1 on success)
+                if (cli_calc_eval_line(data.CLIcmdline)) {
+                    free(thetime);
+                    return RETURN_SUCCESS;
+                }
+
                 int sys_ret = system(data.CLIcmdline);
                 if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) != 127) {
                     printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);

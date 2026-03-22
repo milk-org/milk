@@ -404,13 +404,47 @@ unquoted in arguments.
 milk-cli > iofits.imgs2cube *.fits cube.fits
 ```
 
-### Arithmetic Operations
+### Arithmetic & Logic Operations
 
-Expressions not matching any command are evaluated as
-image arithmetic:
+Expressions that do not match any known command are passed to
+the internal CLI calculator (`cli_calc_parser`). The calculator 
+supports images, scalars, and logical operations.
 
+**Assignments & Math:**
 ```text
-milk-cli > im1=sqrt(im+2.0)       # arithmetic on images
+milk-cli > a = 5.0                 # scalar assignment
+milk-cli > b = a * 10              # scalar arithmetic
+milk-cli > im1 = sqrt(im + 2.0)    # image arithmetic
+```
+
+**Functions:**
+Standard math functions are supported on both scalars and 
+images (per-pixel): `abs`, `fabs`, `round`, `fmod`, `min`, `max`, 
+`sqrt`, `exp`, `cos`, `sin`, `tan`, `acos`, `asin`, `atan`.
+```text
+milk-cli > m = max(im1, 5)         # clip image below 5
+```
+
+**Relational & Logical Operators:**
+Supported operators: `<`, `<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`.
+When applied to images, these return a binary mask (1.0 or 0.0)
+for each pixel.
+```text
+milk-cli > mask = (im1 > 100) && (im2 != 0)
+```
+
+**Ternary Conditionals:**
+The `where(cond, true_val, false_val)` function works like a
+ternary operator. If `cond` is an image mask, it blends
+the `true_val` and `false_val` images/scalars based on the mask.
+```text
+milk-cli > im_clean = where(im > 100, 100, im)  # cap at 100
+```
+
+**Vector Reductions:**
+```text
+milk-cli > d = dot(im1, im2)       # sum(im1 * im2)
+milk-cli > n = norm(im1)           # sqrt(dot(im1, im1))
 ```
 
 ### Watch Command

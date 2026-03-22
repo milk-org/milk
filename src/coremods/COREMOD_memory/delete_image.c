@@ -77,7 +77,7 @@ FPS_V2_SECTION5(FPS_PARAMS)
  * 6.  COMPUTE WRAPPER
  * ============================================================= */
 
-static MILK_HOT errno_t compute_function()
+static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
     DEBUG_TRACE_FSTART();
 
@@ -174,7 +174,7 @@ errno_t delete_image(
 {
     DEBUG_TRACE_FSTART();
 
-    long s;
+    long s __attribute__((unused));
     char fname[STRINGMAXLEN_FULLFILENAME];
 
     imageID ID = img->ID;
