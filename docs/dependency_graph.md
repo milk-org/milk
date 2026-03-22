@@ -1,9 +1,9 @@
 # Dependency Graph
 
-> [!NOTE]
-> Generated from CMakeLists.txt — 2026-03-10.
-> See [Build Tiers](install/build_tiers.md) for cmake
-> commands.
+!!! note
+    Generated from CMakeLists.txt — 2026-03-10.
+    See [Build Tiers](install/build_tiers.md) for cmake
+    commands.
 
 ## Legend
 

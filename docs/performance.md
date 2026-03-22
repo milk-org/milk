@@ -79,10 +79,10 @@ isolcpus=4,5,6,7
 Then only explicitly pinned processes will run on those
 cores.
 
-> [!IMPORTANT]
-> Isolated cores are invisible to normal scheduling.
-> All system services, interrupts, and other processes
-> will be confined to the remaining cores.
+!!! important
+    Isolated cores are invisible to normal scheduling.
+    All system services, interrupts, and other processes
+    will be confined to the remaining cores.
 
 ---
 

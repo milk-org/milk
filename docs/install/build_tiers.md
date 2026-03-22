@@ -1,9 +1,9 @@
 # Build Tiers
 
-> [!NOTE]
-> The milk build system supports multiple build tiers,
-> controlled by CMake options. Lower tiers have fewer external
-> dependencies and produce a smaller footprint.
+!!! note
+    The milk build system supports multiple build tiers,
+    controlled by CMake options. Lower tiers have fewer external
+    dependencies and produce a smaller footprint.
 
 ***
 
@@ -49,13 +49,13 @@
 | `USE_READLINE` | ON | Enable readline for CLI input |
 | `USE_GSL` | ON | Enable GSL for plugins |
 
-> [!IMPORTANT]
-> **Dependency chain:**
->
-> - `USE_CLI=ON` automatically enables `USE_COREMODS`
-> - Plugins are only built when `USE_COREMODS=ON`
-> - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles
->   remaining modules without cfitsio linkage
+!!! important
+    **Dependency chain:**
+    
+    - `USE_CLI=ON` automatically enables `USE_COREMODS`
+    - Plugins are only built when `USE_COREMODS=ON`
+    - `USE_CFITSIO=OFF` excludes `COREMOD_iofits` and compiles
+      remaining modules without cfitsio linkage
 
 ***
 
@@ -92,11 +92,11 @@ are compiled out via `#ifdef USE_CFITSIO` guards:
 | `COREMOD_arith` | No impact (never used cfitsio) |
 | `COREMOD_tools` | No impact |
 
-> [!TIP]
-> The engine and core tiers are ideal for embedded or
-> real-time deployments where only shared-memory stream
-> processing is needed and disk I/O to FITS files is
-> unnecessary.
+!!! tip
+    The engine and core tiers are ideal for embedded or
+    real-time deployments where only shared-memory stream
+    processing is needed and disk I/O to FITS files is
+    unnecessary.
 
 ***
 ← [Documentation Index](../index.md)
