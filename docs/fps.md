@@ -105,7 +105,7 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
 
 ## 4. Parameter Data Types and Flags
 
-=== "Data Types"
+=== ":material-format-list-bulleted: Data Types"
 
     FPS natively supports the following parameter types:
 
@@ -119,7 +119,7 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
     | `STREAMNAME` | Name of a SHM stream |
     | `FILENAME` | File path on disk |
 
-=== "Flags"
+=== ":material-flag: Flags"
 
     Flags control parameter behavior and TUI visibility:
 
@@ -130,7 +130,7 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
     | `FPFLAG_MINLIMIT` | Enforce minimum boundary |
     | `FPFLAG_MAXLIMIT` | Enforce maximum boundary |
 
-=== "Developer Integration"
+=== ":material-code-tags: Developer Integration"
 
     Integrating with FPS entails three steps:
 
