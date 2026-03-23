@@ -88,6 +88,7 @@ on_update wfs_cam { echo "New WFS frame received!" }
 ### Enhanced Conditional Tests (`[ ]`)
 
 The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly without invoking `test` subprocesses:
+
 - **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable), `-w` (writable), `-x` (executable), `-L` (symlink).
 - **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`.
 - **Numbers**: `-eq`, `-ne`, `-lt`, `-le`, `-gt`, `-ge`.
@@ -137,6 +138,7 @@ fpsset myloop loopgain 0.5
 ### Advanced Variable Expansion and Arrays
 
 `milk-cli`'s native interpreter includes powerful bash-like variable expansions:
+
 - **Default values**: `${var:-default}` returns `default` if `var` is empty/unset.
 - **Assign default**: `${var:=default}` sets `var` to `default` if it was empty/unset.
 - **Error if empty**: `${var:?message}` prints an error if `var` is empty/unset.
@@ -145,6 +147,7 @@ fpsset myloop loopgain 0.5
 - **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element of the respective array.
 
 For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
+
 - Basic operators: `+  -  *  /  %`
 - Bitwise operators: `&  |  ^  <<  >>  ~`
 - Comparisons: `==  !=  <  >  <=  >=`
