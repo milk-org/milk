@@ -29,6 +29,33 @@ void CLI_configure_readline();
 void CLI_setup_hint_area(void);
 void CLI_cleanup_scroll_region(void);
 
+/* -- Cross-file helpers (CLIcore_UI_*.c) -- */
+
+/* CLIcore_UI_completion.c */
+void *xmalloc(int size);
+char *dupstr(char *s);
+extern int ghost_chars_on_line;
+
+#ifdef USE_READLINE
+int  cli_accept_line(int count, int key);
+char *CLI_generator(const char *text, int state);
+int  levenshtein_distance(
+    const char *s1, const char *s2);
+#endif
+
+/* CLIcore_UI_highlight.c */
+int  cli_is_command(const char *word);
+#ifdef USE_READLINE
+void cli_highlight_redisplay(void);
+#endif
+
+/* CLIcore_UI_hintarea.c */
+#ifdef USE_READLINE
+int  find_command_match(const char *firstword);
+void set_pending_suggestion(
+    const char *text, int replace_len);
+#endif
+
 /* Command aliases */
 void    cli_alias_load(void);
 errno_t cli_alias_add(void);
