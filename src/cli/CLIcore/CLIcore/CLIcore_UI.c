@@ -1972,8 +1972,12 @@ pipe_fallthrough:
                 strcmp(firstword, ".") == 0 || strcmp(firstword, "source") == 0) {
                 is_internal = 1;
             }
-            if (!is_internal && strchr(firstword, '=') != NULL) {
-                is_internal = 1;
+            if (!is_internal) {
+                // If it's a known form of variable assignment
+                const char *eq = strchr(firstword, '=');
+                if (eq != NULL) {
+                    is_internal = 1;
+                }
             }
 
             if (!is_internal) {
@@ -2008,8 +2012,40 @@ pipe_fallthrough:
     FILE *pipe_fp = NULL;
     int   saved_stdout_fd = -1;
     {
-        char *pipe_pos =
-            strchr(data.CLIcmdline, '|');
+        char *pipe_pos = NULL;
+        {
+            int depth = 0;
+            int in_sq = 0;
+            int in_dq = 0;
+            for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
+            {
+                char c = data.CLIcmdline[si];
+                if(c == '\'' && !in_dq)
+                {
+                    in_sq = !in_sq;
+                }
+                else if(c == '"' && !in_sq)
+                {
+                    in_dq = !in_dq;
+                }
+                else if(!in_sq && !in_dq)
+                {
+                    if(c == '(')
+                    {
+                        depth++;
+                    }
+                    else if(c == ')' && depth > 0)
+                    {
+                        depth--;
+                    }
+                    else if(depth == 0 && c == '|')
+                    {
+                        pipe_pos = data.CLIcmdline + si;
+                        break;
+                    }
+                }
+            }
+        }
         if(pipe_pos != NULL)
         {
             *pipe_pos = '\0';
@@ -2041,8 +2077,40 @@ pipe_fallthrough:
     int   saved_stdout_redir = -1;
     if(pipe_fp == NULL)
     {
-        char *redir_pos =
-            strchr(data.CLIcmdline, '>');
+        char *redir_pos = NULL;
+        {
+            int depth = 0;
+            int in_sq = 0;
+            int in_dq = 0;
+            for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
+            {
+                char c = data.CLIcmdline[si];
+                if(c == '\'' && !in_dq)
+                {
+                    in_sq = !in_sq;
+                }
+                else if(c == '"' && !in_sq)
+                {
+                    in_dq = !in_dq;
+                }
+                else if(!in_sq && !in_dq)
+                {
+                    if(c == '(')
+                    {
+                        depth++;
+                    }
+                    else if(c == ')' && depth > 0)
+                    {
+                        depth--;
+                    }
+                    else if(depth == 0 && c == '>')
+                    {
+                        redir_pos = data.CLIcmdline + si;
+                        break;
+                    }
+                }
+            }
+        }
         if(redir_pos != NULL)
         {
             *redir_pos = '\0';
