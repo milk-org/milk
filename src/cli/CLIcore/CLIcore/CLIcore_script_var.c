@@ -22,6 +22,35 @@ void cli_var_set(
     const char *val
 )
 {
+    int type = 2; // default string
+    long numl = 0;
+    double numf = 0.0;
+
+    if (val != NULL && *val != '\0') {
+        char *endptr = NULL;
+        char valbuf[CLI_VAR_VALLEN];
+        strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
+        valbuf[CLI_VAR_VALLEN - 1] = '\0';
+        size_t len = strlen(valbuf);
+
+        // Try parsing as integer
+        numl = strtol(valbuf, &endptr, 10);
+        if (endptr != valbuf && *endptr == '\0') {
+            type = 1; // long
+        } else {
+            // Try parsing as float
+            if (len > 0 && (valbuf[len-1] == 'f' || valbuf[len-1] == 'F')) {
+                valbuf[len-1] = '\0';
+            }
+            numf = strtod(valbuf, &endptr);
+            if (endptr != valbuf && *endptr == '\0' && len > 0) {
+                type = 0; // double
+            } else {
+                type = 2; // string
+            }
+        }
+    }
+
     /* Update existing */
     for(int i = 0; i < CLI_MAX_VARS; i++)
     {
@@ -33,6 +62,9 @@ void cli_var_set(
                     CLI_VAR_VALLEN - 1);
             cli_vars[i].val[
                 CLI_VAR_VALLEN - 1] = '\0';
+            cli_vars[i].type = type;
+            if (type == 1) cli_vars[i].num.l = numl;
+            if (type == 0) cli_vars[i].num.f = numf;
             return;
         }
     }
@@ -49,6 +81,9 @@ void cli_var_set(
                     CLI_VAR_VALLEN - 1);
             cli_vars[i].val[
                 CLI_VAR_VALLEN - 1] = '\0';
+            cli_vars[i].type = type;
+            if (type == 1) cli_vars[i].num.l = numl;
+            if (type == 0) cli_vars[i].num.f = numf;
             cli_vars[i].used = 1;
             return;
         }
@@ -321,16 +356,21 @@ errno_t cli_cmd_vars(void)
 {
     int count = 0;
     printf("\n  CLI Variables:\n");
-    printf("  %-20s  %s\n",
-           "NAME", "VALUE");
-    printf("  %-20s  %s\n",
-           "----", "-----");
+    printf("  %-20s  %-6s  %s\n",
+           "NAME", "TYPE", "VALUE");
+    printf("  %-20s  %-6s  %s\n",
+           "----", "----", "-----");
     for(int i = 0; i < CLI_MAX_VARS; i++)
     {
         if(cli_vars[i].used)
         {
-            printf("  %-20s  %s\n",
+            const char *typestr = "STR";
+            if(cli_vars[i].type == 0) typestr = "FLT";
+            else if(cli_vars[i].type == 1) typestr = "INT";
+            
+            printf("  %-20s  [%-3s]  %s\n",
                    cli_vars[i].name,
+                   typestr,
                    cli_vars[i].val);
             count++;
         }
