@@ -47,6 +47,13 @@ double arith_atom(ArithParser *p)
         return -arith_atom(p);
     }
 
+    /* Bitwise NOT */
+    if(p->s[p->pos] == '~')
+    {
+        p->pos++;
+        return (double)(~(long)arith_atom(p));
+    }
+
     /* Parenthesized sub-expression */
     if(p->s[p->pos] == '(')
     {
@@ -156,57 +163,126 @@ double arith_term(ArithParser *p)
     return left;
 }
 
-double arith_compare(ArithParser *p)
+double arith_shift(ArithParser *p)
 {
     double left = arith_term(p);
+    arith_skip_ws(p);
+
+    while((p->s[p->pos] == '<' && p->s[p->pos + 1] == '<')
+            || (p->s[p->pos] == '>' && p->s[p->pos + 1] == '>'))
+    {
+        char op = p->s[p->pos];
+        p->pos += 2;
+        double right = arith_term(p);
+        arith_skip_ws(p);
+        if(op == '<')
+        {
+            left = (double)((long)left << (long)right);
+        }
+        else
+        {
+            left = (double)((long)left >> (long)right);
+        }
+    }
+    return left;
+}
+
+double arith_compare(ArithParser *p)
+{
+    double left = arith_shift(p);
     arith_skip_ws(p);
 
     if(p->s[p->pos] == '<'
             && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left <= right) ? 1.0 : 0.0;
     }
     if(p->s[p->pos] == '>'
             && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left >= right) ? 1.0 : 0.0;
     }
     if(p->s[p->pos] == '<')
     {
         p->pos++;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left < right) ? 1.0 : 0.0;
     }
     if(p->s[p->pos] == '>')
     {
         p->pos++;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left > right) ? 1.0 : 0.0;
     }
     if(p->s[p->pos] == '='
             && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left == right) ? 1.0 : 0.0;
     }
     if(p->s[p->pos] == '!'
             && p->s[p->pos + 1] == '=')
     {
         p->pos += 2;
-        double right = arith_term(p);
+        double right = arith_shift(p);
         return (left != right) ? 1.0 : 0.0;
+    }
+    return left;
+}
+
+double arith_bitwise_and(ArithParser *p)
+{
+    double left = arith_compare(p);
+    arith_skip_ws(p);
+
+    while(p->s[p->pos] == '&')
+    {
+        p->pos++;
+        double right = arith_compare(p);
+        arith_skip_ws(p);
+        left = (double)((long)left & (long)right);
+    }
+    return left;
+}
+
+double arith_bitwise_xor(ArithParser *p)
+{
+    double left = arith_bitwise_and(p);
+    arith_skip_ws(p);
+
+    while(p->s[p->pos] == '^')
+    {
+        p->pos++;
+        double right = arith_bitwise_and(p);
+        arith_skip_ws(p);
+        left = (double)((long)left ^ (long)right);
+    }
+    return left;
+}
+
+double arith_bitwise_or(ArithParser *p)
+{
+    double left = arith_bitwise_xor(p);
+    arith_skip_ws(p);
+
+    while(p->s[p->pos] == '|')
+    {
+        p->pos++;
+        double right = arith_bitwise_xor(p);
+        arith_skip_ws(p);
+        left = (double)((long)left | (long)right);
     }
     return left;
 }
 
 double arith_expr(ArithParser *p)
 {
-    return arith_compare(p);
+    return arith_bitwise_or(p);
 }
 
 
@@ -489,6 +565,78 @@ int cli_eval_test(const char *expr)
         return 0;
     }
 
+    /* Logical OR */
+    for(int i = 0; i < ntok; i++)
+    {
+        if(strcmp(tokens[i], "-o") == 0)
+        {
+            char left[512]  = "";
+            char right[512] = "";
+            for(int j = 0; j < i; j++)
+            {
+                if(j > 0)
+                {
+                    strncat(left, " ",
+                            sizeof(left) - strlen(left) - 1);
+                }
+                strncat(left, tokens[j],
+                        sizeof(left) - strlen(left) - 1);
+            }
+            if(cli_eval_test(left))
+            {
+                return 1;
+            }
+
+            for(int j = i + 1; j < ntok; j++)
+            {
+                if(j > i + 1)
+                {
+                    strncat(right, " ",
+                            sizeof(right) - strlen(right) - 1);
+                }
+                strncat(right, tokens[j],
+                        sizeof(right) - strlen(right) - 1);
+            }
+            return cli_eval_test(right);
+        }
+    }
+
+    /* Logical AND */
+    for(int i = 0; i < ntok; i++)
+    {
+        if(strcmp(tokens[i], "-a") == 0)
+        {
+            char left[512]  = "";
+            char right[512] = "";
+            for(int j = 0; j < i; j++)
+            {
+                if(j > 0)
+                {
+                    strncat(left, " ",
+                            sizeof(left) - strlen(left) - 1);
+                }
+                strncat(left, tokens[j],
+                        sizeof(left) - strlen(left) - 1);
+            }
+            if(!cli_eval_test(left))
+            {
+                return 0;
+            }
+
+            for(int j = i + 1; j < ntok; j++)
+            {
+                if(j > i + 1)
+                {
+                    strncat(right, " ",
+                            sizeof(right) - strlen(right) - 1);
+                }
+                strncat(right, tokens[j],
+                        sizeof(right) - strlen(right) - 1);
+            }
+            return cli_eval_test(right);
+        }
+    }
+
     /* Unary: -n str, -z str */
     if(ntok == 2
        && strcmp(tokens[0], "-n") == 0)
@@ -501,7 +649,30 @@ int cli_eval_test(const char *expr)
         return strlen(tokens[1]) == 0 ? 1 : 0;
     }
 
-    /* File tests: -f, -d, -e, -s */
+    /* File tests: -f, -d, -e, -s, -r, -w, -x, -L */
+    if(ntok == 2
+       && strcmp(tokens[0], "-r") == 0)
+    {
+        return access(tokens[1], R_OK) == 0 ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-w") == 0)
+    {
+        return access(tokens[1], W_OK) == 0 ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-x") == 0)
+    {
+        return access(tokens[1], X_OK) == 0 ? 1 : 0;
+    }
+    if(ntok == 2
+       && strcmp(tokens[0], "-L") == 0)
+    {
+        struct stat sb;
+        return (lstat(tokens[1], &sb) == 0
+                && S_ISLNK(sb.st_mode))
+               ? 1 : 0;
+    }
     if(ntok == 2
        && strcmp(tokens[0], "-f") == 0)
     {
@@ -684,6 +855,13 @@ void cli_expand_env(
                 i++;
             }
 
+            int is_length = 0;
+            if(has_brace && line[i] == '#')
+            {
+                is_length = 1;
+                i++;
+            }
+
             char varname[256];
             int  vlen = 0;
 
@@ -706,6 +884,43 @@ void cli_expand_env(
                 }
             }
             varname[vlen] = '\0';
+            
+            char index_str[256];
+            int  has_index = 0;
+            if(has_brace && line[i] == '[')
+            {
+                i++;
+                int ilen = 0;
+                while(line[i] != '\0' && line[i] != ']' && ilen < 255)
+                {
+                    index_str[ilen++] = line[i++];
+                }
+                if(line[i] == ']') i++;
+                index_str[ilen] = '\0';
+                has_index = 1;
+            }
+
+            char mod_op[3] = {0};
+            char mod_arg[256] = {0};
+            if(has_brace && line[i] == ':')
+            {
+                i++;
+                if(line[i] == '-' || line[i] == '=' || line[i] == '?' || line[i] == '+')
+                {
+                    mod_op[0] = ':';
+                    mod_op[1] = line[i++];
+                }
+                else
+                {
+                    mod_op[0] = ':';
+                }
+                int mlen = 0;
+                while(line[i] != '\0' && line[i] != '}' && mlen < 255)
+                {
+                    mod_arg[mlen++] = line[i++];
+                }
+                mod_arg[mlen] = '\0';
+            }
 
             /* Check if this is a supported $VAR string, else just copy literal.
              * E.g. ${#foo} is not supported here, handled elsewhere. */
@@ -717,10 +932,10 @@ void cli_expand_env(
                 }
                 else
                 {
-                    /* Something complex like ${var:-def}, let wordexp handle it.
-                     * We output ${varname back into out and continue. */
+                    /* Something complex ... */
                     out[opos++] = '$';
                     out[opos++] = '{';
+                    if (is_length) out[opos++] = '#';
                     for(int k=0; k<vlen; k++) {
                         if(opos < maxlen - 1) out[opos++] = varname[k];
                     }
@@ -728,21 +943,137 @@ void cli_expand_env(
                 }
             }
 
-            const char *val = cli_var_lookup(varname);
-            if(val != NULL)
+            const char *val = NULL;
+            if(has_index)
+            {
+                const char *idx_val = cli_var_lookup(index_str);
+                if(idx_val == NULL) idx_val = index_str;
+                
+                int is_found = 0;
+                for(int a = 0; a < CLI_MAX_ASSOC; a++)
+                {
+                    if(cli_assoc[a].used && strcmp(cli_assoc[a].name, varname) == 0)
+                    {
+                        for(int e = 0; e < cli_assoc[a].nelem; e++)
+                        {
+                            if(strcmp(cli_assoc[a].keys[e], idx_val) == 0)
+                            {
+                                val = cli_assoc[a].vals[e];
+                                is_found = 1;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                if(!is_found)
+                {
+                    int num_idx = atoi(idx_val);
+                    for(int a = 0; a < CLI_MAX_ARRAYS; a++)
+                    {
+                        if(cli_arrays[a].used && strcmp(cli_arrays[a].name, varname) == 0)
+                        {
+                            if(num_idx >= 0 && num_idx < cli_arrays[a].nelem)
+                            {
+                                val = cli_arrays[a].elem[num_idx];
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                val = cli_var_lookup(varname);
+            }
+
+            char val_buf[256];
+            val_buf[0] = '\0';
+
+            if(mod_op[0] != '\0')
+            {
+                if(mod_op[1] == '-')
+                {
+                    if(val == NULL || val[0] == '\0') val = mod_arg;
+                }
+                else if(mod_op[1] == '=')
+                {
+                    if(val == NULL || val[0] == '\0')
+                    {
+                        val = mod_arg;
+                        cli_var_set(varname, val);
+                    }
+                }
+                else if(mod_op[1] == '?')
+                {
+                    if(val == NULL || val[0] == '\0')
+                    {
+                        printf("CLI expand error: %s: %s\n", varname, mod_arg);
+                        val = "";
+                    }
+                }
+                else if(mod_op[1] == '+')
+                {
+                    if(val != NULL && val[0] != '\0') val = mod_arg;
+                    else val = "";
+                }
+                else if(mod_op[0] == ':')
+                {
+                    int offset = 0;
+                    int length = 255;
+                    char *colon = strchr(mod_arg, ':');
+                    if(colon != NULL)
+                    {
+                        *colon = '\0';
+                        const char *lval = cli_var_lookup(mod_arg);
+                        offset = atoi(lval ? lval : mod_arg);
+                        const char *rval = cli_var_lookup(colon + 1);
+                        length = atoi(rval ? rval : colon + 1);
+                    }
+                    else
+                    {
+                        const char *lval = cli_var_lookup(mod_arg);
+                        offset = atoi(lval ? lval : mod_arg);
+                    }
+
+                    if(val != NULL)
+                    {
+                        int v1 = (int) strlen(val);
+                        if(offset < 0) offset = v1 + offset;
+                        if(offset < 0) offset = 0;
+                        if(offset > v1) offset = v1;
+                        
+                        if(length < 0) length = v1 - offset + length;
+                        if(length < 0) length = 0;
+                        if(offset + length > v1) length = v1 - offset;
+
+                        strncpy(val_buf, val + offset, (size_t) length);
+                        val_buf[length] = '\0';
+                        val = val_buf;
+                    }
+                }
+            }
+
+            if(is_length)
+            {
+                int len = val ? (int) strlen(val) : 0;
+                char numstr[32];
+                snprintf(numstr, sizeof(numstr), "%d", len);
+                emit_str_local(out, &opos, maxlen, numstr);
+            }
+            else if(val != NULL)
             {
                 emit_str_local(out, &opos, maxlen, val);
             }
             else
             {
-                /* Variable not found or milk doesn't know it. We let wordexp
-                 * try to expand it later from environment! Just emit original string */
+                /* E.g. var not found */
                 out[opos++] = '$';
-                if (has_brace) out[opos++] = '{';
+                if(has_brace) out[opos++] = '{';
                 for(int k=0; k<vlen; k++) {
                     if(opos < maxlen - 1) out[opos++] = varname[k];
                 }
-                if (has_brace && opos < maxlen - 1) out[opos++] = '}';
+                if(has_brace && opos < maxlen - 1) out[opos++] = '}';
             }
         }
         else if (line[i] == '\\' && line[i+1] == '$')
