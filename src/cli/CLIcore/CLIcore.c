@@ -104,7 +104,6 @@ static int single_command_flag = 0;
 static char single_command_string[STRINGMAXLEN_CLICMDLINE];
 
 // fifo input
-static int    fifofd;
 static fd_set cli_fdin_set;
 
 /*-----------------------------------------
@@ -122,6 +121,11 @@ static int command_line_process_options(int argc, char **argv);
 /// CLI commands
 static int exitCLI();
 
+/* Forward declarations for FIFO helpers */
+void cli_fifo_close(void);
+int  cli_fifo_open(const char *path);
+errno_t cli_fifo(void);
+
 /* =============================================================================================== */
 /* =============================================================================================== */
 /*                                    FUNCTIONS SOURCE CODE                                        */
@@ -138,9 +142,10 @@ errno_t exitCLI()
      * scroll region and desync row positions. */
     CLI_cleanup_scroll_region();
 
-    if(data.fifoON == 1)
+    if(data.fifoON == 1
+       || data.fifofd >= 0)
     {
-        EXECUTE_SYSTEM_COMMAND("rm %s", data.fifoname);
+        cli_fifo_close();
     }
 
     if(Listimfile == 1)
@@ -287,21 +292,97 @@ errno_t streamCTRL_CTRLscreen__cli()
 
 void fnExit_fifoclose()
 {
-    //	printf("Running atexit function fnExit_fifoclose\n");
-    //	if ( data.fifoON == 1)
-    //	{
-    //		if (fifofd != -1) {
-    //			close(fifofd);
-    //		}
-    //	}
+}
 
-    //	FD_ZERO(&cli_fdin_set);  // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-    //       if(data.fifoON==1)
-    //           FD_SET(fifofd, &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
-    //    FD_SET(fileno(stdin), &cli_fdin_set);  // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+/**
+ * @brief Open (or create) a command FIFO
+ *
+ * If path is NULL, auto-generates a default path
+ * based on process name and PID.
+ *
+ * @param path  FIFO path, or NULL for auto
+ * @return 0 on success, -1 on error
+ */
+int cli_fifo_open(const char *path)
+{
+    /* Close any existing FIFO first */
+    if(data.fifoON == 1)
+    {
+        cli_fifo_close();
+    }
 
-    // reset terminal properties
-    //	system("tset");
+    /* Set the path */
+    if(path != NULL && path[0] != '\0')
+    {
+        snprintf(data.fifoname,
+                 STRINGMAXLEN_FULLFILENAME,
+                 "%s", path);
+    }
+    else
+    {
+        WRITE_FULLFILENAME(
+            data.fifoname,
+            "%s/.%s.fifo.%07d",
+            dcshmdir,
+            data.processname,
+            getpid());
+    }
+
+    /* Create the FIFO if it doesn't exist */
+    struct stat sb;
+    if(stat(data.fifoname, &sb) != 0)
+    {
+        if(mkfifo(data.fifoname, 0666) != 0)
+        {
+            printf(
+                "\033[31mfifo: cannot create"
+                " '%s': %s\033[0m\n",
+                data.fifoname,
+                strerror(errno));
+            return -1;
+        }
+    }
+
+    data.fifofd = open(
+        data.fifoname,
+        O_RDWR | O_NONBLOCK);
+    if(data.fifofd == -1)
+    {
+        perror("open");
+        printf("File name : %s\n",
+               data.fifoname);
+        return -1;
+    }
+
+    data.fifoON = 1;
+
+    if(dcquiet == 0)
+    {
+        printf(
+            "\033[36m[fifo]\033[0m "
+            "opened: %s (fd=%d)\n",
+            data.fifoname, data.fifofd);
+    }
+    return 0;
+}
+
+/**
+ * @brief Close the current command FIFO
+ */
+void cli_fifo_close(void)
+{
+    if(data.fifofd >= 0)
+    {
+        close(data.fifofd);
+        data.fifofd = -1;
+    }
+    if(data.fifoON == 1
+       && data.fifoname[0] != '\0')
+    {
+        unlink(data.fifoname);
+    }
+    data.fifoON = 0;
+    data.fifoname[0] = '\0';
 }
 
 errno_t CLI_startup()
@@ -420,6 +501,7 @@ errno_t CLI_startup()
 
     data.CLIlogON          = 0; // log every command
     data.fifoON            = 0;
+    data.fifofd            = -1;
     dcprocinfo       = 1; // process info for intensive processes
     dcprocinfoact = 0; // toggles to 1 when process is logged
     data.autocomplete      = 1; // autocomplete preview ON by default
@@ -620,22 +702,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     fdmax = fileno(stdin);
     if(data.fifoON == 1)
     {
-        if(dcquiet == 0)
+        if(cli_fifo_open(data.fifoname) != 0)
         {
-            printf("Creating fifo %s\n", data.fifoname);
-        }
-        mkfifo(data.fifoname, 0666);
-        fifofd = open(data.fifoname, O_RDWR | O_NONBLOCK);
-        if(fifofd == -1)
-        {
-            perror("open");
-            printf("File name : %s\n", data.fifoname);
             DEBUG_TRACE_FEXIT();
             return EXIT_FAILURE;
         }
-        if(fifofd > fdmax)
+        if(data.fifofd > fdmax)
         {
-            fdmax = fifofd;
+            fdmax = data.fifofd;
         }
     }
 
@@ -756,11 +830,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
         FD_ZERO(
             &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-        if(data.fifoON == 1)
+        if(data.fifoON == 1
+           && data.fifofd >= 0)
         {
             FD_SET(
-                fifofd,
-                &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+                data.fifofd,
+                &cli_fdin_set);
         }
 
         FD_SET(
@@ -825,6 +900,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 #endif
             }
 
+            /* Recompute fdmax in case fifo
+             * was opened dynamically */
+            fdmax = fileno(stdin);
+            if(data.fifoON == 1
+               && data.fifofd > fdmax)
+            {
+                fdmax = data.fifofd;
+            }
             n = select(fdmax + 1, &cli_fdin_set, NULL, NULL, &tv);
 
             if(n ==
@@ -833,17 +916,17 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                 tv.tv_sec  = 0;
                 tv.tv_usec = cliwaitus;
 
-                FD_ZERO(
-                    &cli_fdin_set); // Initializes the file descriptor set cli_fdin_set to have zero bits for all file descriptors.
-                if(data.fifoON == 1)
+                FD_ZERO(&cli_fdin_set);
+                if(data.fifoON == 1
+                   && data.fifofd >= 0)
                 {
                     FD_SET(
-                        fifofd,
-                        &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+                        data.fifofd,
+                        &cli_fdin_set);
                 }
                 FD_SET(
                     fileno(stdin),
-                    &cli_fdin_set); // Sets the bit for the file descriptor fifofd in the file descriptor set cli_fdin_set.
+                    &cli_fdin_set);
                 continue;
             }
             if(n == -1)
@@ -863,23 +946,31 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
             blockCLIinput = 0;
 
-            if(data.fifoON == 1)
+            if(data.fifoON == 1
+               && data.fifofd >= 0)
             {
                 DEBUG_TRACEPOINT("fifo ON");
-                if(FD_ISSET(fifofd, &cli_fdin_set))
+                if(FD_ISSET(
+                    data.fifofd,
+                    &cli_fdin_set))
                 {
                     total_bytes = 0;
                     for(;;)
                     {
-                        bytes = read(fifofd, buf0, 1);
+                        bytes = read(
+                            data.fifofd,
+                            buf0, 1);
                         if(bytes > 0)
                         {
-                            buf1[total_bytes] = buf0[0];
-                            total_bytes += (size_t) bytes;
+                            buf1[total_bytes] =
+                                buf0[0];
+                            total_bytes +=
+                                (size_t) bytes;
                         }
                         else
                         {
-                            if(errno == EWOULDBLOCK)
+                            if(errno
+                               == EWOULDBLOCK)
                             {
                                 break;
                             }
@@ -887,34 +978,69 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                             {
                                 perror("read");
                                 DEBUG_TRACE_FEXIT();
-                                return EXIT_FAILURE;
+                                return
+                                    EXIT_FAILURE;
                             }
                         }
                         if(buf0[0] == '\n')
                         {
-                            buf1[total_bytes - 1] = '\0';
-                            strncpy(data.CLIcmdline,
+                            buf1[
+                                total_bytes - 1]
+                                = '\0';
+                            strncpy(
+                                data.CLIcmdline,
                                 buf1,
-                                STRINGMAXLEN_CLICMDLINE - 1);
+                                STRINGMAXLEN_CLICMDLINE
+                                - 1);
 
-                            DEBUG_TRACEPOINT(
-                                "CLI executing line: "
-                                "%s",
+                            /* FIFO ingestion
+                             * feedback */
+                            printf(
+                                "\033[36m"
+                                "[fifo]\033[0m"
+                                " \u2190 \"%s\""
+                                "\n",
                                 data.CLIcmdline);
-                            if(dcdebug > 0)
-                            {
-                                printf("DEBUG: %s: execute line, fifo mode\n", __func__);
-                            }
-                            CLI_execute_line();
-                            DEBUG_TRACEPOINT("CLI line executed");
 
-                            printf("%s", prompt);
+                            struct timespec
+                                ft0;
+                            struct timespec
+                                ft1;
+                            clock_gettime(
+                                CLOCK_MONOTONIC,
+                                &ft0);
+
+                            CLI_execute_line();
+
+                            clock_gettime(
+                                CLOCK_MONOTONIC,
+                                &ft1);
+                            {
+                                double fe =
+                                    (double)
+                                    (ft1.tv_sec
+                                     - ft0.tv_sec)
+                                    + 1.0e-9
+                                    * (double)
+                                    (ft1.tv_nsec
+                                     - ft0.tv_nsec);
+                                printf(
+                                    "\033[36m"
+                                    "[fifo]"
+                                    "\033[0m"
+                                    " \u2713 "
+                                    "(%.3fs)"
+                                    "\n",
+                                    fe);
+                            }
+
+                            printf("%s",
+                                   prompt);
                             fflush(stdout);
                             break;
                         }
                     }
-                    blockCLIinput =
-                        1; // keep blocking input while fifo is not empty
+                    blockCLIinput = 1;
                 }
             }
 
@@ -1319,6 +1445,16 @@ void runCLI_cmd_init()
                        "no argument",
                        "pwd",
                        "cli_pwd()");
+
+    RegisterCLIcommand(
+        "fifo",
+        __FILE__,
+        cli_fifo,
+        "manage command FIFO input",
+        "[create|open|close|on|off"
+        "|status] [path]",
+        "fifo create /tmp/myfifo",
+        "cli_fifo()");
 
     RegisterCLIcommand("alias",
                        __FILE__,
