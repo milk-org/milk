@@ -171,11 +171,7 @@ USING "imlist.txt"
 
 Start milk-cli with -l (or --listimf) to maintain "imlist.txt" -- an ASCII table of all images currently in memory. Standard unix tools can filter this list and generate commands.
 
-The -l flag works independently of FIFO mode. You can feed the generated commands back into the CLI via cmdfile.txt or via a FIFO.
-
-Via cmdfile.txt (no -f flag needed):
-
-> !awk '{if ($4>200) print $2}' imlist.txt| xargs -I {} echo iofits.saveFITS {} {}_tmp.fits > cmdfile.txt
+The -l flag works independently of FIFO mode. You can feed the generated commands back into the CLI via a named pipe (FIFO).
 
 Via FIFO (requires -f or -F; start with milk-cli -l -n myctl -f):
 
