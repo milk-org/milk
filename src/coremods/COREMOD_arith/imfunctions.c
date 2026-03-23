@@ -1981,55 +1981,95 @@ int arith_image_function_1ff_1_inplace(const char *ID_name, double f1, double f2
 
 /* Specialized optimized arithmetic functions */
 
-#define ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(name, funcname) \
-errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin, IMGID *imgout) \
-{ \
-    DEBUG_TRACE_FSTART(); \
-    if (imgin->im == NULL) { return RETURN_FAILURE; } \
-    if(imgout->im == NULL) imgid_copy(imgin, imgout); \
-    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
-    else { if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im); } \
-    imgid_mkimage(imgout); \
-    if (imgout->ID == -1 && imgout->im != NULL) { RegisterIMGID(imgout, dcimg, dcnimg); } \
-    uint64_t nelement = imgout->md->nelement; \
-    if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
-    { \
-        float * MILK_RESTRICT p1 = MILK_ASSUME_ALIGNED(imgin->im->array.F); \
-        float * MILK_RESTRICT po = MILK_ASSUME_ALIGNED(imgout->im->array.F); \
-        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
-        for(uint64_t i=0; i<nelement; i++) po[i] = (float)funcname((double)p1[i]); \
-    } \
-    else if(imgin->md->datatype == _DATATYPE_DOUBLE && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
-    { \
-        double *p1 = imgin->im->array.D; \
-        double *po = imgout->im->array.D; \
-        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)") \
-        for(uint64_t i=0; i<nelement; i++) po[i] = funcname(p1[i]); \
-    } \
-    else \
-    { \
-        arith_image_function_1_1_IMGID(imgin, imgout, &P##name); \
-    } \
-    DEBUG_TRACE_FEXIT(); \
-    return RETURN_SUCCESS; \
+/* ---------------------------------------------------------- */
+/* Unary optimized: calls float/double math directly          */
+/* ---------------------------------------------------------- */
+#define ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(         \
+    name, funcname, funcname_f)                       \
+errno_t arith_image_##name##_optimized_IMGID(         \
+    IMGID *imgin, IMGID *imgout)                      \
+{                                                     \
+    DEBUG_TRACE_FSTART();                             \
+    if (imgin->im == NULL)                            \
+    {                                                 \
+        return RETURN_FAILURE;                        \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgid_copy(imgin, imgout);                    \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgout->im =                                  \
+            (IMAGE *) calloc(1, sizeof(IMAGE));       \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        if (imgout->im->md                            \
+            && imgout->im->md->shared == 1)           \
+        {                                             \
+            ImageStreamIO_closeIm(imgout->im);        \
+        }                                             \
+        else                                          \
+        {                                             \
+            ImageStreamIO_destroyIm(imgout->im);      \
+        }                                             \
+    }                                                 \
+    imgid_mkimage(imgout);                            \
+    if (imgout->ID == -1 && imgout->im != NULL)       \
+    {                                                 \
+        RegisterIMGID(imgout, dcimg, dcnimg);         \
+    }                                                 \
+    uint64_t nelement = imgout->md->nelement;         \
+    if (imgin->md->datatype == _DATATYPE_FLOAT        \
+        && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
+    {                                                 \
+        float * MILK_RESTRICT p1 =                    \
+            MILK_ASSUME_ALIGNED(imgin->im->array.F);  \
+        float * MILK_RESTRICT po =                    \
+            MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = funcname_f(p1[i]);                \
+        }                                             \
+    }                                                 \
+    else if (imgin->md->datatype == _DATATYPE_DOUBLE  \
+        && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
+    {                                                 \
+        double *p1 = imgin->im->array.D;              \
+        double *po = imgout->im->array.D;             \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = funcname(p1[i]);                  \
+        }                                             \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        arith_image_function_1_1_IMGID(               \
+            imgin, imgout, &P##name);                 \
+    }                                                 \
+    DEBUG_TRACE_FEXIT();                              \
+    return RETURN_SUCCESS;                            \
 }
 
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(acos, acos)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(asin, asin)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(atan, atan)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ceil, ceil)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cos, cos)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cosh, cosh)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(exp, exp)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(fabs, fabs)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(floor, floor)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ln, log)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(log, log10)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sqrt, sqrt)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sin, sin)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sinh, sinh)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tan, tan)
-ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(acos, acos, acosf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(asin, asin, asinf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(atan, atan, atanf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ceil, ceil, ceilf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cos, cos, cosf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(cosh, cosh, coshf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(exp, exp, expf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(fabs, fabs, fabsf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(floor, floor, floorf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(ln, log, logf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(log, log10, log10f)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sqrt, sqrt, sqrtf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sin, sin, sinf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(sinh, sinh, sinhf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tan, tan, tanf)
+ARITH_UNARY_OPTIMIZED_FUNCTION_CALL(tanh, tanh, tanhf)
 
 #define ARITH_OPTIMIZED_FUNCTION(name, op) \
 errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout) \
@@ -2210,3 +2250,325 @@ ARITH_OPTIMIZED_FUNCTION_CALL(pow, pow, powf)
 ARITH_OPTIMIZED_FUNCTION_CALL(fmod, fmod, fmodf)
 ARITH_OPTIMIZED_FUNCTION_CALL(minv, fmin, fminf)
 ARITH_OPTIMIZED_FUNCTION_CALL(maxv, fmax, fmaxf)
+
+/* ---------------------------------------------------------- */
+/* Binary optimized: comparison/logic with expression          */
+/* ---------------------------------------------------------- */
+#define ARITH_OPTIMIZED_FUNCTION_EXPR(               \
+    name, expr_f, expr_d)                             \
+errno_t arith_image_##name##_optimized_IMGID(         \
+    IMGID *imgin1,                                    \
+    IMGID *imgin2,                                    \
+    IMGID *imgout)                                    \
+{                                                     \
+    DEBUG_TRACE_FSTART();                             \
+    if (imgin1->im == NULL                            \
+        || imgin2->im == NULL)                        \
+    {                                                 \
+        return RETURN_FAILURE;                        \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgid_copy(imgin1, imgout);                   \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgout->im =                                  \
+            (IMAGE *) calloc(1, sizeof(IMAGE));       \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        if (imgout->im->md                            \
+            && imgout->im->md->shared == 1)           \
+        {                                             \
+            ImageStreamIO_closeIm(imgout->im);        \
+        }                                             \
+        else                                          \
+        {                                             \
+            ImageStreamIO_destroyIm(imgout->im);      \
+        }                                             \
+    }                                                 \
+    imgid_mkimage(imgout);                            \
+    if (imgout->ID == -1 && imgout->im != NULL)       \
+    {                                                 \
+        RegisterIMGID(imgout, dcimg, dcnimg);         \
+    }                                                 \
+    uint64_t nelement = imgout->md->nelement;         \
+    if (imgin1->md->datatype == _DATATYPE_FLOAT       \
+        && imgin2->md->datatype == _DATATYPE_FLOAT    \
+        && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
+    {                                                 \
+        const float * MILK_RESTRICT p1 =              \
+            MILK_ASSUME_ALIGNED(                      \
+                imgin1->im->array.F);                 \
+        const float * MILK_RESTRICT p2 =              \
+            MILK_ASSUME_ALIGNED(                      \
+                imgin2->im->array.F);                 \
+        float * MILK_RESTRICT po =                    \
+            MILK_ASSUME_ALIGNED(                      \
+                imgout->im->array.F);                 \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_f);                         \
+        }                                             \
+    }                                                 \
+    else if (imgin1->md->datatype == _DATATYPE_DOUBLE \
+        && imgin2->md->datatype == _DATATYPE_DOUBLE   \
+        && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
+    {                                                 \
+        const double * MILK_RESTRICT p1 =             \
+            MILK_ASSUME_ALIGNED(                      \
+                imgin1->im->array.D);                 \
+        const double * MILK_RESTRICT p2 =             \
+            MILK_ASSUME_ALIGNED(                      \
+                imgin2->im->array.D);                 \
+        double * MILK_RESTRICT po =                   \
+            MILK_ASSUME_ALIGNED(                      \
+                imgout->im->array.D);                 \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_d);                         \
+        }                                             \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        arith_image_function_2_1_IMGID(               \
+            imgin1, imgin2, imgout, &P##name);        \
+    }                                                 \
+    DEBUG_TRACE_FEXIT();                              \
+    return RETURN_SUCCESS;                            \
+}
+
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    testlt,
+    (p1[i] < p2[i]) ? 1.0f : 0.0f,
+    (p1[i] < p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    testmt,
+    (p1[i] >= p2[i]) ? 1.0f : 0.0f,
+    (p1[i] >= p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    teste,
+    (p1[i] == p2[i]) ? 1.0f : 0.0f,
+    (p1[i] == p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    testne,
+    (p1[i] != p2[i]) ? 1.0f : 0.0f,
+    (p1[i] != p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    testle,
+    (p1[i] <= p2[i]) ? 1.0f : 0.0f,
+    (p1[i] <= p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    testge,
+    (p1[i] >= p2[i]) ? 1.0f : 0.0f,
+    (p1[i] >= p2[i]) ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    and,
+    ((p1[i] != 0.0f) && (p2[i] != 0.0f))
+        ? 1.0f : 0.0f,
+    ((p1[i] != 0.0) && (p2[i] != 0.0))
+        ? 1.0 : 0.0)
+ARITH_OPTIMIZED_FUNCTION_EXPR(
+    or,
+    ((p1[i] != 0.0f) || (p2[i] != 0.0f))
+        ? 1.0f : 0.0f,
+    ((p1[i] != 0.0) || (p2[i] != 0.0))
+        ? 1.0 : 0.0)
+
+/* ---------------------------------------------------------- */
+/* Const-scalar optimized: comparison/logic with expression    */
+/* ---------------------------------------------------------- */
+#define ARITH_CST_OPTIMIZED_FUNCTION_EXPR(            \
+    name, expr_f, expr_d)                             \
+errno_t arith_image_cst##name##_optimized_IMGID(      \
+    IMGID *imgin,                                     \
+    double f1,                                        \
+    IMGID *imgout)                                    \
+{                                                     \
+    DEBUG_TRACE_FSTART();                             \
+    if (imgin->im == NULL)                            \
+    {                                                 \
+        return RETURN_FAILURE;                        \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgid_copy(imgin, imgout);                    \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgout->im =                                  \
+            (IMAGE *) calloc(1, sizeof(IMAGE));       \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        if (imgout->im->md                            \
+            && imgout->im->md->shared == 1)           \
+        {                                             \
+            ImageStreamIO_closeIm(imgout->im);        \
+        }                                             \
+        else                                          \
+        {                                             \
+            ImageStreamIO_destroyIm(imgout->im);      \
+        }                                             \
+    }                                                 \
+    imgid_mkimage(imgout);                            \
+    if (imgout->ID == -1 && imgout->im != NULL)       \
+    {                                                 \
+        RegisterIMGID(imgout, dcimg, dcnimg);         \
+    }                                                 \
+    uint64_t nelement = imgout->md->nelement;         \
+    if (imgin->md->datatype == _DATATYPE_FLOAT        \
+        && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
+    {                                                 \
+        const float * MILK_RESTRICT p1 =              \
+            MILK_ASSUME_ALIGNED(imgin->im->array.F);  \
+        float * MILK_RESTRICT po =                    \
+            MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        float cf1 = (float) f1;                       \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_f);                         \
+        }                                             \
+    }                                                 \
+    else if (imgin->md->datatype == _DATATYPE_DOUBLE  \
+        && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
+    {                                                 \
+        const double * MILK_RESTRICT p1 =             \
+            MILK_ASSUME_ALIGNED(imgin->im->array.D);  \
+        double * MILK_RESTRICT po =                   \
+            MILK_ASSUME_ALIGNED(imgout->im->array.D); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_d);                         \
+        }                                             \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        arith_image_function_1f_1_IMGID(              \
+            imgin, f1, imgout, &P##name);             \
+    }                                                 \
+    DEBUG_TRACE_FEXIT();                              \
+    return RETURN_SUCCESS;                            \
+}
+
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    testlt,
+    (p1[i] < cf1) ? 1.0f : 0.0f,
+    (p1[i] < f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    testmt,
+    (p1[i] >= cf1) ? 1.0f : 0.0f,
+    (p1[i] >= f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    teste,
+    (p1[i] == cf1) ? 1.0f : 0.0f,
+    (p1[i] == f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    testne,
+    (p1[i] != cf1) ? 1.0f : 0.0f,
+    (p1[i] != f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    testle,
+    (p1[i] <= cf1) ? 1.0f : 0.0f,
+    (p1[i] <= f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    testge,
+    (p1[i] >= cf1) ? 1.0f : 0.0f,
+    (p1[i] >= f1) ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    and,
+    ((p1[i] != 0.0f) && (cf1 != 0.0f))
+        ? 1.0f : 0.0f,
+    ((p1[i] != 0.0) && (f1 != 0.0))
+        ? 1.0 : 0.0)
+ARITH_CST_OPTIMIZED_FUNCTION_EXPR(
+    or,
+    ((p1[i] != 0.0f) || (cf1 != 0.0f))
+        ? 1.0f : 0.0f,
+    ((p1[i] != 0.0) || (f1 != 0.0))
+        ? 1.0 : 0.0)
+
+/* ---------------------------------------------------------- */
+/* Unary optimized: comparison with expression                 */
+/* ---------------------------------------------------------- */
+#define ARITH_UNARY_OPTIMIZED_FUNCTION_EXPR(          \
+    name, expr_f, expr_d)                             \
+errno_t arith_image_##name##_optimized_IMGID(         \
+    IMGID *imgin, IMGID *imgout)                      \
+{                                                     \
+    DEBUG_TRACE_FSTART();                             \
+    if (imgin->im == NULL)                            \
+    {                                                 \
+        return RETURN_FAILURE;                        \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgid_copy(imgin, imgout);                    \
+    }                                                 \
+    if (imgout->im == NULL)                           \
+    {                                                 \
+        imgout->im =                                  \
+            (IMAGE *) calloc(1, sizeof(IMAGE));       \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        if (imgout->im->md                            \
+            && imgout->im->md->shared == 1)           \
+        {                                             \
+            ImageStreamIO_closeIm(imgout->im);        \
+        }                                             \
+        else                                          \
+        {                                             \
+            ImageStreamIO_destroyIm(imgout->im);      \
+        }                                             \
+    }                                                 \
+    imgid_mkimage(imgout);                            \
+    if (imgout->ID == -1 && imgout->im != NULL)       \
+    {                                                 \
+        RegisterIMGID(imgout, dcimg, dcnimg);         \
+    }                                                 \
+    uint64_t nelement = imgout->md->nelement;         \
+    if (imgin->md->datatype == _DATATYPE_FLOAT        \
+        && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
+    {                                                 \
+        const float * MILK_RESTRICT p1 =              \
+            MILK_ASSUME_ALIGNED(imgin->im->array.F);  \
+        float * MILK_RESTRICT po =                    \
+            MILK_ASSUME_ALIGNED(imgout->im->array.F); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_f);                         \
+        }                                             \
+    }                                                 \
+    else if (imgin->md->datatype == _DATATYPE_DOUBLE  \
+        && imgout->mdt->datatype == _DATATYPE_DOUBLE) \
+    {                                                 \
+        const double * MILK_RESTRICT p1 =             \
+            MILK_ASSUME_ALIGNED(imgin->im->array.D);  \
+        double * MILK_RESTRICT po =                   \
+            MILK_ASSUME_ALIGNED(imgout->im->array.D); \
+        _Pragma("omp parallel for simd if (nelement > OMP_NELEMENT_LIMIT)")     \
+        for (uint64_t i = 0; i < nelement; i++)       \
+        {                                             \
+            po[i] = (expr_d);                         \
+        }                                             \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        arith_image_function_1_1_IMGID(               \
+            imgin, imgout, &P##name);                 \
+    }                                                 \
+    DEBUG_TRACE_FEXIT();                              \
+    return RETURN_SUCCESS;                            \
+}
+
+ARITH_UNARY_OPTIMIZED_FUNCTION_EXPR(
+    positive,
+    (p1[i] > 0.0f) ? 1.0f : 0.0f,
+    (p1[i] > 0.0) ? 1.0 : 0.0)
