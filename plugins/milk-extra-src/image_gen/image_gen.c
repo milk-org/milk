@@ -967,6 +967,20 @@ static errno_t ic_CLIfunc(void) {
 
 static errno_t init_module_CLI()
 {
+    init_gs();
+    init_fc();
+    init_sl();
+    init_di();
+    init_hx();
+    init_sw();
+    init_rc();
+    init_ln();
+    init_lc();
+    init_gp();
+    init_ri();
+    init_rg();
+    init_ic();
+
     CLIADDCMD_image_gen__mkdisk();
     CLIADDCMD_image_gen__mkpolygon();
     CLIADDCMD_image_gen__mkspdisk();
