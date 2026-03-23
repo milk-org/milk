@@ -353,6 +353,7 @@ typedef struct
     // =================================================
 
     int      fifoON;
+    int      fifofd;
     char     processname[STRINGMAXLEN_PROCESSNAME];
     char     processname0[STRINGMAXLEN_PROCESSNAME];
     int      processnameflag;

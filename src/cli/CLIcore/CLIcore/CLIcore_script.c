@@ -143,6 +143,16 @@ const char *cli_var_lookup(const char *name)
         return retbuf;
     }
 
+    /* $MCLIFIFO — current command FIFO path */
+    if(strcmp(name, "MCLIFIFO") == 0)
+    {
+        if(data.fifoON == 1)
+        {
+            return data.fifoname;
+        }
+        return "";
+    }
+
     /* CLI variable */
     const char *v = cli_var_get(name);
     if(v != NULL)
