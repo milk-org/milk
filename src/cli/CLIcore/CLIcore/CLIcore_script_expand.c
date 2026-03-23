@@ -28,6 +28,7 @@ typedef struct
 
 double arith_expr(ArithParser *p);
 
+/** @brief Skip whitespace in parser. */
 void arith_skip_ws(ArithParser *p)
 {
     while(p->s[p->pos] == ' '
@@ -37,6 +38,11 @@ void arith_skip_ws(ArithParser *p)
     }
 }
 
+/**
+ * @brief Parse an atomic value (number, variable,
+ *        unary minus, bitwise NOT, or parenthesized
+ *        sub-expression).
+ */
 double arith_atom(ArithParser *p)
 {
     arith_skip_ws(p);
@@ -105,6 +111,7 @@ double arith_atom(ArithParser *p)
     return 0.0;
 }
 
+/** @brief Parse multiplicative operators: * / % */
 double arith_factor(ArithParser *p)
 {
     double left = arith_atom(p);
@@ -140,6 +147,7 @@ double arith_factor(ArithParser *p)
     return left;
 }
 
+/** @brief Parse additive operators: + - */
 double arith_term(ArithParser *p)
 {
     double left = arith_factor(p);
@@ -164,6 +172,7 @@ double arith_term(ArithParser *p)
     return left;
 }
 
+/** @brief Parse bitwise shift operators: << >> */
 double arith_shift(ArithParser *p)
 {
     double left = arith_term(p);
@@ -188,6 +197,7 @@ double arith_shift(ArithParser *p)
     return left;
 }
 
+/** @brief Parse comparison operators: < > <= >= == != */
 double arith_compare(ArithParser *p)
 {
     double left = arith_shift(p);
@@ -236,6 +246,7 @@ double arith_compare(ArithParser *p)
     return left;
 }
 
+/** @brief Parse bitwise AND (&). */
 double arith_bitwise_and(ArithParser *p)
 {
     double left = arith_compare(p);
@@ -251,6 +262,7 @@ double arith_bitwise_and(ArithParser *p)
     return left;
 }
 
+/** @brief Parse bitwise XOR (^). */
 double arith_bitwise_xor(ArithParser *p)
 {
     double left = arith_bitwise_and(p);
@@ -266,6 +278,7 @@ double arith_bitwise_xor(ArithParser *p)
     return left;
 }
 
+/** @brief Parse bitwise OR (|). */
 double arith_bitwise_or(ArithParser *p)
 {
     double left = arith_bitwise_xor(p);
@@ -281,6 +294,7 @@ double arith_bitwise_or(ArithParser *p)
     return left;
 }
 
+/** @brief Top-level arithmetic expression entry. */
 double arith_expr(ArithParser *p)
 {
     return arith_bitwise_or(p);
@@ -820,6 +834,12 @@ int cli_eval_test(const char *expr)
  * ============================================================
  */
 
+/**
+ * @brief Append a string to the output buffer.
+ *
+ * Helper for cli_expand_env() — writes chars
+ * until NUL or buffer full.
+ */
 static void emit_str_local(
     char *out,
     int  *opos,
@@ -833,6 +853,18 @@ static void emit_str_local(
     }
 }
 
+/**
+ * @brief Expand $VAR and ${VAR} references
+ *        in a command line buffer.
+ *
+ * Looks up CLI variables first, then falls
+ * back to environment variables. Also handles
+ * ${#var}, ${arr[i]}, ${!ref}, and array
+ * expansions.
+ *
+ * @param line   Buffer to expand in-place
+ * @param maxlen Buffer size
+ */
 void cli_expand_env(
     char *line,
     int   maxlen
