@@ -90,7 +90,7 @@ on_update wfs_cam { echo "New WFS frame received!" }
 The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly without invoking `test` subprocesses:
 
 - **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable), `-w` (writable), `-x` (executable), `-L` (symlink).
-- **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`.
+- **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`, `=~` (POSIX regex match).
 - **Numbers**: `-eq`, `-ne`, `-lt`, `-le`, `-gt`, `-ge`.
 - **Logic**: `-a` (AND), `-o` (OR), `!` (NOT).
 
@@ -145,7 +145,8 @@ fpsset myloop loopgain 0.5
 - **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from the end.
 - **String length**: `${#var}` returns the number of characters in the variable.
 - **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element of the respective array.
-
+- **Array splat**: `${myarray[@]}` expands to all elements in the array joined by a space.
+- **Array size**: `${#myarray[@]}` returns the number of elements in the array.
 For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
 
 - Basic operators: `+  -  *  /  %`

@@ -847,3 +847,33 @@ _c_loop_sum=0
 for (( i=0; i<3; i++ )); do _c_loop_sum=$(( _c_loop_sum + i )); done
 echo $_c_loop_sum
 
+# ============================================
+# SECTION 26: Enhanced Introspection
+# ============================================
+
+#DESC: type introspection checks CLI command
+#EXPECT:OK
+type type
+
+# ============================================
+# SECTION 27: Regex Matching 
+# ============================================
+
+#DESC: POSIX Regex operator =~
+#EXPECT:OK
+if [ "hello_world" =~ ^hello ]; then echo matched; fi
+
+# ============================================
+# SECTION 28: Array Splat Expansions
+# ============================================
+
+#DESC: Native Array Splat @
+#EXPECT:OK
+_test_arr[0]=a
+_test_arr[1]=b
+_test_arr[2]=c
+echo ${_test_arr[@]}
+
+#DESC: Native Array Length #
+#EXPECT:OK
+echo ${#_test_arr[@]}
