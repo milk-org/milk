@@ -1903,29 +1903,14 @@ pipe_fallthrough:
         }
     }
 
-    /* Check for array assignment: arr=(a b c) */
-    if(cli_try_array_assign(data.CLIcmdline))
-    {
-        data.CMDexecuted = 1;
-        free(thetime);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_SUCCESS;
-    }
-
-    /* Check for variable assignment (VAR=val) */
-    if(cli_try_var_assign(data.CLIcmdline))
-    {
-        data.CMDexecuted = 1;
-        free(thetime);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_SUCCESS;
-    }
-
     /*
      * ---- Command chaining: ; && || ----
      *
      * Scan for the first unquoted chaining
      * operator and split there.
+     * Must run BEFORE variable assignment so
+     * that "a=1;b=2" is split into two
+     * commands rather than assigned as one.
      */
     {
         char fullline[STRINGMAXLEN_CLICMDLINE];
@@ -2043,6 +2028,24 @@ pipe_fallthrough:
             DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
         }
+    }
+
+    /* Check for array assignment: arr=(a b c) */
+    if(cli_try_array_assign(data.CLIcmdline))
+    {
+        data.CMDexecuted = 1;
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
+    }
+
+    /* Check for variable assignment (VAR=val) */
+    if(cli_try_var_assign(data.CLIcmdline))
+    {
+        data.CMDexecuted = 1;
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
     }
     /* ---- Smart Shell Fallback Bypass ---- */
     /* If the command does not start with an internal milk command, alias, or script keyword,
