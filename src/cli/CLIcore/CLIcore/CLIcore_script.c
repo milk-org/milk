@@ -1733,7 +1733,7 @@ int cli_script_intercept(const char *line)
         for(int i = 1;
             i < CLI_FUNC_MAXARGS; i++)
         {
-            char dst[4], src[4];
+            char dst[16], src[16];
             snprintf(dst, sizeof(dst),
                      "%d", i);
             snprintf(src, sizeof(src),
@@ -2551,7 +2551,7 @@ int cli_script_intercept(const char *line)
         }
         /* Build $(( )) expression */
         char ecmd[
-            STRINGMAXLEN_CLICMDLINE];
+            STRINGMAXLEN_CLICMDLINE + 64];
         snprintf(ecmd, sizeof(ecmd),
                  "$((%s))", lexpr);
         /* Find assignment target */
@@ -3219,7 +3219,7 @@ int cli_script_intercept(const char *line)
             /* Wrap in $(( )) and
              * expand */
             char wrap[
-                STRINGMAXLEN_CLICMDLINE
+                STRINGMAXLEN_CLICMDLINE + 64
             ];
             snprintf(wrap,
                      sizeof(wrap),
