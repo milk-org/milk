@@ -401,5 +401,38 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     !cat /tmp/${PREFIX}_log.txt
     ```
 
+??? example "Example 10: Advanced Hybrid Scripting (Bash + milk-cli Native)"
+
+    Combine the robust argument parsing capabilities of `bash` with the zero-overhead execution of the `milk-cli` interpreter. By parsing arguments in bash and then dropping into a `milk-cli` heredoc, the script gains native access to FPS, streams, and image calculus without sacrificing traditional command-line interfaces.
+    
+    See `scripts/milk-script-advanced` for the full template.
+
+    ```bash
+    #!/usr/bin/env bash
+    
+    # 1. BASH HEADER: Argument Parsing
+    MSdescr="Advanced Native milk-cli Script Template"
+    MSarg+=( "streamname:string:Name of the input stream to wait for" )
+    
+    # Parse arguments (milk-argparse automatically exports $STREAMNAME)
+    source milk-argparse
+    
+    # 2. NATIVE EXECUTION: Zero-Overhead milk-cli Block
+    milk-cli -s << 'EOF'
+    
+    echo "Waiting natively for stream: $STREAMNAME..."
+    # Event-Driven Execution without polling loops
+    waitfor_stream $STREAMNAME 10
+    
+    # Fast Native Image Math & FPS
+    mem.mk2Dim mask_img ${$STREAMNAME.xsize} ${$STREAMNAME.ysize}
+    mask_img = mask_img * 0.0 + 1.0
+    
+    on_update $STREAMNAME {
+        echo "Frame arrived!"
+    }
+    EOF
+    ```
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)

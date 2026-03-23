@@ -658,6 +658,7 @@ install(PROGRAMS
                         scripts/merge3DfitsTelemetry
       scripts/milk-images-merge
                         scripts/milk-scriptexample
+                        scripts/milk-script-advanced
                         scripts/milk-script-std-config
                         scripts/milk-streamlink
       scripts/milk-stream-scan
