@@ -781,3 +781,69 @@ BDIR_SYNC_VAR="hello_frommilk"
 test_subshell_var=$(echo "success_from_subshell")
 !test "$test_subshell_var" = "success_from_subshell"
 
+# ============================================
+# SECTION 22: Advanced Variable Expansions
+# ============================================
+
+#DESC: Default values ${var:-default}
+#EXPECT:OK
+echo ${_unset_adv:-fallback_adv}
+
+#DESC: Assign default values ${var:=default}
+#EXPECT:OK
+echo ${_unset_adv2:=assigned_adv}
+echo ${_unset_adv2}
+
+#DESC: Substring extraction
+#EXPECT:OK
+_sub_str="hello_world"
+echo ${_sub_str:0:5}
+
+#DESC: Substring with negative offset
+#EXPECT:OK
+echo ${_sub_str:-5:5}
+
+#DESC: Error if empty
+#EXPECT:ERR
+echo ${_empty_err:?variable_is_missing}
+
+# ============================================
+# SECTION 23: Advanced Test Evaluator
+# ============================================
+
+#DESC: Logical AND test
+#EXPECT:OK
+if [ 5 -gt 3 -a 10 -lt 20 ]; then echo both_true; fi
+
+#DESC: Logical OR test
+#EXPECT:OK
+if [ 5 -lt 3 -o 10 -gt 5 ]; then echo one_true; fi
+
+#DESC: File permissions test -r
+#EXPECT:OK
+if [ -r /etc/passwd ]; then echo readable; fi
+
+# ============================================
+# SECTION 24: Bitwise Operators & Native Math
+# ============================================
+
+#DESC: Bitwise logic AND / OR
+#EXPECT:OK
+_bit_val=$(( 5 & 3 | 8 ))
+echo $_bit_val
+
+#DESC: Bitwise shifts
+#EXPECT:OK
+_bit_shift=$(( 1 << 4 ))
+if [ $_bit_shift -eq 16 ]; then echo shifted; fi
+
+# ============================================
+# SECTION 25: C-style loop native support
+# ============================================
+
+#DESC: Native C-style for loop
+#EXPECT:OK
+_c_loop_sum=0
+for (( i=0; i<3; i++ )); do _c_loop_sum=$(( _c_loop_sum + i )); done
+echo $_c_loop_sum
+
