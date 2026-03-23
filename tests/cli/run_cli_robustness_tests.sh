@@ -265,6 +265,21 @@ for i in $(seq 0 $((NUM_TESTS - 1))); do
 done
 
 # ============================================================
+# Test -c Flag
+# ============================================================
+TOTAL=$((TOTAL + 1))
+exit_code=0
+c_output=$(timeout "${TIMEOUT_SEC}" milk-cli -c "echo c_flag_test" 2>/dev/null) || exit_code=$?
+
+if [[ $exit_code -eq 0 && "$c_output" == *"c_flag_test"* ]]; then
+    PASS=$((PASS + 1))
+    printf "  [%3d/%3d] ${GRN}%-14s${RST} %s\n" "$TOTAL" "$((NUM_TESTS + 1))" "PASS" "Test -c flag execution"
+else
+    FAIL=$((FAIL + 1))
+    printf "  [%3d/%3d] ${RED}%-14s${RST} %s\n" "$TOTAL" "$((NUM_TESTS + 1))" "FAIL" "Test -c flag execution (got exit=$exit_code, output=$c_output)"
+fi
+
+# ============================================================
 # Summary
 # ============================================================
 echo ""
