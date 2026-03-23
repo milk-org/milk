@@ -60,6 +60,13 @@ errno_t write_process_log()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Restore terminal echo mode.
+ *
+ * Re-enables ECHO on stdin. Called during signal
+ * handling (crash/exit) to leave the terminal in
+ * a usable state.
+ */
 static void set_terminal_echo_on()
 {
     // Terminal settings
@@ -73,7 +80,19 @@ static void set_terminal_echo_on()
     tcsetattr(0, TCSADRAIN, &termInfo);
 }
 
-static void fprintf_stdout(FILE *f, char const *fmt, ...)
+/**
+ * @brief Write formatted output to both stdout
+ *        and a file stream.
+ *
+ * Used by write_process_exit_report() to produce
+ * the crash report on disk while simultaneously
+ * printing it to the terminal.
+ */
+static void fprintf_stdout(
+    FILE       *f,
+    char const *fmt,
+    ...
+)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -136,7 +155,22 @@ errno_t set_signal_catch()
  * errortypestring describes the type of error or reason to issue report
  *
  */
-errno_t write_process_exit_report(const char *__restrict errortypestring)
+/**
+ * @brief Write a crash/exit report to disk.
+ *
+ * Dumps the last tracepoint, function call stack,
+ * open file descriptors, and timing info into
+ * exitreport-<reason>.<PID>.log.
+ *
+ * Typically called from the signal handler before
+ * exit() so the developer has a post-mortem trail.
+ *
+ * @param errortypestring  Reason string (e.g.
+ *        "SIGSEGV", "SIGBUS")
+ */
+errno_t write_process_exit_report(
+    const char *__restrict errortypestring
+)
 {
 #ifndef NDEBUG
     FILE *fpexit;
