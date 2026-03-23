@@ -876,6 +876,93 @@ errno_t CLI_execute_string(const char *cmd)
     return ret;
 }
 
+
+static int cli_check_unquoted_restricted_symbols(const char *cmdline) {
+    int in_squote = 0;
+    int in_dquote = 0;
+    int esc = 0;
+    
+    const char *restricted = ";<>|[]()&*?$";
+    
+    int word_start = 1;
+    int valid_assign_prefix = 0; 
+    
+    for (int i = 0; cmdline[i] != '\0'; i++) {
+        char c = cmdline[i];
+        
+        if (esc) {
+            esc = 0;
+            word_start = 0;
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (c == '\\') {
+            esc = 1;
+            word_start = 0;
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (in_squote) {
+            if (c == '\'') in_squote = 0;
+            continue;
+        }
+        
+        if (in_dquote) {
+            if (c == '"') in_dquote = 0;
+            continue;
+        }
+        
+        if (c == '\'') {
+            in_squote = 1;
+            word_start = 0;
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (c == '"') {
+            in_dquote = 1;
+            word_start = 0;
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (isspace(c)) {
+            word_start = 1;
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (strchr(restricted, c) != NULL) {
+            return 1;
+        }
+        
+        if (c == '=') {
+            if (!valid_assign_prefix) {
+                return 1;
+            }
+            valid_assign_prefix = 0;
+            continue;
+        }
+        
+        if (word_start) {
+            if (isalpha(c) || c == '_') {
+                valid_assign_prefix = 1;
+            } else {
+                valid_assign_prefix = 0;
+            }
+            word_start = 0;
+        } else {
+            if (!isalnum(c) && c != '_') {
+                valid_assign_prefix = 0;
+            }
+        }
+    }
+    
+    return 0;
+}
+
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();
@@ -3019,6 +3106,16 @@ pipe_fallthrough:
         
         cli_export_vars_to_env(); // export variables prior to wordexp evaluation
         
+        if (cli_check_unquoted_restricted_symbols(data.CLIcmdline) != 0)
+        {
+            printf(
+                "\n%c[%d;%dm ERROR %c[%d;m Syntax error: flow process symbols must be quoted\n",
+                (char) 27, 1, 31, (char) 27, 0);
+            data.CMDexecuted = 1; // Prevent fallback to shell
+            data.parseerror = 1;
+            return RETURN_FAILURE;
+        }
+
         wordexp_t p;
         int we_ret = wordexp(data.CLIcmdline, &p, WRDE_SHOWERR | WRDE_UNDEF);
         if(we_ret == 0)
@@ -3049,6 +3146,13 @@ pipe_fallthrough:
                 }
                 else
                 {
+                    strncpy(
+                        data.cmdargtoken[data.cmdNBarg].val.string,
+                        cmdargstring,
+                        STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+                    data.cmdargtoken[data.cmdNBarg]
+                        .val.string[STRINGMAXLEN_CMDARGTOKEN_VAL - 1] = '\0';
+
                     snprintf(str, strmaxlen,
                              "%s\n", cmdargstring);
                     cli_parse(str);
