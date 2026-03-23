@@ -112,16 +112,20 @@ int arith_image_cstminv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
 
 ARITH_IMAGE_CST_WRAPPER(minv)
 
-int arith_image_csttestlt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_csttestlt_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestlt);
+    return arith_image_csttestlt_optimized_IMGID(
+        imgin, f1, imgout);
 }
 
 ARITH_IMAGE_CST_WRAPPER(testlt)
 
-int arith_image_csttestmt_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_csttestmt_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestmt);
+    return arith_image_csttestmt_optimized_IMGID(
+        imgin, f1, imgout);
 }
 
 ARITH_IMAGE_CST_WRAPPER(testmt)
@@ -258,38 +262,50 @@ int arith_image_csttestmt_inplace_byID(long ID, double f1)
     return (0);
 }
 
-int arith_image_cstteste_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_cstteste_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pteste);
+    return arith_image_cstteste_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(teste)
 
-int arith_image_csttestne_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_csttestne_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestne);
+    return arith_image_csttestne_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(testne)
 
-int arith_image_csttestle_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_csttestle_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestle);
+    return arith_image_csttestle_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(testle)
 
-int arith_image_csttestge_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_csttestge_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Ptestge);
+    return arith_image_csttestge_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(testge)
 
-int arith_image_cstand_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_cstand_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pand);
+    return arith_image_cstand_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(and)
 
-int arith_image_cstor_IMGID(IMGID *imgin, double f1, IMGID *imgout)
+int arith_image_cstor_IMGID(
+    IMGID *imgin, double f1, IMGID *imgout)
 {
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Por);
+    return arith_image_cstor_optimized_IMGID(
+        imgin, f1, imgout);
 }
 ARITH_IMAGE_CST_WRAPPER(or)

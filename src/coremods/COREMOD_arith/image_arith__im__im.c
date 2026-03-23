@@ -316,7 +316,8 @@ int arith_image_tanh(const char *ID_name, const char *ID_out)
 
 int arith_image_positive_IMGID(IMGID *imgin, IMGID *imgout)
 {
-    return arith_image_function_1_1_IMGID(imgin, imgout, &Ppositive);
+    return arith_image_positive_optimized_IMGID(
+        imgin, imgout);
 }
 
 int arith_image_positive(const char *ID_name, const char *ID_out)
