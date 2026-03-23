@@ -2664,26 +2664,62 @@ int cli_script_intercept(const char *line)
     {
         p += 4;
         p = strip_ws(p);
-        /* Search registered commands */
+        /* Search registered aliases */
         int found = 0;
-        for(int ci = 0;
-            ci < data.NBcmd; ci++)
+        for(int i = 0; i < data.NBalias; i++)
         {
-            if(strcmp(
-                   data.cmd[ci].key,
-                   p) == 0)
+            if(strcmp(data.alias[i].name, p) == 0)
             {
-                printf("%s is a "
-                       "CLI command\n",
-                       p);
+                printf("%s is aliased to `%s`\n", p, data.alias[i].cmd);
                 found = 1;
                 break;
             }
         }
+
+        /* Search user functions */
         if(!found)
         {
-            printf("%s: not found\n",
-                   p);
+            CLI_FUNC *f = cli_func_find(p);
+            if(f != NULL)
+            {
+                printf("%s is a function\n", p);
+                found = 1;
+            }
+        }
+
+        /* Search registered CLI commands */
+        if(!found)
+        {
+            for(int ci = 0; ci < data.NBcmd; ci++)
+            {
+                if(strcmp(data.cmd[ci].key, p) == 0)
+                {
+                    printf("%s is a CLI command\n", p);
+                    found = 1;
+                    break;
+                }
+            }
+        }
+
+        /* Search external executables in PATH */
+        if(!found)
+        {
+            char sys_cmd[512];
+            snprintf(sys_cmd, sizeof(sys_cmd), "which %s > /dev/null 2>&1", p);
+            if(system(sys_cmd) == 0)
+            {
+                snprintf(sys_cmd, sizeof(sys_cmd), "which %s", p);
+                if(system(sys_cmd) == -1)
+                {
+                    // Ignore system failure explicitly check
+                }
+                found = 1;
+            }
+        }
+
+        if(!found)
+        {
+            printf("milk: type: %s: not found\n", p);
             cli_last_retval = 1;
         }
         else

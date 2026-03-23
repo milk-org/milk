@@ -156,7 +156,23 @@ void rl_cb_linehandler(char *linein)
 
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
-    //int color_cyan = 36;
+    // Try to get PS1 from CLI vars or environment
+    const char *ps1_val = cli_var_lookup("PS1");
+    if(ps1_val == NULL)
+    {
+        ps1_val = getenv("PS1");
+    }
+
+    if(ps1_val != NULL && strlen(ps1_val) > 0)
+    {
+        char expanded_ps1[FPS_DIR_STRLENMAX];
+        strncpy(expanded_ps1, ps1_val, FPS_DIR_STRLENMAX - 1);
+        expanded_ps1[FPS_DIR_STRLENMAX - 1] = '\0';
+        cli_expand_env(expanded_ps1, FPS_DIR_STRLENMAX);
+        strncpy(prompt, expanded_ps1, FPS_DIR_STRLENMAX - 1);
+        prompt[FPS_DIR_STRLENMAX - 1] = '\0';
+        return RETURN_SUCCESS;
+    }
 
     if(strlen(promptstring) > 0)
     {
