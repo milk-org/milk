@@ -10,8 +10,8 @@ The `milk-cli` interpreter is designed to provide a seamless scripting experienc
 
 This means **all standard Bash scripting features are fully supported** inside `milk-cli`, including:
 
-- Variables (`$var`), Arithmetic (`$(( ))`), and String Manipulation
-- Flow Control (`if`, `for`, `while`, `case`)
+- Variables (`$var`), Arithmetic (`$(( ))`), array indexing, and bash-style parameter expansions
+- Flow Control (`if`, `for`, `while`, `case`), including C-style `for ((i=0; i<N; i++))` loops
 - Built-ins (`sleep`, `read`, `printf`, `trap`, `shift`)
 - I/O Redirection (`>`. `<`. `|`), Heredocs, and Background Jobs (`&`)
 
@@ -85,6 +85,14 @@ This is extremely useful for event-driven processing and synchronous scripts:
 on_update wfs_cam { echo "New WFS frame received!" }
 ```
 
+### Enhanced Conditional Tests (`[ ]`)
+
+The native interpreter supports a robust set of file and logic tests inside `[ ]` that run instantly without invoking `test` subprocesses:
+- **Filesystem**: `-f` (file), `-d` (directory), `-e` (exists), `-s` (non-empty), `-r` (readable), `-w` (writable), `-x` (executable), `-L` (symlink).
+- **Strings**: `-n` (not empty), `-z` (empty), `==`, `!=`.
+- **Numbers**: `-eq`, `-ne`, `-lt`, `-le`, `-gt`, `-ge`.
+- **Logic**: `-a` (AND), `-o` (OR), `!` (NOT).
+
 ### Wait for Resources (`waitfor_*`)
 
 You can tell your script to pause and wait for shared memory streams or FPS parameter blocks to be initialized by other compute units before proceeding:
@@ -125,6 +133,21 @@ To write FPS parameters programmatically, natively use the `fpsset` command:
 # Note: Do not use the '@' prefix when writing
 fpsset myloop loopgain 0.5
 ```
+
+### Advanced Variable Expansion and Arrays
+
+`milk-cli`'s native interpreter includes powerful bash-like variable expansions:
+- **Default values**: `${var:-default}` returns `default` if `var` is empty/unset.
+- **Assign default**: `${var:=default}` sets `var` to `default` if it was empty/unset.
+- **Error if empty**: `${var:?message}` prints an error if `var` is empty/unset.
+- **Substring**: `${var:offset:length}` returns a slice of the string. Negative offsets count from the end.
+- **String length**: `${#var}` returns the number of characters in the variable.
+- **Array indexing**: `${myarray[idx]}` or `${myassoc[key]}` returns the value at the given element of the respective array.
+
+For mathematical expressions, the `$(( ... ))` expansion natively supports standard arithmetic and bitwise logic:
+- Basic operators: `+  -  *  /  %`
+- Bitwise operators: `&  |  ^  <<  >>  ~`
+- Comparisons: `==  !=  <  >  <=  >=`
 
 ### Stream & FPS Metadata Expansion
 
