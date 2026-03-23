@@ -88,6 +88,33 @@ CLI_LOCAL_SHADOW cli_local_shadows[CLI_MAX_LOCAL_DEPTH][CLI_MAX_LOCALS_PER_FUNC]
 int cli_local_shadow_count[CLI_MAX_LOCAL_DEPTH];
 int cli_local_depth = 0;
 
+/* ---- Source Location Tracking ---- */
+CLI_SRC_LOC cli_src_stack[CLI_SRC_STACK_DEPTH];
+int         cli_src_depth = 0;
+
+/**
+ * @brief Print source location stack trace
+ *
+ * Called on error to show where in the
+ * source file hierarchy the error occurred.
+ */
+void cli_print_source_trace(void)
+{
+    if(cli_src_depth <= 0)
+    {
+        return;
+    }
+    fprintf(stderr,
+            "\033[2mStack trace:\033[0m\n");
+    for(int i = cli_src_depth - 1;
+        i >= 0; i--)
+    {
+        fprintf(stderr,
+                "  \033[2m%s:%d\033[0m\n",
+                cli_src_stack[i].file,
+                cli_src_stack[i].line);
+    }
+}
 
 /**
  * @brief Look up a CLI variable by name

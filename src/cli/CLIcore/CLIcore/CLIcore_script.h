@@ -241,4 +241,26 @@ void cli_trap_run(int signum);
 /** Run EXIT traps (called at script end). */
 void cli_trap_run_exit(void);
 
+
+/* ---- Source Location Tracking ---- */
+
+#define CLI_SRC_STACK_DEPTH 16
+
+/**
+ * @brief Source file location for error
+ *        context display.
+ */
+typedef struct
+{
+    char file[256];
+    int  line;
+} CLI_SRC_LOC;
+
+extern CLI_SRC_LOC
+    cli_src_stack[CLI_SRC_STACK_DEPTH];
+extern int cli_src_depth;
+
+/** Print source location stack trace. */
+void cli_print_source_trace(void);
+
 #endif /* CLICORE_SCRIPT_H */
