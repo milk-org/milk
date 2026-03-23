@@ -286,7 +286,7 @@ int arith_image_maxv(const char *ID1_name,
 
 int arith_image_testlt_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestlt);
+    return arith_image_testlt_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_testlt(const char *ID1_name,
@@ -319,7 +319,7 @@ int arith_image_testlt(const char *ID1_name,
 
 int arith_image_testmt_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestmt);
+    return arith_image_testmt_optimized_IMGID(imgin1, imgin2, imgout);
 }
 
 int arith_image_testmt(const char *ID1_name,
@@ -471,7 +471,7 @@ int arith_image_testmt_inplace_byID(long ID1, long ID2)
 
 int arith_image_teste_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pteste);
+    return arith_image_teste_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_teste(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
@@ -490,7 +490,7 @@ int arith_image_teste(const char *ID1_name, const char *ID2_name, const char *ID
 
 int arith_image_testne_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestne);
+    return arith_image_testne_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_testne(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
@@ -509,7 +509,7 @@ int arith_image_testne(const char *ID1_name, const char *ID2_name, const char *I
 
 int arith_image_testle_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestle);
+    return arith_image_testle_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_testle(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
@@ -528,7 +528,7 @@ int arith_image_testle(const char *ID1_name, const char *ID2_name, const char *I
 
 int arith_image_testge_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Ptestge);
+    return arith_image_testge_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_testge(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
@@ -547,7 +547,7 @@ int arith_image_testge(const char *ID1_name, const char *ID2_name, const char *I
 
 int arith_image_and_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Pand);
+    return arith_image_and_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_and(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
@@ -566,7 +566,7 @@ int arith_image_and(const char *ID1_name, const char *ID2_name, const char *ID_o
 
 int arith_image_or_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout)
 {
-    return arith_image_function_2_1_IMGID(imgin1, imgin2, imgout, &Por);
+    return arith_image_or_optimized_IMGID(imgin1, imgin2, imgout);
 }
 int arith_image_or(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
