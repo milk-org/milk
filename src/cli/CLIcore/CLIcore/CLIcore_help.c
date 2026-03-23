@@ -56,6 +56,15 @@
 
 int help_format_mode = 0;
 
+/**
+ * @brief Print system and build information.
+ *
+ * Displays PID, package version, compiler info,
+ * precision settings, memory usage, number of
+ * images, loaded modules, environment directories,
+ * and malloc statistics. Used by the 'soloinfo'
+ * and 'dinfo' CLI commands.
+ */
 errno_t printInfo()
 {
     float f1;
@@ -426,6 +435,14 @@ errno_t printInfo()
 }
 
 
+/**
+ * @brief List all registered CLI commands.
+ *
+ * Prints a table of every command including its
+ * index, keyword, module, description, and
+ * example. Column widths adapt to the terminal
+ * width.
+ */
 errno_t list_commands()
 {
     int cols = 120; // default
@@ -476,7 +493,18 @@ errno_t list_commands()
 }
 
 
-errno_t list_commands_module(const char *__restrict modulename)
+/**
+ * @brief List commands for a specific module.
+ *
+ * Shows module metadata (name, version, package)
+ * followed by all commands belonging to @modulename.
+ * Used by the 'mload?' and 'm?' CLI commands.
+ *
+ * @param modulename  Module name to filter by
+ */
+errno_t list_commands_module(
+    const char *__restrict modulename
+)
 {
     int cols = 120; // default
 #ifdef TIOCGWINSZ
@@ -712,7 +740,23 @@ int CLIhelp_make_cmdexamplestring(CLICMDARGDEF fpscliarg[],
     return strlen(outcmdexstring);
 }
 
-static int checkFlag64(uint64_t flags, uint64_t testflag, char *flagdescription)
+/**
+ * @brief Print a 64-bit flag with ON/OFF indicator.
+ *
+ * Tests whether @testflag is set in @flags and
+ * prints a colored ON or OFF label followed by
+ * @flagdescription.
+ *
+ * @param flags           Combined flag word
+ * @param testflag        Bit(s) to test
+ * @param flagdescription Human-readable label
+ * @return 1 if flag is set, 0 if not
+ */
+static int checkFlag64(
+    uint64_t flags,
+    uint64_t testflag,
+    char    *flagdescription
+)
 {
     int rval = 0;
 
@@ -1246,6 +1290,14 @@ errno_t command_info_search(const char *restrict searchstring)
 
 
 
+/**
+ * @brief Top-level 'help' command handler.
+ *
+ * Dispatches to topic-specific help pages or the
+ * general CLI help summary. Supports --json and
+ * --porcelain output modes for machine-readable
+ * output.
+ */
 errno_t help()
 {
     int json_mode = 0;
@@ -1291,6 +1343,12 @@ errno_t help()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Display readline keybinding help.
+ *
+ * Pages through the doc/helpreadline.md file
+ * using the system pager.
+ */
 errno_t helpreadline()
 {
 
@@ -1301,6 +1359,13 @@ errno_t helpreadline()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Show detailed help for a specific command.
+ *
+ * If a command name is provided as argument 1,
+ * prints its full help (syntax, arguments, flags).
+ * If no argument, falls back to list_commands().
+ */
 errno_t help_cmd()
 {
     if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
@@ -1318,6 +1383,13 @@ errno_t help_cmd()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Search command descriptions for a keyword.
+ *
+ * If a search string is provided as argument 1,
+ * calls command_info_search() to find matching
+ * commands. If no argument, lists all commands.
+ */
 errno_t cmdinfosearch()
 {
     if((data.cmdargtoken[1].type == CMDARGTOKEN_TYPE_STRING) ||
@@ -1335,6 +1407,13 @@ errno_t cmdinfosearch()
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Show module info or list all loaded modules.
+ *
+ * If a module name is provided as argument 1,
+ * shows that module's commands. Otherwise lists
+ * all loaded modules with version and description.
+ */
 errno_t help_module()
 {
 

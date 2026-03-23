@@ -50,6 +50,20 @@ extern int  yylex_destroy(void);
 
 
 
+/**
+ * @brief Dump the circular code-trace buffer to a log
+ *        file for post-mortem debugging.
+ *
+ * Writes every non-empty entry from the dctestptarr[]
+ * ring buffer into a timestamped log file named
+ * milk-codetracepoint.<PID>.log. Each entry includes
+ * the source file, line number, function name, message,
+ * and the full function-call stack at that tracepoint.
+ *
+ * This is called on abnormal exit (signal handler or
+ * explicit user request) so the developer can inspect
+ * the execution path that led to a crash.
+ */
 errno_t write_tracedebugfile()
 {
     pid_t thisPID = getpid();
@@ -113,6 +127,21 @@ errno_t write_tracedebugfile()
 
 
 
+/**
+ * @brief Execute a command string without clobbering
+ *        the current command line.
+ *
+ * Saves the current data.CLIcmdline, replaces it with
+ * @cmd, runs CLI_execute_line(), then restores the
+ * original. This allows re-entrant command execution
+ * (e.g. from within scripts, trap handlers, or
+ * on_update callbacks) without losing the outer
+ * command context.
+ *
+ * @param cmd  Null-terminated command string to execute
+ * @return RETURN_SUCCESS on success, error code on
+ *         failure
+ */
 errno_t CLI_execute_string(const char *cmd)
 {
     char save_cmdline[STRINGMAXLEN_CLICMDLINE];
@@ -125,7 +154,28 @@ errno_t CLI_execute_string(const char *cmd)
 }
 
 
-static int cli_check_unquoted_restricted_symbols(const char *cmdline) {
+/**
+ * @brief Detect shell meta-characters outside quotes.
+ *
+ * Scans @cmdline character by character, tracking
+ * single-quote, double-quote, and backslash-escape
+ * state. Returns 1 if any restricted symbol
+ * (; < > | [ ] ( ) & * $) appears outside quotes.
+ *
+ * The '=' character is only allowed in valid
+ * assignment context (after an identifier).
+ *
+ * This gate decides whether the line must be
+ * dispatched to /bin/sh (restricted symbols present)
+ * or can be handled by the milk parser directly.
+ *
+ * @param cmdline  Command line to scan
+ * @return 1 if restricted symbols found, 0 if clean
+ */
+static int cli_check_unquoted_restricted_symbols(
+    const char *cmdline
+)
+{
     int in_squote = 0;
     int in_dquote = 0;
     int esc = 0;
@@ -211,6 +261,29 @@ static int cli_check_unquoted_restricted_symbols(const char *cmdline) {
     return 0;
 }
 
+/**
+ * @brief Central command dispatcher — the main entry
+ *        point for every line the CLI processes.
+ *
+ * Performs all stages of command processing in order:
+ *  1. History expansion (!! and !$)
+ *  2. Script flow-control interception (if/while/for)
+ *  3. Semicolon splitting and command chaining
+ *  4. Variable expansion ($VAR, ${VAR}, $())
+ *  5. FPS variable expansion (@fps.param)
+ *  6. Arithmetic expansion ($((...)))
+ *  7. Variable assignment (VAR=val)
+ *  8. Alias expansion
+ *  9. Command lookup in the registered command table
+ * 10. Math expression detection (via calc tokenizer)
+ * 11. Fallback to /bin/sh for unrecognized commands
+ *
+ * Each processed command is logged to the session log
+ * and timing statistics are collected if enabled.
+ *
+ * @return RETURN_SUCCESS on success, or an errno_t
+ *         error code
+ */
 errno_t CLI_execute_line()
 {
     DEBUG_TRACE_FSTART();

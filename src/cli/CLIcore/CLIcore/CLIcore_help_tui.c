@@ -89,8 +89,23 @@ static int tui_stdin_wait_ms(int ms)
                   &fds, NULL, NULL, &tv) > 0;
 }
 
-// Simple Levenshtein distance for fuzzy matching
-static int fuzzy_match_score(const char *query, const char *target)
+/**
+ * @brief Compute a fuzzy subsequence match score.
+ *
+ * Walks through @query and @target simultaneously.
+ * Each character in @query that matches a character
+ * in @target scores +10. A length penalty (-len)
+ * favors shorter targets. Returns -1000 if @query
+ * was not fully consumed (incomplete match).
+ *
+ * @param query   Search string from user input
+ * @param target  Candidate string to match against
+ * @return Score (higher = better), -1000 if no match
+ */
+static int fuzzy_match_score(
+    const char *query,
+    const char *target
+)
 {
     if (!query || !query[0]) return 10000; // Empty query matches perfectly
     
@@ -119,11 +134,27 @@ typedef struct {
     int score;
 } MatchScore;
 
-static int compare_matches(const void *a, const void *b)
+/**
+ * @brief qsort comparator — sort matches by
+ *        descending score.
+ */
+static int compare_matches(
+    const void *a,
+    const void *b
+)
 {
     return ((MatchScore*)b)->score - ((MatchScore*)a)->score;
 }
 
+/**
+ * @brief Interactive fuzzy command search (fhelp).
+ *
+ * Provides a TUI where the user types a partial
+ * command name and sees a live-filtered, ranked
+ * list of matching CLI commands. Arrow keys
+ * navigate; Enter selects and inserts the command
+ * into the readline buffer.
+ */
 int cli_fhelp(void)
 {
     struct termios oldt, newt;
@@ -244,6 +275,15 @@ int cli_fhelp(void)
 // Interactive Fuzzy History (fhist)
 // -----------------------------------------------------------------------------
 
+/**
+ * @brief Interactive fuzzy history search (fhist).
+ *
+ * TUI interface for searching through readline
+ * command history. The user types a substring;
+ * matching history entries are shown ranked by
+ * fuzzy score. Selecting an entry inserts it into
+ * the readline buffer for immediate re-execution.
+ */
 int cli_fhist(void)
 {
 #ifdef USE_READLINE
@@ -379,6 +419,18 @@ int cli_fhist(void)
 // Interactive FPS Parameter Edit (fparam)
 // -----------------------------------------------------------------------------
 
+/**
+ * @brief Interactive FPS parameter editor (fparam).
+ *
+ * Connects to a live FPS by name and presents a
+ * TUI list of its parameters. Arrow keys navigate;
+ * Enter opens inline editing of the selected
+ * parameter value. Changes are written directly
+ * to the FPS shared memory.
+ *
+ * This provides a lightweight alternative to
+ * milk-fpsCTRL for quick parameter edits.
+ */
 int cli_fparam(void)
 {
     if (data.cmdargtoken[1].type != CMDARGTOKEN_TYPE_STRING) {

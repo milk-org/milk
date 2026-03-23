@@ -22,6 +22,11 @@
  * allocated by milk_data_init(), then copied into
  * data.core so both DATA.core and milk_data refer
  * to the same storage.
+ *
+ * Calls milk_data_init() to allocate core arrays
+ * (images, variables, FPS), then creates built-in
+ * mathematical constants (_PI, _e, _c, etc.) and
+ * seeds the random number generator.
  */
 errno_t CLI_data_init()
 {

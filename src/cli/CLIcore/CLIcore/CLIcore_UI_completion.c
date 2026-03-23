@@ -83,6 +83,15 @@ void *xmalloc(int size)
     return buf;
 }
 
+/**
+ * @brief Duplicate a string using xmalloc.
+ *
+ * Allocates memory for a copy of @s and returns
+ * the copy. The caller must free() the result.
+ *
+ * @param s  String to duplicate
+ * @return Newly allocated copy of @s
+ */
 char *dupstr(char *s)
 {
     char *r;
@@ -133,6 +142,23 @@ int cli_accept_line(
     return rl_newline(count, key);
 }
 
+/**
+ * @brief Readline callback handler — processes a
+ *        completed input line.
+ *
+ * Invoked by rl_callback_read_char() when the user
+ * presses Enter. Copies the input into
+ * data.CLIcmdline, handles backslash line
+ * continuation (reading extra lines until no
+ * trailing backslash), then dispatches the
+ * assembled command via CLI_execute_line().
+ *
+ * If linein is NULL (Ctrl-D / EOF), sets
+ * data.CLIloopON=0 to exit the main loop.
+ *
+ * @param linein  Line text from readline
+ *                (caller-allocated, freed here)
+ */
 void rl_cb_linehandler(char *linein)
 {
     if(NULL == linein)

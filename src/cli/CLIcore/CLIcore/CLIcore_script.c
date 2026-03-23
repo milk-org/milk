@@ -407,6 +407,11 @@ const char *strip_ws(const char *s)
     return s;
 }
 
+/**
+ * @brief Check if @line starts with @prefix.
+ *
+ * @return Non-zero if @line begins with @prefix
+ */
 int starts_with(
     const char *line,
     const char *prefix
@@ -496,6 +501,32 @@ int eval_cond_line(
  *   else
  *       body3
  *   fi
+ */
+/**
+ * @brief Pre-execution interceptor for flow-control
+ *        and scripting constructs.
+ *
+ * Called before every line reaches CLI_execute_line().
+ * Detects and handles:
+ *  - Heredoc accumulation (<<EOF)
+ *  - Comments (#)
+ *  - Trap commands (trap 'cmd' SIGNAL)
+ *  - set -e / set -x flags
+ *  - If/elif/else/fi blocks
+ *  - While/until loops
+ *  - For loops (word-list and C-style)
+ *  - Select menus
+ *  - Case/esac blocks
+ *  - Function definitions (function name { })
+ *  - Logical operators (&& and ||)
+ *  - on_update stream triggers
+ *  - getopts option parsing
+ *  - break/continue with nesting depth
+ *  - return from user-defined functions
+ *
+ * @param line  Raw input line to evaluate
+ * @return 1 if the line was consumed (do not
+ *         execute further), 0 if not intercepted
  */
 int cli_script_intercept(const char *line)
 {

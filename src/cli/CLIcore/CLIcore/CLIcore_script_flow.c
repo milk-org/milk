@@ -38,6 +38,17 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI.h"
 
+/**
+ * @brief Execute an if/elif/else/fi block.
+ *
+ * Parses the accumulated lines to extract branch
+ * conditions and body ranges, then evaluates each
+ * condition in order. The first true branch's body
+ * is executed; remaining branches are skipped.
+ *
+ * @param lines   Array of accumulated lines
+ * @param nlines  Number of lines
+ */
 void cli_exec_block_if(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines

@@ -44,6 +44,12 @@
 #define COLORINFO      "\033[32m"
 #endif
 
+/**
+ * @brief Print the high-level milk framework overview.
+ *
+ * Displays the three-pillar architecture (Streams,
+ * FPS, Processinfo) with pointers to detailed guides.
+ */
 void print_milk_framework_help(void)
 {
     printf("\n");
@@ -674,6 +680,13 @@ void print_help_topic_list(void)
     printf("\n");
 }
 
+/**
+ * @brief Emit help index as JSON for machine parsing.
+ *
+ * Outputs a JSON object with "topics" and
+ * "quick_reference" arrays for integration with
+ * external tooling.
+ */
 void print_milk_cli_help_json(void)
 {
     printf("{\n");
@@ -696,6 +709,13 @@ void print_milk_cli_help_json(void)
     printf("}\n");
 }
 
+/**
+ * @brief Emit help index in tab-separated format.
+ *
+ * Outputs TYPE, NAME, ARGS, DESCRIPTION columns
+ * for easy parsing by scripts and completion
+ * generators.
+ */
 void print_milk_cli_help_porcelain(void)
 {
     printf("TYPE\tNAME\tARGS\tDESCRIPTION\n");
@@ -713,6 +733,14 @@ void print_milk_cli_help_porcelain(void)
     printf("QUICKREF\tquit / exit\t\tExit the milk shell\n");
 }
 
+/**
+ * @brief Print the main help index page.
+ *
+ * Selects the output format (human, JSON, or
+ * porcelain) based on help_format_mode, then
+ * prints the topics list and quick-reference
+ * commands.
+ */
 void print_milk_cli_help(void)
 {
     if (help_format_mode == 1) {
