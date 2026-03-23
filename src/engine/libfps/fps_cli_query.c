@@ -82,7 +82,7 @@ void fps_print_query_info(
 
     /* ---- Shared FPS in shm ---- */
     {
-        char pattern[300];
+        char pattern[1024];
         snprintf(pattern, sizeof(pattern),
                  "ls %s/*.fps.shm 2>/dev/null",
                  dcshmdir);
