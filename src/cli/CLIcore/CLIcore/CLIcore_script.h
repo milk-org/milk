@@ -197,6 +197,52 @@ void cli_exec_lines(
     int  nlines
 );
 
+/* -- Cross-file helpers (CLIcore_script_*.c) -- */
+
+/** Strip leading whitespace. */
+const char *strip_ws(const char *s);
+
+/** Test if line starts with given prefix. */
+int starts_with(
+    const char *line,
+    const char *prefix
+);
+
+/** Evaluate a condition line for if/elif. */
+int eval_cond_line(
+    const char *raw,
+    int skip
+);
+
+/* CLIcore_script_flow.c */
+void cli_exec_block_if(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
+void cli_exec_block_while(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
+void cli_exec_block_for(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
+void cli_exec_block_select(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
+
+/* CLIcore_script_case.c */
+void cli_func_define(
+    const char *name,
+    char body[][STRINGMAXLEN_CLICMDLINE],
+    int nbody
+);
+void cli_exec_block_case(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
+
 /* ---- User-Defined Functions ---- */
 
 #define CLI_FUNC_MAXARGS  10

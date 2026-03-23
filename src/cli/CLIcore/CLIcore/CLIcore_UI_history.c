@@ -20,6 +20,13 @@
 #include "timeutils.h"
 
 
+/**
+ * @brief Return path to the readline history
+ *        file (~/.milk_history).
+ *
+ * Lazy-initialised: builds the path once and
+ * caches it in a static buffer.
+ */
 const char *CLI_history_file(void)
 {
     static char path[1024] = {0};
@@ -47,6 +54,10 @@ const char *CLI_history_file(void)
 
 #define MILK_HISTORY_MAXLINES 1000
 
+/**
+ * @brief Load persistent history from
+ *        ~/.milk_history into readline.
+ */
 void cli_history_load(void)
 {
 #ifdef USE_READLINE
@@ -59,6 +70,11 @@ void cli_history_load(void)
 #endif
 }
 
+/**
+ * @brief Save readline history to
+ *        ~/.milk_history, truncating to
+ *        MILK_HISTORY_MAXLINES.
+ */
 void cli_history_save(void)
 {
 #ifdef USE_READLINE
@@ -903,6 +919,15 @@ errno_t cli_lhistory(void)
  * !<prefix> → last command starting with <prefix>
  */
 
+/**
+ * @brief Expand history references in the
+ *        current command line.
+ *
+ * Supports:
+ *   !!        — replay last command
+ *   !$        — last argument of previous cmd
+ *   !<prefix> — last command starting with prefix
+ */
 void cli_history_expand(void)
 {
 #ifdef USE_READLINE
@@ -1076,6 +1101,11 @@ errno_t cli_savehistory(void)
  * ============================================================
  */
 
+/**
+ * @brief Show recent readline history entries.
+ *
+ * Usage: history [N]  (default 20)
+ */
 errno_t cli_history_show(void)
 {
 #ifdef USE_READLINE
@@ -1124,6 +1154,13 @@ errno_t cli_history_show(void)
  * substring. Shows all matches with index.
  */
 
+/**
+ * @brief Case-insensitive substring search
+ *        through readline history.
+ *
+ * Usage: searchhist <pattern>
+ * Highlights matches in bold yellow.
+ */
 errno_t cli_searchhist(void)
 {
 #ifdef USE_READLINE

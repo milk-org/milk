@@ -156,6 +156,14 @@ watch_done:
  * ============================================================
  */
 
+/**
+ * @brief Source ~/.milkrc on startup.
+ *
+ * Reads the user's milkrc file line-by-line and
+ * executes each non-blank, non-comment line
+ * through CLI_execute_line(). Silently skips
+ * processing if the file does not exist.
+ */
 void cli_milkrc_load(void)
 {
     char rcpath[STRINGMAXLEN_FULLFILENAME];
@@ -203,6 +211,12 @@ void cli_milkrc_load(void)
  * ============================================================
  */
 
+/**
+ * @brief Measure and report wall-clock execution
+ *        time of a command.
+ *
+ * Usage: time <command...>
+ */
 errno_t cli_time(void)
 {
     if(data.cmdNBarg < 2)
@@ -255,6 +269,13 @@ errno_t cli_time(void)
  * ============================================================
  */
 
+/**
+ * @brief Display per-command invocation counts.
+ *
+ * Shows the top-20 most frequently called CLI
+ * commands during this session, sorted by call
+ * count in descending order.
+ */
 errno_t cli_cmdstats(void)
 {
     typedef struct
@@ -317,6 +338,12 @@ errno_t cli_cmdstats(void)
  * ============================================================
  */
 
+/**
+ * @brief Toggle command execution timing display.
+ *
+ * Usage: cli.timing [on|off]
+ * With no args, toggles the current state.
+ */
 errno_t cli_timing_toggle(void)
 {
     if(data.cmdNBarg >= 2)
@@ -352,6 +379,12 @@ errno_t cli_timing_toggle(void)
 }
 
 #ifdef USE_READLINE
+/**
+ * @brief Toggle readline syntax highlighting.
+ *
+ * Usage: synhl [on|off]
+ * With no args, toggles the current state.
+ */
 errno_t cli_syntax_highlight_toggle(void)
 {
     if(data.cmdNBarg >= 2)
@@ -394,6 +427,15 @@ errno_t cli_syntax_highlight_toggle(void)
  * ============================================================
  */
 
+/**
+ * @brief Execute a milk script file (source cmd).
+ *
+ * Opens the file and executes each line through
+ * CLI_execute_line(). Maintains a source file
+ * location stack for error reporting.
+ *
+ * Usage: source <filename>
+ */
 errno_t cli_source(void)
 {
     if(data.cmdNBarg < 2)
@@ -570,6 +612,15 @@ errno_t cli_savescript(void)
 FILE *session_log_fp = NULL;
 struct timespec session_log_t0;
 
+/**
+ * @brief Start/stop session command logging.
+ *
+ * Logs every command with a wall-clock timestamp
+ * and elapsed time to a file.
+ *
+ * Usage: sessionlog [on|off|<filename>]
+ * Default log path: ~/.milk_session.log
+ */
 errno_t cli_sessionlog(void)
 {
     if(data.cmdNBarg < 2)
@@ -681,6 +732,11 @@ void cli_session_log_cmd(
  * ============================================================
  */
 
+/**
+ * @brief Change the current working directory.
+ *
+ * Usage: cd [dir]  (defaults to $HOME)
+ */
 errno_t cli_cd(void)
 {
     const char *dir = getenv("HOME");
@@ -699,6 +755,9 @@ errno_t cli_cd(void)
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Print the current working directory.
+ */
 errno_t cli_pwd(void)
 {
     char cwd[1024];
