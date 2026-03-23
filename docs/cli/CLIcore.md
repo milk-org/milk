@@ -594,15 +594,7 @@ memory. Standard Unix tools can filter this list and
 generate commands.
 
 The `-l` flag works independently of FIFO mode. You can
-feed the generated commands back into the CLI via
-`cmdfile.txt` or via a FIFO:
-
-**Via `cmdfile.txt`** (no `-f` flag needed):
-
-```text
-milk-cli > !awk '{if ($4>200) print $2}' imlist.txt \
-        | xargs -I {} echo iofits.save_fl {} {}_tmp.fits > cmdfile.txt
-```
+feed the generated commands back into the CLI via a FIFO:
 
 **Via FIFO** (requires `-f` or `-F`; start with
 `milk-cli -l -n myctl -f`):
