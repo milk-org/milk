@@ -877,3 +877,57 @@ echo ${_test_arr[@]}
 #DESC: Native Array Length #
 #EXPECT:OK
 echo ${#_test_arr[@]}
+
+# ============================================
+# SECTION 29: Stream Pipeline Operator |>
+# ============================================
+
+#DESC: Pipeline operator rewrites command
+#EXPECT:OK
+mem.mk2Dim _spipe_test 16 16
+_spipe_test |> mem.rm
+echo pipeline_done
+
+#DESC: Pipeline operator with cleanup 
+#EXPECT:OK
+mem.mk2Dim _spipe_a 8 8
+mem.mk2Dim _spipe_b 8 8
+_spipe_a |> mem.rm
+_spipe_b |> mem.rm
+echo pipe_cleanup_done
+
+#DESC: Pipeline with nonexistent stream
+#EXPECT:ERR
+_nostream_xyz |> mem.rm
+
+# ============================================
+# SECTION 30: Listim Glob
+# ============================================
+
+#DESC: Listim with glob pattern (no crash)
+#EXPECT:OK
+listim _nonexist_*
+
+#DESC: Listim glob matches created streams
+#EXPECT:OK
+mem.mk2Dim _globtest_a 4 4
+mem.mk2Dim _globtest_b 4 4
+listim _globtest_*
+mem.rm _globtest_a
+mem.rm _globtest_b
+
+#DESC: Listim glob with question mark
+#EXPECT:OK
+listim _nonexist_?
+
+# ============================================
+# SECTION 31: Source Error Context
+# ============================================
+
+#DESC: Source error shows location on bad file
+#EXPECT:ERR
+source /tmp/_clitest_no_trace.milk
+
+#DESC: On_fpschange missing dot notation
+#EXPECT:ERR
+on_fpschange nodot { echo x }

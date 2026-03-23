@@ -410,12 +410,36 @@ errno_t cli_source(void)
                fname);
         return RETURN_FAILURE;
     }
+
+    /* Push source location */
+    int src_slot = -1;
+    if(cli_src_depth
+       < CLI_SRC_STACK_DEPTH)
+    {
+        src_slot = cli_src_depth;
+        strncpy(
+            cli_src_stack[src_slot].file,
+            fname,
+            sizeof(cli_src_stack[0].file)
+            - 1);
+        cli_src_stack[src_slot].file[
+            sizeof(cli_src_stack[0].file)
+            - 1] = '\0';
+        cli_src_stack[src_slot].line = 0;
+        cli_src_depth++;
+    }
+
     char line[STRINGMAXLEN_CLICMDLINE];
     int lineno = 0;
     while(fgets(line, STRINGMAXLEN_CLICMDLINE,
                 fp) != NULL)
     {
         lineno++;
+        if(src_slot >= 0)
+        {
+            cli_src_stack[src_slot].line =
+                lineno;
+        }
         {
             size_t len = strlen(line);
             if(len > 0
@@ -436,7 +460,8 @@ errno_t cli_source(void)
         strncpy(data.CLIcmdline, line,
                 STRINGMAXLEN_CLICMDLINE - 1);
         data.CLIcmdline[
-            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+            STRINGMAXLEN_CLICMDLINE - 1]
+            = '\0';
         errno_t ret = CLI_execute_line();
         if(ret != RETURN_SUCCESS)
         {
@@ -444,9 +469,18 @@ errno_t cli_source(void)
                 "\033[31m[source:%s:%d] "
                 "error\033[0m\n",
                 fname, lineno);
+            cli_print_source_trace();
         }
     }
     fclose(fp);
+
+    /* Pop source location */
+    if(src_slot >= 0
+       && cli_src_depth > 0)
+    {
+        cli_src_depth--;
+    }
+
     return RETURN_SUCCESS;
 }
 

@@ -350,6 +350,32 @@ int cli_tokenize(
                 p++;
             }
 
+            /* Detect unknown function call:
+             * identifier immediately followed
+             * by '(' means the user tried to
+             * call an unrecognized function. */
+            if (*p == '(')
+            {
+                size_t nlen =
+                    (size_t)(p - start);
+                if (nlen
+                    >= CLI_CALC_TOKEN_MAXLEN)
+                {
+                    nlen =
+                        CLI_CALC_TOKEN_MAXLEN
+                        - 1;
+                }
+                char fname[
+                    CLI_CALC_TOKEN_MAXLEN];
+                memcpy(fname, start, nlen);
+                fname[nlen] = '\0';
+                fprintf(stderr,
+                        "ERROR: unknown "
+                        "function "
+                        "'%s'\n", fname);
+                return -1;
+            }
+
             size_t slen = (size_t)(p - start);
             if (slen >= CLI_CALC_TOKEN_MAXLEN)
             {
