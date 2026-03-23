@@ -1,0 +1,21 @@
+# Test string stringency in CLI
+
+# 1. Unquoted restricted symbols should be rejected
+echo "Running unquoted restricted symbol test..."
+!test "$(milk-cli -c 'echo a;b' 2>&1 | grep -c 'Syntax error: flow process symbols must be quoted')" -eq 1
+!test "$(milk-cli -c 'echo a>b' 2>&1 | grep -c 'Syntax error: flow process symbols must be quoted')" -eq 1
+!test "$(milk-cli -c 'echo a|b' 2>&1 | grep -c 'Syntax error: flow process symbols must be quoted')" -eq 1
+
+# 2. Quoted restricted symbols should be accepted
+echo "Running quoted restricted symbol test..."
+a="a;b"
+!test "$a" = "a;b"
+
+# 3. Dynamic variable assignment with unquoted = should be accepted
+echo "Running dynamic variable assignment test..."
+wer=4
+!test "$wer" = "4"
+b=1.5
+!test "$b" = "1.5"
+
+echo "CLI_STRINGENCY_TESTS_COMPLETE"
