@@ -19,6 +19,12 @@ typedef struct
 {
     char name[CLI_VAR_NAMELEN];
     char val[CLI_VAR_VALLEN];
+    int  type;  /**< 0: double, 1: long, 2: string */
+    union
+    {
+        double f;
+        long   l;
+    } num;
     int  used;
 } CLI_VAR;
 
