@@ -76,12 +76,8 @@ chosen approach was selected over the alternatives.
 ### AI Authorship
 
 - **Model(s) used** — list every model that
-  contributed code in this PR with exact version.
-  The current agent model is **Claude Sonnet 4.6**
-  (Anthropic). If the exact model version cannot
-  be determined, use **Antigravity**. Ensure you
-  report the correct model you are currently
-  running as.
+  contributed code in this PR. For the agent model,
+  just put **Antigravity**.
 - **User edits** — state whether the user made
   direct edits to source code alongside the
   agent work, and if so, summarize what was
