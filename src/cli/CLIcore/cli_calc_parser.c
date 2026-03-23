@@ -118,7 +118,10 @@ static inline cli_token *advance_eval(void)
  */
 static void parse_errmsg(const char *msg)
 {
-    fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
+    if (parse_mode == 1 || data.core.Debug > 0)
+    {
+        fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
+    }
     data.parseerror = 1;
     parse_error = 1;
     if (parse_mode == 1) {
@@ -1474,6 +1477,20 @@ void cli_parse(const char *input)
     val_t result = parse_expr(0);
     if (parse_error)
     {
+        /* Fallback: if it's not a valid expression, treat it as a raw string */
+        data.parseerror = 0;
+        parse_error = 0;
+        
+        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+        snprintf(data.cmdargtoken[data.cmdNBarg].val.string,
+                 STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", input);
+        
+        /* Remove trailing newline if `input` had one (which it does via snprintf earlier) */
+        size_t len = strlen(data.cmdargtoken[data.cmdNBarg].val.string);
+        if (len > 0 && data.cmdargtoken[data.cmdNBarg].val.string[len - 1] == '\n')
+        {
+            data.cmdargtoken[data.cmdNBarg].val.string[len - 1] = '\0';
+        }
         return;
     }
 
@@ -1587,5 +1604,58 @@ int cli_calc_eval_line(const char *input)
          //printf("    generic\n");
     }
     
+    return 1;
+}
+
+/**
+ * @brief Evaluate a string as a pure math expression, returning the result value silently.
+ * 
+ * @param input     Expression string
+ * @param out_type  Pointer to receive the parsed type (1=long, 2=double)
+ * @param out_lval  Pointer to receive long value
+ * @param out_dval  Pointer to receive double value
+ * @return 1 on success (pure math), 0 on failure/string
+ */
+int cli_calc_eval_math_to_val(const char *input, int *out_type, long *out_lval, double *out_dval)
+{
+    parse_mode = 1;
+    char tbuf[8192];
+    snprintf(tbuf, 8192, "%s\n", input);
+
+    eval_ntok = cli_tokenize(tbuf, eval_tokens, CLI_CALC_MAX_TOKENS);
+    parse_error = 0;
+    eval_error  = 0;
+    eval_pos    = 0;
+
+    if (eval_ntok <= 0 || cur_eval()->type == TOK_NEWLINE || cur_eval()->type == TOK_EOF)
+    {
+        return 0; // empty expression
+    }
+
+    val_t result = parse_expr(0);
+
+    /* if there is any parse error or trailing garbage */
+    if (parse_error || eval_error || (cur_eval()->type != TOK_EOF && cur_eval()->type != TOK_NEWLINE))
+    {
+        return 0; /* not a pure math expression */
+    }
+
+    /* Success! If it's a string, it's not pure math unless it was evaluated from an operator */
+    if (result.type == VAL_STRING && eval_ntok <= 2)
+    {
+        return 0;
+    }
+
+    /* Output values */
+    if (result.type == VAL_LONG) {
+        if (out_type) *out_type = 1;
+        if (out_lval) *out_lval = result.lval;
+    } else if (result.type == VAL_DOUBLE) {
+        if (out_type) *out_type = 2;
+        if (out_dval) *out_dval = result.dval;
+    } else {
+        return 0; // Not a numeric result
+    }
+
     return 1;
 }

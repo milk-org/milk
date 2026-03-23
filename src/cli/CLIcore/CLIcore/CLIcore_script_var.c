@@ -10,6 +10,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore/cli_calc_parser.h"
 
+#include "COREMOD_memory/COREMOD_memory.h"
 
 /**
  * @brief Set a CLI variable (create or update)
@@ -22,6 +23,62 @@ void cli_var_set(
     const char *val
 )
 {
+    int type = 2; // default string
+    long numl = 0;
+    double numf = 0.0;
+    char valbuf[CLI_VAR_VALLEN];
+
+    if (val != NULL && *val != '\0') {
+        char *endptr = NULL;
+        strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
+        valbuf[CLI_VAR_VALLEN - 1] = '\0';
+        size_t len = strlen(valbuf);
+
+        // Try parsing as integer
+        numl = strtol(valbuf, &endptr, 10);
+        if (endptr != valbuf && *endptr == '\0') {
+            type = 1; // long
+            strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
+            valbuf[CLI_VAR_VALLEN - 1] = '\0';
+        } else {
+            // Try parsing as float
+            if (len > 0 && (valbuf[len-1] == 'f' || valbuf[len-1] == 'F')) {
+                valbuf[len-1] = '\0';
+            }
+            numf = strtod(valbuf, &endptr);
+            if (endptr != valbuf && *endptr == '\0' && len > 0) {
+                type = 0; // double
+                strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
+                valbuf[CLI_VAR_VALLEN - 1] = '\0';
+            } else {
+                int mtype;
+                long mlval;
+                double mdval;
+                if (cli_calc_eval_math_to_val(valbuf, &mtype, &mlval, &mdval)) {
+                    if (mtype == 1) {
+                        type = 1; // long
+                        numl = mlval;
+                        snprintf(valbuf, CLI_VAR_VALLEN, "%ld", numl);
+                    } else if (mtype == 2) {
+                        type = 0; // double
+                        numf = mdval;
+                        snprintf(valbuf, CLI_VAR_VALLEN, "%g", numf);
+                    } else {
+                        type = 2; // string
+                    }
+                } else {
+                    type = 2; // string
+                    // Restore original value if we stripped trailing f from it
+                    strncpy(valbuf, val, CLI_VAR_VALLEN - 1);
+                    valbuf[CLI_VAR_VALLEN - 1] = '\0';
+                }
+            }
+        }
+    } else {
+        // empty val
+        valbuf[0] = '\0';
+    }
+
     /* Update existing */
     for(int i = 0; i < CLI_MAX_VARS; i++)
     {
@@ -29,10 +86,19 @@ void cli_var_set(
                 && strcmp(cli_vars[i].name, name)
                 == 0)
         {
-            strncpy(cli_vars[i].val, val,
+            strncpy(cli_vars[i].val, valbuf,
                     CLI_VAR_VALLEN - 1);
             cli_vars[i].val[
                 CLI_VAR_VALLEN - 1] = '\0';
+            cli_vars[i].type = type;
+            if (type == 1) { 
+                cli_vars[i].num.l = numl;
+                create_variable_ID(name, (double)numl);
+            }
+            if (type == 0) {
+                cli_vars[i].num.f = numf;
+                create_variable_ID(name, numf);
+            }
             return;
         }
     }
@@ -45,10 +111,19 @@ void cli_var_set(
                     CLI_VAR_NAMELEN - 1);
             cli_vars[i].name[
                 CLI_VAR_NAMELEN - 1] = '\0';
-            strncpy(cli_vars[i].val, val,
+            strncpy(cli_vars[i].val, valbuf,
                     CLI_VAR_VALLEN - 1);
             cli_vars[i].val[
                 CLI_VAR_VALLEN - 1] = '\0';
+            cli_vars[i].type = type;
+            if (type == 1) {
+                cli_vars[i].num.l = numl;
+                create_variable_ID(name, (double)numl);
+            }
+            if (type == 0) {
+                cli_vars[i].num.f = numf;
+                create_variable_ID(name, numf);
+            }
             cli_vars[i].used = 1;
             return;
         }
@@ -115,14 +190,21 @@ int cli_try_var_assign(const char *line)
         p++;
     }
 
-    /* Must hit '=' immediately */
+    int namelen = (int)(p - name_start);
+
+    /* Skip spaces before '=' */
+    while(*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+
+    /* Must hit '=' */
     if(*p != '=')
     {
         return 0;
     }
 
     {
-        int namelen = (int)(p - name_start);
         char tmpname[CLI_VAR_NAMELEN];
         if(namelen >= CLI_VAR_NAMELEN)
         {
@@ -321,16 +403,21 @@ errno_t cli_cmd_vars(void)
 {
     int count = 0;
     printf("\n  CLI Variables:\n");
-    printf("  %-20s  %s\n",
-           "NAME", "VALUE");
-    printf("  %-20s  %s\n",
-           "----", "-----");
+    printf("  %-20s  %-6s  %s\n",
+           "NAME", "TYPE", "VALUE");
+    printf("  %-20s  %-6s  %s\n",
+           "----", "----", "-----");
     for(int i = 0; i < CLI_MAX_VARS; i++)
     {
         if(cli_vars[i].used)
         {
-            printf("  %-20s  %s\n",
+            const char *typestr = "STR";
+            if(cli_vars[i].type == 0) typestr = "FLT";
+            else if(cli_vars[i].type == 1) typestr = "INT";
+            
+            printf("  %-20s  [%-3s]  %s\n",
                    cli_vars[i].name,
+                   typestr,
                    cli_vars[i].val);
             count++;
         }
