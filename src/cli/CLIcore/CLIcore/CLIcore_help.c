@@ -1328,6 +1328,7 @@ void help_topic_cmdopts(void)
     printf(C_CMD "  -f, --fifoflag     " C_RST
            "enable default fifo input\n");
     printf(C_CMD "  -F <fifoname>      " C_RST "specify custom fifo name\n");
+    printf(C_CMD "  -c, --command <cmd>" C_RST " execute single command and exit\n");
     printf(C_CMD "  -s <file>          " C_RST "execute startup script\n");
     printf(C_CMD "  -n <name>          " C_RST "specify process name\n");
     printf(C_CMD "  -p <priority>      " C_RST
