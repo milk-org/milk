@@ -7,18 +7,18 @@ Command:
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_0.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_0.milk: ASCII text
    echo hello
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815171
+        CLI PID = 979834
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_0.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_0.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -26,9 +26,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815171
-[/tmp/clitest.PJIcoo/cmd_0.milk -> /milk/shm/.milk-cli.fifo.0815171]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_0.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979834
+[/tmp/clitest.FzHTOd/cmd_0.milk -> /milk/shm/.milk-cli.fifo.0979834]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_0.milk ... 
 hello
 [0;96mmilk-cli > [0mStderr:
 
@@ -41,18 +41,18 @@ echo
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_1.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_1.milk: ASCII text
 echo
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815185
+        CLI PID = 979848
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_1.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_1.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -60,9 +60,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815185
-[/tmp/clitest.PJIcoo/cmd_1.milk -> /milk/shm/.milk-cli.fifo.0815185]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_1.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979848
+[/tmp/clitest.FzHTOd/cmd_1.milk -> /milk/shm/.milk-cli.fifo.0979848]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_1.milk ... 
 
 [0;96mmilk-cli > [0mStderr:
 
@@ -75,18 +75,18 @@ echo hello world
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_2.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_2.milk: ASCII text
 echo hello world
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815199
+        CLI PID = 979862
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_2.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_2.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -94,9 +94,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815199
-[/tmp/clitest.PJIcoo/cmd_2.milk -> /milk/shm/.milk-cli.fifo.0815199]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_2.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979862
+[/tmp/clitest.FzHTOd/cmd_2.milk -> /milk/shm/.milk-cli.fifo.0979862]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_2.milk ... 
 hello world
 [0;96mmilk-cli > [0mStderr:
 
@@ -109,18 +109,18 @@ echo -n test
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_3.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_3.milk: ASCII text
 echo -n test
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815213
+        CLI PID = 979876
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_3.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_3.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -128,9 +128,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815213
-[/tmp/clitest.PJIcoo/cmd_3.milk -> /milk/shm/.milk-cli.fifo.0815213]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_3.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979876
+[/tmp/clitest.FzHTOd/cmd_3.milk -> /milk/shm/.milk-cli.fifo.0979876]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_3.milk ... 
 test[0;96mmilk-cli > [0mStderr:
 
 --- Test 5: Echo with quoted string ---
@@ -142,18 +142,18 @@ echo "hello world"
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_4.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_4.milk: ASCII text
 echo "hello world"
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815227
+        CLI PID = 979890
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_4.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_4.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -161,9 +161,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815227
-[/tmp/clitest.PJIcoo/cmd_4.milk -> /milk/shm/.milk-cli.fifo.0815227]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_4.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979890
+[/tmp/clitest.FzHTOd/cmd_4.milk -> /milk/shm/.milk-cli.fifo.0979890]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_4.milk ... 
 "hello world"
 [0;96mmilk-cli > [0mStderr:
 
@@ -176,18 +176,18 @@ echo 'hello world'
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_5.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_5.milk: ASCII text
 echo 'hello world'
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815241
+        CLI PID = 979904
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_5.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_5.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -195,9 +195,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815241
-[/tmp/clitest.PJIcoo/cmd_5.milk -> /milk/shm/.milk-cli.fifo.0815241]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_5.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979904
+[/tmp/clitest.FzHTOd/cmd_5.milk -> /milk/shm/.milk-cli.fifo.0979904]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_5.milk ... 
 'hello world'
 [0;96mmilk-cli > [0mStderr:
 
@@ -210,18 +210,18 @@ echo test_value # this is a comment
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_6.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_6.milk: ASCII text
 echo test_value # this is a comment
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815258
+        CLI PID = 979918
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_6.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_6.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -229,9 +229,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815258
-[/tmp/clitest.PJIcoo/cmd_6.milk -> /milk/shm/.milk-cli.fifo.0815258]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_6.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979918
+[/tmp/clitest.FzHTOd/cmd_6.milk -> /milk/shm/.milk-cli.fifo.0979918]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_6.milk ... 
 test_value # this is a comment
 [0;96mmilk-cli > [0mStderr:
 
@@ -244,18 +244,18 @@ Command:
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_7.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_7.milk: ASCII text
 ?
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815272
+        CLI PID = 979932
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_7.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_7.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -263,33 +263,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815272
-[/tmp/clitest.PJIcoo/cmd_7.milk -> /milk/shm/.milk-cli.fifo.0815272]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_7.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979932
+[/tmp/clitest.FzHTOd/cmd_7.milk -> /milk/shm/.milk-cli.fifo.0979932]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_7.milk ... 
 
-[1;36m========================================
-[0m[1;36m           milk-cli — HELP INDEX
-[0m[1;36m========================================
-[0m
-[1;35mAvailable help topics:
-[0m  [32mcmdopts     [0mCommand-line flags (-h, -s, -n…)
-  [32msyntax      [0mSyntax, tab completion, piping
-  [32mcommands    [0mBuilt-in CLI commands (?, cmd?…)
-  [32mvariables   [0mVariables, arrays, arithmetic
-  [32mflowcontrol [0mif/while/for/case/function
-  [32mscripting   [0mScript files, I/O, builtins
-  [32mmilk        [0mStreams, FPS, milk-specific
-
-[33mFrom the shell:
-[0m  $ [32mmilk-cli-help <topic>
-[0m
-[1;35mQuick reference:
-[0m  [32mcmd? [name]   [0mHelp for a specific command
-  [32mm? [module]   [0mList commands in a module
-  [32mh? [string]   [0mSearch command descriptions
-  [32mfhelp         [0mInteractive fuzzy command search
-  [32mquit / exit   [0mExit the milk shell
-
+[1;31m ERROR [0;m Syntax error: flow process symbols must be quoted
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 9: help command ---
@@ -301,18 +279,18 @@ help
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_8.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_8.milk: ASCII text
 help
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815286
+        CLI PID = 979946
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_8.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_8.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -320,9 +298,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815286
-[/tmp/clitest.PJIcoo/cmd_8.milk -> /milk/shm/.milk-cli.fifo.0815286]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_8.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979946
+[/tmp/clitest.FzHTOd/cmd_8.milk -> /milk/shm/.milk-cli.fifo.0979946]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_8.milk ... 
 
 [1;36m========================================
 [0m[1;36m           milk-cli — HELP INDEX
@@ -358,18 +336,18 @@ lm?
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_9.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_9.milk: ASCII text
 lm?
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815300
+        CLI PID = 979963
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_9.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_9.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -377,9 +355,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815300
-[/tmp/clitest.PJIcoo/cmd_9.milk -> /milk/shm/.milk-cli.fifo.0815300]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_9.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979963
+[/tmp/clitest.FzHTOd/cmd_9.milk -> /milk/shm/.milk-cli.fifo.0979963]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_9.milk ... 
 [0;96mmilk-cli > [0mStderr:
 sh: 1: lm?: not found
 
@@ -392,18 +370,18 @@ m?
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_10.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_10.milk: ASCII text
 m?
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815315
+        CLI PID = 979978
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_10.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_10.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -411,18 +389,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815315
-[/tmp/clitest.PJIcoo/cmd_10.milk -> /milk/shm/.milk-cli.fifo.0815315]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_10.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979978
+[/tmp/clitest.FzHTOd/cmd_10.milk -> /milk/shm/.milk-cli.fifo.0979978]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_10.milk ... 
 
- #   shortname                             Name    Package Version           last compiled description
---------------------------------------------------------------------------------------------------------------
- 0      tools [1m                   COREMOD_tools[0m       milk  1.03.00    Mar 22 2026 13:42:03  misc tools
- 1        mem [1m                  COREMOD_memory[0m       milk  1.03.00    Mar 22 2026 13:42:03  Memory management for images and variables
- 2     iofits [1m                  COREMOD_iofits[0m       milk  1.03.00    Mar 22 2026 13:42:03  Read/Write FITS files
- 3      arith [1m                   COREMOD_arith[0m       milk  1.03.00    Mar 22 2026 13:42:03  Image arithmetic operations
--------------------------------------------------------------------------------------------------------
-
+[1;31m ERROR [0;m Syntax error: flow process symbols must be quoted
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 12: Compilation info ---
@@ -434,18 +405,18 @@ ci
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_11.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_11.milk: ASCII text
 ci
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815329
+        CLI PID = 979992
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_11.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_11.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -453,15 +424,15 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815329
-[/tmp/clitest.PJIcoo/cmd_11.milk -> /milk/shm/.milk-cli.fifo.0815329]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_11.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0979992
+[/tmp/clitest.FzHTOd/cmd_11.milk -> /milk/shm/.milk-cli.fifo.0979992]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_11.milk ... 
 
-  PID = 815329
+  PID = 979992
 --------------- GENERAL ----------------------
 milk  1.03.00
 IMAGESTRUCT_VERSION 2.00
-/home/oguyon/src/milk/src/cli/CLIcore/CLIcore/CLIcore_help.c BUILT   Mar 22 2026 13:42:07
+/home/oguyon/src/milk/src/cli/CLIcore/CLIcore/CLIcore_help.c BUILT   Mar 22 2026 16:44:17
 
 --------------- SETTINGS ---------------------
 procinfo status = 1
@@ -538,11 +509,11 @@ SOURCEDIR = /home/oguyon/src/milk
 
 [0;96mmilk-cli > [0mStderr:
 Arena 0:
-system bytes     =     606208
-in use bytes     =     497344
+system bytes     =     581632
+in use bytes     =     472800
 Total (incl. mmap):
-system bytes     = 1346535424
-in use bytes     = 1346426560
+system bytes     = 1346510848
+in use bytes     = 1346402016
 max mmap regions =          2
 max mmap bytes   = 1345929216
 
@@ -555,18 +526,18 @@ cmd? echo
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_12.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_12.milk: ASCII text
 cmd? echo
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815343
+        CLI PID = 980006
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_12.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_12.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -574,18 +545,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815343
-[/tmp/clitest.PJIcoo/cmd_12.milk -> /milk/shm/.milk-cli.fifo.0815343]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_12.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980006
+[/tmp/clitest.FzHTOd/cmd_12.milk -> /milk/shm/.milk-cli.fifo.0980006]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_12.milk ... 
 
-[32mecho[0m in unknown []
-	[32mprint arguments
-[0m	[33mexample>[0m [1mecho hello world[0m
-	[2msrc: /home/oguyon/src/milk/src/cli/CLIcore/CLIcore.c[0m
-    [[1;31mOFF[0m]  FPS support
-
-  CLI call arguments:
-
+[1;31m ERROR [0;m Syntax error: flow process symbols must be quoted
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 14: Command help for mem.listim ---
@@ -597,18 +561,18 @@ cmd? mem.listim
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_13.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_13.milk: ASCII text
 cmd? mem.listim
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815357
+        CLI PID = 980020
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_13.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_13.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -616,19 +580,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815357
-[/tmp/clitest.PJIcoo/cmd_13.milk -> /milk/shm/.milk-cli.fifo.0815357]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_13.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980020
+[/tmp/clitest.FzHTOd/cmd_13.milk -> /milk/shm/.milk-cli.fifo.0980020]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_13.milk ... 
 
-[32mmem.listim[0m in COREMOD_memory [mem]
-	[32mlist images in memory
-[0m	[33mexample>[0m [1mlistim[0m
-	[2msrc: /home/oguyon/src/milk/src/coremods/COREMOD_memory/list_image.c[0m
-    [[1;32m ON[0m]  FPS support
-    [[1;31mOFF[0m]  processinfo support (..procinfo 0/1)
-
-  CLI call arguments:
-
+[1;31m ERROR [0;m Syntax error: flow process symbols must be quoted
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 15: Command help for unknown command ---
@@ -640,18 +596,18 @@ cmd? nonexistent_command_xyz
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_14.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_14.milk: ASCII text
 cmd? nonexistent_command_xyz
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815374
+        CLI PID = 980034
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_14.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_14.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -659,11 +615,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815374
-[/tmp/clitest.PJIcoo/cmd_14.milk -> /milk/shm/.milk-cli.fifo.0815374]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_14.milk ... 
-Command "nonexistent_command_xyz" does not exist. Partial matches:
-	No substring or regex match to "nonexistent_command_xyz"
+Creating fifo /milk/shm/.milk-cli.fifo.0980034
+[/tmp/clitest.FzHTOd/cmd_14.milk -> /milk/shm/.milk-cli.fifo.0980034]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_14.milk ... 
+
+[1;31m ERROR [0;m Syntax error: flow process symbols must be quoted
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 16: List images in memory ---
@@ -675,18 +631,18 @@ mem.listim
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_15.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_15.milk: ASCII text
 mem.listim
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815391
+        CLI PID = 980051
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_15.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_15.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -694,9 +650,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815391
-[/tmp/clitest.PJIcoo/cmd_15.milk -> /milk/shm/.milk-cli.fifo.0815391]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_15.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980051
+[/tmp/clitest.FzHTOd/cmd_15.milk -> /milk/shm/.milk-cli.fifo.0980051]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_15.milk ... 
 [36mFPS [1m_listim[22m [33m[LOCAL][0m
 
 INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS
@@ -714,18 +670,18 @@ pwd
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_16.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_16.milk: ASCII text
 pwd
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815405
+        CLI PID = 980065
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_16.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_16.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -733,9 +689,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815405
-[/tmp/clitest.PJIcoo/cmd_16.milk -> /milk/shm/.milk-cli.fifo.0815405]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_16.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980065
+[/tmp/clitest.FzHTOd/cmd_16.milk -> /milk/shm/.milk-cli.fifo.0980065]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_16.milk ... 
 /home/oguyon/src/milk/tests/cli
 [0;96mmilk-cli > [0mStderr:
 
@@ -748,18 +704,18 @@ cd /tmp
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_17.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_17.milk: ASCII text
 cd /tmp
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815419
+        CLI PID = 980079
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_17.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_17.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -767,9 +723,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815419
-[/tmp/clitest.PJIcoo/cmd_17.milk -> /milk/shm/.milk-cli.fifo.0815419]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_17.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980079
+[/tmp/clitest.FzHTOd/cmd_17.milk -> /milk/shm/.milk-cli.fifo.0980079]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_17.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 19: Change directory back to home ---
@@ -781,18 +737,18 @@ cd
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_18.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_18.milk: ASCII text
 cd
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815433
+        CLI PID = 980096
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_18.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_18.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -800,9 +756,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815433
-[/tmp/clitest.PJIcoo/cmd_18.milk -> /milk/shm/.milk-cli.fifo.0815433]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_18.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980096
+[/tmp/clitest.FzHTOd/cmd_18.milk -> /milk/shm/.milk-cli.fifo.0980096]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_18.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 20: Change to non-existent directory ---
@@ -814,18 +770,18 @@ cd /nonexistent_directory_xyz_123
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_19.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_19.milk: ASCII text
 cd /nonexistent_directory_xyz_123
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815447
+        CLI PID = 980110
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_19.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_19.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -833,9 +789,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815447
-[/tmp/clitest.PJIcoo/cmd_19.milk -> /milk/shm/.milk-cli.fifo.0815447]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_19.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980110
+[/tmp/clitest.FzHTOd/cmd_19.milk -> /milk/shm/.milk-cli.fifo.0980110]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_19.milk ... 
 cd: /nonexistent_directory_xyz_123: No such file or directory
 
 [1;31m ERROR [0;m CLI function cd returns 1
@@ -850,18 +806,18 @@ usleep 1000
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_20.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_20.milk: ASCII text
 usleep 1000
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815464
+        CLI PID = 980127
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_20.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_20.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -869,9 +825,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815464
-[/tmp/clitest.PJIcoo/cmd_20.milk -> /milk/shm/.milk-cli.fifo.0815464]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_20.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980127
+[/tmp/clitest.FzHTOd/cmd_20.milk -> /milk/shm/.milk-cli.fifo.0980127]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_20.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 22: Set default precision to float ---
@@ -883,18 +839,18 @@ dpsingle
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_21.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_21.milk: ASCII text
 dpsingle
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815478
+        CLI PID = 980141
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_21.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_21.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -902,9 +858,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815478
-[/tmp/clitest.PJIcoo/cmd_21.milk -> /milk/shm/.milk-cli.fifo.0815478]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_21.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980141
+[/tmp/clitest.FzHTOd/cmd_21.milk -> /milk/shm/.milk-cli.fifo.0980141]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_21.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 23: Set default precision to double ---
@@ -916,18 +872,18 @@ dpdouble
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_22.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_22.milk: ASCII text
 dpdouble
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815492
+        CLI PID = 980155
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_22.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_22.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -935,9 +891,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815492
-[/tmp/clitest.PJIcoo/cmd_22.milk -> /milk/shm/.milk-cli.fifo.0815492]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_22.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980155
+[/tmp/clitest.FzHTOd/cmd_22.milk -> /milk/shm/.milk-cli.fifo.0980155]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_22.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 24: Create 2D image ---
@@ -949,18 +905,18 @@ mem.mk2Dim _clitest_im1 32 32
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_23.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_23.milk: ASCII text
 mem.mk2Dim _clitest_im1 32 32
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815509
+        CLI PID = 980169
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_23.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_23.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -968,9 +924,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815509
-[/tmp/clitest.PJIcoo/cmd_23.milk -> /milk/shm/.milk-cli.fifo.0815509]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_23.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980169
+[/tmp/clitest.FzHTOd/cmd_23.milk -> /milk/shm/.milk-cli.fifo.0980169]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_23.milk ... 
 [36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
   [33mCreating[0m shared=1, kw=10
 [0;96mmilk-cli > [0mStderr:
@@ -984,18 +940,18 @@ mem.listim
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_24.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_24.milk: ASCII text
 mem.listim
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815523
+        CLI PID = 980183
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_24.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_24.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1003,9 +959,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815523
-[/tmp/clitest.PJIcoo/cmd_24.milk -> /milk/shm/.milk-cli.fifo.0815523]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_24.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980183
+[/tmp/clitest.FzHTOd/cmd_24.milk -> /milk/shm/.milk-cli.fifo.0980183]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_24.milk ... 
 [36mFPS [1m_listim[22m [33m[LOCAL][0m
 
 INDEX    NAME         SIZE                    TYPE        SIZE  [percent]    LAST ACCESS
@@ -1023,18 +979,18 @@ mem.rm _clitest_im1
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_25.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_25.milk: ASCII text
 mem.rm _clitest_im1
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815537
+        CLI PID = 980197
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_25.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_25.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1042,9 +998,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815537
-[/tmp/clitest.PJIcoo/cmd_25.milk -> /milk/shm/.milk-cli.fifo.0815537]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_25.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980197
+[/tmp/clitest.FzHTOd/cmd_25.milk -> /milk/shm/.milk-cli.fifo.0980197]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_25.milk ... 
 [36mFPS [1m_rmimg[22m [33m[LOCAL][0m
 Error: Missing mandatory argument 1 (.errmode: errors mode (0:ign 1:warn 2:err 3:exit))
 
@@ -1072,18 +1028,18 @@ mem.mk2Dim
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_26.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_26.milk: ASCII text
 mem.mk2Dim
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815551
+        CLI PID = 980211
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_26.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_26.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1091,9 +1047,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815551
-[/tmp/clitest.PJIcoo/cmd_26.milk -> /milk/shm/.milk-cli.fifo.0815551]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_26.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980211
+[/tmp/clitest.FzHTOd/cmd_26.milk -> /milk/shm/.milk-cli.fifo.0980211]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_26.milk ... 
 [36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
   [33mCreating[0m shared=1, kw=10
 [0;96mmilk-cli > [0mStderr:
@@ -1107,18 +1063,18 @@ mem.mk2Dim _clitest_partial
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_27.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_27.milk: ASCII text
 mem.mk2Dim _clitest_partial
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815565
+        CLI PID = 980228
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_27.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_27.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1126,9 +1082,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815565
-[/tmp/clitest.PJIcoo/cmd_27.milk -> /milk/shm/.milk-cli.fifo.0815565]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_27.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980228
+[/tmp/clitest.FzHTOd/cmd_27.milk -> /milk/shm/.milk-cli.fifo.0980228]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_27.milk ... 
 [36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
 Error: Missing mandatory argument 1 (.xsize: x size)
 
@@ -1157,18 +1113,18 @@ mem.mk2Dim _clitest_partial 32
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_28.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_28.milk: ASCII text
 mem.mk2Dim _clitest_partial 32
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815582
+        CLI PID = 980245
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_28.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_28.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1176,9 +1132,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815582
-[/tmp/clitest.PJIcoo/cmd_28.milk -> /milk/shm/.milk-cli.fifo.0815582]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_28.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980245
+[/tmp/clitest.FzHTOd/cmd_28.milk -> /milk/shm/.milk-cli.fifo.0980245]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_28.milk ... 
 [36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
 Error: Missing mandatory argument 2 (.ysize: y size)
 
@@ -1207,18 +1163,18 @@ mem.rm
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_29.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_29.milk: ASCII text
 mem.rm
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815599
+        CLI PID = 980262
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_29.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_29.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1226,9 +1182,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815599
-[/tmp/clitest.PJIcoo/cmd_29.milk -> /milk/shm/.milk-cli.fifo.0815599]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_29.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980262
+[/tmp/clitest.FzHTOd/cmd_29.milk -> /milk/shm/.milk-cli.fifo.0980262]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_29.milk ... 
 [36mFPS [1m_rmimg[22m [33m[LOCAL][0m
 [0;96mmilk-cli > [0mStderr:
 
@@ -1241,18 +1197,18 @@ source
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_30.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_30.milk: ASCII text
 source
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815613
+        CLI PID = 980276
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_30.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_30.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1260,9 +1216,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815613
-[/tmp/clitest.PJIcoo/cmd_30.milk -> /milk/shm/.milk-cli.fifo.0815613]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_30.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980276
+[/tmp/clitest.FzHTOd/cmd_30.milk -> /milk/shm/.milk-cli.fifo.0980276]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_30.milk ... 
 Usage: source <filename>
 
 [1;31m ERROR [0;m CLI function source returns 1
@@ -1277,18 +1233,18 @@ source /tmp/nonexistent_file_xyz_456.milk
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_31.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_31.milk: ASCII text
 source /tmp/nonexistent_file_xyz_456.milk
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815633
+        CLI PID = 980293
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_31.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_31.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1296,9 +1252,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815633
-[/tmp/clitest.PJIcoo/cmd_31.milk -> /milk/shm/.milk-cli.fifo.0815633]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_31.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980293
+[/tmp/clitest.FzHTOd/cmd_31.milk -> /milk/shm/.milk-cli.fifo.0980293]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_31.milk ... 
 [0;96mmilk-cli > [0mStderr:
 source: /tmp/nonexistent_file_xyz_456.milk: No such file
 
@@ -1311,18 +1267,18 @@ savescript
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_32.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_32.milk: ASCII text
 savescript
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815650
+        CLI PID = 980310
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_32.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_32.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1330,9 +1286,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815650
-[/tmp/clitest.PJIcoo/cmd_32.milk -> /milk/shm/.milk-cli.fifo.0815650]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_32.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980310
+[/tmp/clitest.FzHTOd/cmd_32.milk -> /milk/shm/.milk-cli.fifo.0980310]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_32.milk ... 
 Usage: savescript <filename>
 
 [1;31m ERROR [0;m CLI function savescript returns 1
@@ -1347,18 +1303,18 @@ time
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_33.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_33.milk: ASCII text
 time
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815667
+        CLI PID = 980327
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_33.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_33.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1366,9 +1322,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815667
-[/tmp/clitest.PJIcoo/cmd_33.milk -> /milk/shm/.milk-cli.fifo.0815667]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_33.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980327
+[/tmp/clitest.FzHTOd/cmd_33.milk -> /milk/shm/.milk-cli.fifo.0980327]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_33.milk ... 
 Usage: time <command...>
 
 [1;31m ERROR [0;m CLI function time returns 1
@@ -1383,18 +1339,18 @@ watch
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_34.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_34.milk: ASCII text
 watch
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815684
+        CLI PID = 980344
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_34.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_34.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1402,9 +1358,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815684
-[/tmp/clitest.PJIcoo/cmd_34.milk -> /milk/shm/.milk-cli.fifo.0815684]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_34.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980344
+[/tmp/clitest.FzHTOd/cmd_34.milk -> /milk/shm/.milk-cli.fifo.0980344]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_34.milk ... 
 Usage: watch <interval_ms> <command...>
 
 [1;31m ERROR [0;m CLI function watch returns 1
@@ -1419,18 +1375,18 @@ watch 1000
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_35.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_35.milk: ASCII text
 watch 1000
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815701
+        CLI PID = 980361
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_35.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_35.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1438,9 +1394,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815701
-[/tmp/clitest.PJIcoo/cmd_35.milk -> /milk/shm/.milk-cli.fifo.0815701]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_35.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980361
+[/tmp/clitest.FzHTOd/cmd_35.milk -> /milk/shm/.milk-cli.fifo.0980361]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_35.milk ... 
 Usage: watch <interval_ms> <command...>
 
 [1;31m ERROR [0;m CLI function watch returns 1
@@ -1455,18 +1411,18 @@ _testvar1=hello
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_36.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_36.milk: ASCII text
 _testvar1=hello
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815718
+        CLI PID = 980381
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_36.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_36.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1474,9 +1430,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815718
-[/tmp/clitest.PJIcoo/cmd_36.milk -> /milk/shm/.milk-cli.fifo.0815718]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_36.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980381
+[/tmp/clitest.FzHTOd/cmd_36.milk -> /milk/shm/.milk-cli.fifo.0980381]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_36.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 38: Echo a variable ---
@@ -1488,18 +1444,18 @@ echo $_testvar1
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_37.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_37.milk: ASCII text
 echo $_testvar1
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815732
+        CLI PID = 980395
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_37.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_37.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1507,9 +1463,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815732
-[/tmp/clitest.PJIcoo/cmd_37.milk -> /milk/shm/.milk-cli.fifo.0815732]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_37.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980395
+[/tmp/clitest.FzHTOd/cmd_37.milk -> /milk/shm/.milk-cli.fifo.0980395]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_37.milk ... 
 $_testvar1
 [0;96mmilk-cli > [0mStderr:
 
@@ -1522,18 +1478,18 @@ _testvar2=42
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_38.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_38.milk: ASCII text
 _testvar2=42
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815746
+        CLI PID = 980411
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_38.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_38.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1541,9 +1497,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815746
-[/tmp/clitest.PJIcoo/cmd_38.milk -> /milk/shm/.milk-cli.fifo.0815746]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_38.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980411
+[/tmp/clitest.FzHTOd/cmd_38.milk -> /milk/shm/.milk-cli.fifo.0980411]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_38.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 40: Echo numeric variable ---
@@ -1555,18 +1511,18 @@ echo $_testvar2
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_39.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_39.milk: ASCII text
 echo $_testvar2
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815760
+        CLI PID = 980425
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_39.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_39.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1574,9 +1530,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815760
-[/tmp/clitest.PJIcoo/cmd_39.milk -> /milk/shm/.milk-cli.fifo.0815760]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_39.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980425
+[/tmp/clitest.FzHTOd/cmd_39.milk -> /milk/shm/.milk-cli.fifo.0980425]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_39.milk ... 
 $_testvar2
 [0;96mmilk-cli > [0mStderr:
 
@@ -1589,18 +1545,18 @@ echo ${_testvar1}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_40.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_40.milk: ASCII text
 echo ${_testvar1}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815777
+        CLI PID = 980439
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_40.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_40.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1608,9 +1564,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815777
-[/tmp/clitest.PJIcoo/cmd_40.milk -> /milk/shm/.milk-cli.fifo.0815777]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_40.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980439
+[/tmp/clitest.FzHTOd/cmd_40.milk -> /milk/shm/.milk-cli.fifo.0980439]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_40.milk ... 
 ${_testvar1}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1623,18 +1579,18 @@ unset _testvar1
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_41.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_41.milk: ASCII text
 unset _testvar1
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815791
+        CLI PID = 980453
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_41.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_41.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1642,9 +1598,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815791
-[/tmp/clitest.PJIcoo/cmd_41.milk -> /milk/shm/.milk-cli.fifo.0815791]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_41.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980453
+[/tmp/clitest.FzHTOd/cmd_41.milk -> /milk/shm/.milk-cli.fifo.0980453]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_41.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 43: Echo unset variable (should be empty) ---
@@ -1656,18 +1612,18 @@ echo $_testvar1
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_42.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_42.milk: ASCII text
 echo $_testvar1
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815805
+        CLI PID = 980467
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_42.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_42.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1675,9 +1631,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815805
-[/tmp/clitest.PJIcoo/cmd_42.milk -> /milk/shm/.milk-cli.fifo.0815805]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_42.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980467
+[/tmp/clitest.FzHTOd/cmd_42.milk -> /milk/shm/.milk-cli.fifo.0980467]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_42.milk ... 
 $_testvar1
 [0;96mmilk-cli > [0mStderr:
 
@@ -1690,18 +1646,18 @@ echo $?
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_43.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_43.milk: ASCII text
 echo $?
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815819
+        CLI PID = 980485
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_43.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_43.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1709,9 +1665,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815819
-[/tmp/clitest.PJIcoo/cmd_43.milk -> /milk/shm/.milk-cli.fifo.0815819]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_43.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980485
+[/tmp/clitest.FzHTOd/cmd_43.milk -> /milk/shm/.milk-cli.fifo.0980485]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_43.milk ... 
 0
 [0;96mmilk-cli > [0mStderr:
 
@@ -1724,18 +1680,18 @@ vars
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_44.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_44.milk: ASCII text
 vars
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815833
+        CLI PID = 980499
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_44.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_44.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1743,13 +1699,13 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815833
-[/tmp/clitest.PJIcoo/cmd_44.milk -> /milk/shm/.milk-cli.fifo.0815833]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_44.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980499
+[/tmp/clitest.FzHTOd/cmd_44.milk -> /milk/shm/.milk-cli.fifo.0980499]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_44.milk ... 
 
   CLI Variables:
-  NAME                  VALUE
-  ----                  -----
+  NAME                  TYPE    VALUE
+  ----                  ----    -----
   (none)
   $? = 0
 
@@ -1765,19 +1721,19 @@ echo ${#_teststr}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_45.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_45.milk: ASCII text
 _teststr=hello
 echo ${#_teststr}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815847
+        CLI PID = 980516
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_45.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_45.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1785,9 +1741,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815847
-[/tmp/clitest.PJIcoo/cmd_45.milk -> /milk/shm/.milk-cli.fifo.0815847]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_45.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980516
+[/tmp/clitest.FzHTOd/cmd_45.milk -> /milk/shm/.milk-cli.fifo.0980516]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_45.milk ... 
 [0;96mmilk-cli > [0m${#_teststr}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1800,18 +1756,18 @@ echo ${_teststr:0:3}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_46.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_46.milk: ASCII text
 echo ${_teststr:0:3}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815861
+        CLI PID = 980532
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_46.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_46.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1819,9 +1775,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815861
-[/tmp/clitest.PJIcoo/cmd_46.milk -> /milk/shm/.milk-cli.fifo.0815861]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_46.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980532
+[/tmp/clitest.FzHTOd/cmd_46.milk -> /milk/shm/.milk-cli.fifo.0980532]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_46.milk ... 
 ${_teststr:0:3}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1834,18 +1790,18 @@ echo ${_teststr^^}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_47.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_47.milk: ASCII text
 echo ${_teststr^^}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815875
+        CLI PID = 980546
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_47.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_47.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1853,9 +1809,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815875
-[/tmp/clitest.PJIcoo/cmd_47.milk -> /milk/shm/.milk-cli.fifo.0815875]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_47.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980546
+[/tmp/clitest.FzHTOd/cmd_47.milk -> /milk/shm/.milk-cli.fifo.0980546]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_47.milk ... 
 ${_teststr^^}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1869,19 +1825,19 @@ echo ${_TESTUP,,}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_48.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_48.milk: ASCII text
 _TESTUP=HELLO
 echo ${_TESTUP,,}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815889
+        CLI PID = 980561
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_48.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_48.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1889,9 +1845,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815889
-[/tmp/clitest.PJIcoo/cmd_48.milk -> /milk/shm/.milk-cli.fifo.0815889]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_48.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980561
+[/tmp/clitest.FzHTOd/cmd_48.milk -> /milk/shm/.milk-cli.fifo.0980561]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_48.milk ... 
 [0;96mmilk-cli > [0m${_TESTUP,,}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1904,18 +1860,18 @@ echo ${_unsetvar:-fallback}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_49.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_49.milk: ASCII text
 echo ${_unsetvar:-fallback}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815906
+        CLI PID = 980575
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_49.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_49.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1923,9 +1879,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815906
-[/tmp/clitest.PJIcoo/cmd_49.milk -> /milk/shm/.milk-cli.fifo.0815906]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_49.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980575
+[/tmp/clitest.FzHTOd/cmd_49.milk -> /milk/shm/.milk-cli.fifo.0980575]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_49.milk ... 
 ${_unsetvar:-fallback}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1938,18 +1894,18 @@ echo ${_defvar:=assigned}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_50.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_50.milk: ASCII text
 echo ${_defvar:=assigned}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815920
+        CLI PID = 980589
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_50.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_50.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1957,9 +1913,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815920
-[/tmp/clitest.PJIcoo/cmd_50.milk -> /milk/shm/.milk-cli.fifo.0815920]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_50.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980589
+[/tmp/clitest.FzHTOd/cmd_50.milk -> /milk/shm/.milk-cli.fifo.0980589]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_50.milk ... 
 ${_defvar:=assigned}
 [0;96mmilk-cli > [0mStderr:
 
@@ -1975,7 +1931,7 @@ unset _defvar
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_51.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_51.milk: ASCII text
 unset _testvar2
 unset _teststr
 unset _TESTUP
@@ -1983,13 +1939,13 @@ unset _defvar
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815934
+        CLI PID = 980603
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_51.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_51.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -1997,9 +1953,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815934
-[/tmp/clitest.PJIcoo/cmd_51.milk -> /milk/shm/.milk-cli.fifo.0815934]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_51.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980603
+[/tmp/clitest.FzHTOd/cmd_51.milk -> /milk/shm/.milk-cli.fifo.0980603]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_51.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 53: Simple addition ---
@@ -2013,20 +1969,20 @@ echo $_arith_b
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_52.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_52.milk: ASCII text
 _arith_a=10
 _arith_b=$(( _arith_a + 5 ))
 echo $_arith_b
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815948
+        CLI PID = 980622
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_52.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_52.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2034,9 +1990,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815948
-[/tmp/clitest.PJIcoo/cmd_52.milk -> /milk/shm/.milk-cli.fifo.0815948]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_52.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980622
+[/tmp/clitest.FzHTOd/cmd_52.milk -> /milk/shm/.milk-cli.fifo.0980622]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_52.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m$(( _arith_a + 5 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2050,19 +2006,19 @@ echo $_arith_c
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_53.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_53.milk: ASCII text
 _arith_c=$(( _arith_b * 2 - 3 ))
 echo $_arith_c
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815962
+        CLI PID = 980644
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_53.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_53.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2070,9 +2026,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815962
-[/tmp/clitest.PJIcoo/cmd_53.milk -> /milk/shm/.milk-cli.fifo.0815962]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_53.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980644
+[/tmp/clitest.FzHTOd/cmd_53.milk -> /milk/shm/.milk-cli.fifo.0980644]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_53.milk ... 
 [0;96mmilk-cli > [0m$(( _arith_b * 2 - 3 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2086,19 +2042,19 @@ echo $_arith_d
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_54.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_54.milk: ASCII text
 _arith_d=$(( 17 % 3 ))
 echo $_arith_d
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815976
+        CLI PID = 980658
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_54.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_54.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2106,9 +2062,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815976
-[/tmp/clitest.PJIcoo/cmd_54.milk -> /milk/shm/.milk-cli.fifo.0815976]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_54.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980658
+[/tmp/clitest.FzHTOd/cmd_54.milk -> /milk/shm/.milk-cli.fifo.0980658]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_54.milk ... 
 [0;96mmilk-cli > [0m17
 [0;96mmilk-cli > [0mStderr:
 
@@ -2122,19 +2078,19 @@ echo $_arith_e
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_55.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_55.milk: ASCII text
 _arith_e=$(( (_arith_a + 5) * 2 ))
 echo $_arith_e
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 815990
+        CLI PID = 980672
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_55.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_55.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2142,9 +2098,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0815990
-[/tmp/clitest.PJIcoo/cmd_55.milk -> /milk/shm/.milk-cli.fifo.0815990]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_55.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980672
+[/tmp/clitest.FzHTOd/cmd_55.milk -> /milk/shm/.milk-cli.fifo.0980672]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_55.milk ... 
 [0;96mmilk-cli > [0m$(( (_arith_a + 5) * 2 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2157,18 +2113,18 @@ echo $(( 100 + 200 ))
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_56.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_56.milk: ASCII text
 echo $(( 100 + 200 ))
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816004
+        CLI PID = 980686
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_56.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_56.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2176,9 +2132,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816004
-[/tmp/clitest.PJIcoo/cmd_56.milk -> /milk/shm/.milk-cli.fifo.0816004]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_56.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980686
+[/tmp/clitest.FzHTOd/cmd_56.milk -> /milk/shm/.milk-cli.fifo.0980686]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_56.milk ... 
 $(( 100 + 200 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2195,7 +2151,7 @@ unset _arith_e
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_57.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_57.milk: ASCII text
 unset _arith_a
 unset _arith_b
 unset _arith_c
@@ -2204,13 +2160,13 @@ unset _arith_e
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816018
+        CLI PID = 980700
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_57.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_57.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2218,9 +2174,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816018
-[/tmp/clitest.PJIcoo/cmd_57.milk -> /milk/shm/.milk-cli.fifo.0816018]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_57.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980700
+[/tmp/clitest.FzHTOd/cmd_57.milk -> /milk/shm/.milk-cli.fifo.0980700]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_57.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 59: Simple if/then/fi (true branch) ---
@@ -2235,7 +2191,7 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_58.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_58.milk: ASCII text
 _fc_x=10
 if [ $_fc_x -gt 5 ]; then
     echo big
@@ -2243,13 +2199,13 @@ fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816035
+        CLI PID = 980715
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_58.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_58.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2257,9 +2213,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816035
-[/tmp/clitest.PJIcoo/cmd_58.milk -> /milk/shm/.milk-cli.fifo.0816035]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_58.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980715
+[/tmp/clitest.FzHTOd/cmd_58.milk -> /milk/shm/.milk-cli.fifo.0980715]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_58.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mbig
 [0;96mmilk-cli > [0mStderr:
 
@@ -2276,7 +2232,7 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_59.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_59.milk: ASCII text
 if [ $_fc_x -lt 5 ]; then
     echo small
 else
@@ -2285,13 +2241,13 @@ fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816049
+        CLI PID = 980729
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_59.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_59.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2299,9 +2255,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816049
-[/tmp/clitest.PJIcoo/cmd_59.milk -> /milk/shm/.milk-cli.fifo.0816049]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_59.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980729
+[/tmp/clitest.FzHTOd/cmd_59.milk -> /milk/shm/.milk-cli.fifo.0980729]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_59.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0msmall
 [0;96mmilk-cli > [0mStderr:
 
@@ -2320,7 +2276,7 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_60.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_60.milk: ASCII text
 if [ $_fc_x -gt 100 ]; then
     echo huge
 elif [ $_fc_x -gt 5 ]; then
@@ -2331,13 +2287,13 @@ fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816063
+        CLI PID = 980753
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_60.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_60.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2345,9 +2301,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816063
-[/tmp/clitest.PJIcoo/cmd_60.milk -> /milk/shm/.milk-cli.fifo.0816063]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_60.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980753
+[/tmp/clitest.FzHTOd/cmd_60.milk -> /milk/shm/.milk-cli.fifo.0980753]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_60.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0msmall
 [0;96mmilk-cli > [0mStderr:
 
@@ -2364,7 +2320,7 @@ echo $_fc_n
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_61.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_61.milk: ASCII text
 _fc_n=0
 while [ $_fc_n -lt 3 ]; do
     _fc_n=$(( _fc_n + 1 ))
@@ -2373,13 +2329,13 @@ echo $_fc_n
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816077
+        CLI PID = 980767
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_61.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_61.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2387,9 +2343,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816077
-[/tmp/clitest.PJIcoo/cmd_61.milk -> /milk/shm/.milk-cli.fifo.0816077]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_61.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980767
+[/tmp/clitest.FzHTOd/cmd_61.milk -> /milk/shm/.milk-cli.fifo.0980767]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_61.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m$(( _fc_n + 1 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2404,20 +2360,20 @@ done
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_62.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_62.milk: ASCII text
 for _fc_item in alpha beta gamma; do
     echo $_fc_item
 done
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816091
+        CLI PID = 980786
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_62.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_62.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2425,9 +2381,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816091
-[/tmp/clitest.PJIcoo/cmd_62.milk -> /milk/shm/.milk-cli.fifo.0816091]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_62.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980786
+[/tmp/clitest.FzHTOd/cmd_62.milk -> /milk/shm/.milk-cli.fifo.0980786]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_62.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0malpha
 beta
 gamma
@@ -2444,20 +2400,20 @@ done
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_63.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_63.milk: ASCII text
 for _fc_i in {1..3}; do
     echo iter_$_fc_i
 done
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816105
+        CLI PID = 980819
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_63.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_63.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2465,9 +2421,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816105
-[/tmp/clitest.PJIcoo/cmd_63.milk -> /milk/shm/.milk-cli.fifo.0816105]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_63.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980819
+[/tmp/clitest.FzHTOd/cmd_63.milk -> /milk/shm/.milk-cli.fifo.0980819]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_63.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0miter_1 2 3
 [0;96mmilk-cli > [0mStderr:
 
@@ -2486,7 +2442,7 @@ done
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_64.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_64.milk: ASCII text
 _fc_m=0
 while [ $_fc_m -lt 3 ]; do
     _fc_m=$(( _fc_m + 1 ))
@@ -2497,13 +2453,13 @@ done
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816119
+        CLI PID = 980834
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_64.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_64.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2511,9 +2467,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816119
-[/tmp/clitest.PJIcoo/cmd_64.milk -> /milk/shm/.milk-cli.fifo.0816119]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_64.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980834
+[/tmp/clitest.FzHTOd/cmd_64.milk -> /milk/shm/.milk-cli.fifo.0980834]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_64.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 66: Break in while loop ---
@@ -2532,7 +2488,7 @@ echo $_fc_k
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_65.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_65.milk: ASCII text
 _fc_k=0
 while [ $_fc_k -lt 100 ]; do
     _fc_k=$(( _fc_k + 1 ))
@@ -2544,13 +2500,13 @@ echo $_fc_k
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816142
+        CLI PID = 980865
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_65.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_65.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2558,9 +2514,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816142
-[/tmp/clitest.PJIcoo/cmd_65.milk -> /milk/shm/.milk-cli.fifo.0816142]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_65.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980865
+[/tmp/clitest.FzHTOd/cmd_65.milk -> /milk/shm/.milk-cli.fifo.0980865]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_65.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m$(( _fc_k + 1 ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2582,7 +2538,7 @@ echo $_fc_sum
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_66.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_66.milk: ASCII text
 _fc_sum=0
 _fc_j=0
 while [ $_fc_j -lt 5 ]; do
@@ -2596,13 +2552,13 @@ echo $_fc_sum
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816165
+        CLI PID = 980896
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_66.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_66.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2610,9 +2566,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816165
-[/tmp/clitest.PJIcoo/cmd_66.milk -> /milk/shm/.milk-cli.fifo.0816165]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_66.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980896
+[/tmp/clitest.FzHTOd/cmd_66.milk -> /milk/shm/.milk-cli.fifo.0980896]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_66.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m$(( _fc_sum + _fc_j ))
 [0;96mmilk-cli > [0mStderr:
 
@@ -2630,7 +2586,7 @@ esac
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_67.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_67.milk: ASCII text
 _fc_mode=fast
 case $_fc_mode in
     fast) echo speed ;;
@@ -2640,13 +2596,13 @@ esac
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816185
+        CLI PID = 980916
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_67.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_67.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2654,9 +2610,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816185
-[/tmp/clitest.PJIcoo/cmd_67.milk -> /milk/shm/.milk-cli.fifo.0816185]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_67.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980916
+[/tmp/clitest.FzHTOd/cmd_67.milk -> /milk/shm/.milk-cli.fifo.0980916]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_67.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mspeed
 [0;96mmilk-cli > [0mStderr:
 
@@ -2672,7 +2628,7 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_68.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_68.milk: ASCII text
 _fc_s=hello
 if [ $_fc_s = hello ]; then
     echo match
@@ -2680,13 +2636,13 @@ fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816202
+        CLI PID = 980933
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_68.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_68.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2694,9 +2650,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816202
-[/tmp/clitest.PJIcoo/cmd_68.milk -> /milk/shm/.milk-cli.fifo.0816202]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_68.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980933
+[/tmp/clitest.FzHTOd/cmd_68.milk -> /milk/shm/.milk-cli.fifo.0980933]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_68.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mmatch
 [0;96mmilk-cli > [0mStderr:
 
@@ -2711,20 +2667,20 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_69.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_69.milk: ASCII text
 if [ $_fc_s != world ]; then
     echo differ
 fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816216
+        CLI PID = 980947
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_69.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_69.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2732,9 +2688,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816216
-[/tmp/clitest.PJIcoo/cmd_69.milk -> /milk/shm/.milk-cli.fifo.0816216]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_69.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980947
+[/tmp/clitest.FzHTOd/cmd_69.milk -> /milk/shm/.milk-cli.fifo.0980947]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_69.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mdiffer
 [0;96mmilk-cli > [0mStderr:
 
@@ -2749,20 +2705,20 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_70.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_70.milk: ASCII text
 if [ -n $_fc_s ]; then
     echo nonempty
 fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816230
+        CLI PID = 980961
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_70.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_70.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2770,9 +2726,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816230
-[/tmp/clitest.PJIcoo/cmd_70.milk -> /milk/shm/.milk-cli.fifo.0816230]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_70.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980961
+[/tmp/clitest.FzHTOd/cmd_70.milk -> /milk/shm/.milk-cli.fifo.0980961]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_70.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mnonempty
 [0;96mmilk-cli > [0mStderr:
 
@@ -2788,7 +2744,7 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_71.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_71.milk: ASCII text
 _fc_empty=
 if [ -z $_fc_empty ]; then
     echo empty
@@ -2796,13 +2752,13 @@ fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816244
+        CLI PID = 980975
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_71.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_71.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2810,9 +2766,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816244
-[/tmp/clitest.PJIcoo/cmd_71.milk -> /milk/shm/.milk-cli.fifo.0816244]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_71.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980975
+[/tmp/clitest.FzHTOd/cmd_71.milk -> /milk/shm/.milk-cli.fifo.0980975]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_71.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mempty
 [0;96mmilk-cli > [0mStderr:
 
@@ -2827,20 +2783,20 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_72.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_72.milk: ASCII text
 if [ -d /tmp ]; then
     echo dir_exists
 fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816258
+        CLI PID = 980989
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_72.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_72.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2848,9 +2804,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816258
-[/tmp/clitest.PJIcoo/cmd_72.milk -> /milk/shm/.milk-cli.fifo.0816258]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_72.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0980989
+[/tmp/clitest.FzHTOd/cmd_72.milk -> /milk/shm/.milk-cli.fifo.0980989]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_72.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mdir_exists
 [0;96mmilk-cli > [0mStderr:
 
@@ -2865,20 +2821,20 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_73.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_73.milk: ASCII text
 if [ -f /etc/hostname ]; then
     echo file_exists
 fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816273
+        CLI PID = 981003
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_73.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_73.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2886,9 +2842,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816273
-[/tmp/clitest.PJIcoo/cmd_73.milk -> /milk/shm/.milk-cli.fifo.0816273]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_73.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981003
+[/tmp/clitest.FzHTOd/cmd_73.milk -> /milk/shm/.milk-cli.fifo.0981003]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_73.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mfile_exists
 [0;96mmilk-cli > [0mStderr:
 
@@ -2903,20 +2859,20 @@ fi
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_74.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_74.milk: ASCII text
 if [ ! -f /tmp/no_such_file_xyz ]; then
     echo not_found
 fi
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816287
+        CLI PID = 981017
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_74.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_74.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2924,9 +2880,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816287
-[/tmp/clitest.PJIcoo/cmd_74.milk -> /milk/shm/.milk-cli.fifo.0816287]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_74.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981017
+[/tmp/clitest.FzHTOd/cmd_74.milk -> /milk/shm/.milk-cli.fifo.0981017]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_74.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mnot_found
 [0;96mmilk-cli > [0mStderr:
 
@@ -2947,7 +2903,7 @@ unset _fc_empty
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_75.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_75.milk: ASCII text
 unset _fc_x
 unset _fc_n
 unset _fc_m
@@ -2960,13 +2916,13 @@ unset _fc_empty
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816301
+        CLI PID = 981031
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_75.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_75.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -2974,9 +2930,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816301
-[/tmp/clitest.PJIcoo/cmd_75.milk -> /milk/shm/.milk-cli.fifo.0816301]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_75.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981031
+[/tmp/clitest.FzHTOd/cmd_75.milk -> /milk/shm/.milk-cli.fifo.0981031]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_75.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 77: Define a simple function ---
@@ -2990,20 +2946,20 @@ function _testfunc_greet {
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_76.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_76.milk: ASCII text
 function _testfunc_greet {
     echo greeting_$1
 }
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816315
+        CLI PID = 981045
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_76.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_76.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3011,9 +2967,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816315
-[/tmp/clitest.PJIcoo/cmd_76.milk -> /milk/shm/.milk-cli.fifo.0816315]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_76.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981045
+[/tmp/clitest.FzHTOd/cmd_76.milk -> /milk/shm/.milk-cli.fifo.0981045]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_76.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 78: Call user function ---
@@ -3025,18 +2981,18 @@ _testfunc_greet world
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_77.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_77.milk: ASCII text
 _testfunc_greet world
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816332
+        CLI PID = 981062
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_77.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_77.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3044,9 +3000,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816332
-[/tmp/clitest.PJIcoo/cmd_77.milk -> /milk/shm/.milk-cli.fifo.0816332]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_77.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981062
+[/tmp/clitest.FzHTOd/cmd_77.milk -> /milk/shm/.milk-cli.fifo.0981062]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_77.milk ... 
 [0;96mmilk-cli > [0mStderr:
 sh: 1: _testfunc_greet: not found
 
@@ -3066,7 +3022,7 @@ echo $?
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_78.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_78.milk: ASCII text
 function _testfunc_check {
     if [ $1 -gt 10 ]; then
         return 0
@@ -3078,13 +3034,13 @@ echo $?
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816347
+        CLI PID = 981077
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_78.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_78.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3092,9 +3048,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816347
-[/tmp/clitest.PJIcoo/cmd_78.milk -> /milk/shm/.milk-cli.fifo.0816347]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_78.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981077
+[/tmp/clitest.FzHTOd/cmd_78.milk -> /milk/shm/.milk-cli.fifo.0981077]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_78.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m0
 [0;96mmilk-cli > [0mStderr:
 
@@ -3113,7 +3069,7 @@ echo $_gvar
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_79.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_79.milk: ASCII text
 _gvar=global
 function _testfunc_local {
     local _gvar=localized
@@ -3124,13 +3080,13 @@ echo $_gvar
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816361
+        CLI PID = 981091
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_79.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_79.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3138,9 +3094,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816361
-[/tmp/clitest.PJIcoo/cmd_79.milk -> /milk/shm/.milk-cli.fifo.0816361]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_79.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981091
+[/tmp/clitest.FzHTOd/cmd_79.milk -> /milk/shm/.milk-cli.fifo.0981091]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_79.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mlocalized
 [0;96mmilk-cli > [0mglobal
 [0;96mmilk-cli > [0mStderr:
@@ -3158,7 +3114,7 @@ _testfunc_add 3 7
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_80.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_80.milk: ASCII text
 function _testfunc_add {
     _result=$(( $1 + $2 ))
     echo $_result
@@ -3167,13 +3123,13 @@ _testfunc_add 3 7
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816375
+        CLI PID = 981105
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_80.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_80.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3181,9 +3137,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816375
-[/tmp/clitest.PJIcoo/cmd_80.milk -> /milk/shm/.milk-cli.fifo.0816375]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_80.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981105
+[/tmp/clitest.FzHTOd/cmd_80.milk -> /milk/shm/.milk-cli.fifo.0981105]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_80.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m10
 [0;96mmilk-cli > [0mStderr:
 
@@ -3196,18 +3152,18 @@ _nonexistent_function_xyz
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_81.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_81.milk: ASCII text
 _nonexistent_function_xyz
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816389
+        CLI PID = 981119
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_81.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_81.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3215,9 +3171,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816389
-[/tmp/clitest.PJIcoo/cmd_81.milk -> /milk/shm/.milk-cli.fifo.0816389]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_81.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981119
+[/tmp/clitest.FzHTOd/cmd_81.milk -> /milk/shm/.milk-cli.fifo.0981119]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_81.milk ... 
 [0;96mmilk-cli > [0mStderr:
 sh: 1: _nonexistent_function_xyz: not found
 
@@ -3231,19 +3187,19 @@ unset _result
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_82.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_82.milk: ASCII text
 unset _gvar
 unset _result
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816407
+        CLI PID = 981137
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_82.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_82.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3251,9 +3207,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816407
-[/tmp/clitest.PJIcoo/cmd_82.milk -> /milk/shm/.milk-cli.fifo.0816407]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_82.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981137
+[/tmp/clitest.FzHTOd/cmd_82.milk -> /milk/shm/.milk-cli.fifo.0981137]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_82.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 84: Semicolon chaining ---
@@ -3265,18 +3221,18 @@ echo first ; echo second
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_83.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_83.milk: ASCII text
 echo first ; echo second
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816421
+        CLI PID = 981151
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_83.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_83.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3284,9 +3240,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816421
-[/tmp/clitest.PJIcoo/cmd_83.milk -> /milk/shm/.milk-cli.fifo.0816421]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_83.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981151
+[/tmp/clitest.FzHTOd/cmd_83.milk -> /milk/shm/.milk-cli.fifo.0981151]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_83.milk ... 
 first 
 second
 [0;96mmilk-cli > [0mStderr:
@@ -3300,18 +3256,18 @@ echo ok_cmd && echo and_ran
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_84.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_84.milk: ASCII text
 echo ok_cmd && echo and_ran
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816435
+        CLI PID = 981165
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_84.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_84.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3319,9 +3275,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816435
-[/tmp/clitest.PJIcoo/cmd_84.milk -> /milk/shm/.milk-cli.fifo.0816435]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_84.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981165
+[/tmp/clitest.FzHTOd/cmd_84.milk -> /milk/shm/.milk-cli.fifo.0981165]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_84.milk ... 
 ok_cmd 
 and_ran
 [0;96mmilk-cli > [0mStderr:
@@ -3335,18 +3291,18 @@ echo ok_cmd || echo or_skipped
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_85.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_85.milk: ASCII text
 echo ok_cmd || echo or_skipped
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816452
+        CLI PID = 981179
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_85.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_85.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3354,9 +3310,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816452
-[/tmp/clitest.PJIcoo/cmd_85.milk -> /milk/shm/.milk-cli.fifo.0816452]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_85.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981179
+[/tmp/clitest.FzHTOd/cmd_85.milk -> /milk/shm/.milk-cli.fifo.0981179]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_85.milk ... 
 ok_cmd 
 [0;96mmilk-cli > [0mStderr:
 
@@ -3369,18 +3325,18 @@ echo redirect_test > /tmp/_clitest_redir.txt
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_86.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_86.milk: ASCII text
 echo redirect_test > /tmp/_clitest_redir.txt
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816466
+        CLI PID = 981196
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_86.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_86.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3388,9 +3344,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816466
-[/tmp/clitest.PJIcoo/cmd_86.milk -> /milk/shm/.milk-cli.fifo.0816466]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_86.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981196
+[/tmp/clitest.FzHTOd/cmd_86.milk -> /milk/shm/.milk-cli.fifo.0981196]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_86.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 88: Append redirect ---
@@ -3402,18 +3358,18 @@ echo append_line >> /tmp/_clitest_redir.txt
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_87.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_87.milk: ASCII text
 echo append_line >> /tmp/_clitest_redir.txt
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816480
+        CLI PID = 981210
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_87.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_87.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3421,9 +3377,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816480
-[/tmp/clitest.PJIcoo/cmd_87.milk -> /milk/shm/.milk-cli.fifo.0816480]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_87.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981210
+[/tmp/clitest.FzHTOd/cmd_87.milk -> /milk/shm/.milk-cli.fifo.0981210]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_87.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 89: Command substitution ---
@@ -3436,19 +3392,19 @@ echo $_subst_val
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_88.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_88.milk: ASCII text
 _subst_val=$(echo hello_sub)
 echo $_subst_val
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816494
+        CLI PID = 981224
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_88.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_88.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3456,9 +3412,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816494
-[/tmp/clitest.PJIcoo/cmd_88.milk -> /milk/shm/.milk-cli.fifo.0816494]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_88.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981224
+[/tmp/clitest.FzHTOd/cmd_88.milk -> /milk/shm/.milk-cli.fifo.0981224]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_88.milk ... 
 [0;96mmilk-cli > [0mhello_sub
 [0;96mmilk-cli > [0mStderr:
 
@@ -3471,18 +3427,18 @@ echo $HOME
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_89.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_89.milk: ASCII text
 echo $HOME
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816509
+        CLI PID = 981239
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_89.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_89.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3490,9 +3446,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816509
-[/tmp/clitest.PJIcoo/cmd_89.milk -> /milk/shm/.milk-cli.fifo.0816509]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_89.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981239
+[/tmp/clitest.FzHTOd/cmd_89.milk -> /milk/shm/.milk-cli.fifo.0981239]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_89.milk ... 
 /home/oguyon
 [0;96mmilk-cli > [0mStderr:
 
@@ -3505,18 +3461,18 @@ echo ~
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_90.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_90.milk: ASCII text
 echo ~
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816523
+        CLI PID = 981253
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_90.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_90.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3524,9 +3480,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816523
-[/tmp/clitest.PJIcoo/cmd_90.milk -> /milk/shm/.milk-cli.fifo.0816523]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_90.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981253
+[/tmp/clitest.FzHTOd/cmd_90.milk -> /milk/shm/.milk-cli.fifo.0981253]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_90.milk ... 
 ~
 [0;96mmilk-cli > [0mStderr:
 
@@ -3539,18 +3495,18 @@ echo {1..5}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_91.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_91.milk: ASCII text
 echo {1..5}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816537
+        CLI PID = 981267
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_91.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_91.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3558,9 +3514,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816537
-[/tmp/clitest.PJIcoo/cmd_91.milk -> /milk/shm/.milk-cli.fifo.0816537]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_91.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981267
+[/tmp/clitest.FzHTOd/cmd_91.milk -> /milk/shm/.milk-cli.fifo.0981267]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_91.milk ... 
 1 2 3 4 5
 [0;96mmilk-cli > [0mStderr:
 
@@ -3573,18 +3529,18 @@ echo {0..10..2}
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_92.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_92.milk: ASCII text
 echo {0..10..2}
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816551
+        CLI PID = 981281
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_92.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_92.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3592,9 +3548,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816551
-[/tmp/clitest.PJIcoo/cmd_92.milk -> /milk/shm/.milk-cli.fifo.0816551]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_92.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981281
+[/tmp/clitest.FzHTOd/cmd_92.milk -> /milk/shm/.milk-cli.fifo.0981281]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_92.milk ... 
 0 2 4 6 8 10
 [0;96mmilk-cli > [0mStderr:
 
@@ -3608,19 +3564,19 @@ echo $_hs_val
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_93.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_93.milk: ASCII text
 read _hs_val <<< "here_string_test"
 echo $_hs_val
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816565
+        CLI PID = 981295
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_93.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_93.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3628,9 +3584,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816565
-[/tmp/clitest.PJIcoo/cmd_93.milk -> /milk/shm/.milk-cli.fifo.0816565]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_93.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981295
+[/tmp/clitest.FzHTOd/cmd_93.milk -> /milk/shm/.milk-cli.fifo.0981295]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_93.milk ... 
 [2;33m[shell bypass] read _hs_val [0m
 [0;96mmilk-cli > [0m$_hs_val
 [0;96mmilk-cli > [0mStderr:
@@ -3644,7 +3600,7 @@ echo searchable_text | grep searchable
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_94.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_94.milk: ASCII text
 echo searchable_text | grep searchable
 exit
 [2;33m[shell pipe] grep searchable[0m
@@ -3661,19 +3617,19 @@ unset _hs_val
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_95.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_95.milk: ASCII text
 unset _subst_val
 unset _hs_val
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816599
+        CLI PID = 981329
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_95.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_95.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3681,9 +3637,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816599
-[/tmp/clitest.PJIcoo/cmd_95.milk -> /milk/shm/.milk-cli.fifo.0816599]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_95.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981329
+[/tmp/clitest.FzHTOd/cmd_95.milk -> /milk/shm/.milk-cli.fifo.0981329]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_95.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0mStderr:
 
 --- Test 97: Unknown command (should suggest) ---
@@ -3695,18 +3651,18 @@ mem.lisim
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_96.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_96.milk: ASCII text
 mem.lisim
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816613
+        CLI PID = 981343
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_96.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_96.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3714,9 +3670,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816613
-[/tmp/clitest.PJIcoo/cmd_96.milk -> /milk/shm/.milk-cli.fifo.0816613]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_96.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981343
+[/tmp/clitest.FzHTOd/cmd_96.milk -> /milk/shm/.milk-cli.fifo.0981343]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_96.milk ... 
 [0;96mmilk-cli > [0mStderr:
 sh: 1: mem.lisim: not found
 
@@ -3729,18 +3685,18 @@ xyzzy_nonexistent_command
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_97.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_97.milk: ASCII text
 xyzzy_nonexistent_command
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816631
+        CLI PID = 981361
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_97.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_97.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3748,9 +3704,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816631
-[/tmp/clitest.PJIcoo/cmd_97.milk -> /milk/shm/.milk-cli.fifo.0816631]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_97.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981361
+[/tmp/clitest.FzHTOd/cmd_97.milk -> /milk/shm/.milk-cli.fifo.0981361]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_97.milk ... 
 [0;96mmilk-cli > [0mStderr:
 sh: 1: xyzzy_nonexistent_command: not found
 
@@ -3764,19 +3720,19 @@ synhl on
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_98.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_98.milk: ASCII text
 synhl off
 synhl on
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816649
+        CLI PID = 981379
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_98.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_98.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3784,9 +3740,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816649
-[/tmp/clitest.PJIcoo/cmd_98.milk -> /milk/shm/.milk-cli.fifo.0816649]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_98.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981379
+[/tmp/clitest.FzHTOd/cmd_98.milk -> /milk/shm/.milk-cli.fifo.0981379]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_98.milk ... 
 Syntax highlighting OFF
 [0;96mmilk-cli > [0mSyntax highlighting ON
 [0;96mmilk-cli > [0mStderr:
@@ -3800,18 +3756,18 @@ source /tmp/_clitest_no_such_file.milk
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_99.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_99.milk: ASCII text
 source /tmp/_clitest_no_such_file.milk
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816663
+        CLI PID = 981393
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_99.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_99.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3819,9 +3775,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816663
-[/tmp/clitest.PJIcoo/cmd_99.milk -> /milk/shm/.milk-cli.fifo.0816663]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_99.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981393
+[/tmp/clitest.FzHTOd/cmd_99.milk -> /milk/shm/.milk-cli.fifo.0981393]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_99.milk ... 
 [0;96mmilk-cli > [0mStderr:
 source: /tmp/_clitest_no_such_file.milk: No such file
 
@@ -3834,18 +3790,18 @@ include_once /tmp/_clitest_no_such_f2.milk
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_100.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_100.milk: ASCII text
 include_once /tmp/_clitest_no_such_f2.milk
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816680
+        CLI PID = 981410
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_100.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_100.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3853,9 +3809,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816680
-[/tmp/clitest.PJIcoo/cmd_100.milk -> /milk/shm/.milk-cli.fifo.0816680]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_100.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981410
+[/tmp/clitest.FzHTOd/cmd_100.milk -> /milk/shm/.milk-cli.fifo.0981410]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_100.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Image 'include_once' not found
 sh: 1: include_once: not found
@@ -3869,18 +3825,18 @@ set -x
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_101.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_101.milk: ASCII text
 set -x
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816698
+        CLI PID = 981428
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_101.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_101.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3888,9 +3844,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816698
-[/tmp/clitest.PJIcoo/cmd_101.milk -> /milk/shm/.milk-cli.fifo.0816698]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_101.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981428
+[/tmp/clitest.FzHTOd/cmd_101.milk -> /milk/shm/.milk-cli.fifo.0981428]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_101.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 103: set +x (trace off) ---
@@ -3902,18 +3858,18 @@ set +x
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_102.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_102.milk: ASCII text
 set +x
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816715
+        CLI PID = 981442
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_102.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_102.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3921,9 +3877,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816715
-[/tmp/clitest.PJIcoo/cmd_102.milk -> /milk/shm/.milk-cli.fifo.0816715]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_102.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981442
+[/tmp/clitest.FzHTOd/cmd_102.milk -> /milk/shm/.milk-cli.fifo.0981442]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_102.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 104: Readonly variable ---
@@ -3935,18 +3891,18 @@ readonly _RO_PI=3
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_103.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_103.milk: ASCII text
 readonly _RO_PI=3
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816729
+        CLI PID = 981459
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_103.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_103.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3954,9 +3910,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816729
-[/tmp/clitest.PJIcoo/cmd_103.milk -> /milk/shm/.milk-cli.fifo.0816729]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_103.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981459
+[/tmp/clitest.FzHTOd/cmd_103.milk -> /milk/shm/.milk-cli.fifo.0981459]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_103.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 105: Declare integer ---
@@ -3968,18 +3924,18 @@ declare -i _decl_count=0
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_104.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_104.milk: ASCII text
 declare -i _decl_count=0
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816743
+        CLI PID = 981473
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_104.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_104.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -3987,9 +3943,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816743
-[/tmp/clitest.PJIcoo/cmd_104.milk -> /milk/shm/.milk-cli.fifo.0816743]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_104.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981473
+[/tmp/clitest.FzHTOd/cmd_104.milk -> /milk/shm/.milk-cli.fifo.0981473]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_104.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 106: Let arithmetic ---
@@ -4002,19 +3958,19 @@ echo $_decl_count
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_105.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_105.milk: ASCII text
 let "_decl_count=5+3"
 echo $_decl_count
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816757
+        CLI PID = 981487
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_105.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_105.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4022,9 +3978,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816757
-[/tmp/clitest.PJIcoo/cmd_105.milk -> /milk/shm/.milk-cli.fifo.0816757]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_105.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981487
+[/tmp/clitest.FzHTOd/cmd_105.milk -> /milk/shm/.milk-cli.fifo.0981487]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_105.milk ... 
 [0;96mmilk-cli > [0m$((5+3))
 [0;96mmilk-cli > [0mStderr:
 
@@ -4037,18 +3993,18 @@ unset _decl_count
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_106.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_106.milk: ASCII text
 unset _decl_count
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816771
+        CLI PID = 981501
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_106.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_106.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4056,9 +4012,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816771
-[/tmp/clitest.PJIcoo/cmd_106.milk -> /milk/shm/.milk-cli.fifo.0816771]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_106.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981501
+[/tmp/clitest.FzHTOd/cmd_106.milk -> /milk/shm/.milk-cli.fifo.0981501]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_106.milk ... 
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 108: Basic calculator arithmetic ---
@@ -4071,19 +4027,19 @@ echo $_calc_a
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_107.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_107.milk: ASCII text
 _calc_a = 2 + 3 * 4
 echo $_calc_a
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816785
+        CLI PID = 981515
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_107.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_107.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4091,11 +4047,10 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816785
-[/tmp/clitest.PJIcoo/cmd_107.milk -> /milk/shm/.milk-cli.fifo.0816785]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_107.milk ... 
-    double: 14
-[0;96mmilk-cli > [0m14
+Creating fifo /milk/shm/.milk-cli.fifo.0981515
+[/tmp/clitest.FzHTOd/cmd_107.milk -> /milk/shm/.milk-cli.fifo.0981515]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_107.milk ... 
+[0;96mmilk-cli > [0m2 + 3 10 cli_robustness_tests.milk cli_test_report.txt cli_test_stringency.milk run_cli_robustness_tests.sh test_calculator.milk test_env_sync.milk 4
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 109: Relational and logical natively ---
@@ -4111,7 +4066,7 @@ echo $_calc_d
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_108.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_108.milk: ASCII text
 _calc_a = 2 + 3 * 4
 _calc_b = _calc_a > 10
 _calc_c = (_calc_a == 14)
@@ -4120,13 +4075,13 @@ echo $_calc_d
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816799
+        CLI PID = 981529
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_108.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_108.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4134,15 +4089,13 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816799
-[/tmp/clitest.PJIcoo/cmd_108.milk -> /milk/shm/.milk-cli.fifo.0816799]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_108.milk ... 
-    double: 14
-[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m    double: 1
-[0;96mmilk-cli > [0m    double: 14
-    double: 1
-[0;96mmilk-cli > [0m14
+Creating fifo /milk/shm/.milk-cli.fifo.0981529
+[/tmp/clitest.FzHTOd/cmd_108.milk -> /milk/shm/.milk-cli.fifo.0981529]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_108.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m_calc_b
 [0;96mmilk-cli > [0mStderr:
+   [CALC_PARSER_ERROR] Image '_calc_a' not found
+sh: 1: _calc_c: not found
 
 --- Test 110: Built-in mathematical functions ---
 Expect: OK
@@ -4154,19 +4107,19 @@ echo $_calc_e
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_109.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_109.milk: ASCII text
 _calc_e = min(abs(-5), max(3, fmod(17, 5)))
 echo $_calc_e
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816813
+        CLI PID = 981544
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_109.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_109.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4174,10 +4127,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816813
-[/tmp/clitest.PJIcoo/cmd_109.milk -> /milk/shm/.milk-cli.fifo.0816813]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_109.milk ... 
-    double: 3
+Creating fifo /milk/shm/.milk-cli.fifo.0981544
+[/tmp/clitest.FzHTOd/cmd_109.milk -> /milk/shm/.milk-cli.fifo.0981544]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_109.milk ... 
 [0;96mmilk-cli > [0m3
 [0;96mmilk-cli > [0mStderr:
 
@@ -4192,20 +4144,20 @@ echo $_calc_f
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_110.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_110.milk: ASCII text
 _calc_e = min(abs(-5), max(3, fmod(17, 5)))
 _calc_f = where(_calc_e > 2, 100, -100)
 echo $_calc_f
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816827
+        CLI PID = 981558
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_110.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_110.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4213,12 +4165,10 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816827
-[/tmp/clitest.PJIcoo/cmd_110.milk -> /milk/shm/.milk-cli.fifo.0816827]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_110.milk ... 
-    double: 3
-[0;96mmilk-cli > [0m    double: 100
-[0;96mmilk-cli > [0m100
+Creating fifo /milk/shm/.milk-cli.fifo.0981558
+[/tmp/clitest.FzHTOd/cmd_110.milk -> /milk/shm/.milk-cli.fifo.0981558]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_110.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m100
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 112: Image arithmetic and masking ---
@@ -4235,7 +4185,7 @@ echo $_calc_g
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_111.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_111.milk: ASCII text
 mem.mk2Dim _calc_imtest 10 10 
 _calc_imtest = _calc_imtest * 0.0 + 5.0
 _calc_imtest_plus = _calc_imtest + 3
@@ -4245,13 +4195,13 @@ echo $_calc_g
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816844
+        CLI PID = 981572
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_111.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_111.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4259,17 +4209,15 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816844
-[/tmp/clitest.PJIcoo/cmd_111.milk -> /milk/shm/.milk-cli.fifo.0816844]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_111.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981572
+[/tmp/clitest.FzHTOd/cmd_111.milk -> /milk/shm/.milk-cli.fifo.0981572]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_111.milk ... 
 [36mFPS [1m_mk2Dim[22m [33m[LOCAL][0m
   [33mCreating[0m shared=1, kw=10
-[0;96mmilk-cli > [0m    string: _calc_imtest
-[0;96mmilk-cli > [0m    string: _calc_imtest_plus
-[0;96mmilk-cli > [0m    string: _calc_imtest_mask
-[0;96mmilk-cli > [0m    double: 100
-[0;96mmilk-cli > [0m100
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mitot(_calc_imtest_mask)
 [0;96mmilk-cli > [0mStderr:
+   [CALC_PARSER_ERROR] Image '_calc_imtest_plus' not found
+   [CALC_PARSER_ERROR] Image '_calc_imtest_mask' not found
 
 --- Test 113: Image ternary conditional where() ---
 Expect: OK
@@ -4282,20 +4230,20 @@ echo $_calc_h
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_112.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_112.milk: ASCII text
 _calc_im_where = where(_calc_imtest_mask, _calc_imtest, -_calc_imtest)
 _calc_h = imean(_calc_im_where)
 echo $_calc_h
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816858
+        CLI PID = 981589
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_112.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_112.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4303,17 +4251,13 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816858
-[/tmp/clitest.PJIcoo/cmd_112.milk -> /milk/shm/.milk-cli.fifo.0816858]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_112.milk ... 
-[2;33m[shell bypass] _calc_im_where = where(_calc_imtest_mask, _calc_imtest, -_calc_imtest)[0m
-[0;96mmilk-cli > [0m[2;33m[shell bypass] _calc_h = imean(_calc_im_where)[0m
-[0;96mmilk-cli > [0m$_calc_h
+Creating fifo /milk/shm/.milk-cli.fifo.0981589
+[/tmp/clitest.FzHTOd/cmd_112.milk -> /milk/shm/.milk-cli.fifo.0981589]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_112.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mimean(_calc_im_where)
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Image '_calc_imtest' not found
-sh: 1: Syntax error: "(" unexpected
    [CALC_PARSER_ERROR] Image '_calc_im_where' not found
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 114: Vector operations ---
 Expect: OK
@@ -4326,20 +4270,20 @@ echo $_calc_d_im
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_113.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_113.milk: ASCII text
 _calc_d_im = dot(_calc_imtest, _calc_imtest)
 _calc_n_im = norm(_calc_imtest)
 echo $_calc_d_im
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816874
+        CLI PID = 981603
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_113.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_113.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4347,17 +4291,13 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816874
-[/tmp/clitest.PJIcoo/cmd_113.milk -> /milk/shm/.milk-cli.fifo.0816874]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_113.milk ... 
-[2;33m[shell bypass] _calc_d_im = dot(_calc_imtest, _calc_imtest)[0m
-[0;96mmilk-cli > [0m[2;33m[shell bypass] _calc_n_im = norm(_calc_imtest)[0m
-[0;96mmilk-cli > [0m$_calc_d_im
+Creating fifo /milk/shm/.milk-cli.fifo.0981603
+[/tmp/clitest.FzHTOd/cmd_113.milk -> /milk/shm/.milk-cli.fifo.0981603]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_113.milk ... 
+[0;96mmilk-cli > [0m[0;96mmilk-cli > [0mdot(_calc_imtest, _calc_imtest)
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Image '_calc_imtest' not found
-sh: 1: Syntax error: "(" unexpected
    [CALC_PARSER_ERROR] Image '_calc_imtest' not found
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 115: Clean up calculator variables and images ---
 Expect: OK
@@ -4381,7 +4321,7 @@ mem.rm _calc_im_where
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_114.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_114.milk: ASCII text
 unset _calc_a
 unset _calc_b
 unset _calc_c
@@ -4399,13 +4339,13 @@ mem.rm _calc_im_where
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816890
+        CLI PID = 981617
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_114.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_114.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4413,9 +4353,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816890
-[/tmp/clitest.PJIcoo/cmd_114.milk -> /milk/shm/.milk-cli.fifo.0816890]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_114.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981617
+[/tmp/clitest.FzHTOd/cmd_114.milk -> /milk/shm/.milk-cli.fifo.0981617]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_114.milk ... 
 [0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[0;96mmilk-cli > [0m[36mFPS [1m_rmimg[22m [33m[LOCAL][0m
 Error: Missing mandatory argument 1 (.errmode: errors mode (0:ign 1:warn 2:err 3:exit))
 
@@ -4491,18 +4431,18 @@ ls 'unclosed
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_115.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_115.milk: ASCII text
 ls 'unclosed
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816904
+        CLI PID = 981631
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_115.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_115.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4510,9 +4450,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816904
-[/tmp/clitest.PJIcoo/cmd_115.milk -> /milk/shm/.milk-cli.fifo.0816904]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_115.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981631
+[/tmp/clitest.FzHTOd/cmd_115.milk -> /milk/shm/.milk-cli.fifo.0981631]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_115.milk ... 
 [2;33m[shell bypass] ls 'unclosed[0m
 [0;96mmilk-cli > [0mStderr:
 sh: 1: Syntax error: Unterminated quoted string
@@ -4526,18 +4466,18 @@ ls "unclosed
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_116.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_116.milk: ASCII text
 ls "unclosed
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816922
+        CLI PID = 981649
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_116.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_116.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4545,9 +4485,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816922
-[/tmp/clitest.PJIcoo/cmd_116.milk -> /milk/shm/.milk-cli.fifo.0816922]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_116.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981649
+[/tmp/clitest.FzHTOd/cmd_116.milk -> /milk/shm/.milk-cli.fifo.0981649]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_116.milk ... 
 [2;33m[shell bypass] ls "unclosed[0m
 [0;96mmilk-cli > [0mStderr:
 sh: 1: Syntax error: Unterminated quoted string
@@ -4561,18 +4501,18 @@ ls $( ls
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_117.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_117.milk: ASCII text
 ls $( ls
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816940
+        CLI PID = 981667
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_117.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_117.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4580,9 +4520,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816940
-[/tmp/clitest.PJIcoo/cmd_117.milk -> /milk/shm/.milk-cli.fifo.0816940]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_117.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981667
+[/tmp/clitest.FzHTOd/cmd_117.milk -> /milk/shm/.milk-cli.fifo.0981667]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_117.milk ... 
 [2;33m[shell bypass] ls $( ls[0m
 [0;96mmilk-cli > [0mStderr:
 sh: 1: Syntax error: end of file unexpected (expecting ")")
@@ -4596,18 +4536,18 @@ Command:
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_118.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_118.milk: ASCII text
 ( ls
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816958
+        CLI PID = 981685
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_118.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_118.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4615,9 +4555,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816958
-[/tmp/clitest.PJIcoo/cmd_118.milk -> /milk/shm/.milk-cli.fifo.0816958]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_118.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981685
+[/tmp/clitest.FzHTOd/cmd_118.milk -> /milk/shm/.milk-cli.fifo.0981685]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_118.milk ... 
 [2;33m[shell bypass] ( ls[0m
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Expected ')'
@@ -4632,18 +4572,18 @@ echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_119.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_119.milk: ASCII text
 echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816976
+        CLI PID = 981703
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_119.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_119.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4651,9 +4591,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816976
-[/tmp/clitest.PJIcoo/cmd_119.milk -> /milk/shm/.milk-cli.fifo.0816976]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_119.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981703
+[/tmp/clitest.FzHTOd/cmd_119.milk -> /milk/shm/.milk-cli.fifo.0981703]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_119.milk ... 
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 [0;96mmilk-cli > [0mStderr:
 
@@ -4666,18 +4606,18 @@ echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_120.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_120.milk: ASCII text
 echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 816993
+        CLI PID = 981717
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_120.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_120.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4685,9 +4625,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0816993
-[/tmp/clitest.PJIcoo/cmd_120.milk -> /milk/shm/.milk-cli.fifo.0816993]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_120.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981717
+[/tmp/clitest.FzHTOd/cmd_120.milk -> /milk/shm/.milk-cli.fifo.0981717]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_120.milk ... 
 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30
 [0;96mmilk-cli > [0mStderr:
 
@@ -4700,18 +4640,18 @@ pwd --invalid-option-xyz
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_121.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_121.milk: ASCII text
 pwd --invalid-option-xyz
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817007
+        CLI PID = 981734
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_121.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_121.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4719,9 +4659,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817007
-[/tmp/clitest.PJIcoo/cmd_121.milk -> /milk/shm/.milk-cli.fifo.0817007]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_121.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981734
+[/tmp/clitest.FzHTOd/cmd_121.milk -> /milk/shm/.milk-cli.fifo.0981734]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_121.milk ... 
 /home/oguyon/src/milk/tests/cli
 [0;96mmilk-cli > [0mStderr:
 
@@ -4734,18 +4674,18 @@ _calc_err = 1 / 0
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_122.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_122.milk: ASCII text
 _calc_err = 1 / 0
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817024
+        CLI PID = 981751
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_122.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_122.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4753,12 +4693,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817024
-[/tmp/clitest.PJIcoo/cmd_122.milk -> /milk/shm/.milk-cli.fifo.0817024]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_122.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981751
+[/tmp/clitest.FzHTOd/cmd_122.milk -> /milk/shm/.milk-cli.fifo.0981751]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_122.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Division by zero
-sh: 1: _calc_err: not found
 
 --- Test 124: Mismatched parentheses ---
 Expect: ERR
@@ -4769,18 +4708,18 @@ _calc_err = ( 2 + 3
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_123.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_123.milk: ASCII text
 _calc_err = ( 2 + 3 
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817042
+        CLI PID = 981768
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_123.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_123.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4788,13 +4727,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817042
-[/tmp/clitest.PJIcoo/cmd_123.milk -> /milk/shm/.milk-cli.fifo.0817042]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_123.milk ... 
-[2;33m[shell bypass] _calc_err = ( 2 + 3 [0m
+Creating fifo /milk/shm/.milk-cli.fifo.0981768
+[/tmp/clitest.FzHTOd/cmd_123.milk -> /milk/shm/.milk-cli.fifo.0981768]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_123.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Expected ')'
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 125: Missing operand  ---
 Expect: ERR
@@ -4805,18 +4742,18 @@ _calc_err = 2 +
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_124.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_124.milk: ASCII text
 _calc_err = 2 + 
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817060
+        CLI PID = 981785
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_124.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_124.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4824,34 +4761,34 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817060
-[/tmp/clitest.PJIcoo/cmd_124.milk -> /milk/shm/.milk-cli.fifo.0817060]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_124.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981785
+[/tmp/clitest.FzHTOd/cmd_124.milk -> /milk/shm/.milk-cli.fifo.0981785]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_124.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Unexpected token
-sh: 1: _calc_err: not found
 
 --- Test 126: Invalid mathematical function ---
 Expect: ERR
-Result: PASS
+Result: MISSING_ERROR
 Exit:   0
+Detail: Expected error message but got none (exit=0)
 Command:
 _calc_err = non_existent_function(5)
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_125.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_125.milk: ASCII text
 _calc_err = non_existent_function(5)
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817078
+        CLI PID = 981802
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_125.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_125.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4859,13 +4796,10 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817078
-[/tmp/clitest.PJIcoo/cmd_125.milk -> /milk/shm/.milk-cli.fifo.0817078]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_125.milk ... 
-[2;33m[shell bypass] _calc_err = non_existent_function(5)[0m
+Creating fifo /milk/shm/.milk-cli.fifo.0981802
+[/tmp/clitest.FzHTOd/cmd_125.milk -> /milk/shm/.milk-cli.fifo.0981802]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_125.milk ... 
 [0;96mmilk-cli > [0mStderr:
-   [CALC_PARSER_ERROR] Source image does not exist
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 127: Missing math function argument ---
 Expect: ERR
@@ -4876,18 +4810,18 @@ _calc_err = min(5)
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_126.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_126.milk: ASCII text
 _calc_err = min(5)
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817096
+        CLI PID = 981826
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_126.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_126.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4895,13 +4829,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817096
-[/tmp/clitest.PJIcoo/cmd_126.milk -> /milk/shm/.milk-cli.fifo.0817096]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_126.milk ... 
-[2;33m[shell bypass] _calc_err = min(5)[0m
+Creating fifo /milk/shm/.milk-cli.fifo.0981826
+[/tmp/clitest.FzHTOd/cmd_126.milk -> /milk/shm/.milk-cli.fifo.0981826]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_126.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Expected ','
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 128: Too many math function arguments ---
 Expect: ERR
@@ -4912,18 +4844,18 @@ _calc_err = abs(1, 2)
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_127.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_127.milk: ASCII text
 _calc_err = abs(1, 2)
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817114
+        CLI PID = 981843
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_127.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_127.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4931,13 +4863,11 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817114
-[/tmp/clitest.PJIcoo/cmd_127.milk -> /milk/shm/.milk-cli.fifo.0817114]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_127.milk ... 
-[2;33m[shell bypass] _calc_err = abs(1, 2)[0m
+Creating fifo /milk/shm/.milk-cli.fifo.0981843
+[/tmp/clitest.FzHTOd/cmd_127.milk -> /milk/shm/.milk-cli.fifo.0981843]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_127.milk ... 
 [0;96mmilk-cli > [0mStderr:
    [CALC_PARSER_ERROR] Expected ')'
-sh: 1: Syntax error: "(" unexpected
 
 --- Test 129: Remove temp redirect file ---
 Expect: OK
@@ -4948,18 +4878,18 @@ Command:
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_128.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_128.milk: ASCII text
 !rm -f /tmp/_clitest_redir.txt
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817135
+        CLI PID = 981860
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_128.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_128.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -4967,9 +4897,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817135
-[/tmp/clitest.PJIcoo/cmd_128.milk -> /milk/shm/.milk-cli.fifo.0817135]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_128.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981860
+[/tmp/clitest.FzHTOd/cmd_128.milk -> /milk/shm/.milk-cli.fifo.0981860]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_128.milk ... 
 !rm -f /tmp/_clitest_redir.txt: event not found
 [0;96mmilk-cli > [0mStderr:
 
@@ -4982,18 +4912,18 @@ echo CLI_ROBUSTNESS_TESTS_COMPLETE
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_129.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_129.milk: ASCII text
 echo CLI_ROBUSTNESS_TESTS_COMPLETE
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817149
+        CLI PID = 981877
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_129.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_129.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -5001,9 +4931,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817149
-[/tmp/clitest.PJIcoo/cmd_129.milk -> /milk/shm/.milk-cli.fifo.0817149]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_129.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981877
+[/tmp/clitest.FzHTOd/cmd_129.milk -> /milk/shm/.milk-cli.fifo.0981877]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_129.milk ... 
 CLI_ROBUSTNESS_TESTS_COMPLETE
 [0;96mmilk-cli > [0mStderr:
 
@@ -5016,18 +4946,18 @@ echo $PATH
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_130.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_130.milk: ASCII text
 echo $PATH
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817163
+        CLI PID = 981891
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_130.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_130.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -5035,10 +4965,10 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817163
-[/tmp/clitest.PJIcoo/cmd_130.milk -> /milk/shm/.milk-cli.fifo.0817163]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_130.milk ... 
-/home/oguyon/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/usr/local/milk/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/milk/bin:/home/linuxbrew/.linuxbrew/bin
+Creating fifo /milk/shm/.milk-cli.fifo.0981891
+[/tmp/clitest.FzHTOd/cmd_130.milk -> /milk/shm/.milk-cli.fifo.0981891]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_130.milk ... 
+/home/oguyon/src/milk/_build:/home/oguyon/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/usr/local/milk/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/milk/bin:/home/linuxbrew/.linuxbrew/bin
 [0;96mmilk-cli > [0mStderr:
 
 --- Test 132: Outward env sync: local var exported to spawned shell ---
@@ -5051,19 +4981,19 @@ BDIR_SYNC_VAR="hello_frommilk"
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_131.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_131.milk: ASCII text
 BDIR_SYNC_VAR="hello_frommilk"
 !test "$BDIR_SYNC_VAR" = "hello_frommilk"
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817177
+        CLI PID = 981905
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_131.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_131.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -5071,9 +5001,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817177
-[/tmp/clitest.PJIcoo/cmd_131.milk -> /milk/shm/.milk-cli.fifo.0817177]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_131.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981905
+[/tmp/clitest.FzHTOd/cmd_131.milk -> /milk/shm/.milk-cli.fifo.0981905]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_131.milk ... 
 [0;96mmilk-cli > [0m!test "$BDIR_SYNC_VAR" = "hello_frommilk": event not found
 [0;96mmilk-cli > [0mStderr:
 
@@ -5087,19 +5017,19 @@ test_subshell_var=$(echo "success_from_subshell")
 exit
 Stdout:
         Cpus_allowed_list:	0-23
-/tmp/clitest.PJIcoo/cmd_132.milk: ASCII text
+/tmp/clitest.FzHTOd/cmd_132.milk: ASCII text
 test_subshell_var=$(echo "success_from_subshell")
 !test "$test_subshell_var" = "success_from_subshell"
 exit
 ....        [ENABLED]  Code test point tracing
 [1m
-        milk-cli  v 1.03.00  (compiled Mar 22 2026 13:42:08)
+        milk-cli  v 1.03.00  (compiled Mar 22 2026 16:44:19)
         === DEBUG MODE : assert() & DEBUG_TRACEPOINT  enabled ===
 [22m        
-        CLI PID = 817191
+        CLI PID = 981919
         Running with openMP 201511, max threads = 24  (OMP_NUM_THREADS)
         MILK_SHM_DIR: /milk/shm
-Startup file : /tmp/clitest.PJIcoo/cmd_132.milk
+Startup file : /tmp/clitest.FzHTOd/cmd_132.milk
 fifo input ON
 
 [32m   LOADED : libmilkfpsCLI.so
@@ -5107,9 +5037,9 @@ fifo input ON
         MILKCLI_ADD_LIBS not set -> no additional module loaded
         Loaded 4 modules, 149 commands
         
-Creating fifo /milk/shm/.milk-cli.fifo.0817191
-[/tmp/clitest.PJIcoo/cmd_132.milk -> /milk/shm/.milk-cli.fifo.0817191]
-IMPORTING FILE /tmp/clitest.PJIcoo/cmd_132.milk ... 
+Creating fifo /milk/shm/.milk-cli.fifo.0981919
+[/tmp/clitest.FzHTOd/cmd_132.milk -> /milk/shm/.milk-cli.fifo.0981919]
+IMPORTING FILE /tmp/clitest.FzHTOd/cmd_132.milk ... 
 [0;96mmilk-cli > [0m!test "$test_subshell_var" = "success_from_subshell": event not found
 [0;96mmilk-cli > [0mStderr:
 
