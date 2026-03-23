@@ -13,6 +13,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <regex.h>
 
 /* ============================================================
  *  Arithmetic Expansion Helper Functions
@@ -601,6 +602,20 @@ int cli_eval_test(const char *expr)
         }
     }
 
+    /* POSIX Regex Match */
+    if(ntok == 3 && strcmp(tokens[1], "=~") == 0)
+    {
+        regex_t regex;
+        int reti = regcomp(&regex, tokens[2], REG_EXTENDED);
+        if(reti)
+        {
+            return 0; /* Failed to compile regex */
+        }
+        reti = regexec(&regex, tokens[0], 0, NULL, 0);
+        regfree(&regex);
+        return !reti; /* regexec returns 0 on match */
+    }
+
     /* Logical AND */
     for(int i = 0; i < ntok; i++)
     {
@@ -944,40 +959,97 @@ void cli_expand_env(
             }
 
             const char *val = NULL;
+            char all_elems[STRINGMAXLEN_CLICMDLINE];
+            all_elems[0] = '\0';
+            int elems_count = 0;
+
             if(has_index)
             {
                 const char *idx_val = cli_var_lookup(index_str);
                 if(idx_val == NULL) idx_val = index_str;
                 
-                int is_found = 0;
-                for(int a = 0; a < CLI_MAX_ASSOC; a++)
+                if(strcmp(idx_val, "@") == 0)
                 {
-                    if(cli_assoc[a].used && strcmp(cli_assoc[a].name, varname) == 0)
+                    int is_found = 0;
+                    for(int a = 0; a < CLI_MAX_ASSOC; a++)
                     {
-                        for(int e = 0; e < cli_assoc[a].nelem; e++)
+                        if(cli_assoc[a].used && strcmp(cli_assoc[a].name, varname) == 0)
                         {
-                            if(strcmp(cli_assoc[a].keys[e], idx_val) == 0)
+                            elems_count = cli_assoc[a].nelem;
+                            if(!is_length)
                             {
-                                val = cli_assoc[a].vals[e];
-                                is_found = 1;
+                                for(int e = 0; e < cli_assoc[a].nelem; e++)
+                                {
+                                    if(e > 0) strncat(all_elems, " ", sizeof(all_elems) - strlen(all_elems) - 1);
+                                    strncat(all_elems, cli_assoc[a].vals[e], sizeof(all_elems) - strlen(all_elems) - 1);
+                                }
+                            }
+                            is_found = 1;
+                            break;
+                        }
+                    }
+                    if(!is_found)
+                    {
+                        for(int a = 0; a < CLI_MAX_ARRAYS; a++)
+                        {
+                            if(cli_arrays[a].used && strcmp(cli_arrays[a].name, varname) == 0)
+                            {
+                                elems_count = cli_arrays[a].nelem;
+                                if(!is_length)
+                                {
+                                    for(int e = 0; e < cli_arrays[a].nelem; e++)
+                                    {
+                                        if(e > 0) strncat(all_elems, " ", sizeof(all_elems) - strlen(all_elems) - 1);
+                                        strncat(all_elems, cli_arrays[a].elem[e], sizeof(all_elems) - strlen(all_elems) - 1);
+                                    }
+                                }
                                 break;
                             }
                         }
-                        break;
                     }
-                }
-                if(!is_found)
-                {
-                    int num_idx = atoi(idx_val);
-                    for(int a = 0; a < CLI_MAX_ARRAYS; a++)
+                    if(is_length)
                     {
-                        if(cli_arrays[a].used && strcmp(cli_arrays[a].name, varname) == 0)
+                        char cnt_buf[32];
+                        snprintf(cnt_buf, sizeof(cnt_buf), "%d", elems_count);
+                        strncpy(all_elems, cnt_buf, sizeof(all_elems) - 1);
+                    }
+                    val = all_elems;
+                    
+                    /* If it's a length query on a splat, we've already resolved it */
+                    if(is_length) is_length = 0; 
+                }
+                else
+                {
+                    int is_found = 0;
+                    for(int a = 0; a < CLI_MAX_ASSOC; a++)
+                    {
+                        if(cli_assoc[a].used && strcmp(cli_assoc[a].name, varname) == 0)
                         {
-                            if(num_idx >= 0 && num_idx < cli_arrays[a].nelem)
+                            for(int e = 0; e < cli_assoc[a].nelem; e++)
                             {
-                                val = cli_arrays[a].elem[num_idx];
+                                if(strcmp(cli_assoc[a].keys[e], idx_val) == 0)
+                                {
+                                    val = cli_assoc[a].vals[e];
+                                    is_found = 1;
+                                    break;
+                                }
                             }
                             break;
+                        }
+                    }
+                    if(!is_found)
+                    {
+                        int num_idx = atoi(idx_val);
+                        for(int a = 0; a < CLI_MAX_ARRAYS; a++)
+                        {
+                            if(cli_arrays[a].used && strcmp(cli_arrays[a].name, varname) == 0)
+                            {
+                                if(num_idx >= 0 && num_idx < cli_arrays[a].nelem)
+                                {
+                                    val = cli_arrays[a].elem[num_idx];
+                                }
+                                break;
+                            }
                         }
                     }
                 }
