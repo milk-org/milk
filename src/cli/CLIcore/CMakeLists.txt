@@ -30,14 +30,19 @@ set(CORE_FILES
     CLIcore/CLIcore_utils.c
     CLIcore/CLIcore_UI.c
     CLIcore/CLIcore_checkargs.c
+    CLIcore/CLIcore_checkargs_fps.c
     CLIcore/CLIcore_datainit.c
     CLIcore/CLIcore_help.c
+    CLIcore/CLIcore_help_topics.c
+    CLIcore/CLIcore_help_tui.c
     CLIcore/CLIcore_memory.c
     CLIcore/CLIcore_modules.c
     CLIcore/CLIcore_setSHMdir.c
     CLIcore/CLIcore_script.c
     CLIcore/CLIcore_script_builtin.c
+    CLIcore/CLIcore_script_case.c
     CLIcore/CLIcore_script_expand.c
+    CLIcore/CLIcore_script_flow.c
     CLIcore/CLIcore_script_func.c
     CLIcore/CLIcore_script_var.c
     CLIcore/CLIcore_signals.c
@@ -45,6 +50,9 @@ set(CORE_FILES
     CLIcore/CLIcore_UI_alias.c
     CLIcore/CLIcore_UI_bookmark.c
     CLIcore/CLIcore_UI_builtins.c
+    CLIcore/CLIcore_UI_completion.c
+    CLIcore/CLIcore_UI_highlight.c
+    CLIcore/CLIcore_UI_hintarea.c
     CLIcore/CLIcore_UI_history.c
     CLIcore/CLIcore_UI_prompt.c
     cli_calc_tokenizer.c

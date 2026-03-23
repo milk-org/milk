@@ -7,6 +7,18 @@
 
 #include "COREMOD_memory/COREMOD_memory.h"
 
+/**
+ * @brief Grow image and variable arrays when nearly
+ *        full.
+ *
+ * Maintains a buffer of NB_IMAGES_BUFFER free slots
+ * above the current count. When the buffer is
+ * exhausted, realloc() extends the array by
+ * NB_IMAGES_BUFFER_REALLOC entries.
+ *
+ * Same logic applies to the VARIABLE array.
+ * No-op when DATA_STATIC_ALLOC is defined.
+ */
 errno_t memory_re_alloc()
 {
     /* keeps the number of images addresses available
