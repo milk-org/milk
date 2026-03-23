@@ -23,6 +23,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI.h"
 
+#include <fnmatch.h>
 #include <glob.h>
 #include <sys/wait.h>
 
@@ -1112,6 +1113,114 @@ errno_t CLI_execute_line()
         }
     }
 
+    /* Stream pipeline: stream |> cmd args
+     * Rewrites to: cmd stream args
+     * Must be checked BEFORE the pipe
+     * handler below. */
+    {
+        const char *src = data.CLIcmdline;
+        int depth = 0;
+        int in_sq = 0;
+        int in_dq = 0;
+        int gpipe = -1;
+
+        for(int si = 0;
+            src[si] != '\0'; si++)
+        {
+            char c = src[si];
+            if(c == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+            }
+            else if(c == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+            }
+            else if(!in_sq && !in_dq)
+            {
+                if(c == '(')
+                {
+                    depth++;
+                }
+                else if(c == ')'
+                        && depth > 0)
+                {
+                    depth--;
+                }
+                else if(depth == 0
+                        && c == '|'
+                        && src[si + 1]
+                        == '>')
+                {
+                    gpipe = si;
+                    break;
+                }
+            }
+        }
+        if(gpipe >= 0)
+        {
+            char lhs[
+                STRINGMAXLEN_CLICMDLINE];
+            strncpy(lhs,
+                    data.CLIcmdline,
+                    (size_t) gpipe);
+            lhs[gpipe] = '\0';
+            /* Trim trailing spaces */
+            {
+                int e = gpipe - 1;
+                while(e >= 0
+                      && (lhs[e] == ' '
+                          || lhs[e]
+                          == '\t'))
+                {
+                    lhs[e--] = '\0';
+                }
+            }
+            const char *rhs =
+                data.CLIcmdline
+                + gpipe + 2;
+            while(*rhs == ' '
+                  || *rhs == '\t')
+            {
+                rhs++;
+            }
+            /* rhs = "cmd args..." */
+            const char *sp =
+                strchr(rhs, ' ');
+            char newcmd[
+                STRINGMAXLEN_CLICMDLINE];
+            if(sp != NULL)
+            {
+                snprintf(newcmd,
+                         sizeof(newcmd),
+                         "%.*s %s %s",
+                         (int)(sp - rhs),
+                         rhs, lhs,
+                         sp + 1);
+            }
+            else
+            {
+                snprintf(newcmd,
+                         sizeof(newcmd),
+                         "%s %s",
+                         rhs, lhs);
+            }
+            strncpy(
+                data.CLIcmdline,
+                newcmd,
+                STRINGMAXLEN_CLICMDLINE
+                - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE
+                - 1] = '\0';
+            errno_t lret =
+                CLI_execute_line();
+            data.CMDexecuted = 1;
+            DEBUG_TRACE_FEXIT();
+            return lret;
+        }
+    }
+
     /* Pipe: cmd1 | cmd2
      * Capture stdout of left command into a
      * temp file, then feed it as stdin to
@@ -1149,7 +1258,9 @@ errno_t CLI_execute_line()
                 else if(depth == 0
                         && c == '|'
                         && src[si + 1]
-                        != '|')
+                        != '|'
+                        && src[si + 1]
+                        != '>')
                 {
                     pipe_pos = si;
                     break;
@@ -2289,6 +2400,72 @@ pipe_fallthrough:
         data.CMDexecuted = 1;
     }
     else if(strncmp(data.CLIcmdline,
+                    "listim ", 7) == 0)
+    {
+        /* listim <pattern> — glob filter
+         * Only intercept when pattern has
+         * wildcard chars (* or ?).
+         * Non-wildcard falls through to
+         * normal registered command. */
+        const char *pat =
+            data.CLIcmdline + 7;
+        while(*pat == ' ' || *pat == '\t')
+        {
+            pat++;
+        }
+        if(strchr(pat, '*') != NULL
+           || strchr(pat, '?') != NULL)
+        {
+            /* Build glob pattern for
+             * /dev/shm matching */
+            char shmglob[512];
+            snprintf(shmglob,
+                     sizeof(shmglob),
+                     "%s.im.shm", pat);
+            DIR *dp = opendir("/dev/shm");
+            if(dp != NULL)
+            {
+                struct dirent *de;
+                int count = 0;
+                while((de = readdir(dp))
+                      != NULL)
+                {
+                    if(fnmatch(
+                        shmglob,
+                        de->d_name,
+                        0) == 0)
+                    {
+                        /* Strip .im.shm
+                         * suffix */
+                        char nm[256];
+                        strncpy(nm,
+                                de->d_name,
+                                sizeof(nm)
+                                - 1);
+                        nm[sizeof(nm) - 1]
+                            = '\0';
+                        char *sfx =
+                            strstr(nm,
+                                   ".im.shm");
+                        if(sfx != NULL)
+                        {
+                            *sfx = '\0';
+                        }
+                        printf("  %s\n", nm);
+                        count++;
+                    }
+                }
+                closedir(dp);
+                printf("%d stream(s) "
+                       "matched\n",
+                       count);
+            }
+            data.CMDexecuted = 1;
+        }
+        /* else: no wildcard, fall through
+         * to normal listim command */
+    }
+    else if(strncmp(data.CLIcmdline,
                     "echo ", 5) == 0
             || strcmp(data.CLIcmdline,
                       "echo") == 0)
@@ -2579,6 +2756,153 @@ pipe_fallthrough:
             }
         }
         data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "on_fpschange ",
+                    13) == 0)
+    {
+        /* on_fpschange fpsname.param { cmd }
+         * Poll FPS parameter, execute body
+         * when it changes. */
+        const char *arg =
+            data.CLIcmdline + 13;
+        while(*arg == ' '
+              || *arg == '\t')
+        {
+            arg++;
+        }
+        /* Extract fpsname.param */
+        char fparg[256];
+        {
+            int ai = 0;
+            while(*arg != '\0'
+                  && *arg != ' '
+                  && *arg != '\t'
+                  && ai < 255)
+            {
+                fparg[ai++] = *arg++;
+            }
+            fparg[ai] = '\0';
+        }
+        /* Split at dot */
+        char *dot = strchr(fparg, '.');
+        if(dot == NULL)
+        {
+            printf(
+                "on_fpschange: "
+                "use fpsname.param\n");
+            cli_last_retval = 1;
+            data.CMDexecuted = 1;
+        }
+        else
+        {
+            *dot = '\0';
+            const char *fpsn = fparg;
+            const char *parn = dot + 1;
+            /* Extract body between { } */
+            while(*arg == ' '
+                  || *arg == '\t')
+            {
+                arg++;
+            }
+            char body[
+                STRINGMAXLEN_CLICMDLINE];
+            body[0] = '\0';
+            if(*arg == '{')
+            {
+                arg++;
+                while(*arg == ' '
+                      || *arg == '\t')
+                {
+                    arg++;
+                }
+                int bi = 0;
+                while(*arg != '\0'
+                      && *arg != '}'
+                      && bi
+                      < STRINGMAXLEN_CLICMDLINE
+                      - 1)
+                {
+                    body[bi++] = *arg++;
+                }
+                body[bi] = '\0';
+                /* trim trailing spaces */
+                while(bi > 0
+                      && (body[bi - 1]
+                          == ' '
+                          || body[bi - 1]
+                          == '\t'))
+                {
+                    body[--bi] = '\0';
+                }
+            }
+            /* Connect to FPS */
+            FUNCTION_PARAMETER_STRUCT fps;
+            if(
+                function_parameter_struct_connect(
+                    fpsn, &fps,
+                    FPSCONNECT_SIMPLE)
+                != EXIT_SUCCESS)
+            {
+                printf(
+                    "on_fpschange: "
+                    "cannot connect "
+                    "to fps '%s'\n",
+                    fpsn);
+                cli_last_retval = 1;
+            }
+            else
+            {
+                long pidx =
+                    functionparameter_GetParamIndex(
+                        &fps, parn);
+                if(pidx < 0)
+                {
+                    printf(
+                        "on_fpschange: "
+                        "param '%s' not "
+                        "found\n", parn);
+                    cli_last_retval = 1;
+                }
+                else
+                {
+                    char prev[256];
+                    functionparameter_GetParamValueString(
+                        &fps.parray[pidx],
+                        prev,
+                        sizeof(prev));
+                    /* Poll until change */
+                    char cur[256];
+                    for(;;)
+                    {
+                        usleep(100000);
+                        functionparameter_GetParamValueString(
+                            &fps.parray[pidx],
+                            cur,
+                            sizeof(cur));
+                        if(strcmp(cur,
+                                 prev)
+                           != 0)
+                        {
+                            break;
+                        }
+                    }
+                    /* Execute body */
+                    strncpy(
+                        data.CLIcmdline,
+                        body,
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1);
+                    data.CLIcmdline[
+                        STRINGMAXLEN_CLICMDLINE
+                        - 1] = '\0';
+                    CLI_execute_line();
+                }
+                function_parameter_struct_disconnect(
+                    &fps);
+            }
+            data.CMDexecuted = 1;
+        }
     }
     else if(strncmp(data.CLIcmdline,
                     "sleep ", 6) == 0
