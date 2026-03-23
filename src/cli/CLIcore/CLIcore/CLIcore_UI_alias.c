@@ -296,9 +296,9 @@ void cli_alias_expand(void)
                  firstword) == 0)
         {
             /* Build expanded line */
-            char expanded[STRINGMAXLEN_CLICMDLINE];
+            char expanded[STRINGMAXLEN_CLICMDLINE + CLI_ALIAS_CMDLEN];
             snprintf(expanded,
-                     STRINGMAXLEN_CLICMDLINE,
+                     sizeof(expanded),
                      "%s%s",
                      data.alias[i].cmd,
                      p); /* p points to rest */

@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
             
             if (regexec(&regex, ext_pname, 0, NULL, 0) == 0) {
                 // Match found
-                char fullpath[STRINGMAXLEN_FULLFILENAME];
+                char fullpath[STRINGMAXLEN_FULLFILENAME + 256];
                 snprintf(fullpath, sizeof(fullpath), "%s/%s", procdname, entry->d_name);
             
                 if (verbose) {

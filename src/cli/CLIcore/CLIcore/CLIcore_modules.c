@@ -173,7 +173,7 @@ errno_t load_module_shared_local()
 {
     DEBUG_TRACE_FSTART();
 
-    char           libname[STRINGMAXLEN_FULLFILENAME];
+    char           libname[STRINGMAXLEN_FULLFILENAME + STRINGMAXLEN_DIRNAME];
     char           dirname[STRINGMAXLEN_DIRNAME];
     DIR           *d;
     struct dirent *dir;
@@ -202,7 +202,7 @@ errno_t load_module_shared_local()
                 char *dot = strrchr(dir->d_name, '.');
                 if(dot && !strcmp(dot, ".so"))
                 {
-                    WRITE_FULLFILENAME(libname,
+                    snprintf(libname, sizeof(libname),
                                        "%s/lib/%s",
                                        dcinstalldir,
                                        dir->d_name);
