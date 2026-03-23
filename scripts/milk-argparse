@@ -179,7 +179,13 @@ function printHELP {
     if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
 		argindex=0
 		while [ $argindex -lt ${NBarg} ]; do
-			printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${inputMSargdescrARRAY[$argindex]}"
+			def_val="${inputMSargdefaultARRAY[$argindex]:-}"
+			if [ -n "$def_val" ]; then
+				desc_str="${inputMSargdescrARRAY[$argindex]} (Default: ${def_val})"
+			else
+				desc_str="${inputMSargdescrARRAY[$argindex]}"
+			fi
+			printf "  %12s [%s]\n     %s\n" "${fgYellow}${inputMSargnameARRAY[$argindex]}${txReset}" "${fgGreen}${inputMSargtypeARRAY[$argindex]}${txReset}" "${desc_str}"
 			let argindex+=1
 		done
 	else
@@ -260,16 +266,18 @@ PARAMS=""
 inputMSargnameARRAY=( )
 inputMSargtypeARRAY=( )
 inputMSargdescrARRAY=( )
+inputMSargdefaultARRAY=( )
 
 NBarg=0
 if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
 	if (( ${#MSarg[@]} )); then
 	for argdat in "${MSarg[@]}";do
 		#echo "Argument ${NBarg}: $argdat"
-		IFS=':' read -r -a argarray <<< "$argdat"
-		inputMSargnameARRAY+=( ${argarray[0]} )
-		inputMSargtypeARRAY+=( ${argarray[1]} )
-		inputMSargdescrARRAY+=( "${argarray[2]}" )
+		IFS=':' read -r f1 f2 f3 f4 <<< "$argdat"
+		inputMSargnameARRAY+=( "$f1" )
+		inputMSargtypeARRAY+=( "$f2" )
+		inputMSargdescrARRAY+=( "$f3" )
+		inputMSargdefaultARRAY+=( "$f4" )
 		#echo "    ${inputMSargnameARRAY[$NBarg]}"
 		let NBarg+=1
 	done
@@ -381,8 +389,23 @@ done
 set +o nounset
 NBoptact=0
 for MSopt in "${optactlist[@]}";do
-    #echo "   input option   ${NBoptact} : $MSopt -> ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}"
-    ${OPTfunc[$MSopt]} ${OPTargstring[$MSopt]}
+    func_name="${OPTfunc[$MSopt]}"
+    if [ -z "$func_name" ]; then
+        # Auto-export option: OPT_<LONGNAME>=value (or 1 if no arg)
+        long_name="${OPTlong[$MSopt]}"
+        var_name="OPT_${long_name^^}"
+        var_name="${var_name//-/_}"
+        
+        if [ -z "${OPTarg[$MSopt]}" ]; then
+            export "${var_name}"=1
+        else
+            val="${OPTargstring[$MSopt]# }"
+            export "${var_name}"="${val}"
+        fi
+    else
+        # Legacy callback execution
+        ${func_name} ${OPTargstring[$MSopt]}
+    fi
     let NBoptact+=1
 done
 set -o nounset
@@ -400,13 +423,30 @@ checkallprerequisites
 
 if [ $MILK_SCRIPT_ARGPARSE = 1 ]; then
 	NBargin=0
-	#for MSarg in "${inputMSargARRAY[@]}";do
 	if (( ${#inputParamString[@]} )); then
 		for MSarg in "${inputParamString[@]}";do
-			#  echo "   input argument ${NBargin} : $MSarg"
+			if [[ ${NBargin} -lt ${NBarg} ]]; then
+				# Export argument to environment natively
+				arg_name="${inputMSargnameARRAY[$NBargin]}"
+				var_name="${arg_name^^}"
+				export "${var_name//-/_}"="${MSarg}"
+			fi
 			let NBargin+=1
 		done
 	fi
+
+	# Apply Default Values for Missing Arguments
+	while [[ ${NBargin} -lt ${NBarg} ]]; do
+		def_val="${inputMSargdefaultARRAY[$NBargin]:-}"
+		if [ -n "$def_val" ]; then
+			arg_name="${inputMSargnameARRAY[$NBargin]}"
+			var_name="${arg_name^^}"
+			export "${var_name//-/_}"="${def_val}"
+			let NBargin+=1
+		else
+			break
+		fi
+	done
 
 	if [[ ${NBargin} -ne ${NBarg} ]]; then
 		printHELP
