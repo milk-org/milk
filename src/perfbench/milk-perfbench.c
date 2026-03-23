@@ -53,7 +53,7 @@
  * Constants
  * ============================================================= */
 
-#define MAX_CMD           2048
+#define MAX_CMD           8192
 #define MAX_PATH          2048
 #define MAX_LABEL         64
 #define POLL_INTERVAL_MS  10
@@ -245,7 +245,7 @@ typedef struct
     int  nbiter;
     int  warmup;
     char procdir[MAX_PATH];
-    char result_file[MAX_PATH];
+    char result_file[MAX_PATH + MAX_LABEL + 64];
     char git_commit[64];
     char build_tags[256]; /* extracted from binary */
 } bench_cfg_t;
@@ -709,7 +709,7 @@ static void fps_create_streams(const bench_cfg_t *cfg)
         if (strlen(sname) == 0)
             continue;
 
-        char impath[MAX_PATH];
+        char impath[MAX_PATH + 256 + 32];
         snprintf(impath, sizeof(impath),
                  "%s/%s.im.shm", shmdir, sname);
 

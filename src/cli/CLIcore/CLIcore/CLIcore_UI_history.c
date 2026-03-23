@@ -932,10 +932,13 @@ void cli_history_expand(void)
                     STRINGMAXLEN_CLICMDLINE - 1]
                     = '\0';
             }
-            snprintf(data.CLIcmdline,
-                     STRINGMAXLEN_CLICMDLINE,
+            char expanded[STRINGMAXLEN_CLICMDLINE * 2];
+            snprintf(expanded,
+                     sizeof(expanded),
                      "%s%s",
                      prev->line, suffix);
+            strncpy(data.CLIcmdline, expanded, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             printf(">> %s\n", data.CLIcmdline);
         }
         return;
@@ -952,10 +955,13 @@ void cli_history_expand(void)
             rest[
                 STRINGMAXLEN_CLICMDLINE - 1]
                 = '\0';
-            snprintf(data.CLIcmdline,
-                     STRINGMAXLEN_CLICMDLINE,
+            char expanded[STRINGMAXLEN_CLICMDLINE * 2];
+            snprintf(expanded,
+                     sizeof(expanded),
                      "%s%s",
                      data.last_argument, rest);
+            strncpy(data.CLIcmdline, expanded, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             printf(">> %s\n", data.CLIcmdline);
         }
         return;
