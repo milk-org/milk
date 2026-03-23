@@ -54,6 +54,7 @@ typedef enum
     TOK_OP_AND,
     TOK_OP_OR,
     TOK_OP_NOT,
+    TOK_OP_PIPE,
     TOK_LPAREN,
     TOK_RPAREN,
     TOK_COMMA,

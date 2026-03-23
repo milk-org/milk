@@ -118,7 +118,10 @@ static inline cli_token *advance_eval(void)
  */
 static void parse_errmsg(const char *msg)
 {
-    fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
+    if (parse_mode == 1 || data.core.Debug > 0)
+    {
+        fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
+    }
     data.parseerror = 1;
     parse_error = 1;
     if (parse_mode == 1) {
@@ -1474,6 +1477,20 @@ void cli_parse(const char *input)
     val_t result = parse_expr(0);
     if (parse_error)
     {
+        /* Fallback: if it's not a valid expression, treat it as a raw string */
+        data.parseerror = 0;
+        parse_error = 0;
+        
+        data.cmdargtoken[data.cmdNBarg].type = CMDARGTOKEN_TYPE_RAWSTRING;
+        snprintf(data.cmdargtoken[data.cmdNBarg].val.string,
+                 STRINGMAXLEN_CMDARGTOKEN_VAL, "%s", input);
+        
+        /* Remove trailing newline if `input` had one (which it does via snprintf earlier) */
+        size_t len = strlen(data.cmdargtoken[data.cmdNBarg].val.string);
+        if (len > 0 && data.cmdargtoken[data.cmdNBarg].val.string[len - 1] == '\n')
+        {
+            data.cmdargtoken[data.cmdNBarg].val.string[len - 1] = '\0';
+        }
         return;
     }
 

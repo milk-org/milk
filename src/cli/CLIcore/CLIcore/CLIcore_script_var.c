@@ -150,14 +150,21 @@ int cli_try_var_assign(const char *line)
         p++;
     }
 
-    /* Must hit '=' immediately */
+    int namelen = (int)(p - name_start);
+
+    /* Skip spaces before '=' */
+    while(*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+
+    /* Must hit '=' */
     if(*p != '=')
     {
         return 0;
     }
 
     {
-        int namelen = (int)(p - name_start);
         char tmpname[CLI_VAR_NAMELEN];
         if(namelen >= CLI_VAR_NAMELEN)
         {

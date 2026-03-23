@@ -189,6 +189,7 @@ int cli_tokenize(
                     case '!': optype = TOK_OP_NOT; break;
                     case '(': optype = TOK_LPAREN; break;
                     case ')': optype = TOK_RPAREN; break;
+                    case '|': optype = TOK_OP_PIPE; break;
                     case ',': optype = TOK_COMMA; break;
                     case '=': optype = TOK_EQUAL; break;
                     default: break;
