@@ -26,6 +26,19 @@ static void *DLib_handle[1000];
 static char  libnameloaded[STRINGMAXLEN_MODULE_SOFILENAME];
 
 
+/**
+ * @brief Load a shared library via dlopen.
+ *
+ * Opens @libname with RTLD_LAZY|RTLD_GLOBAL.
+ * The library's init function (if any) is called
+ * automatically, which triggers RegisterModule()
+ * to add the module to the command table.
+ *
+ * Skips loading if the .so is already loaded
+ * (checked via sofilename match).
+ *
+ * @param libname  Full path to the .so file
+ */
 errno_t load_sharedobj(
     const char *__restrict libname
 )
@@ -75,6 +88,17 @@ errno_t load_sharedobj(
 }
 
 
+/**
+ * @brief Load a module by name from the install
+ *        directory.
+ *
+ * Constructs the path $MILK_INSTALLDIR/lib/lib<name>.so
+ * and calls load_sharedobj(). Sets the module type
+ * to MODULE_TYPE_CUSTOMLOAD and records the .so
+ * filename and load name in the module struct.
+ *
+ * @param modulename  Module base name or absolute path
+ */
 errno_t load_module_shared(
     const char *__restrict modulename
 )
@@ -169,6 +193,16 @@ errno_t load_module_shared(
 }
 
 
+/**
+ * @brief Load all .so files from the ./milklib/
+ *        directory.
+ *
+ * Scans the local milklib/ directory for shared
+ * objects and loads them with multiple linker passes
+ * (up to 4) to resolve inter-library dependencies.
+ * A pass succeeds when all .so files load without
+ * dlopen errors.
+ */
 errno_t load_module_shared_local()
 {
     DEBUG_TRACE_FSTART();
@@ -262,12 +296,30 @@ errno_t load_module_shared_local()
 }
 
 
-errno_t RegisterModule(const char *__restrict FileName,
-                       const char *__restrict PackageName,
-                       const char *__restrict InfoString,
-                       int versionmajor,
-                       int versionminor,
-                       int versionpatch)
+/**
+ * @brief Register a module in the global module
+ *        table.
+ *
+ * Called from each module's __attribute__((constructor))
+ * init function during dlopen. Records the module
+ * name, package, version, short name, and build
+ * timestamps in data.module[].
+ *
+ * @param FileName      Source filename of the module
+ * @param PackageName   Package the module belongs to
+ * @param InfoString    One-line description
+ * @param versionmajor  Major version number
+ * @param versionminor  Minor version number
+ * @param versionpatch  Patch version number
+ */
+errno_t RegisterModule(
+    const char *__restrict FileName,
+    const char *__restrict PackageName,
+    const char *__restrict InfoString,
+    int versionmajor,
+    int versionminor,
+    int versionpatch
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -384,15 +436,28 @@ errno_t RegisterModule(const char *__restrict FileName,
 }
 
 
-// Legacy function
-//
-uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
-                            const char *__restrict CLImodulesrc,
-                            errno_t (*CLIfptr)(),
-                            const char *__restrict CLIinfo,
-                            const char *__restrict CLIsyntax,
-                            const char *__restrict CLIexample,
-                            const char *__restrict CLICcall)
+/**
+ * @brief Register a CLI command (legacy API).
+ *
+ * Deprecated in favor of RegisterCLIcmd().
+ * Stores the command key, source file, function
+ * pointer, info/syntax/example strings, and C-call
+ * prototype in data.cmd[] at index data.NBcmd.
+ *
+ * The command key is prefixed with the module's
+ * shortname (if set) to form namespace.command.
+ *
+ * @return New data.NBcmd count
+ */
+uint32_t RegisterCLIcommand(
+    const char *__restrict CLIkey,
+    const char *__restrict CLImodulesrc,
+    errno_t (*CLIfptr)(),
+    const char *__restrict CLIinfo,
+    const char *__restrict CLIsyntax,
+    const char *__restrict CLIexample,
+    const char *__restrict CLICcall
+)
 {
     DEBUG_TRACE_FSTART();
 
@@ -476,9 +541,21 @@ uint32_t RegisterCLIcommand(const char *__restrict CLIkey,
 
 
 /**
- Register command
-Replaces legacy function RegisterCLIcommand
-*/
+ * @brief Register a CLI command (current API).
+ *
+ * Replaces the legacy RegisterCLIcommand().
+ * Uses a CLICMDDATA struct to define the command
+ * key, source file, description, argument
+ * definitions, and flags.
+ *
+ * Automatically builds the CLI syntax and example
+ * strings from the argument definitions, and
+ * initializes per-command processinfo settings.
+ *
+ * @param CLIcmddata  Command definition struct
+ * @param CLIfptr     Function pointer to execute
+ * @return Index of the newly registered command
+ */
 uint32_t RegisterCLIcmd(
     CLICMDDATA CLIcmddata,
     errno_t (*CLIfptr)()
