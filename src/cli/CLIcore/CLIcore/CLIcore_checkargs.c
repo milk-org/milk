@@ -638,6 +638,8 @@ errno_t CLI_checkarg_array(
 
     int nberr  = 0;
     int CLIarg = 0; // index of argument in CLI call
+    int printed_default_warning = 0;
+
     for(int arg = 0; arg < nbarg; arg++)
     {
         char argtypestring[16];
@@ -690,6 +692,54 @@ errno_t CLI_checkarg_array(
                 if((data.cmdNBarg == 1) && (dcfpsptr != NULL))
                 {
                     // Allow no argument call if FPS is connected
+                    if(printed_default_warning == 0)
+                    {
+                        printf("\033[36mCommand entered without arguments. Adopting current values:\033[0m\n");
+                        printed_default_warning = 1;
+                    }
+
+                    printf("  %-15s = ", fpscliarg[arg].fpstag);
+                    switch(fpscliarg[arg].type)
+                    {
+                        case CLIARG_FLOAT32:
+                            printf("%f\n", data.cmd[cmdi].argdata[arg].val.f32);
+                            break;
+                        case CLIARG_FLOAT64:
+                            printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
+                            break;
+                        case CLIARG_INT32:
+                            printf("%d\n", data.cmd[cmdi].argdata[arg].val.i32);
+                            break;
+                        case CLIARG_INT64:
+                        case CLIARG_ONOFF:
+                        case FPTYPE_PID:
+                            printf("%ld\n", data.cmd[cmdi].argdata[arg].val.i64);
+                            break;
+                        case CLIARG_UINT32:
+                            printf("%u\n", data.cmd[cmdi].argdata[arg].val.ui32);
+                            break;
+                        case CLIARG_UINT64:
+                            printf("%lu\n", data.cmd[cmdi].argdata[arg].val.ui64);
+                            break;
+                        case FPTYPE_TIMESPEC:
+                            printf("%lf\n", data.cmd[cmdi].argdata[arg].val.f64);
+                            break;
+                        case CLIARG_STR_NOT_IMG:
+                        case CLIARG_IMG:
+                        case CLIARG_STR:
+                        case FPTYPE_FILENAME:
+                        case FPTYPE_FITSFILENAME:
+                        case FPTYPE_FPSNAME:
+                        case FPTYPE_DIRNAME:
+                        case FPTYPE_EXECFILENAME:
+                        case FPTYPE_PROCESS:
+                            printf("\"%s\"\n", data.cmd[cmdi].argdata[arg].val.s);
+                            break;
+                        default:
+                            printf("?\n");
+                            break;
+                    }
+
                     continue;
                 }
                 else
