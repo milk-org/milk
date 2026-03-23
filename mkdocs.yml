@@ -81,6 +81,7 @@ nav:
     - Process Info: procinfo.md
     - CLI Syntax: cli/CLIcore.md
     - Scripting: cli/scripting.md
+    - FIFO Command Input: cli/fifo.md
     - Readline Keys: cli/helpreadline.md
     - Scripts: scripts.md
     - Python API: python.md
