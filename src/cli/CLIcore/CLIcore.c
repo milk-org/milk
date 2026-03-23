@@ -100,6 +100,9 @@ int Listimfile = 0;
 
 char CLIstartupfilename[STRINGMAXLEN_CLISTARTUPFILENAME] = "CLIstartup.txt";
 
+static int single_command_flag = 0;
+static char single_command_string[STRINGMAXLEN_CLICMDLINE];
+
 // fifo input
 static int    fifofd;
 static fd_set cli_fdin_set;
@@ -700,7 +703,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
         // If fifo is on and file CLIstatup.txt exists, load it
         if(initstartup == 0)
         {
-            if(data.fifoON == 1)
+            if(single_command_flag)
+            {
+                strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
+                CLI_execute_line();
+                data.CLIloopON = 0;
+                break;
+            }
+            else if(data.fifoON == 1)
             {
                 EXECUTE_SYSTEM_COMMAND("file %s",
                                        CLIstartupfilename); //TEST
@@ -1600,6 +1610,7 @@ static int command_line_process_options(int argc, char **argv)
         {"no-arg-hints", no_argument, 0, 0x102},
         {"no-fuzzy", no_argument, 0, 0x103},
         {"fifoflag", no_argument, 0, 'f'},
+        {"command", required_argument, 0, 'c'},
         {"debug", required_argument, 0, 'd'},
         {"mmon", required_argument, 0, 'm'},
         {"pname", required_argument, 0, 'n'},
@@ -1618,7 +1629,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvid:oeZm:n:p:fF:s:A",
+                        "hvic:d:oeZm:n:p:fF:s:A",
                         long_options,
                         &option_index);
 
@@ -1771,6 +1782,11 @@ static int command_line_process_options(int argc, char **argv)
             data.fifoON = 1;
             snprintf(data.fifoname, STRINGMAXLEN_FULLFILENAME, "%s", optarg);
             printf("FIFO NAME = %s\n", data.fifoname);
+            break;
+
+        case 'c':
+            strncpy(single_command_string, optarg, STRINGMAXLEN_CLICMDLINE - 1);
+            single_command_flag = 1;
             break;
 
         case 's':
