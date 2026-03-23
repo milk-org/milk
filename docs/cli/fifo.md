@@ -15,7 +15,7 @@ milk-cli in real time.
 
 ## Quick Start
 
-```
+```text
 milk> fifo create
 [fifo] opened: /milk/shm/.milk.fifo.12345 (fd=4)
 
@@ -31,7 +31,7 @@ echo "mem.listim" > /milk/shm/.milk.fifo.12345
 
 The milk-cli session shows ingestion feedback:
 
-```
+```text
 [fifo] ← "mem.listim"
 ... (command output) ...
 [fifo] ✓ (0.003s)
@@ -56,7 +56,7 @@ current FIFO path when a FIFO is active, or an empty
 string when no FIFO is open. This makes it easy to
 reference the FIFO in shell commands:
 
-```
+```text
 milk> fifo create
 milk> !echo "echo hello" > $MCLIFIFO
 ```
@@ -93,14 +93,14 @@ cat commands.milk > $(cat /milk/shm/.milk.fifo.*)
 Process a list of images and save specific ones based
 on metadata:
 
-```
+```text
 milk> fifo create
 milk> !awk '{if ($4>200) print "iofits.saveFITS " $2 " " $2 "_save.fits"}' imlist.txt > $MCLIFIFO
 ```
 
 Each generated command appears with ingestion feedback:
 
-```
+```text
 [fifo] ← "iofits.saveFITS im003 im003_save.fits"
 [fifo] ✓ (0.012s)
 [fifo] ← "iofits.saveFITS im007 im007_save.fits"
@@ -112,7 +112,7 @@ Each generated command appears with ingestion feedback:
 Temporarily disable FIFO input while doing interactive
 work, then re-enable it:
 
-```
+```text
 milk> fifo create
 milk> fifo off
 [fifo] input disabled
@@ -128,7 +128,7 @@ milk> fifo on
 If another milk-cli session has a FIFO open, you can
 connect to it:
 
-```
+```text
 milk> fifo open /milk/shm/.othersession.fifo.54321
 [fifo] opened: /milk/shm/.othersession.fifo.54321 (fd=4)
 ```
@@ -138,7 +138,7 @@ milk> fifo open /milk/shm/.othersession.fifo.54321
 Combine `find`, `xargs`, and FIFO to batch-process
 files:
 
-```
+```text
 milk> fifo create
 milk> !find /data/frames -name "*.fits" | xargs -I {} echo "iofits.loadfits {} frame" > $MCLIFIFO
 ```

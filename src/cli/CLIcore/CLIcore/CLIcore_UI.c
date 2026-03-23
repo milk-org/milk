@@ -882,7 +882,7 @@ static int cli_check_unquoted_restricted_symbols(const char *cmdline) {
     int in_dquote = 0;
     int esc = 0;
     
-    const char *restricted = ";<>|[]()&*?$";
+    const char *restricted = ";<>|[]()&*$";
     
     int word_start = 1;
     int valid_assign_prefix = 0; 
