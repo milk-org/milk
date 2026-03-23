@@ -62,6 +62,43 @@ static long long p_semindex = 0;
       FPFLAG_DEFAULT_INPUT, \
       "semaphore index")
 
+#define FPS_PARAMS_IMSEM_INFO(X) \
+    X(".imname", p_imname, \
+      FPTYPE_STREAMNAME, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "image name")
+
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+static FPS_CLI_BINDING bindings_imsem_info[] = {
+    FPS_PARAMS_IMSEM_INFO(FPS_X_BINDING)
+};
+static const int nb_bindings_imsem_info =
+    sizeof(bindings_imsem_info) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_imsem_info[] = {
+    FPS_PARAMS_IMSEM_INFO(FPS_X_FARG)
+};
+#define CLICMD_FIELDS_IMSEM_INFO \
+    __FILE__, sizeof(farg_imsem_info) / sizeof(CLICMDARGDEF), farg_imsem_info, CLICMDFLAG_FPS, NULL, NULL, NULL
+
+static FPS_CLI_BINDING bindings_imsem[] = {
+    FPS_PARAMS_IMSEM(FPS_X_BINDING)
+};
+static const int nb_bindings_imsem =
+    sizeof(bindings_imsem) /
+    sizeof(FPS_CLI_BINDING);
+static CLICMDARGDEF farg_imsem[] = {
+    FPS_PARAMS_IMSEM(FPS_X_FARG)
+};
+#define CLICMD_FIELDS_IMSEM \
+    __FILE__, sizeof(farg_imsem) / sizeof(CLICMDARGDEF), farg_imsem, CLICMDFLAG_FPS, NULL, NULL, NULL
+#else
+#define CLICMD_FIELDS_IMSEM_INFO \
+    __FILE__, 0, NULL, 0, NULL, NULL, NULL
+#define CLICMD_FIELDS_IMSEM \
+    __FILE__, 0, NULL, 0, NULL, NULL, NULL
+#endif
+
 
 /* ================================================================
  *  CMD 1: imseminfo (1 arg)
@@ -75,7 +112,7 @@ static FPS_APP_INFO FPS_app_info_seminfo = {
 };
 
 static CLICMDDATA CLIcmddata_seminfo = {
-    "", "", CLICMD_FIELDS_NOPARAM
+    "", "", CLICMD_FIELDS_IMSEM_INFO
 };
 static CMDSETTINGS cms1 = {0};
 
@@ -118,7 +155,7 @@ static FPS_APP_INFO FPS_app_info_sempost = {
 };
 
 static CLICMDDATA CLIcmddata_sempost = {
-    "", "", CLICMD_FIELDS_NOPARAM
+    "", "", CLICMD_FIELDS_IMSEM
 };
 static CMDSETTINGS cms2 = {0};
 
@@ -227,7 +264,7 @@ static FPS_APP_INFO FPS_app_info_semwait = {
 };
 
 static CLICMDDATA CLIcmddata_semwait = {
-    "", "", CLICMD_FIELDS_NOPARAM
+    "", "", CLICMD_FIELDS_IMSEM
 };
 static CMDSETTINGS cms4 = {0};
 
@@ -271,7 +308,7 @@ static FPS_APP_INFO FPS_app_info_semflush = {
 };
 
 static CLICMDDATA CLIcmddata_semflush = {
-    "", "", CLICMD_FIELDS_NOPARAM
+    "", "", CLICMD_FIELDS_IMSEM
 };
 static CMDSETTINGS cms5 = {0};
 
@@ -309,23 +346,12 @@ static errno_t __attribute__((unused)) compute_semflush()
 
 #if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
 
-/* bindings for 2-arg commands */
-static FPS_CLI_BINDING bindings_imsem[] = {
-    FPS_PARAMS_IMSEM(FPS_X_BINDING)
-};
-static const int nb_bindings_imsem =
-    sizeof(bindings_imsem) /
-    sizeof(FPS_CLI_BINDING);
-static CLICMDARGDEF farg_imsem[] = {
-    FPS_PARAMS_IMSEM(FPS_X_FARG)
-};
-
 static errno_t CLIfunction_seminfo(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info_seminfo,
-        farg_imsem, &CLIcmddata_seminfo,
-        bindings_imsem, nb_bindings_imsem,
+        farg_imsem_info, &CLIcmddata_seminfo,
+        bindings_imsem_info, nb_bindings_imsem_info,
         compute_seminfo);
 }
 
