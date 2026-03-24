@@ -9,7 +9,13 @@
 # messages.
 #
 # Usage:
-#   bash run_cli_robustness_tests.sh [--verbose]
+#   bash run_cli_robustness_tests.sh [OPTIONS]
+#
+# Options:
+#   --verbose         Show details for failures
+#   --filter PATTERN  Run only test descriptions
+#                     matching glob PATTERN
+#   --stop-on-fail    Stop after first failure
 #
 # Exit codes:
 #   0 — all tests passed
@@ -30,9 +36,17 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TEST_FILE="${SCRIPT_DIR}/cli_robustness_tests.milk"
 TIMEOUT_SEC=10
 VERBOSE=0
-if [[ "${1:-}" == "--verbose" ]]; then
-    VERBOSE=1
-fi
+FILTER=""
+STOP_ON_FAIL=0
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --verbose)     VERBOSE=1 ;;
+        --filter)      FILTER="${2:-}"; shift ;;
+        --stop-on-fail) STOP_ON_FAIL=1 ;;
+    esac
+    shift
+done
 
 # ---- Color codes ----
 RED='\033[0;31m'
@@ -56,6 +70,9 @@ FAIL=0
 ERRFAIL=0    # Expected error but no message
 CRASH=0
 HANG=0
+TOTAL_TIME_MS=0
+SLOWEST_MS=0
+SLOWEST_DESC=""
 
 echo -e "${CYN}═══════════════════════════════════════════${RST}"
 echo -e "${CYN} milk-cli Robustness Test Suite${RST}"
@@ -146,6 +163,14 @@ run_one_test() {
     local expect="${TEST_EXPECT[$idx]}"
     local cmd="${TEST_CMD[$idx]}"
 
+    # Skip if filter is set and doesn't match
+    if [[ -n "$FILTER" ]]; then
+        case "$desc" in
+            *${FILTER}*) ;;
+            *) return 0 ;;
+        esac
+    fi
+
     local cmd_file="${TMPDIR}/cmd_${idx}.milk"
     local out_file="${TMPDIR}/out_${idx}.txt"
     local err_file="${TMPDIR}/err_${idx}.txt"
@@ -159,6 +184,8 @@ run_one_test() {
     # Run milk-cli with the test script, capturing
     # stdout and stderr, with timeout
     local exit_code=0
+    local t_start t_end elapsed_ms
+    t_start=$(date +%s%N)
     timeout "${TIMEOUT_SEC}" milk-cli \
         --no-autocomplete \
         --no-history-suggest \
@@ -167,6 +194,13 @@ run_one_test() {
         -f \
         > "$out_file" 2>"$err_file" < /dev/null \
         || exit_code=$?
+    t_end=$(date +%s%N)
+    elapsed_ms=$(( (t_end - t_start) / 1000000 ))
+    TOTAL_TIME_MS=$((TOTAL_TIME_MS + elapsed_ms))
+    if [[ $elapsed_ms -gt $SLOWEST_MS ]]; then
+        SLOWEST_MS=$elapsed_ms
+        SLOWEST_DESC="$desc"
+    fi
 
     local result="PASS"
     local detail=""
@@ -231,6 +265,7 @@ run_one_test() {
     if [[ -n "$detail" ]]; then
         printf "  ${DIM}(%s)${RST}" "$detail"
     fi
+    printf "  ${DIM}[%dms]${RST}" "$elapsed_ms"
     echo ""
 
     if [[ $VERBOSE -eq 1 && "$result" != "PASS" ]]; then
@@ -262,6 +297,14 @@ run_one_test() {
 
 for i in $(seq 0 $((NUM_TESTS - 1))); do
     run_one_test "$i"
+    if [[ $STOP_ON_FAIL -eq 1 ]]; then
+        PROBLEMS=$((FAIL + ERRFAIL + CRASH + HANG))
+        if [[ $PROBLEMS -gt 0 ]]; then
+            echo ""
+            echo -e "${RED}Stopping on first failure (--stop-on-fail)${RST}"
+            break
+        fi
+    fi
 done
 
 # ============================================================
@@ -293,6 +336,14 @@ printf "  ${RED}Fail:          %d${RST}\n" "$FAIL"
 printf "  ${YLW}Missing Error: %d${RST}\n" "$ERRFAIL"
 printf "  ${RED}Crash:         %d${RST}\n" "$CRASH"
 printf "  ${RED}Hang:          %d${RST}\n" "$HANG"
+echo ""
+printf "  Total time:    %d.%03ds\n" \
+    "$((TOTAL_TIME_MS / 1000))" \
+    "$((TOTAL_TIME_MS % 1000))"
+if [[ -n "$SLOWEST_DESC" ]]; then
+    printf "  Slowest test:  %dms (%s)\n" \
+        "$SLOWEST_MS" "$SLOWEST_DESC"
+fi
 echo ""
 
 # Copy report to working directory
