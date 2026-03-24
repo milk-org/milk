@@ -493,6 +493,17 @@ void update_hint_area(void)
  */
 void CLI_redisplay(void)
 {
+    /* Erase stale ghost text before rl_redisplay().
+     * Ghost text is written outside readline's buffer.
+     * If not erased, readline's optimized redraw does
+     * not know to overwrite it, and characters typed
+     * into overlapping positions may not appear. */
+    if(ghost_chars_on_line > 0)
+    {
+        printf("\033[K");
+        ghost_chars_on_line = 0;
+    }
+
     /* Default or syntax-highlighted redisplay */
     rl_redisplay_function = NULL;
     if(data.syntax_highlight
