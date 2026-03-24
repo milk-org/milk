@@ -21,6 +21,7 @@
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "COREMOD_arith/COREMOD_arith.h"
+#include "COREMOD_memory/stream_slice.h"
 
 #include "cli_calc_tokenizer.h"
 #include "cli_calc_parser.h"
@@ -1334,6 +1335,101 @@ static val_t parse_primary(void)
                 );
             }
         }
+        /* Check for slice bracket syntax.
+         * Materialize the sliced region into
+         * a temporary image and return that
+         * name instead. */
+        if (strchr(t->sval, '[') != NULL)
+        {
+            char bare[200];
+            char btext[200];
+            int has_brk =
+                imgid_slice_split_name(
+                    t->sval,
+                    bare, (int) sizeof(bare),
+                    btext,
+                    (int) sizeof(btext));
+            if (has_brk)
+            {
+                imageID srcid = image_ID(
+                    bare,
+                    data.core.image,
+                    data.core.NB_MAX_IMAGE);
+                if (srcid == -1)
+                {
+                    parse_errmsg(
+                        "Source image "
+                        "not found");
+                    return mk_double(0);
+                }
+                IMAGE *srcim =
+                    &data.core.image[srcid];
+                IMGID_SLICE slc =
+                    imgid_slice_parse(btext);
+                if (slc.error)
+                {
+                    parse_errmsg(
+                        slc.errmsg);
+                    return mk_double(0);
+                }
+                uint32_t outsz[3] = {0};
+                int snax =
+                    srcim->md[0].naxis;
+                uint32_t ssz[3];
+                for (int a = 0;
+                     a < snax && a < 3;
+                     a++)
+                {
+                    ssz[a] =
+                        srcim->md[0].size[a];
+                }
+                if (imgid_slice_output_size(
+                        &slc, snax,
+                        ssz, outsz) != 0)
+                {
+                    parse_errmsg(
+                        "Bad slice dims");
+                    return mk_double(0);
+                }
+                /* Count output axes */
+                int onax = 0;
+                for (int a = 0; a < 3; a++)
+                {
+                    if (outsz[a] > 0)
+                    {
+                        onax = a + 1;
+                    }
+                }
+                if (onax == 0)
+                {
+                    onax = 1;
+                }
+                const char *tmpn =
+                    alloc_tmpname();
+                imageID tid =
+                    create_image_ID(
+                        tmpn,
+                        onax,
+                        outsz,
+                        srcim->md[0].datatype,
+                        0, 10, 0, NULL);
+                if (tid != -1)
+                {
+                    IMGID simg;
+                    memset(&simg, 0,
+                           sizeof(simg));
+                    simg.ID = srcid;
+                    simg.im = srcim;
+                    simg.md = srcim->md;
+                    simg.slice = slc;
+                    simg.slice_im =
+                        &data.core.image[tid];
+                    imgid_slice_materialize(
+                        &simg);
+                }
+                return mk_string(tmpn);
+            }
+        }
         return mk_string(t->sval);
     }
 
@@ -1603,7 +1699,33 @@ int cli_calc_eval_line(const char *input)
          /* generic usually means function evaluated but no specific printable value returned */
          //printf("    generic\n");
     }
-    
+
+    /* Clean up temporary images created
+     * during expression evaluation (e.g.
+     * intermediate arithmetic results and
+     * slice materialization buffers). */
+    {
+        char tmpn[200];
+        for (long i = 0;
+             i < data.calctmp_imindex;
+             i++)
+        {
+            snprintf(tmpn, sizeof(tmpn),
+                     "_tmpcalc%ld", i);
+            imageID tid = image_ID(
+                tmpn,
+                data.core.image,
+                data.core.NB_MAX_IMAGE);
+            if (tid != -1)
+            {
+                delete_image_ID(
+                    tmpn,
+                    DELETE_IMAGE_ERRMODE_WARNING);
+            }
+        }
+        data.calctmp_imindex = 0;
+    }
+
     return 1;
 }
 
