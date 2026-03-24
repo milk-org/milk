@@ -1497,3 +1497,23 @@ assert [ 1 -eq 2 ] "expected failure"
 #DESC: Trap ERR registration
 #EXPECT:OK
 trap 'echo error_caught' ERR
+
+# ============================================
+# ---- Processinfo CLI Integration ----
+# ============================================
+
+#DESC: PROCINFO_NCPU auto-variable
+#EXPECT:OK
+echo $PROCINFO_NCPU
+
+#DESC: PROCINFO_NPROC auto-variable
+#EXPECT:OK
+echo $PROCINFO_NPROC
+
+#DESC: procstat no processes
+#EXPECT:OK
+procstat
+
+#DESC: procctl unknown process
+#EXPECT:OK
+procctl _nonexistent_proc_ stop

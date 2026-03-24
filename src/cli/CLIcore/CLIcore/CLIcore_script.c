@@ -27,6 +27,14 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI.h"
 
+#include <sys/mman.h>
+
+/* processinfo functions — linked via milkprocessinfo */
+extern PROCESSINFO *processinfo_shm_link(
+    const char *pname, int *fd);
+extern errno_t processinfo_procdirname(
+    char *procdname);
+
 /* ============================================================
  *  CLI Variable Storage
  * ============================================================
@@ -183,6 +191,37 @@ const char *cli_var_lookup(const char *name)
             return data.fifoname;
         }
         return "";
+    }
+
+    /* $PROCINFO_NCPU — online CPUs */
+    if(strcmp(name, "PROCINFO_NCPU") == 0)
+    {
+        long ncpu = sysconf(
+            _SC_NPROCESSORS_ONLN);
+        snprintf(retbuf, sizeof(retbuf),
+                 "%ld", ncpu);
+        return retbuf;
+    }
+
+    /* $PROCINFO_NPROC — active procs */
+    if(strcmp(name, "PROCINFO_NPROC") == 0)
+    {
+        int cnt = 0;
+        if(pinfolist != NULL)
+        {
+            for(int pi = 0;
+                pi < PROCESSINFOLISTSIZE;
+                pi++)
+            {
+                if(pinfolist->active[pi])
+                {
+                    cnt++;
+                }
+            }
+        }
+        snprintf(retbuf, sizeof(retbuf),
+                 "%d", cnt);
+        return retbuf;
     }
 
     /* CLI variable */
@@ -926,6 +965,385 @@ int cli_script_intercept(const char *line)
             else
             {
                 cli_var_unset(dst);
+            }
+        }
+        return 1;
+    }
+
+    /* procctl <name> run|pause|step|stop */
+    if(starts_with(p, "procctl ")
+       || starts_with(p, "procctl\t"))
+    {
+        const char *ap = p + 7;
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char pname[256];
+        int nlen = 0;
+        while(*ap && *ap != ' '
+              && *ap != '\t'
+              && nlen < 255)
+        {
+            pname[nlen++] = *ap++;
+        }
+        pname[nlen] = '\0';
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int ctrlval = -1;
+        if(strncmp(ap, "run", 3) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_RUN;
+        }
+        else if(strncmp(ap, "pause", 5) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_PAUSE;
+        }
+        else if(strncmp(ap, "step", 4) == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_INCR;
+        }
+        else if(strncmp(ap, "stop", 4) == 0
+                || strncmp(ap, "exit", 4)
+                   == 0)
+        {
+            ctrlval = PROCESSINFO_CTRLVAL_EXIT;
+        }
+        if(ctrlval < 0)
+        {
+            printf(
+                "procctl: unknown action "
+                "'%s' (use run|pause|"
+                "step|stop)\n", ap);
+            return 1;
+        }
+        if(pinfolist != NULL)
+        {
+            pid_t fpid = 0;
+            for(int pi = 0;
+                pi < PROCESSINFOLISTSIZE;
+                pi++)
+            {
+                if(pinfolist->active[pi]
+                   && strcmp(
+                       pinfolist
+                           ->pnamearray[pi],
+                       pname) == 0)
+                {
+                    fpid = pinfolist
+                        ->PIDarray[pi];
+                    break;
+                }
+            }
+            if(fpid > 0)
+            {
+                char pfn[512];
+                char pdname[256];
+                processinfo_procdirname(
+                    pdname);
+                snprintf(pfn, sizeof(pfn),
+                         "%s/proc.%d.shm",
+                         pdname,
+                         (int) fpid);
+                int pfd = -1;
+                PROCESSINFO *pi =
+                    processinfo_shm_link(
+                        pfn, &pfd);
+                if(pi != MAP_FAILED
+                   && pi != NULL)
+                {
+                    pi->CTRLval = ctrlval;
+                    munmap(pi,
+                        sizeof(PROCESSINFO));
+                    close(pfd);
+                }
+                else if(pfd >= 0)
+                {
+                    close(pfd);
+                }
+            }
+            else
+            {
+                printf(
+                    "procctl: process "
+                    "'%s' not found\n",
+                    pname);
+            }
+        }
+        return 1;
+    }
+
+    /* procwait <name> <state> [timeout] */
+    if(starts_with(p, "procwait ")
+       || starts_with(p, "procwait\t"))
+    {
+        const char *ap = p + 8;
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char pname[256];
+        int nlen = 0;
+        while(*ap && *ap != ' '
+              && *ap != '\t'
+              && nlen < 255)
+        {
+            pname[nlen++] = *ap++;
+        }
+        pname[nlen] = '\0';
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int tgt = -1;
+        if(strncasecmp(ap, "INIT", 4) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_INIT;
+        }
+        else if(strncasecmp(ap, "ACTIVE",
+                6) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_ACTIVE;
+        }
+        else if(strncasecmp(ap, "PAUSE",
+                5) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_PAUSE;
+        }
+        else if(strncasecmp(ap, "STOP",
+                4) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_STOP;
+        }
+        else if(strncasecmp(ap, "ERROR",
+                5) == 0)
+        {
+            tgt = PROCESSINFO_LOOPSTAT_ERROR;
+        }
+        else
+        {
+            tgt = (int) strtol(ap, NULL, 0);
+        }
+        /* Skip state word */
+        while(*ap && *ap != ' '
+              && *ap != '\t')
+        {
+            ap++;
+        }
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        double timeout = 30.0;
+        if(*ap != '\0')
+        {
+            timeout = strtod(ap, NULL);
+        }
+        struct timespec slp;
+        slp.tv_sec = 0;
+        slp.tv_nsec = 100000000; /* 100ms */
+        double elapsed = 0.0;
+        cli_last_retval = 1;
+        while(elapsed < timeout)
+        {
+            if(pinfolist != NULL)
+            {
+                for(int pi = 0;
+                    pi < PROCESSINFOLISTSIZE;
+                    pi++)
+                {
+                    if(pinfolist->active[pi]
+                       && strcmp(
+                           pinfolist
+                               ->pnamearray[
+                                   pi],
+                           pname) == 0)
+                    {
+                        pid_t fpid =
+                            pinfolist
+                                ->PIDarray[
+                                    pi];
+                        char pfn[512];
+                        char pdname[256];
+                        processinfo_procdirname(
+                            pdname);
+                        snprintf(
+                            pfn,
+                            sizeof(pfn),
+                            "%s/proc."
+                            "%d.shm",
+                            pdname,
+                            (int) fpid);
+                        int pfd = -1;
+                        PROCESSINFO *pii =
+                            processinfo_shm_link(
+                                pfn, &pfd);
+                        if(pii
+                           != MAP_FAILED
+                           && pii != NULL)
+                        {
+                            if(pii
+                               ->loopstat
+                               == tgt)
+                            {
+                                cli_last_retval
+                                    = 0;
+                            }
+                            munmap(pii,
+                                sizeof(
+                                PROCESSINFO));
+                            close(pfd);
+                        }
+                        else if(pfd >= 0)
+                        {
+                            close(pfd);
+                        }
+                        break;
+                    }
+                }
+            }
+            if(cli_last_retval == 0)
+            {
+                break;
+            }
+            nanosleep(&slp, NULL);
+            elapsed += 0.1;
+        }
+        return 1;
+    }
+
+    /* procstat [name] */
+    if(strcmp(p, "procstat") == 0
+       || starts_with(p, "procstat ")
+       || starts_with(p, "procstat\t"))
+    {
+        const char *ap = p + 8;
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        char filter[256];
+        filter[0] = '\0';
+        if(*ap != '\0')
+        {
+            strncpy(filter, ap,
+                    sizeof(filter) - 1);
+            filter[sizeof(filter) - 1]
+                = '\0';
+        }
+        if(pinfolist != NULL)
+        {
+            char pdname[256];
+            processinfo_procdirname(pdname);
+            for(int pi = 0;
+                pi < PROCESSINFOLISTSIZE;
+                pi++)
+            {
+                if(!pinfolist->active[pi])
+                {
+                    continue;
+                }
+                if(filter[0] != '\0'
+                   && strcmp(
+                       pinfolist
+                           ->pnamearray[pi],
+                       filter) != 0)
+                {
+                    continue;
+                }
+                pid_t fpid =
+                    pinfolist
+                        ->PIDarray[pi];
+                char pfn[512];
+                snprintf(pfn,
+                         sizeof(pfn),
+                         "%s/proc.%d.shm",
+                         pdname,
+                         (int) fpid);
+                int pfd = -1;
+                PROCESSINFO *pii =
+                    processinfo_shm_link(
+                        pfn, &pfd);
+                if(pii == MAP_FAILED
+                   || pii == NULL)
+                {
+                    if(pfd >= 0)
+                    {
+                        close(pfd);
+                    }
+                    continue;
+                }
+                const char *stname =
+                    "UNKNOWN";
+                switch(pii->loopstat)
+                {
+                    case 0:
+                        stname = "INIT";
+                        break;
+                    case 1:
+                        stname = "ACTIVE";
+                        break;
+                    case 2:
+                        stname = "PAUSED";
+                        break;
+                    case 3:
+                        stname = "STOPPED";
+                        break;
+                    case 4:
+                        stname = "ERROR";
+                        break;
+                    case 5:
+                        stname = "SPINNING";
+                        break;
+                    case 6:
+                        stname = "CRASHED";
+                        break;
+                }
+                double hz = 0.0;
+                if(pii->dtmedian_iter_ns
+                   > 0)
+                {
+                    hz = 1.0e9
+                        / (double)
+                          pii
+                          ->dtmedian_iter_ns;
+                }
+                double us =
+                    (double)
+                    pii->dtmedian_exec_ns
+                    / 1000.0;
+                printf(
+                    "name=%s\n"
+                    "pid=%d\n"
+                    "loopstat=%s\n"
+                    "loopcnt=%ld\n"
+                    "loopfreq_hz=%.1f\n"
+                    "exectime_us=%.1f\n"
+                    "rtprio=%d\n"
+                    "ctrlval=%d\n"
+                    "missedframes=%lu\n"
+                    "tmux=%s\n",
+                    pii->name,
+                    (int) pii->PID,
+                    stname,
+                    pii->loopcnt,
+                    hz, us,
+                    pii->RT_priority,
+                    pii->CTRLval,
+                    (unsigned long)
+                    pii
+                    ->triggermissedframe_cumul,
+                    pii->tmuxname);
+                munmap(pii,
+                    sizeof(PROCESSINFO));
+                close(pfd);
+                if(filter[0] != '\0')
+                {
+                    break;
+                }
+                printf("---\n");
             }
         }
         return 1;
