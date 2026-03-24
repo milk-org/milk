@@ -135,6 +135,8 @@ void cli_alias_expand(void);
 void cli_expand_braces(char *line, int maxlen);
 void cli_session_log_cmd(const char *cmd);
 void cli_history_log_cmd(const char *cmd);
+void cli_history_log_prompt(const char *prompt);
+void cli_history_log_shell(const char *cmd);
 const char *CLI_history_file(void);
 void cli_save_last_argument(void);
 const char *strip_ws(const char *s);
