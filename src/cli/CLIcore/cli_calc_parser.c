@@ -1196,6 +1196,13 @@ static val_t parse_primary(void)
                 }
                 return mk_string(t->sval);
             }
+            if (v.type == VAL_LONG)
+            {
+                create_variable_long_ID(
+                    t->sval, v.lval
+                );
+                return mk_long(v.lval);
+            }
             create_variable_ID(
                 t->sval, to_double(v)
             );
@@ -1211,6 +1218,12 @@ static val_t parse_primary(void)
                      t->sval);
             parse_errmsg(msg);
             return mk_double(0);
+        }
+        if (data.core.variable[vID].type == 1)
+        {
+            return mk_long(
+                data.core.variable[vID].value.l
+            );
         }
         return mk_double(
             data.core.variable[vID].value.f
@@ -1259,16 +1272,35 @@ static val_t parse_primary(void)
                     printf("creating double\n");
                 }
             }
+            if (v.type == VAL_LONG)
+            {
+                create_variable_long_ID(
+                    t->sval, v.lval
+                );
+                char numv[64];
+                snprintf(
+                    numv, 64, "%ld", v.lval
+                );
+                if (parse_mode == 1)
+                {
+                    cli_var_set(t->sval, numv);
+                }
+                return mk_long(v.lval);
+            }
             create_variable_ID(
                 t->sval, to_double(v)
             );
-            
-            char numv[64];
-            snprintf(numv, 64, "%g", to_double(v));
-            if (parse_mode == 1) {
-                cli_var_set(t->sval, numv);
+            {
+                char numv[64];
+                snprintf(
+                    numv, 64, "%g",
+                    to_double(v)
+                );
+                if (parse_mode == 1)
+                {
+                    cli_var_set(t->sval, numv);
+                }
             }
-            
             return mk_double(to_double(v));
         }
         /* standalone new variable/image name */
