@@ -94,6 +94,21 @@ static const builtin_func builtins[] =
     /* string -> double */
     {"strlen(", NULL, TOK_FUNC_S_D},
 
+    /* string -> string */
+    {"toupper(", NULL, TOK_FUNC_S_S},
+    {"tolower(", NULL, TOK_FUNC_S_S},
+
+    /* string,int,int -> string */
+    {"substr(", NULL, TOK_FUNC_SDD_S},
+
+    /* string,string,string -> string */
+    {"replace(", NULL, TOK_FUNC_SSS_S},
+
+    /* double -> string (format) */
+    {"hex(", NULL, TOK_FUNC_D_S},
+    {"oct(", NULL, TOK_FUNC_D_S},
+    {"bin(", NULL, TOK_FUNC_D_S},
+
     {NULL, NULL, TOK_EOF}
 };
 
@@ -181,6 +196,9 @@ int cli_tokenize(
             else if (*p == '-' && *(p+1) == '=') { optype = TOK_OP_MINUS_EQ; oplen = 2; }
             else if (*p == '*' && *(p+1) == '=') { optype = TOK_OP_STAR_EQ; oplen = 2; }
             else if (*p == '/' && *(p+1) == '=') { optype = TOK_OP_SLASH_EQ; oplen = 2; }
+            else if (*p == '<' && *(p+1) == '<') { optype = TOK_OP_LSHIFT; oplen = 2; }
+            else if (*p == '>' && *(p+1) == '>') { optype = TOK_OP_RSHIFT; oplen = 2; }
+            else if (*p == '^' && *(p+1) == '^') { optype = TOK_OP_BXOR; oplen = 2; }
             else
             {
                 switch (*p)
@@ -196,7 +214,9 @@ int cli_tokenize(
                     case '!': optype = TOK_OP_NOT; break;
                     case '(': optype = TOK_LPAREN; break;
                     case ')': optype = TOK_RPAREN; break;
-                    case '|': optype = TOK_OP_PIPE; break;
+                    case '|': optype = TOK_OP_BOR; break;
+                    case '&': optype = TOK_OP_BAND; break;
+                    case '~': optype = TOK_OP_BNOT; break;
                     case ',': optype = TOK_COMMA; break;
                     case '=': optype = TOK_EQUAL; break;
                     case '?': optype = TOK_OP_QUESTION; break;
