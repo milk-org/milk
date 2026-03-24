@@ -75,7 +75,7 @@
 #endif
 #include "COREMOD_memory/COREMOD_memory.h"
 
-#include "CLIcore_UI.h"
+#include "CLIcore_UI_execute.h"
 #include "CLIcore_checkargs.h"
 #include "CLIcore_datainit.h"
 #include "CLIcore_help.h"
