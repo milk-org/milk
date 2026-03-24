@@ -36,7 +36,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
-#include "CLIcore_UI.h"
+#include "CLIcore_UI_execute.h"
 
 /**
  * @brief Execute an if/elif/else/fi block.
