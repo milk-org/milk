@@ -1010,6 +1010,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                                 CLOCK_MONOTONIC,
                                 &ft0);
 
+                            cli_history_log_prompt(
+                                data.CLIcmdline);
+
                             CLI_execute_line();
 
                             clock_gettime(
@@ -1080,9 +1083,11 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                     DEBUG_TRACEPOINT("readline callback");
                     rl_callback_read_char();
 #else
-                    // Fallback for no readline: read from stdin directly
+                    // Fallback: no readline
                     if (fgets(data.CLIcmdline, sizeof(data.CLIcmdline), stdin)) {
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
+                        cli_history_log_prompt(
+                            data.CLIcmdline);
                         CLI_execute_line();
                     } else {
                         data.CLIloopON = 0;
