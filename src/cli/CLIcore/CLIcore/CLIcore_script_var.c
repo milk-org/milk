@@ -93,7 +93,9 @@ void cli_var_set(
             cli_vars[i].type = type;
             if (type == 1) { 
                 cli_vars[i].num.l = numl;
-                create_variable_ID(name, (double)numl);
+                create_variable_long_ID(
+                    name, numl
+                );
             }
             if (type == 0) {
                 cli_vars[i].num.f = numf;
@@ -118,7 +120,9 @@ void cli_var_set(
             cli_vars[i].type = type;
             if (type == 1) {
                 cli_vars[i].num.l = numl;
-                create_variable_ID(name, (double)numl);
+                create_variable_long_ID(
+                    name, numl
+                );
             }
             if (type == 0) {
                 cli_vars[i].num.f = numf;
