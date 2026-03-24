@@ -180,7 +180,9 @@ static int cli_check_unquoted_restricted_symbols(
     int in_dquote = 0;
     int esc = 0;
     
-    const char *restricted = ";<>|[]()&*$";
+    /* '[' and ']' removed to allow stream
+     * slicing syntax (e.g. im[0:19,10:29]). */
+    const char *restricted = ";<>|()*&$";
     
     int word_start = 1;
     int valid_assign_prefix = 0; 

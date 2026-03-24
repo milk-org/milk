@@ -16,6 +16,7 @@
 #endif
 
 #include "COREMOD_memory/COREMOD_memory.h"
+#include "COREMOD_memory/stream_slice.h"
 
 #include "image_arith__Cim_Cim__Cim.h"
 #include "image_arith__im__im.h"
@@ -677,6 +678,89 @@ int execute_arith(const char *cmd1)
                 word_type[i] = ARITHTOKENTYPE_VARIABLE;
                 tmp_name_index++;
             }
+        }
+
+        /* Sliced images are materialized into
+         * temporary images so the rest of the
+         * evaluator can work with plain names. */
+        for (int i = 0; i < nbword; i++)
+        {
+            if (word_type[i] != ARITHTOKENTYPE_IMAGE)
+            {
+                continue;
+            }
+            if (strchr(word[i], '[') == NULL)
+            {
+                continue;
+            }
+
+            IMGID simg =
+                imgid_make_from_name(word[i]);
+            imageID sid = image_ID(
+                simg.name, dcimg, dcnimg);
+            if (sid < 0)
+            {
+                imgid_free(&simg);
+                continue;
+            }
+            simg.ID = sid;
+            simg.im = &dcimg[sid];
+
+            /* Materialize the slice */
+            if (imgid_slice_materialize(
+                    &simg) != 0)
+            {
+                PRINT_WARNING(
+                    "slice materialize failed"
+                    " for %s", word[i]);
+                imgid_free(&simg);
+                continue;
+            }
+
+            IMAGE *slc = simg.slice_im;
+            int snaxis =
+                (int) slc->md[0].naxis;
+            uint32_t ssz[3] = {1, 1, 1};
+            for (int a = 0; a < snaxis; a++)
+            {
+                ssz[a] = slc->md[0].size[a];
+            }
+
+            /* Create temp image with slice
+             * dimensions */
+            CREATE_IMAGENAME(
+                name,
+                "_slice%d_%d",
+                tmp_name_index,
+                (int) getpid());
+
+            imageID tid = -1;
+            create_image_ID(
+                name,
+                snaxis,
+                ssz,
+                slc->md[0].datatype,
+                0, /* not shared */
+                IMGID_NB_KEYWO_MAX,
+                0, /* CBsize */
+                &tid);
+
+            if (tid >= 0)
+            {
+                uint64_t nbytes =
+                    slc->md[0].nelement
+                    * (uint64_t)
+                      ImageStreamIO_typesize(
+                          slc->md[0].datatype);
+                __builtin_memcpy(
+                    dcimg[tid].array.raw,
+                    slc->array.raw,
+                    nbytes);
+            }
+
+            strcpy(word[i], name);
+            tmp_name_index++;
+            imgid_free(&simg);
         }
 
         /* computing the number of to-be-processed words */
