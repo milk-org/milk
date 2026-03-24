@@ -42,7 +42,7 @@
 #include "CLIcore.h"
 #include "CLIcore/cli_calc_parser.h"
 #include "CLIcore_script.h"
-#include "CLIcore_UI.h"
+#include "CLIcore_UI_execute.h"
 
 #include <fnmatch.h>
 #include <glob.h>

@@ -9,7 +9,7 @@
 #include <readline/readline.h>
 #endif
 #include "CLIcore.h"
-#include "CLIcore_UI.h"
+#include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
 
 struct bookmark_entry
