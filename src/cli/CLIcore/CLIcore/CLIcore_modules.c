@@ -564,6 +564,16 @@ uint32_t RegisterCLIcmd(
     // Command registration logic
     DEBUG_TRACE_FSTART();
 
+    /* Guard against constructor ordering race:
+     * per-command __attribute__((constructor))
+     * may not have run yet, leaving key empty.
+     */
+    if (CLIcmddata.key[0] == '\0')
+    {
+        DEBUG_TRACE_FEXIT();
+        return data.NBcmd;
+    }
+
     data.cmd[data.NBcmd].moduleindex = data.moduleindex;
     if(data.cmd[data.NBcmd].moduleindex == -1)
     {
