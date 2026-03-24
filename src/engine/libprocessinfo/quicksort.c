@@ -1,12 +1,41 @@
 /**
- * @file quicksort.c
- * @brief Quicksort module
+ * @file    quicksort.c
+ * @brief   In-place sorting routines for processinfo
+ *
+ * Provides quicksort and bubble sort implementations
+ * used by processinfo statistics (median, percentile)
+ * and by general-purpose array reordering throughout
+ * the framework.
+ *
+ * Naming convention:
+ *  - qs_<type>()       — recursive Hoare-partition
+ *                        quicksort on a single array.
+ *  - qs<N>[l|ul]_*()   — multi-array variants that
+ *                        co-sort N satellite arrays
+ *                        alongside the key array.
+ *                        'l' = long, 'ul' = unsigned
+ *                        long satellite arrays.
+ *  - quick_sort_*()    — public entry points that
+ *                        convert (array, count) to
+ *                        (array, 0, count-1) and call
+ *                        the recursive qs_ variant.
+ *
+ * All sort functions sort in ascending order.
+ * Multi-array variants keep satellite arrays in sync
+ * with the key array — when two key elements swap,
+ * the corresponding satellite elements swap too.
  */
 
 /**
- * @file quicksort.c
+ * @brief Sort array in ascending order via bubble sort
+ *
+ * Simple O(n^2) sort used for very small arrays
+ * where quicksort overhead is not justified.
+ *
+ * @param array  Array of doubles to sort in-place
+ * @param count  Number of elements
+ * @return 0 on success
  */
-
 int bubble_sort(
     double * __restrict array,
     unsigned long count
@@ -27,6 +56,15 @@ int bubble_sort(
     return (0);
 }
 
+/**
+ * @brief Recursive Hoare-partition quicksort on float
+ *
+ * Partitions around the midpoint pivot and recurses.
+ *
+ * @param array  Float array to sort in-place
+ * @param left   Left index of partition (inclusive)
+ * @param right  Right index of partition (inclusive)
+ */
 void qs_float(
     float * __restrict array,
     unsigned long left,
@@ -75,6 +113,13 @@ void qs_float(
     }
 }
 
+/**
+ * @brief Recursive Hoare-partition quicksort on long
+ *
+ * @param array  Long array to sort in-place
+ * @param left   Left index of partition (inclusive)
+ * @param right  Right index of partition (inclusive)
+ */
 void qs_long(
     long * __restrict array,
     unsigned long left,
@@ -123,6 +168,13 @@ void qs_long(
     }
 }
 
+/**
+ * @brief Recursive Hoare-partition quicksort on double
+ *
+ * @param array  Double array to sort in-place
+ * @param left   Left index of partition (inclusive)
+ * @param right  Right index of partition (inclusive)
+ */
 void qs_double(
     double * __restrict array,
     unsigned long left,
@@ -172,6 +224,13 @@ void qs_double(
     }
 }
 
+/**
+ * @brief Recursive quicksort on unsigned short
+ *
+ * @param array  Unsigned short array to sort
+ * @param left   Left index (inclusive)
+ * @param right  Right index (inclusive)
+ */
 void qs_ushort(
     unsigned short * __restrict array,
     unsigned long left,
@@ -221,6 +280,16 @@ void qs_ushort(
     }
 }
 
+/**
+ * @brief Quicksort with one double satellite array
+ *
+ * Sorts @p array ascending, co-permuting @p array1.
+ *
+ * @param array   Key array (double)
+ * @param array1  Satellite array (double)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs2(
     double       * __restrict array,
     double       * __restrict array1,
@@ -277,6 +346,18 @@ void qs2(
     }
 }
 
+/**
+ * @brief Quicksort with two double satellite arrays
+ *
+ * Sorts @p array ascending, co-permuting both
+ * @p array1 and @p array2.
+ *
+ * @param array   Key array (double)
+ * @param array1  First satellite array (double)
+ * @param array2  Second satellite array (double)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs3(
     double       * __restrict array,
     double       * __restrict array1,
@@ -338,6 +419,17 @@ void qs3(
     }
 }
 
+/**
+ * @brief Quicksort with two float satellite arrays
+ *
+ * Float variant of qs3().
+ *
+ * @param array   Key array (float)
+ * @param array1  First satellite array (float)
+ * @param array2  Second satellite array (float)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs3_float(
     float        * __restrict array,
     float        * __restrict array1,
@@ -399,6 +491,17 @@ void qs3_float(
     }
 }
 
+/**
+ * @brief Quicksort with two double satellite arrays
+ *
+ * Explicit-double variant of qs3().
+ *
+ * @param array   Key array (double)
+ * @param array1  First satellite array (double)
+ * @param array2  Second satellite array (double)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs3_double(
     double       * __restrict array,
     double       * __restrict array1,
@@ -460,6 +563,17 @@ void qs3_double(
     }
 }
 
+/**
+ * @brief Quicksort double key with long satellite
+ *
+ * Sorts @p array ascending, co-permuting the
+ * long satellite array @p array1.
+ *
+ * @param array   Key array (double)
+ * @param array1  Satellite array (long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs2l(
     double * __restrict array,
     long   * __restrict array1,
@@ -516,6 +630,14 @@ void qs2l(
     }
 }
 
+/**
+ * @brief Quicksort double key with ulong satellite
+ *
+ * @param array   Key array (double)
+ * @param array1  Satellite array (unsigned long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs2ul(
     double        * __restrict array,
     unsigned long * __restrict array1,
@@ -570,6 +692,16 @@ void qs2ul(
     }
 }
 
+/**
+ * @brief Quicksort double key with long satellite
+ *
+ * Explicit-double variant of qs2l().
+ *
+ * @param array   Key array (double)
+ * @param array1  Satellite array (long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs2l_double(
     double       * __restrict array,
     long         * __restrict array1,
@@ -626,6 +758,16 @@ void qs2l_double(
     }
 }
 
+/**
+ * @brief Quicksort double key with ulong satellite
+ *
+ * Explicit-double variant of qs2ul().
+ *
+ * @param array   Key array (double)
+ * @param array1  Satellite (unsigned long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs2ul_double(
     double        * __restrict array,
     unsigned long * __restrict array1,
@@ -682,6 +824,15 @@ void qs2ul_double(
     }
 }
 
+/**
+ * @brief Quicksort double key with two long satellites
+ *
+ * @param array   Key array (double)
+ * @param array1  First satellite (long)
+ * @param array2  Second satellite (long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs3ll_double(
     double       * __restrict array,
     long         * __restrict array1,
@@ -742,6 +893,15 @@ void qs3ll_double(
     }
 }
 
+/**
+ * @brief Quicksort double key with two ulong satellites
+ *
+ * @param array   Key array (double)
+ * @param array1  First satellite (unsigned long)
+ * @param array2  Second satellite (unsigned long)
+ * @param left    Left index (inclusive)
+ * @param right   Right index (inclusive)
+ */
 void qs3ulul_double(
     double        * __restrict array,
     unsigned long * __restrict array1,
@@ -803,6 +963,19 @@ void qs3ulul_double(
     }
 }
 
+/* ============================================================
+ * Public entry points
+ *
+ * Convert (array, count) to (array, 0, count-1) and
+ * delegate to the recursive qs_ variant.
+ * ========================================================== */
+
+/**
+ * @brief Sort float array in ascending order
+ *
+ * @param array  Float array to sort in-place
+ * @param count  Number of elements
+ */
 void quick_sort_float(
     float * __restrict array,
     unsigned long count
@@ -811,6 +984,12 @@ void quick_sort_float(
     qs_float(array, 0, count - 1);
 }
 
+/**
+ * @brief Sort long array in ascending order
+ *
+ * @param array  Long array to sort in-place
+ * @param count  Number of elements
+ */
 void quick_sort_long(
     long * __restrict array,
     unsigned long count
@@ -819,6 +998,12 @@ void quick_sort_long(
     qs_long(array, 0, count - 1);
 }
 
+/**
+ * @brief Sort double array in ascending order
+ *
+ * @param array  Double array to sort in-place
+ * @param count  Number of elements
+ */
 void quick_sort_double(
     double * __restrict array,
     unsigned long count
@@ -827,6 +1012,12 @@ void quick_sort_double(
     qs_double(array, 0, count - 1);
 }
 
+/**
+ * @brief Sort unsigned short array ascending
+ *
+ * @param array  Unsigned short array to sort
+ * @param count  Number of elements
+ */
 void quick_sort_ushort(
     unsigned short * __restrict array,
     unsigned long count
@@ -835,6 +1026,13 @@ void quick_sort_ushort(
     qs_ushort(array, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + one double satellite
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  Satellite co-permuted with key
+ * @param count   Number of elements
+ */
 void quick_sort2(
     double       * __restrict array,
     double       * __restrict array1,
@@ -844,6 +1042,14 @@ void quick_sort2(
     qs2(array, array1, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + two double satellites
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  First satellite
+ * @param array2  Second satellite
+ * @param count   Number of elements
+ */
 void quick_sort3(
     double       * __restrict array,
     double       * __restrict array1,
@@ -854,6 +1060,14 @@ void quick_sort3(
     qs3(array, array1, array2, 0, count - 1);
 }
 
+/**
+ * @brief Sort float key + two float satellites
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  First satellite
+ * @param array2  Second satellite
+ * @param count   Number of elements
+ */
 void quick_sort3_float(
     float        * __restrict array,
     float        * __restrict array1,
@@ -864,6 +1078,14 @@ void quick_sort3_float(
     qs3_float(array, array1, array2, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + two double satellites
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  First satellite
+ * @param array2  Second satellite
+ * @param count   Number of elements
+ */
 void quick_sort3_double(
     double       * __restrict array,
     double       * __restrict array1,
@@ -874,6 +1096,13 @@ void quick_sort3_double(
     qs3_double(array, array1, array2, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + one long satellite
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  Satellite (long)
+ * @param count   Number of elements
+ */
 void quick_sort2l(
     double * __restrict array,
     long * __restrict array1,
@@ -883,6 +1112,13 @@ void quick_sort2l(
     qs2l(array, array1, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + one ulong satellite
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  Satellite (unsigned long)
+ * @param count   Number of elements
+ */
 void quick_sort2ul(
     double * __restrict array,
     unsigned long * __restrict array1,
@@ -892,6 +1128,15 @@ void quick_sort2ul(
     qs2ul(array, array1, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + one long satellite
+ *
+ * Explicit-double variant of quick_sort2l().
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  Satellite (long)
+ * @param count   Number of elements
+ */
 void quick_sort2l_double(
     double * __restrict array,
     long * __restrict array1,
@@ -901,6 +1146,15 @@ void quick_sort2l_double(
     qs2l_double(array, array1, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + one ulong satellite
+ *
+ * Explicit-double variant of quick_sort2ul().
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  Satellite (unsigned long)
+ * @param count   Number of elements
+ */
 void quick_sort2ul_double(
     double        * __restrict array,
     unsigned long * __restrict array1,
@@ -910,6 +1164,14 @@ void quick_sort2ul_double(
     qs2ul_double(array, array1, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + two long satellites
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  First satellite (long)
+ * @param array2  Second satellite (long)
+ * @param count   Number of elements
+ */
 void quick_sort3ll_double(
     double       * __restrict array,
     long         * __restrict array1,
@@ -920,6 +1182,14 @@ void quick_sort3ll_double(
     qs3ll_double(array, array1, array2, 0, count - 1);
 }
 
+/**
+ * @brief Sort double key + two ulong satellites
+ *
+ * @param array   Key array (sorted ascending)
+ * @param array1  First satellite (unsigned long)
+ * @param array2  Second satellite (unsigned long)
+ * @param count   Number of elements
+ */
 void quick_sort3ulul_double(
     double        * __restrict array,
     unsigned long * __restrict array1,

@@ -1,10 +1,35 @@
 /**
  * @file    image_arith__im__im.c
- * @brief   arith functions
+ * @brief   Unary image arithmetic (image → image)
  *
- * input : image
- * output: image
+ * Applies a single math function to every pixel of
+ * an input image, producing an output image.
  *
+ * Each math operation (acos, sin, sqrt, …) has four
+ * function variants:
+ *
+ *  1. arith_image_<op>_byID(ID, IDout)
+ *     Legacy API using raw image slot indices.
+ *     Delegates to arith_image_function_1_1_byID()
+ *     with a function pointer from mathfuncs.c
+ *     (e.g., &Pacos).
+ *
+ *  2. arith_image_<op>_IMGID(imgin, imgout)
+ *     Modern IMGID API. Calls the optimized
+ *     macro-stamped variant from imfunctions.c.
+ *
+ *  3. arith_image_<op>(name_in, name_out)
+ *     String-based API used by the CLI parser.
+ *     Constructs IMGIDs from names and delegates
+ *     to the IMGID variant.
+ *
+ *  4. arith_image_<op>_inplace_byID(ID)
+ *     arith_image_<op>_inplace(name)
+ *     In-place variants that overwrite the input.
+ *
+ * Supported operations: acos, asin, atan, ceil,
+ * cos, cosh, exp, fabs, floor, ln, log, sqrt,
+ * sin, sinh, tan, tanh, positive.
  */
 
 
