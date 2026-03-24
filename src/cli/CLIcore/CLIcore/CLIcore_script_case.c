@@ -30,7 +30,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
-#include "CLIcore_UI.h"
+#include "CLIcore_UI_execute.h"
 
 void cli_func_define(
     const char *name,
