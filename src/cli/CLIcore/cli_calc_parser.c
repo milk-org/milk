@@ -1699,7 +1699,33 @@ int cli_calc_eval_line(const char *input)
          /* generic usually means function evaluated but no specific printable value returned */
          //printf("    generic\n");
     }
-    
+
+    /* Clean up temporary images created
+     * during expression evaluation (e.g.
+     * intermediate arithmetic results and
+     * slice materialization buffers). */
+    {
+        char tmpn[200];
+        for (long i = 0;
+             i < data.calctmp_imindex;
+             i++)
+        {
+            snprintf(tmpn, sizeof(tmpn),
+                     "_tmpcalc%ld", i);
+            imageID tid = image_ID(
+                tmpn,
+                data.core.image,
+                data.core.NB_MAX_IMAGE);
+            if (tid != -1)
+            {
+                delete_image_ID(
+                    tmpn,
+                    DELETE_IMAGE_ERRMODE_WARNING);
+            }
+        }
+        data.calctmp_imindex = 0;
+    }
+
     return 1;
 }
 
