@@ -228,12 +228,14 @@ void rl_cb_linehandler(char *linein)
  */
 errno_t runCLI_prompt(char *promptstring, char *prompt)
 {
-    // Try to get PS1 from CLI vars or environment
-    const char *ps1_val = cli_var_lookup("PS1");
-    if(ps1_val == NULL)
-    {
-        ps1_val = getenv("PS1");
-    }
+    /* Use PS1 only from CLI vars (set inside
+     * milk-cli).  Do NOT fall back to
+     * getenv("PS1") — the bash PS1 contains
+     * shell-specific escapes like $(cmd) that
+     * cli_expand_env cannot evaluate, which
+     * would corrupt the prompt. */
+    const char *ps1_val =
+        cli_var_get("PS1");
 
     if(ps1_val != NULL && strlen(ps1_val) > 0)
     {
