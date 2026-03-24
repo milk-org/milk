@@ -163,28 +163,85 @@ errno_t load_module_shared(
     DEBUG_TRACEPOINT("[%5d] Loading shared object \"%s\"", DLib_index, libname);
 
 
-    // a custom module is about to be loaded, so we set the type accordingly
-    // this variable will be written by module register function into module struct
+
+
+
     strncpy(data.moduleloadname,
             modulenameLC,
             STRINGMAXLEN_MODULE_LOADNAME - 1);
-    strncpy(data.modulesofilename, libname, STRINGMAXLEN_MODULE_SOFILENAME - 1);
-
-
-    if(load_sharedobj(libname) == RETURN_SUCCESS)
-    {
-        // RegisterModule called here
-    }
-
-
-    data.module[data.moduleindex].type = MODULE_TYPE_CUSTOMLOAD;
-
-    strncpy(data.module[data.moduleindex].sofilename,
-            data.modulesofilename,
+    strncpy(data.modulesofilename,
+            libname,
             STRINGMAXLEN_MODULE_SOFILENAME - 1);
 
-    strncpy(data.module[data.moduleindex].loadname,
-            data.moduleloadname,
+    load_sharedobj(libname);
+
+    // Find the correct module slot for metadata.
+    //
+    // We cannot blindly use data.moduleindex because
+    // dlopen() may have transitively loaded other
+    // libraries whose constructors changed it.
+    // If the .so was already loaded (transitive dep
+    // of a prior dlopen), the constructor does not
+    // re-run and moduleindex is stale.
+    //
+    // Strategy:
+    //  1. Match by sofilename (set by a prior call)
+    //  2. Among newly registered modules, match by
+    //     module name as suffix of the load name
+    //  3. Fall back to data.moduleindex
+
+    int target_idx = -1;
+
+    // Case 1: sofilename already set by prior call
+    for(int m = 0; m < data.NBmodule; m++)
+    {
+        if(strcmp(data.module[m].sofilename,
+                 libname) == 0)
+        {
+            target_idx = m;
+            break;
+        }
+    }
+
+    // Case 2: match module name as suffix of load
+    // name. Handles modules loaded transitively by
+    // an earlier dlopen (sofilename still empty).
+    // E.g. loadname "milkpsf" matches name "psf".
+    if(target_idx < 0)
+    {
+        int llen = (int) strlen(modulenameLC);
+        for(long m = 0; m < data.NBmodule; m++)
+        {
+            const char *mname =
+                data.module[m].name;
+            int mlen = (int) strlen(mname);
+            if(mlen > 0
+               && mlen <= llen
+               && strcmp(modulenameLC
+                         + llen - mlen,
+                         mname) == 0)
+            {
+                target_idx = (int) m;
+                break;
+            }
+        }
+    }
+
+    // Case 3: fallback
+    if(target_idx < 0)
+    {
+        target_idx = (int) data.moduleindex;
+    }
+
+    data.module[target_idx].type =
+        MODULE_TYPE_CUSTOMLOAD;
+
+    strncpy(data.module[target_idx].sofilename,
+            libname,
+            STRINGMAXLEN_MODULE_SOFILENAME - 1);
+
+    strncpy(data.module[target_idx].loadname,
+            modulenameLC,
             STRINGMAXLEN_MODULE_LOADNAME - 1);
 
 
