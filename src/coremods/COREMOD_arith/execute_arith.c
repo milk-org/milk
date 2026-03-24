@@ -367,8 +367,36 @@ int execute_arith(const char *cmd1)
     */
     w = 0;
     l = 0;
+    int bracket_depth = 0; /* track [...] nesting */
     for(int i = 0; i < (signed) strlen(cmd); i++)
     {
+        /* Inside brackets: everything is part of
+         * the current word. Used for slice syntax
+         * like im[0:19,10:29]. */
+        if (cmd[i] == '[')
+        {
+            bracket_depth++;
+            word[w][l] = cmd[i];
+            l++;
+            continue;
+        }
+        if (cmd[i] == ']')
+        {
+            if (bracket_depth > 0)
+            {
+                bracket_depth--;
+            }
+            word[w][l] = cmd[i];
+            l++;
+            continue;
+        }
+        if (bracket_depth > 0)
+        {
+            word[w][l] = cmd[i];
+            l++;
+            continue;
+        }
+
         switch(cmd[i])
         {
 
@@ -511,6 +539,26 @@ int execute_arith(const char *cmd1)
         {
             word_type[i]    = ARITHTOKENTYPE_IMAGE;
             found_word_type = 1;
+        }
+        /* If word contains brackets, try bare name */
+        if (found_word_type == 0
+            && strchr(word[i], '[') != NULL)
+        {
+            char bare[100];
+            const char *bk = strchr(word[i], '[');
+            int blen = (int)(bk - word[i]);
+            if (blen > 0 && blen < 100)
+            {
+                memcpy(bare, word[i], blen);
+                bare[blen] = '\0';
+                if (image_ID(bare,
+                             dcimg, dcnimg) != -1)
+                {
+                    word_type[i] =
+                        ARITHTOKENTYPE_IMAGE;
+                    found_word_type = 1;
+                }
+            }
         }
         if(found_word_type == 0)
         {
