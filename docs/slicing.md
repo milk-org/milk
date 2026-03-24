@@ -32,7 +32,7 @@ Each axis specification follows this grammar:
 
 ### Examples
 
-```
+```text
 im[0:19,10:29]       # 2D crop: x=0..19, y=10..29
 im[*,-*]             # Flip Y axis
 im[0:99:2,*]         # X stride: every other column  (WRONG, should be ::2)
@@ -98,7 +98,7 @@ In CLI arithmetic expressions, sliced image names are
 preserved as single tokens. The bracket contents are
 kept together with the image name:
 
-```
+```text
 milk> mk2Dim im 100 100   # create 100×100 image
 milk> out = im[10:29,10:29] + 1.0
 ```
@@ -126,7 +126,7 @@ By default, materialized slices are **local-only**
 buffers (not visible to other processes). To expose
 a sliced view as shared memory, use the `@S:` prefix:
 
-```
+```text
 @S:im[0:63,0:63]
 ```
 
@@ -139,7 +139,7 @@ name derived from the source name and slice specification
 Slicing can also be used on the left-hand side of
 assignments to write into a sub-region:
 
-```
+```text
 milk> im[10:19,10:19] = 0.0
 ```
 
