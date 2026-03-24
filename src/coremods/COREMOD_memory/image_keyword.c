@@ -1,8 +1,15 @@
 /**
  * @file    image_keyword.c
- * @brief   image keyword read/write
+ * @brief   Image keyword read/write API
  *
- * Uses FPS V2 framework.
+ * FITS-like keyword metadata attached to images.
+ * Each image has a fixed-size keyword array; entries
+ * are typed as Long ('L'), Double ('D'), or
+ * String ('S'). Unused slots have type 'N'.
+ *
+ * CLI commands:
+ *  - imlistkw   — list all keywords of an image
+ *  - imwritekwL — write a long-type keyword
  */
 
 #ifdef MILK_NO_CLI
@@ -233,6 +240,19 @@ CLIADDCMD_COREMOD_memory__image_keyword()
  *  COMPUTATION CODE
  * ============================================================= */
 
+/**
+ * @brief Write a long-type keyword to an image
+ *
+ * Finds the first empty keyword slot (type 'N')
+ * and writes name, value, and comment. Returns
+ * the slot index, or exits if no slots available.
+ *
+ * @param IDname   Image name
+ * @param kname    Keyword name
+ * @param value    Long integer value
+ * @param comment  Keyword comment string
+ * @return Keyword slot index
+ */
 long image_write_keyword_L(
     const char *IDname,
     const char *kname,
@@ -272,6 +292,15 @@ long image_write_keyword_L(
     return kw0;
 }
 
+/**
+ * @brief Write a double-type keyword to an image
+ *
+ * @param IDname   Image name
+ * @param kname    Keyword name
+ * @param value    Double-precision value
+ * @param comment  Keyword comment string
+ * @return Keyword slot index
+ */
 long image_write_keyword_D(
     const char *IDname,
     const char *kname,
@@ -313,6 +342,15 @@ long image_write_keyword_D(
     return kw0;
 }
 
+/**
+ * @brief Write a string-type keyword to an image
+ *
+ * @param IDname   Image name
+ * @param kname    Keyword name
+ * @param value    String value
+ * @param comment  Keyword comment string
+ * @return Keyword slot index
+ */
 long image_write_keyword_S(
     const char *IDname,
     const char *kname,
@@ -355,6 +393,15 @@ long image_write_keyword_S(
     return kw0;
 }
 
+/**
+ * @brief List all keywords of an image
+ *
+ * Prints each keyword's name, typed value, and
+ * comment to stdout.
+ *
+ * @param IDname  Image name
+ * @return Image ID
+ */
 imageID image_list_keywords(
     const char *restrict IDname)
 {
@@ -406,6 +453,16 @@ imageID image_list_keywords(
     return ID;
 }
 
+/**
+ * @brief Read a double-type keyword value
+ *
+ * Scans keyword array for a matching 'D'-type entry.
+ *
+ * @param IDname  Image name
+ * @param kname   Keyword name to find
+ * @param val     Output: keyword value
+ * @return Keyword slot index, or -1 if not found
+ */
 long image_read_keyword_D(
     const char *IDname,
     const char *kname,
@@ -436,6 +493,14 @@ long image_read_keyword_D(
     return kw0;
 }
 
+/**
+ * @brief Read a long-type keyword value
+ *
+ * @param IDname  Image name
+ * @param kname   Keyword name to find
+ * @param val     Output: keyword value
+ * @return Keyword slot index, or -1 if not found
+ */
 long image_read_keyword_L(
     const char *IDname,
     const char *kname,
