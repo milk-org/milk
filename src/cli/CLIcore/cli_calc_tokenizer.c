@@ -350,6 +350,27 @@ int cli_tokenize(
                 p++;
             }
 
+            /* Consume trailing bracket block
+             * for stream slicing syntax
+             * e.g. wfs[0:63,10:73] */
+            if (*p == '[')
+            {
+                int bdepth = 0;
+                do
+                {
+                    if (*p == '[')
+                    {
+                        bdepth++;
+                    }
+                    else if (*p == ']')
+                    {
+                        bdepth--;
+                    }
+                    p++;
+                } while (bdepth > 0
+                         && *p != '\0');
+            }
+
             /* Detect unknown function call:
              * identifier immediately followed
              * by '(' means the user tried to
@@ -418,6 +439,43 @@ int cli_tokenize(
                         "DEBUG: TOKENIZER: \"%s\""
                         " IS AN IMAGE\n", s
                     );
+                }
+            }
+            /* Bracket token: try bare name
+             * for sliced stream references */
+            else if (strchr(s, '[') != NULL)
+            {
+                char bare[
+                    CLI_CALC_TOKEN_MAXLEN];
+                const char *bk =
+                    strchr(s, '[');
+                size_t bn =
+                    (size_t)(bk - s);
+                if (bn > 0
+                    && bn
+                       < CLI_CALC_TOKEN_MAXLEN)
+                {
+                    memcpy(bare, s, bn);
+                    bare[bn] = '\0';
+                    if (image_ID(
+                            bare,
+                            data.core.image,
+                            data.core
+                                .NB_MAX_IMAGE)
+                        != -1)
+                    {
+                        tokens[nt].type =
+                            TOK_IMAGE;
+                    }
+                    else
+                    {
+                        tokens[nt].type =
+                            TOK_NVAR;
+                    }
+                }
+                else
+                {
+                    tokens[nt].type = TOK_NVAR;
                 }
             }
             else if (data.cmdNBarg == 0)
