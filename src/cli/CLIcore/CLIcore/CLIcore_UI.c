@@ -1642,6 +1642,8 @@ pipe_fallthrough:
                     "[shell bypass] %s"
                     COLORRST "\n",
                     data.CLIcmdline);
+                cli_history_log_shell(
+                    data.CLIcmdline);
                 cli_export_vars_to_env();
                 system(data.CLIcmdline);
                 free(thetime);
@@ -1792,15 +1794,11 @@ pipe_fallthrough:
         }
     }
 
-#ifdef USE_READLINE
-    add_history(data.CLIcmdline);
+    /* Log resolved command (type C) to
+     * structured history.  add_history()
+     * is now called in rl_cb_linehandler()
+     * with the raw prompt text. */
     cli_history_log_cmd(data.CLIcmdline);
-    if(data.autocomplete_history)
-    {
-        append_history(1, CLI_history_file());
-        history_truncate_file(CLI_history_file(), 10000);
-    }
-#endif
 
     //
     // If line starts with !, use system()
