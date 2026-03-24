@@ -1,8 +1,17 @@
 /**
  * @file    image_copy.c
- * @brief   image copy, rename, copy to shm
+ * @brief   Image copy, rename, and copy-to-SHM
  *
- * Uses FPS V2 framework.
+ * Provides three CLI commands:
+ *
+ *  - cp       — copy image (local)
+ *  - mv       — rename image in-place
+ *  - imcp2shm — copy image into shared memory
+ *
+ * Each operation has an IMGID API and a string API.
+ * Copy and cp2shm verify size/type compatibility,
+ * deleting and re-creating the destination if there
+ * is a mismatch.
  */
 
 #ifdef MILK_NO_CLI
@@ -254,6 +263,19 @@ CLIADDCMD_COREMOD_memory__image_copy()
     return RETURN_SUCCESS;
 }
 #endif
+/**
+ * @brief Copy image data to a new or existing image
+ *
+ * Resolves input image; if output exists, checks
+ * for size/type mismatch (re-creates if needed).
+ * Copies raw pixel data via memcpy and posts all
+ * output semaphores.
+ *
+ * @param imgin   Source image
+ * @param imgout  Destination image
+ * @param shared  1 for shared memory, 0 for local
+ * @return Output image ID
+ */
 imageID copy_image_ID_IMGID(
     IMGID *imgin,
     IMGID *imgout,
@@ -335,6 +357,14 @@ imageID copy_image_ID_IMGID(
     return imgout->ID;
 }
 
+/**
+ * @brief Copy image by name (string API)
+ *
+ * @param name     Source image name
+ * @param newname  Destination image name
+ * @param shared   1 for shared memory output
+ * @return Output image ID
+ */
 imageID copy_image_ID(
     const char *restrict name,
     const char *restrict newname,
@@ -347,6 +377,17 @@ imageID copy_image_ID(
     return copy_image_ID_IMGID(&imgin, &imgout, shared);
 }
 
+/**
+ * @brief Rename image in-place (IMGID API)
+ *
+ * Changes the name field of the image. Fails if
+ * the new name is already in use by another image
+ * or variable.
+ *
+ * @param imgin     Image to rename
+ * @param new_name  New name string
+ * @return Image ID
+ */
 imageID chname_image_ID_IMGID(
     IMGID *imgin,
     const char *new_name
@@ -384,9 +425,17 @@ imageID chname_image_ID(
     return chname_image_ID_IMGID(&imgin, new_name);
 }
 
-/** copy an image to shared memory
+/**
+ * @brief Copy image into shared memory (IMGID API)
  *
+ * Creates a shared-memory image matching the source
+ * dimensions/type, copies pixel data, and posts
+ * semaphores. If destination exists but mismatches,
+ * it is deleted and re-created.
  *
+ * @param imgin   Source image (any allocation)
+ * @param imgout  Destination (will be shared)
+ * @return RETURN_SUCCESS
  */
 errno_t COREMOD_MEMORY_cp2shm_IMGID(
     IMGID *imgin,
