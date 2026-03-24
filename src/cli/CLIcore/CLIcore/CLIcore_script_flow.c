@@ -328,6 +328,146 @@ void cli_exec_block_while(
 }
 
 
+/* ---- Parse until/do/done block ---- */
+
+/**
+ * @brief Execute an until/do/done block
+ *
+ * Loops while condition is FALSE.
+ * Expected format:
+ *   lines[0]: "until [ condition ]; do"
+ *   ...body...
+ *   "done"
+ */
+void cli_exec_block_until(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+)
+{
+    if(nlines < 2)
+    {
+        return;
+    }
+
+    int body_start = 1;
+    int body_end = nlines;
+    int max_iter = 100000;
+
+    if(body_start < body_end)
+    {
+        const char *ds =
+            strip_ws(lines[body_start]);
+        if(strcmp(ds, "do") == 0)
+        {
+            body_start++;
+        }
+    }
+
+    for(int iter = 0;
+        iter < max_iter; iter++)
+    {
+        char condline[
+            STRINGMAXLEN_CLICMDLINE];
+        strncpy(condline, lines[0],
+                STRINGMAXLEN_CLICMDLINE - 1);
+        condline[
+            STRINGMAXLEN_CLICMDLINE - 1]
+            = '\0';
+
+        cli_expand_fpsvar(
+            condline,
+            STRINGMAXLEN_CLICMDLINE);
+        cli_expand_env(
+            condline,
+            STRINGMAXLEN_CLICMDLINE);
+        cli_expand_arith(
+            condline,
+            STRINGMAXLEN_CLICMDLINE);
+
+        const char *cl =
+            strip_ws(condline);
+        cl += 5; /* skip "until" */
+        cl = strip_ws(cl);
+
+        int cond_result = 0;
+        if(*cl == '[')
+        {
+            cl++;
+            const char *end =
+                strrchr(cl, ']');
+            if(end != NULL)
+            {
+                char cs[512];
+                int clen =
+                    (int)(end - cl);
+                if(clen
+                   >= (int) sizeof(cs))
+                {
+                    clen =
+                        (int) sizeof(cs)
+                        - 1;
+                }
+                memcpy(cs, cl,
+                       (size_t) clen);
+                cs[clen] = '\0';
+                cond_result =
+                    cli_eval_test(cs);
+            }
+        }
+        else
+        {
+            char ccmd[
+                STRINGMAXLEN_CLICMDLINE];
+            strncpy(ccmd, cl,
+                    sizeof(ccmd) - 1);
+            ccmd[sizeof(ccmd) - 1] = '\0';
+            char *sc =
+                strstr(ccmd, ";");
+            if(sc)
+            {
+                char *dp =
+                    strstr(sc, "do");
+                if(dp)
+                {
+                    *sc = '\0';
+                }
+            }
+            int len = (int) strlen(ccmd);
+            while(len > 0
+                  && (ccmd[len - 1] == ';'
+                      || ccmd[len - 1]
+                         == ' '
+                      || ccmd[len - 1]
+                         == '\t'))
+            {
+                ccmd[--len] = '\0';
+            }
+            CLI_execute_string(ccmd);
+            cond_result =
+                (cli_last_retval == 0)
+                ? 1 : 0;
+        }
+
+        /* until: loop while FALSE */
+        if(cond_result)
+        {
+            break;
+        }
+
+        cli_continue_flag = 0;
+        cli_exec_lines(
+            lines + body_start,
+            body_end - body_start);
+
+        if(cli_break_flag)
+        {
+            cli_break_flag = 0;
+            break;
+        }
+    }
+}
+
+
 /* ---- Parse for/do/done block ---- */
 
 /**

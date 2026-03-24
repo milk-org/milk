@@ -1214,3 +1214,137 @@ mem.mk2Dim _dbl_test 4 4
 _dbl_test = _dbl_test * 0.0 + 1.5
 mem.rm _dbl_test
 dpsingle
+
+# ============================================
+# ---- New features: Compound Assignment ----
+# ============================================
+
+#DESC: Compound add-assign
+#EXPECT:OK
+_ca = 10
+_ca += 5
+echo $_ca
+unset _ca
+
+#DESC: Compound sub-assign
+#EXPECT:OK
+_cs = 20
+_cs -= 3
+echo $_cs
+unset _cs
+
+#DESC: Compound mul-assign
+#EXPECT:OK
+_cm = 4
+_cm *= 3
+echo $_cm
+unset _cm
+
+#DESC: Compound div-assign
+#EXPECT:OK
+_cd = 12
+_cd /= 4
+echo $_cd
+unset _cd
+
+# ============================================
+# ---- Ternary operator ----
+# ============================================
+
+#DESC: Ternary true branch
+#EXPECT:OK
+_tt = (1 > 0) ? 10 : 20
+echo $_tt
+unset _tt
+
+#DESC: Ternary false branch
+#EXPECT:OK
+_tf = (0 > 1) ? 10 : 20
+echo $_tf
+unset _tf
+
+# ============================================
+# ---- Integer literal formats ----
+# ============================================
+
+#DESC: Hex literal
+#EXPECT:OK
+_hx = 0xff
+echo $_hx
+unset _hx
+
+#DESC: Octal literal
+#EXPECT:OK
+_oc = 0o77
+echo $_oc
+unset _oc
+
+#DESC: Binary literal
+#EXPECT:OK
+_bn = 0b1010
+echo $_bn
+unset _bn
+
+# ============================================
+# ---- strlen builtin ----
+# ============================================
+
+#DESC: strlen of string
+#EXPECT:OK
+_str="hello"
+_sl = strlen("hello")
+echo $_sl
+unset _str
+unset _sl
+
+# ============================================
+# ---- until loop ----
+# ============================================
+
+#DESC: Until loop basic
+#EXPECT:OK
+_uc = 0
+until [ $_uc -ge 3 ]; do
+_uc = $(( $_uc + 1 ))
+done
+echo $_uc
+unset _uc
+
+# ============================================
+# ---- printf builtin ----
+# ============================================
+
+#DESC: Printf basic format
+#EXPECT:OK
+printf "value=%d\n" 42
+
+#DESC: Printf string format
+#EXPECT:OK
+printf "%s world\n" hello
+
+#DESC: Printf float format
+#EXPECT:OK
+printf "pi=%f\n" 3.14
+
+# ============================================
+# ---- export builtin ----
+# ============================================
+
+#DESC: Export with value
+#EXPECT:OK
+export _CLI_TESTVAR=hello123
+echo $_CLI_TESTVAR
+unset _CLI_TESTVAR
+
+# ============================================
+# ---- shift builtin ----
+# ============================================
+
+#DESC: Shift in function
+#EXPECT:OK
+function _test_shift {
+echo $1
+shift
+echo $1
+}
+_test_shift alpha beta

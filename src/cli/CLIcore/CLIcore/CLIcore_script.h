@@ -121,6 +121,18 @@ errno_t cli_cmd_echo(void);
 /** fpsset — write FPS parameter */
 errno_t cli_cmd_fpsset(void);
 
+/** read — read a line into a variable */
+errno_t cli_cmd_read(void);
+
+/** export — push CLI var to environ */
+errno_t cli_cmd_export(void);
+
+/** shift — rotate positional parameters */
+errno_t cli_cmd_shift(void);
+
+/** printf — formatted output */
+errno_t cli_cmd_printf(void);
+
 /* ---- Expansion Functions ---- */
 
 /** Unified variable lookup: CLI > special > env */
@@ -166,7 +178,8 @@ enum
     CLI_BLOCK_FOR,
     CLI_BLOCK_FUNC,
     CLI_BLOCK_CASE,
-    CLI_BLOCK_SELECT
+    CLI_BLOCK_SELECT,
+    CLI_BLOCK_UNTIL
 };
 
 /** Block accumulator state */
