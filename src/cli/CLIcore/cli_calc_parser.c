@@ -15,6 +15,7 @@
  * as per-pixel masking. Populates data.cmdargtoken[data.cmdNBarg].
  */
 
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -153,23 +154,32 @@ static inline int get_prec(cli_token_type t)
             return 1;
         case TOK_OP_AND:
             return 2;
+        case TOK_OP_BOR:
+            return 3;
+        case TOK_OP_BXOR:
+            return 4;
+        case TOK_OP_BAND:
+            return 5;
         case TOK_OP_EQ:
         case TOK_OP_NEQ:
-            return 3;
+            return 6;
         case TOK_OP_LT:
         case TOK_OP_LE:
         case TOK_OP_GT:
         case TOK_OP_GE:
-            return 4;
+            return 7;
+        case TOK_OP_LSHIFT:
+        case TOK_OP_RSHIFT:
+            return 8;
         case TOK_OP_PLUS:
         case TOK_OP_MINUS:
-            return 5;
+            return 9;
         case TOK_OP_STAR:
         case TOK_OP_SLASH:
         case TOK_OP_MOD:
-            return 6;
+            return 10;
         case TOK_OP_CARET:
-            return 7;
+            return 11;
         case TOK_EQUAL:
         case TOK_OP_PLUS_EQ:
         case TOK_OP_MINUS_EQ:
@@ -569,6 +579,21 @@ static val_t eval_binop(
                 return mk_long((left.lval && right.lval) ? 1 : 0);
             case TOK_OP_OR:
                 return mk_long((left.lval || right.lval) ? 1 : 0);
+            case TOK_OP_BAND:
+                return mk_long(
+                    left.lval & right.lval);
+            case TOK_OP_BOR:
+                return mk_long(
+                    left.lval | right.lval);
+            case TOK_OP_BXOR:
+                return mk_long(
+                    left.lval ^ right.lval);
+            case TOK_OP_LSHIFT:
+                return mk_long(
+                    left.lval << right.lval);
+            case TOK_OP_RSHIFT:
+                return mk_long(
+                    left.lval >> right.lval);
             default:
                 break;
         }
@@ -617,6 +642,21 @@ static val_t eval_binop(
                 return mk_long((lv != 0 && rv != 0) ? 1 : 0);
             case TOK_OP_OR:
                 return mk_long((lv != 0 || rv != 0) ? 1 : 0);
+            case TOK_OP_BAND:
+                return mk_long(
+                    (long) lv & (long) rv);
+            case TOK_OP_BOR:
+                return mk_long(
+                    (long) lv | (long) rv);
+            case TOK_OP_BXOR:
+                return mk_long(
+                    (long) lv ^ (long) rv);
+            case TOK_OP_LSHIFT:
+                return mk_long(
+                    (long) lv << (long) rv);
+            case TOK_OP_RSHIFT:
+                return mk_long(
+                    (long) lv >> (long) rv);
             default:
                 break;
         }
@@ -1102,6 +1142,327 @@ static val_t parse_funccall(cli_token *ftok)
         );
     }
 
+    /* toupper(s), tolower(s) -> string */
+    if (ftok->type == TOK_FUNC_S_S)
+    {
+        val_t arg = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        /* Resolve string value */
+        const char *sv = NULL;
+        char numbuf[64];
+        if (arg.type == VAL_STRING)
+        {
+            const char *cv =
+                cli_var_get(arg.sval);
+            sv = cv ? cv : arg.sval;
+        }
+        else if (arg.type == VAL_LONG)
+        {
+            snprintf(numbuf, 64,
+                     "%ld", arg.lval);
+            sv = numbuf;
+        }
+        else
+        {
+            snprintf(numbuf, 64,
+                     "%g", arg.dval);
+            sv = numbuf;
+        }
+
+        char result[CLI_CALC_TOKEN_MAXLEN];
+        strncpy(result, sv,
+                sizeof(result) - 1);
+        result[sizeof(result) - 1] = '\0';
+
+        const char *fn = ftok->sval;
+        if (strncmp(fn, "toupper(", 8) == 0)
+        {
+            for (int i = 0;
+                 result[i]; i++)
+            {
+                result[i] = (char) toupper(
+                    (unsigned char) result[i]);
+            }
+        }
+        else /* tolower */
+        {
+            for (int i = 0;
+                 result[i]; i++)
+            {
+                result[i] = (char) tolower(
+                    (unsigned char) result[i]);
+            }
+        }
+
+        /* Store as temp CLI var */
+        const char *tmpn = alloc_tmpname();
+        cli_var_set(tmpn, result);
+        return mk_string(tmpn);
+    }
+
+    /* substr(s, off, len) -> string */
+    if (ftok->type == TOK_FUNC_SDD_S)
+    {
+        val_t arg1 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("substr: need 3 args");
+            return mk_double(0);
+        }
+        advance_func();
+        val_t arg2 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg("substr: need 3 args");
+            return mk_double(0);
+        }
+        advance_func();
+        val_t arg3 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        const char *sv = NULL;
+        if (arg1.type == VAL_STRING)
+        {
+            const char *cv =
+                cli_var_get(arg1.sval);
+            sv = cv ? cv : arg1.sval;
+        }
+        else
+        {
+            parse_errmsg(
+                "substr: first arg "
+                "must be string");
+            return mk_double(0);
+        }
+
+        int slen = (int) strlen(sv);
+        int off = (int) to_double(arg2);
+        int len = (int) to_double(arg3);
+        if (off < 0) { off = 0; }
+        if (off > slen) { off = slen; }
+        if (len < 0) { len = 0; }
+        if (off + len > slen)
+        {
+            len = slen - off;
+        }
+
+        char result[CLI_CALC_TOKEN_MAXLEN];
+        memcpy(result, sv + off,
+               (size_t) len);
+        result[len] = '\0';
+
+        const char *tmpn = alloc_tmpname();
+        cli_var_set(tmpn, result);
+        return mk_string(tmpn);
+    }
+
+    /* replace(s, old, new) -> string */
+    if (ftok->type == TOK_FUNC_SSS_S)
+    {
+        val_t arg1 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg(
+                "replace: need 3 args");
+            return mk_double(0);
+        }
+        advance_func();
+        val_t arg2 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_COMMA)
+        {
+            parse_errmsg(
+                "replace: need 3 args");
+            return mk_double(0);
+        }
+        advance_func();
+        val_t arg3 = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        const char *s1 = NULL;
+        const char *s2 = NULL;
+        const char *s3 = NULL;
+        if (arg1.type == VAL_STRING)
+        {
+            const char *cv =
+                cli_var_get(arg1.sval);
+            s1 = cv ? cv : arg1.sval;
+        }
+        if (arg2.type == VAL_STRING)
+        {
+            const char *cv =
+                cli_var_get(arg2.sval);
+            s2 = cv ? cv : arg2.sval;
+        }
+        if (arg3.type == VAL_STRING)
+        {
+            const char *cv =
+                cli_var_get(arg3.sval);
+            s3 = cv ? cv : arg3.sval;
+        }
+        if (!s1 || !s2 || !s3)
+        {
+            parse_errmsg(
+                "replace: all args "
+                "must be strings");
+            return mk_double(0);
+        }
+
+        char result[CLI_CALC_TOKEN_MAXLEN];
+        result[0] = '\0';
+        int s2len = (int) strlen(s2);
+        if (s2len == 0)
+        {
+            strncpy(result, s1,
+                    sizeof(result) - 1);
+            result[sizeof(result) - 1]
+                = '\0';
+        }
+        else
+        {
+            const char *p = s1;
+            char *w = result;
+            char *end = result
+                + sizeof(result) - 1;
+            while (*p && w < end)
+            {
+                if (strncmp(p, s2,
+                    (size_t) s2len) == 0)
+                {
+                    int rlen =
+                        (int) strlen(s3);
+                    if (w + rlen < end)
+                    {
+                        memcpy(w, s3,
+                            (size_t) rlen);
+                        w += rlen;
+                    }
+                    p += s2len;
+                }
+                else
+                {
+                    *w++ = *p++;
+                }
+            }
+            *w = '\0';
+        }
+
+        const char *tmpn = alloc_tmpname();
+        cli_var_set(tmpn, result);
+        return mk_string(tmpn);
+    }
+
+    /* hex(n), oct(n), bin(n) -> string */
+    if (ftok->type == TOK_FUNC_D_S)
+    {
+        val_t arg = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        long iv = (arg.type == VAL_LONG)
+            ? arg.lval
+            : (long) to_double(arg);
+
+        char result[CLI_CALC_TOKEN_MAXLEN];
+        const char *fn = ftok->sval;
+        if (strncmp(fn, "hex(", 4) == 0)
+        {
+            snprintf(result,
+                     sizeof(result),
+                     "0x%lx", iv);
+        }
+        else if (strncmp(fn, "oct(", 4)
+                 == 0)
+        {
+            snprintf(result,
+                     sizeof(result),
+                     "0o%lo", iv);
+        }
+        else /* bin */
+        {
+            char *w = result;
+            *w++ = '0';
+            *w++ = 'b';
+            if (iv == 0)
+            {
+                *w++ = '0';
+            }
+            else
+            {
+                long v = iv;
+                char bits[65];
+                int bi = 0;
+                while (v > 0 && bi < 64)
+                {
+                    bits[bi++] =
+                        (v & 1) ? '1' : '0';
+                    v >>= 1;
+                }
+                for (int i = bi - 1;
+                     i >= 0; i--)
+                {
+                    *w++ = bits[i];
+                }
+            }
+            *w = '\0';
+        }
+
+        const char *tmpn = alloc_tmpname();
+        cli_var_set(tmpn, result);
+        return mk_string(tmpn);
+    }
+
     parse_errmsg("Unknown function type");
     return mk_double(0);
 }
@@ -1204,6 +1565,20 @@ static val_t parse_primary(void)
         return mk_double(0);
     }
 
+    /* unary bitwise NOT */
+    if (t->type == TOK_OP_BNOT)
+    {
+        advance_func();
+        val_t v = parse_primary();
+        if (parse_error || eval_error)
+        {
+            return mk_long(0);
+        }
+        long iv = (v.type == VAL_LONG)
+            ? v.lval : (long) v.dval;
+        return mk_long(~iv);
+    }
+
     /* parenthesized expression */
     if (t->type == TOK_LPAREN)
     {
@@ -1230,7 +1605,11 @@ static val_t parse_primary(void)
         || t->type == TOK_FUNC_IMD_D
         || t->type == TOK_FUNC_WHERE
         || t->type == TOK_FUNC_IMIM_D
-        || t->type == TOK_FUNC_S_D)
+        || t->type == TOK_FUNC_S_D
+        || t->type == TOK_FUNC_S_S
+        || t->type == TOK_FUNC_SDD_S
+        || t->type == TOK_FUNC_SSS_S
+        || t->type == TOK_FUNC_D_S)
     {
         advance_func();
         return parse_funccall(t);

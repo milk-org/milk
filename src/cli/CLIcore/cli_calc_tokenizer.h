@@ -66,6 +66,19 @@ typedef enum
     TOK_OP_QUESTION, /**< ? (ternary) */
     TOK_OP_COLON,    /**< : (ternary) */
     TOK_FUNC_S_D,    /**< func(string)->double */
+    /* Bitwise operators */
+    TOK_OP_BAND,     /**< & (bitwise AND) */
+    TOK_OP_BOR,      /**< | (bitwise OR)  */
+    TOK_OP_BXOR,     /**< ^ (bitwise XOR) */
+    TOK_OP_BNOT,     /**< ~ (bitwise NOT) */
+    TOK_OP_LSHIFT,   /**< <<              */
+    TOK_OP_RSHIFT,   /**< >>              */
+    /* String functions */
+    TOK_FUNC_S_S,    /**< func(string)->string */
+    TOK_FUNC_SDD_S,  /**< func(s,d,d)->string  */
+    TOK_FUNC_SSS_S,  /**< func(s,s,s)->string  */
+    /* Format conversions */
+    TOK_FUNC_D_S,    /**< func(double)->string */
     TOK_NEWLINE
 } cli_token_type;
 
