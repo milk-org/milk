@@ -1637,19 +1637,13 @@ pipe_fallthrough:
             }
             if (!is_internal)
             {
+                printf(
+                    COLORDIMYELLOW
+                    "[shell bypass] %s"
+                    COLORRST "\n",
+                    data.CLIcmdline);
                 cli_export_vars_to_env();
-                int sys_ret =
-                    system(data.CLIcmdline);
-                if (sys_ret != -1
-                    && ((sys_ret >> 8) & 0xff)
-                           != 127)
-                {
-                    printf(
-                        COLORDIMYELLOW
-                        "[shell bypass] %s"
-                        COLORRST "\n",
-                        data.CLIcmdline);
-                }
+                system(data.CLIcmdline);
                 free(thetime);
                 return RETURN_SUCCESS;
             }
