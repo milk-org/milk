@@ -200,6 +200,8 @@ extern int       cli_block_level;
  *  Returns 1 if consumed, 0 if not. */
 int cli_script_intercept(const char *line);
 
+int cli_trap_signum(const char *name);
+
 /** Evaluate a test expression [ ... ].
  *  Returns 1 if true, 0 if false. */
 int cli_eval_test(const char *expr);

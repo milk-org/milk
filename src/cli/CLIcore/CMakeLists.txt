@@ -28,7 +28,7 @@ find_package(Threads REQUIRED)
 set(CORE_FILES
     CLIcore.c
     CLIcore/CLIcore_utils.c
-    CLIcore/CLIcore_UI.c
+    CLIcore/CLIcore_UI_execute.c
     CLIcore/CLIcore_checkargs.c
     CLIcore/CLIcore_checkargs_fps.c
     CLIcore/CLIcore_datainit.c
@@ -39,6 +39,7 @@ set(CORE_FILES
     CLIcore/CLIcore_modules.c
     CLIcore/CLIcore_setSHMdir.c
     CLIcore/CLIcore_script.c
+    CLIcore/CLIcore_script_intercept.c
     CLIcore/CLIcore_script_builtin.c
     CLIcore/CLIcore_script_case.c
     CLIcore/CLIcore_script_expand.c
@@ -46,7 +47,7 @@ set(CORE_FILES
     CLIcore/CLIcore_script_func.c
     CLIcore/CLIcore_script_var.c
     CLIcore/CLIcore_signals.c
-    CLIcore/CLIcore_UI.c
+    CLIcore/CLIcore_UI_execute.c
     CLIcore/CLIcore_UI_alias.c
     CLIcore/CLIcore_UI_bookmark.c
     CLIcore/CLIcore_UI_builtins.c
@@ -56,7 +57,9 @@ set(CORE_FILES
     CLIcore/CLIcore_UI_history.c
     CLIcore/CLIcore_UI_prompt.c
     cli_calc_tokenizer.c
-    cli_calc_parser.c)
+    cli_calc_parser.c
+    cli_calc_functions.c
+    cli_calc_eval.c)
     
     link_directories(${NCURSES_LIBRARY_DIRS})
     
@@ -160,7 +163,7 @@ install(FILES CLIcore.h
               ../../engine/libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
 
-install(FILES CLIcore/CLIcore_UI.h
+install(FILES CLIcore/CLIcore_UI_execute.h
               CLIcore/CLIcore_checkargs.h
               CLIcore/CLIcore_datainit.h
               CLIcore/CLIcore_help.h
