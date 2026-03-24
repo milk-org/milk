@@ -180,7 +180,9 @@ static int cli_check_unquoted_restricted_symbols(
     int in_dquote = 0;
     int esc = 0;
     
-    const char *restricted = ";<>|[]()&*$";
+    /* '[' and ']' removed to allow stream
+     * slicing syntax (e.g. im[0:19,10:29]). */
+    const char *restricted = ";<>|()*&$";
     
     int word_start = 1;
     int valid_assign_prefix = 0; 
@@ -1470,6 +1472,85 @@ pipe_fallthrough:
         return RETURN_SUCCESS;
     }
 
+    /* ---- Calc expression evaluation ---- */
+    /* Try native mathematical evaluation for
+     * expressions like: crop1 = wfs + 1.0
+     * This works in all modes (interactive,
+     * -c flag, FIFO input).
+     * Must run BEFORE cli_try_var_assign()
+     * because var_assign intercepts space-
+     * separated = signs and doesn't handle
+     * image arithmetic or rename. */
+    if (data.CLIcmdline[0] != '\0'
+        && data.CLIcmdline[0] != '!')
+    {
+        char firstword[2048];
+        if (sscanf(data.CLIcmdline,
+                   " %2047s",
+                   firstword) == 1)
+        {
+            int is_internal = 0;
+            if (strcmp(firstword, "if") == 0
+                || strcmp(firstword,
+                         "elif") == 0
+                || strcmp(firstword,
+                         "else") == 0
+                || strcmp(firstword,
+                         "fi") == 0
+                || strcmp(firstword,
+                         "for") == 0
+                || strcmp(firstword,
+                         "while") == 0
+                || strcmp(firstword,
+                         "do") == 0
+                || strcmp(firstword,
+                         "done") == 0
+                || strcmp(firstword,
+                         ".") == 0
+                || strcmp(firstword,
+                         "source") == 0)
+            {
+                is_internal = 1;
+            }
+            if (!is_internal)
+            {
+                for (long i = 0;
+                     i < (long) data.NBcmd;
+                     i++)
+                {
+                    size_t cmdlen =
+                        strlen(
+                            data.cmd[i].key);
+                    if (strncmp(
+                            firstword,
+                            data.cmd[i].key,
+                            cmdlen) == 0
+                        && (firstword[cmdlen]
+                                == '\0'
+                            || firstword[
+                                   cmdlen]
+                                   == ':'
+                            || firstword[
+                                   cmdlen]
+                                   == ' '))
+                    {
+                        is_internal = 1;
+                        break;
+                    }
+                }
+            }
+            if (!is_internal)
+            {
+                if (cli_calc_eval_line(
+                        data.CLIcmdline))
+                {
+                    free(thetime);
+                    return RETURN_SUCCESS;
+                }
+            }
+        }
+    }
+
     /* Check for variable assignment (VAR=val) */
     if(cli_try_var_assign(data.CLIcmdline))
     {
@@ -1478,50 +1559,96 @@ pipe_fallthrough:
         DEBUG_TRACE_FEXIT();
         return RETURN_SUCCESS;
     }
+
     /* ---- Smart Shell Fallback Bypass ---- */
-    /* If the command does not start with an internal milk command, alias, or script keyword,
-     * bypass manual pipe/redirect parsing and instantly delegate the full pipeline to bash.
-     */
-    if (data.CLIcmdline[0] != '\0' && data.CLIcmdline[0] != '!' && data.CLIloopON == 1) {
+    /* If the command does not start with an
+     * internal milk command, alias, or script
+     * keyword, bypass manual pipe/redirect
+     * parsing and instantly delegate the
+     * full pipeline to bash. */
+    if (data.CLIcmdline[0] != '\0'
+        && data.CLIcmdline[0] != '!'
+        && data.CLIloopON == 1)
+    {
         char firstword[2048];
-        if (sscanf(data.CLIcmdline, " %2047s", firstword) == 1) {
+        if (sscanf(data.CLIcmdline,
+                   " %2047s",
+                   firstword) == 1)
+        {
             int is_internal = 0;
-            if (strcmp(firstword, "if") == 0 || strcmp(firstword, "elif") == 0 ||
-                strcmp(firstword, "else") == 0 || strcmp(firstword, "fi") == 0 ||
-                strcmp(firstword, "for") == 0 || strcmp(firstword, "while") == 0 ||
-                strcmp(firstword, "do") == 0 || strcmp(firstword, "done") == 0 ||
-                strcmp(firstword, ".") == 0 || strcmp(firstword, "source") == 0) {
+            if (strcmp(firstword, "if") == 0
+                || strcmp(firstword,
+                         "elif") == 0
+                || strcmp(firstword,
+                         "else") == 0
+                || strcmp(firstword,
+                         "fi") == 0
+                || strcmp(firstword,
+                         "for") == 0
+                || strcmp(firstword,
+                         "while") == 0
+                || strcmp(firstword,
+                         "do") == 0
+                || strcmp(firstword,
+                         "done") == 0
+                || strcmp(firstword,
+                         ".") == 0
+                || strcmp(firstword,
+                         "source") == 0)
+            {
                 is_internal = 1;
             }
-            if (!is_internal) {
-                // If it's a known form of variable assignment
-                const char *eq = strchr(firstword, '=');
-                if (eq != NULL) {
+            if (!is_internal)
+            {
+                const char *eq =
+                    strchr(firstword, '=');
+                if (eq != NULL)
+                {
                     is_internal = 1;
                 }
             }
 
-            if (!is_internal) {
-                for (long i = 0; i < (long) data.NBcmd; i++) {
-                    size_t cmdlen = strlen(data.cmd[i].key);
-                    if (strncmp(firstword, data.cmd[i].key, cmdlen) == 0 && 
-                        (firstword[cmdlen] == '\0' || firstword[cmdlen] == ':' || firstword[cmdlen] == ' ')) {
+            if (!is_internal)
+            {
+                for (long i = 0;
+                     i < (long) data.NBcmd;
+                     i++)
+                {
+                    size_t cmdlen =
+                        strlen(
+                            data.cmd[i].key);
+                    if (strncmp(
+                            firstword,
+                            data.cmd[i].key,
+                            cmdlen) == 0
+                        && (firstword[cmdlen]
+                                == '\0'
+                            || firstword[
+                                   cmdlen]
+                                   == ':'
+                            || firstword[
+                                   cmdlen]
+                                   == ' '))
+                    {
                         is_internal = 1;
                         break;
                     }
                 }
             }
-            if (!is_internal) {
-                // Attempt native mathematical evaluation first (returns 1 on success)
-                if (cli_calc_eval_line(data.CLIcmdline)) {
-                    free(thetime);
-                    return RETURN_SUCCESS;
-                }
-
+            if (!is_internal)
+            {
                 cli_export_vars_to_env();
-                int sys_ret = system(data.CLIcmdline);
-                if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) != 127) {
-                    printf(COLORDIMYELLOW "[shell bypass] %s" COLORRST "\n", data.CLIcmdline);
+                int sys_ret =
+                    system(data.CLIcmdline);
+                if (sys_ret != -1
+                    && ((sys_ret >> 8) & 0xff)
+                           != 127)
+                {
+                    printf(
+                        COLORDIMYELLOW
+                        "[shell bypass] %s"
+                        COLORRST "\n",
+                        data.CLIcmdline);
                 }
                 free(thetime);
                 return RETURN_SUCCESS;

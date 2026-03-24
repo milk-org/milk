@@ -13,6 +13,7 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_streamname_parse.h"
+#include "imgid_slice.h"
 
 
 
@@ -86,6 +87,14 @@ typedef struct
     char stream_must_exist; // 1 if @E
     char stream_must_new;   // 1 if @N
 
+    // Array slice parsed from name[...]
+    IMGID_SLICE slice;
+
+    // Materialized slice buffer
+    IMAGE      *slice_im;        // NULL until first use
+    uint64_t    slice_last_cnt0;  // source frame counter
+    int         slice_shared;    // 1 if @S: requested
+
 } IMGID;
 
 
@@ -122,6 +131,11 @@ static inline IMGID imgid_make()
     img.stream_must_exist = 0;
     img.stream_must_new   = 0;
 
+    memset(&img.slice, 0, sizeof(IMGID_SLICE));
+    img.slice_im       = NULL;
+    img.slice_last_cnt0 = 0;
+    img.slice_shared   = 0;
+
     return img;
 }
 
@@ -134,6 +148,12 @@ static inline void imgid_free(
         free(img->mdt);
     }
     img->mdt = NULL;
+
+    if (img->slice_im != NULL)
+    {
+        free(img->slice_im);
+        img->slice_im = NULL;
+    }
 }
 
 
@@ -277,9 +297,33 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
 
     img.ID        = -1;
     img.createcnt = -1;
-    strncpy(img.name, pch1, STRINGMAXLEN_IMAGE_NAME - 1);
     img.im = NULL;
     img.md = NULL;
+
+    /* Parse bracket slice from the final name.
+     * e.g. "im[0:19,10:29]" → bare name "im"
+     *   + slice {0:19, 10:29}.
+     */
+    {
+        char bare[STRINGMAXLEN_IMAGE_NAME];
+        char slicebuf[128];
+        int has_bracket =
+            imgid_slice_split_name(
+                pch1,
+                bare,
+                STRINGMAXLEN_IMAGE_NAME,
+                slicebuf,
+                sizeof(slicebuf));
+
+        strncpy(img.name, bare,
+                STRINGMAXLEN_IMAGE_NAME - 1);
+
+        if (has_bracket)
+        {
+            img.slice =
+                imgid_slice_parse(slicebuf);
+        }
+    }
 
     return img;
 }

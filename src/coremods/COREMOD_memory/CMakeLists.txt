@@ -59,6 +59,7 @@ set(SOURCEFILES
     stream_TCP.c
     stream_UDP.c
     stream_updateloop.c
+    stream_slice.c
     variable_ID.c
    )
 
@@ -118,6 +119,7 @@ set(INCLUDEFILES
     stream_TCP.h
     stream_UDP.h
     stream_updateloop.h
+    stream_slice.h
     variable_ID.h
    )
 
