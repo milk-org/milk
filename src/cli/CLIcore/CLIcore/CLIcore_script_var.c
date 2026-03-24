@@ -258,6 +258,34 @@ int cli_try_var_assign(const char *line)
         {
             cli_var_set(tmpname, valbuf);
         }
+
+        /* Print the assigned value so the user
+         * gets feedback, matching the output
+         * format of cli_calc_eval_line(). */
+        for (int i = 0; i < CLI_MAX_VARS; i++)
+        {
+            if (cli_vars[i].used
+                && strcmp(cli_vars[i].name,
+                          tmpname) == 0)
+            {
+                if (cli_vars[i].type == 1)
+                {
+                    printf("    long: %ld\n",
+                           cli_vars[i].num.l);
+                }
+                else if (cli_vars[i].type == 0)
+                {
+                    printf("    double: %g\n",
+                           cli_vars[i].num.f);
+                }
+                else
+                {
+                    printf("    string: %s\n",
+                           cli_vars[i].val);
+                }
+                break;
+            }
+        }
         return 1;
     }
 }
