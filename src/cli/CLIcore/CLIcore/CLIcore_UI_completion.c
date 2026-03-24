@@ -172,6 +172,23 @@ void rl_cb_linehandler(char *linein)
     // copy input into data.CLIcmdline
     strcpy(data.CLIcmdline, linein);
 
+    /* Record raw prompt in readline history
+     * and structured log BEFORE any expansion
+     * or alias resolution.  This means up-arrow
+     * recalls exactly what the user typed. */
+    if(linein[0] != '\0')
+    {
+        add_history(linein);
+        cli_history_log_prompt(linein);
+        if(data.autocomplete_history)
+        {
+            append_history(
+                1, CLI_history_file());
+            history_truncate_file(
+                CLI_history_file(), 10000);
+        }
+    }
+
     /* Handle backslash line continuation:
      * temporarily switch to blocking readline
      * to read additional lines */
