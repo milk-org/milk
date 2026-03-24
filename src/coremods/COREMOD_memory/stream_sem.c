@@ -1,8 +1,20 @@
 /**
  * @file    stream_sem.c
- * @brief   stream semaphores
+ * @brief   Stream semaphore operations
  *
- * Uses FPS V2 framework.
+ * CLI and standalone FPS commands for operating on
+ * ImageStreamIO semaphores. Provides five commands:
+ *
+ *  - imseminfo     — print semaphore status
+ *  - imsetsempost  — post a single semaphore
+ *  - imsetsempostl — post in a timed loop (primary)
+ *  - imsetsemwait  — wait on a semaphore
+ *  - imsetsemflush — flush (drain) a semaphore
+ *
+ * Each command is registered with the FPS framework
+ * using the V2 X-macro parameter binding pattern.
+ * The primary compute function (imsetsempostl)
+ * supports full procinfo lifecycle management.
  */
 
 #include <pthread.h>
@@ -438,7 +450,18 @@ CLIADDCMD_COREMOD_memory__stream_sem()
 }
 #endif
 
-imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
+/**
+ * @brief Print semaphore status for an image
+ *
+ * Prints write/read PIDs and current values for
+ * every semaphore attached to the image, plus
+ * the semlog value.
+ *
+ * @param IDname  Image name to query
+ * @return Image ID on success
+ */
+imageID COREMOD_MEMORY_image_seminfo(
+    const char *IDname)
 {
     imageID ID;
 
@@ -475,10 +498,17 @@ imageID COREMOD_MEMORY_image_seminfo(const char *IDname)
 }
 
 /**
- * @see ImageStreamIO_sempost
+ * @brief Post a semaphore by image name
+ *
+ * Resolves image name (loading from shared memory
+ * if needed), then posts the specified semaphore.
+ *
+ * @param IDname  Image name
+ * @param index   Semaphore index to post
+ * @return Image ID
  */
-
-imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
+imageID COREMOD_MEMORY_image_set_sempost(
+    const char *IDname, long index)
 {
     imageID ID;
 
@@ -494,9 +524,14 @@ imageID COREMOD_MEMORY_image_set_sempost(const char *IDname, long index)
 }
 
 /**
- * @see ImageStreamIO_sempost
+ * @brief Post a semaphore by image slot ID
+ *
+ * @param ID     Image slot index
+ * @param index  Semaphore index to post
+ * @return Image ID
  */
-imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
+imageID COREMOD_MEMORY_image_set_sempost_byID(
+    imageID ID, long index)
 {
     ImageStreamIO_sempost(&dcimg[ID], index);
 
@@ -504,9 +539,14 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(imageID ID, long index)
 }
 
 /**
- * @see ImageStreamIO_sempost_excl
+ * @brief Post semaphore exclusively by ID
+ *
+ * @param ID     Image slot index
+ * @param index  Semaphore index
+ * @return Image ID
  */
-imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index)
+imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
+    imageID ID, long index)
 {
     ImageStreamIO_sempost_excl(&dcimg[ID], index);
 
@@ -514,11 +554,21 @@ imageID COREMOD_MEMORY_image_set_sempost_excl_byID(imageID ID, long index)
 }
 
 /**
- * @see ImageStreamIO_sempost_loop
+ * @brief Post semaphore in timed loop
+ *
+ * Continuously posts semaphore at specified
+ * interval until cancelled. Used for rate-
+ * limited triggering of consumer loops.
+ *
+ * @param IDname  Image name
+ * @param index   Semaphore index
+ * @param dtus    Interval in microseconds
+ * @return Image ID
  */
-
 imageID
-COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)
+COREMOD_MEMORY_image_set_sempost_loop(
+    const char *IDname, long index,
+    long dtus)
 {
     imageID ID;
 
@@ -534,9 +584,16 @@ COREMOD_MEMORY_image_set_sempost_loop(const char *IDname, long index, long dtus)
 }
 
 /**
- * @see ImageStreamIO_semwait
+ * @brief Wait on a semaphore by image name
+ *
+ * Blocks until the specified semaphore is posted.
+ *
+ * @param IDname  Image name
+ * @param index   Semaphore index
+ * @return Image ID
  */
-imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
+imageID COREMOD_MEMORY_image_set_semwait(
+    const char *IDname, long index)
 {
     imageID ID;
 
@@ -551,7 +608,16 @@ imageID COREMOD_MEMORY_image_set_semwait(const char *IDname, long index)
     return ID;
 }
 
-// only works for sem0
+/**
+ * @brief Thread func: wait on sem0, cancel peers
+ *
+ * Used by semwait_OR_IDarray to implement OR-wait.
+ * Each thread waits on one stream's sem0; the first
+ * to wake cancels all sibling threads.
+ *
+ * @param ID  Image slot index (cast from void*)
+ * @return NULL (exits via pthread_exit)
+ */
 void *waitforsemID(void *ID)
 {
     pthread_t tid;
@@ -581,9 +647,20 @@ void *waitforsemID(void *ID)
     pthread_exit(NULL);
 }
 
-/// \brief Wait for multiple images semaphores [OR], only works for sem0
-errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray,
-        long     NB_ID)
+/**
+ * @brief Wait on any of N streams' sem0 (OR logic)
+ *
+ * Spawns one thread per stream, each waiting on
+ * sem0. When any thread returns, it cancels all
+ * others — implementing a multi-stream OR-wait.
+ *
+ * @param IDarray  Array of image IDs to wait on
+ * @param NB_ID    Length of IDarray
+ * @return RETURN_SUCCESS
+ */
+errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(
+    imageID *IDarray,
+    long     NB_ID)
 {
     int t;
     //    int semval;
@@ -619,8 +696,18 @@ errno_t COREMOD_MEMORY_image_set_semwait_OR_IDarray(imageID *IDarray,
     return RETURN_SUCCESS;
 }
 
-/// \brief flush multiple semaphores
-errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
+/**
+ * @brief Flush semaphores on multiple images
+ *
+ * Iterates all semaphores on each image, draining
+ * their values to zero via sem_trywait.
+ *
+ * @param IDarray  Array of image IDs
+ * @param NB_ID    Length of IDarray
+ * @return RETURN_SUCCESS
+ */
+errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
+    imageID *IDarray, long NB_ID)
 {
     long i, cnt;
     int  semval;
@@ -649,9 +736,18 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(imageID *IDarray, long NB_ID)
     return RETURN_SUCCESS;
 }
 
-/// set semaphore value to 0
-// if index <0, flush all image semaphores
-imageID COREMOD_MEMORY_image_set_semflush(const char *IDname, long index)
+/**
+ * @brief Flush a single image's semaphore
+ *
+ * If index < 0, flushes all semaphores on the
+ * image. Resolves from shared memory if needed.
+ *
+ * @param IDname  Image name
+ * @param index   Semaphore index (or -1 for all)
+ * @return Image ID
+ */
+imageID COREMOD_MEMORY_image_set_semflush(
+    const char *IDname, long index)
 {
     imageID ID;
 
