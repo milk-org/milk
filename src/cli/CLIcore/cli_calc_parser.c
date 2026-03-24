@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "CLIcore.h"
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -146,6 +147,8 @@ static inline int get_prec(cli_token_type t)
 {
     switch (t)
     {
+        case TOK_OP_QUESTION:
+            return -1;
         case TOK_OP_OR:
             return 1;
         case TOK_OP_AND:
@@ -168,6 +171,10 @@ static inline int get_prec(cli_token_type t)
         case TOK_OP_CARET:
             return 7;
         case TOK_EQUAL:
+        case TOK_OP_PLUS_EQ:
+        case TOK_OP_MINUS_EQ:
+        case TOK_OP_STAR_EQ:
+        case TOK_OP_SLASH_EQ:
             return 0;
         default:
             return -1;
@@ -176,7 +183,13 @@ static inline int get_prec(cli_token_type t)
 
 static inline int is_right_assoc(cli_token_type t)
 {
-    return (t == TOK_OP_CARET) || (t == TOK_EQUAL);
+    return (t == TOK_OP_CARET)
+        || (t == TOK_EQUAL)
+        || (t == TOK_OP_PLUS_EQ)
+        || (t == TOK_OP_MINUS_EQ)
+        || (t == TOK_OP_STAR_EQ)
+        || (t == TOK_OP_SLASH_EQ)
+        || (t == TOK_OP_QUESTION);
 }
 
 /* --------------------------------------------------------
@@ -1039,6 +1052,56 @@ static val_t parse_funccall(cli_token *ftok)
         return mk_double(res);
     }
 
+    /* strlen(string) -> long */
+    if (ftok->type == TOK_FUNC_S_D)
+    {
+        val_t arg = parse_expr(0);
+        if (parse_error || eval_error)
+        {
+            return mk_double(0);
+        }
+        if (cur_func()->type != TOK_RPAREN)
+        {
+            parse_errmsg("Expected ')'");
+            return mk_double(0);
+        }
+        advance_func();
+
+        /* Argument is a variable name or
+         * image name stored in sval */
+        if (arg.type == VAL_STRING)
+        {
+            /* Try CLI var first */
+            const char *cv =
+                cli_var_get(arg.sval);
+            if (cv != NULL)
+            {
+                return mk_long(
+                    (long) strlen(cv)
+                );
+            }
+            /* Fallback: length of name */
+            return mk_long(
+                (long) strlen(arg.sval)
+            );
+        }
+        /* If numeric, convert to string */
+        char numstr[64];
+        if (arg.type == VAL_LONG)
+        {
+            snprintf(numstr, 64,
+                     "%ld", arg.lval);
+        }
+        else
+        {
+            snprintf(numstr, 64,
+                     "%g", arg.dval);
+        }
+        return mk_long(
+            (long) strlen(numstr)
+        );
+    }
+
     parse_errmsg("Unknown function type");
     return mk_double(0);
 }
@@ -1166,7 +1229,8 @@ static val_t parse_primary(void)
         || t->type == TOK_FUNC_IM_D
         || t->type == TOK_FUNC_IMD_D
         || t->type == TOK_FUNC_WHERE
-        || t->type == TOK_FUNC_IMIM_D) // Added TOK_FUNC_IMIM_D and TOK_FUNC_WHERE
+        || t->type == TOK_FUNC_IMIM_D
+        || t->type == TOK_FUNC_S_D)
     {
         advance_func();
         return parse_funccall(t);
@@ -1176,7 +1240,12 @@ static val_t parse_primary(void)
     if (t->type == TOK_VAR)
     {
         advance_func();
-        if (cur_func()->type == TOK_EQUAL)
+        cli_token_type aop = cur_func()->type;
+        if (aop == TOK_EQUAL
+            || aop == TOK_OP_PLUS_EQ
+            || aop == TOK_OP_MINUS_EQ
+            || aop == TOK_OP_STAR_EQ
+            || aop == TOK_OP_SLASH_EQ)
         {
             advance_func();
             val_t v = parse_expr(0);
@@ -1184,6 +1253,68 @@ static val_t parse_primary(void)
             {
                 return v;
             }
+
+            /* compound: fetch old, apply op */
+            if (aop != TOK_EQUAL)
+            {
+                long vid = variable_ID(t->sval);
+                if (vid == -1)
+                {
+                    parse_errmsg(
+                        "Variable not found"
+                        " for compound assign"
+                    );
+                    return mk_double(0);
+                }
+                double old;
+                if (data.core.variable[vid]
+                    .type == 1)
+                {
+                    old = (double)
+                        data.core.variable[vid]
+                            .value.l;
+                }
+                else
+                {
+                    old = data.core.variable[vid]
+                        .value.f;
+                }
+                double nv = to_double(v);
+                switch (aop)
+                {
+                    case TOK_OP_PLUS_EQ:
+                        nv = old + nv; break;
+                    case TOK_OP_MINUS_EQ:
+                        nv = old - nv; break;
+                    case TOK_OP_STAR_EQ:
+                        nv = old * nv; break;
+                    case TOK_OP_SLASH_EQ:
+                        if (nv == 0.0)
+                        {
+                            parse_errmsg(
+                                "Division by zero"
+                            );
+                            return mk_double(0);
+                        }
+                        nv = old / nv;
+                        break;
+                    default:
+                        break;
+                }
+                /* check if result is integer */
+                if (v.type == VAL_LONG
+                    && data.core.variable[vid]
+                        .type == 1
+                    && aop != TOK_OP_SLASH_EQ)
+                {
+                    v = mk_long((long) nv);
+                }
+                else
+                {
+                    v = mk_double(nv);
+                }
+            }
+
             if (v.type == VAL_STRING)
             {
                 /* var = image -> rename */
@@ -1536,6 +1667,110 @@ static val_t parse_expr(int min_prec)
         }
 
         advance_func();
+
+        /* Ternary ? : operator */
+        if (op == TOK_OP_QUESTION)
+        {
+            val_t true_val = parse_expr(-1);
+            if (parse_error || eval_error)
+            {
+                return left;
+            }
+            if (cur_func()->type
+                != TOK_OP_COLON)
+            {
+                parse_errmsg(
+                    "Expected ':' in ternary"
+                );
+                return mk_double(0);
+            }
+            advance_func();
+            val_t false_val = parse_expr(-1);
+            if (parse_error || eval_error)
+            {
+                return left;
+            }
+            /* Scalar ternary */
+            if (left.type != VAL_STRING)
+            {
+                double c = to_double(left);
+                left = (c != 0.0)
+                    ? true_val : false_val;
+            }
+            else
+            {
+                /* Image ternary -> where() */
+                if (!check_image(left.sval))
+                {
+                    return mk_string("");
+                }
+                const char *tmask =
+                    alloc_tmpname();
+                const char *timask =
+                    alloc_tmpname();
+                const char *tpart =
+                    alloc_tmpname();
+                const char *fpart =
+                    alloc_tmpname();
+                const char *tmpn =
+                    alloc_tmpname();
+                arith_image_csttestne(
+                    left.sval, 0.0,
+                    tmask
+                );
+                arith_image_cstteste(
+                    left.sval, 0.0,
+                    timask
+                );
+                if (true_val.type
+                    == VAL_STRING)
+                {
+                    if (!check_image(
+                            true_val.sval))
+                    {
+                        return mk_string("");
+                    }
+                    arith_image_mult(
+                        true_val.sval,
+                        tmask, tpart
+                    );
+                }
+                else
+                {
+                    arith_image_cstmult(
+                        tmask,
+                        to_double(true_val),
+                        tpart
+                    );
+                }
+                if (false_val.type
+                    == VAL_STRING)
+                {
+                    if (!check_image(
+                            false_val.sval))
+                    {
+                        return mk_string("");
+                    }
+                    arith_image_mult(
+                        false_val.sval,
+                        timask, fpart
+                    );
+                }
+                else
+                {
+                    arith_image_cstmult(
+                        timask,
+                        to_double(false_val),
+                        fpart
+                    );
+                }
+                arith_image_add(
+                    tpart, fpart, tmpn
+                );
+                left = mk_string(tmpn);
+            }
+            continue;
+        }
 
         int next_min = is_right_assoc(op)
                        ? prec
