@@ -968,3 +968,249 @@ mem.rm _sliceout
 mem.rm _sliceout2
 mem.rm _sliceout3
 mem.rm _sliceout4
+
+# ============================================
+# SECTION 33: Alias System
+# ============================================
+
+#DESC: Define an alias
+#EXPECT:OK
+alias _testalias "echo alias_works"
+
+#DESC: Run an alias
+#EXPECT:OK
+_testalias
+
+#DESC: Overwrite an alias
+#EXPECT:OK
+alias _testalias "echo overwritten"
+_testalias
+
+#DESC: Remove an alias
+#EXPECT:OK
+unalias _testalias
+
+#DESC: Unalias nonexistent name (no crash)
+#EXPECT:OK
+unalias _no_such_alias_xyz
+
+#DESC: Alias list (bare alias)
+#EXPECT:OK
+alias
+
+# ============================================
+# SECTION 34: Bookmark System
+# ============================================
+
+#DESC: Bookmark list (initially empty or existing)
+#EXPECT:OK
+bookmark list
+
+#DESC: Bookmark save and run
+#EXPECT:OK
+bookmark save _tbm "echo bookmark_ok"
+bookmark run _tbm
+
+#DESC: Bookmark remove
+#EXPECT:OK
+bookmark rm _tbm
+
+#DESC: Bookmark unknown action
+#EXPECT:ERR
+bookmark frobnicate
+
+#DESC: Bookmark run nonexistent
+#EXPECT:ERR
+bookmark run _no_such_bm_xyz
+
+# ============================================
+# SECTION 35: printf Command
+# ============================================
+
+#DESC: printf with format string
+#EXPECT:OK
+printf "%s=%d\n" hello 42
+
+#DESC: printf with float format
+#EXPECT:OK
+printf "%.3f\n" 3.14159
+
+#DESC: printf with escape sequences
+#EXPECT:OK
+printf "a\tb\n"
+
+#DESC: printf with no arguments (just format)
+#EXPECT:OK
+printf "literal\n"
+
+# ============================================
+# SECTION 36: sleep Command
+# ============================================
+
+#DESC: Sleep with fractional seconds
+#EXPECT:OK
+sleep 0.01
+
+#DESC: Sleep with no argument (usage)
+#EXPECT:ERR
+sleep
+
+# ============================================
+# SECTION 37: trap Command
+# ============================================
+
+#DESC: Set EXIT trap (parse only)
+#EXPECT:OK
+trap "echo trap_set" EXIT
+
+#DESC: List traps
+#EXPECT:OK
+trap -l
+
+# ============================================
+# SECTION 38: savehistory Command
+# ============================================
+
+#DESC: savehistory to file
+#EXPECT:OK
+savehistory /tmp/_clitest_hist.txt
+
+#DESC: savehistory no argument (usage)
+#EXPECT:ERR
+savehistory
+
+#DESC: Clean up savehistory temp
+#EXPECT:OK
+!rm -f /tmp/_clitest_hist.txt
+
+# ============================================
+# SECTION 39: History Commands
+# ============================================
+
+#DESC: Local history display
+#EXPECT:OK
+lhistory
+
+#DESC: Global history display
+#EXPECT:OK
+ghistory
+
+#DESC: ghistory with count
+#EXPECT:OK
+ghistory 5
+
+#DESC: lhistory with type filter
+#EXPECT:OK
+lhistory -t cmd
+
+# ============================================
+# SECTION 40: fpsset Error Paths
+# ============================================
+
+#DESC: fpsset with no arguments (usage)
+#EXPECT:ERR
+fpsset
+
+#DESC: fpsset with missing dot notation
+#EXPECT:ERR
+fpsset nodotparam 42
+
+#DESC: fpsset nonexistent FPS
+#EXPECT:ERR
+fpsset nosuchfps_xyz.param 42
+
+# ============================================
+# SECTION 41: on_update Error Paths
+# ============================================
+
+#DESC: on_update with nonexistent stream
+#EXPECT:ERR
+on_update _no_such_stream_xyz { echo x }
+
+#DESC: on_update with no arguments (usage)
+#EXPECT:ERR
+on_update
+
+# ============================================
+# SECTION 42: Shell Bypass
+# ============================================
+
+#DESC: Shell bypass with valid command
+#EXPECT:OK
+!echo shell_bypass_test
+
+#DESC: Shell bypass with nonexistent command
+#EXPECT:ERR
+!nonexistent_cmd_xyz_456
+
+# ============================================
+# SECTION 43: include_once Idempotency
+# ============================================
+
+#DESC: include_once same file twice (no error)
+#EXPECT:OK
+!echo "echo sourced_once" > /tmp/_clitest_inc.milk
+include_once /tmp/_clitest_inc.milk
+include_once /tmp/_clitest_inc.milk
+!rm -f /tmp/_clitest_inc.milk
+
+# ============================================
+# SECTION 44: Edge Cases
+# ============================================
+
+#DESC: Variable name with digits
+#EXPECT:OK
+_var123abc=test_digits
+echo $_var123abc
+unset _var123abc
+
+#DESC: Deeply nested arithmetic
+#EXPECT:OK
+_deep=$(( ((1 + 2) * (3 + 4)) + ((5 - 6) * 7) ))
+echo $_deep
+unset _deep
+
+#DESC: While false (never enters body)
+#EXPECT:OK
+while [ 0 -eq 1 ]; do
+    echo never
+done
+
+#DESC: Nested function calls
+#EXPECT:OK
+function _outer { echo outer_$1; }
+function _inner { _outer inner; }
+_inner
+
+#DESC: OR chain first fails
+#EXPECT:OK
+xyzzy_nonexistent_12345 || echo fallback_ok
+
+#DESC: AND chain first fails
+#EXPECT:OK
+xyzzy_nonexistent_12345 && echo skipped
+echo and_chain_done
+
+#DESC: Semicolon with trailing spaces
+#EXPECT:OK
+echo first_sc ;   echo second_sc
+
+#DESC: Empty variable expansion in argument
+#EXPECT:OK
+_ev=
+echo prefix${_ev}suffix
+unset _ev
+
+#DESC: Calculator with negative literal
+#EXPECT:OK
+_neg = -5 + 3
+echo $_neg
+unset _neg
+
+#DESC: Image math type promotion (double)
+#EXPECT:OK
+dpdouble
+mem.mk2Dim _dbl_test 4 4
+_dbl_test = _dbl_test * 0.0 + 1.5
+mem.rm _dbl_test
+dpsingle
