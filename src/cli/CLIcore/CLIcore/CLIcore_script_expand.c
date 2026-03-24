@@ -14,6 +14,13 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <regex.h>
+#include <sys/mman.h>
+
+/* processinfo functions — linked via milkprocessinfo */
+extern PROCESSINFO *processinfo_shm_link(
+    const char *pname, int *fd);
+extern errno_t processinfo_procdirname(
+    char *procdname);
 
 /* ============================================================
  *  Arithmetic Expansion Helper Functions
@@ -373,6 +380,202 @@ void cli_expand_fpsvar(
             if(fpsconn == -1
                     || fps.parray == NULL)
             {
+                /* FPS not found — try procinfo */
+                if(pinfolist != NULL)
+                {
+                    pid_t found_pid = 0;
+                    for(int pi = 0;
+                        pi < PROCESSINFOLISTSIZE;
+                        pi++)
+                    {
+                        if(pinfolist->active[pi]
+                           && strcmp(
+                               pinfolist
+                                   ->pnamearray[pi],
+                               fpsname) == 0)
+                        {
+                            found_pid =
+                                pinfolist
+                                    ->PIDarray[pi];
+                            break;
+                        }
+                    }
+                    if(found_pid > 0)
+                    {
+                        char pfname[512];
+                        char procdname[256];
+                        processinfo_procdirname(
+                            procdname);
+                        snprintf(
+                            pfname,
+                            sizeof(pfname),
+                            "%s/proc.%d.shm",
+                            procdname,
+                            (int) found_pid);
+                        int pfd = -1;
+                        PROCESSINFO *pi =
+                            processinfo_shm_link(
+                                pfname, &pfd);
+                        if(pi != MAP_FAILED
+                           && pi != NULL)
+                        {
+                            char vstr[512];
+                            vstr[0] = '\0';
+                            if(strcmp(pname,
+                                "pid") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%d",
+                                    (int) pi->PID);
+                            }
+                            else if(strcmp(pname,
+                                "loopstat") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%d",
+                                    pi->loopstat);
+                            }
+                            else if(strcmp(pname,
+                                "loopcnt") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%ld",
+                                    pi->loopcnt);
+                            }
+                            else if(strcmp(pname,
+                                "loopfreq") == 0)
+                            {
+                                double hz = 0.0;
+                                if(pi
+                                    ->dtmedian_iter_ns
+                                   > 0)
+                                {
+                                    hz = 1.0e9
+                                        / (double)
+                                          pi
+                                          ->dtmedian_iter_ns;
+                                }
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%.1f", hz);
+                            }
+                            else if(strcmp(pname,
+                                "exectime") == 0)
+                            {
+                                double us =
+                                    (double)
+                                    pi
+                                    ->dtmedian_exec_ns
+                                    / 1000.0;
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%.1f", us);
+                            }
+                            else if(strcmp(pname,
+                                "rtprio") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%d",
+                                    pi
+                                    ->RT_priority);
+                            }
+                            else if(strcmp(pname,
+                                "ctrlval") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%d",
+                                    pi->CTRLval);
+                            }
+                            else if(strcmp(pname,
+                                "trigmode") == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%d",
+                                    pi
+                                    ->triggermode);
+                            }
+                            else if(strcmp(pname,
+                                "statusmsg") == 0)
+                            {
+                                strncpy(
+                                    vstr,
+                                    pi->statusmsg,
+                                    sizeof(vstr)
+                                    - 1);
+                                vstr[sizeof(vstr)
+                                     - 1] = '\0';
+                            }
+                            else if(strcmp(pname,
+                                "tmux") == 0)
+                            {
+                                strncpy(
+                                    vstr,
+                                    pi->tmuxname,
+                                    sizeof(vstr)
+                                    - 1);
+                                vstr[sizeof(vstr)
+                                     - 1] = '\0';
+                            }
+                            else if(strcmp(pname,
+                                "description")
+                                == 0)
+                            {
+                                strncpy(
+                                    vstr,
+                                    pi
+                                    ->description,
+                                    sizeof(vstr)
+                                    - 1);
+                                vstr[sizeof(vstr)
+                                     - 1] = '\0';
+                            }
+                            else if(strcmp(pname,
+                                "missedframes")
+                                == 0)
+                            {
+                                snprintf(
+                                    vstr,
+                                    sizeof(vstr),
+                                    "%lu",
+                                    (unsigned long)
+                                    pi
+                                    ->triggermissedframe_cumul);
+                            }
+                            int vlen =
+                                (int) strlen(vstr);
+                            int avail =
+                                maxlen - 1 - opos;
+                            int clen =
+                                vlen < avail
+                                ? vlen : avail;
+                            memcpy(out + opos,
+                                   vstr,
+                                   (size_t) clen);
+                            opos += clen;
+                            munmap(pi,
+                                sizeof(PROCESSINFO));
+                            close(pfd);
+                        }
+                        else if(pfd >= 0)
+                        {
+                            close(pfd);
+                        }
+                    }
+                }
                 continue;
             }
 
