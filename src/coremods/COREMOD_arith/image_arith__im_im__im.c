@@ -1,10 +1,24 @@
 /**
  * @file    image_arith__im_im__im.c
- * @brief   arith functions
+ * @brief   Binary image×image arithmetic (img,img → img)
  *
- * input : image, image
- * output: image
+ * Applies a binary math function element-wise to two
+ * input images, producing an output image.
  *
+ * Each operation (add, sub, mult, div, pow, fmod,
+ * minv, maxv, testlt, testmt, teste, testne, testle,
+ * testge, and, or) provides three call surfaces:
+ *
+ *  - arith_image_<op>_IMGID(in1, in2, out)
+ *    Modern IMGID API, calls macro-stamped optimized
+ *    function.
+ *  - arith_image_<op>(name1, name2, name_out)
+ *    String-based API for CLI use.
+ *  - arith_image_<op>_inplace(name1, name2)
+ *    In-place: modifies image1 via function-pointer
+ *    dispatch.
+ *  - arith_image_<op>_inplace_byID(ID1, ID2)
+ *    In-place via legacy image IDs.
  */
 
 

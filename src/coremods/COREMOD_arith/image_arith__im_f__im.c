@@ -1,10 +1,20 @@
 /**
  * @file    image_arith__im_f__im.c
- * @brief   arith functions
+ * @brief   Image + scalar arithmetic (img,float → img)
  *
- * input : image, float
- * output: image
+ * Applies a binary math function to every pixel of
+ * an input image combined with a scalar constant,
+ * producing an output image.
  *
+ * A convenience macro ARITH_IMAGE_CST_WRAPPER(name)
+ * generates the string-based CLI entry point for each
+ * operation, which resolves IMGIDs from names and
+ * delegates to the _IMGID variant.
+ *
+ * Supported operations: cstadd, cstsub, cstsubm,
+ * cstmult, cstdiv, cstdiv1, cstpow, cstfmod,
+ * cstmaxv, cstminv, csttestlt, csttestmt, cstteste,
+ * csttestne, csttestle, csttestge, cstand, cstor.
  */
 
 
