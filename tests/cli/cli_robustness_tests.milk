@@ -931,3 +931,40 @@ source /tmp/_clitest_no_trace.milk
 #DESC: On_fpschange missing dot notation
 #EXPECT:ERR
 on_fpschange nodot { echo x }
+
+# ============================================
+# SECTION 32: Stream Slicing
+# ============================================
+
+#DESC: Create image and reference with slice (no crash)
+#EXPECT:OK
+mem.mk2Dim _slicetest 64 64
+listim _slicetest
+
+#DESC: Sliced name recognized in expression (RHS)
+#EXPECT:OK
+_sliceout = _slicetest[0:9,0:9] + 0.0
+
+#DESC: Full axis wildcard slice (no crash)
+#EXPECT:OK
+_sliceout2 = _slicetest[*,*] + 0.0
+
+#DESC: Flipped axis slice (no crash)
+#EXPECT:OK
+_sliceout3 = _slicetest[*,-*] + 0.0
+
+#DESC: Stride syntax (no crash)
+#EXPECT:OK
+_sliceout4 = _slicetest[0:63::2,*] + 0.0
+
+#DESC: Bad slice syntax missing bracket
+#EXPECT:ERR
+_bad = _slicetest[0:9 + 0.0
+
+#DESC: Clean up slice test images
+#EXPECT:OK
+mem.rm _slicetest
+mem.rm _sliceout
+mem.rm _sliceout2
+mem.rm _sliceout3
+mem.rm _sliceout4
