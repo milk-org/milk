@@ -91,6 +91,9 @@ static const builtin_func builtins[] =
     {"dot(",   (double(*)()) arith_image_dot, TOK_FUNC_IMIM_D},
     {"norm(",  (double(*)()) arith_image_norm, TOK_FUNC_IM_D},
 
+    /* string -> double */
+    {"strlen(", NULL, TOK_FUNC_S_D},
+
     {NULL, NULL, TOK_EOF}
 };
 
@@ -174,6 +177,10 @@ int cli_tokenize(
             else if (*p == '!' && *(p+1) == '=') { optype = TOK_OP_NEQ; oplen = 2; }
             else if (*p == '&' && *(p+1) == '&') { optype = TOK_OP_AND; oplen = 2; }
             else if (*p == '|' && *(p+1) == '|') { optype = TOK_OP_OR; oplen = 2; }
+            else if (*p == '+' && *(p+1) == '=') { optype = TOK_OP_PLUS_EQ; oplen = 2; }
+            else if (*p == '-' && *(p+1) == '=') { optype = TOK_OP_MINUS_EQ; oplen = 2; }
+            else if (*p == '*' && *(p+1) == '=') { optype = TOK_OP_STAR_EQ; oplen = 2; }
+            else if (*p == '/' && *(p+1) == '=') { optype = TOK_OP_SLASH_EQ; oplen = 2; }
             else
             {
                 switch (*p)
@@ -192,6 +199,8 @@ int cli_tokenize(
                     case '|': optype = TOK_OP_PIPE; break;
                     case ',': optype = TOK_COMMA; break;
                     case '=': optype = TOK_EQUAL; break;
+                    case '?': optype = TOK_OP_QUESTION; break;
+                    case ':': optype = TOK_OP_COLON; break;
                     default: break;
                 }
             }
@@ -226,6 +235,43 @@ int cli_tokenize(
         {
             const char *start = p;
             int         is_float = 0;
+
+            /* Hex (0x/0X), octal (0o/0O),
+             * binary (0b/0B) prefixes */
+            if (*p == '0' && *(p + 1) != '\0'
+                && !isdigit(
+                    (unsigned char) *(p + 1))
+                && *(p + 1) != '.')
+            {
+                char pfx = *(p + 1);
+                if (pfx == 'x' || pfx == 'X')
+                {
+                    tokens[nt].type  = TOK_LONG;
+                    tokens[nt].val_l =
+                        strtol(start, (char **)&p,
+                               16);
+                    nt++;
+                    continue;
+                }
+                if (pfx == 'o' || pfx == 'O')
+                {
+                    p += 2;
+                    tokens[nt].type  = TOK_LONG;
+                    tokens[nt].val_l =
+                        strtol(p, (char **)&p, 8);
+                    nt++;
+                    continue;
+                }
+                if (pfx == 'b' || pfx == 'B')
+                {
+                    p += 2;
+                    tokens[nt].type  = TOK_LONG;
+                    tokens[nt].val_l =
+                        strtol(p, (char **)&p, 2);
+                    nt++;
+                    continue;
+                }
+            }
 
             /* integer part */
             while (isdigit((unsigned char) *p))

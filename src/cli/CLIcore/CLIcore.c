@@ -1673,6 +1673,42 @@ void runCLI_cmd_init()
         "fpsset loopctrl.gain 0.3",
         "cli_cmd_fpsset()");
 
+    RegisterCLIcommand(
+        "read",
+        __FILE__,
+        cli_cmd_read,
+        "read a line into a variable",
+        "[-p \"prompt\"] <varname>",
+        "read -p \"Enter: \" x",
+        "cli_cmd_read()");
+
+    RegisterCLIcommand(
+        "export",
+        __FILE__,
+        cli_cmd_export,
+        "push CLI variable to environ",
+        "<varname>[=value]",
+        "export MYVAR",
+        "cli_cmd_export()");
+
+    RegisterCLIcommand(
+        "shift",
+        __FILE__,
+        cli_cmd_shift,
+        "shift positional parameters left",
+        "[N]",
+        "shift",
+        "cli_cmd_shift()");
+
+    RegisterCLIcommand(
+        "printf",
+        __FILE__,
+        cli_cmd_printf,
+        "formatted output",
+        "<format> [args...]",
+        "printf \"%s=%d\\n\" name 42",
+        "cli_cmd_printf()");
+
     //  init_modules();
 
     if(dcquiet == 0)

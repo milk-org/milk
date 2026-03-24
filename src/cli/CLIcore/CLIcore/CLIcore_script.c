@@ -390,6 +390,10 @@ void cli_exec_block_while(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
 );
+void cli_exec_block_until(
+    char lines[][STRINGMAXLEN_CLICMDLINE],
+    int nlines
+);
 void cli_exec_block_for(
     char lines[][STRINGMAXLEN_CLICMDLINE],
     int nlines
@@ -615,6 +619,8 @@ int cli_script_intercept(const char *line)
            || starts_with(p, "if\t")
            || starts_with(p, "while ")
            || starts_with(p, "while\t")
+           || starts_with(p, "until ")
+           || starts_with(p, "until\t")
            || starts_with(p, "for ")
            || starts_with(p, "for\t")
            || starts_with(p, "select ")
@@ -667,7 +673,8 @@ int cli_script_intercept(const char *line)
             is_close = 1;
         }
         if((blk->type == CLI_BLOCK_WHILE
-            || blk->type == CLI_BLOCK_FOR)
+            || blk->type == CLI_BLOCK_FOR
+            || blk->type == CLI_BLOCK_UNTIL)
            && strcmp(p, "done") == 0)
         {
             is_close = 1;
@@ -729,6 +736,14 @@ int cli_script_intercept(const char *line)
                 saved_type == CLI_BLOCK_WHILE)
             {
                 cli_exec_block_while(
+                    saved_lines,
+                    saved_nlines);
+            }
+            else if(
+                saved_type
+                == CLI_BLOCK_UNTIL)
+            {
+                cli_exec_block_until(
                     saved_lines,
                     saved_nlines);
             }
@@ -2258,6 +2273,30 @@ int cli_script_intercept(const char *line)
                 cli_block_level];
         memset(blk, 0, sizeof(*blk));
         blk->type = CLI_BLOCK_WHILE;
+        blk->active = 1;
+        strncpy(blk->lines[0], p,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        blk->nlines = 1;
+        cli_block_level++;
+        return 1;
+    }
+
+    /* until ... */
+    if(starts_with(p, "until ")
+       || starts_with(p, "until\t"))
+    {
+        if(cli_block_level
+           >= CLI_BLOCK_MAXDEPTH)
+        {
+            printf("Error: max block "
+                   "nesting exceeded\n");
+            return 1;
+        }
+        CLI_BLOCK *blk =
+            &cli_block_stack[
+                cli_block_level];
+        memset(blk, 0, sizeof(*blk));
+        blk->type = CLI_BLOCK_UNTIL;
         blk->active = 1;
         strncpy(blk->lines[0], p,
                 STRINGMAXLEN_CLICMDLINE - 1);

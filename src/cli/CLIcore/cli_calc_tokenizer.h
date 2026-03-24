@@ -59,6 +59,13 @@ typedef enum
     TOK_RPAREN,
     TOK_COMMA,
     TOK_EQUAL,
+    TOK_OP_PLUS_EQ,  /**< +=  */
+    TOK_OP_MINUS_EQ, /**< -=  */
+    TOK_OP_STAR_EQ,  /**< *=  */
+    TOK_OP_SLASH_EQ, /**< /=  */
+    TOK_OP_QUESTION, /**< ? (ternary) */
+    TOK_OP_COLON,    /**< : (ternary) */
+    TOK_FUNC_S_D,    /**< func(string)->double */
     TOK_NEWLINE
 } cli_token_type;
 

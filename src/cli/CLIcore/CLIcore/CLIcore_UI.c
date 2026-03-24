@@ -1919,6 +1919,116 @@ pipe_fallthrough:
         data.CMDexecuted = 1;
     }
     else if(strncmp(data.CLIcmdline,
+                    "printf ", 7) == 0)
+    {
+        /* Intercept printf before
+         * tokenization so % and
+         * backslash are preserved */
+        const char *raw =
+            data.CLIcmdline + 7;
+        while(*raw == ' ')
+        {
+            raw++;
+        }
+
+        /* Tokenize manually: split on
+         * spaces, respecting quotes */
+        data.cmdNBarg = 1;
+        strncpy(
+            data.cmdargtoken[0].val.string,
+            "printf",
+            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+
+        const char *s = raw;
+        while(*s != '\0'
+              && data.cmdNBarg
+                 < NB_ARG_MAX)
+        {
+            while(*s == ' ') s++;
+            if(*s == '\0') break;
+            int ai = 0;
+            if(*s == '"')
+            {
+                s++;
+                while(*s != '\0'
+                      && *s != '"'
+                      && ai
+                         < STRINGMAXLEN_CMDARGTOKEN_VAL
+                           - 1)
+                {
+                    data.cmdargtoken[
+                        data.cmdNBarg]
+                        .val.string[ai++]
+                        = *s++;
+                }
+                if(*s == '"') s++;
+            }
+            else
+            {
+                while(*s != '\0'
+                      && *s != ' '
+                      && ai
+                         < STRINGMAXLEN_CMDARGTOKEN_VAL
+                           - 1)
+                {
+                    data.cmdargtoken[
+                        data.cmdNBarg]
+                        .val.string[ai++]
+                        = *s++;
+                }
+            }
+            data.cmdargtoken[
+                data.cmdNBarg]
+                .val.string[ai] = '\0';
+            data.cmdNBarg++;
+        }
+
+        cli_cmd_printf();
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
+                    "export ", 7) == 0
+            || strcmp(data.CLIcmdline,
+                     "export") == 0)
+    {
+        /* Intercept export before
+         * tokenization so = in
+         * VAR=value is preserved */
+        const char *raw =
+            data.CLIcmdline + 6;
+        while(*raw == ' ')
+        {
+            raw++;
+        }
+
+        data.cmdNBarg = 1;
+        strncpy(
+            data.cmdargtoken[0].val.string,
+            "export",
+            STRINGMAXLEN_CMDARGTOKEN_VAL - 1);
+
+        if(*raw != '\0')
+        {
+            int ai = 0;
+            while(*raw != '\0'
+                  && *raw != ' '
+                  && ai
+                     < STRINGMAXLEN_CMDARGTOKEN_VAL
+                       - 1)
+            {
+                data.cmdargtoken[1]
+                    .val.string[ai++]
+                    = *raw++;
+            }
+            data.cmdargtoken[1]
+                .val.string[ai] = '\0';
+            data.cmdNBarg = 2;
+        }
+
+        cli_cmd_export();
+        data.CMDexecuted = 1;
+    }
+    else if(strncmp(data.CLIcmdline,
                     "source ", 7) == 0)
     {
         /* Handle before tokenization so
