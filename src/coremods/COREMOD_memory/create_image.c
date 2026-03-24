@@ -1,6 +1,24 @@
 /**
  * @file    create_image.c
- * @brief   create images and streams
+ * @brief   Image and stream creation API
+ *
+ * Central factory for creating images/streams in the
+ * milk framework. All images should be created through
+ * create_image_ID_IMGID() (or its wrappers), which:
+ *
+ *  1. Checks if an image with the same name exists.
+ *  2. If not, allocates a new slot and calls
+ *     ImageStreamIO_createIm().
+ *  3. If it exists, checks for type/size mismatch
+ *     and re-creates if needed.
+ *
+ * Convenience wrappers set naxis + default precision
+ * before delegating:
+ *  - create_{1,2,3}Dimage_ID[_double|_float]()
+ *  - create_{1,2,3}DCimage_ID[_double]()  (complex)
+ *
+ * Each wrapper has both a string API (name-based)
+ * and an IMGID API.
  */
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
@@ -15,9 +33,17 @@
 #include "stream_sem.h"
 #include <fps.h>
 
-/* creates an image ID */
-
-/* all images should be created by this function */
+/**
+ * @brief Create or reuse an image (IMGID API)
+ *
+ * Master creation function. Checks for existing
+ * image with same name; if found and compatible,
+ * reuses it. If mismatched (type, naxis, size),
+ * deletes and re-creates.
+ *
+ * @param img  IMGID with name, mdt fields set
+ * @return RETURN_SUCCESS
+ */
 errno_t create_image_ID_IMGID(
     IMGID *img
 )
@@ -130,6 +156,23 @@ errno_t create_image_ID_IMGID(
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief Create image from explicit parameters
+ *
+ * Builds an IMGID from arguments and delegates to
+ * create_image_ID_IMGID(). This is the legacy
+ * string API used by most of the codebase.
+ *
+ * @param name     Image name
+ * @param naxis    Number of dimensions
+ * @param size     Array of axis sizes
+ * @param datatype Pixel data type token
+ * @param shared   1 for shared memory, 0 for local
+ * @param NBkw     Number of keyword slots
+ * @param CBsize   Circular buffer size
+ * @param outID    If non-NULL, receives the slot ID
+ * @return RETURN_SUCCESS
+ */
 errno_t create_image_ID(
     const char *__restrict name,
     long        naxis,
@@ -162,6 +205,14 @@ errno_t create_image_ID(
     return retval;
 }
 
+/**
+ * @brief Create 1D image with default precision
+ *
+ * Uses global dcprecision (0=float, 1=double).
+ *
+ * @param img  IMGID with name and size[0] set
+ * @return RETURN_SUCCESS
+ */
 errno_t create_1Dimage_ID_IMGID(
     IMGID *img
 )
@@ -238,6 +289,12 @@ errno_t create_1DCimage_ID(
     return retval;
 }
 
+/**
+ * @brief Create 2D image with default precision
+ *
+ * @param img  IMGID with name, size[0..1] set
+ * @return RETURN_SUCCESS
+ */
 errno_t create_2Dimage_ID_IMGID(
     IMGID *img
 )
