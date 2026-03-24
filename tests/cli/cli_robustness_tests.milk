@@ -1348,3 +1348,152 @@ shift
 echo $1
 }
 _test_shift alpha beta
+
+# ============================================
+# ---- Bitwise operators ----
+# ============================================
+
+#DESC: Bitwise AND
+#EXPECT:OK
+_ba = 0xff & 0x0f
+echo $_ba
+unset _ba
+
+#DESC: Bitwise OR
+#EXPECT:OK
+_bo = 0x0f | 0xf0
+echo $_bo
+unset _bo
+
+#DESC: Bitwise XOR
+#EXPECT:OK
+_bx = 0xff ^^ 0x0f
+echo $_bx
+unset _bx
+
+#DESC: Bitwise NOT
+#EXPECT:OK
+_bn = ~0
+echo $_bn
+unset _bn
+
+#DESC: Left shift
+#EXPECT:OK
+_ls = 1 << 4
+echo $_ls
+unset _ls
+
+#DESC: Right shift
+#EXPECT:OK
+_rs = 256 >> 4
+echo $_rs
+unset _rs
+
+# ============================================
+# ---- String functions ----
+# ============================================
+
+#DESC: toupper function
+#EXPECT:OK
+_su = "hello"
+_up = toupper(_su)
+echo $_up
+unset _su
+unset _up
+
+#DESC: tolower function
+#EXPECT:OK
+_sl = "HELLO"
+_lo = tolower(_sl)
+echo $_lo
+unset _sl
+unset _lo
+
+# ============================================
+# ---- Format conversions ----
+# ============================================
+
+#DESC: hex format conversion
+#EXPECT:OK
+_hf = hex(255)
+echo $_hf
+unset _hf
+
+#DESC: oct format conversion
+#EXPECT:OK
+_of = oct(255)
+echo $_of
+unset _of
+
+#DESC: bin format conversion
+#EXPECT:OK
+_bf = bin(10)
+echo $_bf
+unset _bf
+
+# ============================================
+# ---- Default parameter expansion ----
+# ============================================
+
+#DESC: Default value with :-
+#EXPECT:OK
+_unsetvar123=""
+_dv="${_unsetvar123:-fallback}"
+echo $_dv
+unset _unsetvar123
+unset _dv
+
+#DESC: Assign default with :=
+#EXPECT:OK
+_unsetvar456=""
+_iv="${_unsetvar456:=assigned}"
+echo $_unsetvar456
+unset _unsetvar456
+
+#DESC: Alternative with :+
+#EXPECT:OK
+_setvar="yes"
+_av="${_setvar:+alternate}"
+echo $_av
+unset _setvar
+unset _av
+
+# ============================================
+# ---- String slicing ----
+# ============================================
+
+#DESC: String slicing offset:length
+#EXPECT:OK
+_ss="helloworld"
+_sub="${_ss:5:5}"
+echo $_sub
+unset _ss
+unset _sub
+
+# ============================================
+# ---- time command ----
+# ============================================
+
+#DESC: Time command
+#EXPECT:OK
+time echo timed_output
+
+# ============================================
+# ---- assert statement ----
+# ============================================
+
+#DESC: Assert passing condition
+#EXPECT:OK
+assert [ 1 -eq 1 ] "should pass"
+
+#DESC: Assert failing condition
+#EXPECT:OK
+assert [ 1 -eq 2 ] "expected failure"
+
+# ============================================
+# ---- trap ERR ----
+# ============================================
+
+#DESC: Trap ERR registration
+#EXPECT:OK
+trap 'echo error_caught' ERR

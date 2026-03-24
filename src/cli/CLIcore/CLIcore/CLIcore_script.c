@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <time.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -72,6 +73,10 @@ int cli_trap_signum(const char *name)
     if(strcasecmp(name, "USR2") == 0)
     {
         return SIGUSR2;
+    }
+    if(strcasecmp(name, "ERR") == 0)
+    {
+        return -1; /* pseudo-signal */
     }
     return (int) strtol(name, NULL, 0);
 }
@@ -923,6 +928,173 @@ int cli_script_intercept(const char *line)
                 cli_var_unset(dst);
             }
         }
+        return 1;
+    }
+
+    /* time <command> — measure duration */
+    if(starts_with(p, "time ")
+       || starts_with(p, "time\t"))
+    {
+        const char *cmd = p + 4;
+        while(*cmd == ' ' || *cmd == '\t')
+        {
+            cmd++;
+        }
+        struct timespec t0, t1;
+        clock_gettime(
+            CLOCK_MONOTONIC, &t0);
+        CLI_execute_string(cmd);
+        clock_gettime(
+            CLOCK_MONOTONIC, &t1);
+        double elapsed =
+            (double)(t1.tv_sec - t0.tv_sec)
+            + (double)(t1.tv_nsec
+                       - t0.tv_nsec)
+              / 1.0e9;
+        printf(
+            "\nreal\t%.3fs\n",
+            elapsed);
+        return 1;
+    }
+
+    /* assert [ cond ] "message" */
+    if(starts_with(p, "assert ")
+       || starts_with(p, "assert\t"))
+    {
+        const char *ap = p + 6;
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        if(*ap == '[')
+        {
+            ap++;
+            const char *end =
+                strrchr(ap, ']');
+            if(end != NULL)
+            {
+                char cs[512];
+                int clen =
+                    (int)(end - ap);
+                if(clen
+                   >= (int) sizeof(cs))
+                {
+                    clen =
+                        (int) sizeof(cs)
+                        - 1;
+                }
+                memcpy(cs, ap,
+                       (size_t) clen);
+                cs[clen] = '\0';
+                int result =
+                    cli_eval_test(cs);
+                if(!result)
+                {
+                    const char *msg =
+                        end + 1;
+                    while(*msg == ' '
+                          || *msg == '\t')
+                    {
+                        msg++;
+                    }
+                    /* strip quotes */
+                    if(*msg == '"'
+                       || *msg == '\'')
+                    {
+                        msg++;
+                    }
+                    int mlen =
+                        (int) strlen(msg);
+                    if(mlen > 0
+                       && (msg[mlen - 1]
+                           == '"'
+                           || msg[mlen - 1]
+                              == '\''))
+                    {
+                        char mb[512];
+                        strncpy(
+                            mb, msg,
+                            sizeof(mb) - 1);
+                        mb[sizeof(mb) - 1]
+                            = '\0';
+                        if(mlen - 1
+                           < (int)
+                             sizeof(mb))
+                        {
+                            mb[mlen - 1]
+                                = '\0';
+                        }
+                        printf(
+                            "ASSERT "
+                            "FAILED: "
+                            "%s\n", mb);
+                    }
+                    else
+                    {
+                        printf(
+                            "ASSERT "
+                            "FAILED: "
+                            "%s\n", msg);
+                    }
+                    cli_last_retval = 1;
+                    if(cli_flag_errexit)
+                    {
+                        cli_trap_run(-1);
+                    }
+                }
+            }
+        }
+        return 1;
+    }
+
+    /* watch -n <sec> <command> */
+    if(starts_with(p, "watch ")
+       || starts_with(p, "watch\t"))
+    {
+        const char *wp = p + 5;
+        while(*wp == ' ' || *wp == '\t')
+        {
+            wp++;
+        }
+        double interval = 2.0;
+        if(*wp == '-' && *(wp + 1) == 'n')
+        {
+            wp += 2;
+            while(*wp == ' '
+                  || *wp == '\t')
+            {
+                wp++;
+            }
+            interval = strtod(wp, NULL);
+            while(*wp != ' '
+                  && *wp != '\t'
+                  && *wp != '\0')
+            {
+                wp++;
+            }
+            while(*wp == ' '
+                  || *wp == '\t')
+            {
+                wp++;
+            }
+        }
+        struct timespec ts;
+        ts.tv_sec =
+            (time_t) interval;
+        ts.tv_nsec =
+            (long)((interval
+                    - (double) ts.tv_sec)
+                   * 1.0e9);
+        while(!cli_break_flag)
+        {
+            printf(
+                "\033[2J\033[H"
+                "Every %.1fs: %s\n\n",
+                interval, wp);
+            CLI_execute_string(wp);
+            nanosleep(&ts, NULL);
+        }
+        cli_break_flag = 0;
         return 1;
     }
 
