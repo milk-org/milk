@@ -13,6 +13,7 @@
 #include "fps_internal.h"
 #include "TUItools.h"
 #include "fpsCTRL_globals.h"
+#include "engine/libfpsseq/fpsseq.h"
 
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
@@ -78,6 +79,36 @@ int fpsCTRL_TUI_process_user_key(
 
         case 'x':     // Exit control screen
             loopOK = 0;
+            break;
+
+        case '\t':
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 4) {
+                char names[20][FPSSEQ_NAME_MAX];
+                int count = milkseq_list(names, 20);
+                if (count > 0) {
+                    int current_idx = -1;
+                    if (fpsCTRLvar->milkseq_state != NULL) {
+                        for (int i=0; i<count; i++) {
+                            if (strcmp(names[i], fpsCTRLvar->milkseq_name) == 0) {
+                                current_idx = i;
+                                break;
+                            }
+                        }
+                    }
+                    int next_idx = (current_idx + 1) % count;
+                    if (fpsCTRLvar->milkseq_state != NULL) {
+                        milkseq_disconnect((MILKSEQ_STATE *) fpsCTRLvar->milkseq_state);
+                        fpsCTRLvar->milkseq_state = NULL;
+                    }
+                    fpsCTRLvar->milkseq_state = milkseq_connect(names[next_idx]);
+                    if (fpsCTRLvar->milkseq_state) {
+                        strncpy(fpsCTRLvar->milkseq_name, names[next_idx], 79);
+                        fpsCTRLvar->milkseq_name[79] = '\0';
+                    } else {
+                        fpsCTRLvar->milkseq_name[0] = '\0';
+                    }
+                }
+            }
             break;
 
         // ============ SCREENS
