@@ -171,7 +171,7 @@ if(USE_NCURSES AND USE_CLI)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
     )
-    target_link_libraries(milkfpsTUI PUBLIC ${LIBNAME} milkTUI ${NCURSES_LIBRARIES})
+    target_link_libraries(milkfpsTUI PUBLIC ${LIBNAME} milkTUI milkfpsseq ${NCURSES_LIBRARIES})
     install(TARGETS milkfpsTUI EXPORT milkTargets DESTINATION lib)
 endif()
 
@@ -201,6 +201,7 @@ target_include_directories(milk-fpsCTRL PRIVATE
 )
 target_link_libraries(milk-fpsCTRL PUBLIC 
     milkfpsTUI
+    milkfpsseq
     milkfps
     milkprocessinfo 
     ImageStreamIO

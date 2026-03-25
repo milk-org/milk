@@ -26,6 +26,16 @@
 #define MILKSEQ_STATUS_ERROR    0x0004
 #define MILKSEQ_STATUS_STOPPING 0x0008
 
+/* Extensions to FPSTASK_FLAG_* for synchronization */
+#define MILKSEQ_TASKFLAG_WAITFPS_RUNNING 0x00000100
+#define MILKSEQ_TASKFLAG_WAITFPS_NORUN   0x00000200
+#define MILKSEQ_TASKFLAG_WAITSEQ_IDLE    0x00000400
+
+/* Extensions to FPSTASK_FLAG_* for error policies */
+#define MILKSEQ_TASKFLAG_ONERROR_ABORT   0x00001000
+#define MILKSEQ_TASKFLAG_ONERROR_SKIP    0x00002000
+#define MILKSEQ_TASKFLAG_ONERROR_RETRY   0x00004000
+
 /**
  * @brief Sequencer instance state, mapped into shared memory.
  *
