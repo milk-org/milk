@@ -17,6 +17,14 @@ any commands:
 source ~/src/milk/local/bin/milk-setup.bash
 ```
 
+## First-Time Build
+
+After a fresh clone, initialize submodules before
+building:
+```bash
+git submodule update --init --recursive
+```
+
 ## Common Pitfalls
 
 1. **Do not run `milk-cli` interactively** from the

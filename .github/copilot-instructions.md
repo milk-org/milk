@@ -34,6 +34,8 @@ telemetry (`processinfo`).
 
 ## Key Rules
 
+- **NEVER** push to the `dev` branch. Use
+  `framework-dev` or feature branches.
 - Check `docs/dependency_graph.md` before adding
   cross-module dependencies.
 - Standalone executables must link `_compute` variants,

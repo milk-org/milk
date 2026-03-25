@@ -36,8 +36,13 @@ DATA __attribute__((used)) data;
  * Skip when FPS_STANDALONE_SKIP_STUBS is set
  * (static LTO builds get CLIPID from the
  * processinfo static archive).
+ *
+ * Also skip when MILK_NO_CLI is defined,
+ * because CLIcore_standalone.h already
+ * provides a static CLIPID.
  */
-#ifndef FPS_STANDALONE_SKIP_STUBS
+#if !defined(FPS_STANDALONE_SKIP_STUBS) \
+    && !defined(MILK_NO_CLI)
 pid_t CLIPID;
 #endif
 
@@ -50,7 +55,8 @@ pid_t CLIPID;
  * provides these as static inline stubs, so we skip them here.
  */
 
-#ifndef FPS_STANDALONE_SKIP_STUBS
+#if !defined(FPS_STANDALONE_SKIP_STUBS) \
+    && !defined(MILK_NO_CLI)
 errno_t RegisterModule(
     const char *restrict FileName __attribute__((unused)),
     const char *restrict PackageName __attribute__((unused)),
@@ -100,7 +106,7 @@ imageID image_ID(
     }
     return -1;
 }
-#endif /* !FPS_STANDALONE_SKIP_STUBS */
+#endif /* !FPS_STANDALONE_SKIP_STUBS && !MILK_NO_CLI */
 
 /* =====================================
  * ncurses stubs (always stub in no-CLI)

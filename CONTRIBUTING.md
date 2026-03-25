@@ -1,20 +1,35 @@
 # Contributing to milk
 
-Thank you for your interest in contributing to `milk`!
+Thank you for your interest in contributing!
 
 See also: [Coding Standards](docs/developer/coding_standards.md) ·
 [Programmer's Guide](docs/programmers_guide.md) ·
 [Developer Tutorial](docs/developer/tutorial.md) ·
-[Working with Git](docs/developer/WorkingWithGit.md)
+[Working with Git](docs/developer/WorkingWithGit.md) ·
+[Code Assist](docs/code_assist.md)
+
+## AI-Assisted Development
+
+This project includes extensive support for AI coding
+agents. See [`AGENTS.md`](AGENTS.md) for full onboarding.
+Key resources live under `.agents/`:
+
+- **Rules** — always-on guardrails that enforce
+  conventions
+- **Skills** — deep-dive instruction sets for
+  specialized tasks
+- **Workflows** — step-by-step task templates
+  (invoke with slash commands)
 
 ## Getting Started
 
 1. Fork the repository and clone your fork.
-2. Create a feature branch from `dev`:
+2. Create a feature branch from `framework-dev`:
 
    ```bash
-   git checkout dev
-   git checkout -b feature/my-change
+   git checkout framework-dev
+   git pull --ff-only origin framework-dev
+   git checkout -b feat/my-change
    ```
 
 3. Build and test your changes (see [Installation](docs/install/compile.md)).
@@ -53,12 +68,16 @@ refactor: extract processinfo loop into helper
 
 ## Pull Request Process
 
-1. Target the `dev` branch (not `main`).
-2. Ensure your code compiles cleanly with `-Wall -Wextra`.
-3. Run the test suite: `cd _build && ctest`.
-4. Update documentation if you add new functions, parameters,
-   or CLI commands.
+1. Target `framework-dev` (never `dev` or `main`).
+2. Ensure your code compiles cleanly with
+   `-Wall -Wextra`.
+3. Run the test suite:
+   `cd _build && ctest --output-on-failure`.
+4. Update documentation if you add new functions,
+   parameters, or CLI commands.
 5. Keep PRs focused — one feature or fix per PR.
+6. If AI-assisted, include "Prompt Summary" and
+   "AI Authorship" sections in the PR body.
 
 ## Architecture Guidelines
 
