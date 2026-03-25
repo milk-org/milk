@@ -146,7 +146,26 @@ static inline errno_t TUI_exit() { return 0; }
 //  ************ lib module init **********************************
 //
 
-/** @brief Initialize module
+/**
+ * @brief Declare module dependencies.
+ *
+ * Place this macro before INIT_MODULE_LIB() in the
+ * module's main .c file.  Arguments are loadnames
+ * (matching mload convention), e.g.:
+ *
+ *     MODULE_DEPS("milkfft", "milkimage_gen")
+ *
+ * If a module has no deps, omit this macro entirely.
+ */
+#define MODULE_DEPS(...)                              \
+    static const char *_module_deps[] =               \
+        { __VA_ARGS__ };                              \
+    static const int _module_ndeps =                  \
+        (int)(sizeof(_module_deps)                    \
+              / sizeof(_module_deps[0]));             \
+    static const int _module_deps_defined = 1
+
+/** @brief Initialize module (no dependencies)
  */
 #define INIT_MODULE_LIB(modname)                                               \
     static errno_t init_module_CLI(); /* forward declaration */                \
@@ -159,6 +178,73 @@ static inline errno_t TUI_exit() { return 0; }
             strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING-1);                           \
             strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING-1);                           \
             strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                               \
+            data.module_nbdep = 0;                                             \
+            RegisterModule(__FILE__,                                           \
+                           PROJECT_NAME,                                       \
+                           MODULE_DESCRIPTION,                                 \
+                           VERSION_MAJOR,                                      \
+                           VERSION_MINOR,                                      \
+                           VERSION_PATCH);                                     \
+            init_module_CLI();                                                 \
+            INITSTATUS_##modname = 1;                                          \
+            strncpy(data.modulename, "", STRINGMAXLEN_MODULE_NAME-1);              /* reset after use */    \
+            strncpy(data.moduleshortname_default, "", STRINGMAXLEN_MODULE_SHORTNAME-1); /* reset after use */    \
+            strncpy(data.moduleshortname, "", STRINGMAXLEN_MODULE_SHORTNAME-1);         /* reset after use */    \
+        }                                                                      \
+    }                                                                          \
+    void __attribute__((destructor)) libclose_##modname()                      \
+    {                                                                          \
+        if (INITSTATUS_##modname == 1)                                         \
+        {                                                                      \
+        }                                                                      \
+    }
+
+/**
+ * @brief Initialize module with auto-dep loading.
+ *
+ * Same as INIT_MODULE_LIB but iterates the dep
+ * list declared by MODULE_DEPS() and calls
+ * load_module_shared() for each before registration.
+ *
+ * Usage:
+ *   MODULE_DEPS("milkfft", "milkimage_gen")
+ *   INIT_MODULE_LIB_DEPS(mymodule)
+ */
+#define INIT_MODULE_LIB_DEPS(modname)                                          \
+    static errno_t init_module_CLI(); /* forward declaration */                \
+    static int     INITSTATUS_##modname = 0;                                   \
+    void __attribute__((constructor)) libinit_##modname()                      \
+    {                                                                          \
+        if (INITSTATUS_##modname == 0) /* only run once */                     \
+        {                                                                      \
+            /* --- auto-load declared deps --- */                               \
+            for (int _di = 0;                                                  \
+                 _di < _module_ndeps; _di++)                                    \
+            {                                                                  \
+                load_module_shared(                                            \
+                    _module_deps[_di]);                                         \
+            }                                                                  \
+            strncpy(data.moduleshortname_default, MODULE_SHORTNAME_DEFAULT, STRINGMAXLEN_MODULE_SHORTNAME-1);    \
+            strncpy(data.moduledatestring, __DATE__, STRINGMAXLEN_MODULE_DATESTRING-1);                           \
+            strncpy(data.moduletimestring, __TIME__, STRINGMAXLEN_MODULE_TIMESTRING-1);                           \
+            strncpy(data.modulename, (#modname), STRINGMAXLEN_MODULE_NAME);                               \
+            /* Store dep list for RegisterModule */                             \
+            {                                                                  \
+                int _ndcopy =                                                  \
+                    (_module_ndeps > MODULE_MAX_DEPS)                          \
+                    ? MODULE_MAX_DEPS                                          \
+                    : _module_ndeps;                                            \
+                data.module_nbdep = _ndcopy;                                   \
+                for (int _di = 0;                                              \
+                     _di < _ndcopy; _di++)                                     \
+                {                                                              \
+                    strncpy(                                                    \
+                        data.module_depname[_di],                              \
+                        _module_deps[_di],                                     \
+                        STRINGMAXLEN_MODULE_LOADNAME                           \
+                            - 1);                                              \
+                }                                                              \
+            }                                                                  \
             RegisterModule(__FILE__,                                           \
                            PROJECT_NAME,                                       \
                            MODULE_DESCRIPTION,                                 \
@@ -214,6 +300,9 @@ extern uid_t suid;
 #define MODULE_TYPE_STARTUP    1
 #define MODULE_TYPE_CUSTOMLOAD 2
 
+/** Maximum number of declared dependencies per module */
+#define MODULE_MAX_DEPS 16
+
 typedef struct
 {
     int type;
@@ -238,6 +327,12 @@ typedef struct
     char timestring[STRINGMAXLEN_MODULE_TIMESTRING]; // Compilation time
 
     void *DLib_handle;
+
+    /** Number of declared dependencies */
+    int nbdep;
+    /** Dependency load names (mload convention) */
+    char depname[MODULE_MAX_DEPS]
+                [STRINGMAXLEN_MODULE_LOADNAME];
 
 } MODULE;
 
@@ -409,6 +504,12 @@ typedef struct
         STRINGMAXLEN_MODULE_DATESTRING];
     char moduletimestring[
         STRINGMAXLEN_MODULE_TIMESTRING];
+
+    /** Transient dep count for module being registered */
+    int module_nbdep;
+    /** Transient dep names for module being registered */
+    char module_depname[MODULE_MAX_DEPS]
+                       [STRINGMAXLEN_MODULE_LOADNAME];
 
     // COMMAND ALIASES
     // =================================================
