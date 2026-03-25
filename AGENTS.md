@@ -202,6 +202,7 @@ and enforced. Know what they require:
 | `readme-update.md` | Update module README when files change |
 | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux guidance |
 | `script-docs.md` | Update `docs/scripts.md` when scripts change |
+| `whatsnew-update.md` | Add entry to `docs/whatsnew.md` for significant features |
 
 ---
 
