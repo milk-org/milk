@@ -178,6 +178,8 @@ pillars — **ImageStreamIO**, **FPS**, and
 
 ## :link: More Resources
 
+- **[What's New](whatsnew.md)** — recent features
+  and upgrades
 - [CLI Syntax Reference](cli/CLIcore.md) ·
   [Readline Keys](cli/helpreadline.md)
 - [Scripts Reference](scripts.md) ·
