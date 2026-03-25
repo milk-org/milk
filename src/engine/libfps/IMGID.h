@@ -159,14 +159,22 @@ static inline void imgid_free(
 
 /** make IMGID from name
  *
- * Some settings can be embedded in the image name string for convenience :
+ * Settings can be embedded in the image name
+ * string for convenience.
  *
- * Examples:
- * "im1" no optional setting, image name = im1
- * "s>im1" : set shared memory flag
- * "k10>im1" : number of keyword = 10
- * "c20>im1" : 20-sized circular buffer
- * "tf64>im1" : datatype is double (64 bit floating point)
+ * @X: prefix modifiers (parsed first):
+ *   @S:im1  shared memory (default)
+ *   @L:im1  local memory only
+ *   @E:im1  must already exist
+ *   @N:im1  must not exist
+ *
+ * Legacy > prefixes (still supported):
+ *   "tf64>im1"  datatype double
+ *   "k10>im1"   number of keywords = 10
+ *   "c20>im1"   20-sized circular buffer
+ *
+ * The legacy "s>" prefix has been removed.
+ * Use @S: instead (or omit — shared is default).
 */
 static inline IMGID imgid_make_from_name(CONST_WORD name)
 {
@@ -217,11 +225,9 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
             pch1 = pch;
             //printf("[%2d] %s\n", nbword, pch);
 
-            if(strcmp(pch, "s") == 0)
-            {
-                printf("    shared memory\n");
-                img.mdt->shared = 1;
-            }
+            /* "s>" prefix removed — use @S:
+             * instead (shared is default).
+             */
 
             if(strcmp(pch, "tui8") == 0)
             {
