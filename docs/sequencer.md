@@ -51,6 +51,7 @@ milk-exec "seq.submit calibloop load next_step.seq"
 The sequencer supports a subset of bash-like scripting constructs tailored for high-performance, real-time AO scheduling. These commands are written in `.seq` files.
 
 ### 3.1 Loop Constructs
+
 You can loop blocks of commands using `repeat N / endrepeat`:
 
 ```bash
@@ -61,6 +62,7 @@ endrepeat
 ```
 
 ### 3.2 Conditional Blocks
+
 Evaluate FPS configuration flags before executing commands:
 
 ```bash
@@ -70,6 +72,7 @@ endif
 ```
 
 ### 3.3 FPS Synchronization
+
 The `wait_fps` and `wait_seq` commands pause execution until a condition is met in another process or sequencer, ensuring lock-step synchronization.
 
 ```bash
@@ -81,6 +84,7 @@ wait_seq other_loop IDLE
 ```
 
 ### 3.4 Error Handling
+
 You can define an error policy using `on_error`:
 
 ```bash
@@ -89,6 +93,7 @@ on_error abort
 ```
 
 ### 3.5 Cross-Sequencer Injection
+
 Use `seq_send` to inject a command into another running sequencer's FIFO securely:
 
 ```bash
@@ -96,6 +101,7 @@ seq_send other_loop "load failover.seq"
 ```
 
 ### 3.6 Modularity
+
 You can compose scripts using the `include` directive:
 
 ```bash
