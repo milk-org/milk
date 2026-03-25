@@ -3,6 +3,7 @@ set(FPSSEQ_SOURCES
     fpsseq_scheduler.c
     fpsseq_fifo.c
     fpsseq_cmdexec.c
+    fpsseq_script.c
 )
 
 add_library(milkfpsseq SHARED ${FPSSEQ_SOURCES})

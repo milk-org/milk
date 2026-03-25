@@ -64,6 +64,34 @@ int milkseq_scheduler_step(
                         }
                     }
 
+                    if (state->tasklist[cmdindexExec].flag & MILKSEQ_TASKFLAG_WAITFPS_RUNNING) {
+                        if (!(fps[state->tasklist[cmdindexExec].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN)) {
+                            task_completed = 0;
+                            queue_nexttask[qi] = QUEUE_WAIT;
+                        }
+                    }
+
+                    if (state->tasklist[cmdindexExec].flag & MILKSEQ_TASKFLAG_WAITFPS_NORUN) {
+                        if (fps[state->tasklist[cmdindexExec].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN) {
+                            task_completed = 0;
+                            queue_nexttask[qi] = QUEUE_WAIT;
+                        }
+                    }
+
+                    if (state->tasklist[cmdindexExec].flag & MILKSEQ_TASKFLAG_WAITSEQ_IDLE) {
+                        char target_seq[FPSSEQ_NAME_MAX];
+                        if (sscanf(state->tasklist[cmdindexExec].cmdstring, "wait_seq %63s idle", target_seq) == 1) {
+                            MILKSEQ_STATE *tstate = milkseq_connect(target_seq);
+                            if (tstate != NULL) {
+                                if (tstate->NBtasks_active > 0 || (tstate->status & MILKSEQ_STATUS_RUNNING)) {
+                                    task_completed = 0;
+                                    queue_nexttask[qi] = QUEUE_WAIT;
+                                }
+                                milkseq_disconnect(tstate);
+                            }
+                        }
+                    }
+
                     if (state->tasklist[cmdindexExec].flag & FPSTASK_FLAG_WAITONCONF) {
                         if (fps[state->tasklist[cmdindexExec].fpsindex].md->status & FUNCTION_PARAMETER_STRUCT_SIGNAL_CHECKED) {
                             task_completed = 0;
@@ -137,7 +165,7 @@ int milkseq_scheduler_step(
         uint64_t taskstatus = 0;
 
         state->tasklist[cmdindexExec].fpsindex = milkseq_exec_cmd(
-            state->tasklist[cmdindexExec].cmdstring,
+            cmdindexExec,
             state,
             fps,
             keywnode,
