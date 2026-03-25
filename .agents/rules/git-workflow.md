@@ -24,6 +24,15 @@ request. Never commit directly to `framework-dev`
 
 2. **Make commits** on the feature branch.
    - Keep commits atomic and well-described.
+   - Use conventional-style prefixes:
+     `feat:`, `fix:`, `perf:`, `refactor:`,
+     `docs:`, `chore:`, `test:`.
+   - Subject line: max 72 characters, imperative
+     mood (e.g., "feat: add stream filter").
+   - Body: wrap at 72 characters, explain *why*
+     not just *what*.
+   - Reference issues when applicable
+     (e.g., `Fixes #42`).
 
 3. **Push** the feature branch to origin.
 

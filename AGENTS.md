@@ -12,6 +12,28 @@ context efficiently.
 
 ---
 
+## Quick Start (5 minutes)
+
+1. Read sections 1–3 below (What is milk, Reading
+   order, Source tree map).
+2. Run `/compile-test` to verify your build works.
+3. For your first task, try `/add-function` or
+   `/create-fpsexec`.
+4. Read the relevant rules in `.agents/rules/` as
+   you encounter them.
+
+**Good first contributions** (suited for AI-assisted
+work):
+
+- Add Kernel-Doc to undocumented functions
+  (use `batch-kernel-doc` skill)
+- Add CLI robustness tests (use `cli-test-writer`)
+- Fix type consistency gaps (`/check-type-consistency`)
+- Update module READMEs
+- Migrate V1 fpsexec code to V2 (`/migrate-to-v2`)
+
+---
+
 ## 1. What Is milk?
 
 `milk` is a **real-time image-processing framework**
@@ -188,20 +210,27 @@ and enforced. Know what they require:
 
 | Rule | Key Requirement |
 |------|-----------------|
+| `agent-docs-update.md` | Update AGENTS.md and code_assist.md when agent files change |
 | `architecture-principles.md` | Check dependency graph before adding deps |
 | `cmake-conventions.md` | Use `PUBLIC`/`INTERFACE` properties; modules own their headers |
 | `code-style-guide.md` | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes |
 | `compile-after-edit.md` | Always compile-test after C/CMake changes |
+| `concurrency-practices.md` | Semaphore protocol, FPS sync, process coordination |
+| `documentation-site.md` | MkDocs structure, page creation, tag categories |
 | `documentation-standards.md` | Consistent markdown, shell prompts, link checking |
+| `error-handling-practices.md` | Use milkDebugTools.h macros for errors |
 | `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao` |
 | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` support |
-| `git-workflow.md` | All changes via PRs from feature branches into `framework-dev`. NO pushes to `dev`. |
+| `git-workflow.md` | PRs from feature branches into `framework-dev`; commit conventions |
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
+| `module-deps-declaration.md` | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros |
 | `performance-practices.md` | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning |
 | `readme-update.md` | Update module README when files change |
 | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux guidance |
 | `script-docs.md` | Update `docs/scripts.md` when scripts change |
+| `shared-memory-safety.md` | SHM cleanup, stale detection, stream creation |
+| `testing-practices.md` | Run tests after changes; add regression tests |
 | `whatsnew-update.md` | Add entry to `docs/whatsnew.md` for significant features |
 
 ---
@@ -218,9 +247,13 @@ when domain-specific tasks require extended capabilities.
 |-------|-------------|
 | `batch-kernel-doc` | Systematic Kernel-Doc documentation passes |
 | `cli-test-writer` | Writing CLI robustness test cases |
+| `cmake-patterns` | Module CMake setup, standalone builds, `_compute` variants |
 | `debug-cli-behavior` | Investigating CLI crashes, display bugs, missing errors |
 | `diagnose-build-failure` | Triaging CMake/GCC build errors |
+| `fps-parameter-guide` | FPS parameter types, flags, X-macro patterns |
+| `imagestream-internals` | SHM stream layout, semaphore protocol, circular buffers |
 | `module-loading-internals` | Debugging module registration, empty commands |
+| `optimize-compute-function` | Systematic performance optimization methodology |
 | `pr-preparation` | Packaging work into a pull request |
 | `refactor-c-source` | Splitting large C files into smaller modules |
 | `stream-modifier-guide` | IMGID parsing, `@S:`/`@L:`/`@F:` modifiers, slice syntax |
@@ -240,9 +273,17 @@ listed task types:
 | `/add-function` | Adding a function to an existing module |
 | `/add-stream-processor` | Creating a stream processing loop |
 | `/add-cli-command` | Adding a CLI command to a module |
+| `/fix-bug` | Investigating, fixing, and verifying a bug |
+| `/migrate-to-v2` | Converting V1 fpsexec code to V2 template |
+| `/review-pr` | Reviewing a PR for standards compliance |
+| `/setup-dev-environment` | First-time development setup |
 | `/update-programmers-guide` | After architectural changes |
 | `/audit-help-consistency` | After editing help text anywhere |
 | `/check-type-consistency` | Auditing data type handling in switch blocks |
+| `/cli-robustness-test` | Running CLI robustness test suite |
+| `/inspect-machine-code` | Assembly inspection for performance |
+| `/sync-worktree` | Syncing worktree to latest framework-dev |
+| `/update-docs-site` | Adding or updating MkDocs pages |
 | `/update-scripts-docs` | After adding or modifying shell scripts |
 
 ---
