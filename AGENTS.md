@@ -245,6 +245,7 @@ when domain-specific tasks require extended capabilities.
 
 | Skill | When to use |
 |-------|-------------|
+| `feature-planner` | Structured planning and decomposition for new features |
 | `batch-kernel-doc` | Systematic Kernel-Doc documentation passes |
 | `cli-test-writer` | Writing CLI robustness test cases |
 | `cmake-patterns` | Module CMake setup, standalone builds, `_compute` variants |

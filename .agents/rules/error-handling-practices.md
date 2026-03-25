@@ -1,3 +1,8 @@
+---
+description: Standardized error handling and logging
+  via milkDebugTools.h macros.
+---
+
 # Error Handling Practices
 
 The `milk` project standardizes its error handling and logging via macros defined in `src/engine/libmilkdata/milkDebugTools.h`. To ensure consistency, robustness, and ease of debugging across the codebase, all C source code must adhere to the following practices.
