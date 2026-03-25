@@ -1,8 +1,27 @@
-# milk Documentation
+<div class="md-hero" markdown>
 
-Welcome to the `milk` documentation — a high-performance
-real-time image processing framework for Adaptive Optics
-and scientific computing.
+# :telescope: milk
+
+<p class="md-hero__tagline">
+High-performance real-time image processing framework
+for Adaptive Optics and scientific computing.
+Microsecond-latency pipelines through zero-copy
+shared memory.
+</p>
+
+<p class="md-hero__badges">
+<a href="https://github.com/milk-org/milk">
+<img alt="GitHub stars" src="https://img.shields.io/github/stars/milk-org/milk?style=flat-square&color=00bfa5">
+</a>
+<a href="https://github.com/milk-org/milk/blob/framework-dev/LICENSE">
+<img alt="License" src="https://img.shields.io/github/license/milk-org/milk?style=flat-square&color=0097a7">
+</a>
+<a href="https://github.com/milk-org/milk/actions">
+<img alt="Build" src="https://img.shields.io/github/actions/workflow/status/milk-org/milk/docs.yml?style=flat-square&label=docs&color=26a69a">
+</a>
+</p>
+
+</div>
 
 `milk` orchestrates many small compute units that
 communicate through zero-copy shared memory tensors,
