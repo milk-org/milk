@@ -181,7 +181,7 @@ static MILK_HOT errno_t fpsexec(
                  i < xysize; i++)
             {
                 imgoutrms->array.F[i] =
-                    sqrt(imdataarrayPOW[i])
+                    sqrtf(imdataarrayPOW[i])
                     / (streamave_cntindex);
             }
             processinfo_update_output_stream(
