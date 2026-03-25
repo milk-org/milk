@@ -207,7 +207,22 @@ and enforced. Know what they require:
 
 ## 7. Skills
 
-Skills are specialized instruction sets located in `.agents/skills/`. Each skill provides the agent with deep context, helper scripts, and rules for a specific technical domain. Agents consult these automatically when domain-specific tasks require extended capabilities.
+Skills are specialized instruction sets located in
+`.agents/skills/`. Each skill provides the agent with
+deep context, helper scripts, and rules for a specific
+technical domain. Agents consult these automatically
+when domain-specific tasks require extended capabilities.
+
+| Skill | When to use |
+|-------|-------------|
+| `batch-kernel-doc` | Systematic Kernel-Doc documentation passes |
+| `cli-test-writer` | Writing CLI robustness test cases |
+| `debug-cli-behavior` | Investigating CLI crashes, display bugs, missing errors |
+| `diagnose-build-failure` | Triaging CMake/GCC build errors |
+| `module-loading-internals` | Debugging module registration, empty commands |
+| `pr-preparation` | Packaging work into a pull request |
+| `refactor-c-source` | Splitting large C files into smaller modules |
+| `stream-modifier-guide` | IMGID parsing, `@S:`/`@L:`/`@F:` modifiers, slice syntax |
 
 ---
 
