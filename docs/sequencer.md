@@ -19,6 +19,7 @@ See also: [Function Processing System (FPS)](fps.md)
 `milk-seq` operates as an independent backend daemon. It creates a `MILKSEQ_STATE` structure in `/dev/shm/milkseq.<name>.shm` and listens for commands on a designated FIFO pipe.
 
 ### The Component Stack
+
 1. **`milk-seq` Daemon:** Headless orchestrator that executes `.seq` scripts and `milk-cli` commands.
 2. **`milk-fpsCTRL` TUI:** Provides a real-time visual dashboard of the running sequencer. It now acts as a read-only viewer, reading the `MILKSEQ_STATE` from shared memory.
 3. **`milk-cli` Commands (`seq.*`):** A suite of CLI commands for submitting inputs, checking status, and managing sequencer instances dynamically.
@@ -38,6 +39,7 @@ You can manage sequencers directly from `milk-cli` or bash using the `seq.*` com
 | `seq.submit <name> <command>` | Push an arbitrary command into a sequencer's FIFO pipe for immediate execution. |
 
 **Example Workflow:**
+
 ```bash
 milk-exec "seq.start calibloop -f calibration.seq"
 milk-exec "seq.status calibloop"
