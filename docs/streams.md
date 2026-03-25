@@ -78,11 +78,39 @@ module.
   to be visible externally.
 - `@F:` (File / FITS): Bypasses shared memory to directly
   read a physical file on disk.
+- `@E:` (Exists): The stream must already exist.
+  Returns an error if not found.
+- `@N:` (New): The stream must **not** exist.
+  Returns an error if it already exists.
+
+Modifiers are composable: `@LE:name` means "local
+memory, must exist".
 
 *When writing modules using `fpsexec` patterns, passing
 a non-existent or disallowed modifier automatically alerts
 the user and aborts the module spin-up to prevent silent
 failures.*
+
+### Legacy `>` Prefixes
+
+Older code may use `>` as a separator for inline
+creation hints embedded in the stream name string:
+
+| Prefix | Example | Effect |
+|--------|---------|--------|
+| `t...>` | `tf32>im1` | Set data type (float32) |
+| `k...>` | `k10>im1` | Set keyword count |
+| `c...>` | `c20>im1` | Set circular buffer size |
+
+These are parsed by `imgid_make_from_name()` and
+remain supported.
+
+> [!NOTE]
+> The `s>` prefix (shared memory) has been **removed**.
+> It was redundant with the default behavior
+> (shared memory is always the default). Use `@S:` for
+> explicit shared-memory annotation if needed.
+
 
 ## 4. Introspection
 
@@ -142,9 +170,9 @@ arguments.
     }
     ```
 
-    Special name syntax like `s>tf32>im1` can also be
-    used to automatically set type and location
-    properties.
+    Name prefixes like `tf32>im1` set the data type
+    automatically. Use `@S:` / `@L:` modifiers for
+    location control (see section 3 above).
 
 === "Format-checked"
 
