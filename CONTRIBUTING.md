@@ -90,9 +90,9 @@ refactor: extract processinfo loop into helper
 
 ## Reporting Issues
 
-Use GitHub Issues. Include:
-
-- milk version (`milk-cli -i`)
-- OS and compiler version
-- Steps to reproduce
-- Expected vs actual behavior
+Use the [issue templates](https://github.com/milk-org/milk/issues/new/choose)
+when filing a bug, feature request, build problem, or
+performance issue. The templates guide you through the
+required information (version, reproduction steps, etc.)
+and are integrated with the project's agent workflows
+for faster triage.
