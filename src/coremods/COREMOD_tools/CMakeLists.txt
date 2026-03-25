@@ -14,6 +14,7 @@ set(SOURCEFILES
 	mvprocCPUset.c
 	statusstat.c
 	stringutils.c
+	seq_cli.c
 )
 
 set(INCLUDEFILES
@@ -25,6 +26,7 @@ set(INCLUDEFILES
 	mvprocCPUset.h
 	statusstat.h
 	stringutils.h
+	seq_cli.h
 )
 
 # TESTING
@@ -75,7 +77,7 @@ endif()
 
 target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
 											$<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME} PUBLIC m milkfps)
+target_link_libraries(${LIBNAME} PUBLIC m milkfps milkfpsseq)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
@@ -87,7 +89,7 @@ target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>)
-target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps)
+target_link_libraries(${LIBNAME_COMPUTE} PUBLIC m milkfps milkfpsseq)
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)
 
@@ -113,5 +115,7 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkTUI>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfpsseq>
       $<INSTALL_INTERFACE:include>)
+  target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC milkfpsseq_static)
 endif()

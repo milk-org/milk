@@ -72,68 +72,7 @@ static uid_t suid __attribute__((unused));
 static uint8_t TYPESIZE[32] __attribute__((unused));
 
 
-/* =====================================
- * ncurses stubs (always stub in no-CLI)
- * ===================================== */
-
-static inline errno_t
-functionparameter_CTRLscreen(
-    uint32_t mode __attribute__((unused)),
-    char *fpsnamemask __attribute__((unused)),
-    char *fpsCTRLfifoname __attribute__((unused)),
-    double timeout_sec __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline errno_t
-processinfo_CTRLscreen(void)
-{
-    return 0;
-}
-
-static inline void
-TUI_printfw(
-    const char *fmt __attribute__((unused)),
-    ...)
-{
-}
-
-static inline void TUI_newline(void) {}
-static inline void screenprint_setreverse(void) {}
-static inline void screenprint_unsetreverse(void) {}
-
-static inline void
-screenprint_setcolor(int p __attribute__((unused)))
-{
-}
-
-static inline void
-screenprint_unsetcolor(int p __attribute__((unused)))
-{
-}
-
-static inline void
-TUI_set_screenprintmode(
-    int m __attribute__((unused)))
-{
-}
-
-static inline errno_t
-TUI_init_terminal(
-    short unsigned int *wrow __attribute__((unused)),
-    short unsigned int *wcol __attribute__((unused)))
-{
-    return 0;
-}
-
-static inline int
-get_singlechar_nonblock(void)
-{
-    return -1;
-}
-
-static inline errno_t TUI_exit(void) { return 0; }
+/* TUI stubs moved to fps_standalone_data.c */
 
 
 /* =====================================
