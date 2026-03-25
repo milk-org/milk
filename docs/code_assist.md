@@ -55,6 +55,23 @@ requiring you to remember every checklist.
 | README updates | [`readme-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
 | Workspace layout | [`files-directories.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/files-directories.md) | cacao lives at `plugins/cacao-src` → `~/src/cacao`. |
 
+## Skills
+
+Skills live in `.agents/skills/` and provide deep
+context for specialized tasks. Each skill folder
+contains a `SKILL.md` with detailed instructions.
+
+| Skill | Folder | What it provides |
+|-------|--------|------------------|
+| Batch Kernel-Doc | [`batch-kernel-doc`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/batch-kernel-doc/SKILL.md) | Systematic function documentation with scanning, templates, and batch processing. |
+| CLI test writer | [`cli-test-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cli-test-writer/SKILL.md) | Writing test cases for the CLI robustness suite with coverage analysis. |
+| Debug CLI behavior | [`debug-cli-behavior`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/debug-cli-behavior/SKILL.md) | Crash investigation, command registration tracing, display debugging. |
+| Diagnose build failure | [`diagnose-build-failure`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/diagnose-build-failure/SKILL.md) | CMake/GCC error triage mapped to milk's build tiers. |
+| Module loading internals | [`module-loading-internals`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/module-loading-internals/SKILL.md) | `dlopen` sequence, `data.moduleindex` race, constructor timing. |
+| PR preparation | [`pr-preparation`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/pr-preparation/SKILL.md) | End-to-end PR packaging with template body and AI authorship. |
+| Refactor C source | [`refactor-c-source`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/refactor-c-source/SKILL.md) | Safe file splitting with dependency analysis and CMake updates. |
+| Stream modifier guide | [`stream-modifier-guide`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/stream-modifier-guide/SKILL.md) | IMGID parsing pipeline, `@S:`/`@L:`/`@F:` modifiers, slice syntax. |
+
 ## Workflows
 
 Workflows are invoked by typing the slash command
