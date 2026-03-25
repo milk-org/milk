@@ -60,6 +60,14 @@
 #define MODULE_DESCRIPTION "Example module: template for creating new modules"
 
 
+// Declare module dependencies (loaded automatically before this module).
+// Use library names matching mload convention, e.g.:
+//   MODULE_DEPS("milkfft", "milkimage_gen")
+//   INIT_MODULE_LIB_DEPS(mymodulename)
+// If no dependencies, omit MODULE_DEPS and use INIT_MODULE_LIB instead.
+// MODULE_DEPS()
+
+
 #include "CLIcore.h"
 
 //
