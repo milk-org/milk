@@ -488,6 +488,19 @@ errno_t RegisterModule(
             "",
             STRINGMAXLEN_MODULE_LOADNAME - 1);
 
+    // Copy dependency info from transient DATA fields
+    data.module[data.moduleindex].nbdep =
+        data.module_nbdep;
+    for(int di = 0; di < data.module_nbdep; di++)
+    {
+        strncpy(
+            data.module[data.moduleindex].depname[di],
+            data.module_depname[di],
+            STRINGMAXLEN_MODULE_LOADNAME - 1);
+    }
+    // Reset transient dep storage
+    data.module_nbdep = 0;
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
