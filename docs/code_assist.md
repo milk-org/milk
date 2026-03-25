@@ -72,6 +72,7 @@ contains a `SKILL.md` with detailed instructions.
 
 | Skill | Folder | What it provides |
 |-------|--------|------------------|
+| Feature planner | [`feature-planner`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/feature-planner/SKILL.md) | Structured planning and architectural decomposition for new features. |
 | Batch Kernel-Doc | [`batch-kernel-doc`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/batch-kernel-doc/SKILL.md) | Systematic function documentation with scanning, templates, and batch processing. |
 | CLI test writer | [`cli-test-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cli-test-writer/SKILL.md) | Writing test cases for the CLI robustness suite with coverage analysis. |
 | CMake patterns | [`cmake-patterns`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/cmake-patterns/SKILL.md) | Module CMake setup, standalone builds, `_compute` variants. |
