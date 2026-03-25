@@ -17,7 +17,8 @@ shared memory.
 See also: [Streams](streams.md) ·
 [Process Info](procinfo.md) ·
 [Programmer's Guide](programmers_guide.md) ·
-[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md)
+[FPS Standalone Modes](FPS_Standalone_CMD_Modes.md) ·
+[FPS Sequencer](sequencer.md)
 
 ## 1. Architecture and Location
 
@@ -143,6 +144,11 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
     See the [Developer Tutorial](developer/tutorial.md) for
     a step-by-step walkthrough.
 
+### 5. Sequencer Integration
+
+FPS instances can be highly coordinated via the `milk-seq` standalone sequencer, which provides cross-process synchronization (`wait_fps`), robust error handling, loops, and condition-based execution.
+
+See the dedicated **[FPS Sequencer Documentation](sequencer.md)** for details on the `milk-seq` daemon, script syntax, and integrating `seq.*` commands from within `milk-cli`.
 
 ---
 ← [Documentation Index](index.md)

@@ -101,3 +101,66 @@ imageID image_ID(
     return -1;
 }
 #endif /* !FPS_STANDALONE_SKIP_STUBS */
+
+/* =====================================
+ * ncurses stubs (always stub in no-CLI)
+ * ===================================== */
+
+errno_t
+functionparameter_CTRLscreen(
+    uint32_t mode __attribute__((unused)),
+    char *fpsnamemask __attribute__((unused)),
+    char *fpsCTRLfifoname __attribute__((unused)),
+    double timeout_sec __attribute__((unused)))
+{
+    return 0;
+}
+
+errno_t
+processinfo_CTRLscreen(void)
+{
+    return 0;
+}
+
+void
+TUI_printfw(
+    const char *fmt __attribute__((unused)),
+    ...)
+{
+}
+
+void TUI_newline(void) {}
+void screenprint_setreverse(void) {}
+void screenprint_unsetreverse(void) {}
+
+void
+screenprint_setcolor(int p __attribute__((unused)))
+{
+}
+
+void
+screenprint_unsetcolor(int p __attribute__((unused)))
+{
+}
+
+void
+TUI_set_screenprintmode(
+    int m __attribute__((unused)))
+{
+}
+
+errno_t
+TUI_init_terminal(
+    short unsigned int *wrow __attribute__((unused)),
+    short unsigned int *wcol __attribute__((unused)))
+{
+    return 0;
+}
+
+int
+get_singlechar_nonblock(void)
+{
+    return -1;
+}
+
+errno_t TUI_exit(void) { return 0; }

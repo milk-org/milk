@@ -119,20 +119,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // Load initial script if provided
-    if (script_file[0] != '\0') {
-        strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
-        if (milkseq_load_script(state, script_file) != 0) {
-            fprintf(stderr, "Failed to load script: %s\n", script_file);
-        }
-    }
-
-    printf("milk-seq started: %s\n", seq_name);
-    state->status = MILKSEQ_STATUS_RUNNING;
-
-    long iter = 0;
-    time_t last_idle_time = time(NULL);
-
     // We need to keep track of the local fps list to feed to the scheduler
     FUNCTION_PARAMETER_STRUCT fps[NB_FPS_MAX];
     memset(fps, 0, sizeof(FUNCTION_PARAMETER_STRUCT) * NB_FPS_MAX);
@@ -144,6 +130,20 @@ int main(int argc, char **argv)
     int fpsindex = 0;
     long pindex = 0;
     functionparameter_scan_fps(1, "_ALL", fps, keywnode, &NBkwn, &fpsindex, &pindex, 0);
+
+    // Load initial script if provided
+    if (script_file[0] != '\0') {
+        strncpy(state->script_path, script_file, sizeof(state->script_path) - 1);
+        if (milkseq_load_script(state, script_file, fps, keywnode) != 0) {
+            fprintf(stderr, "Failed to load script: %s\n", script_file);
+        }
+    }
+
+    printf("milk-seq started: %s\n", seq_name);
+    state->status = MILKSEQ_STATUS_RUNNING;
+
+    long iter = 0;
+    time_t last_idle_time = time(NULL);
 
     // Main Run Loop
     while (keep_running) {

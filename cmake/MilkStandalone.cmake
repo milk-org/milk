@@ -27,6 +27,7 @@ set(FPS_STANDALONE_DATA_SRC
 set(_MILK_STANDALONE_LIBS
     milkfps
     milkfpsStandalone
+    milkfpsseq
     milkdata
     milkprocessinfo
     ImageStreamIO
@@ -54,6 +55,7 @@ if(USE_STATIC_LTO)
       milkCOREMODtools_compute_static
       milkCOREMODarith_compute_static
       milkfpsStandalone_static
+      milkfpsseq_static
       milkfps_static
       milkdata_static
       milkprocessinfo_static
@@ -190,7 +192,7 @@ function(add_milk_standalone FUNC_NAME SRC_FILE)
         "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
         "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME}
-        PRIVATE FPS_STANDALONE)
+        PRIVATE FPS_STANDALONE MILK_NO_CLI)
     if(USE_STATIC_LTO)
         # fps_standalone_data.c provides stub symbols
         # that clash with real implementations in the
@@ -232,7 +234,7 @@ function(add_cacao_standalone FUNC_NAME SRC_FILE)
         "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_FILE}"
         "${FPS_STANDALONE_DATA_SRC}")
     target_compile_definitions(${EXE_NAME}
-        PRIVATE FPS_STANDALONE)
+        PRIVATE FPS_STANDALONE MILK_NO_CLI)
     if(USE_STATIC_LTO)
         set_source_files_properties(
             "${FPS_STANDALONE_DATA_SRC}"
