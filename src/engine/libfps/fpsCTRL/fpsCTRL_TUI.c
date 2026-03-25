@@ -372,31 +372,8 @@ errno_t functionparameter_CTRLscreen(
         }
     }
 
-    FPSCTRL_TASK_ENTRY *fpsctrltasklist = calloc(NB_FPSCTRL_TASK_MAX,
-                                          sizeof(*fpsctrltasklist));
-    if(fpsctrltasklist == NULL)
-    {
-        PRINT_ERROR("calloc error");
-        abort();
-    }
-    for(int cmdindex = 0; cmdindex < NB_FPSCTRL_TASK_MAX; cmdindex++)
-    {
-        fpsctrltasklist[cmdindex].status = 0;
-        fpsctrltasklist[cmdindex].queue  = 0;
-    }
-
-    FPSCTRL_TASK_QUEUE *fpsctrlqueuelist = calloc(NB_FPSCTRL_TASKQUEUE_MAX,
-                                           sizeof(* fpsctrlqueuelist));
-    if(fpsctrlqueuelist == NULL)
-    {
-        PRINT_ERROR("calloc error");
-        abort();
-    }
-    for(int queueindex = 0; queueindex < NB_FPSCTRL_TASKQUEUE_MAX;
-            queueindex++)
-    {
-        fpsctrlqueuelist[queueindex].priority = 1; // 0 = not active
-    }
+    fpsCTRLvar.milkseq_state = NULL;
+    fpsCTRLvar.milkseq_name[0] = '\0';
 
     if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
         // Create FIFO if it does not exist
@@ -526,45 +503,14 @@ errno_t functionparameter_CTRLscreen(
 
         while(refresh_screen == 0)  // wait for input
         {
-            // put input commands from fifo into the task queue
-            if (fpsCTRLvar.fpsCTRLfifofd > 0) {
-                int fcnt =
-                    functionparameter_read_fpsCMD_fifo(
-                        fpsCTRLvar.fpsCTRLfifofd,
-                        fpsctrltasklist,
-                        fpsctrlqueuelist);
-                fifocmdcnt += fcnt;
-            }
+            // Command processing moved to standalone milk-seq daemon
 
-            DEBUG_TRACEPOINT(" ");
-
-            // execute next command in the queue
-            int taskflag =
-                function_parameter_process_fpsCMDarray(
-                    fpsctrltasklist,
-                    fpsctrlqueuelist,
-                    keywnode,
-                    &fpsCTRLvar,
-                    fpsarray);
-
-            if(taskflag > 0)  // task has been performed
+            // gradually slow down
+            getchardt_us = (int)(1.01 * getchardt_us);
+            if(getchardt_us > getchardt_us_ref)
             {
-                getchardt_us = 1000; // check often
+                getchardt_us = getchardt_us_ref;
             }
-            else
-            {
-                // gradually slow down
-                getchardt_us = (int)(1.01 * getchardt_us);
-
-                if(getchardt_us > getchardt_us_ref)
-                {
-                    getchardt_us = getchardt_us_ref;
-                }
-            }
-            NBtaskLaunched += taskflag;
-
-            NBtaskLaunchedcnt += NBtaskLaunched;
-
 
             usleep(getchardt_us);
 
@@ -604,8 +550,8 @@ errno_t functionparameter_CTRLscreen(
         loopOK = fpsCTRL_TUI_process_user_key(ch,
                                               fpsarray,
                                               keywnode,
-                                              fpsctrltasklist,
-                                              fpsctrlqueuelist,
+                                              NULL,
+                                              NULL,
                                               &fpsCTRLvar);
 
         DEBUG_TRACEPOINT(" ");
@@ -681,8 +627,7 @@ errno_t functionparameter_CTRLscreen(
 
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
             {
-                fpsCTRL_scheduler_display(fpsctrltasklist,
-                                          fpsctrlqueuelist,
+                fpsCTRL_scheduler_display(&fpsCTRLvar,
                                           wrow,
                                           &fpsCTRLvar.scheduler_wrowstart);
             }
@@ -743,9 +688,7 @@ errno_t functionparameter_CTRLscreen(
 
     // free(keywnode);
 
-    free(fpsctrltasklist);
-    free(fpsctrlqueuelist);
-
+    // No longer freeing local task queues
     if (strlen(fpsCTRLvar.fpsCTRLfifoname) > 0) {
         unlink(fpsCTRLvar.fpsCTRLfifoname);
     }

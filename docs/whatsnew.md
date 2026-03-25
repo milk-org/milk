@@ -20,6 +20,8 @@ for the full history.
 
 ### 2026-03
 
+- **2026-03-25** — `milk-seq` standalone sequencer,
+  fpsCTRL and milk-cli integration `#fps` `#cli`
 - **2026-03-25** — Module dependency system with
   `MODULE_DEPS` macro `#api` `#build`
   ([PR #169](https://github.com/milk-org/milk/pull/169))

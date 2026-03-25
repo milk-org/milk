@@ -61,7 +61,7 @@
  */
 
 int milkseq_exec_cmd(
-    const char               *FPScmdline,
+    uint32_t                 cmdindex,
     MILKSEQ_STATE            *state,
     FUNCTION_PARAMETER_STRUCT *fps,
     KEYWORD_TREE_NODE        *keywnode,
@@ -69,6 +69,7 @@ int milkseq_exec_cmd(
     uint64_t                 *taskstatus
 )
 {
+    const char *FPScmdline = state->tasklist[cmdindex].cmdstring;
     int  fpsindex;
     long pindex;
 
@@ -343,6 +344,65 @@ int milkseq_exec_cmd(
         }
     }
 
+    // seq_send
+    //
+    if((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
+    {
+        cmdFOUND = 1;
+
+        if(nbword < 3)
+        {
+            functionparameter_outlog(
+                "ERROR",
+                "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
+            cmdOK = 0;
+            *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+        }
+        else
+        {
+            char fifo_path[256];
+            snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
+            FILE *fp = fopen(fifo_path, "w");
+            if (fp == NULL) {
+                cmdOK = 0;
+                functionparameter_outlog("ERROR", "seq_send: cannot open FIFO %s", fifo_path);
+            } else {
+                const char *cmd_start = strstr(FPScmdline, FPSarg1);
+                if (cmd_start) {
+                    fprintf(fp, "%s\n", cmd_start);
+                    fflush(fp);
+                    cmdOK = 1;
+                } else {
+                    cmdOK = 0;
+                }
+                fclose(fp);
+            }
+        }
+    }
+
+    // wait_seq
+    //
+    if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
+    {
+        cmdFOUND = 1;
+
+        if(nbword != 3 || strcmp(FPSarg1, "idle") != 0)
+        {
+            functionparameter_outlog(
+                "ERROR",
+                "COMMAND wait_seq requires format: wait_seq <seqname> idle");
+            cmdOK = 0;
+            *taskstatus |= FPSTASK_STATUS_ERR_NBARG;
+        }
+        else
+        {
+            cmdOK = 1;
+            state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITSEQ_IDLE;
+            *taskstatus |= FPSTASK_STATUS_RUNNING; 
+        }
+    }
+
+    // wait, we skip FPS resolution for these commands!
     // From this point on, FPSarg0 is expected to be a FPS entry
     // so we resolve it and look for fps
     int kwnindex = -1;
@@ -1275,6 +1335,95 @@ int milkseq_exec_cmd(
                 }
             }
         }
+
+        // wait_fps
+        //
+        if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_fps") == 0))
+        {
+            cmdFOUND = 1;
+
+            if(nbword != 3)
+            {
+                functionparameter_outlog(
+                    "ERROR",
+                    "COMMAND wait_fps requires 2 arguments (<fpsname> <running|norun>)");
+                cmdOK = 0;
+            }
+            else
+            {
+                cmdOK = 1;
+                state->tasklist[cmdindex].fpsindex = fpsindex; // store for scheduler
+
+                if (strcmp(FPSarg1, "running") == 0) {
+                    state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITFPS_RUNNING;
+                } else if (strcmp(FPSarg1, "norun") == 0) {
+                    state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITFPS_NORUN;
+                } else {
+                    cmdOK = 0;
+                    functionparameter_outlog("ERROR", "wait_fps: invalid condition %s", FPSarg1);
+                }
+                
+                if (cmdOK == 1) {
+                    *taskstatus |= FPSTASK_STATUS_RUNNING; // Scheduler will hold task until completion
+                }
+            }
+        }
+
+        // seq_send
+        //
+        if((cmdFOUND == 0) && (strcmp(FPScommand, "seq_send") == 0))
+        {
+            cmdFOUND = 1;
+
+            if(nbword < 3)
+            {
+                functionparameter_outlog(
+                    "ERROR",
+                    "COMMAND seq_send requires 2+ arguments (<seqname> <cmd...>)");
+                cmdOK = 0;
+            }
+            else
+            {
+                char fifo_path[256];
+                snprintf(fifo_path, sizeof(fifo_path), "/tmp/milkseq.%s.fifo", FPSarg0);
+                FILE *fp = fopen(fifo_path, "w");
+                if (fp == NULL) {
+                    cmdOK = 0;
+                    functionparameter_outlog("ERROR", "seq_send: cannot open FIFO %s", fifo_path);
+                } else {
+                    const char *cmd_start = strstr(FPScmdline, FPSarg1);
+                    if (cmd_start) {
+                        fprintf(fp, "%s\n", cmd_start);
+                        fflush(fp);
+                        cmdOK = 1;
+                    } else {
+                        cmdOK = 0;
+                    }
+                    fclose(fp);
+                }
+            }
+        }
+
+        // wait_seq
+        //
+        if((cmdFOUND == 0) && (strcmp(FPScommand, "wait_seq") == 0))
+        {
+            cmdFOUND = 1;
+
+            if(nbword != 3 || strcmp(FPSarg1, "idle") != 0)
+            {
+                functionparameter_outlog(
+                    "ERROR",
+                    "COMMAND wait_seq requires format: wait_seq <seqname> idle");
+                cmdOK = 0;
+            }
+            else
+            {
+                cmdOK = 1;
+                state->tasklist[cmdindex].flag |= MILKSEQ_TASKFLAG_WAITSEQ_IDLE;
+                *taskstatus |= FPSTASK_STATUS_RUNNING; 
+            }
+        }
     }
 
     if(cmdOK == 0)
@@ -1311,32 +1460,4 @@ int milkseq_exec_cmd(
     DEBUG_TRACEPOINT(" ");
 
     return fpsindex;
-}
-
-
-errno_t milkseq_load_script(
-    MILKSEQ_STATE *state,
-    const char *filename)
-{
-    FILE *fpinputcmd = fopen(filename, "r");
-
-    if (fpinputcmd != NULL) {
-        char *FPScmdline = NULL;
-        size_t len = 0;
-        ssize_t read_bytes;
-
-        while ((read_bytes = getline(&FPScmdline, &len, fpinputcmd)) != -1) {
-            uint64_t taskstatus = 0;
-            printf("Processing line : %s\n", FPScmdline);
-            milkseq_exec_cmd(FPScmdline, state, NULL, NULL, NULL, &taskstatus);
-        }
-        if (FPScmdline) {
-            free(FPScmdline);
-        }
-        fclose(fpinputcmd);
-    } else {
-        return -1;
-    }
-
-    return RETURN_SUCCESS;
 }

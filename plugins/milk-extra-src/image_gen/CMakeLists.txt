@@ -67,7 +67,8 @@ if(USE_CFITSIO AND CFITSIO_FOUND)
 endif()
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
-    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include/${SRCNAME}>)
 if(USE_CFITSIO AND CFITSIO_FOUND)
@@ -89,6 +90,8 @@ if(USE_STATIC_LTO)
   target_compile_definitions(${LIBNAME_COMPUTE_STATIC} PRIVATE MILK_NO_CLI)
   target_include_directories(${LIBNAME_COMPUTE_STATIC} PUBLIC
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
       $<INSTALL_INTERFACE:include>)
   if(USE_CFITSIO AND CFITSIO_FOUND)
@@ -96,6 +99,12 @@ if(USE_STATIC_LTO)
         PUBLIC USE_CFITSIO=1)
     target_include_directories(${LIBNAME_COMPUTE_STATIC}
         PUBLIC ${CFITSIO_INCLUDE_DIRS})
+    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC
+        m ${CFITSIO_LIBRARIES}
+        milkCOREMODmemory_compute_static milkCOREMODiofits_compute_static milkstatistic_compute_static)
+  else()
+    target_link_libraries(${LIBNAME_COMPUTE_STATIC} PUBLIC
+        m milkCOREMODmemory_compute_static milkstatistic_compute_static)
   endif()
 endif()
 
