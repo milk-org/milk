@@ -322,9 +322,11 @@ void help_topic_variables(void)
     printf("  " C_CMD "${s.naxis}" C_RST
            "         Number of axes\n");
     printf("  " C_CMD "${s.type}" C_RST
-           "          Datatype name\n");
+           "          Datatype code\n");
+    printf("  " C_CMD "${s.typename}" C_RST
+           "      Datatype name\n");
     printf("  " C_CMD "${s.typeid}" C_RST
-           "        Datatype code\n");
+           "        Datatype code (alias)\n");
     printf("  " C_CMD "${s.cnt0}" C_RST
            "          Frame counter (total)\n");
     printf("  " C_CMD "${s.cnt1}" C_RST
@@ -564,9 +566,11 @@ void help_topic_milk(void)
     printf("  " C_CMD "${s.naxis}" C_RST
            "         Number of axes\n");
     printf("  " C_CMD "${s.type}" C_RST
-           "          Datatype name\n");
+           "          Datatype code\n");
+    printf("  " C_CMD "${s.typename}" C_RST
+           "      Datatype name\n");
     printf("  " C_CMD "${s.typeid}" C_RST
-           "        Datatype code\n");
+           "        Datatype code (alias)\n");
     printf("  " C_CMD "${s.cnt0}" C_RST
            "          Frame counter (total)\n");
     printf("  " C_CMD "${s.cnt1}" C_RST
