@@ -355,18 +355,93 @@ void cli_expand_fpsvar(
             {
                 i++; /* skip '=' */
 
-                /* Collect value (to whitespace,
-                 * semicolon, or NUL) */
+                /* Collect value up to statement end
+                 * (semicolon, newline, or NUL),
+                 * allowing spaces, parentheses, and
+                 * quoted strings. */
                 char valstr[512];
-                int  vlen = 0;
+                int  vlen      = 0;
+                int  depth     = 0; /* paren depth */
+                int  in_single = 0;
+                int  in_double = 0;
+                int  escape    = 0;
+
+                /* Skip leading whitespace after '=' */
+                while(line[i] == ' '
+                      || line[i] == '\t')
+                {
+                    i++;
+                }
+
                 while(line[i] != '\0'
-                      && line[i] != ' '
-                      && line[i] != '\t'
-                      && line[i] != ';'
-                      && line[i] != '\n'
                       && vlen < 511)
                 {
-                    valstr[vlen++] = line[i++];
+                    char c = line[i];
+
+                    if(!escape)
+                    {
+                        if(c == '\\')
+                        {
+                            escape = 1;
+                            valstr[vlen++] = c;
+                            i++;
+                            continue;
+                        }
+
+                        if(!in_single
+                           && !in_double)
+                        {
+                            if(c == '(')
+                            {
+                                depth++;
+                            }
+                            else if(c == ')'
+                                    && depth > 0)
+                            {
+                                depth--;
+                            }
+
+                            /* Stop at ';' or
+                             * newline only when
+                             * not nested. */
+                            if(depth == 0
+                                    && (c == ';'
+                                        || c == '\n'))
+                            {
+                                break;
+                            }
+                        }
+
+                        if(!in_double
+                           && c == '\'')
+                        {
+                            in_single =
+                                !in_single;
+                        }
+                        else if(!in_single
+                                && c == '"')
+                        {
+                            in_double =
+                                !in_double;
+                        }
+                    }
+                    else
+                    {
+                        /* Escaped character */
+                        escape = 0;
+                    }
+
+                    valstr[vlen++] = c;
+                    i++;
+                }
+
+                /* Trim trailing whitespace */
+                while(vlen > 0
+                      && (valstr[vlen - 1] == ' '
+                          || valstr[vlen - 1]
+                          == '\t'))
+                {
+                    vlen--;
                 }
                 valstr[vlen] = '\0';
 
