@@ -12,6 +12,13 @@ The workflow is one of upstream merging through github pull requests.
 ## Rules that apply to your local machine.
 
 - Configure your `git config pull.rebase true`. We do not want merge commits between the local and remote refs of the same branch. Ever.
+- Install the `pre-commit` package, which performs local check upon making a commit.
+```bash
+milk>$ pip-install pre-commit # Installs pre-commit on your system
+#OR
+milk>$ sudo apt install pre-commit
+milk>$ pre-commit install # Install the action hooks in the milk repository
+```
 
 
 ## Commits
