@@ -1,66 +1,36 @@
 # Copilot Instructions — milk
 
-This file provides GitHub Copilot with project-specific
-context. For the full agent onboarding guide, see
-[AGENTS.md](../../AGENTS.md) at the repo root.
+> **Source of truth**: [`AGENTS.md`](../../AGENTS.md)
+> and [`.agents/rules/`](../../.agents/rules/) contain
+> the full, maintained coding rules. This file provides
+> Copilot with a compact summary. When in doubt, defer
+> to the agent rules.
 
-## Project Overview
+milk is a **real-time image-processing framework** for
+Adaptive Optics. Architecture: shared-memory streams
+(`ImageStreamIO`), parameters (`FPS`), heartbeat
+(`processinfo`). See `AGENTS.md` §1 for details.
 
-`milk` is a real-time image-processing framework for
-Adaptive Optics. It uses shared-memory IPC: streams
-(`ImageStreamIO`), parameter sync (`FPS`), and heartbeat
-telemetry (`processinfo`).
+## Quick Reference
 
-## Coding Conventions
+| Topic | Source of Truth |
+|-------|----------------|
+| Coding style | `.agents/rules/code-style-guide.md` |
+| Performance | `.agents/rules/performance-practices.md` |
+| Architecture | `.agents/rules/architecture-principles.md` |
+| FPS executables | `.agents/rules/fpsexec-conventions.md` |
+| CMake | `.agents/rules/cmake-conventions.md` |
+| Git/PR workflow | `.agents/rules/git-workflow.md` |
+| V2 template | `src/milk_module_example/examplefunc_fps_cli_poc.c` |
+| Dependency graph | `docs/dependency_graph.md` |
+| Full onboarding | `AGENTS.md` |
 
-- Line length ≤ 80 characters
-- Linux kernel C coding style
-- Kernel-Doc (`/** ... */`) for function documentation
-- Every `.c` file explicitly includes the headers it uses
-- Use code blocks `{ }` to minimize variable scope
-- Function prototypes: multi-line, one argument per line
-- Prioritize runtime performance
+## Critical Rules (Summary)
 
-## Templates
-
-- **New FPS compute unit**: follow
-  `src/milk_module_example/examplefunc_fps_cli_poc.c`
-- **Stream processing**: follow
-  `src/milk_module_example/examplefunc4_streamprocess.c`
-- **FPS-enabled function**: follow
-  `src/milk_module_example/examplefunc2_FPS.c`
-- **CMakeLists.txt**: follow
-  `src/milk_module_example/CMakeLists.txt`
-
-## Key Rules
-
-- **NEVER** push to the `dev` branch. Use
-  `framework-dev` or feature branches.
-- Check `docs/dependency_graph.md` before adding
-  cross-module dependencies.
-- Standalone executables must link `_compute` variants,
-  never `CLIcore`. Use `add_milk_standalone()` or
-  `add_cacao_standalone()` CMake helpers.
-- Always compile-test after C or CMake changes.
-- Update module README when source files change.
-- Update `docs/programmers_guide.md` after architectural
-  changes.
-
-## Dual-Mode Files
-
-Files compiled as both CLI library and standalone use:
-
-```c
-#ifdef MILK_NO_CLI
-#include "CLIcore_standalone.h"
-#else
-#include "CLIcore.h"
-#endif
-#include "fps.h"
-```
-
-## Agent Rules and Workflows
-
-See `.agents/rules/` for always-on guardrails and
-`.agents/workflows/` for on-demand task templates.
-Full index: `docs/code_assist.md`.
+- Lines ≤ 80 characters, Linux kernel C style
+- Kernel-Doc on functions, explicit `#include`s
+- `framework-dev` branch only — never `dev`/`main`
+- Use `sqrtf()` not `sqrt()` for float data
+- No `printf` in compute hot paths
+- No `malloc`/`free` inside per-frame loops
+- Standalone executables link `_compute` variants
