@@ -316,7 +316,17 @@ double arith_expr(ArithParser *p)
 /**
  * @brief Expand @fpsname.param tokens in place
  *
- * @param line   Command line buffer
+ * Tokens of the form @fpsname.param are replaced with
+ * the current value of that FPS parameter (read path).
+ * Tokens of the form @fpsname.param=value write the
+ * value to the parameter instead.
+ *
+ * Expansion is suppressed when the @ character appears
+ * inside single or double quotes, or after a backslash
+ * escape, so that e.g. echo "@fps.p=1" passes the
+ * literal string through unchanged.
+ *
+ * @param line   Command line buffer (modified in place)
  * @param maxlen Buffer size
  */
 void cli_expand_fpsvar(
@@ -325,13 +335,52 @@ void cli_expand_fpsvar(
 )
 {
     char out[STRINGMAXLEN_CLICMDLINE];
-    int  opos = 0;
-    int  i = 0;
+    int  opos      = 0;
+    int  i         = 0;
+    int  in_single = 0; /* inside ' ... ' */
+    int  in_double = 0; /* inside " ... " */
+    int  out_esc   = 0; /* backslash escape */
 
     while(line[i] != '\0'
             && opos < maxlen - 1)
     {
-        if(line[i] == '@')
+        char c = line[i];
+
+        /* ---- Outer quote / escape tracking ---- */
+        if(out_esc)
+        {
+            out_esc = 0;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '\\' && !in_single)
+        {
+            out_esc = 1;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '\'' && !in_double)
+        {
+            in_single = !in_single;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '"' && !in_single)
+        {
+            in_double = !in_double;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        /* Skip @ expansion when inside quotes */
+        if(c == '@' && !in_single && !in_double)
         {
             i++; /* skip @ */
             char token[512];
@@ -348,6 +397,153 @@ void cli_expand_fpsvar(
                 token[tlen++] = line[i++];
             }
             token[tlen] = '\0';
+
+            /* ---- Write path: @fps.param=val ---- */
+            if(line[i] == '='
+               && strchr(token, '.') != NULL)
+            {
+                i++; /* skip '=' */
+
+                /* Collect value up to statement end
+                 * (semicolon, newline, or NUL),
+                 * allowing spaces, parentheses, and
+                 * quoted strings. */
+                char valstr[512];
+                int  vlen      = 0;
+                int  depth     = 0; /* paren depth */
+                int  in_single = 0;
+                int  in_double = 0;
+                int  escape    = 0;
+
+                /* Skip leading whitespace after '=' */
+                while(line[i] == ' '
+                      || line[i] == '\t')
+                {
+                    i++;
+                }
+
+                while(line[i] != '\0'
+                      && vlen < 511)
+                {
+                    char c = line[i];
+
+                    if(!escape)
+                    {
+                        if(c == '\\')
+                        {
+                            escape = 1;
+                            valstr[vlen++] = c;
+                            i++;
+                            continue;
+                        }
+
+                        if(!in_single
+                           && !in_double)
+                        {
+                            if(c == '(')
+                            {
+                                depth++;
+                            }
+                            else if(c == ')'
+                                    && depth > 0)
+                            {
+                                depth--;
+                            }
+
+                            /* Stop at ';' or
+                             * newline only when
+                             * not nested. */
+                            if(depth == 0
+                                    && (c == ';'
+                                        || c == '\n'))
+                            {
+                                break;
+                            }
+                        }
+
+                        if(!in_double
+                           && c == '\'')
+                        {
+                            in_single =
+                                !in_single;
+                        }
+                        else if(!in_single
+                                && c == '"')
+                        {
+                            in_double =
+                                !in_double;
+                        }
+                    }
+                    else
+                    {
+                        /* Escaped character */
+                        escape = 0;
+                    }
+
+                    valstr[vlen++] = c;
+                    i++;
+                }
+
+                /* Trim trailing whitespace */
+                while(vlen > 0
+                      && (valstr[vlen - 1] == ' '
+                          || valstr[vlen - 1]
+                          == '\t'))
+                {
+                    vlen--;
+                }
+                valstr[vlen] = '\0';
+
+                /* Expand @fps.param refs, $VAR and
+                 * $((...)) in the value before
+                 * setting the parameter, so that
+                 * e.g. @fps.gain=$var or
+                 * @fps.gain=$((a+b)) works. */
+                cli_expand_fpsvar(
+                    valstr,
+                    (int) sizeof(valstr));
+                cli_expand_env(
+                    valstr,
+                    (int) sizeof(valstr));
+                cli_expand_arith(
+                    valstr,
+                    (int) sizeof(valstr));
+
+                /* Split token at first dot */
+                char tcopy[512];
+                strncpy(tcopy, token,
+                        sizeof(tcopy) - 1);
+                tcopy[sizeof(tcopy) - 1] =
+                    '\0';
+                char *dot = strchr(tcopy, '.');
+                *dot = '\0';
+                const char *fpsname = tcopy;
+                const char *pname = dot + 1;
+
+                cli_fps_set_param(
+                    fpsname, pname, valstr);
+
+                /* If this assignment is the whole
+                 * command, ensure the expanded
+                 * line is not empty so that the
+                 * dispatcher does not fall back
+                 * to a spurious "command not
+                 * found" / shell execution.
+                 * Insert a POSIX no-op ":" as
+                 * a harmless placeholder. */
+                if(opos == 0)
+                {
+                    if(opos < maxlen - 1)
+                    {
+                        out[opos++] = ':';
+                    }
+                    if(opos < maxlen - 1)
+                    {
+                        out[opos++] = ' ';
+                    }
+                }
+                continue;
+            }
 
             char *dot = strchr(token, '.');
             if(dot == NULL)
