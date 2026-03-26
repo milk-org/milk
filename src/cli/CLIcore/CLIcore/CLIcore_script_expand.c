@@ -349,6 +349,43 @@ void cli_expand_fpsvar(
             }
             token[tlen] = '\0';
 
+            /* ---- Write path: @fps.param=val ---- */
+            if(line[i] == '='
+               && strchr(token, '.') != NULL)
+            {
+                i++; /* skip '=' */
+
+                /* Collect value (to whitespace,
+                 * semicolon, or NUL) */
+                char valstr[512];
+                int  vlen = 0;
+                while(line[i] != '\0'
+                      && line[i] != ' '
+                      && line[i] != '\t'
+                      && line[i] != ';'
+                      && line[i] != '\n'
+                      && vlen < 511)
+                {
+                    valstr[vlen++] = line[i++];
+                }
+                valstr[vlen] = '\0';
+
+                /* Split token at first dot */
+                char tcopy[512];
+                strncpy(tcopy, token,
+                        sizeof(tcopy) - 1);
+                tcopy[sizeof(tcopy) - 1] =
+                    '\0';
+                char *dot = strchr(tcopy, '.');
+                *dot = '\0';
+                const char *fpsname = tcopy;
+                const char *pname = dot + 1;
+
+                cli_fps_set_param(
+                    fpsname, pname, valstr);
+                continue;
+            }
+
             char *dot = strchr(token, '.');
             if(dot == NULL)
             {

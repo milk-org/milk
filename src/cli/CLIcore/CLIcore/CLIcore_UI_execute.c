@@ -247,14 +247,16 @@ static int cli_check_unquoted_restricted_symbols(
         }
         
         if (word_start) {
-            if (isalpha(c) || c == '_') {
+            if (isalpha(c) || c == '_'
+                || c == '@') {
                 valid_assign_prefix = 1;
             } else {
                 valid_assign_prefix = 0;
             }
             word_start = 0;
         } else {
-            if (!isalnum(c) && c != '_') {
+            if (!isalnum(c) && c != '_'
+                && c != '.' && c != '@') {
                 valid_assign_prefix = 0;
             }
         }
