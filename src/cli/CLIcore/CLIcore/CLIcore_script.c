@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -252,6 +253,24 @@ const char *cli_var_lookup(const char *name)
             sname[sn] = '\0';
             const char *prop = dot + 1;
 
+            /* Existence check using configured
+             * SHM dir (avoids spurious warnings
+             * from ImageStreamIO when stream does
+             * not exist) */
+            char shmchkpath[
+                STRINGMAXLEN_DIRNAME
+                + 128 + 16];
+            snprintf(shmchkpath,
+                     sizeof(shmchkpath),
+                     "%s/%s.im.shm",
+                     dcshmdir, sname);
+            if(access(shmchkpath,
+                      F_OK) != 0)
+            {
+                /* stream not present */
+                goto stream_prop_done;
+            }
+
             /* Connect via ImageStreamIO
              * (uses MILK_SHM_DIR) */
             IMAGE img;
@@ -282,7 +301,11 @@ const char *cli_var_lookup(const char *name)
                         retbuf,
                         sizeof(retbuf),
                         "%u",
-                        img.md->size[1]);
+                        (img.md->naxis > 1
+                         && img.md->size[1]
+                            > 0)
+                        ? img.md->size[1]
+                        : 1U);
                     found = 1;
                 }
                 else if(strcmp(prop,
@@ -292,7 +315,11 @@ const char *cli_var_lookup(const char *name)
                         retbuf,
                         sizeof(retbuf),
                         "%u",
-                        img.md->size[2]);
+                        (img.md->naxis > 2
+                         && img.md->size[2]
+                            > 0)
+                        ? img.md->size[2]
+                        : 1U);
                     found = 1;
                 }
                 else if(strcmp(prop,
@@ -308,6 +335,17 @@ const char *cli_var_lookup(const char *name)
                 }
                 else if(strcmp(prop,
                     "type") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        (unsigned)
+                        img.md->datatype);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "typename") == 0)
                 {
                     const char *tn =
                         ImageStreamIO_typename(
@@ -424,6 +462,7 @@ const char *cli_var_lookup(const char *name)
                 }
             }
 
+stream_prop_done:
             /* Try FPS SHM */
             char fpath[256];
             snprintf(fpath,
