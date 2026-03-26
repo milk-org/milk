@@ -96,7 +96,7 @@ If you undertake something major (feature, refactor, performance), it is heavily
 ## Rules: git
 Rebase on pull, always always rebase on pull.
 
-### Rules: segregation of intent
+### Rules: separation of intent
 - When working in a branch and preparing a pull request, one must choose the intent of the PR (or the single commit)
 - The possible intents I foresee:
   - Changing top-level documents, including this one.
