@@ -445,6 +445,21 @@ void cli_expand_fpsvar(
                 }
                 valstr[vlen] = '\0';
 
+                /* Expand @fps.param refs, $VAR and
+                 * $((...)) in the value before
+                 * setting the parameter, so that
+                 * e.g. @fps.gain=$var or
+                 * @fps.gain=$((a+b)) works. */
+                cli_expand_fpsvar(
+                    valstr,
+                    (int) sizeof(valstr));
+                cli_expand_env(
+                    valstr,
+                    (int) sizeof(valstr));
+                cli_expand_arith(
+                    valstr,
+                    (int) sizeof(valstr));
+
                 /* Split token at first dot */
                 char tcopy[512];
                 strncpy(tcopy, token,
