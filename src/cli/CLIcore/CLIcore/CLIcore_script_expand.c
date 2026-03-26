@@ -316,7 +316,17 @@ double arith_expr(ArithParser *p)
 /**
  * @brief Expand @fpsname.param tokens in place
  *
- * @param line   Command line buffer
+ * Tokens of the form @fpsname.param are replaced with
+ * the current value of that FPS parameter (read path).
+ * Tokens of the form @fpsname.param=value write the
+ * value to the parameter instead.
+ *
+ * Expansion is suppressed when the @ character appears
+ * inside single or double quotes, or after a backslash
+ * escape, so that e.g. echo "@fps.p=1" passes the
+ * literal string through unchanged.
+ *
+ * @param line   Command line buffer (modified in place)
  * @param maxlen Buffer size
  */
 void cli_expand_fpsvar(
@@ -325,13 +335,52 @@ void cli_expand_fpsvar(
 )
 {
     char out[STRINGMAXLEN_CLICMDLINE];
-    int  opos = 0;
-    int  i = 0;
+    int  opos      = 0;
+    int  i         = 0;
+    int  in_single = 0; /* inside ' ... ' */
+    int  in_double = 0; /* inside " ... " */
+    int  out_esc   = 0; /* backslash escape */
 
     while(line[i] != '\0'
             && opos < maxlen - 1)
     {
-        if(line[i] == '@')
+        char c = line[i];
+
+        /* ---- Outer quote / escape tracking ---- */
+        if(out_esc)
+        {
+            out_esc = 0;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '\\' && !in_single)
+        {
+            out_esc = 1;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '\'' && !in_double)
+        {
+            in_single = !in_single;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        if(c == '"' && !in_single)
+        {
+            in_double = !in_double;
+            out[opos++] = c;
+            i++;
+            continue;
+        }
+
+        /* Skip @ expansion when inside quotes */
+        if(c == '@' && !in_single && !in_double)
         {
             i++; /* skip @ */
             char token[512];
