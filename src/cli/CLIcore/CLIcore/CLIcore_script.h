@@ -141,6 +141,9 @@ errno_t cli_cmd_shift(void);
 /** printf — formatted output */
 errno_t cli_cmd_printf(void);
 
+/** fpslist — list live FPS instances */
+errno_t cli_cmd_fpslist(void);
+
 /* ---- Expansion Functions ---- */
 
 /** Unified variable lookup: CLI > special > env */
