@@ -1,0 +1,44 @@
+# CODEOWNERS — Auto-assign reviewers by component
+#
+# When a PR modifies files matching these patterns,
+# the listed users are automatically requested as
+# reviewers. See:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Format: <pattern>  <owner1> <owner2> ...
+
+# Default — catches everything not matched below
+*                               @oguyon
+
+# ── Engine libraries ──────────────────────────────
+src/engine/ImageStreamIO/       @oguyon
+src/engine/libfps/              @oguyon
+src/engine/libprocessinfo/      @oguyon
+src/engine/libmilkdata/         @oguyon
+
+# ── CLI framework ────────────────────────────────
+src/cli/CLIcore/                @oguyon
+src/cli/libmilkTUI/             @oguyon
+src/cli/streamCTRL/             @oguyon
+
+# ── Core modules ─────────────────────────────────
+src/coremods/                   @oguyon
+
+# ── Plugins ──────────────────────────────────────
+plugins/milk-extra-src/         @oguyon
+
+# ── Build system ─────────────────────────────────
+CMakeLists.txt                  @oguyon
+cmake/                          @oguyon
+**/CMakeLists.txt               @oguyon
+
+# ── Documentation ────────────────────────────────
+docs/                           @oguyon
+*.md                            @oguyon
+
+# ── Agent infrastructure ─────────────────────────
+.agents/                        @oguyon
+.github/                        @oguyon
+
+# ── Tests ────────────────────────────────────────
+tests/                          @oguyon
