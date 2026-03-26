@@ -1,0 +1,43 @@
+# Copilot Coding Agent — Build Environment Setup
+#
+# This file defines the environment Copilot uses when
+# working on issues assigned to it. It runs in a
+# sandboxed container.
+#
+# See: https://docs.github.com/en/copilot/using-github-copilot/
+#      using-copilot-coding-agent-to-work-on-tasks
+
+steps:
+  - name: Install build dependencies
+    run: |
+      sudo apt-get update
+      sudo apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        pkg-config \
+        libcfitsio-dev \
+        libblas-dev \
+        liblapack-dev \
+        libgsl-dev \
+        libfftw3-dev \
+        libncurses-dev \
+        git
+
+  - name: Initialize submodules
+    run: |
+      git submodule update --init --recursive
+
+  - name: Configure and build
+    run: |
+      mkdir -p _build
+      cd _build
+      cmake .. \
+        -DCMAKE_INSTALL_PREFIX=$HOME/local \
+        -DCMAKE_BUILD_TYPE=Release
+      make -j$(nproc)
+      make install
+
+  - name: Source environment
+    run: |
+      echo "source $HOME/local/bin/milk-setup.bash" \
+        >> $HOME/.bashrc
