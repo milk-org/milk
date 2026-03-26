@@ -126,23 +126,3 @@ Also, documentation.
 
 Adding dependencies, yes but no.
 Reworking the rules by embedding routines extracted from libraries: yes but no.
-
-
-
------ WORKZONE -----
-
-
-
-[x] ./README.md (I like Oli's with all the badges.)
-[x] ./.github/copilot-instructions.md
-[ ] ./docs/
-- [-] ./docs/architecture.md _big one_
-[x] ./CONTRIBUTING.md
-[x] ./AGENTS.md _varying quality stuff_
-[x] ./python_module/README.md _not relevant for now, mostly obsolete_
-[ ] ./.agents/workflows/
-- [ ]
-[x] ./.agents/skills/ _referred to in AGENTS.md, doesn't exist_
-[ ] ./.agents/rules/
-- [ ]
-[ ] ./GEMINI.md _tell gemini not to fuck the branches, then look at AGENTS.md_
