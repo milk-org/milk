@@ -1709,6 +1709,15 @@ void runCLI_cmd_init()
         "printf \"%s=%d\\n\" name 42",
         "cli_cmd_printf()");
 
+    RegisterCLIcommand(
+        "fpslist",
+        __FILE__,
+        cli_cmd_fpslist,
+        "list live FPS instances",
+        "[pattern]",
+        "fpslist dm*",
+        "cli_cmd_fpslist()");
+
     //  init_modules();
 
     if(dcquiet == 0)
