@@ -1,3 +1,5 @@
+#include <dirent.h>
+#include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -573,5 +575,141 @@ errno_t cli_cmd_printf(void)
     }
 
     fflush(stdout);
+    return RETURN_SUCCESS;
+}
+
+/*
+ * ============================================================
+ *  fpslist — list live FPS instances
+ * ============================================================
+ */
+
+#include "fps_connect.h"
+#include "fps_disconnect.h"
+#include "fps_shmdirname.h"
+
+/**
+ * @brief fpslist command — list live FPS instances
+ *
+ * Scans the SHM directory for *.fps.shm files,
+ * connects to each, and prints a summary table
+ * showing name, status and description.
+ *
+ * Usage: fpslist [pattern]
+ *
+ * An optional glob pattern (e.g. "dm*") limits
+ * output to matching FPS names.
+ */
+errno_t cli_cmd_fpslist(void)
+{
+    char shmdname[STRINGMAXLEN_SHMDIRNAME];
+    function_parameter_struct_shmdirname(
+        shmdname);
+
+    /* Optional glob pattern from $1
+     * (cmdNBarg includes the command itself,
+     *  so >= 2 means one argument was given) */
+    const char *pat = NULL;
+    if(data.cmdNBarg >= 2)
+    {
+        pat =
+            data.cmdargtoken[1].val.string;
+    }
+
+    /* Header */
+    printf("%-24s %-12s %s\n",
+           "FPS NAME", "STATUS",
+           "DESCRIPTION");
+    printf("%-24s %-12s %s\n",
+           "------------------------",
+           "------------",
+           "--------------------"
+           "--------------------");
+
+    DIR           *d;
+    struct dirent *de;
+    d = opendir(shmdname);
+    if(d == NULL)
+    {
+        printf("Cannot open SHM dir: %s\n",
+               shmdname);
+        return RETURN_FAILURE;
+    }
+
+    while((de = readdir(d)) != NULL)
+    {
+        /* Only process *.fps.shm files */
+        char *sfx = strstr(de->d_name,
+                           ".fps.shm");
+        if(sfx == NULL)
+        {
+            continue;
+        }
+
+        /* Extract FPS name */
+        char fpsname[STRINGMAXLEN_FPS_NAME];
+        size_t nlen = (size_t)(sfx
+                               - de->d_name);
+        if(nlen >= sizeof(fpsname))
+        {
+            continue;
+        }
+        strncpy(fpsname, de->d_name, nlen);
+        fpsname[nlen] = '\0';
+
+        /* Apply glob filter when provided */
+        if(pat != NULL
+           && fnmatch(pat, fpsname, 0) != 0)
+        {
+            continue;
+        }
+
+        /* Connect to FPS */
+        FUNCTION_PARAMETER_STRUCT fps;
+        fps.SMfd = -1;
+        int rc =
+            function_parameter_struct_connect(
+                fpsname, &fps,
+                FPSCONNECT_SIMPLE);
+        if(rc == -1 || fps.md == NULL)
+        {
+            printf("%-24s %-12s %s\n",
+                   fpsname,
+                   "UNAVAIL", "");
+            continue;
+        }
+
+        /* Build status string */
+        uint32_t st = fps.md->status;
+        /* longest value: "CONF_ON\0" = 8 */
+        char ststr[16];
+        if(st & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
+        {
+            strncpy(ststr, "RUN",
+                    sizeof(ststr) - 1);
+        }
+        else if(st
+                & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
+        {
+            strncpy(ststr, "CONF_ON",
+                    sizeof(ststr) - 1);
+        }
+        else
+        {
+            strncpy(ststr, "IDLE",
+                    sizeof(ststr) - 1);
+        }
+        ststr[sizeof(ststr) - 1] = '\0';
+
+        printf("%-24s %-12s %s\n",
+               fpsname,
+               ststr,
+               fps.md->description);
+
+        function_parameter_struct_disconnect(
+            &fps);
+    }
+    closedir(d);
+
     return RETURN_SUCCESS;
 }
