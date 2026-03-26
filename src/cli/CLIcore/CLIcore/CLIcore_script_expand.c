@@ -383,6 +383,26 @@ void cli_expand_fpsvar(
 
                 cli_fps_set_param(
                     fpsname, pname, valstr);
+
+                /* If this assignment is the whole
+                 * command, ensure the expanded
+                 * line is not empty so that the
+                 * dispatcher does not fall back
+                 * to a spurious "command not
+                 * found" / shell execution.
+                 * Insert a POSIX no-op ":" as
+                 * a harmless placeholder. */
+                if(opos == 0)
+                {
+                    if(opos < maxlen - 1)
+                    {
+                        out[opos++] = ':';
+                    }
+                    if(opos < maxlen - 1)
+                    {
+                        out[opos++] = ' ';
+                    }
+                }
                 continue;
             }
 
