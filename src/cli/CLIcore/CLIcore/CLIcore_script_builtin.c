@@ -78,7 +78,7 @@ errno_t cli_cmd_echo(void)
 
 
 /* ============================================================
- *  FPS Write — fpsset command
+ *  FPS Write — reusable helper and fpsset command
  * ============================================================
  */
 
@@ -88,54 +88,39 @@ errno_t cli_cmd_echo(void)
 #include "fps_connect.h"
 
 /**
- * @brief fpsset command — write FPS parameter
+ * @brief Set an FPS parameter by name
  *
- * Usage: fpsset fpsname.param value
+ * Connects to the named FPS, locates the
+ * parameter, writes the value string, and
+ * disconnects.  Reused by both the fpsset
+ * command and the @fpsname.param=value
+ * expansion syntax.
+ *
+ * @param fpsname  FPS shared-memory name
+ * @param pname    Parameter key inside FPS
+ * @param valstr   Value to write (as string)
+ * @return 0 on success, -1 on error
  */
-errno_t cli_cmd_fpsset(void)
+int cli_fps_set_param(
+    const char *fpsname,
+    const char *pname,
+    const char *valstr
+)
 {
-    if(data.cmdNBarg < 3)
-    {
-        printf("Usage: fpsset "
-               "<fpsname.param> <value>\n");
-        return RETURN_FAILURE;
-    }
-
-    const char *fullname =
-        data.cmdargtoken[1].val.string;
-    const char *valstr =
-        data.cmdargtoken[2].val.string;
-
-    /* Split fpsname.param at first dot */
-    char fpsname[256];
-    strncpy(fpsname, fullname,
-            sizeof(fpsname) - 1);
-    fpsname[sizeof(fpsname) - 1] = '\0';
-
-    char *dot = strchr(fpsname, '.');
-    if(dot == NULL)
-    {
-        printf("Error: fpsset requires "
-               "fpsname.paramname\n");
-        return RETURN_FAILURE;
-    }
-    *dot = '\0';
-    const char *pname = dot + 1;
-
-    /* Connect to FPS */
     FUNCTION_PARAMETER_STRUCT fps;
     int fpsconn =
         function_parameter_struct_connect(
-            fpsname, &fps, FPSCONNECT_SIMPLE);
+            fpsname, &fps,
+            FPSCONNECT_SIMPLE);
 
-    if(fpsconn == -1 || fps.parray == NULL)
+    if(fpsconn == -1
+       || fps.parray == NULL)
     {
         printf("Error: cannot connect to "
                "FPS '%s'\n", fpsname);
-        return RETURN_FAILURE;
+        return -1;
     }
 
-    /* Find parameter index */
     int pindex =
         functionparameter_GetParamIndex(
             &fps, pname);
@@ -157,17 +142,17 @@ errno_t cli_cmd_fpsset(void)
                pname, fpsname);
         function_parameter_struct_disconnect(
             &fps);
-        return RETURN_FAILURE;
+        return -1;
     }
 
-    /* Set value based on parameter type */
     uint32_t ptype =
         fps.parray[pindex].type;
 
     if(ptype & FPTYPE_INT64)
     {
         fps.parray[pindex].val.i64[0] =
-            (int64_t) strtol(valstr, NULL, 0);
+            (int64_t) strtol(
+                valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
     else if(ptype & FPTYPE_FLOAT64)
@@ -188,23 +173,28 @@ errno_t cli_cmd_fpsset(void)
            || strcmp(valstr, "on") == 0
            || strcmp(valstr, "1") == 0)
         {
-            fps.parray[pindex].val.i64[0] = 1;
+            fps.parray[pindex]
+                .val.i64[0] = 1;
         }
         else
         {
-            fps.parray[pindex].val.i64[0] = 0;
+            fps.parray[pindex]
+                .val.i64[0] = 0;
         }
         fps.parray[pindex].cnt0++;
     }
     else if(ptype & FPTYPE_STRING)
     {
         strncpy(
-            fps.parray[pindex].val.string[0],
+            fps.parray[pindex]
+                .val.string[0],
             valstr,
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fps.parray[pindex].val.string[0][
-            FUNCTION_PARAMETER_STRMAXLEN - 1]
-            = '\0';
+            FUNCTION_PARAMETER_STRMAXLEN
+            - 1);
+        fps.parray[pindex]
+            .val.string[0][
+                FUNCTION_PARAMETER_STRMAXLEN
+                - 1] = '\0';
         fps.parray[pindex].cnt0++;
     }
     else
@@ -213,7 +203,51 @@ errno_t cli_cmd_fpsset(void)
                "type 0x%x\n", ptype);
     }
 
-    function_parameter_struct_disconnect(&fps);
+    function_parameter_struct_disconnect(
+        &fps);
+    return 0;
+}
+
+/**
+ * @brief fpsset command — write FPS parameter
+ *
+ * Usage: fpsset fpsname.param value
+ */
+errno_t cli_cmd_fpsset(void)
+{
+    if(data.cmdNBarg < 3)
+    {
+        printf("Usage: fpsset "
+               "<fpsname.param> <value>\n");
+        return RETURN_FAILURE;
+    }
+
+    const char *fullname =
+        data.cmdargtoken[1].val.string;
+    const char *valstr =
+        data.cmdargtoken[2].val.string;
+
+    char fpsname[256];
+    strncpy(fpsname, fullname,
+            sizeof(fpsname) - 1);
+    fpsname[sizeof(fpsname) - 1] = '\0';
+
+    char *dot = strchr(fpsname, '.');
+    if(dot == NULL)
+    {
+        printf("Error: fpsset requires "
+               "fpsname.paramname\n");
+        return RETURN_FAILURE;
+    }
+    *dot = '\0';
+    const char *pname = dot + 1;
+
+    if(cli_fps_set_param(
+           fpsname, pname, valstr) != 0)
+    {
+        return RETURN_FAILURE;
+    }
+
     return RETURN_SUCCESS;
 }
 
