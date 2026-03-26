@@ -313,10 +313,30 @@ void help_topic_variables(void)
            "    Write FPS parameter\n");
     printf("\n");
     printf(C_HDR "Milk Stream Attributes:\n" C_RST);
-    printf("  " C_CMD "${s.xsize}" C_RST "         Stream width\n");
-    printf("  " C_CMD "${s.ysize}" C_RST "         Stream height\n");
-    printf("  " C_CMD "${s.type}" C_RST "          Stream datatype\n");
-    printf("  " C_CMD "${s.cnt0}" C_RST "          Stream frame counter\n");
+    printf("  " C_CMD "${s.xsize}" C_RST
+           "         Stream width  (size[0])\n");
+    printf("  " C_CMD "${s.ysize}" C_RST
+           "         Stream height (size[1])\n");
+    printf("  " C_CMD "${s.zsize}" C_RST
+           "         Stream depth  (size[2])\n");
+    printf("  " C_CMD "${s.naxis}" C_RST
+           "         Number of axes\n");
+    printf("  " C_CMD "${s.type}" C_RST
+           "          Datatype name\n");
+    printf("  " C_CMD "${s.typeid}" C_RST
+           "        Datatype code\n");
+    printf("  " C_CMD "${s.cnt0}" C_RST
+           "          Frame counter (total)\n");
+    printf("  " C_CMD "${s.cnt1}" C_RST
+           "          Frame counter (recent)\n");
+    printf("  " C_CMD "${s.sem}" C_RST
+           "           Semaphore count\n");
+    printf("  " C_CMD "${s.pid}" C_RST
+           "           Creator PID\n");
+    printf("  " C_CMD "${s.ownerPID}" C_RST
+           "      Owner PID\n");
+    printf("  " C_CMD "${s.nelement}" C_RST
+           "      Total elements\n");
     printf("\n");
 }
 
@@ -536,15 +556,29 @@ void help_topic_milk(void)
     printf("\n");
     printf(C_HDR "Stream Metadata Dot-Expansion:\n" C_RST);
     printf("  " C_CMD "${s.xsize}" C_RST
-           "         Stream width dimension\n");
+           "         Stream width  (size[0])\n");
     printf("  " C_CMD "${s.ysize}" C_RST
-           "         Stream height dimension\n");
+           "         Stream height (size[1])\n");
+    printf("  " C_CMD "${s.zsize}" C_RST
+           "         Stream depth  (size[2])\n");
+    printf("  " C_CMD "${s.naxis}" C_RST
+           "         Number of axes\n");
     printf("  " C_CMD "${s.type}" C_RST
-           "          Stream datatype code\n");
+           "          Datatype name\n");
+    printf("  " C_CMD "${s.typeid}" C_RST
+           "        Datatype code\n");
     printf("  " C_CMD "${s.cnt0}" C_RST
            "          Frame counter (total)\n");
     printf("  " C_CMD "${s.cnt1}" C_RST
            "          Frame counter (recent)\n");
+    printf("  " C_CMD "${s.sem}" C_RST
+           "           Semaphore count\n");
+    printf("  " C_CMD "${s.pid}" C_RST
+           "           Creator PID\n");
+    printf("  " C_CMD "${s.ownerPID}" C_RST
+           "      Owner PID\n");
+    printf("  " C_CMD "${s.nelement}" C_RST
+           "      Total elements\n");
     printf("\n");
     printf(C_HDR "Waiting for Resources:\n" C_RST);
     printf("  " C_CMD "waitfor_stream s T" C_RST

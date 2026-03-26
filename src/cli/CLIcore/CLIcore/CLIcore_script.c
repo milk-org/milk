@@ -26,6 +26,7 @@
 #include "CLIcore.h"
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 #include <sys/mman.h>
 
@@ -232,7 +233,7 @@ const char *cli_var_lookup(const char *name)
     }
 
     /* stream.prop — shared memory
-     * stream metadata */
+     * stream metadata via ImageStreamIO */
     {
         const char *dot =
             strchr(name, '.');
@@ -251,123 +252,175 @@ const char *cli_var_lookup(const char *name)
             sname[sn] = '\0';
             const char *prop = dot + 1;
 
-            /* Try stream SHM */
-            char spath[256];
-            snprintf(spath,
-                     sizeof(spath),
-                     "/dev/shm/%s"
-                     ".im.shm",
-                     sname);
-            if(access(spath,
-                      F_OK) == 0)
+            /* Connect via ImageStreamIO
+             * (uses MILK_SHM_DIR) */
+            IMAGE img;
+            memset(&img, 0,
+                   sizeof(IMAGE));
+            errno_t sret =
+                ImageStreamIO_openIm(
+                    &img, sname);
+            if(sret
+               == IMAGESTREAMIO_SUCCESS
+               && img.md != NULL)
             {
-                IMAGE img;
-                if(ImageStreamIO_read_sharedmem_image_toIMAGE(
-                    sname, &img) == 0)
+                int found = 0;
+                if(strcmp(prop,
+                    "xsize") == 0)
                 {
-                    if(strcmp(prop,
-                        "xsize") == 0
-                       && img.md != NULL
-                       && img.md->naxis
-                       >= 1)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%u",
-                            img.md
-                            ->size[0]);
-                        return retbuf;
-                    }
-                    if(strcmp(prop,
-                        "ysize") == 0
-                       && img.md != NULL
-                       && img.md->naxis
-                       >= 2)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%u",
-                            img.md
-                            ->size[1]);
-                        return retbuf;
-                    }
-                    if(strcmp(prop,
-                        "zsize") == 0
-                       && img.md != NULL
-                       && img.md->naxis
-                       >= 3)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%u",
-                            img.md
-                            ->size[2]);
-                        return retbuf;
-                    }
-                    if(strcmp(prop,
-                        "type") == 0
-                       && img.md != NULL)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%d",
-                            (int)
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        img.md->size[0]);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "ysize") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        img.md->size[1]);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "zsize") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        img.md->size[2]);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "naxis") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        (unsigned)
+                        img.md->naxis);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "type") == 0)
+                {
+                    const char *tn =
+                        ImageStreamIO_typename(
                             img.md
                             ->datatype);
-                        return retbuf;
+                    if(tn != NULL)
+                    {
+                        strncpy(
+                            retbuf, tn,
+                            sizeof(retbuf)
+                            - 1);
+                        retbuf[
+                            sizeof(retbuf)
+                            - 1] = '\0';
                     }
-                    if(strcmp(prop,
-                        "cnt0") == 0
-                       && img.md != NULL)
+                    else
                     {
                         snprintf(
                             retbuf,
                             sizeof(
                                 retbuf),
-                            "%lu",
-                            (unsigned
-                            long)
+                            "%u",
+                            (unsigned)
                             img.md
-                            ->cnt0);
-                        return retbuf;
+                            ->datatype);
                     }
-                    if(strcmp(prop,
-                        "cnt1") == 0
-                       && img.md != NULL)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%lu",
-                            (unsigned
-                            long)
-                            img.md
-                            ->cnt1);
-                        return retbuf;
-                    }
-                    if(strcmp(prop,
-                        "naxis") == 0
-                       && img.md != NULL)
-                    {
-                        snprintf(
-                            retbuf,
-                            sizeof(
-                                retbuf),
-                            "%d",
-                            (int)
-                            img.md
-                            ->naxis);
-                        return retbuf;
-                    }
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "typeid") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        (unsigned)
+                        img.md->datatype);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "cnt0") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%lu",
+                        (unsigned long)
+                        img.md->cnt0);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "cnt1") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%lu",
+                        (unsigned long)
+                        img.md->cnt1);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "sem") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%u",
+                        (unsigned)
+                        img.md->sem);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "pid") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%d",
+                        (int)
+                        img.md
+                        ->creatorPID);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "ownerPID") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%d",
+                        (int)
+                        img.md
+                        ->ownerPID);
+                    found = 1;
+                }
+                else if(strcmp(prop,
+                    "nelement") == 0)
+                {
+                    snprintf(
+                        retbuf,
+                        sizeof(retbuf),
+                        "%lu",
+                        (unsigned long)
+                        img.md
+                        ->nelement);
+                    found = 1;
+                }
+                ImageStreamIO_closeIm(
+                    &img);
+                if(found)
+                {
+                    return retbuf;
                 }
             }
 
