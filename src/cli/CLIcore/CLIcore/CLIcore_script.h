@@ -121,6 +121,14 @@ errno_t cli_cmd_echo(void);
 /** fpsset — write FPS parameter */
 errno_t cli_cmd_fpsset(void);
 
+/** Set an FPS parameter by name.
+ *  Returns 0 on success, -1 on error. */
+int cli_fps_set_param(
+    const char *fpsname,
+    const char *pname,
+    const char *valstr
+);
+
 /** read — read a line into a variable */
 errno_t cli_cmd_read(void);
 
