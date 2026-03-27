@@ -1,8 +1,15 @@
 /**
- * @file CLIcore_UI.c
+ * @file CLIcore_UI_execute.c
  *
- * @brief User input (UI) functions
+ * @brief Core CLI execution engine and dispatcher
  *
+ * Architecture Overview:
+ * This file implements the central command loop execution engine.
+ * The primary entry point is `CLI_execute_line()`, which is responsible for
+ * taking a raw input string and running it through a sequence of script-like
+ * preprocessing steps (variable expansion, arithmetic, aliases, control flow)
+ * before dispatching it to either a native C module command or an external
+ * system binary.
  */
 
 #include <stdio.h>
