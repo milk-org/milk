@@ -40,7 +40,7 @@
 #endif
 
 #include "CLIcore.h"
-#include "CLIcore/cli_calc_parser.h"
+
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
@@ -48,7 +48,7 @@
 #include <glob.h>
 #include <sys/wait.h>
 
-#include "COREMOD_memory/COREMOD_memory.h"
+
 #include "timeutils.h"
 
 #define CLICOMPLETIONMODE_COMMANDS  0
@@ -56,6 +56,9 @@
 #define CLICOMPLETIONMODE_CMDARGS  2
 #define CLICOMPLETIONMODE_FILES    3
 #define CLICOMPLETIONMODE_FPSPARAMS 4
+#define CLICOMPLETIONMODE_VARS_FPS    5
+#define CLICOMPLETIONMODE_VARS_SEQ    6
+#define CLICOMPLETIONMODE_VARS_STREAM 7
 
 #define COLORRED       "\001\033[31m\002"
 #define COLORHBOLDCYAN "\001\e[0;96m\002"
@@ -690,6 +693,120 @@ retry_fuzzy:
         }
     }
 
+    if(data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS)
+    {
+        static DIR *vfps_dirp = NULL;
+        if(!state)
+        {
+            if(vfps_dirp != NULL) { closedir(vfps_dirp); vfps_dirp = NULL; }
+            vfps_dirp = opendir(dcshmdir);
+        }
+        if(vfps_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(vfps_dirp)) != NULL)
+            {
+                if(strncmp(ent->d_name, "fps.", 4) == 0)
+                {
+                    char *ext = strstr(ent->d_name, ".datadir");
+                    if(ext != NULL && strcmp(ext, ".datadir") == 0)
+                    {
+                        char fpsname[256];
+                        int namelen = ext - (ent->d_name + 4);
+                        if(namelen > 240) namelen = 240;
+                        snprintf(fpsname, sizeof(fpsname), "@fps.%.*s.", namelen, ent->d_name + 4);
+                        
+                        if(generator_fuzzy_pass == 0)
+                        {
+                            if(strncmp(fpsname, text, len) == 0) return dupstr(fpsname);
+                        }
+                        else
+                        {
+                            if(strstr(fpsname, text) != NULL) return dupstr(fpsname);
+                        }
+                    }
+                }
+            }
+            closedir(vfps_dirp);
+            vfps_dirp = NULL;
+        }
+    }
+
+    if(data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ)
+    {
+        static DIR *vseq_dirp = NULL;
+        if(!state)
+        {
+            if(vseq_dirp != NULL) { closedir(vseq_dirp); vseq_dirp = NULL; }
+            vseq_dirp = opendir(dcshmdir);
+        }
+        if(vseq_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(vseq_dirp)) != NULL)
+            {
+                if(strncmp(ent->d_name, "seq.", 4) == 0)
+                {
+                    char *ext = strstr(ent->d_name, ".shm");
+                    if(ext != NULL && strcmp(ext, ".shm") == 0)
+                    {
+                        char seqname[256];
+                        int namelen = ext - (ent->d_name + 4);
+                        if(namelen > 240) namelen = 240;
+                        snprintf(seqname, sizeof(seqname), "@seq.%.*s.", namelen, ent->d_name + 4);
+                        
+                        if(generator_fuzzy_pass == 0)
+                        {
+                            if(strncmp(seqname, text, len) == 0) return dupstr(seqname);
+                        }
+                        else
+                        {
+                            if(strstr(seqname, text) != NULL) return dupstr(seqname);
+                        }
+                    }
+                }
+            }
+            closedir(vseq_dirp);
+            vseq_dirp = NULL;
+        }
+    }
+
+    if(data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
+    {
+        static DIR *vstream_dirp = NULL;
+        if(!state)
+        {
+            if(vstream_dirp != NULL) { closedir(vstream_dirp); vstream_dirp = NULL; }
+            vstream_dirp = opendir(dcshmdir);
+        }
+        if(vstream_dirp != NULL)
+        {
+            struct dirent *ent;
+            while((ent = readdir(vstream_dirp)) != NULL)
+            {
+                char *ext = strstr(ent->d_name, ".im.shm");
+                if(ext != NULL && strcmp(ext, ".im.shm") == 0)
+                {
+                    char sname[256];
+                    int namelen = ext - ent->d_name;
+                    if(namelen > 240) namelen = 240;
+                    snprintf(sname, sizeof(sname), "${s.%.*s.", namelen, ent->d_name);
+                    
+                    if(generator_fuzzy_pass == 0)
+                    {
+                        if(strncmp(sname, text, len) == 0) return dupstr(sname);
+                    }
+                    else
+                    {
+                        if(strstr(sname, text) != NULL) return dupstr(sname);
+                    }
+                }
+            }
+            closedir(vstream_dirp);
+            vstream_dirp = NULL;
+        }
+    }
+
     /* Fuzzy fallback: if prefix pass found
      * nothing, restart with substring matching */
     if(generator_fuzzy_pass == 0
@@ -736,6 +853,18 @@ CLI_completion(
     {
         data.CLImatchMode =
             CLICOMPLETIONMODE_COMMANDS;
+    }
+    else if(strncmp(text, "@fps.", 5) == 0)
+    {
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_FPS;
+    }
+    else if(strncmp(text, "@seq.", 5) == 0)
+    {
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_SEQ;
+    }
+    else if(strncmp(text, "${s.", 4) == 0)
+    {
+        data.CLImatchMode = CLICOMPLETIONMODE_VARS_STREAM;
     }
     else
     {
@@ -887,8 +1016,14 @@ CLI_completion(
         (char *) text, &CLI_generator);
 
     /* Reset append char to default space */
-    if(data.CLImatchMode
-       != CLICOMPLETIONMODE_FILES)
+    if(data.CLImatchMode == CLICOMPLETIONMODE_FILES
+       || data.CLImatchMode == CLICOMPLETIONMODE_VARS_FPS
+       || data.CLImatchMode == CLICOMPLETIONMODE_VARS_SEQ
+       || data.CLImatchMode == CLICOMPLETIONMODE_VARS_STREAM)
+    {
+        rl_completion_append_character = '\0';
+    }
+    else
     {
         rl_completion_append_character = ' ';
     }
