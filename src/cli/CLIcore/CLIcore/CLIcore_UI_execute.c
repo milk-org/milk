@@ -37,10 +37,15 @@
 #include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
+#include "ImageStreamIO.h"
+#include "fps_connect.h"
+#include "fps_paramvalue.h"
+
 #define CLICOMPLETIONMODE_COMMANDS 0
 #define CLICOMPLETIONMODE_IMAGES   1
 #define CLICOMPLETIONMODE_CMDARGS  2
 #define CLICOMPLETIONMODE_FILES    3
+
 #define CLICOMPLETIONMODE_FPSPARAMS 4
 
 // COLORRESET removed to prevent redefinition with fps.h
@@ -893,7 +898,38 @@ static int cli_handle_input_redir(
         }
     }
 
-    FILE *ifp = fopen(infile, "r");
+    FILE *ifp = NULL;
+    int is_stream = 0;
+    char tempname[256];
+    
+    if (strncmp(infile, "@S:", 3) == 0) {
+        is_stream = 1;
+        char *sname = infile + 3;
+        IMAGE *img = (IMAGE*) malloc(sizeof(IMAGE));
+        if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, img) == 0) {
+            snprintf(tempname, sizeof(tempname), "/tmp/milk_cli_inredir_XXXXXX");
+            int fd = mkstemp(tempname);
+            if (fd >= 0) {
+                FILE *tf = fdopen(fd, "w");
+                if (tf) {
+                    size_t bytes = ImageStreamIO_typesize(img->md->datatype) * img->md->nelement;
+                    fwrite(img->array.raw, 1, bytes, tf);
+                    fclose(tf);
+                } else {
+                    close(fd);
+                }
+                ifp = fopen(tempname, "r");
+                unlink(tempname);
+            }
+            ImageStreamIO_closeIm(img);
+        } else {
+            printf("stream redirection: stream %s not found\n", sname);
+        }
+        free(img);
+    } else {
+        ifp = fopen(infile, "r");
+    }
+
     if (ifp != NULL)
     {
         int sv_in = dup(STDIN_FILENO);
@@ -904,7 +940,12 @@ static int cli_handle_input_redir(
         dup2(sv_in, STDIN_FILENO);
         close(sv_in);
         fclose(ifp);
+        
         return 1;
+    } else {
+        if (is_stream && tempname[0] != '\0') {
+            unlink(tempname);
+        }
     }
     return 0;
 }
@@ -1119,9 +1160,31 @@ static int cli_handle_output_redir(
         }
     }
 
-    FILE *rfp = fopen(
-        rfile,
-        (redir_mode == 2) ? "a" : "w");
+    FILE *rfp = NULL;
+    int is_fps = 0;
+    int is_stream = 0;
+    char tempname[256];
+    
+    if (strncmp(rfile, "@F:", 3) == 0) {
+        is_fps = 1;
+        snprintf(tempname, sizeof(tempname), "/tmp/milk_cli_fredir_XXXXXX");
+        int fd = mkstemp(tempname);
+        if (fd >= 0) {
+            rfp = fdopen(fd, (redir_mode == 2) ? "a" : "w");
+            if (!rfp) close(fd);
+        }
+    } else if (strncmp(rfile, "@S:", 3) == 0) {
+        is_stream = 1;
+        snprintf(tempname, sizeof(tempname), "/tmp/milk_cli_sredir_XXXXXX");
+        int fd = mkstemp(tempname);
+        if (fd >= 0) {
+            rfp = fdopen(fd, (redir_mode == 2) ? "a" : "w");
+            if (!rfp) close(fd);
+        }
+    } else {
+        rfp = fopen(rfile, (redir_mode == 2) ? "a" : "w");
+    }
+
     if (rfp != NULL)
     {
         fflush(stdout);
@@ -1134,7 +1197,99 @@ static int cli_handle_output_redir(
         dup2(sv_out, STDOUT_FILENO);
         close(sv_out);
         fclose(rfp);
+        
+        if (is_fps) {
+            char *fpspath = rfile + 3;
+            char *dot = strchr(fpspath, '.');
+            if (dot != NULL) {
+                *dot = '\0';
+                char *fpsname = fpspath;
+                char *param = dot + 1;
+                
+                FILE *tf = fopen(tempname, "r");
+                if (tf) {
+                    char valbuf[2048] = {0};
+                    size_t rn = fread(valbuf, 1, sizeof(valbuf)-1, tf);
+                    valbuf[rn] = '\0';
+                    fclose(tf);
+                    
+                    while(rn > 0 && (valbuf[rn-1] == '\n' || valbuf[rn-1] == '\r')) {
+                        valbuf[--rn] = '\0';
+                    }
+                    
+                    FUNCTION_PARAMETER_STRUCT fps_struct;
+                    if (function_parameter_struct_connect(fpsname, &fps_struct, FPSCONNECT_SIMPLE) == 0 && fps_struct.parray != NULL) {
+                        int pidx = functionparameter_GetParamIndex(&fps_struct, param);
+                        if (pidx < 0) {
+                            char dotname[512];
+                            snprintf(dotname, sizeof(dotname), ".%s", param);
+                            pidx = functionparameter_GetParamIndex(&fps_struct, dotname);
+                        }
+                        if (pidx >= 0) {
+                            const char *kw = fps_struct.parray[pidx].keyword[0];
+                            switch (fps_struct.parray[pidx].type) {
+                                case FPTYPE_INT32:
+                                    functionparameter_SetParamValue_INT32(&fps_struct, kw, strtol(valbuf, NULL, 10)); break;
+                                case FPTYPE_UINT32:
+                                    functionparameter_SetParamValue_UINT32(&fps_struct, kw, strtoul(valbuf, NULL, 10)); break;
+                                case FPTYPE_INT64:
+                                case FPTYPE_PID:
+                                    functionparameter_SetParamValue_INT64(&fps_struct, kw, strtoll(valbuf, NULL, 10)); break;
+                                case FPTYPE_UINT64:
+                                    functionparameter_SetParamValue_UINT64(&fps_struct, kw, strtoull(valbuf, NULL, 10)); break;
+                                case FPTYPE_FLOAT32:
+                                    functionparameter_SetParamValue_FLOAT32(&fps_struct, kw, strtof(valbuf, NULL)); break;
+                                case FPTYPE_FLOAT64:
+                                    functionparameter_SetParamValue_FLOAT64(&fps_struct, kw, strtod(valbuf, NULL)); break;
+                                case FPTYPE_TIMESPEC:
+                                    functionparameter_SetParamValue_TIMESPEC(&fps_struct, kw, strtof(valbuf, NULL)); break;
+                                case FPTYPE_ONOFF:
+                                    if (strcasecmp(valbuf, "ON") == 0 || strcmp(valbuf, "1") == 0) {
+                                        functionparameter_SetParamValue_ONOFF(&fps_struct, kw, 1);
+                                    } else if (strcasecmp(valbuf, "OFF") == 0 || strcmp(valbuf, "0") == 0) {
+                                        functionparameter_SetParamValue_ONOFF(&fps_struct, kw, 0);
+                                    }
+                                    break;
+                                default:
+                                    functionparameter_SetParamValue_STRING(&fps_struct, kw, valbuf); break;
+                            }
+                        } else {
+                            printf("fps redirection: param %s not found in %s\n", param, fpsname);
+                        }
+                        function_parameter_struct_disconnect(&fps_struct);
+                    } else {
+                        printf("fps redirection: could not connect to %s\n", fpsname);
+                    }
+                }
+            } else {
+                printf("fps redirection: format must be @F:fpsname.param\n");
+            }
+            unlink(tempname);
+        } else if (is_stream) {
+            char *sname = rfile + 3;
+            IMAGE *img = (IMAGE*) malloc(sizeof(IMAGE));
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, img) == 0) {
+                FILE *tf = fopen(tempname, "r");
+                if (tf) {
+                    size_t bytes = ImageStreamIO_typesize(img->md->datatype) * img->md->nelement;
+                    size_t bread = fread(img->array.raw, 1, bytes, tf);
+                    (void)bread;
+                    fclose(tf);
+                }
+                ImageStreamIO_UpdateIm(img);
+
+                ImageStreamIO_closeIm(img);
+            } else {
+                printf("stream redirection: stream %s not found\n", sname);
+            }
+            free(img);
+            unlink(tempname);
+        }
         return 1;
+    } else {
+        if ((is_fps || is_stream) && tempname[0] != '\0') {
+            unlink(tempname);
+        }
     }
     return 0;
 }
