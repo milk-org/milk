@@ -720,7 +720,7 @@ void CLI_configure_readline()
     /* Set custom word break characters to prevent readline
      * from splitting on @ and $, ensuring full variable tokens
      * (e.g. @fps.run or ${s.sz}) reach the completion generator. */
-    rl_completer_word_break_characters = " \t\n\"\\'<>=;|&{(";
+    rl_completer_word_break_characters = " \t\n\"\\'<>=;|&(";
 
     /* Bind Right Arrow to accept suggestion */
     rl_bind_keyseq("\\e[C", accept_suggestion);
