@@ -748,6 +748,45 @@ _calc_err = min(5)
 _calc_err = abs(1, 2)
 
 # ============================================
+# SECTION 18b: SHM-Aware Test Operators
+# ============================================
+
+#DESC: Test -S on nonexistent stream (false)
+#EXPECT:OK
+if [ -S _clitest_nostream_xyz ]; then
+    echo FAIL_stream_found
+fi
+
+#DESC: Create stream and test -S (true)
+#EXPECT:OK
+mem.mk2Dim _clitest_shm_s 8 8
+if [ -S _clitest_shm_s ]; then
+    echo stream_exists
+fi
+
+#DESC: Test ! -S negation on existing stream
+#EXPECT:OK
+if [ ! -S _clitest_nostream_xyz ]; then
+    echo stream_absent
+fi
+
+#DESC: Test -F on nonexistent FPS (false)
+#EXPECT:OK
+if [ -F _clitest_nofps_xyz ]; then
+    echo FAIL_fps_found
+fi
+
+#DESC: Test -P on nonexistent process (false)
+#EXPECT:OK
+if [ -P _clitest_noproc_xyz ]; then
+    echo FAIL_proc_found
+fi
+
+#DESC: Clean up SHM test stream
+#EXPECT:OK
+mem.rm _clitest_shm_s
+
+# ============================================
 # SECTION 19: Cleanup
 # ============================================
 
