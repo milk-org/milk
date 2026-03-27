@@ -1506,6 +1506,23 @@ void runCLI_cmd_init()
                        "watch 1000 mem.listim",
                        "cli_watch()");
 
+    RegisterCLIcommand("list-streams",
+                       __FILE__,
+                       cli_list_streams,
+                       "list available ImageStreamIO streams",
+                       "no argument",
+                       "list-streams",
+                       "cli_list_streams()");
+
+    RegisterCLIcommand("list-fps",
+                       __FILE__,
+                       cli_list_fps,
+                       "list available FPS instances",
+                       "no argument",
+                       "list-fps",
+                       "cli_list_fps()");
+
+
     RegisterCLIcommand("time",
                        __FILE__,
                        cli_time,
