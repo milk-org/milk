@@ -125,7 +125,7 @@ target_link_libraries(CLIcore
                               $<$<BOOL:${USE_NCURSES}>:milkTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkprocessinfoTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
-                              milkCOREMODarith $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits> milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkdata)
+                              milkCOREMODarith $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits> milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkfpsseq milkdata)
 
 
 target_include_directories(CLIcore
