@@ -598,8 +598,8 @@ static int expand_fpsvar_procinfo(
         return 0;
     }
 
-    char pfname[512];
-    char procdname[256];
+    char pfname[STRINGMAXLEN_FULLFILENAME];
+    char procdname[STRINGMAXLEN_DIRNAME];
     processinfo_procdirname(procdname);
     snprintf(pfname, sizeof(pfname),
              "%s/proc.%d.shm",
