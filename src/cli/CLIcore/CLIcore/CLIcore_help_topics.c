@@ -479,6 +479,8 @@ void help_topic_scripting(void)
            "Timed read (seconds)\n");
     printf(C_CMD "  read -a ARR        " C_RST
            "Read words into array\n");
+    printf(C_CMD "  read -n N var      " C_RST
+           "Read N chars (raw mode)\n");
     printf(C_CMD "  exit [N]           " C_RST "Exit with status N\n");
     printf(C_CMD "  shift [N]          " C_RST "Shift $1..$9 by N\n");
     printf(C_CMD "  true / false       " C_RST "Set $? to 0 / 1\n");
