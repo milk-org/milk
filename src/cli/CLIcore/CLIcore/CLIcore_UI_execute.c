@@ -32,6 +32,7 @@
 
 #include <fnmatch.h>
 #include <glob.h>
+#include <strings.h>
 #include <sys/wait.h>
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -900,7 +901,7 @@ static int cli_handle_input_redir(
 
     FILE *ifp = NULL;
     int is_stream = 0;
-    char tempname[256];
+    char tempname[256] = "";
     
     if (strncmp(infile, "@S:", 3) == 0) {
         is_stream = 1;
