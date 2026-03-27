@@ -1,8 +1,14 @@
 /**
  * @file CLIcore_checkargs.c
  *
- * @brief Check CLI command line arguments
+ * @brief Command line argument validation and type checking
  *
+ * Architecture Overview:
+ * This file verifies that the arguments provided to a CLI command match the 
+ * expected parameters defined by the module's `FPS_CMDDEF` table. It ensures
+ * type safety for CLI interactions by checking scalars, arrays, FPS parameter
+ * formats, existing files, and shared memory streams before the underlying
+ * C function is invoked.
  */
 
 #include <stdio.h>
