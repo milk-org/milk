@@ -20,6 +20,9 @@ for the full history.
 
 ### 2026-03
 
+- **2026-03-26** — `@seq.NAME.prop` variable expansion
+  for sequencer state in CLI scripts `#cli` `#fps`
+  ([#183](https://github.com/milk-org/milk/issues/183))
 - **2026-03-25** — `milk-seq` standalone sequencer,
   fpsCTRL and milk-cli integration `#fps` `#cli`
 - **2026-03-25** — Module dependency system with
