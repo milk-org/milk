@@ -221,7 +221,7 @@ and enforced. Know what they require:
 | `error-handling-practices.md` | Use milkDebugTools.h macros for errors |
 | `files-directories.md` | cacao lives at `plugins/cacao-src` → `~/src/cacao` |
 | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` support |
-| `git-workflow.md` | PRs from feature branches into `framework-dev`; commit conventions |
+| `git-workflow.md` | Small changes direct to `framework-dev`; ask user for branch/PR on larger changes |
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
 | `module-deps-declaration.md` | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros |
