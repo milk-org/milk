@@ -1255,8 +1255,11 @@ static int cli_handle_background(
  * Transforms ". file" into "source file" in
  * data.CLIcmdline so the normal source handler
  * processes it.
+ *
+ * Always returns 0 (not consumed) — the rewritten
+ * line is passed through to subsequent stages.
  */
-static void cli_rewrite_dot_source(void)
+static int cli_rewrite_dot_source(void)
 {
     const char *p = data.CLIcmdline;
     while (*p == ' ' || *p == '\t')
@@ -1274,6 +1277,7 @@ static void cli_rewrite_dot_source(void)
         data.CLIcmdline[
             STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
+    return 0;
 }
 
 
