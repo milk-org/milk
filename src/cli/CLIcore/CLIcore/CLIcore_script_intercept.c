@@ -2487,11 +2487,30 @@ int cli_script_intercept(const char *line)
                     while (!cli_break_flag) {
                         char vstr[512];
                         functionparameter_GetParamValueString(&fps.parray[pindex], vstr, sizeof(vstr));
-                        if (strcmp(vstr, value) == 0) {
+
+                        /* First try exact string match (original behavior) */
+                        if (strcmp(vstr, value) == 0)
+                        {
                             cli_last_retval = 0;
                             break;
                         }
-                        
+
+                        /* If not equal as strings, try numeric comparison when both look numeric.
+                         * This allows matches such as "1" vs "1.000000" or "1.000000000". */
+                        {
+                            char  *end_vstr  = NULL;
+                            char  *end_value = NULL;
+                            double dvstr     = strtod(vstr, &end_vstr);
+                            double dvalue    = strtod(value, &end_value);
+
+                            if (end_vstr != vstr && *end_vstr == '\0' &&
+                                end_value != value && *end_value == '\0' &&
+                                dvstr == dvalue)
+                            {
+                                cli_last_retval = 0;
+                                break;
+                            }
+                        }
                         if (wait_timeout >= 0.0) {
                             clock_gettime(CLOCK_MONOTONIC, &ts_now);
                             double elapsed = (double)(ts_now.tv_sec - ts_start.tv_sec) + 
