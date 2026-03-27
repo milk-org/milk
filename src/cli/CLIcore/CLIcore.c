@@ -1,7 +1,11 @@
 /**
  * @file CLIcore.c
- * @brief main C file
+ * @brief Main Command Line Interface (CLI) implementation
  *
+ * This file contains the initialization and main loop logic for the milk-cli.
+ * It is responsible for setting up the environment, loading persistent state
+ * (history, aliases, configurations), initializing core modules, and 
+ * entering the main Read-Eval-Print Loop (REPL) in `runCLI()`.
  */
 
 /*
@@ -557,10 +561,19 @@ static void sighandler(int sig)
 }
 
 /**
- * @brief Command Line Interface (CLI) main\n
+ * @brief Main entry point for the interactive CLI read-eval-print loop (REPL)
  *
- * Uses readline to read user input\n
- * parsing done with bison and flex
+ * This function is the heart of the milk command-line interface. It performs:
+ * 1. Environment initialization (signals, paths, shared memory).
+ * 2. Loading of user config, aliases, and history.
+ * 3. Loading of core and dynamically requested modules.
+ * 4. The main REPL: reading input (from stdin, readline, or FIFO), 
+ *    parsing it, and executing commands via `CLI_execute_line()`.
+ *
+ * @param argc          Number of command-line arguments passed to the host process
+ * @param argv          Array of command-line arguments
+ * @param promptstring  String to display at the CLI prompt
+ * @return              errno_t Status code (0 on normal exit)
  */
 
 errno_t runCLI(int argc, char *argv[], char *promptstring)
