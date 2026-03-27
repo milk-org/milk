@@ -16,6 +16,9 @@
 #include <regex.h>
 #include <sys/mman.h>
 
+/* Sequencer SHM API — linked via milkfpsseq */
+#include "fpsseq.h"
+
 /* processinfo functions — linked via milkprocessinfo */
 extern PROCESSINFO *processinfo_shm_link(
     const char *pname, int *fd);
@@ -321,6 +324,10 @@ double arith_expr(ArithParser *p)
  * Tokens of the form @fpsname.param=value write the
  * value to the parameter instead.
  *
+ * The special prefix @seq.NAME.prop expands sequencer
+ * properties (status, tasks, errors, pid, completed)
+ * by connecting to the sequencer SHM.
+ *
  * Expansion is suppressed when the @ character appears
  * inside single or double quotes, or after a backslash
  * escape, so that e.g. echo "@fps.p=1" passes the
@@ -566,6 +573,107 @@ void cli_expand_fpsvar(
             *dot = '\0';
             const char *fpsname = token;
             const char *pname = dot + 1;
+
+            /* ---- Sequencer: @seq.NAME.prop ---- */
+            if(strcmp(fpsname, "seq") == 0)
+            {
+                char *dot2 = strchr(pname, '.');
+                if(dot2 != NULL)
+                {
+                    *dot2 = '\0';
+                    const char *seqname = pname;
+                    const char *seqprop = dot2 + 1;
+
+                    MILKSEQ_STATE *seqst =
+                        milkseq_connect(seqname);
+                    if(seqst != NULL)
+                    {
+                        char vstr[512];
+                        vstr[0] = '\0';
+
+                        if(strcmp(seqprop,
+                            "status") == 0)
+                        {
+                            const char *s = "IDLE";
+                            uint32_t st =
+                                seqst->status;
+                            if(st
+                               & MILKSEQ_STATUS_ERROR)
+                            {
+                                s = "ERROR";
+                            }
+                            else if(st
+                               & MILKSEQ_STATUS_STOPPING)
+                            {
+                                s = "STOPPING";
+                            }
+                            else if(st
+                               & MILKSEQ_STATUS_RUNNING)
+                            {
+                                s = "RUNNING";
+                            }
+                            strncpy(vstr, s,
+                                sizeof(vstr) - 1);
+                            vstr[sizeof(vstr) - 1]
+                                = '\0';
+                        }
+                        else if(strcmp(seqprop,
+                            "tasks") == 0)
+                        {
+                            snprintf(
+                                vstr,
+                                sizeof(vstr),
+                                "%u",
+                                seqst
+                                ->NBtasks_active);
+                        }
+                        else if(strcmp(seqprop,
+                            "errors") == 0)
+                        {
+                            snprintf(
+                                vstr,
+                                sizeof(vstr),
+                                "%u",
+                                seqst
+                                ->error_count);
+                        }
+                        else if(strcmp(seqprop,
+                            "pid") == 0)
+                        {
+                            snprintf(
+                                vstr,
+                                sizeof(vstr),
+                                "%d",
+                                (int) seqst->pid);
+                        }
+                        else if(strcmp(seqprop,
+                            "completed") == 0)
+                        {
+                            snprintf(
+                                vstr,
+                                sizeof(vstr),
+                                "%u",
+                                seqst
+                                ->NBtasks_completed);
+                        }
+
+                        milkseq_disconnect(seqst);
+
+                        int vlen =
+                            (int) strlen(vstr);
+                        int avail =
+                            maxlen - 1 - opos;
+                        int clen =
+                            vlen < avail
+                            ? vlen : avail;
+                        memcpy(out + opos,
+                               vstr,
+                               (size_t) clen);
+                        opos += clen;
+                    }
+                }
+                continue;
+            }
 
             FUNCTION_PARAMETER_STRUCT fps;
             int fpsconn =
