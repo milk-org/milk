@@ -266,6 +266,1022 @@ static int cli_check_unquoted_restricted_symbols(
 }
 
 /**
+ * @brief Split command line at top-level && or ||.
+ *
+ * Scans for the first unquoted, un-nested && or ||
+ * operator. If found, executes the left side, then
+ * conditionally executes the right side based on
+ * success/failure.
+ *
+ * @param[out] retval  Set to the return value if
+ *                     the line was consumed
+ * @return 1 if the line was consumed, 0 otherwise
+ */
+static int cli_split_logical_op(errno_t *retval)
+{
+    const char *src = data.CLIcmdline;
+    int depth = 0;
+    int in_sq = 0;
+    int in_dq = 0;
+    int split_pos = -1;
+    int op_len = 0;
+    int op_is_and = 0;
+
+    for (int si = 0; src[si] != '\0'; si++)
+    {
+        char c = src[si];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')' && depth > 0)
+            {
+                depth--;
+            }
+            else if (depth == 0
+                     && c == '&'
+                     && src[si + 1] == '&')
+            {
+                split_pos = si;
+                op_len = 2;
+                op_is_and = 1;
+                break;
+            }
+            else if (depth == 0
+                     && c == '|'
+                     && src[si + 1] == '|')
+            {
+                split_pos = si;
+                op_len = 2;
+                op_is_and = 0;
+                break;
+            }
+        }
+    }
+    if (split_pos < 0)
+    {
+        return 0;
+    }
+
+    char right[STRINGMAXLEN_CLICMDLINE];
+    const char *rp = src + split_pos + op_len;
+    while (*rp == ' ' || *rp == '\t')
+    {
+        rp++;
+    }
+    strncpy(right, rp,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+
+    char left[STRINGMAXLEN_CLICMDLINE];
+    strncpy(left, data.CLIcmdline,
+            (size_t) split_pos);
+    left[split_pos] = '\0';
+    strncpy(data.CLIcmdline, left,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[
+        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+
+    errno_t lret = CLI_execute_line();
+    int ok = (cli_last_retval == 0);
+    int run_right =
+        (op_is_and && ok)
+        || (!op_is_and && !ok);
+    if (run_right)
+    {
+        strncpy(data.CLIcmdline, right,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        *retval = CLI_execute_line();
+        return 1;
+    }
+    *retval = lret;
+    return 1;
+}
+
+
+/**
+ * @brief Rewrite stream pipeline |> syntax.
+ *
+ * Transforms "stream |> cmd args" into
+ * "cmd stream args" and re-executes.
+ *
+ * @param[out] retval  Set to the return value if
+ *                     the line was consumed
+ * @return 1 if the line was consumed, 0 otherwise
+ */
+static int cli_rewrite_stream_pipe(
+    errno_t *retval
+)
+{
+    const char *src = data.CLIcmdline;
+    int depth = 0;
+    int in_sq = 0;
+    int in_dq = 0;
+    int gpipe = -1;
+
+    for (int si = 0; src[si] != '\0'; si++)
+    {
+        char c = src[si];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')' && depth > 0)
+            {
+                depth--;
+            }
+            else if (depth == 0
+                     && c == '|'
+                     && src[si + 1] == '>')
+            {
+                gpipe = si;
+                break;
+            }
+        }
+    }
+    if (gpipe < 0)
+    {
+        return 0;
+    }
+
+    char lhs[STRINGMAXLEN_CLICMDLINE];
+    strncpy(lhs, data.CLIcmdline,
+            (size_t) gpipe);
+    lhs[gpipe] = '\0';
+    {
+        int e = gpipe - 1;
+        while (e >= 0
+               && (lhs[e] == ' '
+                   || lhs[e] == '\t'))
+        {
+            lhs[e--] = '\0';
+        }
+    }
+    const char *rhs =
+        data.CLIcmdline + gpipe + 2;
+    while (*rhs == ' ' || *rhs == '\t')
+    {
+        rhs++;
+    }
+    const char *sp = strchr(rhs, ' ');
+    char newcmd[STRINGMAXLEN_CLICMDLINE];
+    if (sp != NULL)
+    {
+        snprintf(newcmd, sizeof(newcmd),
+                 "%.*s %s %s",
+                 (int)(sp - rhs),
+                 rhs, lhs, sp + 1);
+    }
+    else
+    {
+        snprintf(newcmd, sizeof(newcmd),
+                 "%s %s", rhs, lhs);
+    }
+    strncpy(data.CLIcmdline, newcmd,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[
+        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    *retval = CLI_execute_line();
+    data.CMDexecuted = 1;
+    return 1;
+}
+
+
+/**
+ * @brief Split command at top-level pipe operator.
+ *
+ * Handles "cmd1 | cmd2" by capturing stdout of the
+ * left command into a temp file and feeding it as
+ * stdin to the right command. Only matches single
+ * '|', not '||' or '|>'.
+ *
+ * Falls through (returns 0) if the right side is
+ * not a registered milk command — the later popen-
+ * based handler deals with shell pipes.
+ *
+ * @param[out] retval  Set to the return value if
+ *                     the line was consumed
+ * @return 1 if the line was consumed, 0 otherwise
+ */
+static int cli_split_pipe(errno_t *retval)
+{
+    const char *src = data.CLIcmdline;
+    int depth = 0;
+    int in_sq = 0;
+    int in_dq = 0;
+    int pipe_pos = -1;
+
+    for (int si = 0; src[si] != '\0'; si++)
+    {
+        char c = src[si];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')' && depth > 0)
+            {
+                depth--;
+            }
+            else if (depth == 0
+                     && c == '|'
+                     && src[si + 1] != '|'
+                     && src[si + 1] != '>')
+            {
+                pipe_pos = si;
+                break;
+            }
+        }
+    }
+    if (pipe_pos < 0)
+    {
+        return 0;
+    }
+
+    char left[STRINGMAXLEN_CLICMDLINE];
+    strncpy(left, data.CLIcmdline,
+            (size_t) pipe_pos);
+    left[pipe_pos] = '\0';
+    const char *rp =
+        data.CLIcmdline + pipe_pos + 1;
+    while (*rp == ' ' || *rp == '\t')
+    {
+        rp++;
+    }
+    char right[STRINGMAXLEN_CLICMDLINE];
+    strncpy(right, rp,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+
+    /* Check if right side is a milk command;
+     * if not, fall through for popen handler */
+    {
+        char rword[200];
+        int rw = 0;
+        const char *rr = right;
+        while (*rr == ' ' || *rr == '\t')
+        {
+            rr++;
+        }
+        while (*rr != '\0'
+               && *rr != ' '
+               && *rr != '\t'
+               && rw < (int) sizeof(rword) - 1)
+        {
+            rword[rw++] = *rr++;
+        }
+        rword[rw] = '\0';
+        if (!cli_is_command(rword))
+        {
+            return 0;
+        }
+    }
+
+    /* Capture left stdout into tmpfile */
+    FILE *tmpfp = tmpfile();
+    if (tmpfp != NULL)
+    {
+        fflush(stdout);
+        int saved_stdout = dup(STDOUT_FILENO);
+        dup2(fileno(tmpfp), STDOUT_FILENO);
+
+        strncpy(data.CLIcmdline, left,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        CLI_execute_line();
+
+        fflush(stdout);
+        dup2(saved_stdout, STDOUT_FILENO);
+        close(saved_stdout);
+
+        /* Feed tmpfile as stdin to right */
+        rewind(tmpfp);
+        int saved_stdin = dup(STDIN_FILENO);
+        dup2(fileno(tmpfp), STDIN_FILENO);
+
+        strncpy(data.CLIcmdline, right,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        *retval = CLI_execute_line();
+
+        dup2(saved_stdin, STDIN_FILENO);
+        close(saved_stdin);
+        fclose(tmpfp);
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Handle subshell execution: (cmd1; cmd2)
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_subshell(
+    errno_t *retval
+)
+{
+    const char *sp = data.CLIcmdline;
+    int spl = (int) strlen(sp);
+    if (spl < 3
+        || sp[0] != '('
+        || sp[spl - 1] != ')')
+    {
+        return 0;
+    }
+    char sbuf[STRINGMAXLEN_CLICMDLINE];
+    memcpy(sbuf, sp + 1,
+           (size_t)(spl - 2));
+    sbuf[spl - 2] = '\0';
+    pid_t spid = fork();
+    if (spid == 0)
+    {
+        char *tok = strtok(sbuf, ";");
+        while (tok != NULL)
+        {
+            const char *st = tok;
+            while (*st == ' '
+                   || *st == '\t')
+            {
+                st++;
+            }
+            if (*st != '\0')
+            {
+                CLI_execute_string(
+                    (char *) st);
+            }
+            tok = strtok(NULL, ";");
+        }
+        _exit(0);
+    }
+    else if (spid > 0)
+    {
+        int wst;
+        waitpid(spid, &wst, 0);
+        cli_last_retval =
+            WEXITSTATUS(wst);
+    }
+    *retval = 0;
+    return 1;
+}
+
+
+/**
+ * @brief Handle late here-string (pipe-based).
+ *
+ * Alternative here-string handler that uses pipe()
+ * instead of tmpfile() for feeding text to stdin.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_herestring_late(
+    errno_t *retval
+)
+{
+    const char *hs = strstr(
+        data.CLIcmdline, "<<<");
+    if (hs == NULL)
+    {
+        return 0;
+    }
+
+    char hcmd[STRINGMAXLEN_CLICMDLINE];
+    int hcl = (int)(hs - data.CLIcmdline);
+    if (hcl >= STRINGMAXLEN_CLICMDLINE)
+    {
+        hcl = STRINGMAXLEN_CLICMDLINE - 1;
+    }
+    memcpy(hcmd, data.CLIcmdline,
+           (size_t) hcl);
+    hcmd[hcl] = '\0';
+    while (hcl > 0
+           && (hcmd[hcl - 1] == ' '
+               || hcmd[hcl - 1] == '\t'))
+    {
+        hcmd[--hcl] = '\0';
+    }
+    const char *tp = hs + 3;
+    while (*tp == ' ' || *tp == '\t')
+    {
+        tp++;
+    }
+    char htxt[1024];
+    strncpy(htxt, tp, sizeof(htxt) - 1);
+    htxt[sizeof(htxt) - 1] = '\0';
+    int htl = (int) strlen(htxt);
+    if (htl >= 2
+        && ((htxt[0] == '"'
+             && htxt[htl - 1] == '"')
+            || (htxt[0] == '\''
+                && htxt[htl - 1] == '\'')))
+    {
+        htxt[htl - 1] = '\0';
+        memmove(htxt, htxt + 1,
+                (size_t)(htl - 1));
+    }
+    int pfd[2];
+    if (pipe(pfd) == 0)
+    {
+        ssize_t wr_ignore;
+        wr_ignore = write(pfd[1], htxt,
+                          strlen(htxt));
+        wr_ignore = write(pfd[1], "\n", 1);
+        (void) wr_ignore;
+        close(pfd[1]);
+        int sv = dup(STDIN_FILENO);
+        dup2(pfd[0], STDIN_FILENO);
+        close(pfd[0]);
+        CLI_execute_string(hcmd);
+        dup2(sv, STDIN_FILENO);
+        close(sv);
+    }
+    *retval = 0;
+    return 1;
+}
+
+
+/**
+ * @brief Handle stderr redirection (2>&1, 2>file).
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_stderr_redir(
+    errno_t *retval
+)
+{
+    const char *se = strstr(
+        data.CLIcmdline, "2>");
+    if (se == NULL)
+    {
+        return 0;
+    }
+
+    char scmd[STRINGMAXLEN_CLICMDLINE];
+    int scl = (int)(se - data.CLIcmdline);
+    if (scl >= STRINGMAXLEN_CLICMDLINE)
+    {
+        scl = STRINGMAXLEN_CLICMDLINE - 1;
+    }
+    memcpy(scmd, data.CLIcmdline,
+           (size_t) scl);
+    scmd[scl] = '\0';
+    while (scl > 0
+           && (scmd[scl - 1] == ' '
+               || scmd[scl - 1] == '\t'))
+    {
+        scmd[--scl] = '\0';
+    }
+    const char *target = se + 2;
+    while (*target == ' '
+           || *target == '\t')
+    {
+        target++;
+    }
+    int sv_err = dup(STDERR_FILENO);
+    if (strncmp(target, "&1", 2) == 0)
+    {
+        dup2(STDOUT_FILENO, STDERR_FILENO);
+    }
+    else
+    {
+        char fname[256];
+        int fi = 0;
+        while (target[fi] != '\0'
+               && target[fi] != ' '
+               && target[fi] != '\t'
+               && fi < 254)
+        {
+            fname[fi] = target[fi];
+            fi++;
+        }
+        fname[fi] = '\0';
+        FILE *ef = fopen(fname, "w");
+        if (ef != NULL)
+        {
+            dup2(fileno(ef),
+                 STDERR_FILENO);
+            fclose(ef);
+        }
+    }
+    CLI_execute_string(scmd);
+    dup2(sv_err, STDERR_FILENO);
+    close(sv_err);
+    *retval = 0;
+    return 1;
+}
+
+
+/**
+ * @brief Handle input redirection (cmd < file).
+ *
+ * Scans for unquoted < (not << or <<<), redirects
+ * stdin from the named file, and re-executes.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_input_redir(
+    errno_t *retval
+)
+{
+    const char *cl4 = data.CLIcmdline;
+    int in_sq4 = 0, in_dq4 = 0, depth4 = 0;
+    int inr_pos = -1;
+
+    for (int ri = 0; cl4[ri] != '\0'; ri++)
+    {
+        if (cl4[ri] == '\'' && !in_dq4)
+        {
+            in_sq4 = !in_sq4;
+        }
+        else if (cl4[ri] == '"' && !in_sq4)
+        {
+            in_dq4 = !in_dq4;
+        }
+        else if (!in_sq4 && !in_dq4)
+        {
+            if (cl4[ri] == '(')
+            {
+                depth4++;
+            }
+            else if (cl4[ri] == ')'
+                     && depth4 > 0)
+            {
+                depth4--;
+            }
+            else if (depth4 == 0
+                     && cl4[ri] == '<'
+                     && cl4[ri + 1] != '<')
+            {
+                inr_pos = ri;
+                break;
+            }
+        }
+    }
+    if (inr_pos < 0)
+    {
+        return 0;
+    }
+
+    int fst = inr_pos + 1;
+    while (data.CLIcmdline[fst] == ' '
+           || data.CLIcmdline[fst] == '\t')
+    {
+        fst++;
+    }
+    char infile[512];
+    int ifi = 0;
+    while (data.CLIcmdline[fst] != '\0'
+           && data.CLIcmdline[fst] != ' '
+           && data.CLIcmdline[fst] != '\t'
+           && ifi < 511)
+    {
+        infile[ifi++] =
+            data.CLIcmdline[fst++];
+    }
+    infile[ifi] = '\0';
+
+    data.CLIcmdline[inr_pos] = '\0';
+    {
+        int cl5 = inr_pos - 1;
+        while (cl5 >= 0
+               && (data.CLIcmdline[cl5] == ' '
+                   || data.CLIcmdline[cl5]
+                   == '\t'))
+        {
+            data.CLIcmdline[cl5--] = '\0';
+        }
+    }
+
+    FILE *ifp = fopen(infile, "r");
+    if (ifp != NULL)
+    {
+        int sv_in = dup(STDIN_FILENO);
+        dup2(fileno(ifp), STDIN_FILENO);
+
+        *retval = CLI_execute_line();
+
+        dup2(sv_in, STDIN_FILENO);
+        close(sv_in);
+        fclose(ifp);
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Split at semicolon or chaining ops.
+ *
+ * Scans for the first unquoted ; or && or ||,
+ * splits the line, executes the first part,
+ * then conditionally executes the rest.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_split_semicolon(
+    errno_t *retval
+)
+{
+    char fullline[STRINGMAXLEN_CLICMDLINE];
+    strncpy(fullline, data.CLIcmdline,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    fullline[STRINGMAXLEN_CLICMDLINE - 1] =
+        '\0';
+
+    int chain_type = 0; /* 1=; 2=&& 3=|| */
+    int chain_off = -1;
+    int chain_len = 0;
+    for (int ci = 0;
+         fullline[ci] != '\0'; ci++)
+    {
+        if (fullline[ci] == '"')
+        {
+            ci++;
+            while (fullline[ci] != '\0'
+                   && fullline[ci] != '"')
+            {
+                ci++;
+            }
+            if (fullline[ci] == '\0')
+            {
+                break;
+            }
+            continue;
+        }
+        if (fullline[ci] == ';')
+        {
+            chain_type = 1;
+            chain_off = ci;
+            chain_len = 1;
+            break;
+        }
+        if (fullline[ci] == '&'
+            && fullline[ci + 1] == '&')
+        {
+            chain_type = 2;
+            chain_off = ci;
+            chain_len = 2;
+            break;
+        }
+        if (fullline[ci] == '|'
+            && fullline[ci + 1] == '|')
+        {
+            chain_type = 3;
+            chain_off = ci;
+            chain_len = 2;
+            break;
+        }
+    }
+    if (chain_off < 0)
+    {
+        return 0;
+    }
+
+    fullline[chain_off] = '\0';
+    strncpy(data.CLIcmdline, fullline,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[
+        STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+
+    errno_t ret1 = CLI_execute_line();
+
+    int run_rest = 0;
+    if (chain_type == 1)
+    {
+        run_rest = 1;
+    }
+    else if (chain_type == 2)
+    {
+        run_rest =
+            (ret1 == RETURN_SUCCESS) ? 1 : 0;
+    }
+    else if (chain_type == 3)
+    {
+        run_rest =
+            (ret1 != RETURN_SUCCESS) ? 1 : 0;
+    }
+    if (run_rest)
+    {
+        const char *rest =
+            fullline + chain_off + chain_len;
+        while (*rest == ' '
+               || *rest == '\t')
+        {
+            rest++;
+        }
+        if (*rest != '\0')
+        {
+            strncpy(data.CLIcmdline, rest,
+                    STRINGMAXLEN_CLICMDLINE
+                    - 1);
+            data.CLIcmdline[
+                STRINGMAXLEN_CLICMDLINE - 1]
+                = '\0';
+            CLI_execute_line();
+        }
+    }
+    *retval = RETURN_SUCCESS;
+    return 1;
+}
+
+
+/**
+ * @brief Handle output redirection (> and >>).
+ *
+ * Scans for unquoted > or >> outside parens/quotes,
+ * extracts the filename, redirects stdout, executes
+ * the truncated command, then restores stdout.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_output_redir(
+    errno_t *retval
+)
+{
+    int redir_mode = 0; /* 1=trunc 2=append */
+    int redir_pos = -1;
+    int in_sq2 = 0, in_dq2 = 0, depth2 = 0;
+    const char *cl2 = data.CLIcmdline;
+
+    for (int ri = 0; cl2[ri] != '\0'; ri++)
+    {
+        if (cl2[ri] == '\'' && !in_dq2)
+        {
+            in_sq2 = !in_sq2;
+        }
+        else if (cl2[ri] == '"' && !in_sq2)
+        {
+            in_dq2 = !in_dq2;
+        }
+        else if (!in_sq2 && !in_dq2)
+        {
+            if (cl2[ri] == '(')
+            {
+                depth2++;
+            }
+            else if (cl2[ri] == ')'
+                     && depth2 > 0)
+            {
+                depth2--;
+            }
+            else if (depth2 == 0
+                     && cl2[ri] == '>')
+            {
+                if (cl2[ri + 1] == '>')
+                {
+                    redir_mode = 2;
+                }
+                else
+                {
+                    redir_mode = 1;
+                }
+                redir_pos = ri;
+            }
+        }
+    }
+    if (redir_pos < 0)
+    {
+        return 0;
+    }
+
+    int fstart = redir_pos
+                 + ((redir_mode == 2) ? 2 : 1);
+    while (data.CLIcmdline[fstart] == ' '
+           || data.CLIcmdline[fstart] == '\t')
+    {
+        fstart++;
+    }
+    char rfile[512];
+    int fi = 0;
+    while (data.CLIcmdline[fstart] != '\0'
+           && data.CLIcmdline[fstart] != ' '
+           && data.CLIcmdline[fstart] != '\t'
+           && fi < 511)
+    {
+        rfile[fi++] =
+            data.CLIcmdline[fstart++];
+    }
+    rfile[fi] = '\0';
+
+    /* Truncate cmd at redir */
+    data.CLIcmdline[redir_pos] = '\0';
+    {
+        int cl3 = redir_pos - 1;
+        while (cl3 >= 0
+               && (data.CLIcmdline[cl3] == ' '
+                   || data.CLIcmdline[cl3]
+                   == '\t'))
+        {
+            data.CLIcmdline[cl3--] = '\0';
+        }
+    }
+
+    FILE *rfp = fopen(
+        rfile,
+        (redir_mode == 2) ? "a" : "w");
+    if (rfp != NULL)
+    {
+        fflush(stdout);
+        int sv_out = dup(STDOUT_FILENO);
+        dup2(fileno(rfp), STDOUT_FILENO);
+
+        *retval = CLI_execute_line();
+
+        fflush(stdout);
+        dup2(sv_out, STDOUT_FILENO);
+        close(sv_out);
+        fclose(rfp);
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Handle here-string syntax (<<<).
+ *
+ * Parses "cmd <<< text", strips quotes from text,
+ * writes it to a tmpfile, redirects stdin, and
+ * executes the command.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_herestring_early(
+    errno_t *retval
+)
+{
+    char *hs = strstr(
+        data.CLIcmdline, "<<<");
+    if (hs == NULL)
+    {
+        return 0;
+    }
+
+    *hs = '\0';
+    const char *hsval = hs + 3;
+    while (*hsval == ' ' || *hsval == '\t')
+    {
+        hsval++;
+    }
+    int hvlen = (int) strlen(hsval);
+    char hvbuf[STRINGMAXLEN_CLICMDLINE];
+    if (hvlen >= 2
+        && ((hsval[0] == '"'
+             && hsval[hvlen - 1] == '"')
+            || (hsval[0] == '\''
+                && hsval[hvlen - 1] == '\'')))
+    {
+        memcpy(hvbuf, hsval + 1,
+               (size_t)(hvlen - 2));
+        hvbuf[hvlen - 2] = '\0';
+    }
+    else
+    {
+        strncpy(hvbuf, hsval,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        hvbuf[STRINGMAXLEN_CLICMDLINE - 1] =
+            '\0';
+    }
+
+    FILE *hsfp = tmpfile();
+    if (hsfp != NULL)
+    {
+        fprintf(hsfp, "%s\n", hvbuf);
+        rewind(hsfp);
+        int sv_in = dup(STDIN_FILENO);
+        dup2(fileno(hsfp), STDIN_FILENO);
+
+        *retval = CLI_execute_line();
+
+        dup2(sv_in, STDIN_FILENO);
+        close(sv_in);
+        fclose(hsfp);
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Handle background execution (cmd &).
+ *
+ * If the command ends with an unquoted trailing &
+ * (not &&), forks a child process to execute the
+ * command and returns immediately.
+ *
+ * @param[out] retval  Return value if consumed
+ * @return 1 if consumed, 0 otherwise
+ */
+static int cli_handle_background(
+    errno_t *retval
+)
+{
+    int ll = (int) strlen(data.CLIcmdline);
+    int bi = ll - 1;
+    while (bi >= 0
+           && (data.CLIcmdline[bi] == ' '
+               || data.CLIcmdline[bi] == '\t'))
+    {
+        bi--;
+    }
+    if (bi < 0
+        || data.CLIcmdline[bi] != '&'
+        || (bi > 0
+            && data.CLIcmdline[bi - 1] == '&'))
+    {
+        return 0;
+    }
+
+    data.CLIcmdline[bi] = '\0';
+    pid_t cpid = fork();
+    if (cpid == 0)
+    {
+        CLI_execute_string(data.CLIcmdline);
+        _exit(0);
+    }
+    else if (cpid > 0)
+    {
+        printf("[bg] %d\n", (int) cpid);
+        char pb[32];
+        snprintf(pb, sizeof(pb),
+                 "%d", (int) cpid);
+        cli_var_set("!", pb);
+    }
+    *retval = 0;
+    return 1;
+}
+
+
+/**
+ * @brief Rewrite dot-source syntax to source command.
+ *
+ * Transforms ". file" into "source file" in
+ * data.CLIcmdline so the normal source handler
+ * processes it.
+ *
+ * Always returns 0 (not consumed) — the rewritten
+ * line is passed through to subsequent stages.
+ */
+static int cli_rewrite_dot_source(void)
+{
+    const char *p = data.CLIcmdline;
+    while (*p == ' ' || *p == '\t')
+    {
+        p++;
+    }
+    if (p[0] == '.' && p[1] == ' ')
+    {
+        char tmp[STRINGMAXLEN_CLICMDLINE];
+        snprintf(tmp,
+                 STRINGMAXLEN_CLICMDLINE,
+                 "source %s", p + 2);
+        strncpy(data.CLIcmdline, tmp,
+                STRINGMAXLEN_CLICMDLINE - 1);
+        data.CLIcmdline[
+            STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    }
+    return 0;
+}
+
+
+/**
  * @brief Central command dispatcher — the main entry
  *        point for every line the CLI processes.
  *
@@ -314,388 +1330,41 @@ errno_t CLI_execute_line()
     /* Expand aliases before anything else */
     cli_alias_expand();
 
-    /* Logical operators: && and ||
-     * Split line at top-level && / || and
-     * execute segments conditionally.
-     * Skip && / || inside quotes or $(). */
+    /* Split at top-level && or || */
     {
-        const char *src = data.CLIcmdline;
-        int depth = 0;   /* () nesting */
-        int in_sq = 0;   /* single quote */
-        int in_dq = 0;   /* double quote */
-        int found = 0;
-        int split_pos = -1;
-        int op_len = 0;  /* 2 for && or || */
-        int op_is_and = 0;
-
-        for(int si = 0; src[si] != '\0'; si++)
+        errno_t ret;
+        if (cli_split_logical_op(&ret))
         {
-            char c = src[si];
-            if(c == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-            }
-            else if(c == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-            }
-            else if(!in_sq && !in_dq)
-            {
-                if(c == '(')
-                {
-                    depth++;
-                }
-                else if(c == ')' && depth > 0)
-                {
-                    depth--;
-                }
-                else if(depth == 0
-                        && c == '&'
-                        && src[si + 1] == '&')
-                {
-                    found = 1;
-                    split_pos = si;
-                    op_len = 2;
-                    op_is_and = 1;
-                    break;
-                }
-                else if(depth == 0
-                        && c == '|'
-                        && src[si + 1] == '|')
-                {
-                    found = 1;
-                    split_pos = si;
-                    op_len = 2;
-                    op_is_and = 0;
-                    break;
-                }
-            }
-        }
-        if(found && split_pos >= 0)
-        {
-            char right[STRINGMAXLEN_CLICMDLINE];
-            const char *rp =
-                src + split_pos + op_len;
-            while(*rp == ' '
-                  || *rp == '\t')
-            {
-                rp++;
-            }
-            strncpy(right, rp, STRINGMAXLEN_CLICMDLINE - 1);
-            right[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
-
-            char left[STRINGMAXLEN_CLICMDLINE];
-            strncpy(left, data.CLIcmdline,
-                    (size_t) split_pos);
-            left[split_pos] = '\0';
-            strncpy(data.CLIcmdline, left,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE
-                - 1] = '\0';
-
-            errno_t lret = CLI_execute_line();
-            int ok = (cli_last_retval == 0);
-            /* Decide whether to run right */
-            int run_right =
-                (op_is_and && ok)
-                || (!op_is_and && !ok);
-            if(run_right)
-            {
-                strncpy(data.CLIcmdline, right,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                data.CLIcmdline[
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
-                errno_t rret =
-                    CLI_execute_line();
-                free(thetime);
-                DEBUG_TRACE_FEXIT();
-                return rret;
-            }
             free(thetime);
             DEBUG_TRACE_FEXIT();
-            return lret;
+            return ret;
         }
     }
 
-    /* Stream pipeline: stream |> cmd args
-     * Rewrites to: cmd stream args
-     * Must be checked BEFORE the pipe
-     * handler below. */
+    /* Rewrite stream |> pipeline */
     {
-        const char *src = data.CLIcmdline;
-        int depth = 0;
-        int in_sq = 0;
-        int in_dq = 0;
-        int gpipe = -1;
-
-        for(int si = 0;
-            src[si] != '\0'; si++)
+        errno_t ret;
+        if (cli_rewrite_stream_pipe(&ret))
         {
-            char c = src[si];
-            if(c == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-            }
-            else if(c == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-            }
-            else if(!in_sq && !in_dq)
-            {
-                if(c == '(')
-                {
-                    depth++;
-                }
-                else if(c == ')'
-                        && depth > 0)
-                {
-                    depth--;
-                }
-                else if(depth == 0
-                        && c == '|'
-                        && src[si + 1]
-                        == '>')
-                {
-                    gpipe = si;
-                    break;
-                }
-            }
-        }
-        if(gpipe >= 0)
-        {
-            char lhs[
-                STRINGMAXLEN_CLICMDLINE];
-            strncpy(lhs,
-                    data.CLIcmdline,
-                    (size_t) gpipe);
-            lhs[gpipe] = '\0';
-            /* Trim trailing spaces */
-            {
-                int e = gpipe - 1;
-                while(e >= 0
-                      && (lhs[e] == ' '
-                          || lhs[e]
-                          == '\t'))
-                {
-                    lhs[e--] = '\0';
-                }
-            }
-            const char *rhs =
-                data.CLIcmdline
-                + gpipe + 2;
-            while(*rhs == ' '
-                  || *rhs == '\t')
-            {
-                rhs++;
-            }
-            /* rhs = "cmd args..." */
-            const char *sp =
-                strchr(rhs, ' ');
-            char newcmd[
-                STRINGMAXLEN_CLICMDLINE];
-            if(sp != NULL)
-            {
-                snprintf(newcmd,
-                         sizeof(newcmd),
-                         "%.*s %s %s",
-                         (int)(sp - rhs),
-                         rhs, lhs,
-                         sp + 1);
-            }
-            else
-            {
-                snprintf(newcmd,
-                         sizeof(newcmd),
-                         "%s %s",
-                         rhs, lhs);
-            }
-            strncpy(
-                data.CLIcmdline,
-                newcmd,
-                STRINGMAXLEN_CLICMDLINE
-                - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE
-                - 1] = '\0';
-            errno_t lret =
-                CLI_execute_line();
-            data.CMDexecuted = 1;
+            free(thetime);
             DEBUG_TRACE_FEXIT();
-            return lret;
+            return ret;
         }
     }
 
-    /* Pipe: cmd1 | cmd2
-     * Capture stdout of left command into a
-     * temp file, then feed it as stdin to
-     * the right command. Only matches single
-     * '|', not '||'. */
+    /* Split at milk-to-milk pipe */
     {
-        const char *src = data.CLIcmdline;
-        int depth = 0;
-        int in_sq = 0;
-        int in_dq = 0;
-        int pipe_pos = -1;
-
-        for(int si = 0; src[si] != '\0'; si++)
+        errno_t ret;
+        if (cli_split_pipe(&ret))
         {
-            char c = src[si];
-            if(c == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-            }
-            else if(c == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-            }
-            else if(!in_sq && !in_dq)
-            {
-                if(c == '(')
-                {
-                    depth++;
-                }
-                else if(c == ')'
-                        && depth > 0)
-                {
-                    depth--;
-                }
-                else if(depth == 0
-                        && c == '|'
-                        && src[si + 1]
-                        != '|'
-                        && src[si + 1]
-                        != '>')
-                {
-                    pipe_pos = si;
-                    break;
-                }
-            }
-        }
-        if(pipe_pos >= 0)
-        {
-            /* Split at pipe */
-            char left[STRINGMAXLEN_CLICMDLINE];
-            strncpy(left, data.CLIcmdline,
-                    (size_t) pipe_pos);
-            left[pipe_pos] = '\0';
-            const char *rp =
-                data.CLIcmdline
-                + pipe_pos + 1;
-            while(*rp == ' ' || *rp == '\t')
-            {
-                rp++;
-            }
-            char right[STRINGMAXLEN_CLICMDLINE];
-            strncpy(right, rp,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            right[STRINGMAXLEN_CLICMDLINE
-                  - 1] = '\0';
-
-            /* Check whether the right side is
-             * a registered milk command.  If
-             * not, fall through so the popen-
-             * based handler can pipe to a shell
-             * command (e.g. grep, sort, wc). */
-            {
-                char rword[200];
-                int  rw = 0;
-                const char *rr = right;
-                while(*rr == ' '
-                      || *rr == '\t')
-                {
-                    rr++;
-                }
-                while(*rr != '\0'
-                      && *rr != ' '
-                      && *rr != '\t'
-                      && rw < (int)
-                         sizeof(rword) - 1)
-                {
-                    rword[rw++] = *rr++;
-                }
-                rword[rw] = '\0';
-                if(!cli_is_command(rword))
-                {
-                    goto pipe_fallthrough;
-                }
-            }
-
-            /* Capture left stdout */
-            FILE *tmpfp = tmpfile();
-            if(tmpfp != NULL)
-            {
-                fflush(stdout);
-                int saved_stdout =
-                    dup(STDOUT_FILENO);
-                dup2(fileno(tmpfp),
-                     STDOUT_FILENO);
-
-                strncpy(data.CLIcmdline,
-                        left,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                CLI_execute_line();
-
-                fflush(stdout);
-                dup2(saved_stdout,
-                     STDOUT_FILENO);
-                close(saved_stdout);
-
-                /* Feed to right stdin */
-                rewind(tmpfp);
-                int saved_stdin =
-                    dup(STDIN_FILENO);
-                dup2(fileno(tmpfp),
-                     STDIN_FILENO);
-
-                strncpy(data.CLIcmdline,
-                        right,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                errno_t pret =
-                    CLI_execute_line();
-
-                dup2(saved_stdin,
-                     STDIN_FILENO);
-                close(saved_stdin);
-                fclose(tmpfp);
-
-                free(thetime);
-                DEBUG_TRACE_FEXIT();
-                return pret;
-            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
         }
     }
-pipe_fallthrough:
-    (void) 0;
 
-    /* Dot-sourcing: ". file" → "source file"
-     * Must check before script intercept */
-    {
-        const char *p = data.CLIcmdline;
-        while(*p == ' ' || *p == '\t')
-        {
-            p++;
-        }
-        if(p[0] == '.' && p[1] == ' ')
-        {
-            char tmp[STRINGMAXLEN_CLICMDLINE];
-            snprintf(tmp,
-                     STRINGMAXLEN_CLICMDLINE,
-                     "source %s", p + 2);
-            strncpy(data.CLIcmdline, tmp,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE
-                - 1] = '\0';
-        }
-    }
+    /* Dot-sourcing: ". file" → "source file" */
+    cli_rewrite_dot_source();
 
     /* Flow control: if/while/for/function
      * and user-defined function calls.
@@ -733,735 +1402,91 @@ pipe_fallthrough:
                 data.CLIcmdline);
     }
 
-    /* Output redirection: cmd > file,
-     * cmd >> file. Scan from end for
-     * unquoted > or >> and redirect. */
+    /* Output redirection: > or >> */
     {
-        int redir_mode = 0; /* 1=trunc 2=app */
-        int redir_pos = -1;
-        int in_sq2 = 0;
-        int in_dq2 = 0;
-        int depth2 = 0;
-        const char *cl2 = data.CLIcmdline;
-        for(int ri = 0;
-            cl2[ri] != '\0'; ri++)
+        errno_t ret;
+        if (cli_handle_output_redir(&ret))
         {
-            if(cl2[ri] == '\''
-               && !in_dq2)
-            {
-                in_sq2 = !in_sq2;
-            }
-            else if(cl2[ri] == '"'
-                    && !in_sq2)
-            {
-                in_dq2 = !in_dq2;
-            }
-            else if(!in_sq2
-                    && !in_dq2)
-            {
-                if(cl2[ri] == '(')
-                {
-                    depth2++;
-                }
-                else if(cl2[ri] == ')'
-                        && depth2 > 0)
-                {
-                    depth2--;
-                }
-                else if(depth2 == 0
-                        && cl2[ri] == '>')
-                {
-                    if(cl2[ri + 1] == '>')
-                    {
-                        redir_mode = 2;
-                        redir_pos = ri;
-                    }
-                    else
-                    {
-                        redir_mode = 1;
-                        redir_pos = ri;
-                    }
-                }
-            }
-        }
-        if(redir_pos >= 0)
-        {
-            /* Extract filename */
-            int fstart = redir_pos
-                         + ((redir_mode
-                             == 2) ? 2 : 1);
-            while(data.CLIcmdline[fstart]
-                  == ' '
-                  || data.CLIcmdline[fstart]
-                  == '\t')
-            {
-                fstart++;
-            }
-            char rfile[512];
-            int fi = 0;
-            while(data.CLIcmdline[fstart]
-                  != '\0'
-                  && data.CLIcmdline[fstart]
-                  != ' '
-                  && data.CLIcmdline[fstart]
-                  != '\t'
-                  && fi < 511)
-            {
-                rfile[fi++] =
-                    data.CLIcmdline[
-                        fstart++];
-            }
-            rfile[fi] = '\0';
-
-            /* Truncate cmd at redir */
-            data.CLIcmdline[
-                redir_pos] = '\0';
-            {
-                int cl3 = redir_pos - 1;
-                while(cl3 >= 0
-                      && (data.CLIcmdline[
-                              cl3] == ' '
-                          || data.CLIcmdline[
-                              cl3]
-                          == '\t'))
-                {
-                    data.CLIcmdline[
-                        cl3--] = '\0';
-                }
-            }
-
-            /* Open file and redirect */
-            FILE *rfp = fopen(
-                rfile,
-                (redir_mode == 2)
-                ? "a" : "w");
-            if(rfp != NULL)
-            {
-                fflush(stdout);
-                int sv_out =
-                    dup(STDOUT_FILENO);
-                dup2(fileno(rfp),
-                     STDOUT_FILENO);
-
-                errno_t rret =
-                    CLI_execute_line();
-
-                fflush(stdout);
-                dup2(sv_out,
-                     STDOUT_FILENO);
-                close(sv_out);
-                fclose(rfp);
-
-                free(thetime);
-                DEBUG_TRACE_FEXIT();
-                return rret;
-            }
-        }
-    }
-
-    /* Here-string: cmd <<< "string"
-     * Provides string as stdin to cmd */
-    {
-        char *hs = strstr(
-            data.CLIcmdline, "<<<");
-        if(hs != NULL)
-        {
-            /* Split at <<< */
-            *hs = '\0';
-            const char *hsval =
-                hs + 3;
-            while(*hsval == ' '
-                  || *hsval == '\t')
-            {
-                hsval++;
-            }
-            /* Strip quotes */
-            int hvlen =
-                (int) strlen(hsval);
-            char hvbuf[STRINGMAXLEN_CLICMDLINE];
-            if(hvlen >= 2
-               && ((hsval[0] == '"'
-                    && hsval[
-                        hvlen - 1]
-                    == '"')
-                   || (hsval[0] == '\''
-                       && hsval[
-                           hvlen - 1]
-                       == '\'')))
-            {
-                memcpy(hvbuf,
-                       hsval + 1,
-                       (size_t)
-                       (hvlen - 2));
-                hvbuf[hvlen - 2] = '\0';
-            }
-            else
-            {
-                strncpy(
-                    hvbuf, hsval,
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1);
-                hvbuf[
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1] = '\0';
-            }
-
-            /* Write to tmpfile, feed
-             * as stdin */
-            FILE *hsfp = tmpfile();
-            if(hsfp != NULL)
-            {
-                fprintf(hsfp, "%s\n",
-                        hvbuf);
-                rewind(hsfp);
-                int sv_in =
-                    dup(STDIN_FILENO);
-                dup2(fileno(hsfp),
-                     STDIN_FILENO);
-
-                errno_t hsret =
-                    CLI_execute_line();
-
-                dup2(sv_in,
-                     STDIN_FILENO);
-                close(sv_in);
-                fclose(hsfp);
-
-                free(thetime);
-                DEBUG_TRACE_FEXIT();
-                return hsret;
-            }
-        }
-    }
-
-    /* Background: cmd & */
-    {
-        int ll =
-            (int) strlen(
-                data.CLIcmdline);
-        /* Scan backward for & */
-        int bi = ll - 1;
-        while(bi >= 0
-              && (data.CLIcmdline[bi]
-                  == ' '
-                  || data.CLIcmdline[
-                      bi]
-                  == '\t'))
-        {
-            bi--;
-        }
-        if(bi >= 0
-           && data.CLIcmdline[bi]
-           == '&'
-           && (bi == 0
-               || data.CLIcmdline[
-                      bi - 1]
-               != '&'))
-        {
-            /* Strip trailing & */
-            data.CLIcmdline[bi] =
-                '\0';
-            pid_t cpid = fork();
-            if(cpid == 0)
-            {
-                /* Child */
-                CLI_execute_string(
-                    data.CLIcmdline);
-                _exit(0);
-            }
-            else if(cpid > 0)
-            {
-                printf("[bg] %d\n",
-                       (int) cpid);
-                char pb[32];
-                snprintf(
-                    pb, sizeof(pb),
-                    "%d",
-                    (int) cpid);
-                cli_var_set("!", pb);
-            }
             free(thetime);
             DEBUG_TRACE_FEXIT();
-            return 0;
-        }
-    }
-
-    /* Subshell: (cmd1; cmd2) */
-    {
-        const char *sp =
-            data.CLIcmdline;
-        int spl =
-            (int) strlen(sp);
-        if(spl >= 3
-           && sp[0] == '('
-           && sp[spl - 1] == ')')
-        {
-            char sbuf[
-                STRINGMAXLEN_CLICMDLINE
-            ];
-            memcpy(sbuf, sp + 1,
-                   (size_t)(spl - 2));
-            sbuf[spl - 2] = '\0';
-            pid_t spid = fork();
-            if(spid == 0)
-            {
-                /* Execute in child */
-                /* Split on ; */
-                char *tok =
-                    strtok(sbuf, ";");
-                while(tok != NULL)
-                {
-                    const char *st =
-                        tok;
-                    while(*st == ' '
-                          || *st
-                          == '\t')
-                    {
-                        st++;
-                    }
-                    if(*st != '\0')
-                    {
-                        CLI_execute_string(
-                            (char *) st
-                        );
-                    }
-                    tok =
-                        strtok(
-                            NULL,
-                            ";");
-                }
-                _exit(0);
-            }
-            else if(spid > 0)
-            {
-                int wst;
-                waitpid(spid,
-                        &wst, 0);
-                cli_last_retval =
-                    WEXITSTATUS(wst);
-            }
-            free(thetime);
-            DEBUG_TRACE_FEXIT();
-            return 0;
+            return ret;
         }
     }
 
     /* Here-string: cmd <<< "text" */
     {
-        const char *hs =
-            strstr(data.CLIcmdline,
-                   "<<<");
-        if(hs != NULL)
+        errno_t ret;
+        if (cli_handle_herestring_early(&ret))
         {
-            /* Extract command before
-             * <<< */
-            char hcmd[
-                STRINGMAXLEN_CLICMDLINE
-            ];
-            int hcl =
-                (int)(hs
-                      - data.CLIcmdline);
-            if(hcl
-               >= STRINGMAXLEN_CLICMDLINE)
-            {
-                hcl =
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1;
-            }
-            memcpy(hcmd,
-                   data.CLIcmdline,
-                   (size_t) hcl);
-            hcmd[hcl] = '\0';
-            /* Trim trailing ws */
-            while(hcl > 0
-                  && (hcmd[hcl - 1]
-                      == ' '
-                      || hcmd[hcl - 1]
-                      == '\t'))
-            {
-                hcmd[--hcl] = '\0';
-            }
-            /* Get the text */
-            const char *tp = hs + 3;
-            while(*tp == ' '
-                  || *tp == '\t')
-            {
-                tp++;
-            }
-            /* Strip quotes */
-            char htxt[1024];
-            strncpy(htxt, tp,
-                    sizeof(htxt) - 1);
-            htxt[sizeof(htxt) - 1] =
-                '\0';
-            int htl =
-                (int) strlen(htxt);
-            if(htl >= 2
-               && ((htxt[0] == '"'
-                    && htxt[htl - 1]
-                    == '"')
-                   || (htxt[0] == '\''
-                       && htxt[
-                           htl - 1]
-                       == '\'')))
-            {
-                htxt[htl - 1] = '\0';
-                memmove(htxt,
-                        htxt + 1,
-                        (size_t)
-                        (htl - 1));
-            }
-            /* Create pipe */
-            int pfd[2];
-            if(pipe(pfd) == 0)
-            {
-                /* Write text to pipe */
-                ssize_t wr_ignore;
-                wr_ignore =
-                write(pfd[1], htxt,
-                      strlen(htxt));
-                wr_ignore =
-                write(pfd[1], "\n", 1);
-                (void) wr_ignore;
-                close(pfd[1]);
-                /* Redirect stdin */
-                int sv =
-                    dup(STDIN_FILENO);
-                dup2(pfd[0],
-                     STDIN_FILENO);
-                close(pfd[0]);
-                CLI_execute_string(hcmd);
-                dup2(sv,
-                     STDIN_FILENO);
-                close(sv);
-            }
             free(thetime);
             DEBUG_TRACE_FEXIT();
-            return 0;
+            return ret;
         }
     }
 
-    /* Stderr redirect: 2>&1, 2>/dev/null,
-     * 2>file */
+    /* Background: cmd & */
     {
-        const char *se =
-            strstr(data.CLIcmdline,
-                   "2>");
-        if(se != NULL)
+        errno_t ret;
+        if (cli_handle_background(&ret))
         {
-            /* Extract cmd before 2> */
-            char scmd[
-                STRINGMAXLEN_CLICMDLINE
-            ];
-            int scl =
-                (int)(se
-                      - data.CLIcmdline);
-            if(scl
-               >= STRINGMAXLEN_CLICMDLINE)
-            {
-                scl =
-                    STRINGMAXLEN_CLICMDLINE
-                    - 1;
-            }
-            memcpy(scmd,
-                   data.CLIcmdline,
-                   (size_t) scl);
-            scmd[scl] = '\0';
-            while(scl > 0
-                  && (scmd[scl - 1]
-                      == ' '
-                      || scmd[scl - 1]
-                      == '\t'))
-            {
-                scmd[--scl] = '\0';
-            }
-            const char *target =
-                se + 2;
-            while(*target == ' '
-                  || *target == '\t')
-            {
-                target++;
-            }
-            int sv_err =
-                dup(STDERR_FILENO);
-            if(strncmp(target, "&1",
-                       2) == 0)
-            {
-                dup2(STDOUT_FILENO,
-                     STDERR_FILENO);
-            }
-            else
-            {
-                /* Strip trailing ws */
-                char fname[256];
-                int fi = 0;
-                while(target[fi]
-                      != '\0'
-                      && target[fi]
-                      != ' '
-                      && target[fi]
-                      != '\t'
-                      && fi < 254)
-                {
-                    fname[fi] =
-                        target[fi];
-                    fi++;
-                }
-                fname[fi] = '\0';
-                FILE *ef =
-                    fopen(fname, "w");
-                if(ef != NULL)
-                {
-                    dup2(fileno(ef),
-                         STDERR_FILENO);
-                    fclose(ef);
-                }
-            }
-            CLI_execute_string(scmd);
-            dup2(sv_err,
-                 STDERR_FILENO);
-            close(sv_err);
             free(thetime);
             DEBUG_TRACE_FEXIT();
-            return 0;
+            return ret;
         }
     }
 
-    /* Input redirection: cmd < file
-     * Scan for unquoted < that is not
-     * << or <<<. */
+    /* Subshell: (cmd1; cmd2) */
     {
-        const char *cl4 =
-            data.CLIcmdline;
-        int in_sq4 = 0, in_dq4 = 0;
-        int depth4 = 0;
-        int inr_pos = -1;
-        for(int ri = 0;
-            cl4[ri] != '\0'; ri++)
+        errno_t ret;
+        if (cli_handle_subshell(&ret))
         {
-            if(cl4[ri] == '\''
-               && !in_dq4)
-            {
-                in_sq4 = !in_sq4;
-            }
-            else if(cl4[ri] == '"'
-                    && !in_sq4)
-            {
-                in_dq4 = !in_dq4;
-            }
-            else if(!in_sq4
-                    && !in_dq4)
-            {
-                if(cl4[ri] == '(')
-                {
-                    depth4++;
-                }
-                else if(cl4[ri] == ')'
-                        && depth4 > 0)
-                {
-                    depth4--;
-                }
-                else if(depth4 == 0
-                        && cl4[ri] == '<'
-                        && cl4[ri + 1]
-                        != '<')
-                {
-                    inr_pos = ri;
-                    break;
-                }
-            }
-        }
-        if(inr_pos >= 0)
-        {
-            int fst = inr_pos + 1;
-            while(data.CLIcmdline[fst]
-                  == ' '
-                  || data.CLIcmdline[fst]
-                  == '\t')
-            {
-                fst++;
-            }
-            char infile[512];
-            int ifi = 0;
-            while(data.CLIcmdline[fst]
-                  != '\0'
-                  && data.CLIcmdline[fst]
-                  != ' '
-                  && data.CLIcmdline[fst]
-                  != '\t'
-                  && ifi < 511)
-            {
-                infile[ifi++] =
-                    data.CLIcmdline[
-                        fst++];
-            }
-            infile[ifi] = '\0';
-
-            /* Truncate cmd at < */
-            data.CLIcmdline[
-                inr_pos] = '\0';
-            {
-                int cl5 = inr_pos - 1;
-                while(cl5 >= 0
-                      && (data.CLIcmdline[
-                              cl5] == ' '
-                          || data.CLIcmdline[
-                              cl5]
-                          == '\t'))
-                {
-                    data.CLIcmdline[
-                        cl5--] = '\0';
-                }
-            }
-
-            FILE *ifp =
-                fopen(infile, "r");
-            if(ifp != NULL)
-            {
-                int sv_in =
-                    dup(STDIN_FILENO);
-                dup2(fileno(ifp),
-                     STDIN_FILENO);
-
-                errno_t iret =
-                    CLI_execute_line();
-
-                dup2(sv_in,
-                     STDIN_FILENO);
-                close(sv_in);
-                fclose(ifp);
-
-                free(thetime);
-                DEBUG_TRACE_FEXIT();
-                return iret;
-            }
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
         }
     }
 
-    /*
-     * ---- Command chaining: ; && || ----
-     *
-     * Scan for the first unquoted chaining
-     * operator and split there.
-     * Must run BEFORE variable assignment so
-     * that "a=1;b=2" is split into two
-     * commands rather than assigned as one.
-     */
+    /* Here-string: cmd <<< "text" (late) */
     {
-        char fullline[STRINGMAXLEN_CLICMDLINE];
-        strncpy(fullline, data.CLIcmdline,
-                STRINGMAXLEN_CLICMDLINE - 1);
-        fullline[
-            STRINGMAXLEN_CLICMDLINE - 1]
-            = '\0';
-
-        /* Find first chaining operator */
-        int  chain_type = 0;
-        /* 1=;  2=&&  3=||  */
-        int  chain_off = -1;
-        int  chain_len = 0;
-        for(int ci = 0; fullline[ci] != '\0';
-                ci++)
+        errno_t ret;
+        if (cli_handle_herestring_late(&ret))
         {
-            /* Skip quoted strings */
-            if(fullline[ci] == '"')
-            {
-                ci++;
-                while(fullline[ci] != '\0'
-                        && fullline[ci] != '"')
-                {
-                    ci++;
-                }
-                if(fullline[ci] == '\0')
-                {
-                    break;
-                }
-                continue;
-            }
-            if(fullline[ci] == ';')
-            {
-                chain_type = 1;
-                chain_off = ci;
-                chain_len = 1;
-                break;
-            }
-            if(fullline[ci] == '&'
-                    && fullline[ci + 1] == '&')
-            {
-                chain_type = 2;
-                chain_off = ci;
-                chain_len = 2;
-                break;
-            }
-            if(fullline[ci] == '|'
-                    && fullline[ci + 1] == '|')
-            {
-                chain_type = 3;
-                chain_off = ci;
-                chain_len = 2;
-                break;
-            }
-        }
-
-        if(chain_off >= 0)
-        {
-            /* Extract first part */
-            fullline[chain_off] = '\0';
-            strncpy(data.CLIcmdline, fullline,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
-
-            /* Execute first part */
-            errno_t ret1 = CLI_execute_line();
-
-            /* Determine whether to run rest */
-            int run_rest = 0;
-            if(chain_type == 1)
-            {
-                run_rest = 1; /* ; always */
-            }
-            else if(chain_type == 2)
-            {
-                /* && only on success */
-                run_rest =
-                    (ret1 == RETURN_SUCCESS)
-                    ? 1 : 0;
-            }
-            else if(chain_type == 3)
-            {
-                /* || only on failure */
-                run_rest =
-                    (ret1 != RETURN_SUCCESS)
-                    ? 1 : 0;
-            }
-
-            if(run_rest)
-            {
-                const char *rest =
-                    fullline + chain_off
-                    + chain_len;
-                while(*rest == ' '
-                        || *rest == '\t')
-                {
-                    rest++;
-                }
-                if(*rest != '\0')
-                {
-                    strncpy(data.CLIcmdline,
-                            rest,
-                            STRINGMAXLEN_CLICMDLINE
-                            - 1);
-                    data.CLIcmdline[
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1] = '\0';
-                    CLI_execute_line();
-                }
-            }
             free(thetime);
             DEBUG_TRACE_FEXIT();
-            return RETURN_SUCCESS;
+            return ret;
+        }
+    }
+
+    /* Stderr redirect: 2>&1, 2>file */
+    {
+        errno_t ret;
+        if (cli_handle_stderr_redir(&ret))
+        {
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
+        }
+    }
+
+    /* Input redirection: cmd < file */
+    {
+        errno_t ret;
+        if (cli_handle_input_redir(&ret))
+        {
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
+        }
+    }
+
+    /* Command chaining: ; && || */
+    {
+        errno_t ret;
+        if (cli_split_semicolon(&ret))
+        {
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return ret;
         }
     }
 
