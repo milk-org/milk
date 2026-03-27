@@ -1,3 +1,19 @@
+/**
+ * @file CLIcore_script_expand.c
+ *
+ * @brief Script string expansion and test evaluations
+ *
+ * Architecture Overview:
+ * This file handles the preprocessing of CLI input strings before they are
+ * dispatched. Key responsibilities include:
+ * - Variable expansion: Environment variables (`$VAR`), command substitution (`$(cmd)`),
+ *   and arithmetic properties (`$((expr))`).
+ * - FPS and Stream expansion: Real-time queries into shared memory properties
+ *   (e.g., `@fps.param`, `@s.prop`, `@seq.prop`).
+ * - Operator Evaluation: Handling of bash-like `test` operations (`-f`, `-d`, `-S`,
+ *   numeric comparisons) for use in script conditionals.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -710,6 +726,20 @@ static int expand_fpsvar_procinfo(
 }
 
 
+/**
+ * @brief Expand and query properties from shared memory objects
+ *
+ * This function intercepts specific prefixes in the command string to
+ * query real-time properties from milk's shared memory systems.
+ * It currently supports four active expansions:
+ * - \@fps.name.param: Queries FPS parameters
+ * - \@s.name.prop: Queries ImageStreamIO stream metadata
+ * - \@proc.name.prop: Queries processinfo telemetry
+ * - \@seq.name.prop: Queries sequencer status and statistics
+ *
+ * @param line    Pointer to the command line string to expand in-place
+ * @param maxlen  Maximum buffer length for the expanded line
+ */
 void cli_expand_fpsvar(
     char *line,
     int   maxlen
@@ -1236,6 +1266,18 @@ static int test_binary_op(
 }
 
 
+/**
+ * @brief Evaluate boolean test expressions (like bash `test` or `[ ]`)
+ *
+ * Recursively parses and evaluates conditional test expressions.
+ * Supports unary file operators (-f, -d), string tests (-n, -z), unary SHM
+ * operators (-S for streams, -F for FPS, -P for procinfo), binary numeric
+ * operators (-eq, -gt), string equality (=, !=), and logical combinators
+ * (!, -a, -o).
+ *
+ * @param expr  The test expression string (e.g. "-f myfile.txt -a -S mystream")
+ * @return 1 if the expression evaluates to true, 0 if false
+ */
 int cli_eval_test(const char *expr)
 {
     /* Tokenize expression */

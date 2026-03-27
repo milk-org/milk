@@ -2,17 +2,13 @@
  * @file cli_calc_parser.c
  * @brief Hand-written Pratt parser for CLI expressions
  *
- * Replaces the bison-generated parser (calc_bison.y).
- *
- * Approach:
- * Uses precedence-climbing (Pratt parsing) to evaluate
- * expressions. It supports +, -, *, /, ^, % arithmetic, 
- * logical/relational operators (<, <=, >, >=, ==, !=, &&, ||, !),
- * and dynamic variable assignments (=). Supports three value
- * types: long, double, and string (image name). Includes functions
- * like round, min, max, abs, dot, norm, and ternary conditionals (where).
+ * Architecture Overview:
+ * The Pratt (precedence-climbing) parser replaces legacy bison-generated parsers
+ * for expression evaluation. It parses operator precedence natively supporting 
+ * +, -, *, /, ^, % arithmetic, logical/relational operators, and dynamic variable
+ * assignments. Supports `long`, `double`, and `string` (image name) evaluation.
  * Evaluates expressions immediately, supporting math on images as well
- * as per-pixel masking. Populates data.cmdargtoken[data.cmdNBarg].
+ * as per-pixel masking. Populates the global execution context `data.cmdargtoken`.
  */
 
 #include <ctype.h>

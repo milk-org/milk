@@ -2,7 +2,19 @@
  * @file    CLIcore.h
  * @brief   Command line interface
  *
- * Command line interface (CLI) definitions and function prototypes
+ * Command line interface (CLI) definitions and function prototypes.
+ *
+ * Architecture Overview:
+ * The milk-cli is an interactive command-line environment and scripting engine.
+ * - Central Data: The `DATA` struct (extending `MILK_DATA`) holds the CLI state,
+ *   including registered commands, loaded modules, and parsing context.
+ * - Dispatch Loop: `runCLI()` initializes the environment and enters an interactive
+ *   read-eval-print loop (REPL). `CLI_execute_line()` parses individual lines.
+ * - Modules: Commands are dynamically loaded from plugins/modules.
+ *   Dependencies are loaded automatically via the `MODULE_DEPS` macro system.
+ * - Scripting: Before executing a registered C function, the CLI intercepts script
+ *   constructs (control flow, calculator mathematical syntax, variable expansion,
+ *   test conditions).
  *
  * @defgroup errcheckmacro     MACROS: Error checking
  * @defgroup debugmacro        MACROS: Debugging
