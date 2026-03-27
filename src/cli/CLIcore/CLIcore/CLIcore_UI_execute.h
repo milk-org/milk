@@ -65,6 +65,11 @@ errno_t cli_alias_list(void);
 /* Watch command */
 errno_t cli_watch(void);
 
+/* List active shared memory structures */
+errno_t cli_list_streams(void);
+errno_t cli_list_fps(void);
+
+
 /* Startup script */
 void cli_milkrc_load(void);
 

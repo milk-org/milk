@@ -1107,9 +1107,9 @@ int cli_script_intercept(const char *line)
         {
             wp++;
         }
-        double interval = 2.0;
         if(*wp == '-' && *(wp + 1) == 'n')
         {
+            double interval = 2.0;
             wp += 2;
             while(*wp == ' '
                   || *wp == '\t')
@@ -1128,25 +1128,25 @@ int cli_script_intercept(const char *line)
             {
                 wp++;
             }
+            struct timespec ts;
+            ts.tv_sec =
+                (time_t) interval;
+            ts.tv_nsec =
+                (long)((interval
+                        - (double) ts.tv_sec)
+                       * 1.0e9);
+            while(!cli_break_flag)
+            {
+                printf(
+                    "\033[2J\033[H"
+                    "Every %.1fs: %s\n\n",
+                    interval, wp);
+                CLI_execute_string(wp);
+                nanosleep(&ts, NULL);
+            }
+            cli_break_flag = 0;
+            return 1;
         }
-        struct timespec ts;
-        ts.tv_sec =
-            (time_t) interval;
-        ts.tv_nsec =
-            (long)((interval
-                    - (double) ts.tv_sec)
-                   * 1.0e9);
-        while(!cli_break_flag)
-        {
-            printf(
-                "\033[2J\033[H"
-                "Every %.1fs: %s\n\n",
-                interval, wp);
-            CLI_execute_string(wp);
-            nanosleep(&ts, NULL);
-        }
-        cli_break_flag = 0;
-        return 1;
     }
 
     /* trap 'cmd' SIGNAL [SIGNAL...] */
@@ -2396,19 +2396,149 @@ int cli_script_intercept(const char *line)
         return 1;
     }
 
-    /* wait — wait for bg children */
+    /* wait — wait for bg children or streams/fps */
     if(strcmp(p, "wait") == 0
        || starts_with(p, "wait ")
        || starts_with(p, "wait\t"))
     {
-        int wstatus;
-        while(waitpid(-1, &wstatus,
-                      0) > 0)
-        {
-            /* reap all children */
+        char argbuf[STRINGMAXLEN_CLICMDLINE];
+        strncpy(argbuf, p, STRINGMAXLEN_CLICMDLINE - 1);
+        argbuf[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        
+        char *ptr_save = NULL;
+        char *tok = strtok_r(argbuf, " \t", &ptr_save); /* "wait" */
+        tok = strtok_r(NULL, " \t", &ptr_save);
+        
+        if (tok != NULL && strcmp(tok, "-S") == 0) {
+            char *sname = strtok_r(NULL, " \t", &ptr_save);
+            char *tmstr = strtok_r(NULL, " \t", &ptr_save);
+            if (!sname) {
+                printf("wait: missing stream name\n");
+                cli_last_retval = 1;
+                return 1;
+            }
+            double wait_timeout = tmstr ? atof(tmstr) : -1.0;
+            
+            IMAGE img;
+            if (ImageStreamIO_read_sharedmem_image_toIMAGE(sname, &img) == IMAGESTREAMIO_SUCCESS) {
+                uint64_t start_cnt0 = img.md->cnt0;
+                struct timespec ts_start, ts_now;
+                clock_gettime(CLOCK_MONOTONIC, &ts_start);
+                cli_last_retval = 1;
+                
+                while (!cli_break_flag) {
+                    if (img.md->cnt0 != start_cnt0) {
+                        cli_last_retval = 0;
+                        break;
+                    }
+                    if (wait_timeout >= 0.0) {
+                        clock_gettime(CLOCK_MONOTONIC, &ts_now);
+                        double elapsed = (double)(ts_now.tv_sec - ts_start.tv_sec) + 
+                                         1e-9 * (double)(ts_now.tv_nsec - ts_start.tv_nsec);
+                        if (elapsed >= wait_timeout) {
+                            break;
+                        }
+                    }
+                    usleep(1000);
+                }
+                ImageStreamIO_closeIm(&img);
+            } else {
+                printf("wait: stream %s not found\n", sname);
+                cli_last_retval = 1;
+            }
+            return 1;
         }
-        cli_last_retval = 0;
-        return 1;
+        else if (tok != NULL && strcmp(tok, "-F") == 0) {
+            char *fname = strtok_r(NULL, " \t", &ptr_save);
+            char *pval  = strtok_r(NULL, " \t", &ptr_save);
+            char *tmstr = strtok_r(NULL, " \t", &ptr_save);
+            
+            if (!fname || !pval) {
+                printf("wait: missing fps name or param=value\n");
+                cli_last_retval = 1;
+                return 1;
+            }
+            
+            char *eq = strchr(pval, '=');
+            if (!eq) {
+                printf("wait: require param=value format\n");
+                cli_last_retval = 1;
+                return 1;
+            }
+            *eq = '\0';
+            const char *param = pval;
+            const char *value = eq + 1;
+            double wait_timeout = tmstr ? atof(tmstr) : -1.0;
+            
+            FUNCTION_PARAMETER_STRUCT fps;
+            if (function_parameter_struct_connect(fname, &fps, FPSCONNECT_SIMPLE) != -1 && fps.parray != NULL) {
+                int pindex = functionparameter_GetParamIndex(&fps, param);
+                if (pindex < 0) {
+                    char dotname[512];
+                    snprintf(dotname, sizeof(dotname), ".%s", param);
+                    pindex = functionparameter_GetParamIndex(&fps, dotname);
+                }
+                
+                if (pindex >= 0) {
+                    struct timespec ts_start, ts_now;
+                    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+                    cli_last_retval = 1;
+                    
+                    while (!cli_break_flag) {
+                        char vstr[512];
+                        functionparameter_GetParamValueString(&fps.parray[pindex], vstr, sizeof(vstr));
+
+                        /* First try exact string match (original behavior) */
+                        if (strcmp(vstr, value) == 0)
+                        {
+                            cli_last_retval = 0;
+                            break;
+                        }
+
+                        /* If not equal as strings, try numeric comparison when both look numeric.
+                         * This allows matches such as "1" vs "1.000000" or "1.000000000". */
+                        {
+                            char  *end_vstr  = NULL;
+                            char  *end_value = NULL;
+                            double dvstr     = strtod(vstr, &end_vstr);
+                            double dvalue    = strtod(value, &end_value);
+
+                            if (end_vstr != vstr && *end_vstr == '\0' &&
+                                end_value != value && *end_value == '\0' &&
+                                dvstr == dvalue)
+                            {
+                                cli_last_retval = 0;
+                                break;
+                            }
+                        }
+                        if (wait_timeout >= 0.0) {
+                            clock_gettime(CLOCK_MONOTONIC, &ts_now);
+                            double elapsed = (double)(ts_now.tv_sec - ts_start.tv_sec) + 
+                                             1e-9 * (double)(ts_now.tv_nsec - ts_start.tv_nsec);
+                            if (elapsed >= wait_timeout) {
+                                break;
+                            }
+                        }
+                        usleep(1000);
+                    }
+                } else {
+                    printf("wait: param %s not found in %s\n", param, fname);
+                    cli_last_retval = 1;
+                }
+                function_parameter_struct_disconnect(&fps);
+            } else {
+                printf("wait: fps %s not found\n", fname);
+                cli_last_retval = 1;
+            }
+            return 1;
+        }
+        else {
+            /* Standard wait for children */
+            int wstatus;
+            while(waitpid(-1, &wstatus, 0) > 0) {}
+            cli_last_retval = 0;
+            return 1;
+        }
     }
 
     /* [[ expr ]] — extended test */

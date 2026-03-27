@@ -945,3 +945,77 @@ errno_t cli_fifo(void)
         sub);
     return RETURN_FAILURE;
 }
+
+/*
+ * ============================================================
+ *  List Streams / FPS Command
+ * ============================================================
+ */
+
+/**
+ * @brief CLI handler: list-streams
+ *
+ * Prints all available ImageStreamIO streams as a space-separated list.
+ * Useful for scripting: for s in $(list-streams); do ...; done
+ */
+errno_t cli_list_streams(void)
+{
+    DIR *dir;
+    struct dirent *ent;
+    int first = 1;
+
+    if ((dir = opendir(dcshmdir)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            char *ext = strstr(ent->d_name, ".im.shm");
+            if (ext != NULL && strcmp(ext, ".im.shm") == 0)
+            {
+                int namelen = ext - ent->d_name;
+                if (!first) {
+                    printf(" ");
+                }
+                printf("%.*s", namelen, ent->d_name);
+                first = 0;
+            }
+        }
+        closedir(dir);
+    }
+    printf("\n");
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief CLI handler: list-fps
+ *
+ * Prints all available FPS instances as a space-separated list.
+ */
+errno_t cli_list_fps(void)
+{
+    DIR *dir;
+    struct dirent *ent;
+    int first = 1;
+
+    if ((dir = opendir(dcshmdir)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            if (strncmp(ent->d_name, "fps.", 4) == 0)
+            {
+                char *ext = strstr(ent->d_name, ".datadir");
+                if (ext != NULL && strcmp(ext, ".datadir") == 0)
+                {
+                    int namelen = ext - (ent->d_name + 4);
+                    if (!first) {
+                        printf(" ");
+                    }
+                    printf("%.*s", namelen, ent->d_name + 4);
+                    first = 0;
+                }
+            }
+        }
+        closedir(dir);
+    }
+    printf("\n");
+    return RETURN_SUCCESS;
+}
