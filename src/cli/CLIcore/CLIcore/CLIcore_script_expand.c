@@ -336,6 +336,380 @@ double arith_expr(ArithParser *p)
  * @param line   Command line buffer (modified in place)
  * @param maxlen Buffer size
  */
+/**
+ * @brief Handle @fpsname.param=value write path.
+ *
+ * Parses value (with quote/escape/paren awareness),
+ * recursively expands it, then calls cli_fps_set_param.
+ *
+ * @param line   Full command line
+ * @param[in,out] i  Current parse position (after '=')
+ * @param token  "fpsname.param" token
+ * @param out    Output buffer
+ * @param[in,out] opos  Output position
+ * @param maxlen Output buffer size
+ */
+static void expand_fpsvar_write(
+    char       *line,
+    int        *i,
+    const char *token,
+    char       *out,
+    int        *opos,
+    int         maxlen
+)
+{
+    char valstr[512];
+    int  vlen      = 0;
+    int  depth     = 0;
+    int  in_sq     = 0;
+    int  in_dq     = 0;
+    int  esc       = 0;
+    int  pos       = *i;
+
+    while (line[pos] == ' '
+           || line[pos] == '\t')
+    {
+        pos++;
+    }
+
+    while (line[pos] != '\0'
+           && vlen < 511)
+    {
+        char ch = line[pos];
+
+        if (!esc)
+        {
+            if (ch == '\\')
+            {
+                esc = 1;
+                valstr[vlen++] = ch;
+                pos++;
+                continue;
+            }
+            if (!in_sq && !in_dq)
+            {
+                if (ch == '(')
+                {
+                    depth++;
+                }
+                else if (ch == ')'
+                         && depth > 0)
+                {
+                    depth--;
+                }
+                if (depth == 0
+                    && (ch == ';'
+                        || ch == '\n'))
+                {
+                    break;
+                }
+            }
+            if (!in_dq && ch == '\'')
+            {
+                in_sq = !in_sq;
+            }
+            else if (!in_sq && ch == '"')
+            {
+                in_dq = !in_dq;
+            }
+        }
+        else
+        {
+            esc = 0;
+        }
+        valstr[vlen++] = ch;
+        pos++;
+    }
+
+    while (vlen > 0
+           && (valstr[vlen - 1] == ' '
+               || valstr[vlen - 1] == '\t'))
+    {
+        vlen--;
+    }
+    valstr[vlen] = '\0';
+
+    cli_expand_fpsvar(
+        valstr, (int) sizeof(valstr));
+    cli_expand_env(
+        valstr, (int) sizeof(valstr));
+    cli_expand_arith(
+        valstr, (int) sizeof(valstr));
+
+    char tcopy[512];
+    strncpy(tcopy, token,
+            sizeof(tcopy) - 1);
+    tcopy[sizeof(tcopy) - 1] = '\0';
+    char *dot = strchr(tcopy, '.');
+    *dot = '\0';
+    cli_fps_set_param(tcopy, dot + 1, valstr);
+
+    /* Insert no-op ":" if this is the entire cmd */
+    if (*opos == 0)
+    {
+        if (*opos < maxlen - 1)
+        {
+            out[(*opos)++] = ':';
+        }
+        if (*opos < maxlen - 1)
+        {
+            out[(*opos)++] = ' ';
+        }
+    }
+    *i = pos;
+}
+
+
+/**
+ * @brief Expand @seq.NAME.prop sequencer tokens.
+ *
+ * Connects to sequencer SHM and reads status, tasks,
+ * errors, pid, or completed properties.
+ *
+ * @param pname  "NAME.prop" (after "seq.")
+ * @param out    Output buffer
+ * @param[in,out] opos  Output position
+ * @param maxlen Output buffer size
+ * @return 1 if expanded, 0 if no dot found
+ */
+static int expand_fpsvar_seq(
+    char *pname,
+    char *out,
+    int  *opos,
+    int   maxlen
+)
+{
+    char *dot2 = strchr(pname, '.');
+    if (dot2 == NULL)
+    {
+        return 0;
+    }
+    *dot2 = '\0';
+    const char *seqname = pname;
+    const char *seqprop = dot2 + 1;
+
+    MILKSEQ_STATE *seqst =
+        milkseq_connect(seqname);
+    if (seqst == NULL)
+    {
+        return 1;
+    }
+
+    char vstr[512];
+    vstr[0] = '\0';
+
+    if (strcmp(seqprop, "status") == 0)
+    {
+        const char *s = "IDLE";
+        uint32_t st = seqst->status;
+        if (st & MILKSEQ_STATUS_ERROR)
+        {
+            s = "ERROR";
+        }
+        else if (st & MILKSEQ_STATUS_STOPPING)
+        {
+            s = "STOPPING";
+        }
+        else if (st & MILKSEQ_STATUS_RUNNING)
+        {
+            s = "RUNNING";
+        }
+        strncpy(vstr, s,
+                sizeof(vstr) - 1);
+        vstr[sizeof(vstr) - 1] = '\0';
+    }
+    else if (strcmp(seqprop, "tasks") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%u",
+                 seqst->NBtasks_active);
+    }
+    else if (strcmp(seqprop, "errors") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%u",
+                 seqst->error_count);
+    }
+    else if (strcmp(seqprop, "pid") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", (int) seqst->pid);
+    }
+    else if (strcmp(seqprop, "completed") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%u",
+                 seqst->NBtasks_completed);
+    }
+
+    milkseq_disconnect(seqst);
+
+    int vlen = (int) strlen(vstr);
+    int avail = maxlen - 1 - *opos;
+    int clen = vlen < avail ? vlen : avail;
+    memcpy(out + *opos, vstr, (size_t) clen);
+    *opos += clen;
+    return 1;
+}
+
+
+/**
+ * @brief Expand @procname.prop via processinfo SHM.
+ *
+ * Scans pinfolist for a matching process name, maps
+ * its SHM, and reads the requested property.
+ *
+ * @param fpsname  Process name to look up
+ * @param pname    Property name (pid, loopstat, etc.)
+ * @param out      Output buffer
+ * @param[in,out] opos  Output position
+ * @param maxlen   Output buffer size
+ * @return 1 if expanded, 0 if not found
+ */
+static int expand_fpsvar_procinfo(
+    const char *fpsname,
+    const char *pname,
+    char       *out,
+    int        *opos,
+    int         maxlen
+)
+{
+    if (pinfolist == NULL)
+    {
+        return 0;
+    }
+
+    pid_t found_pid = 0;
+    for (int pi = 0;
+         pi < PROCESSINFOLISTSIZE; pi++)
+    {
+        if (pinfolist->active[pi]
+            && strcmp(
+                pinfolist->pnamearray[pi],
+                fpsname) == 0)
+        {
+            found_pid =
+                pinfolist->PIDarray[pi];
+            break;
+        }
+    }
+    if (found_pid <= 0)
+    {
+        return 0;
+    }
+
+    char pfname[512];
+    char procdname[256];
+    processinfo_procdirname(procdname);
+    snprintf(pfname, sizeof(pfname),
+             "%s/proc.%d.shm",
+             procdname,
+             (int) found_pid);
+    int pfd = -1;
+    PROCESSINFO *pi =
+        processinfo_shm_link(pfname, &pfd);
+    if (pi == MAP_FAILED || pi == NULL)
+    {
+        if (pfd >= 0)
+        {
+            close(pfd);
+        }
+        return 0;
+    }
+
+    char vstr[512];
+    vstr[0] = '\0';
+
+    if (strcmp(pname, "pid") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", (int) pi->PID);
+    }
+    else if (strcmp(pname, "loopstat") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", pi->loopstat);
+    }
+    else if (strcmp(pname, "loopcnt") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%ld", pi->loopcnt);
+    }
+    else if (strcmp(pname, "loopfreq") == 0)
+    {
+        double hz = 0.0;
+        if (pi->dtmedian_iter_ns > 0)
+        {
+            hz = 1.0e9
+                 / (double)
+                   pi->dtmedian_iter_ns;
+        }
+        snprintf(vstr, sizeof(vstr),
+                 "%.1f", hz);
+    }
+    else if (strcmp(pname, "exectime") == 0)
+    {
+        double us =
+            (double) pi->dtmedian_exec_ns
+            / 1000.0;
+        snprintf(vstr, sizeof(vstr),
+                 "%.1f", us);
+    }
+    else if (strcmp(pname, "rtprio") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", pi->RT_priority);
+    }
+    else if (strcmp(pname, "ctrlval") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", pi->CTRLval);
+    }
+    else if (strcmp(pname, "trigmode") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%d", pi->triggermode);
+    }
+    else if (strcmp(pname,
+                    "statusmsg") == 0)
+    {
+        strncpy(vstr, pi->statusmsg,
+                sizeof(vstr) - 1);
+        vstr[sizeof(vstr) - 1] = '\0';
+    }
+    else if (strcmp(pname, "tmux") == 0)
+    {
+        strncpy(vstr, pi->tmuxname,
+                sizeof(vstr) - 1);
+        vstr[sizeof(vstr) - 1] = '\0';
+    }
+    else if (strcmp(pname,
+                    "description") == 0)
+    {
+        strncpy(vstr, pi->description,
+                sizeof(vstr) - 1);
+        vstr[sizeof(vstr) - 1] = '\0';
+    }
+    else if (strcmp(pname,
+                    "missedframes") == 0)
+    {
+        snprintf(vstr, sizeof(vstr),
+                 "%lu",
+                 (unsigned long)
+                 pi->triggermissedframe_cumul);
+    }
+
+    int vlen = (int) strlen(vstr);
+    int avail = maxlen - 1 - *opos;
+    int clen = vlen < avail ? vlen : avail;
+    memcpy(out + *opos, vstr, (size_t) clen);
+    *opos += clen;
+    munmap(pi, sizeof(PROCESSINFO));
+    close(pfd);
+    return 1;
+}
+
+
 void cli_expand_fpsvar(
     char *line,
     int   maxlen
@@ -409,146 +783,10 @@ void cli_expand_fpsvar(
             if(line[i] == '='
                && strchr(token, '.') != NULL)
             {
-                i++; /* skip '=' */
-
-                /* Collect value up to statement end
-                 * (semicolon, newline, or NUL),
-                 * allowing spaces, parentheses, and
-                 * quoted strings. */
-                char valstr[512];
-                int  vlen      = 0;
-                int  depth     = 0; /* paren depth */
-                int  in_single = 0;
-                int  in_double = 0;
-                int  escape    = 0;
-
-                /* Skip leading whitespace after '=' */
-                while(line[i] == ' '
-                      || line[i] == '\t')
-                {
-                    i++;
-                }
-
-                while(line[i] != '\0'
-                      && vlen < 511)
-                {
-                    char c = line[i];
-
-                    if(!escape)
-                    {
-                        if(c == '\\')
-                        {
-                            escape = 1;
-                            valstr[vlen++] = c;
-                            i++;
-                            continue;
-                        }
-
-                        if(!in_single
-                           && !in_double)
-                        {
-                            if(c == '(')
-                            {
-                                depth++;
-                            }
-                            else if(c == ')'
-                                    && depth > 0)
-                            {
-                                depth--;
-                            }
-
-                            /* Stop at ';' or
-                             * newline only when
-                             * not nested. */
-                            if(depth == 0
-                                    && (c == ';'
-                                        || c == '\n'))
-                            {
-                                break;
-                            }
-                        }
-
-                        if(!in_double
-                           && c == '\'')
-                        {
-                            in_single =
-                                !in_single;
-                        }
-                        else if(!in_single
-                                && c == '"')
-                        {
-                            in_double =
-                                !in_double;
-                        }
-                    }
-                    else
-                    {
-                        /* Escaped character */
-                        escape = 0;
-                    }
-
-                    valstr[vlen++] = c;
-                    i++;
-                }
-
-                /* Trim trailing whitespace */
-                while(vlen > 0
-                      && (valstr[vlen - 1] == ' '
-                          || valstr[vlen - 1]
-                          == '\t'))
-                {
-                    vlen--;
-                }
-                valstr[vlen] = '\0';
-
-                /* Expand @fps.param refs, $VAR and
-                 * $((...)) in the value before
-                 * setting the parameter, so that
-                 * e.g. @fps.gain=$var or
-                 * @fps.gain=$((a+b)) works. */
-                cli_expand_fpsvar(
-                    valstr,
-                    (int) sizeof(valstr));
-                cli_expand_env(
-                    valstr,
-                    (int) sizeof(valstr));
-                cli_expand_arith(
-                    valstr,
-                    (int) sizeof(valstr));
-
-                /* Split token at first dot */
-                char tcopy[512];
-                strncpy(tcopy, token,
-                        sizeof(tcopy) - 1);
-                tcopy[sizeof(tcopy) - 1] =
-                    '\0';
-                char *dot = strchr(tcopy, '.');
-                *dot = '\0';
-                const char *fpsname = tcopy;
-                const char *pname = dot + 1;
-
-                cli_fps_set_param(
-                    fpsname, pname, valstr);
-
-                /* If this assignment is the whole
-                 * command, ensure the expanded
-                 * line is not empty so that the
-                 * dispatcher does not fall back
-                 * to a spurious "command not
-                 * found" / shell execution.
-                 * Insert a POSIX no-op ":" as
-                 * a harmless placeholder. */
-                if(opos == 0)
-                {
-                    if(opos < maxlen - 1)
-                    {
-                        out[opos++] = ':';
-                    }
-                    if(opos < maxlen - 1)
-                    {
-                        out[opos++] = ' ';
-                    }
-                }
+                i++;
+                expand_fpsvar_write(
+                    line, &i, token,
+                    out, &opos, maxlen);
                 continue;
             }
 
@@ -572,106 +810,14 @@ void cli_expand_fpsvar(
 
             *dot = '\0';
             const char *fpsname = token;
-            const char *pname = dot + 1;
+            char *pname = dot + 1;
 
             /* ---- Sequencer: @seq.NAME.prop ---- */
             if(strcmp(fpsname, "seq") == 0)
             {
-                char *dot2 = strchr(pname, '.');
-                if(dot2 != NULL)
-                {
-                    *dot2 = '\0';
-                    const char *seqname = pname;
-                    const char *seqprop = dot2 + 1;
-
-                    MILKSEQ_STATE *seqst =
-                        milkseq_connect(seqname);
-                    if(seqst != NULL)
-                    {
-                        char vstr[512];
-                        vstr[0] = '\0';
-
-                        if(strcmp(seqprop,
-                            "status") == 0)
-                        {
-                            const char *s = "IDLE";
-                            uint32_t st =
-                                seqst->status;
-                            if(st
-                               & MILKSEQ_STATUS_ERROR)
-                            {
-                                s = "ERROR";
-                            }
-                            else if(st
-                               & MILKSEQ_STATUS_STOPPING)
-                            {
-                                s = "STOPPING";
-                            }
-                            else if(st
-                               & MILKSEQ_STATUS_RUNNING)
-                            {
-                                s = "RUNNING";
-                            }
-                            strncpy(vstr, s,
-                                sizeof(vstr) - 1);
-                            vstr[sizeof(vstr) - 1]
-                                = '\0';
-                        }
-                        else if(strcmp(seqprop,
-                            "tasks") == 0)
-                        {
-                            snprintf(
-                                vstr,
-                                sizeof(vstr),
-                                "%u",
-                                seqst
-                                ->NBtasks_active);
-                        }
-                        else if(strcmp(seqprop,
-                            "errors") == 0)
-                        {
-                            snprintf(
-                                vstr,
-                                sizeof(vstr),
-                                "%u",
-                                seqst
-                                ->error_count);
-                        }
-                        else if(strcmp(seqprop,
-                            "pid") == 0)
-                        {
-                            snprintf(
-                                vstr,
-                                sizeof(vstr),
-                                "%d",
-                                (int) seqst->pid);
-                        }
-                        else if(strcmp(seqprop,
-                            "completed") == 0)
-                        {
-                            snprintf(
-                                vstr,
-                                sizeof(vstr),
-                                "%u",
-                                seqst
-                                ->NBtasks_completed);
-                        }
-
-                        milkseq_disconnect(seqst);
-
-                        int vlen =
-                            (int) strlen(vstr);
-                        int avail =
-                            maxlen - 1 - opos;
-                        int clen =
-                            vlen < avail
-                            ? vlen : avail;
-                        memcpy(out + opos,
-                               vstr,
-                               (size_t) clen);
-                        opos += clen;
-                    }
-                }
+                expand_fpsvar_seq(
+                    pname, out,
+                    &opos, maxlen);
                 continue;
             }
 
@@ -685,201 +831,9 @@ void cli_expand_fpsvar(
                     || fps.parray == NULL)
             {
                 /* FPS not found — try procinfo */
-                if(pinfolist != NULL)
-                {
-                    pid_t found_pid = 0;
-                    for(int pi = 0;
-                        pi < PROCESSINFOLISTSIZE;
-                        pi++)
-                    {
-                        if(pinfolist->active[pi]
-                           && strcmp(
-                               pinfolist
-                                   ->pnamearray[pi],
-                               fpsname) == 0)
-                        {
-                            found_pid =
-                                pinfolist
-                                    ->PIDarray[pi];
-                            break;
-                        }
-                    }
-                    if(found_pid > 0)
-                    {
-                        char pfname[512];
-                        char procdname[256];
-                        processinfo_procdirname(
-                            procdname);
-                        snprintf(
-                            pfname,
-                            sizeof(pfname),
-                            "%s/proc.%d.shm",
-                            procdname,
-                            (int) found_pid);
-                        int pfd = -1;
-                        PROCESSINFO *pi =
-                            processinfo_shm_link(
-                                pfname, &pfd);
-                        if(pi != MAP_FAILED
-                           && pi != NULL)
-                        {
-                            char vstr[512];
-                            vstr[0] = '\0';
-                            if(strcmp(pname,
-                                "pid") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%d",
-                                    (int) pi->PID);
-                            }
-                            else if(strcmp(pname,
-                                "loopstat") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%d",
-                                    pi->loopstat);
-                            }
-                            else if(strcmp(pname,
-                                "loopcnt") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%ld",
-                                    pi->loopcnt);
-                            }
-                            else if(strcmp(pname,
-                                "loopfreq") == 0)
-                            {
-                                double hz = 0.0;
-                                if(pi
-                                    ->dtmedian_iter_ns
-                                   > 0)
-                                {
-                                    hz = 1.0e9
-                                        / (double)
-                                          pi
-                                          ->dtmedian_iter_ns;
-                                }
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%.1f", hz);
-                            }
-                            else if(strcmp(pname,
-                                "exectime") == 0)
-                            {
-                                double us =
-                                    (double)
-                                    pi
-                                    ->dtmedian_exec_ns
-                                    / 1000.0;
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%.1f", us);
-                            }
-                            else if(strcmp(pname,
-                                "rtprio") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%d",
-                                    pi
-                                    ->RT_priority);
-                            }
-                            else if(strcmp(pname,
-                                "ctrlval") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%d",
-                                    pi->CTRLval);
-                            }
-                            else if(strcmp(pname,
-                                "trigmode") == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%d",
-                                    pi
-                                    ->triggermode);
-                            }
-                            else if(strcmp(pname,
-                                "statusmsg") == 0)
-                            {
-                                strncpy(
-                                    vstr,
-                                    pi->statusmsg,
-                                    sizeof(vstr)
-                                    - 1);
-                                vstr[sizeof(vstr)
-                                     - 1] = '\0';
-                            }
-                            else if(strcmp(pname,
-                                "tmux") == 0)
-                            {
-                                strncpy(
-                                    vstr,
-                                    pi->tmuxname,
-                                    sizeof(vstr)
-                                    - 1);
-                                vstr[sizeof(vstr)
-                                     - 1] = '\0';
-                            }
-                            else if(strcmp(pname,
-                                "description")
-                                == 0)
-                            {
-                                strncpy(
-                                    vstr,
-                                    pi
-                                    ->description,
-                                    sizeof(vstr)
-                                    - 1);
-                                vstr[sizeof(vstr)
-                                     - 1] = '\0';
-                            }
-                            else if(strcmp(pname,
-                                "missedframes")
-                                == 0)
-                            {
-                                snprintf(
-                                    vstr,
-                                    sizeof(vstr),
-                                    "%lu",
-                                    (unsigned long)
-                                    pi
-                                    ->triggermissedframe_cumul);
-                            }
-                            int vlen =
-                                (int) strlen(vstr);
-                            int avail =
-                                maxlen - 1 - opos;
-                            int clen =
-                                vlen < avail
-                                ? vlen : avail;
-                            memcpy(out + opos,
-                                   vstr,
-                                   (size_t) clen);
-                            opos += clen;
-                            munmap(pi,
-                                sizeof(PROCESSINFO));
-                            close(pfd);
-                        }
-                        else if(pfd >= 0)
-                        {
-                            close(pfd);
-                        }
-                    }
-                }
+                expand_fpsvar_procinfo(
+                    fpsname, pname,
+                    out, &opos, maxlen);
                 continue;
             }
 
@@ -1049,6 +1003,239 @@ void cli_expand_arith(
  * @param expr   The content between [ and ]
  * @return 1 = true, 0 = false
  */
+/**
+ * @brief Evaluate unary file-system tests.
+ *
+ * Handles -f, -d, -e, -s, -r, -w, -x, -L.
+ *
+ * @param op     Operator string (e.g. "-f")
+ * @param arg    File path argument
+ * @param[out] result  Test result (0 or 1)
+ * @return 1 if operator was handled, 0 if not
+ */
+static int test_unary_file(
+    const char *op,
+    const char *arg,
+    int        *result
+)
+{
+    if (strcmp(op, "-r") == 0)
+    {
+        *result =
+            access(arg, R_OK) == 0 ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-w") == 0)
+    {
+        *result =
+            access(arg, W_OK) == 0 ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-x") == 0)
+    {
+        *result =
+            access(arg, X_OK) == 0 ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-L") == 0)
+    {
+        struct stat sb;
+        *result = (lstat(arg, &sb) == 0
+                   && S_ISLNK(sb.st_mode))
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-f") == 0)
+    {
+        struct stat sb;
+        *result = (stat(arg, &sb) == 0
+                   && S_ISREG(sb.st_mode))
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-d") == 0)
+    {
+        struct stat sb;
+        *result = (stat(arg, &sb) == 0
+                   && S_ISDIR(sb.st_mode))
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-e") == 0)
+    {
+        struct stat sb;
+        *result = stat(arg, &sb) == 0
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-s") == 0)
+    {
+        struct stat sb;
+        *result = (stat(arg, &sb) == 0
+                   && sb.st_size > 0)
+                  ? 1 : 0;
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Evaluate SHM/process unary tests.
+ *
+ * Handles -S (stream), -F (FPS), -P (process),
+ * -v (variable), -n (non-empty), -z (empty).
+ *
+ * @param op     Operator string
+ * @param arg    Argument
+ * @param[out] result  Test result
+ * @return 1 if handled, 0 if not
+ */
+static int test_unary_shm(
+    const char *op,
+    const char *arg,
+    int        *result
+)
+{
+    if (strcmp(op, "-n") == 0)
+    {
+        *result =
+            strlen(arg) > 0 ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-z") == 0)
+    {
+        *result =
+            strlen(arg) == 0 ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-v") == 0)
+    {
+        const char *vv = cli_var_get(arg);
+        if (vv != NULL)
+        {
+            *result = 1;
+            return 1;
+        }
+        *result =
+            getenv(arg) != NULL ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-S") == 0)
+    {
+        char shmpath[512];
+        struct stat sb;
+        snprintf(shmpath, sizeof(shmpath),
+                 "/dev/shm/%s.im.shm", arg);
+        *result = stat(shmpath, &sb) == 0
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-F") == 0)
+    {
+        char shmpath[512];
+        struct stat sb;
+        snprintf(shmpath, sizeof(shmpath),
+                 "/dev/shm/fps.%s.shm", arg);
+        *result = stat(shmpath, &sb) == 0
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-P") == 0)
+    {
+        *result = 0;
+        if (pinfolist != NULL)
+        {
+            for (int pi = 0;
+                 pi < PROCESSINFOLISTSIZE;
+                 pi++)
+            {
+                if (pinfolist->active[pi]
+                    && strcmp(
+                        pinfolist
+                            ->pnamearray[pi],
+                        arg) == 0)
+                {
+                    *result = 1;
+                    break;
+                }
+            }
+        }
+        return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * @brief Evaluate binary comparison operators.
+ *
+ * Handles -eq/-ne/-lt/-gt/-le/-ge (numeric)
+ * and ==/=, != (string).
+ *
+ * @param lhs  Left operand string
+ * @param op   Operator string
+ * @param rhs  Right operand string
+ * @param[out] result  Comparison result
+ * @return 1 if handled, 0 if not
+ */
+static int test_binary_op(
+    const char *lhs,
+    const char *op,
+    const char *rhs,
+    int        *result
+)
+{
+    double lv = strtod(lhs, NULL);
+    double rv = strtod(rhs, NULL);
+
+    if (strcmp(op, "-eq") == 0)
+    {
+        *result = (lv == rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-ne") == 0)
+    {
+        *result = (lv != rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-lt") == 0)
+    {
+        *result = (lv < rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-gt") == 0)
+    {
+        *result = (lv > rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-le") == 0)
+    {
+        *result = (lv <= rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "-ge") == 0)
+    {
+        *result = (lv >= rv) ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "==") == 0
+        || strcmp(op, "=") == 0)
+    {
+        *result = strcmp(lhs, rhs) == 0
+                  ? 1 : 0;
+        return 1;
+    }
+    if (strcmp(op, "!=") == 0)
+    {
+        *result = strcmp(lhs, rhs) != 0
+                  ? 1 : 0;
+        return 1;
+    }
+    return 0;
+}
+
+
 int cli_eval_test(const char *expr)
 {
     /* Tokenize expression */
@@ -1176,136 +1363,22 @@ int cli_eval_test(const char *expr)
         }
     }
 
-    /* Unary: -n str, -z str */
-    if(ntok == 2
-       && strcmp(tokens[0], "-n") == 0)
+    /* Unary tests: string, file, SHM, variable */
+    if(ntok == 2)
     {
-        return strlen(tokens[1]) > 0 ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-z") == 0)
-    {
-        return strlen(tokens[1]) == 0 ? 1 : 0;
-    }
-
-    /* File tests: -f, -d, -e, -s, -r, -w, -x, -L */
-    if(ntok == 2
-       && strcmp(tokens[0], "-r") == 0)
-    {
-        return access(tokens[1], R_OK) == 0 ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-w") == 0)
-    {
-        return access(tokens[1], W_OK) == 0 ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-x") == 0)
-    {
-        return access(tokens[1], X_OK) == 0 ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-L") == 0)
-    {
-        struct stat sb;
-        return (lstat(tokens[1], &sb) == 0
-                && S_ISLNK(sb.st_mode))
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-f") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && S_ISREG(sb.st_mode))
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-d") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && S_ISDIR(sb.st_mode))
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-e") == 0)
-    {
-        struct stat sb;
-        return stat(tokens[1], &sb) == 0
-               ? 1 : 0;
-    }
-    if(ntok == 2
-       && strcmp(tokens[0], "-s") == 0)
-    {
-        struct stat sb;
-        return (stat(tokens[1], &sb) == 0
-                && sb.st_size > 0)
-               ? 1 : 0;
-    }
-
-    /* Variable test: -v VAR */
-    if(ntok == 2
-       && strcmp(tokens[0], "-v") == 0)
-    {
-        const char *vv =
-            cli_var_get(tokens[1]);
-        if(vv != NULL)
+        int result;
+        if(test_unary_shm(
+               tokens[0], tokens[1],
+               &result))
         {
-            return 1;
+            return result;
         }
-        const char *ev =
-            getenv(tokens[1]);
-        return ev != NULL ? 1 : 0;
-    }
-
-    /* SHM stream test: -S name */
-    if(ntok == 2
-       && strcmp(tokens[0], "-S") == 0)
-    {
-        char shmpath[512];
-        struct stat sb;
-        snprintf(shmpath, sizeof(shmpath),
-                 "/dev/shm/%s.im.shm",
-                 tokens[1]);
-        return stat(shmpath, &sb) == 0
-               ? 1 : 0;
-    }
-
-    /* FPS test: -F name */
-    if(ntok == 2
-       && strcmp(tokens[0], "-F") == 0)
-    {
-        char shmpath[512];
-        struct stat sb;
-        snprintf(shmpath, sizeof(shmpath),
-                 "/dev/shm/fps.%s.shm",
-                 tokens[1]);
-        return stat(shmpath, &sb) == 0
-               ? 1 : 0;
-    }
-
-    /* Process test: -P name */
-    if(ntok == 2
-       && strcmp(tokens[0], "-P") == 0)
-    {
-        if(pinfolist != NULL)
+        if(test_unary_file(
+               tokens[0], tokens[1],
+               &result))
         {
-            for(int pi = 0;
-                pi < PROCESSINFOLISTSIZE;
-                pi++)
-            {
-                if(pinfolist->active[pi]
-                   && strcmp(
-                       pinfolist
-                           ->pnamearray[pi],
-                       tokens[1]) == 0)
-                {
-                    return 1;
-                }
-            }
+            return result;
         }
-        return 0;
     }
 
     /* Logical NOT: ! expr */
@@ -1341,46 +1414,12 @@ int cli_eval_test(const char *expr)
     /* Binary: val1 op val2 */
     if(ntok >= 3)
     {
-        const char *lhs = tokens[0];
-        const char *op = tokens[1];
-        const char *rhs = tokens[2];
-
-        double lv = strtod(lhs, NULL);
-        double rv = strtod(rhs, NULL);
-
-        if(strcmp(op, "-eq") == 0)
+        int result;
+        if(test_binary_op(
+               tokens[0], tokens[1],
+               tokens[2], &result))
         {
-            return (lv == rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-ne") == 0)
-        {
-            return (lv != rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-lt") == 0)
-        {
-            return (lv < rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-gt") == 0)
-        {
-            return (lv > rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-le") == 0)
-        {
-            return (lv <= rv) ? 1 : 0;
-        }
-        if(strcmp(op, "-ge") == 0)
-        {
-            return (lv >= rv) ? 1 : 0;
-        }
-        if(strcmp(op, "==") == 0 || strcmp(op, "=") == 0)
-        {
-            return strcmp(lhs, rhs) == 0
-                   ? 1 : 0;
-        }
-        if(strcmp(op, "!=") == 0)
-        {
-            return strcmp(lhs, rhs) != 0
-                   ? 1 : 0;
+            return result;
         }
     }
 
