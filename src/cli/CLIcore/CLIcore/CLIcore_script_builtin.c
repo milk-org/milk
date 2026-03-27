@@ -1,9 +1,11 @@
 #include <dirent.h>
 #include <fnmatch.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <termios.h>
 #include <unistd.h>
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
@@ -263,55 +265,271 @@ errno_t cli_cmd_fpsset(void)
 /**
  * @brief read command — read a line into a variable
  *
- * Usage: read [-p "prompt"] <varname>
+ * Usage: read [-p "prompt"] [-t N] [-n N]
+ *             [-a arr] <varname>
+ *
+ * Flags:
+ *   -p prompt   Display prompt string
+ *   -t N        Timeout after N seconds
+ *   -a arr      Split input into array
+ *   -n N        Read exactly N characters
+ *               (raw mode, no Enter needed)
+ *
+ * On timeout, $? is set to 1 and the variable
+ * is not modified.
  */
 errno_t cli_cmd_read(void)
 {
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: read [-p \"prompt\"]"
-               " <varname>\n");
+        printf("Usage: read [-p prompt]"
+               " [-t N] [-n N]"
+               " [-a arr] <var>\n");
         return RETURN_FAILURE;
     }
 
     const char *prompt = "";
-    int varidx = 1;
+    int timeout_sec = -1;  /* -1 = no timeout */
+    int nchars = -1;       /* -1 = full line  */
+    const char *arrayname = NULL;
+    const char *varname = NULL;
 
-    /* Parse -p flag */
-    if(data.cmdNBarg >= 4
-       && strcmp(
-           data.cmdargtoken[1].val.string,
-           "-p") == 0)
+    /* ---- Parse flags ---- */
     {
-        prompt =
-            data.cmdargtoken[2].val.string;
-        varidx = 3;
+        int i = 1;
+        while(i < data.cmdNBarg)
+        {
+            const char *tok =
+                data.cmdargtoken[i]
+                    .val.string;
+
+            if(strcmp(tok, "-p") == 0)
+            {
+                i++;
+                if(i < data.cmdNBarg)
+                {
+                    prompt =
+                        data.cmdargtoken[i]
+                            .val.string;
+                }
+            }
+            else if(strcmp(tok, "-t") == 0)
+            {
+                i++;
+                if(i < data.cmdNBarg)
+                {
+                    timeout_sec = (int)
+                        strtol(
+                            data.cmdargtoken[i]
+                                .val.string,
+                            NULL, 10);
+                }
+            }
+            else if(strcmp(tok, "-n") == 0)
+            {
+                i++;
+                if(i < data.cmdNBarg)
+                {
+                    nchars = (int)
+                        strtol(
+                            data.cmdargtoken[i]
+                                .val.string,
+                            NULL, 10);
+                }
+            }
+            else if(strcmp(tok, "-a") == 0)
+            {
+                i++;
+                if(i < data.cmdNBarg)
+                {
+                    arrayname =
+                        data.cmdargtoken[i]
+                            .val.string;
+                }
+            }
+            else
+            {
+                /* First non-flag is varname */
+                varname = tok;
+            }
+            i++;
+        }
     }
 
-    const char *varname =
-        data.cmdargtoken[varidx].val.string;
+    /* Need either a var or an array target */
+    if(varname == NULL && arrayname == NULL)
+    {
+        printf("Usage: read [-p prompt]"
+               " [-t N] [-n N]"
+               " [-a arr] <var>\n");
+        return RETURN_FAILURE;
+    }
 
-    /* Display prompt and read */
+    /* ---- Display prompt ---- */
     if(prompt[0] != '\0')
     {
         printf("%s", prompt);
         fflush(stdout);
     }
+
     char buf[CLI_VAR_VALLEN];
-    if(fgets(buf, sizeof(buf),
-             stdin) == NULL)
+    buf[0] = '\0';
+
+    /* ---- Timed read with poll() ---- */
+    if(timeout_sec >= 0)
     {
-        buf[0] = '\0';
-    }
-    {
-        size_t len = strlen(buf);
-        if(len > 0 && buf[len - 1] == '\n')
+        struct pollfd pfd;
+        pfd.fd = STDIN_FILENO;
+        pfd.events = POLLIN;
+
+        int tmout_ms = timeout_sec * 1000;
+        int ret = poll(&pfd, 1, tmout_ms);
+
+        if(ret <= 0)
         {
-            buf[len - 1] = '\0';
+            /* Timeout or error */
+            cli_last_retval = 1;
+            return RETURN_SUCCESS;
         }
     }
 
-    cli_var_set(varname, buf);
+    /* ---- Raw-mode read (-n nchars) ---- */
+    if(nchars > 0)
+    {
+        struct termios oldt;
+        struct termios newt;
+        int tty = isatty(STDIN_FILENO);
+
+        if(tty)
+        {
+            tcgetattr(STDIN_FILENO, &oldt);
+            newt = oldt;
+            newt.c_lflag &=
+                (tcflag_t) ~(ICANON | ECHO);
+            newt.c_cc[VMIN] = 1;
+            newt.c_cc[VTIME] = 0;
+            tcsetattr(STDIN_FILENO,
+                      TCSANOW, &newt);
+        }
+
+        int cap = nchars;
+        if(cap >= (int) sizeof(buf))
+        {
+            cap = (int) sizeof(buf) - 1;
+        }
+
+        ssize_t nr = read(
+            STDIN_FILENO, buf,
+            (size_t) cap);
+
+        if(nr < 0)
+        {
+            nr = 0;
+        }
+        buf[nr] = '\0';
+
+        if(tty)
+        {
+            tcsetattr(STDIN_FILENO,
+                      TCSANOW, &oldt);
+            /* Print newline after raw read
+             * for clean terminal output */
+            printf("\n");
+        }
+    }
+    else
+    {
+        /* ---- Normal line read ---- */
+        if(fgets(buf, sizeof(buf),
+                 stdin) == NULL)
+        {
+            buf[0] = '\0';
+        }
+        {
+            size_t len = strlen(buf);
+            if(len > 0
+               && buf[len - 1] == '\n')
+            {
+                buf[len - 1] = '\0';
+            }
+        }
+    }
+
+    /* ---- Store result ---- */
+    if(arrayname != NULL)
+    {
+        /* Split buf by whitespace into array */
+        int slot = -1;
+        for(int i = 0;
+            i < CLI_MAX_ARRAYS; i++)
+        {
+            if(cli_arrays[i].used
+               && strcmp(cli_arrays[i].name,
+                         arrayname) == 0)
+            {
+                slot = i;
+                break;
+            }
+        }
+        if(slot < 0)
+        {
+            for(int i = 0;
+                i < CLI_MAX_ARRAYS; i++)
+            {
+                if(!cli_arrays[i].used)
+                {
+                    slot = i;
+                    break;
+                }
+            }
+        }
+        if(slot < 0)
+        {
+            printf("Error: array table"
+                   " full\n");
+            return RETURN_FAILURE;
+        }
+
+        strncpy(cli_arrays[slot].name,
+                arrayname,
+                CLI_VAR_NAMELEN - 1);
+        cli_arrays[slot].name[
+            CLI_VAR_NAMELEN - 1] = '\0';
+        cli_arrays[slot].used = 1;
+        cli_arrays[slot].nelem = 0;
+
+        char *saveptr = NULL;
+        char *word = strtok_r(
+            buf, " \t", &saveptr);
+
+        while(word != NULL)
+        {
+            int idx =
+                cli_arrays[slot].nelem;
+            if(idx >= CLI_ARRAY_MAXELEM)
+            {
+                break;
+            }
+            strncpy(
+                cli_arrays[slot]
+                    .elem[idx],
+                word,
+                CLI_VAR_VALLEN - 1);
+            cli_arrays[slot]
+                .elem[idx][
+                    CLI_VAR_VALLEN - 1]
+                = '\0';
+            cli_arrays[slot].nelem++;
+            word = strtok_r(
+                NULL, " \t", &saveptr);
+        }
+    }
+    else
+    {
+        cli_var_set(varname, buf);
+    }
+
+    cli_last_retval = 0;
     return RETURN_SUCCESS;
 }
 
