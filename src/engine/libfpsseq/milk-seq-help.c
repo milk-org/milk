@@ -4,7 +4,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #define COLOR_RESET   "\033[0m"
@@ -29,15 +28,22 @@ int main()
     printf("  - " COLOR_GREEN "Deterministic Lock-Stepping:" COLOR_RESET " Provides `wait_fps` and `wait_seq` primitives.\n\n");
 
     printf(COLOR_BOLD "2. BASIC USAGE\n" COLOR_RESET);
-    printf("  " COLOR_CYAN "milk-seq -n <name> -f <script.seq>\n" COLOR_RESET);
-    printf("  Starts a sequencer instance in the background parsing the script.\n\n");
+    printf("  " COLOR_CYAN "milk-seq -n <name> -f <script.seq> --daemon\n" COLOR_RESET);
+    printf("  Starts a daemonized sequencer that detaches from the terminal.\n\n");
 
-    printf("  Additionally, you can run commands from the CLI environment:\n");
+    printf(COLOR_BOLD "  Daemon Lifecycle:\n" COLOR_RESET);
+    printf("  - PID file:  " COLOR_GREEN "$MILK_SHM_DIR/milkseq.<name>.pid" COLOR_RESET "\n");
+    printf("  - Log file:  " COLOR_GREEN "$MILK_SHM_DIR/milkseq.<name>.log" COLOR_RESET "\n");
+    printf("  - Survives SSH disconnections (POSIX double-fork daemon).\n");
+    printf("  - Stopped via SIGTERM (seq.stop reads PID file).\n\n");
+
+    printf("  CLI commands (from milk-cli):\n");
     printf("    " COLOR_YELLOW "seq.list" COLOR_RESET "                 List all active sequencer instances\n");
-    printf("    " COLOR_YELLOW "seq.start <name>" COLOR_RESET "         Start a blank sequencer\n");
-    printf("    " COLOR_YELLOW "seq.stop  <name>" COLOR_RESET "         Stop a sequencer safely\n");
+    printf("    " COLOR_YELLOW "seq.start <name>" COLOR_RESET "         Start a daemonized sequencer\n");
+    printf("    " COLOR_YELLOW "seq.stop  <name>" COLOR_RESET "         Stop via SIGTERM (PID file)\n");
     printf("    " COLOR_YELLOW "seq.status <name>" COLOR_RESET "        View task status and error counts\n");
-    printf("    " COLOR_YELLOW "seq.submit <name> <cmd>" COLOR_RESET "  Inject a command from CLI to sequence\n\n");
+    printf("    " COLOR_YELLOW "seq.submit <name> <cmd>" COLOR_RESET "  Inject a command via FIFO\n");
+    printf("    " COLOR_YELLOW "seq.log <name>" COLOR_RESET "           Show tail of daemon log\n\n");
 
     printf(COLOR_BOLD "3. SCRIPTING COMMANDS\n" COLOR_RESET);
     printf("  Inside a `.seq` file, standard bash executable calls are valid.\n");
