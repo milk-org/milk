@@ -11,6 +11,244 @@
 #include "CLIcore_script.h"
 #include "cli_calc_internal.h"
 
+/**
+ * @brief Image OP image binary operation.
+ *
+ * Dispatches to the appropriate arith_image_*
+ * function for two image operands.
+ *
+ * @param op    Token operator type
+ * @param lname Left image name
+ * @param rname Right image name
+ * @param tmpn  Temporary output image name
+ * @return 1 on success, 0 on unsupported op
+ */
+static int binop_img_img(
+    cli_token_type op,
+    const char *lname,
+    const char *rname,
+    const char *tmpn
+)
+{
+    switch (op)
+    {
+        case TOK_OP_PLUS:
+            arith_image_add(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_MINUS:
+            arith_image_sub(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_STAR:
+            arith_image_mult(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_SLASH:
+            arith_image_div(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_MOD:
+            arith_image_fmod(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_CARET:
+            arith_image_pow(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_LT:
+            arith_image_testlt(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_LE:
+            arith_image_testle(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_GT:
+            arith_image_testmt(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_GE:
+            arith_image_testge(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_EQ:
+            arith_image_teste(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_NEQ:
+            arith_image_testne(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_AND:
+            arith_image_and(
+                lname, rname, tmpn);
+            break;
+        case TOK_OP_OR:
+            arith_image_or(
+                lname, rname, tmpn);
+            break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+
+/**
+ * @brief Image OP scalar binary operation.
+ *
+ * @param op    Token operator type
+ * @param iname Image name (left operand)
+ * @param rv    Scalar value (right operand)
+ * @param tmpn  Output image name
+ * @return 1 on success, 0 on unsupported op
+ */
+static int binop_img_scalar(
+    cli_token_type op,
+    const char *iname,
+    double rv,
+    const char *tmpn
+)
+{
+    switch (op)
+    {
+        case TOK_OP_PLUS:
+            arith_image_cstadd(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_MINUS:
+            arith_image_cstadd(
+                iname, -rv, tmpn);
+            break;
+        case TOK_OP_STAR:
+            arith_image_cstmult(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_SLASH:
+            arith_image_cstdiv(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_MOD:
+            arith_image_cstfmod(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_CARET:
+            arith_image_cstpow(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_LT:
+            arith_image_csttestlt(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_LE:
+            arith_image_csttestle(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_GT:
+            arith_image_csttestmt(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_GE:
+            arith_image_csttestge(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_EQ:
+            arith_image_cstteste(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_NEQ:
+            arith_image_csttestne(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_AND:
+            arith_image_cstand(
+                iname, rv, tmpn);
+            break;
+        case TOK_OP_OR:
+            arith_image_cstor(
+                iname, rv, tmpn);
+            break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+
+/**
+ * @brief Scalar OP image binary operation.
+ *
+ * @param op    Token operator type
+ * @param lv    Scalar value (left operand)
+ * @param iname Image name (right operand)
+ * @param tmpn  Output image name
+ * @return 1 on success, 0 on unsupported op
+ */
+static int binop_scalar_img(
+    cli_token_type op,
+    double lv,
+    const char *iname,
+    const char *tmpn
+)
+{
+    switch (op)
+    {
+        case TOK_OP_PLUS:
+            arith_image_cstadd(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_MINUS:
+            arith_image_cstsubm(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_STAR:
+            arith_image_cstmult(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_SLASH:
+            arith_image_cstdiv1(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_LT:
+            arith_image_csttestmt(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_LE:
+            arith_image_csttestge(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_GT:
+            arith_image_csttestlt(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_GE:
+            arith_image_csttestle(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_EQ:
+            arith_image_cstteste(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_NEQ:
+            arith_image_csttestne(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_AND:
+            arith_image_cstand(
+                iname, lv, tmpn);
+            break;
+        case TOK_OP_OR:
+            arith_image_cstor(
+                iname, lv, tmpn);
+            break;
+        default:
+            return 0;
+    }
+    return 1;
+}
+
+
 val_t eval_binop(
     cli_token_type op,
     val_t left,
@@ -32,71 +270,14 @@ val_t eval_binop(
             {
                 return mk_string("");
             }
-            switch (op)
+            if (!binop_img_img(
+                    op, left.sval,
+                    right.sval, tmpn))
             {
-                case TOK_OP_PLUS:
-                    arith_image_add(
-                        left.sval,
-                        right.sval,
-                        tmpn
-                    );
-                    break;
-                case TOK_OP_MINUS:
-                    arith_image_sub(
-                        left.sval,
-                        right.sval,
-                        tmpn
-                    );
-                    break;
-                case TOK_OP_STAR:
-                    arith_image_mult(
-                        left.sval,
-                        right.sval,
-                        tmpn
-                    );
-                    break;
-                case TOK_OP_SLASH:
-                    arith_image_div(
-                        left.sval,
-                        right.sval,
-                        tmpn
-                    );
-                    break;
-                case TOK_OP_MOD:
-                    arith_image_fmod(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_CARET:
-                    arith_image_pow(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_LT:
-                    arith_image_testlt(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_LE:
-                    arith_image_testle(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_GT:
-                    arith_image_testmt(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_GE:
-                    arith_image_testge(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_EQ:
-                    arith_image_teste(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_NEQ:
-                    arith_image_testne(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_AND:
-                    arith_image_and(left.sval, right.sval, tmpn);
-                    break;
-                case TOK_OP_OR:
-                    arith_image_or(left.sval, right.sval, tmpn);
-                    break;
-                default:
-                    parse_errmsg(
-                        "Unsupported image op"
-                    );
-                    return mk_string("");
+                parse_errmsg(
+                    "Unsupported image op"
+                );
+                return mk_string("");
             }
             return mk_string(tmpn);
         }
@@ -109,62 +290,14 @@ val_t eval_binop(
                 return mk_string("");
             }
             double rv = to_double(right);
-
-            switch (op)
+            if (!binop_img_scalar(
+                    op, left.sval,
+                    rv, tmpn))
             {
-                case TOK_OP_PLUS:
-                    arith_image_cstadd(
-                        left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_MINUS:
-                    arith_image_cstadd(
-                        left.sval, -rv, tmpn);
-                    break;
-                case TOK_OP_STAR:
-                    arith_image_cstmult(
-                        left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_SLASH:
-                    arith_image_cstdiv(
-                        left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_MOD:
-                    arith_image_cstfmod(
-                        left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_CARET:
-                    arith_image_cstpow(
-                        left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_LT:
-                    arith_image_csttestlt(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_LE:
-                    arith_image_csttestle(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_GT:
-                    arith_image_csttestmt(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_GE:
-                    arith_image_csttestge(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_EQ:
-                    arith_image_cstteste(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_NEQ:
-                    arith_image_csttestne(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_AND:
-                    arith_image_cstand(left.sval, rv, tmpn);
-                    break;
-                case TOK_OP_OR:
-                    arith_image_cstor(left.sval, rv, tmpn);
-                    break;
-                default:
-                    parse_errmsg(
-                        "Unsupported image op"
-                    );
-                    return mk_string("");
+                parse_errmsg(
+                    "Unsupported image op"
+                );
+                return mk_string("");
             }
             return mk_string(tmpn);
         }
@@ -177,54 +310,14 @@ val_t eval_binop(
                 return mk_string("");
             }
             double lv = to_double(left);
-
-            switch (op)
+            if (!binop_scalar_img(
+                    op, lv,
+                    right.sval, tmpn))
             {
-                case TOK_OP_PLUS:
-                    arith_image_cstadd(
-                        right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_MINUS:
-                    arith_image_cstsubm(
-                        right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_STAR:
-                    arith_image_cstmult(
-                        right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_SLASH:
-                    arith_image_cstdiv1(
-                        right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_LT:
-                    arith_image_csttestmt(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_LE:
-                    arith_image_csttestge(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_GT:
-                    arith_image_csttestlt(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_GE:
-                    arith_image_csttestle(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_EQ:
-                    arith_image_cstteste(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_NEQ:
-                    arith_image_csttestne(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_AND:
-                    arith_image_cstand(right.sval, lv, tmpn);
-                    break;
-                case TOK_OP_OR:
-                    arith_image_cstor(right.sval, lv, tmpn);
-                    break;
-                default:
-                    parse_errmsg(
-                        "Unsupported image op"
-                    );
-                    return mk_string("");
+                parse_errmsg(
+                    "Unsupported image op"
+                );
+                return mk_string("");
             }
             return mk_string(tmpn);
         }
