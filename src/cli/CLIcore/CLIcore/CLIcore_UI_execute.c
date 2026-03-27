@@ -946,8 +946,11 @@ static int cli_handle_input_redir(
         if (is_stream && tempname[0] != '\0') {
             unlink(tempname);
         }
+        // Redirection was detected and the command line has been modified.
+        // Treat this as consumed and signal failure to the caller.
+        *retval = RETURN_FAILURE;
+        return 1;
     }
-    return 0;
 }
 
 
