@@ -929,6 +929,9 @@ void cli_expand_arith(
  *   [ -d path ]         directory exists
  *   [ -e path ]         path exists
  *   [ -s path ]         file exists, non-empty
+ *   [ -S name ]         SHM stream exists
+ *   [ -F name ]         FPS instance exists
+ *   [ -P name ]         process is active
  *   [ ! expr ]          logical NOT
  */
 
@@ -1146,6 +1149,55 @@ int cli_eval_test(const char *expr)
         const char *ev =
             getenv(tokens[1]);
         return ev != NULL ? 1 : 0;
+    }
+
+    /* SHM stream test: -S name */
+    if(ntok == 2
+       && strcmp(tokens[0], "-S") == 0)
+    {
+        char shmpath[512];
+        struct stat sb;
+        snprintf(shmpath, sizeof(shmpath),
+                 "/dev/shm/%s.im.shm",
+                 tokens[1]);
+        return stat(shmpath, &sb) == 0
+               ? 1 : 0;
+    }
+
+    /* FPS test: -F name */
+    if(ntok == 2
+       && strcmp(tokens[0], "-F") == 0)
+    {
+        char shmpath[512];
+        struct stat sb;
+        snprintf(shmpath, sizeof(shmpath),
+                 "/dev/shm/fps.%s.shm",
+                 tokens[1]);
+        return stat(shmpath, &sb) == 0
+               ? 1 : 0;
+    }
+
+    /* Process test: -P name */
+    if(ntok == 2
+       && strcmp(tokens[0], "-P") == 0)
+    {
+        if(pinfolist != NULL)
+        {
+            for(int pi = 0;
+                pi < PROCESSINFOLISTSIZE;
+                pi++)
+            {
+                if(pinfolist->active[pi]
+                   && strcmp(
+                       pinfolist
+                           ->pnamearray[pi],
+                       tokens[1]) == 0)
+                {
+                    return 1;
+                }
+            }
+        }
+        return 0;
     }
 
     /* Logical NOT: ! expr */
