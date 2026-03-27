@@ -1,3 +1,15 @@
+/**
+ * @file cli_calc_functions.c
+ *
+ * @brief Calculator function evaluation and binary operations
+ *
+ * Architecture Overview:
+ * This file contains the execution logic for the mathematical REPL syntax
+ * natively embedded in milk-cli. It implements two main responsibilities:
+ * 1. `parse_funccall`: Function evaluation (e.g., `sin(a)`, `imcrop(img)`).
+ * 2. `eval_binop`: Binary arithmetic dispatching between images, floats, and ints.
+ */
+
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -249,6 +261,19 @@ static int binop_scalar_img(
 }
 
 
+/**
+ * @brief Dispatch binary operations during expression parsing
+ *
+ * Evaluates binary operators (+, -, *, /, ^, %, <, <=, ==, !=, &&, ||).
+ * Dispatches to specialized arithmetic routines based on operand types:
+ * scalar-scalar (int/float), image-scalar (modifying a stream by a constant),
+ * scalar-image, or image-image (element-wise operations).
+ *
+ * @param op    The token representing the binary operator
+ * @param left  Left operand value (can be long, double, or string/image-name)
+ * @param right Right operand value (can be long, double, or string/image-name)
+ * @return val_t Result of the binary operation
+ */
 val_t eval_binop(
     cli_token_type op,
     val_t left,
@@ -476,6 +501,18 @@ val_t eval_binop(
  * has already been consumed.  We parse the argument
  * expressions separated by commas and expect a
  * closing ')'.
+ */
+/**
+ * @brief Evaluate mathematical or programmatic functions in CLI expressions
+ *
+ * This function dispatches supported calculator functions based on the
+ * provided token string. It supports mathematical operations (sin, max, etc.),
+ * image operations (imcrop, imsum, etc.), random generation (rand, randn),
+ * and string manipulation (substr, toupper).
+ * Parameters are parsed recursively from the token stream.
+ *
+ * @param ftok  Token representing the function name (e.g., "sin")
+ * @return val_t Result of the function evaluation
  */
 val_t parse_funccall(cli_token *ftok)
 {
