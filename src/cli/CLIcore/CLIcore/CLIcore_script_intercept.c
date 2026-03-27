@@ -2471,7 +2471,7 @@ int cli_script_intercept(const char *line)
             double wait_timeout = tmstr ? atof(tmstr) : -1.0;
             
             FUNCTION_PARAMETER_STRUCT fps;
-            if (function_parameter_struct_connect(fname, &fps, FPSCONNECT_SIMPLE) == 0 && fps.parray != NULL) {
+            if (function_parameter_struct_connect(fname, &fps, FPSCONNECT_SIMPLE) != -1 && fps.parray != NULL) {
                 int pindex = functionparameter_GetParamIndex(&fps, param);
                 if (pindex < 0) {
                     char dotname[512];
