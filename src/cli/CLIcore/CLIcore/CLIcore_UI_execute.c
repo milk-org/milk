@@ -1221,7 +1221,7 @@ static int cli_handle_output_redir(
                     }
                     
                     FUNCTION_PARAMETER_STRUCT fps_struct;
-                    if (function_parameter_struct_connect(fpsname, &fps_struct, FPSCONNECT_SIMPLE) == 0 && fps_struct.parray != NULL) {
+                    if (function_parameter_struct_connect(fpsname, &fps_struct, FPSCONNECT_SIMPLE) != -1 && fps_struct.parray != NULL) {
                         int pidx = functionparameter_GetParamIndex(&fps_struct, param);
                         if (pidx < 0) {
                             char dotname[512];
