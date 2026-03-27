@@ -38,8 +38,11 @@ static void print_help()
     printf("  --headless       Run silently without TUI (default)\n");
     printf("  --fifo <path>    Custom FIFO path (default: /tmp/milkseq.<name>.fifo)\n");
     printf("  --timeout <sec>  Exit after idle for <sec> seconds\n");
-    printf("  -h, --help       Show this help\n");
+    printf("  -h, --help       Show this brief help\n\n");
+    printf("For extensive documentation, including scripting syntax and\n");
+    printf("architecture overview, run `milk-seq-help`.\n");
 }
+
 
 int main(int argc, char **argv)
 {

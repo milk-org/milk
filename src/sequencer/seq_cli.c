@@ -207,27 +207,27 @@ static errno_t cli_seq_stop(void)
 /**
  * @brief Register all commands
  */
-errno_t CLIADDCMD_COREMOD_tools__seq_cli(void)
+errno_t CLIADDCMD_sequencer__seq_cli(void)
 {
-    RegisterCLIcommand("seq.list", __func__, cli_seq_list,
+    RegisterCLIcommand("list", __func__, cli_seq_list,
                        "List active sequencer instances",
                        "seq.list", "seq.list", "");
                        
-    RegisterCLIcommand("seq.submit", __func__, cli_seq_submit,
+    RegisterCLIcommand("submit", __func__, cli_seq_submit,
                        "Submit a command to a sequencer",
                        "seq.submit <name> <cmd...>", 
                        "seq.submit loop01 sleep 1.5", "");
 
-    RegisterCLIcommand("seq.status", __func__, cli_seq_status,
+    RegisterCLIcommand("status", __func__, cli_seq_status,
                        "Show status of a sequencer",
                        "seq.status <name>", "seq.status loop01", "");
 
-    RegisterCLIcommand("seq.start", __func__, cli_seq_start,
+    RegisterCLIcommand("start", __func__, cli_seq_start,
                        "Start a new sequencer instance",
                        "seq.start <name> [-f script.seq]", 
                        "seq.start calib -f test.seq", "");
 
-    RegisterCLIcommand("seq.stop", __func__, cli_seq_stop,
+    RegisterCLIcommand("stop", __func__, cli_seq_stop,
                        "Stop a sequencer instance safely",
                        "seq.stop <name>", "seq.stop calib", "");
 
