@@ -36,3 +36,7 @@ target_link_libraries(milk-seq PUBLIC
     milkdata milkprocessinfo ImageStreamIO
     pthread m rt)
 install(TARGETS milk-seq DESTINATION bin)
+
+# milk-seq-help standalone documentation
+add_executable(milk-seq-help milk-seq-help.c)
+install(TARGETS milk-seq-help DESTINATION bin)

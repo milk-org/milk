@@ -57,7 +57,7 @@ void print_milk_framework_help(void)
     printf(C_TITLE "                    milk OVERVIEW\n" C_RST);
     printf(C_TITLE "========================================================\n" C_RST);
     printf("\n");
-    printf("The milk framework is built around three core pillars for\n");
+    printf("The milk framework is built around four core pillars for\n");
     printf("high-performance, real-time data processing:\n");
     printf("\n");
 
@@ -79,6 +79,12 @@ void print_milk_framework_help(void)
     printf("Advanced real-time execution management, CPU affinity,\n");
     printf("scheduling policies, and stream-based process triggering.\n");
     printf("  " C_NOTE "Detailed guide:" C_RST " Run " C_CMD "milk-procinfo-help\n" C_RST);
+    printf("\n");
+
+    printf(C_HDR "4. Sequencer (seq API)\n" C_RST);
+    printf("Deterministic real-time scheduling and execution engine\n");
+    printf("for hardware calibration loops and automated routines.\n");
+    printf("  " C_NOTE "Detailed guide:" C_RST " Run " C_CMD "milk-seq-help\n" C_RST);
     printf("\n");
 
     printf(C_TITLE "--------------------------------------------------------\n" C_RST);

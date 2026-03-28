@@ -12,9 +12,30 @@
 #include "CLIcore.h"
 #include "fpsseq.h"
 #include <fcntl.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+/**
+ * @brief Resolve SHM directory for PID/log files
+ *
+ * Mirrors the logic in milk-seq.c.
+ */
+static const char *get_shm_dir(void)
+{
+    const char *dir = getenv("MILK_SHM_DIR");
+    if (dir && dir[0] != '\0') {
+        return dir;
+    }
+    struct stat st;
+    if (stat("/milk/shm", &st) == 0
+        && S_ISDIR(st.st_mode))
+    {
+        return "/milk/shm";
+    }
+    return "/tmp";
+}
 
 /**
  * @brief List all running sequencer instances
@@ -141,7 +162,7 @@ static errno_t cli_seq_status(void)
 }
 
 /**
- * @brief Start a sequencer process
+ * @brief Start a sequencer as a POSIX daemon
  */
 static errno_t cli_seq_start(void)
 {
@@ -149,31 +170,47 @@ static errno_t cli_seq_start(void)
         return RETURN_SUCCESS;
     }
 
-    const char *seqname = data.cmdargtoken[1].val.string;
+    const char *seqname =
+        data.cmdargtoken[1].val.string;
     char cmd[512];
-    
-    // Check if script file provided via -f
-    if (data.cmdargtoken[2].type == 4 && strcmp(data.cmdargtoken[2].val.string, "-f") == 0) {
+
+    if (data.cmdargtoken[2].type == 4
+        && strcmp(
+               data.cmdargtoken[2].val.string,
+               "-f") == 0)
+    {
         if (data.cmdargtoken[3].type == 0) {
-            printf("ERROR: Missing script file after -f\n");
+            printf(
+                "ERROR: Missing script file "
+                "after -f\n");
             return RETURN_SUCCESS;
         }
-        snprintf(cmd, sizeof(cmd), "milk-seq -n %s -f %s --headless &", 
-                 seqname, data.cmdargtoken[3].val.string);
+        snprintf(
+            cmd, sizeof(cmd),
+            "milk-seq -n %s -f %s --daemon",
+            seqname,
+            data.cmdargtoken[3].val.string);
     } else {
-        snprintf(cmd, sizeof(cmd), "milk-seq -n %s --headless &", seqname);
+        snprintf(
+            cmd, sizeof(cmd),
+            "milk-seq -n %s --daemon",
+            seqname);
     }
 
     printf("Starting sequencer: %s\n", cmd);
     if (system(cmd) == -1) {
-        printf("ERROR: Failed to launch sequencer.\n");
+        printf(
+            "ERROR: Failed to launch "
+            "sequencer.\n");
     }
-    
+
     return RETURN_SUCCESS;
 }
 
 /**
- * @brief Stop a sequencer process
+ * @brief Stop a sequencer via SIGTERM (PID file)
+ *
+ * Falls back to FIFO "exit" if PID file is absent.
  */
 static errno_t cli_seq_stop(void)
 {
@@ -181,23 +218,67 @@ static errno_t cli_seq_stop(void)
         return RETURN_SUCCESS;
     }
 
-    const char *seqname = data.cmdargtoken[1].val.string;
-    MILKSEQ_STATE *state = milkseq_connect(seqname);
+    const char *seqname =
+        data.cmdargtoken[1].val.string;
+
+    /* Try PID file first */
+    char pidpath[256];
+    snprintf(pidpath, sizeof(pidpath),
+             "%s/milkseq.%s.pid",
+             get_shm_dir(), seqname);
+
+    FILE *fp = fopen(pidpath, "r");
+    if (fp) {
+        int pid = 0;
+        if (fscanf(fp, "%d", &pid) == 1
+            && pid > 0)
+        {
+            if (kill((pid_t)pid, SIGTERM) == 0)
+            {
+                printf(
+                    "SIGTERM sent to '%s' "
+                    "(PID %d).\n",
+                    seqname, pid);
+                fclose(fp);
+                return RETURN_SUCCESS;
+            }
+            printf(
+                "WARNING: kill(%d) failed, "
+                "trying FIFO fallback.\n",
+                pid);
+        }
+        fclose(fp);
+    }
+
+    /* Fallback: FIFO "exit" command */
+    MILKSEQ_STATE *state =
+        milkseq_connect(seqname);
     if (!state) {
-        printf("ERROR: Sequencer '%s' not found.\n", seqname);
+        printf(
+            "ERROR: Sequencer '%s' not "
+            "found.\n", seqname);
         return RETURN_SUCCESS;
     }
 
-    int fd = open(state->fifo_path, O_WRONLY | O_NONBLOCK);
+    int fd = open(
+        state->fifo_path,
+        O_WRONLY | O_NONBLOCK);
     if (fd >= 0) {
         if (write(fd, "exit\n", 5) < 0) {
-            printf("ERROR: Failed to write to FIFO.\n");
+            printf(
+                "ERROR: Failed to write "
+                "to FIFO.\n");
         } else {
-            printf("Stop command sent to '%s'.\n", seqname);
+            printf(
+                "Stop command sent to "
+                "'%s' via FIFO.\n",
+                seqname);
         }
         close(fd);
     } else {
-        printf("ERROR: Could not open FIFO for '%s'.\n", seqname);
+        printf(
+            "ERROR: Could not open FIFO "
+            "for '%s'.\n", seqname);
     }
 
     milkseq_disconnect(state);
@@ -205,31 +286,98 @@ static errno_t cli_seq_stop(void)
 }
 
 /**
+ * @brief Print tail of sequencer log file
+ */
+static errno_t cli_seq_log(void)
+{
+    if (CLI_checkarg(1, 4) == 0) {
+        return RETURN_SUCCESS;
+    }
+
+    const char *seqname =
+        data.cmdargtoken[1].val.string;
+
+    char logpath[256];
+    snprintf(logpath, sizeof(logpath),
+             "%s/milkseq.%s.log",
+             get_shm_dir(), seqname);
+
+    FILE *fp = fopen(logpath, "r");
+    if (!fp) {
+        printf(
+            "No log file found: %s\n",
+            logpath);
+        return RETURN_SUCCESS;
+    }
+
+    /* Count lines */
+    int nlines = 0;
+    int ch;
+    while ((ch = fgetc(fp)) != EOF) {
+        if (ch == '\n') {
+            nlines++;
+        }
+    }
+
+    /* Seek to last 50 lines */
+    int skip = (nlines > 50) ? nlines - 50 : 0;
+    rewind(fp);
+    int cur = 0;
+    while (cur < skip) {
+        ch = fgetc(fp);
+        if (ch == EOF) {
+            break;
+        }
+        if (ch == '\n') {
+            cur++;
+        }
+    }
+
+    printf("--- %s (last %d lines) ---\n",
+           logpath, nlines - skip);
+    while ((ch = fgetc(fp)) != EOF) {
+        putchar(ch);
+    }
+    printf("--- end ---\n");
+
+    fclose(fp);
+    return RETURN_SUCCESS;
+}
+
+/**
  * @brief Register all commands
  */
-errno_t CLIADDCMD_COREMOD_tools__seq_cli(void)
+errno_t CLIADDCMD_sequencer__seq_cli(void)
 {
-    RegisterCLIcommand("seq.list", __func__, cli_seq_list,
+    RegisterCLIcommand("list", __func__, cli_seq_list,
                        "List active sequencer instances",
                        "seq.list", "seq.list", "");
                        
-    RegisterCLIcommand("seq.submit", __func__, cli_seq_submit,
+    RegisterCLIcommand("submit", __func__, cli_seq_submit,
                        "Submit a command to a sequencer",
                        "seq.submit <name> <cmd...>", 
                        "seq.submit loop01 sleep 1.5", "");
 
-    RegisterCLIcommand("seq.status", __func__, cli_seq_status,
+    RegisterCLIcommand("status", __func__, cli_seq_status,
                        "Show status of a sequencer",
                        "seq.status <name>", "seq.status loop01", "");
 
-    RegisterCLIcommand("seq.start", __func__, cli_seq_start,
+    RegisterCLIcommand("start", __func__, cli_seq_start,
                        "Start a new sequencer instance",
                        "seq.start <name> [-f script.seq]", 
                        "seq.start calib -f test.seq", "");
 
-    RegisterCLIcommand("seq.stop", __func__, cli_seq_stop,
-                       "Stop a sequencer instance safely",
-                       "seq.stop <name>", "seq.stop calib", "");
+    RegisterCLIcommand(
+        "stop", __func__, cli_seq_stop,
+        "Stop a sequencer instance safely",
+        "seq.stop <name>",
+        "seq.stop calib", "");
+
+    RegisterCLIcommand(
+        "log", __func__, cli_seq_log,
+        "Show tail of sequencer log",
+        "seq.log <name>",
+        "seq.log calib", "");
 
     return RETURN_SUCCESS;
 }
