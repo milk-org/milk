@@ -29,3 +29,21 @@ target_link_libraries(${LIBNAME} PUBLIC m milkfps milkfpsseq CLIcore)
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
 install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
+
+# Add CTest checks to verify that the sequencer module's CLI commands are registered.
+# These tests are only enabled when BUILD_TESTING is ON.
+if(BUILD_TESTING)
+
+    # Verify that the 'seq.list' command is available via the CLI.
+    add_test(
+        NAME sequencer_cmd_help_seq_list
+        COMMAND milk cmd? seq.list
+    )
+
+    # Verify that the 'seq.start' command is available via the CLI.
+    add_test(
+        NAME sequencer_cmd_help_seq_start
+        COMMAND milk cmd? seq.start
+    )
+
+endif()
