@@ -87,18 +87,36 @@ static int daemonize(
         _exit(0);
     }
 
-    /* Redirect stdout/stderr to log file */
+    /* Redirect stdout/stderr to log file (or /dev/null on failure) */
     int logfd = open(
         logpath,
         O_WRONLY | O_CREAT | O_APPEND,
         0644);
-    if (logfd >= 0) {
-        dup2(logfd, STDOUT_FILENO);
-        dup2(logfd, STDERR_FILENO);
-        close(logfd);
+    if (logfd < 0) {
+        /* Fall back to /dev/null to avoid inheriting the terminal */
+        logfd = open("/dev/null", O_WRONLY);
+        if (logfd < 0) {
+            return -1;
+        }
     }
-    close(STDIN_FILENO);
+    if (dup2(logfd, STDOUT_FILENO) < 0 ||
+        dup2(logfd, STDERR_FILENO) < 0)
+    {
+        close(logfd);
+        return -1;
+    }
+    close(logfd);
 
+    /* Redirect stdin from /dev/null */
+    int nullfd = open("/dev/null", O_RDONLY);
+    if (nullfd < 0) {
+        return -1;
+    }
+    if (dup2(nullfd, STDIN_FILENO) < 0) {
+        close(nullfd);
+        return -1;
+    }
+    close(nullfd);
     /* Write PID file */
     {
         FILE *fp = fopen(pidpath, "w");
