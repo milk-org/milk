@@ -14,7 +14,6 @@ set(SOURCEFILES
 	mvprocCPUset.c
 	statusstat.c
 	stringutils.c
-	seq_cli.c
 )
 
 set(INCLUDEFILES
@@ -26,7 +25,6 @@ set(INCLUDEFILES
 	mvprocCPUset.h
 	statusstat.h
 	stringutils.h
-	seq_cli.h
 )
 
 # TESTING
