@@ -117,13 +117,18 @@ static int daemonize(
         return -1;
     }
     close(nullfd);
-    /* Write PID file */
+    /* Write PID file atomically and exclusively */
     {
-        FILE *fp = fopen(pidpath, "w");
-        if (fp) {
-            fprintf(fp, "%d\n", (int)getpid());
-            fclose(fp);
+        int pidfd = open(pidpath, O_WRONLY | O_CREAT | O_EXCL, 0600);
+        if (pidfd < 0) {
+            /* Fail daemonization if PID file cannot be created */
+            return -1;
         }
+        if (dprintf(pidfd, "%d\n", (int)getpid()) < 0) {
+            close(pidfd);
+            return -1;
+        }
+        close(pidfd);
     }
 
     return 0;
