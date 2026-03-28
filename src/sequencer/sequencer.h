@@ -1,4 +1,4 @@
-#ifndef _SEQUENCER_H
-#define _SEQUENCER_H
+#ifndef SEQUENCER_H
+#define SEQUENCER_H
 
 #endif
