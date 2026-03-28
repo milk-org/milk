@@ -2,7 +2,10 @@
  * @file milk-seq.c
  * @brief Standalone milk-seq sequencer daemon
  *
- * Runs the robust standalone sequencer engine out-of-process.
+ * Runs the robust standalone sequencer engine
+ * out-of-process. Supports --daemon for POSIX
+ * daemonization (double-fork, setsid, PID file,
+ * log file redirect).
  */
 
 #include <stdio.h>
@@ -28,6 +31,109 @@ static void sigterm_handler(int signum)
     keep_running = 0;
 }
 
+/**
+ * @brief Resolve SHM directory for PID/log files
+ *
+ * Checks $MILK_SHM_DIR, then /milk/shm,
+ * then falls back to /tmp.
+ */
+static const char *get_shm_dir(void)
+{
+    const char *dir = getenv("MILK_SHM_DIR");
+    if (dir && dir[0] != '\0') {
+        return dir;
+    }
+    struct stat st;
+    if (stat("/milk/shm", &st) == 0
+        && S_ISDIR(st.st_mode))
+    {
+        return "/milk/shm";
+    }
+    return "/tmp";
+}
+
+/**
+ * @brief POSIX double-fork daemonization
+ *
+ * Detaches from terminal, creates new session,
+ * writes PID file, redirects stdout/stderr to
+ * log file. Returns 0 in the daemon child,
+ * or -1 on error. The original process exits.
+ */
+static int daemonize(
+    const char *pidpath,
+    const char *logpath)
+{
+    /* First fork — parent exits */
+    pid_t pid = fork();
+    if (pid < 0) {
+        return -1;
+    }
+    if (pid > 0) {
+        _exit(0); /* parent exits */
+    }
+
+    /* New session leader */
+    if (setsid() < 0) {
+        return -1;
+    }
+
+    /* Second fork — prevent re-acquiring tty */
+    pid = fork();
+    if (pid < 0) {
+        return -1;
+    }
+    if (pid > 0) {
+        _exit(0);
+    }
+
+    /* Redirect stdout/stderr to log file (or /dev/null on failure) */
+    int logfd = open(
+        logpath,
+        O_WRONLY | O_CREAT | O_APPEND,
+        0644);
+    if (logfd < 0) {
+        /* Fall back to /dev/null to avoid inheriting the terminal */
+        logfd = open("/dev/null", O_WRONLY);
+        if (logfd < 0) {
+            return -1;
+        }
+    }
+    if (dup2(logfd, STDOUT_FILENO) < 0 ||
+        dup2(logfd, STDERR_FILENO) < 0)
+    {
+        close(logfd);
+        return -1;
+    }
+    close(logfd);
+
+    /* Redirect stdin from /dev/null */
+    int nullfd = open("/dev/null", O_RDONLY);
+    if (nullfd < 0) {
+        return -1;
+    }
+    if (dup2(nullfd, STDIN_FILENO) < 0) {
+        close(nullfd);
+        return -1;
+    }
+    close(nullfd);
+    /* Write PID file atomically and exclusively */
+    {
+        int pidfd = open(pidpath, O_WRONLY | O_CREAT | O_EXCL, 0600);
+        if (pidfd < 0) {
+            /* Fail daemonization if PID file cannot be created */
+            return -1;
+        }
+        if (dprintf(pidfd, "%d\n", (int)getpid()) < 0) {
+            close(pidfd);
+            return -1;
+        }
+        close(pidfd);
+    }
+
+    return 0;
+}
+
 static void print_help()
 {
     printf("milk-seq - Standalone FPS Sequencer Engine\n\n");
@@ -36,10 +142,17 @@ static void print_help()
     printf("  -n <name>        Sequencer name (required)\n");
     printf("  -f <script.seq>  Sequence file to load on startup\n");
     printf("  --headless       Run silently without TUI (default)\n");
+    printf("  --daemon         Daemonize (fork, detach from terminal)\n");
     printf("  --fifo <path>    Custom FIFO path (default: /tmp/milkseq.<name>.fifo)\n");
     printf("  --timeout <sec>  Exit after idle for <sec> seconds\n");
-    printf("  -h, --help       Show this help\n");
+    printf("  -h, --help       Show this brief help\n\n");
+    printf("When --daemon is used, PID file and log are written to\n");
+    printf("$MILK_SHM_DIR (default /milk/shm):\n");
+    printf("  PID: $MILK_SHM_DIR/milkseq.<name>.pid\n");
+    printf("  Log: $MILK_SHM_DIR/milkseq.<name>.log\n\n");
+    printf("For extensive documentation, run `milk-seq-help`.\n");
 }
+
 
 int main(int argc, char **argv)
 {
@@ -47,6 +160,9 @@ int main(int argc, char **argv)
     char script_file[FPSSEQ_SCRIPT_PATH_MAX] = {0};
     char custom_fifo[FPSSEQ_FIFO_PATH_MAX] = {0};
     int timeout_sec = 0;
+    int do_daemon = 0;
+    char pidpath[256] = {0};
+    char logpath[256] = {0};
 
     // Parse arguments
     int i = 1;
@@ -69,6 +185,9 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[i], "--headless") == 0) {
             // currently implied
             i++;
+        } else if (strcmp(argv[i], "--daemon") == 0) {
+            do_daemon = 1;
+            i++;
         } else {
             fprintf(stderr, "Unknown flag: %s\n", argv[i]);
             print_help();
@@ -77,8 +196,30 @@ int main(int argc, char **argv)
     }
 
     if (seq_name[0] == '\0') {
-        fprintf(stderr, "Error: Sequencer name (-n) is required.\n");
+        fprintf(stderr,
+                "Error: Sequencer name (-n) is "
+                "required.\n");
         return 1;
+    }
+
+    /* Build PID/log file paths */
+    {
+        const char *shmdir = get_shm_dir();
+        snprintf(pidpath, sizeof(pidpath),
+                 "%s/milkseq.%s.pid",
+                 shmdir, seq_name);
+        snprintf(logpath, sizeof(logpath),
+                 "%s/milkseq.%s.log",
+                 shmdir, seq_name);
+    }
+
+    /* Daemonize if requested */
+    if (do_daemon) {
+        if (daemonize(pidpath, logpath) < 0) {
+            fprintf(stderr,
+                    "Failed to daemonize\n");
+            return 1;
+        }
     }
 
     // Set up signals
@@ -179,6 +320,11 @@ int main(int argc, char **argv)
 
     close(fifo_fd);
     milkseq_destroy(seq_name);
+
+    /* Clean up PID file */
+    if (do_daemon && pidpath[0] != '\0') {
+        unlink(pidpath);
+    }
 
     free(keywnode);
     return 0;
