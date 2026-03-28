@@ -21,7 +21,7 @@
 #include "imdisplay3d.h"
 #include "mvprocCPUset.h"
 #include "statusstat.h"
-#include "seq_cli.h"
+
 
 INIT_MODULE_LIB(COREMOD_tools)
 
@@ -33,7 +33,7 @@ static errno_t init_module_CLI()
     CLIADDCMD_COREMOD_tools__imdisplay3d();
     CLIADDCMD_COREMOD_tools__statusstat();
 
-    CLIADDCMD_COREMOD_tools__seq_cli();
+
 
     return RETURN_SUCCESS;
 }

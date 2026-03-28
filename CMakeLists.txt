@@ -54,6 +54,7 @@ project(milk LANGUAGES C)
 option(USE_COREMODS "Build core modules (COREMOD_*)"   ON)
 option(USE_CFITSIO  "Build FITS I/O (needs cfitsio)"   ON)
 option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
+option(USE_SEQ      "Build sequencer module (requires CLI)" ON)
 option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
 option(USE_READLINE "Enable readline support"          ON)
 option(USE_GSL      "Enable GSL for plugins"           ON)
@@ -65,6 +66,12 @@ option(USE_STATIC_LTO
 if(USE_CLI AND NOT USE_COREMODS)
   message(STATUS "USE_CLI requires USE_COREMODS; enabling USE_COREMODS")
   set(USE_COREMODS ON CACHE BOOL "" FORCE)
+endif()
+
+# USE_SEQ requires USE_CLI since it relies on CLIcore for commands
+if(USE_SEQ AND NOT USE_CLI)
+  message(STATUS "USE_SEQ requires USE_CLI; disabling USE_SEQ")
+  set(USE_SEQ OFF CACHE BOOL "" FORCE)
 endif()
 
 include(CheckLanguage)
@@ -284,6 +291,12 @@ if(USE_COREMODS)
   endforeach()
 else()
   message(STATUS "USE_COREMODS=OFF: skipping COREMOD_*")
+endif()
+
+if(USE_SEQ)
+  list(APPEND libsrcdir src/sequencer)
+  list(APPEND libname milksequencer)
+  message("======= adding module  sequencer")
 endif()
 
 # =======================================

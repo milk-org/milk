@@ -13,7 +13,7 @@
 #endif
 
 #ifndef MILK_NO_CLI
-errno_t CLIADDCMD_COREMOD_tools__seq_cli(void);
+errno_t CLIADDCMD_sequencer__seq_cli(void);
 #endif
 
 #endif
