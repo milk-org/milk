@@ -5,6 +5,7 @@
 
 #include "ImageStreamIO/ImageStruct.h"
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include <assert.h>
 #include <stdio.h>

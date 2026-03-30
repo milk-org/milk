@@ -16,6 +16,7 @@
 #endif
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 extern int infoscreen_wcol;
 extern int infoscreen_wrow;

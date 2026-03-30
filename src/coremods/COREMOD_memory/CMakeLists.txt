@@ -149,7 +149,7 @@ set_property (TEST "${TESTNAME}" PROPERTY PASS_REGULAR_EXPRESSION "COREMOD_memor
 
 # test that commands are registered
 
-list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "mmon" "rmall")
+list(APPEND commandlist "mk2Dim" "mk3Dim" "listim" "rmall")
 
 foreach(CLIcmdname IN LISTS commandlist)
 

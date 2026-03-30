@@ -10,6 +10,7 @@
 #endif
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "COREMOD_iofits/savefits.h"
 #include "timeutils.h"

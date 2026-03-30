@@ -8,7 +8,7 @@
  *
  */
 
-#include <IMGID.h>
+#include <libfps/IMGID.h>
 
 double Ppositive(double a);
 

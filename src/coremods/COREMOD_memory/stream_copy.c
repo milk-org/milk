@@ -11,12 +11,13 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "stream_sem.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
-#include "libmilkdata/milk_compiler.h"
+#include "libmilkcommon/milk_compiler.h"
 
 
 /* ================================================================

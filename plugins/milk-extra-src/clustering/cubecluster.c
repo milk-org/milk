@@ -17,6 +17,7 @@
 #include "CLIcore.h"
 #include "clustering_defs.h"
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "processinfo.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 

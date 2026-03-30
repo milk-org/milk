@@ -13,7 +13,7 @@
 #endif
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
-#include "libmilkdata/pixel_dispatch.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 static FPS_APP_INFO FPS_app_info = {
     .fps_name    = "slicenorm",

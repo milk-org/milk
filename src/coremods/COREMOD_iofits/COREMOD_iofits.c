@@ -16,6 +16,7 @@ COREMOD_IOFITS_DATA COREMOD_iofits_data;
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #else
 #include "CLIcore.h"
 

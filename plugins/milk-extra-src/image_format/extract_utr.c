@@ -19,6 +19,7 @@
 #include <pthread.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "extract_utr.h"
 
 

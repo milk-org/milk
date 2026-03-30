@@ -11,7 +11,7 @@
 #define _CREATE_IMAGE_H_
 
 #include "ImageStreamIO/ImageStreamIO.h"
-#include "IMGID.h"
+#include "libfps/IMGID.h"
 
 errno_t create_image_ID(const char *name,
                         long        naxis,

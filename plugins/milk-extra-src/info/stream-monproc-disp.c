@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "stream_monproc.h"
 #include "TUItools.h"
 

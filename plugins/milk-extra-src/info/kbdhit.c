@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 errno_t kbdhit(void)
 {
