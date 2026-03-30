@@ -87,6 +87,7 @@
 #include "CLIcore_modules.h"
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
+#include "../libmilkscript/milkscript.h"
 
 /*-----------------------------------------
 *       Globals exported to all modules
@@ -601,7 +602,10 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     char prompt[STRINGMAXLEN_CLIPROMPT];
     runCLI_prompt(promptstring, prompt);
 
-    // CLI initialize
+    // Call shared script engine init
+    milkscript_init(argc, argv);
+
+    // CLI interactive overlay (signals, autocomplete)
     CLI_startup();
 
     // Load persistent command aliases
@@ -625,8 +629,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Load persistent bookmarks
     cli_bookmark_load();
 
-    // set shared memory directory
-    setSHMdir();
+    // (SHM directory setup is handled by milkscript_init)
 
     DEBUG_TRACEPOINT("CLI start");
 
@@ -644,31 +647,7 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     dcprogstatus = 1;
     printf("\n");
 
-    // Pre-load milkfpsCLI so its constructor registers
-    // fps_generic_CLIfunction_ptr and fps_fill_farg_examples_ptr
-    // before any V2 module commands are used.
-    {
-        load_sharedobj("libmilkfpsCLI.so");
-    }
-
-    // Explicitly reference core module constructors to ensure linker doesn't drop them
-    // (these are single-run safe due to their internal INITSTATUS mechanism)
-    extern void libinit_COREMOD_memory(void);
-#ifdef USE_CFITSIO
-    extern void libinit_COREMOD_iofits(void);
-#endif
-    extern void libinit_COREMOD_arith(void);
-    extern void libinit_COREMOD_tools(void);
-    libinit_COREMOD_memory();
-#ifdef USE_CFITSIO
-    libinit_COREMOD_iofits();
-#endif
-    libinit_COREMOD_arith();
-    libinit_COREMOD_tools();
-
-    // uncomment following two lines to auto-load all modules
-    //DEBUG_TRACEPOINT("LOAD MODULES (shared objects)");
-    load_module_shared_local();
+    // (Module loading is now handled centrally by milkscript_init)
 
     // load other libs specified by environment variable MILKCLI_ADD_LIBS
     char *CLI_ADD_LIBS = getenv("MILKCLI_ADD_LIBS");
