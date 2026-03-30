@@ -24,6 +24,10 @@
 // But since this is a UI tool, it's typically built with CLI
 #ifndef MILK_NO_CLI
 #include "CLIcore.h"
+#else
+#include "CLIcore_standalone.h"
+#include "libmilkdata/milkdata.h"
+#include "libmilkdata/milkdata_macros.h"
 #endif
 
 #include "fps.h"

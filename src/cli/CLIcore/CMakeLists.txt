@@ -157,10 +157,9 @@ add_executable(milk-streamCTRL ../streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
 install(TARGETS milk-streamCTRL DESTINATION bin)
 
-add_executable(milk-fpsexec-mmon ../streamCTRL/mmon_ui.c)
-target_link_libraries(milk-fpsexec-mmon PUBLIC CLIcore milkfpsCLI ${NCURSES_LIBRARIES} milkTUI)
-target_compile_definitions(milk-fpsexec-mmon PRIVATE FPS_STANDALONE USE_NCURSES)
-install(TARGETS milk-fpsexec-mmon DESTINATION bin)
+add_milk_standalone(mmon ../streamCTRL/mmon_ui.c)
+target_link_libraries(milk-fpsexec-mmon PUBLIC milkTUI ${NCURSES_LIBRARIES})
+target_compile_definitions(milk-fpsexec-mmon PRIVATE USE_NCURSES)
 
 add_executable(milk-termview termview/milk-termview.c termview/termview.c)
 target_link_libraries(milk-termview PUBLIC CLIcore ImageStreamIO)
