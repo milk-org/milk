@@ -20,7 +20,7 @@ typedef const char *__restrict CONST_WORD;
 #ifdef USE_NCURSES
 #include "TUItools.h"
 #endif
-#include "CLIcore/IMGID.h"
+#include "libfps/IMGID.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 #define CLICMD_FIELDS_FPSPROC                                                  \

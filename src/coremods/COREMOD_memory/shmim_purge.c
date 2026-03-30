@@ -12,6 +12,7 @@
 
 #include "CLIcore.h"
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #ifndef MILK_NO_CLI
 #include "streamCTRL_find_streams.h"

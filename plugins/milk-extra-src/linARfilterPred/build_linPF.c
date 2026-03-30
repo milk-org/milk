@@ -14,6 +14,7 @@
 #include <time.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 #include "COREMOD_iofits/COREMOD_iofits.h"
 

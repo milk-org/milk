@@ -61,7 +61,7 @@ set(SOURCES
     )
     
     # Link dependencies
-    target_link_libraries(milkprocessinfo PUBLIC ImageStreamIO milkdata rt pthread m)
+    target_link_libraries(milkprocessinfo PUBLIC ImageStreamIO milkcommon rt pthread m)
         
     install(TARGETS milkprocessinfo EXPORT milkTargets DESTINATION lib)
 
@@ -74,6 +74,7 @@ if(USE_STATIC_LTO)
       PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/procCTRL>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkcommon>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>

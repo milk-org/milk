@@ -11,6 +11,7 @@
 #include <cublas_v2.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "linalgebra_types.h"
 
 extern GPUMATMULTCONF gpumatmultconf[20];

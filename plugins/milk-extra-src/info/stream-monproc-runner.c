@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "stream_monproc.h"
 
 // External initialization functions from CLIcore

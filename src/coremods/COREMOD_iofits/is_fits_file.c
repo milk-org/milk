@@ -12,6 +12,7 @@
 #include "COREMOD_iofits_common.h"
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #else
 #include "libmilkdata/milkdata.h"
 #include "milkDebugTools.h"
