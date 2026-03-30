@@ -32,6 +32,7 @@
 
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "timeutils.h"
 
 #include "MVM_CPU.h"

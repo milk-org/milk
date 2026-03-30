@@ -7,7 +7,7 @@
  * @file    image_arith__im_f_f__im.h
  */
 
-#include <IMGID.h>
+#include <libfps/IMGID.h>
 
 errno_t image_arith__im_f_f__im_addCLIcmd();
 

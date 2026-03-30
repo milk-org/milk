@@ -37,7 +37,7 @@
 #include "milkDebugTools.h"
 #endif
 
-#include "libmilkdata/milk_compiler.h"
+#include "libmilkcommon/milk_compiler.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
 // Suppress -Wunknown-pragmas for _Pragma("omp ...") expansions

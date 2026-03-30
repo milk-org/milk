@@ -69,6 +69,7 @@
 
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 //
 // Forward declarations are required to connect CLI calls to functions

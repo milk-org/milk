@@ -11,7 +11,8 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
-#include "libmilkdata/pixel_dispatch.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+#include "libmilkcommon/pixel_dispatch.h"
 
 
 /* ================================================================

@@ -20,6 +20,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "create_image.h"
 #include "delete_image.h"
@@ -407,10 +408,7 @@ imageID chname_image_ID_IMGID(
                new_name);
     }
 
-    if(dcmemmon == 1)
-    {
-        list_image_ID_ncurses();
-    }
+
 
     return imgin->ID;
 }

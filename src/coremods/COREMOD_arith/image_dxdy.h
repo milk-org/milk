@@ -7,7 +7,7 @@
  * @file    image_dxdy.c
  */
 
-#include <IMGID.h>
+#include <libfps/IMGID.h>
 
 imageID arith_image_dx(const char *ID_name, const char *IDout_name);
 imageID arith_image_dx_IMGID(IMGID *imgin, IMGID *imgout);

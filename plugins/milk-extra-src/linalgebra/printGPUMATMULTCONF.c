@@ -9,6 +9,7 @@
 #ifdef HAVE_CUDA
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "linalgebra_types.h"
 
