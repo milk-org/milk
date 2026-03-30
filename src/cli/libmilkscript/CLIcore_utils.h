@@ -1,0 +1,637 @@
+/**
+ * @file    CLIcore_utils.h
+ * @brief   Util functions and macros for coding convenience
+ *
+ */
+
+#ifndef CLICORE_UTILS_H
+#define CLICORE_UTILS_H
+
+#ifdef __cplusplus
+typedef const char *CONST_WORD;
+#else
+typedef const char *__restrict CONST_WORD;
+#endif
+
+#include <string.h>
+
+#include "CLIcore.h"
+
+#ifdef USE_NCURSES
+#include "TUItools.h"
+#endif
+#include "CLIcore/IMGID.h"
+#include "COREMOD_memory/COREMOD_memory.h"
+
+#define CLICMD_FIELDS_FPSPROC                                                  \
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg,                       \
+        CLICMDFLAG_FPS | CLICMDFLAG_PROCINFO, NULL, NULL, NULL
+#define CLICMD_FIELDS_DEFAULTS                                                 \
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, CLICMDFLAG_FPS, NULL, \
+        NULL, NULL
+#define CLICMD_FIELDS_NOFPS                                                    \
+    __FILE__, sizeof(farg) / sizeof(CLICMDARGDEF), farg, 0, NULL, NULL, NULL
+
+#define CLICMD_FIELDS_NOPARAM                                                  \
+    __FILE__, 0, NULL, CLICMDFLAG_FPS, NULL, NULL, NULL
+
+// return codes for function CLI_checkarg_array
+#define RETURN_CLICHECKARGARRAY_SUCCESS      0
+#define RETURN_CLICHECKARGARRAY_FAILURE      1
+#define RETURN_CLICHECKARGARRAY_FUNCPARAMSET 2
+#define RETURN_CLICHECKARGARRAY_HELP         3
+
+#define HELPDETAILSSTRINGSTART "------- DETAILS ------"
+
+#define HELPDETAILSSTRINGEND   "-------- END ---------"
+
+
+typedef struct
+{
+    char *name;
+} LOCVAR_INIMG;
+
+#define FARG_INPUTIM(imkey)                                                    \
+    {                                                                          \
+        CLIARG_STR, "." #imkey ".name", "input image", #imkey,                 \
+            (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT), (void **) &imkey.name                      \
+    }
+
+
+
+
+
+
+typedef struct
+{
+    char     *name;
+    uint32_t *xsize;
+    uint32_t *ysize;
+    uint32_t *datatype;
+    uint32_t  *shared;
+    uint32_t  *NBkw;
+    uint32_t  *CBsize;
+} LOCVAR_OUTIMG2D;
+
+
+#define FARG_OUTIM_NAME(imkey)     \
+    {CLIARG_STR,                   \
+     "." #imkey ".name",           \
+     "output image",               \
+     #imkey,                       \
+     (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),       \
+     (void **) &imkey.name,        \
+     NULL}
+
+#define FARG_OUTIM_XSIZE(imkey)    \
+        {CLIARG_UINT32,            \
+         "." #imkey ".xsize",      \
+         "x size",                 \
+         "256",                    \
+         (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),   \
+         (void **) &imkey.xsize,   \
+         NULL}
+
+#define FARG_OUTIM_YSIZE(imkey)    \
+        {CLIARG_UINT32,            \
+         "." #imkey ".ysize",      \
+         "y size",                 \
+         "256",                    \
+         (FPFLAG_DEFAULT_INPUT | FPFLAG_CLI_INPUT),   \
+         (void **) &imkey.ysize,   \
+         NULL}
+
+
+#define FARG_OUTIM_SHARED(imkey)   \
+        {CLIARG_UINT32,            \
+         "." #imkey ".shared",     \
+         "shared flag",            \
+         "0",                      \
+         FPFLAG_DEFAULT_INPUT,    \
+         (void **) &imkey.shared,  \
+         NULL}
+
+
+#define FARG_OUTIM_NBKW(imkey)     \
+        {CLIARG_UINT32,            \
+         "." #imkey ".NBkw",       \
+         "number keywords",        \
+         "10",                     \
+         FPFLAG_DEFAULT_INPUT,    \
+         (void **) &imkey.NBkw,    \
+         NULL}
+
+
+#define FARG_OUTIM_CBSIZE(imkey)   \
+        {CLIARG_UINT32,            \
+         "." #imkey ".CBsize",     \
+         "circ buffer size",       \
+         "0",                      \
+         FPFLAG_DEFAULT_INPUT,    \
+         (void **) &imkey.CBsize,  \
+         NULL}
+
+
+
+
+/** @brief Template for ouput image argument to CLI function
+ *
+ */
+#define FARG_OUTIM2D(imkey)     \
+    FARG_OUTIM_NAME(imkey),     \
+    FARG_OUTIM_XSIZE(imkey),    \
+    FARG_OUTIM_YSIZE(imkey),    \
+    FARG_OUTIM_SHARED(imkey),   \
+    FARG_OUTIM_NBKW(imkey),     \
+    FARG_OUTIM_CBSIZE(imkey)
+
+
+
+// connect to and/or create output 2D image/stream
+//
+#define FARG_OUTIM2DCREATE(imkey, img, data_type)                              \
+        IMGID img = imgid_make_from_name(imkey.name);                             \
+        img.mdt->shared = *imkey.shared;                                            \
+        img.mdt->NBkw   = *imkey.NBkw;                                              \
+        img.mdt->CBsize = *imkey.CBsize;                                            \
+        if(*imkey.shared == 1) {                                               \
+          img = stream_connect_create_2D(imkey.name, *imkey.xsize, *imkey.ysize, data_type); \
+        } else {                                                               \
+          img.mdt->naxis = 2;                                                       \
+          img.mdt->size[0] = *imkey.xsize;                                          \
+          img.mdt->size[1] = *imkey.ysize;                                          \
+          img.mdt->datatype = data_type;                                            \
+          createimagefromIMGID(&img);                                          \
+        }                                                                      \
+        imcreateIMGID(&img);
+
+
+
+
+
+
+// binding between variables and function args/params
+#define STD_FARG_LINKfunction                                                  \
+    for (int argi = 0; argi < (int) (sizeof(farg) / sizeof(CLICMDARGDEF));     \
+         argi++)                                                               \
+    {                                                                          \
+        long  fpsi           = -1;                                             \
+        void *ptr            = get_farg_ptr(farg[argi].fpstag, &fpsi);         \
+        *(farg[argi].valptr) = ptr;                                            \
+        if (farg[argi].indexptr != NULL)                                       \
+        {                                                                      \
+            *(farg[argi].indexptr) = fpsi;                                     \
+        }                                                                      \
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** @brief Standard Function call wrapper
+ *
+ * CLI argument(s) is(are) parsed and checked with CLI_checkarray(), then
+ * passed to the compute function call.
+ *
+ * Custom code may be added for more complex processing of function arguments.
+ *
+ * If CLI call arguments check out, go ahead with computation.
+ * Arguments not contained in CLI call line are extracted from the
+ * command argument list
+ */
+#define INSERT_STD_CLIfunction                                                 \
+    static errno_t CLIfunction(void)                                           \
+    {                                                                          \
+        errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);           \
+        if (retval == RETURN_SUCCESS)                                          \
+        {                                                                      \
+            STD_FARG_LINKfunction return compute_function();                   \
+        }                                                                      \
+        if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+        if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)                    \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+        return retval;                                                         \
+    }
+
+
+
+
+/** @brief FPS conf function
+ * Sets up the FPS and its parameters.\n
+ * Optional parameter checking can be included.\n
+ *
+ * ### ADD PARAMETERS
+ *
+ * The function function_parameter_add_entry() is called to add
+ * each parameter.
+ *
+ * Macros are provided for convenience, named "FPS_ADDPARAM_...".\n
+ * The macros are defined in fps_add_entry.h, and provide a function
+ * parameter identifier variable (int) for each parameter added.
+ *
+ * parameters for FPS_ADDPARAM macros:
+ * - key/variable name
+ * - tag name
+ * - description
+ * - default initial value
+ *
+ * Equivalent code without using macro :
+ *      function_parameter_add_entry(&fps, ".delayus", "Delay [us]", FPTYPE_INT64, FPFLAG_DEFAULT_INPUT|FPFLAG_WRITERUN, NULL);
+ * ### START CONFLOOP
+ *
+ * start function parameter conf loop\n
+ * macro defined in function_parameter.h
+ *
+ * Optional code to handle/check parameters is included after this
+ * statement
+ *
+ * ### STOP CONFLOOP
+ * stop function parameter conf loop\n
+ * macro defined in function_parameter.h
+ *
+ */
+
+#define INSERT_STD_FPSCONFfunction                                             \
+    static errno_t FPSCONFfunction()                                           \
+    {                                                                          \
+        FPS_SETUP_INIT(dcfpsname, dcfpscode);                       \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
+            fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;      \
+            fps.cmdset.procinfo_loopcntMax =                                   \
+                CLIcmddata.cmdsettings->procinfo_loopcntMax;                   \
+            fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;      \
+            strncpy(fps.cmdset.triggerstreamname,                              \
+                   CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1); \
+            fps.cmdset.semindexrequested =                                     \
+                CLIcmddata.cmdsettings->semindexrequested;                     \
+            fps.cmdset.triggerdelay.tv_sec =                                   \
+                CLIcmddata.cmdsettings->triggerdelay.tv_sec;                   \
+            fps.cmdset.triggerdelay.tv_nsec =                                  \
+                CLIcmddata.cmdsettings->triggerdelay.tv_nsec;                  \
+            fps.cmdset.triggertimeout.tv_sec =                                 \
+                CLIcmddata.cmdsettings->triggertimeout.tv_sec;                 \
+            fps.cmdset.triggertimeout.tv_nsec =                                \
+                CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
+            fps_add_processinfo_entries(&fps);                                 \
+        }                                                                      \
+        dcfpsptr = &fps;                                                    \
+        strncpy(dcfpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
+        CMDargs_to_FPSparams_create(&fps);                                     \
+        STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
+        {                                                                      \
+            CLIcmddata.FPS_customCONFsetup();                                  \
+        }                                                                      \
+        FPS_CONFLOOP_START                                                     \
+        if (CLIcmddata.FPS_customCONFcheck != NULL)                            \
+            CLIcmddata.FPS_customCONFcheck();                                  \
+        FPS_CONFLOOP_END                                                       \
+        dcfpsptr = NULL;                                                    \
+        return RETURN_SUCCESS;                                                 \
+    }
+
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                   \
+    int          processloopOK = 1;                                            \
+    PROCESSINFO *processinfo   = NULL;                                         \
+    /* set default timeout to 2 sec */                                         \
+    CLIcmddata.cmdsettings->triggertimeout.tv_sec  = 2;                        \
+    CLIcmddata.cmdsettings->triggertimeout.tv_nsec = 0;                        \
+    if (dcfpsptr != NULL)                                                   \
+    { /* If FPS mode, then FPS settings override defaults*/                    \
+        /* dcfpsptr->cmset entries are read by fps_connect */               \
+        /*CLIcmddata.cmdsettings->flags = dcfpsptr->cmdset.flags;*/         \
+        CLIcmddata.cmdsettings->flags |= (dcfpsptr->cmdset.flags            \
+            & CLICMDFLAG_PROCINFO);                                          \
+        CLIcmddata.cmdsettings->RT_priority = dcfpsptr->cmdset.RT_priority; \
+        CLIcmddata.cmdsettings->procinfo_loopcntMax =                          \
+            dcfpsptr->cmdset.procinfo_loopcntMax;                           \
+        CLIcmddata.cmdsettings->triggermode = dcfpsptr->cmdset.triggermode; \
+        strncpy(CLIcmddata.cmdsettings->triggerstreamname,                     \
+               dcfpsptr->cmdset.triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);   \
+        CLIcmddata.cmdsettings->semindexrequested =                            \
+            dcfpsptr->cmdset.semindexrequested;                             \
+        CLIcmddata.cmdsettings->triggerdelay.tv_sec =                          \
+            dcfpsptr->cmdset.triggerdelay.tv_sec;                           \
+        CLIcmddata.cmdsettings->triggerdelay.tv_nsec =                         \
+            dcfpsptr->cmdset.triggerdelay.tv_nsec;                          \
+        CLIcmddata.cmdsettings->triggertimeout.tv_sec =                        \
+            dcfpsptr->cmdset.triggertimeout.tv_sec;                         \
+        CLIcmddata.cmdsettings->triggertimeout.tv_nsec =                       \
+            dcfpsptr->cmdset.triggertimeout.tv_nsec;                        \
+    }                                                                          \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
+    {                                                                          \
+        char pinfodescr[200];                                                  \
+        int  slen =                                                            \
+            snprintf(pinfodescr, 200, "function %.10s", CLIcmddata.key);       \
+        if (slen < 1)                                                          \
+        {                                                                      \
+            PRINT_ERROR("snprintf wrote <1 char");                             \
+            abort();                                                           \
+        }                                                                      \
+        if (slen >= 200)                                                       \
+        {                                                                      \
+            PRINT_ERROR("snprintf string truncation");                         \
+            abort();                                                           \
+        }                                                                      \
+        if (dcfpsptr != NULL)                                               \
+        {                                                                      \
+            /* dcfpsname may be empty when called via fps_generic_run     */   \
+            /* which bypasses CLI arg parsing. Fall back to FPS SHM name. */   \
+            const char *_piname_ =                                             \
+                (dcfpsname[0] != '\0') ? dcfpsname : dcfpsptr->md->name;    \
+            processinfo = processinfo_setup((char*)_piname_,              \
+                                            pinfodescr,                        \
+                                            "startup",                         \
+                                            __FUNCTION__,                      \
+                                            __FILE__,                          \
+                                            __LINE__);                         \
+            fps_to_processinfo(dcfpsptr, processinfo);                      \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            processinfo = processinfo_setup(CLIcmddata.key,                    \
+                                            pinfodescr,                        \
+                                            "startup",                         \
+                                            __FUNCTION__,                      \
+                                            __FILE__,                          \
+                                            __LINE__);                         \
+        }                                                                      \
+        DEBUG_TRACEPOINT("setting processinfo parameters");                    \
+        processinfo->loopcntMax = CLIcmddata.cmdsettings->procinfo_loopcntMax; \
+        processinfo->triggerstreamID = -2;                                     \
+        processinfo->triggermode     = CLIcmddata.cmdsettings->triggermode;    \
+        strncpy(processinfo->triggerstreamname,                                \
+               CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1);  \
+        processinfo->triggerdelay   = CLIcmddata.cmdsettings->triggerdelay;    \
+        processinfo->triggertimeout = CLIcmddata.cmdsettings->triggertimeout;  \
+        processinfo->triggerstreamID =                                         \
+            image_ID(processinfo->triggerstreamname, dcimg, dcnimg);                          \
+        DEBUG_TRACEPOINT("triggerstreamID = %ld",                              \
+                         processinfo->triggerstreamID);                        \
+        FUNC_CHECK_RETURN(processinfo_waitoninputstream_init(                  \
+            processinfo,                                                       \
+            (processinfo->triggerstreamID > -1 ? &dcimg[processinfo->triggerstreamID] : NULL), \
+            CLIcmddata.cmdsettings->triggermode,                               \
+            CLIcmddata.cmdsettings->semindexrequested));                       \
+        DEBUG_TRACEPOINT("setting RT priority to %d",                          \
+                         CLIcmddata.cmdsettings->RT_priority);                 \
+        processinfo->RT_priority = CLIcmddata.cmdsettings->RT_priority;        \
+        processinfo->CPUmask     = CLIcmddata.cmdsettings->CPUmask;            \
+        processinfo->MeasureTiming =                                           \
+            CLIcmddata.cmdsettings->procinfo_MeasureTiming;                    \
+        DEBUG_TRACEPOINT("loopstart");                                         \
+        processinfo_loopstart(processinfo);                                    \
+    }
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART                              \
+    while (processloopOK == 1)                                                 \
+    {                                                                          \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            DEBUG_TRACEPOINT("loopstep");                                      \
+            processloopOK = processinfo_loopstep(processinfo);                 \
+            DEBUG_TRACEPOINT("waitoninputstream");                             \
+            processinfo_waitoninputstream(processinfo);                        \
+            if (processinfo->triggerstatus == PROCESSINFO_TRIGGERSTATUS_TIMEDOUT && \
+                processinfo->triggermode == PROCESSINFO_TRIGGERMODE_SEMAPHORE)      \
+            {                                                                  \
+                /* Don't execute loop at all upon semaphore timeout */         \
+                /* Except if the trigger is SEMAPHORE_PROP_TIMEOUTS */         \
+                /* in which case we avoid this block and keep going */         \
+                continue;                                                      \
+            }                                                                  \
+            DEBUG_TRACEPOINT("exec_start");                                    \
+            processinfo_exec_start(processinfo);                               \
+        }                                                                      \
+        else                                                                   \
+        {                                                                      \
+            processloopOK = 0;                                                 \
+        }                                                                      \
+        int processcompstatus = 1;                                             \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            processcompstatus = processinfo_compute_status(processinfo);       \
+        }                                                                      \
+        if (processcompstatus == 1)                                            \
+        {
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_START                                  \
+    INSERT_STD_PROCINFO_COMPUTEFUNC_INIT                                       \
+    INSERT_STD_PROCINFO_COMPUTEFUNC_LOOPSTART
+
+
+
+#define INSERT_STD_PROCINFO_COMPUTEFUNC_END                                    \
+    }                                                                          \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO) {                 \
+     if(processinfo != NULL) {                                                 \
+      if(dcfpsptr != NULL) {                                                \
+        if(dcfpsptr->cmdset.triggermodeptr != NULL){                        \
+          processinfo->triggermode = *dcfpsptr->cmdset.triggermodeptr;}     \
+        if(dcfpsptr->cmdset.procinfo_loopcntMax_ptr != NULL){               \
+          processinfo->loopcntMax = *dcfpsptr->cmdset.procinfo_loopcntMax_ptr;}  \
+        if(dcfpsptr->cmdset.triggerdelayptr != NULL){                       \
+          processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];} \
+        if(dcfpsptr->cmdset.triggertimeoutptr != NULL){                     \
+          processinfo->triggertimeout = dcfpsptr->cmdset.triggertimeoutptr[0];} \
+        }}                                                                     \
+    if(processinfo != NULL) {                                              \
+          processinfo_exec_end(processinfo);}                                  \
+    }                                                                          \
+    }                                                                          \
+    if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)                   \
+    {                                                                          \
+        processinfo_cleanExit(processinfo);                                    \
+    }
+
+
+
+/**
+ *
+        if(dcfpsptr->cmdset.triggerdelayptr != NULL) {                      \
+        processinfo->triggerdelay = dcfpsptr->cmdset.triggerdelayptr[0];}   \
+        if(dcfpsptr->cmdset.triggertimeoutptr != NULL) {                    \
+        processinfo->triggerdelay = dcfpsptr->cmdset.triggertimeoutptr[0];} \
+ *
+ */
+
+/** @brief FPS run function
+ *
+ * The FPS name is taken from dcfpsname, which has to
+ * have been set up by either the stand-alone function, or the
+ * CLI.
+ *
+ * Running FPS_CONNECT macro in FPSCONNECT_RUN mode.
+ *
+ * ### GET FUNCTION PARAMETER VALUES
+ *
+ * Parameters are addressed by their tag name\n
+ * These parameters are read once, before running the loop.\n
+ *
+ * FPS_GETPARAM... macros are wrapper to functionparameter_GetParamValue
+ * and functionparameter_GetParamPtr functions, all defined in
+ * fps_paramvalue.h.
+ *
+ * Each of the FPS_GETPARAM macro creates a variable with "_" prepended
+ * to the first macro argument.
+ *
+ * Equivalent code without using macros:
+ *
+ * char _IDin_name[200];
+ * strncpy(_IDin_name,  functionparameter_GetParamPtr_STRING(&fps, ".in_name"), FUNCTION_PARAMETER_STRMAXLEN);
+ * long _delayus = functionparameter_GetParamValue_INT64(&fps, ".delayus");
+ */
+#define INSERT_STD_FPSRUNfunction                                              \
+    static errno_t FPSRUNfunction()                                            \
+    {                                                                          \
+        FPS_CONNECT(dcfpsname, FPSCONNECT_RUN);                            \
+        dcfpsptr                        = &fps;                             \
+        STD_FARG_LINKfunction errno_t fret = compute_function();               \
+        dcfpsptr                        = NULL;                             \
+        function_parameter_RUNexit(&fps);                                      \
+        return fret;                                                           \
+    }
+
+/** @brief FPSCLI function
+ *
+ * GET ARGUMENTS AND PARAMETERS
+ * Try FPS implementation
+ *
+ * Set data.fpsname, providing default value as first arg, and set dcfpscode value.
+ * Default FPS name will be used if CLI process has NOT been named.
+ * See code in function_parameter.h for detailed rules.
+ */
+#define INSERT_STD_FPSCLIfunction                                              \
+    static errno_t CLIfunction(void)                                           \
+    {                                                                          \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_FPS)                    \
+        {                                                                      \
+            extern errno_t (*FPS_CONFfunc)();                                  \
+            extern errno_t (*FPS_RUNfunc)();                                   \
+            extern uint32_t FPS_CMDCODE;                                       \
+            extern char     FPS_name[STRINGMAXLEN_FPS_NAME];                   \
+            extern char     FPS_callprogname[FPS_CALLPROGNAME_STRMAXLEN];      \
+            extern char     FPS_callfuncname[FPS_CALLFUNCNAME_STRMAXLEN];      \
+            extern FUNCTION_PARAMETER_STRUCT *fpsarray;                        \
+            function_parameter_getFPSargs_from_CLIfunc(CLIcmddata.key);        \
+            if (dcfpscode != 0)                                         \
+            {                                                                  \
+                FPS_CONFfunc = FPSCONFfunction;                                \
+                FPS_RUNfunc  = FPSRUNfunction;                                 \
+                FPS_CMDCODE  = dcfpscode;                               \
+                fpsarray     = dcfpsarr;                                  \
+                strncpy(FPS_name, dcfpsname, STRINGMAXLEN_FPS_NAME - 1);    \
+                strncpy(FPS_callprogname, dcpkgname, FPS_CALLPROGNAME_STRMAXLEN - 1); \
+                strncpy(FPS_callfuncname, CLIcmddata.key, FPS_CALLFUNCNAME_STRMAXLEN - 1); \
+                function_parameter_execFPScmd();                               \
+                return RETURN_SUCCESS;                                         \
+            }                                                                  \
+        }                                                                      \
+                                                                               \
+        errno_t retval = CLI_checkarg_array(farg, CLIcmddata.nbarg);           \
+        if (retval == RETURN_CLICHECKARGARRAY_SUCCESS)                         \
+        {                                                                      \
+            dcfpsptr = NULL;                                                \
+            STD_FARG_LINKfunction return compute_function();                   \
+        }                                                                      \
+        if (retval == RETURN_CLICHECKARGARRAY_HELP)                            \
+        {                                                                      \
+            printf(HELPDETAILSSTRINGSTART "\n");                               \
+            help_function();                                                   \
+            printf(HELPDETAILSSTRINGEND "\n");                                 \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+        if (retval == RETURN_CLICHECKARGARRAY_FUNCPARAMSET)                    \
+        {                                                                      \
+            return RETURN_SUCCESS;                                             \
+        }                                                                      \
+                                                                               \
+        return retval;                                                         \
+    }
+
+#define INSERT_STD_FPSCLIfunctions                                             \
+    INSERT_STD_FPSCONFfunction                                                 \
+    INSERT_STD_FPSRUNfunction                                                  \
+        INSERT_STD_FPSCLIfunction
+
+#define INSERT_STD_FPSCONFfunction_DynamicSize                                 \
+    static errno_t FPSCONFfunction()                                           \
+    {                                                                          \
+        long nbparam = sizeof(farg) / sizeof(CLICMDARGDEF) + 50;               \
+        FPS_SETUP_INIT_SIZED(dcfpsname, dcfpscode, nbparam);        \
+        if (CLIcmddata.cmdsettings->flags & CLICMDFLAG_PROCINFO)               \
+        {                                                                      \
+            fps.cmdset.flags       = CLIcmddata.cmdsettings->flags;            \
+            fps.cmdset.RT_priority = CLIcmddata.cmdsettings->RT_priority;      \
+            fps.cmdset.procinfo_loopcntMax =                                   \
+                CLIcmddata.cmdsettings->procinfo_loopcntMax;                   \
+            fps.cmdset.triggermode = CLIcmddata.cmdsettings->triggermode;      \
+            strncpy(fps.cmdset.triggerstreamname,                              \
+                   CLIcmddata.cmdsettings->triggerstreamname, STRINGMAXLEN_IMAGE_NAME-1); \
+            fps.cmdset.semindexrequested =                                     \
+                CLIcmddata.cmdsettings->semindexrequested;                     \
+            fps.cmdset.triggerdelay.tv_sec =                                   \
+                CLIcmddata.cmdsettings->triggerdelay.tv_sec;                   \
+            fps.cmdset.triggerdelay.tv_nsec =                                  \
+                CLIcmddata.cmdsettings->triggerdelay.tv_nsec;                  \
+            fps.cmdset.triggertimeout.tv_sec =                                 \
+                CLIcmddata.cmdsettings->triggertimeout.tv_sec;                 \
+            fps.cmdset.triggertimeout.tv_nsec =                                \
+                CLIcmddata.cmdsettings->triggertimeout.tv_nsec;                \
+            fps_add_processinfo_entries(&fps);                                 \
+        }                                                                      \
+        dcfpsptr = &fps;                                                    \
+        strncpy(dcfpsptr->md->description, CLIcmddata.description, FPS_DESCR_STRMAXLEN-1);\
+        CMDargs_to_FPSparams_create(&fps);                                     \
+        STD_FARG_LINKfunction if (CLIcmddata.FPS_customCONFsetup != NULL)      \
+        {                                                                      \
+            CLIcmddata.FPS_customCONFsetup();                                  \
+        }                                                                      \
+        FPS_CONFLOOP_START                                                     \
+        if (CLIcmddata.FPS_customCONFcheck != NULL)                            \
+            CLIcmddata.FPS_customCONFcheck();                                  \
+        FPS_CONFLOOP_END                                                       \
+        dcfpsptr = NULL;                                                    \
+        return RETURN_SUCCESS;                                                 \
+    }
+
+#define INSERT_STD_FPSCLIfunctions_DynamicSize                                 \
+    INSERT_STD_FPSCONFfunction_DynamicSize                                     \
+    INSERT_STD_FPSRUNfunction                                                  \
+        INSERT_STD_FPSCLIfunction
+
+#define INSERT_STD_CLIREGISTERFUNC                                             \
+    {                                                                          \
+        if (getenv("MILK_FPSPROCINFO"))                                        \
+        {                                                                      \
+            CLIcmddata.flags |= CLICMDFLAG_PROCINFO;                           \
+        }                                                                      \
+        int cmdi               = RegisterCLIcmd(CLIcmddata, CLIfunction);      \
+        CLIcmddata.cmdsettings = &data.cmd[cmdi].cmdsettings;                  \
+    }
+
+
+
+#endif

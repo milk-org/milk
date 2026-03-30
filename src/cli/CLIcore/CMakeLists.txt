@@ -27,39 +27,14 @@ find_package(Threads REQUIRED)
 
 set(CORE_FILES
     CLIcore.c
-    CLIcore/CLIcore_utils.c
-    CLIcore/CLIcore_UI_execute.c
-    CLIcore/CLIcore_checkargs.c
-    CLIcore/CLIcore_checkargs_fps.c
-    CLIcore/CLIcore_datainit.c
-    CLIcore/CLIcore_help.c
-    CLIcore/CLIcore_help_topics.c
     CLIcore/CLIcore_help_tui.c
-    CLIcore/CLIcore_memory.c
-    CLIcore/CLIcore_modules.c
-    CLIcore/CLIcore_setSHMdir.c
-    CLIcore/CLIcore_script.c
-    CLIcore/CLIcore_script_intercept.c
-    CLIcore/CLIcore_script_builtin.c
-    CLIcore/CLIcore_script_case.c
-    CLIcore/CLIcore_script_expand.c
-    CLIcore/CLIcore_script_flow.c
-    CLIcore/CLIcore_script_func.c
-    CLIcore/CLIcore_script_var.c
-    CLIcore/CLIcore_signals.c
-    CLIcore/CLIcore_UI_execute.c
-    CLIcore/CLIcore_UI_alias.c
     CLIcore/CLIcore_UI_bookmark.c
     CLIcore/CLIcore_UI_builtins.c
     CLIcore/CLIcore_UI_completion.c
     CLIcore/CLIcore_UI_highlight.c
     CLIcore/CLIcore_UI_hintarea.c
     CLIcore/CLIcore_UI_history.c
-    CLIcore/CLIcore_UI_prompt.c
-    cli_calc_tokenizer.c
-    cli_calc_parser.c
-    cli_calc_functions.c
-    cli_calc_eval.c)
+    CLIcore/CLIcore_UI_prompt.c)
     
     link_directories(${NCURSES_LIBRARY_DIRS})
     
@@ -115,6 +90,7 @@ endif()
 
 target_link_libraries(CLIcore
                       PUBLIC m
+                              milkscript
                               $<$<BOOL:${USE_READLINE}>:readline>
                               ${CFITSIO_LIBRARIES}
                               dl
@@ -132,6 +108,7 @@ target_include_directories(CLIcore
                            PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
                                   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+                                  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkscript>
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../streamCTRL>
                                   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/CLIcore>
                                   $<INSTALL_INTERFACE:include/${SRCNAME}>
@@ -155,24 +132,24 @@ install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 install(FILES CLIcore.h
               IMGID.h
               ../libmilkTUI/TUItools.h
-              cli_calc_parser.h
-              cli_calc_tokenizer.h
+              ../libmilkscript/cli_calc_parser.h
+              ../libmilkscript/cli_calc_tokenizer.h
               cmdsettings.h
               ../../engine/libmilkdata/milkDebugTools.h
-              standalone_dependencies.h
+              ../libmilkscript/standalone_dependencies.h
               ../../engine/libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
 
-install(FILES CLIcore/CLIcore_UI_execute.h
-              CLIcore/CLIcore_checkargs.h
-              CLIcore/CLIcore_datainit.h
-              CLIcore/CLIcore_help.h
-              CLIcore/CLIcore_memory.h
-              CLIcore/CLIcore_modules.h
-              CLIcore/CLIcore_setSHMdir.h
-              CLIcore/CLIcore_script.h
-              CLIcore/CLIcore_signals.h
-              CLIcore/CLIcore_utils.h
+install(FILES ../libmilkscript/CLIcore_UI_execute.h
+              ../libmilkscript/CLIcore_checkargs.h
+              ../libmilkscript/CLIcore_datainit.h
+              ../libmilkscript/CLIcore_help.h
+              ../libmilkscript/CLIcore_memory.h
+              ../libmilkscript/CLIcore_modules.h
+              ../libmilkscript/CLIcore_setSHMdir.h
+              ../libmilkscript/CLIcore_script.h
+              ../libmilkscript/CLIcore_signals.h
+              ../libmilkscript/CLIcore_utils.h
               DESTINATION include/${SRCNAME}/CLIcore)
 
 
