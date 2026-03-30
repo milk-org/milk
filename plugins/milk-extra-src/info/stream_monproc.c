@@ -15,6 +15,7 @@
 #include <float.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include <processtools_trigger.h>
 

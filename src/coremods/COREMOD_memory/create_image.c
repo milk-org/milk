@@ -22,6 +22,7 @@
  */
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #else
 #include "libmilkdata/milkdata.h"
 #include "milkDebugTools.h"
@@ -148,10 +149,7 @@ errno_t create_image_ID_IMGID(
                 img->mdt->CBsize);
         }
     }
-    if(dcmemmon == 1)
-    {
-        list_image_ID_ncurses();
-    }
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }

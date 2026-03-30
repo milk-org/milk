@@ -28,6 +28,7 @@
 
 #ifdef MILK_NO_CLI
 #include "CLIcore_standalone.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #else
 #include "CLIcore.h"
 
@@ -106,7 +107,7 @@ INIT_MODULE_LIB(COREMOD_memory)
 static errno_t init_module_CLI()
 {
 
-    dcmemmon = 0; // 1 if memory monitor is on
+
 
     CLIADDCMD_COREMOD_memory__clearall();
     CLIADDCMD_COREMOD_memory__list_image();

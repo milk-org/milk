@@ -8,7 +8,7 @@
  *
  */
 
-#include <IMGID.h>
+#include <libfps/IMGID.h>
 
 double Ptrunc(double a, double b, double c);
 

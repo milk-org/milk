@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "zernike.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
