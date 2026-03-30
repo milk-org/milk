@@ -1,5 +1,6 @@
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
 
 #include "CFmeminit.h"

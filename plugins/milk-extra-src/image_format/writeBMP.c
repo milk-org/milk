@@ -7,6 +7,7 @@
  */
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 const int BYTES_PER_PIXEL  = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;

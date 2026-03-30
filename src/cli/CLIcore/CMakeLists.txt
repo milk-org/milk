@@ -101,7 +101,7 @@ target_link_libraries(CLIcore
                               $<$<BOOL:${USE_NCURSES}>:milkTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkprocessinfoTUI>
                               $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
-                              milkCOREMODarith $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits> milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkfpsseq milkdata)
+                              milkcommon milkCOREMODarith $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits> milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkfpsseq milkdata)
 
 
 target_include_directories(CLIcore
@@ -130,12 +130,11 @@ install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 
 
 install(FILES CLIcore.h
-              IMGID.h
               ../libmilkTUI/TUItools.h
               ../libmilkscript/cli_calc_parser.h
               ../libmilkscript/cli_calc_tokenizer.h
               cmdsettings.h
-              ../../engine/libmilkdata/milkDebugTools.h
+              ../../engine/libmilkcommon/milkDebugTools.h
               ../libmilkscript/standalone_dependencies.h
               ../../engine/libprocessinfo/timeutils.h
               DESTINATION include/${SRCNAME})
@@ -156,8 +155,12 @@ install(FILES ../libmilkscript/CLIcore_UI_execute.h
 
 add_executable(milk-streamCTRL ../streamCTRL/milk-streamCTRL.c)
 target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
-
 install(TARGETS milk-streamCTRL DESTINATION bin)
+
+add_executable(milk-fpsexec-mmon ../streamCTRL/mmon_ui.c)
+target_link_libraries(milk-fpsexec-mmon PUBLIC CLIcore milkfpsCLI ${NCURSES_LIBRARIES} milkTUI)
+target_compile_definitions(milk-fpsexec-mmon PRIVATE FPS_STANDALONE USE_NCURSES)
+install(TARGETS milk-fpsexec-mmon DESTINATION bin)
 
 add_executable(milk-termview termview/milk-termview.c termview/termview.c)
 target_link_libraries(milk-termview PUBLIC CLIcore ImageStreamIO)

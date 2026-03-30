@@ -12,6 +12,7 @@
 #define MODULE_DESCRIPTION       "Image information and statistics"
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "cubeMatchMatrix.h"
 #include "cubestats.h"
 #include "image_stats.h"

@@ -495,6 +495,7 @@ if(USE_COREMODS)
 endif()
 
 # add libfps (standalone fps library exploration)
+add_subdirectory(src/engine/libmilkcommon)
 add_subdirectory(src/engine/libfps)
 add_subdirectory(src/engine/libfpsseq)
 
