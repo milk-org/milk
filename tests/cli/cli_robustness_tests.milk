@@ -1556,3 +1556,13 @@ procstat
 #DESC: procctl unknown process
 #EXPECT:OK
 procctl _nonexistent_proc_ stop
+
+# ============================================
+# ---- Issue Verifications ----
+# ============================================
+
+#DESC: mk2Dim and saveFITS (FPTYPE string mapping)
+#EXPECT:OK
+mem.mk2Dim im2D 256 256
+iofits.saveFITS im2D "im2D.fits"
+rm "im2D.fits"
