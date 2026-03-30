@@ -6,20 +6,38 @@ As we're preparing to go through the CACAO++ initiative, we are also paving way 
 Our goal is to reach self-sustainability of community-promoted development of the package by late 2027.
 If you're reading this, you probably have a sense of how the package is organized and layered, and there will be much more on-point documentation on the matter.
 
-#FIXME
-
 > [!NOTE]
 > This document should become the entrypoint for project policy, and establishes some ground for future development, both for CACAO as an engineering and research project in its own right, and as a software project in particular.
 > It's also a first version, and I should expect to modify this frequently in upcoming times.
 
-## Roles
+## TOC
 
-Generally, we'll refer to collaborators across 4 levels of roles: user, module dev, core dev, and maintainer.
+- `code_guidelines.md`: style and in-code documentation rules.
+- `git_guidelines.md`: branching and pull request process.
+- `ai_guidelines.md`: philosophical comments about the use of AI agents for work in MILK.
+- `project_trace.md`: keep trace of project milestones, publication (and policy thereof), contributing teams and groups, and development directions.
+
+## Communication channels
+
+Preferred public channels:
+- gitter for short bump message
+- github repository issues (with either `discussion` or a more appropriate label).
+  - Preferred for developper interaction.
+  - We may find an alternate means of communication if requests from non-developer users become significant.
+of course, maintain your best public & professional persona, and avoid sharing confidential information.
+
+We strive for the reduction of noise, so please avoid using emails or DMs unless necessary, and similarly avoid tagging people excessively.
+It is my experience that people eventually mute means of communication that result in too much spam notifications.
+
+## Peoples' roles
+
+Generally, we'll refer to collaborators across 4 role-tiers: user, module dev, core dev, and maintainer.
 
 ### User:
 
 You want to use CACAO for you AO computing needs ! Please refer to the README.md for installation instructions and pointers to the tutorials. Then:
-- Learn about communication channels, how to seek help, report a bug, ... #TODO
+- Learn about communication channels: use GitHub Issues for bug reports and feature requests, and GitHub Discussions (or the project's Slack/mailing list) for questions and general conversation.
+- When reporting a bug, include: OS/distro, compiler version, CMake flags used, and a minimal reproducing case.
 - Please read the tutorials and documentation as necessary.
 - Have fun !
 
@@ -50,7 +68,7 @@ You're now contribution to the milk core engine, macros, common routines, so as 
 
 ## Development process philosophy
 
-I suggest we work towards a minimum noise environment to make everyone's experience as pleasant and efficient as possible.
+I suggest we work towards _suggesting_ a minimum noise environment to make everyone's experience as pleasant and efficient as possible.
 
 Key points are (to be better sorted in the future):
 
@@ -78,52 +96,13 @@ The executive summary is the following:
 - Maintain traceability
 - Account for other people not using AI like you would -- including reviewers, other core engine dev, etc.
 
-## Info: recommended development environment
+## Information: about making modules
 
-## Preparation for development
+You should strive to minimize your dependencies, both internal and external.
 
--->Branching.
-If you wish to work on something minor and well-scoped, then...
-
-If you undertake something major (feature, refactor, performance), it is heavily recommended that you open an issue so as to have a place for conversation with the maintainers. We can discuss the intent, architecture, stategy, and follow your progress while making sure other developers don't accidentally set up traps for your progress (and vice-versa).
-
-
-## Rules: git
-Rebase on pull, always always rebase on pull.
-
-### Rules: separation of intent
-- When working in a branch and preparing a pull request, one must choose the intent of the PR (or the single commit)
-- The possible intents I foresee:
-  - Changing top-level documents, including this one.
-  - Changing CI/CD workflow.
-  - Hotfixing a release or a pre-release.
-  - Repackaging of the repository (e.g. shuffling files).
-  - Repackaging of the software infrastructure (e.g. dependency order, separation of duties, modification of templates).s
-  - Development of a new feature in the core engine (and documentation and dependencies thereof).
-  - Development of a new extenstion feature (e.g. something new following the modularization templates).
-  - Systematic modification or generation of documentation.
-  - Systematic modification or generation of style.
-  - Systematic modification or generation of tests.
-
-## Rules: style
-
-Do what `pre-commit` tells you to do. It is highly recommendeded to install formatter plugins to your code editor with matching settings; regardless, `pre-commit run` will standardize all the _modified_ files in your repository copy per the pre-commit hooks.
-
-It is possible to overall modify the repository formatting upon discussion with the maintainers.
-
-A commit / feature branch should never mix formatting changes and functional changes, for it obscures traceability of changes entirely.
-
-
-## Rules: documentation
-
-
-## Rules: workflows
-
-We implement github action workflows to run upon push and pull-requests to key branches.
-
-
-## Info: about making modules
-
-You should strive to minimize the dependencies, both internal and external.
-
-The whole idea is to follow the templatization that is designed to quickly develop, embed, include, configure and distribute new features.
+The whole idea is to follow the templatization designed to quickly develop, embed, include, configure and distribute new features:
+- Start from `milk_module_example` in `src/` — it is the canonical skeleton.
+- Each module lives in its own directory under `src/` (or in a separate repo/submodule).
+- Provide a `CMakeLists.txt` that integrates with the top-level build via the `EXTRAMODULES` mechanism.
+- Include at minimum: a README, a CLI registration function, and one or more testable functions.
+- See `doc/templatemodule/` for annotated examples.

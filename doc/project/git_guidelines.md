@@ -21,6 +21,13 @@ milk>$ pre-commit install # Install the action hooks in the milk repository
 ```
 
 
+## Before you start
+
+If you wish to work on something minor and well-scoped, branch off `dev` and go.
+
+If you undertake something major (feature, refactor, performance), open an issue first so as to have a place for conversation with the maintainers. We can discuss the intent, architecture, strategy, and follow your progress while making sure other developers don't accidentally set up traps for your progress (and vice-versa).
+
+
 ## Commits
 
 A commit should be focused on a single _intent_, which can be one of the following:
@@ -81,6 +88,11 @@ When merging a pull request on github, there are [three merging options](https:/
 ### Git workflows
 
 Git workflows are automations that run upon certain actions occuring on github, typically pushes onto and pull requests into important branches. They are described by workflow YAML files located in `.github/workflows`.
+
+Current workflows:
+- **cmake.yml**: Full build + `ctest` for all supported configurations.
+- **pre-commit.yaml**: Runs the same pre-commit hooks as your local install. Auto-commits fixes on PRs.
+- **docker-image.yml**: Validates the Docker build.
 
 `main`/`master` and `dev` are protected: one cannot push commit onto them, and one cannot merge PRs into them _unless_ all the automated checks pass.
 
