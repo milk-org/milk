@@ -78,11 +78,6 @@ The executive summary is the following:
 - Maintain traceability
 - Account for other people not using AI like you would -- including reviewers, other core engine dev, etc.
 
-
-
-
-
-
 ## Info: recommended development environment
 
 ## Preparation for development
@@ -112,17 +107,23 @@ Rebase on pull, always always rebase on pull.
 
 ## Rules: style
 
-Also, documentation.
+Do what `pre-commit` tells you to do. It is highly recommendeded to install formatter plugins to your code editor with matching settings; regardless, `pre-commit run` will standardize all the _modified_ files in your repository copy per the pre-commit hooks.
+
+It is possible to overall modify the repository formatting upon discussion with the maintainers.
+
+A commit / feature branch should never mix formatting changes and functional changes, for it obscures traceability of changes entirely.
+
 
 ## Rules: documentation
 
+
 ## Rules: workflows
 
+We implement github action workflows to run upon push and pull-requests to key branches.
 
 
 ## Info: about making modules
 
+You should strive to minimize the dependencies, both internal and external.
 
-
-Adding dependencies, yes but no.
-Reworking the rules by embedding routines extracted from libraries: yes but no.
+The whole idea is to follow the templatization that is designed to quickly develop, embed, include, configure and distribute new features.

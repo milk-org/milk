@@ -26,7 +26,6 @@ Since its local, we cannot force you to install and run `pre-commit`. However, w
 ## Recommendations on development environment
 
 
-
 ## Code organization and editing discipline
 
 Unfortunately, there are many things beyond what can be automated, so here's a list of rules.
