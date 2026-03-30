@@ -58,10 +58,10 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "header import file")
 
-char *savefits_inimname  = NULL;
-char *savefits_outfname  = NULL;
-int  *savefits_outbitpix = NULL;
-char *savefits_inheader  = NULL;
+char savefits_inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+char savefits_outfname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+int32_t savefits_outbitpix = 0;
+char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 
 
 /* =========================================
@@ -227,18 +227,20 @@ errno_t save_fits(
 
 static MILK_HOT errno_t fpsexec(IMAGE *imgin)
 {
-    if (!savefits_outfname
-        || !savefits_outbitpix)
+    if (savefits_outfname[0] == '\0')
     {
         return RETURN_FAILURE;
     }
-    IMGID id;
+    IMGID id = imgid_make_from_name(imgin->name);
+#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
+    resolveIMGID(&id, ERRMODE_WARN, dcimg, dcnimg);
+#endif
     id.im = imgin;
     id.md = &imgin->md[0];
     saveFITS_opt_trunc_IMGID(
         &id, -1, savefits_outfname,
-        *savefits_outbitpix,
-        savefits_inheader,
+        savefits_outbitpix,
+        savefits_inheader[0] ? savefits_inheader : NULL,
         NULL, 0, "");
     return RETURN_SUCCESS;
 }
