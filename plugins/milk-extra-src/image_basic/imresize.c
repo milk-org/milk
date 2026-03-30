@@ -17,6 +17,7 @@
 #endif
 #include "imresize.h"
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
 

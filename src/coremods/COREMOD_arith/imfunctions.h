@@ -9,7 +9,7 @@
  *
  */
 
-#include <IMGID.h>
+#include <libfps/IMGID.h>
 
 /* Functions for bison / flex    */
 

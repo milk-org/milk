@@ -5,6 +5,7 @@
 
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 #include "clustering_defs.h"
 
 #include "addCF_to_CF.h"

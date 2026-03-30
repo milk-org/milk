@@ -14,6 +14,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "list_image.h"
@@ -349,10 +350,7 @@ errno_t delete_image(
         }
     }
 
-    if(dcmemmon == 1)
-    {
-        list_image_ID_ncurses();
-    }
+
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;

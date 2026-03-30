@@ -10,7 +10,7 @@
 #ifndef STREAM_SLICE_H
 #define STREAM_SLICE_H
 
-#include "IMGID.h"
+#include "libfps/IMGID.h"
 
 /**
  * @brief Materialize a slice: copy source region

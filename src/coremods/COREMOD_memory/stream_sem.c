@@ -25,6 +25,7 @@
 #include "CLIcore.h"
 #endif
 #include "fps.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "image_ID.h"
 #include "list_image.h"

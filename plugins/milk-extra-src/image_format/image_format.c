@@ -10,6 +10,7 @@
 #define MODULE_DESCRIPTION       "Conversion between image format, I/O"
 
 #include "CLIcore.h"
+#include "COREMOD_memory/COREMOD_memory.h"
 
 #include "CR2toFITS.h"
 #include "FITS_to_floatbin_lock.h"
