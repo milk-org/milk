@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>

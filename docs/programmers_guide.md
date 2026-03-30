@@ -36,8 +36,9 @@ The architecture orbits around two primary concepts:
 
 ```mermaid
 graph TD
-    subgraph "User Interfaces"
+    subgraph "User Interfaces & Scripting"
         CLI["milk-cli<br/>(interactive shell)"]
+        SCRIPT["milk-script<br/>(interpreter)"]
         TUI["milk-fpsCTRL<br/>(TUI dashboard)"]
         SCTRL["milk-streamCTRL<br/>(stream monitor)"]
     end
@@ -139,7 +140,7 @@ When building a new compute task, `milk` enforces a standardized "V2" format. Th
 ## 4. Directory Map
 
 - `src/engine/`: Core daemon logic, including `ImageStreamIO` (shared-memory data), `libfps` (FPS core library), `libprocessinfo`, and `libmilkdata`.
-- `src/cli/`: User interfaces, including `CLIcore`, `libmilkTUI`, and `streamCTRL`.
+- `src/cli/`: User interfaces and scripting layer, including `libmilkscript` (core interpreter), `CLIcore` (interactive shell), `libmilkTUI`, and `streamCTRL`.
 - `src/milk_module_example`: Compute unit templates (start here!).
 - `src/coremods/COREMOD_*/`: Core computation libraries (tools, iofits, arith, memory).
 - `plugins/milk-extra-src/`: General plugin modules (fft, linalgebra, image processing...).

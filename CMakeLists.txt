@@ -211,6 +211,9 @@ if(USE_CLI)
     list(APPEND libsrcdir src/cli/libmilkTUI)
     list(APPEND libname milkTUI)
 
+    list(APPEND libsrcdir src/cli/libmilkscript)
+    list(APPEND libname milkscript)
+
     list(APPEND libsrcdir src/cli/CLIcore)
     list(APPEND libname CLIcore)
 else()
