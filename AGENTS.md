@@ -81,6 +81,7 @@ milk/
 │   │   ├── libprocessinfo/        ← Heartbeat + process tracking
 │   │   └── libmilkdata/           ← IMGID struct, image utilities
 │   ├── cli/                       ← User-facing tools
+│   │   ├── libmilkscript/         ← Standalone scripting engine
 │   │   ├── CLIcore/               ← Interactive shell framework
 │   │   ├── libmilkTUI/            ← TUI widget library (ncurses)
 │   │   └── streamCTRL/            ← Stream monitor tool
