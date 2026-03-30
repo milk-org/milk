@@ -242,11 +242,12 @@ else()
         src/cli/CLIcore/CLIcore.h
         src/cli/CLIcore/CLIcore_standalone.h
         src/cli/CLIcore/cmdsettings.h
-        src/cli/CLIcore/timeutils.h
-        src/cli/CLIcore/milkDebugTools.h
-        src/cli/CLIcore/IMGID.h
         DESTINATION include/CommandLineInterface
     )
+    # timeutils.h, milkDebugTools.h, and IMGID.h have moved to
+    # their respective engine modules (libprocessinfo, libmilkcommon,
+    # libfps) which install them unconditionally via their own
+    # CMakeLists.txt targets.
     install(FILES
         src/cli/CLIcore/CLIcore/CLIcore_checkargs.h
         DESTINATION include/CommandLineInterface/CLIcore
