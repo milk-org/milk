@@ -603,7 +603,13 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     runCLI_prompt(promptstring, prompt);
 
     // Call shared script engine init
-    milkscript_init(argc, argv);
+    int ms_status = milkscript_init(argc, argv);
+    if(ms_status != 0)
+    {
+        fprintf(stderr, "ERROR: milkscript_init() failed with code %d\n", ms_status);
+        DEBUG_TRACE_FEXIT();
+        return ms_status;
+    }
 
     // CLI interactive overlay (signals, autocomplete)
     CLI_startup();
