@@ -20,6 +20,8 @@ for the full history.
 
 ### 2026-03
 
+- **2026-03-29** — Complete CLI/Scripting layer decoupling;
+  introduction of `libmilkscript` engine and standalone `milk-script` interpreter `#cli` `#refactor`
 - **2026-03-26** — `@seq.NAME.prop` variable expansion
   for sequencer state in CLI scripts `#cli` `#fps`
   ([#183](https://github.com/milk-org/milk/issues/183))
