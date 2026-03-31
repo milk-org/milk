@@ -32,7 +32,7 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *setcol_inimname = NULL;
+static char      setcol_inimname[256] = "";
 static float    *setcol_pixval   = NULL;
 static uint32_t *setcol_colindex = NULL;
 
@@ -42,7 +42,7 @@ static uint32_t *setcol_colindex = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".imname", &setcol_inimname, \
+    X(".imname", setcol_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
