@@ -1566,3 +1566,11 @@ procctl _nonexistent_proc_ stop
 mem.mk2Dim im2D 256 256
 iofits.saveFITS im2D "im2D.fits"
 rm "im2D.fits"
+
+#DESC: saveFITS and loadfits (FPTYPE string mapping)
+#EXPECT:OK
+mem.mk2Dim im2D_lf 128 128
+iofits.saveFITS im2D_lf "im2D_lf.fits"
+iofits.loadfits "im2D_lf.fits" im2D_lf_loaded 2
+rm "im2D_lf.fits"
+mem.rm "im2D_lf_loaded"
