@@ -254,6 +254,7 @@ when domain-specific tasks require extended capabilities.
 | `diagnose-build-failure` | Triaging CMake/GCC build errors |
 | `fps-parameter-guide` | FPS parameter types, flags, X-macro patterns |
 | `imagestream-internals` | SHM stream layout, semaphore protocol, circular buffers |
+| `milk-script-writer` | Generate correct milk-cli scripts from natural language prompts |
 | `module-loading-internals` | Debugging module registration, empty commands |
 | `optimize-compute-function` | Systematic performance optimization methodology |
 | `pr-preparation` | Packaging work into a pull request |
