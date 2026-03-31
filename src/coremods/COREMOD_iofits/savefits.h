@@ -17,10 +17,10 @@
  * PUBLIC PARAMETER GLOBALS
  * ========================================= */
 
-extern char *savefits_inimname;
-extern char *savefits_outfname;
-extern int  *savefits_outbitpix;
-extern char *savefits_inheader;
+extern char savefits_inimname[FUNCTION_PARAMETER_STRMAXLEN];
+extern char savefits_outfname[FUNCTION_PARAMETER_STRMAXLEN];
+extern int32_t savefits_outbitpix;
+extern char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN];
 
 /* =========================================
  * PUBLIC SAVE FUNCTIONS
