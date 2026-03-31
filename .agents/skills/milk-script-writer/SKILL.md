@@ -298,7 +298,7 @@ function myfunc {
 myfunc hello
 ```
 
-Params: `$1`..$9`, `shift [N]`,
+Params: `$1`..`$9`, `shift [N]`,
 `getopts "ab:" opt`
 
 ### FPS Access
