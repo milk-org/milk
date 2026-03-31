@@ -406,9 +406,12 @@ cmd1 || cmd2             # OR
    to expand due to parser edge cases. Use
    `_hh`, `_ww`, `_width`, `_height` instead.
 
-2. **`mem.rm` requires errmode**: The second
-   argument (0=ignore errors) is mandatory:
-   `mem.rm imgname 0`
+2. **`mem.rm` errmode and defaults**: The second
+   argument (`errmode`, e.g. `0` = ignore errors) is
+   optional. `mem.rm imgname` and even `mem.rm` (no
+   args) are accepted; when arguments are omitted,
+   the command uses its default image selection and
+   error-handling behavior (see `cmd? mem.rm`).
 
 3. **Calc temp images leak**: The calculator
    creates `_tmpcalcN` images in SHM for
