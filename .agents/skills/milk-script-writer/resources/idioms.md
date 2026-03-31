@@ -335,9 +335,9 @@ iofits.savefits _result output.fits
 
 4. **Don't forget `mem.rm ... 0` for temp images.**
    SHM images persist after script exit. Clean up
-   explicitly at end of script. `mem.rm` requires
-   a second argument (errmode: 0=ignore).
-
+   explicitly at end of script. `mem.rm` accepts an
+   optional second argument `errmode` (e.g. `0` to ignore errors);
+   it's good practice to pass it explicitly when cleaning up.
 5. **Don't use `printf` in tight loops.**
    I/O in hot paths hurts performance. Guard
    with a verbosity check.
