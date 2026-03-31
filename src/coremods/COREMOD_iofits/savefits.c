@@ -225,24 +225,18 @@ errno_t save_fits(
  * 4.  FPS COMPUTE KERNEL
  * ============================================================= */
 
-static MILK_HOT errno_t fpsexec(IMAGE *imgin)
+static MILK_HOT errno_t fpsexec(IMGID *imgin)
 {
     if (savefits_outfname[0] == '\0')
     {
         return RETURN_FAILURE;
     }
-    IMGID id = imgid_make_from_name(imgin->name);
-#if !defined(FPS_STANDALONE) && !defined(MILK_NO_CLI)
-    resolveIMGID(&id, ERRMODE_WARN, dcimg, dcnimg);
-#endif
-    id.im = imgin;
-    id.md = &imgin->md[0];
-    saveFITS_opt_trunc_IMGID(
-        &id, -1, savefits_outfname,
+
+    return saveFITS_opt_trunc_IMGID(
+        imgin, -1, savefits_outfname,
         savefits_outbitpix,
         savefits_inheader[0] ? savefits_inheader : NULL,
         NULL, 0, "");
-    return RETURN_SUCCESS;
 }
 
 
@@ -305,7 +299,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    fpsexec(in.im);
+    fpsexec(&in);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
