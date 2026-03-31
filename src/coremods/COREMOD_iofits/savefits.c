@@ -58,10 +58,10 @@ static FPS_APP_INFO FPS_app_info = {
       FPFLAG_DEFAULT_INPUT, \
       "header import file")
 
-char *savefits_inimname  = NULL;
-char *savefits_outfname  = NULL;
-int  *savefits_outbitpix = NULL;
-char *savefits_inheader  = NULL;
+char savefits_inimname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+char savefits_outfname[FUNCTION_PARAMETER_STRMAXLEN]  = "";
+int32_t savefits_outbitpix = 0;
+char savefits_inheader[FUNCTION_PARAMETER_STRMAXLEN]  = "";
 
 
 /* =========================================
@@ -225,22 +225,16 @@ errno_t save_fits(
  * 4.  FPS COMPUTE KERNEL
  * ============================================================= */
 
-static MILK_HOT errno_t fpsexec(IMAGE *imgin)
+static MILK_HOT errno_t fpsexec(IMGID *imgin)
 {
-    if (!savefits_outfname
-        || !savefits_outbitpix)
-    {
+    if (savefits_outfname[0] == '\0')
         return RETURN_FAILURE;
-    }
-    IMGID id;
-    id.im = imgin;
-    id.md = &imgin->md[0];
-    saveFITS_opt_trunc_IMGID(
-        &id, -1, savefits_outfname,
-        *savefits_outbitpix,
-        savefits_inheader,
+
+    return saveFITS_opt_trunc_IMGID(
+        imgin, -1, savefits_outfname,
+        savefits_outbitpix,
+        savefits_inheader[0] ? savefits_inheader : NULL,
         NULL, 0, "");
-    return RETURN_SUCCESS;
 }
 
 
@@ -303,7 +297,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
-    fpsexec(in.im);
+    fpsexec(&in);
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
