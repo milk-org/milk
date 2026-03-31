@@ -81,6 +81,7 @@ contains a `SKILL.md` with detailed instructions.
 | FPS parameter guide | [`fps-parameter-guide`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/fps-parameter-guide/SKILL.md) | FPS parameter types, flags, X-macro patterns, common mistakes. |
 | ImageStream internals | [`imagestream-internals`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/imagestream-internals/SKILL.md) | SHM stream layout, semaphore protocol, circular buffers. |
 | Module loading internals | [`module-loading-internals`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/module-loading-internals/SKILL.md) | `dlopen` sequence, `data.moduleindex` race, constructor timing. |
+| Milk script writer | [`milk-script-writer`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/milk-script-writer/SKILL.md) | Generate correct milk-cli scripts from natural language prompts. |
 | Optimize compute function | [`optimize-compute-function`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/optimize-compute-function/SKILL.md) | Systematic performance optimization methodology. |
 | PR preparation | [`pr-preparation`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/pr-preparation/SKILL.md) | End-to-end PR packaging with template body and AI authorship. |
 | Refactor C source | [`refactor-c-source`](https://github.com/milk-org/milk/blob/framework-dev/.agents/skills/refactor-c-source/SKILL.md) | Safe file splitting with dependency analysis and CMake updates. |
