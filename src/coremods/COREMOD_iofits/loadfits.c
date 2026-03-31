@@ -32,16 +32,16 @@ static FPS_APP_INFO FPS_app_info = {
 };
 
 // CLI function arguments and parameters
-static char *infilename;
-static char *outimname;
-static int64_t *FITSIOerrmode;
+static char infilename[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static char outimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static int64_t FITSIOerrmode = 2;
 
 #define FPS_PARAMS(X) \
     X(".infname", &infilename, \
-      FPTYPE_STRING, 1, \
+      FPTYPE_FILENAME, 1, \
       FPFLAG_DEFAULT_INPUT, "input file") \
     X(".outimname", &outimname, \
-      FPTYPE_STRING, 1, \
+      FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, "output image name") \
     X(".errmode", &FITSIOerrmode, \
       FPTYPE_INT64, 1, \
@@ -656,7 +656,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
 
     IMGID imgout = imgid_make_from_name(outimname);
-    FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, *FITSIOerrmode));
+    FUNC_CHECK_RETURN(load_fits_IMGID(infilename, &imgout, FITSIOerrmode));
 
     INSERT_STD_PROCINFO_COMPUTEFUNC_END
 
