@@ -329,9 +329,9 @@ wait -S name 5           # Wait for update
 on_update name { cmd }   # Trigger on write
 ```
 
-> Note: `mem.rm` requires a second argument
-> (errmode: 0=ignore, 1=warn, 2=err, 3=exit).
-
+> Note: `mem.rm` accepts an optional second argument
+> `errmode` (0=ignore, 1=warn, 2=err, 3=exit). If omitted,
+> the default is `0` (ignore).
 ### Process Control
 
 ```bash
