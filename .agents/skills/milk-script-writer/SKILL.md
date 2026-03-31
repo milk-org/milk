@@ -80,15 +80,16 @@ Example scripts in `examples/`:
 > These are the top sources of bugs when generating
 > milk-cli scripts. Know them by heart.
 
-### 1. Spaced `=` triggers native calculator
+### 1. Spaced `=` vs unspaced `=` in assignments
 
 ```bash
-# Calculator mode (evaluates math expression)
+# Spaced '=': full calculator / image-expression evaluation
 a = 2 + 3 * 4       # a is 14
+# (can also use images/FPS/etc. in the expression)
 
-# String assignment (wordexp, no math eval)
-a=hello              # a is "hello"
-a=2+3                # a is "5" (wordexp evals)
+# Unspaced '=': math-only evaluation via cli_var_set()
+a=2+3               # a is "5" (pure math expression)
+a=hello             # a is "hello" (no math operators → plain string)
 ```
 
 ### 2. `@` prefix reads FPS/process properties
