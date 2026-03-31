@@ -415,10 +415,13 @@ cmd1 || cmd2             # OR
 
 3. **Calc temp images leak**: The calculator
    creates `_tmpcalcN` images in SHM for
-   intermediate results. These are not cleaned
-   up on exit. A subsequent milk-cli startup
-   may print `CALC_PARSER_ERROR` when it
-   tries to resolve stale temps.
+   intermediate results. The CLI normally
+   deletes `_tmpcalc*` after each line and at
+   the end of calculator evaluation, but if
+   milk-cli is killed or crashes mid-eval,
+   stale temps may remain and a subsequent
+   startup may print `CALC_PARSER_ERROR`
+   when it tries to resolve them.
 
 4. **`-S` / `-F` test operators**: These check
    `/dev/shm/` hardcoded. On systems using
