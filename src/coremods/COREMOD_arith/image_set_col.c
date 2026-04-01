@@ -32,9 +32,9 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char     *setcol_inimname = NULL;
-static float    *setcol_pixval   = NULL;
-static uint32_t *setcol_colindex = NULL;
+static char     setcol_inimname[256] = "";
+static float    setcol_pixval        = 0.0f;
+static uint32_t setcol_colindex      = 0;
 
 
 /* ================================================================
@@ -42,7 +42,7 @@ static uint32_t *setcol_colindex = NULL;
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".imname", &setcol_inimname, \
+    X(".imname", setcol_inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
@@ -62,11 +62,8 @@ static uint32_t *setcol_colindex = NULL;
 
 static MILK_HOT errno_t fpsexec(IMAGE *inimg)
 {
-    if (!setcol_pixval || !setcol_colindex) {
-        return RETURN_FAILURE;
-    }
-    float    val = *setcol_pixval;
-    uint32_t col = *setcol_colindex;
+    float    val = setcol_pixval;
+    uint32_t col = setcol_colindex;
     uint32_t xsize = inimg->md[0].size[0];
     uint32_t ysize = inimg->md[0].size[1];
 
