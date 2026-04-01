@@ -80,7 +80,7 @@ target_include_directories(${LIBNAME} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
 )
 
-target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo milkdata milkcommon)
+target_link_libraries(${LIBNAME} PUBLIC ImageStreamIO m rt milkprocessinfo milkcommon)
 
 # ==========================================
 # milkfpsStandalone — standalone FPS framework
