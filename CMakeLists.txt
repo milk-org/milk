@@ -698,6 +698,10 @@ endif(USE_CLI)
 
 install(FILES docs/cli/help.txt DESTINATION doc)
 
+# milk-cli script payloads (.milk files) – installed as data, not executables
+install(FILES scripts/makecircleofdisks.milk
+        DESTINATION share/milk/scripts)
+
 
 
 # Guard: verify no standalone links CLIcore unexpectedly
