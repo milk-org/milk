@@ -682,6 +682,7 @@ install(PROGRAMS
       scripts/milk-images-merge
                         scripts/milk-scriptexample
                         scripts/milk-script-advanced
+                        scripts/milk-makecircleofdisks
                         scripts/milk-script-std-config
                         scripts/milk-streamlink
       scripts/milk-stream-scan
