@@ -195,7 +195,6 @@ install(FILES
     fps_procinfo_macros.h
     imgid_slice.h
     IMGID.h
-    ../libprocessinfo/timeutils.h
     DESTINATION include/libfps)
 
 if(USE_NCURSES AND USE_CLI)
@@ -241,11 +240,7 @@ install(TARGETS milk-fps-help DESTINATION bin)
 
 add_executable(milk-fps-list milk-fps-list.c)
 target_link_libraries(milk-fps-list PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
@@ -253,11 +248,7 @@ install(TARGETS milk-fps-list DESTINATION bin)
 
 add_executable(milk-fps-search milk-fps-search.c)
 target_link_libraries(milk-fps-search PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
@@ -265,11 +256,7 @@ install(TARGETS milk-fps-search DESTINATION bin)
 
 add_executable(milk-fps-info milk-fps-info.c)
 target_link_libraries(milk-fps-info PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
@@ -277,11 +264,7 @@ install(TARGETS milk-fps-info DESTINATION bin)
 
 add_executable(milk-fps-rm milk-fps-rm.c)
 target_link_libraries(milk-fps-rm PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
@@ -300,11 +283,7 @@ set(FPS_GENERIC_CMDS
 foreach(cmd ${FPS_GENERIC_CMDS})
     add_executable(${cmd} milk-fps-cmd.c)
     target_link_libraries(${cmd} PUBLIC 
-        milkfps
         milkfpsStandalone
-        milkdata
-        milkprocessinfo 
-        ImageStreamIO
         pthread
         m
     )
@@ -315,11 +294,7 @@ endforeach()
 
 add_executable(milk-fps-set milk-fps-set.c)
 target_link_libraries(milk-fps-set PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
@@ -329,11 +304,7 @@ install(TARGETS milk-fps-set DESTINATION bin)
 
 add_executable(milk-fps-track milk-fps-track.c)
 target_link_libraries(milk-fps-track PUBLIC 
-    milkfps
     milkfpsStandalone
-    milkdata
-    milkprocessinfo 
-    ImageStreamIO
     pthread
     m
 )
