@@ -1,4 +1,3 @@
-#!/usr/bin/env milk-cli -s
 #
 # makecircleofdisks.milk
 # Creates a 2D image containing N filled disks,
@@ -80,11 +79,11 @@ _idx=0
 while [ $_idx -lt $_ndisks ]; do
 
     # Angle evenly spaced around the full circle
-    _ang = 2.0 * $_pi * $_idx / $_ndisks
+    _ang=$(awk "BEGIN {print 2.0 * $_pi * $_idx / $_ndisks}")
 
     # Disk centre (floating-point pixel coordinates)
-    _cxf = $_ctr + $_crad * cos($_ang)
-    _cyf = $_ctr + $_crad * sin($_ang)
+    _cxf=$(awk "BEGIN {print $_ctr + $_crad * cos($_ang)}")
+    _cyf=$(awk "BEGIN {print $_ctr + $_crad * sin($_ang)}")
 
     echo "  disk $_idx: centre ($_cxf , $_cyf)"
 
