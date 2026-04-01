@@ -1,4 +1,3 @@
-#!/usr/bin/env milk-cli -s
 #
 # makecircleofdisks.milk
 # Creates a 2D image containing N filled disks,

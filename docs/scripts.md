@@ -64,7 +64,7 @@ See also: [Streams](streams.md) ·
 | `milk-cr2tofits` | Convert Canon RAW (CR2) files to FITS |
 | `milk-fitsheader` | Display FITS file header |
 | `milk-images-merge` | Merge multiple FITS images |
-| `milk-makecircleofdisks` | Generate a procedural ring of circular disks |
+| `makecircleofdisks.milk` | Generate a procedural ring of circular disks |
 | `milk-makecsetandrt` | Create cpuset and set real-time scheduling |
 
 ## 5. COREMOD Scripts
