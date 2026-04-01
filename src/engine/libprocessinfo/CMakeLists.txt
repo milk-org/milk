@@ -92,7 +92,6 @@ add_executable(milk-procinfo-rm milk-procinfo-rm.c)
 target_link_libraries(milk-procinfo-rm PUBLIC 
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
     pthread
     m
 )
