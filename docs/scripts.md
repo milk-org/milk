@@ -64,12 +64,26 @@ See also: [Streams](streams.md) ·
 | `milk-cr2tofits` | Convert Canon RAW (CR2) files to FITS |
 | `milk-fitsheader` | Display FITS file header |
 | `milk-images-merge` | Merge multiple FITS images |
-| `makecircleofdisks.milk` | Generate a procedural ring of circular disks |
 | `milk-makecsetandrt` | Create cpuset and set real-time scheduling |
 
-## 5. COREMOD Scripts
+## 5. milk-cli Script Payloads (`share/milk/scripts/`)
 
-### 5.1. COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
+These are `.milk` files evaluated by the milk-cli interpreter.  They are
+installed as **data files** (no execute bit) under `share/milk/scripts/` and
+must be invoked via the CLI orchestrator:
+
+```bash
+milk-cli -s $(milk --install-prefix)/share/milk/scripts/makecircleofdisks.milk \
+         [ndisks] [disk_radius] [circle_radius] [image_size] [output_name]
+```
+
+| Script | Description |
+|--------|-------------|
+| `makecircleofdisks.milk` | Generate a procedural ring of circular disks |
+
+## 6. COREMOD Scripts
+
+### 6.1. COREMOD_memory (`src/coremods/COREMOD_memory/scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -84,7 +98,7 @@ See also: [Streams](streams.md) ·
 | `milk-nettransmit` | Transmit SHM stream over network |
 | `milk-rmshmim` | Remove a shared memory image |
 
-### 5.2. COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
+### 6.2. COREMOD_arith (`src/coremods/COREMOD_arith/scripts/`)
 
 | Script | Description |
 |--------|-------------|
@@ -94,7 +108,7 @@ See also: [Streams](streams.md) ·
 
 ---
 
-## 6. Usage Examples
+## 7. Usage Examples
 
 ### Loading a FITS file into shared memory
 

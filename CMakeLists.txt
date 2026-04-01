@@ -682,7 +682,6 @@ install(PROGRAMS
       scripts/milk-images-merge
                         scripts/milk-scriptexample
                         scripts/milk-script-advanced
-                        scripts/makecircleofdisks.milk
                         scripts/milk-script-std-config
                         scripts/milk-streamlink
       scripts/milk-stream-scan
@@ -698,6 +697,10 @@ install(PROGRAMS
 endif(USE_CLI)
 
 install(FILES docs/cli/help.txt DESTINATION doc)
+
+# milk-cli script payloads (.milk files) – installed as data, not executables
+install(FILES scripts/makecircleofdisks.milk
+        DESTINATION share/milk/scripts)
 
 
 
