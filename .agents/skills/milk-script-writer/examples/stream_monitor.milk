@@ -24,12 +24,12 @@ echo "Filled with constant 3.0"
 # --- Read stream metadata ---
 # The ${name.property} syntax queries SHM
 # image metadata directly from shared memory.
-_ww=${_mon_img.xsize}
-_hh=${_mon_img.ysize}
-_nax=${_mon_img.naxis}
-_dtype=${_mon_img.typename}
-_cnt=${_mon_img.cnt0}
-_nel=${_mon_img.nelement}
+_ww=@s.${_mon_img}.xsize
+_hh=@s.${_mon_img}.ysize
+_nax=@s.${_mon_img}.naxis
+_dtype=@s.${_mon_img}.typename
+_cnt=@s.${_mon_img}.cnt0
+_nel=@s.${_mon_img}.nelement
 
 echo "Dimensions: ${_ww} x ${_hh}"
 echo "Axes:       ${_nax}"
