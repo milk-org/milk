@@ -38,6 +38,8 @@ COMMAND LINE OPTIONS
 	Enable fifo input; auto-generate fifo path
   -F, --fifoname=PATH
 	Enable fifo input; use custom fifo path
+  -c, --command=CMD
+	execute a single command and exit
   -s, --startup=STARTUPFILE
 	execute specified script on startup
 	requires the -f or -F option, as the script is loaded into fifo
@@ -89,6 +91,10 @@ HELP COMMANDS
 > ?
 > help
 	# print this help file
+> help --json
+	# print help index in JSON format
+> help --porcelain
+	# print help index in TSV format
 > helprl
 	# print readline quick help
 > lm?
@@ -111,6 +117,10 @@ IMPORTANT COMMANDS
 	# compilation time and memory usage
 > listim
 	# list all images in memory
+> listim --json
+	# list all images in memory in JSON format
+> listim --porcelain
+	# list all images in memory in TSV format
 > listimf <filename>
 	# list all images in memory and write output to file <filename>
 > !<syscommand>

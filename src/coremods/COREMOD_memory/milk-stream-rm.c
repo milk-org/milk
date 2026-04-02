@@ -9,7 +9,7 @@
 #include <termios.h>
 #include <regex.h>
 
-#include "multiselect_parse.h"
+#include "libmilkcommon/multiselect_parse.h"
 
 #include "ImageStreamIO/ImageStreamIO.h"
 

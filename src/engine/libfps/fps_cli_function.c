@@ -23,7 +23,7 @@
 #include "fps_lifecycle.h"
 #include "fps_local_store.h"
 #include "fps_processinfo_entries.h"
-#include "CLIcore/CLIcore_checkargs.h"
+#include "libmilkdata/milkdata_clicmd.h"
 
 
 errno_t fps_generic_CLIfunction(

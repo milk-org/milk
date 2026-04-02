@@ -48,6 +48,7 @@ available:
 | `-p`, `--priority=PR` | Set RT priority (0–99, higher = higher) |
 | `-f`, `--fifoflag` | Enable fifo input; auto-generate fifo path |
 | `-F`, `--fifoname=PATH` | Enable fifo input; use custom fifo path |
+| `-c`, `--command=CMD` | Execute single command and exit |
 | `-s`, `--startup=FILE` | Feed startup file into fifo (requires `-f` or `-F`) |
 | `-A`, `--autocomplete` | Enable autocomplete preview |
 | `--no-autocomplete` | Disable autocomplete |
