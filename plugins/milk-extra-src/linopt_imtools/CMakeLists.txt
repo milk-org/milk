@@ -62,11 +62,9 @@ add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
 target_include_directories(${LIBNAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-												$<INSTALL_INTERFACE:include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
 
