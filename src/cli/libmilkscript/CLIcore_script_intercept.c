@@ -547,6 +547,8 @@ int cli_script_intercept(const char *line)
                                  NULL, 0);
             }
         }
+        
+        cli_trap_run_exit();
         exit(exitcode);
     }
 
@@ -3383,8 +3385,9 @@ int cli_script_intercept(const char *line)
             char shmpath[256];
             snprintf(shmpath,
                      sizeof(shmpath),
-                     "/dev/shm/%s"
+                     "%s/%s"
                      ".im.shm",
+                     dcshmdir,
                      sname);
             if(access(shmpath,
                       F_OK) == 0)
@@ -3449,8 +3452,9 @@ int cli_script_intercept(const char *line)
             char fpath[256];
             snprintf(fpath,
                      sizeof(fpath),
-                     "/dev/shm/"
+                     "%s/"
                      "fps.%s.shm",
+                     dcshmdir,
                      fname);
             if(access(fpath,
                       F_OK) == 0)

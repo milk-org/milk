@@ -467,8 +467,9 @@ stream_prop_done:
             char fpath[256];
             snprintf(fpath,
                      sizeof(fpath),
-                     "/dev/shm/"
+                     "%s/"
                      "fps.%s.shm",
+                     dcshmdir,
                      sname);
             if(access(fpath,
                       F_OK) == 0)
