@@ -155,14 +155,14 @@ For mathematical expressions, the `$(( ... ))` expansion natively supports stand
 
 ### Stream & FPS Metadata Expansion
 
-Similar to FPS parameters, you can access properties of shared memory streams via dot-syntax expansion:
+Similar to FPS parameters, you can access properties of shared memory streams via the `@s.` namespace expansion:
 
 ```bash
 #!/usr/bin/env milk-cli -s
-echo "Geometry: ${mystream.xsize}x${mystream.ysize}x${mystream.zsize}"
-echo "Datatype Code: ${mystream.type}"
-echo "Frame Counter: ${mystream.cnt0}"
-echo "Number of axes: ${mystream.naxis}"
+echo "Geometry: ${@s.mystream.xsize}x${@s.mystream.ysize}x${@s.mystream.zsize}"
+echo "Datatype Code: ${@s.mystream.type}"
+echo "Frame Counter: ${@s.mystream.cnt0}"
+echo "Number of axes: ${@s.mystream.naxis}"
 ```
 
 For FPS compute units, you can check their allocation status:
@@ -236,8 +236,8 @@ Here are several examples demonstrating how `milk-cli` native features combine w
             return 1
         fi
     
-        # Read stream metadata via dot-expansion
-        echo "Ready! Shape: ${${stream}.xsize}x${${stream}.ysize}"
+        # Read stream metadata via @ namespace
+        echo "Ready! Shape: ${@s.${stream}.xsize} x ${@s.${stream}.ysize}"
     }
     
     wait_and_monitor wfs_cam
@@ -286,9 +286,12 @@ Here are several examples demonstrating how `milk-cli` native features combine w
             continue
         fi
     
-        xs=${${s}.xsize}
-        ys=${${s}.ysize}
-        cnt=${${s}.cnt0}
+# The @s.${s}.prop syntax queries SHM image metadata
+        # directly; $VAR substitution inside @ tokens is
+        # supported so stream names can be dynamic.
+        xs=@s.${s}.xsize
+        ys=@s.${s}.ysize
+        cnt=@s.${s}.cnt0
         printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
     done
     
@@ -312,7 +315,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
         local s=$1 timeout=${2:-30}
         waitfor_stream $s $timeout
         [ $? -ne 0 ] && die "Stream '$s' not available after ${timeout}s"
-        echo "  [OK] $s  ${${s}.xsize}x${${s}.ysize}"
+        echo "  [OK] $s"
     }
     
     # ---------- 1. verify hardware streams ----------
@@ -452,7 +455,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     waitfor_stream $STREAMNAME 10
     
     # Fast Native Image Math & FPS
-    mem.mk2Dim mask_img ${$STREAMNAME.xsize} ${$STREAMNAME.ysize}
+    mem.mk2Dim mask_img ${@s.in.xsize} ${@s.in.ysize}
     mask_img = mask_img * 0.0 + 1.0
     
     on_update $STREAMNAME {

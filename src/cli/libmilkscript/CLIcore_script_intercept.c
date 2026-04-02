@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
@@ -100,6 +101,69 @@ int starts_with(
 {
     return strncmp(line, prefix,
                    strlen(prefix)) == 0;
+}
+
+
+/**
+ * @brief Search for an executable by name in PATH.
+ *
+ * Performs the same lookup as the `which` command
+ * using C library calls only, avoiding any fork/exec.
+ * If the name contains a slash it is tested directly.
+ *
+ * @param name       Command name to look up
+ * @param pathbuf    Buffer to receive the full path
+ * @param pathbuf_sz Size of pathbuf in bytes
+ * @return 1 if found (pathbuf is filled), 0 otherwise
+ */
+static int cli_find_in_path(
+    const char *name,
+    char       *pathbuf,
+    size_t      pathbuf_sz
+)
+{
+    /* Absolute or relative path — test directly */
+    if(strchr(name, '/') != NULL)
+    {
+        if(access(name, X_OK) == 0)
+        {
+            strncpy(pathbuf, name,
+                    pathbuf_sz - 1);
+            pathbuf[pathbuf_sz - 1] = '\0';
+            return 1;
+        }
+        return 0;
+    }
+
+    const char *PATH_env = getenv("PATH");
+    if(PATH_env == NULL)
+    {
+        PATH_env =
+            "/usr/local/bin:"
+            "/usr/bin:/bin";
+    }
+
+    char path_copy[4096];
+    strncpy(path_copy, PATH_env,
+            sizeof(path_copy) - 1);
+    path_copy[sizeof(path_copy) - 1] = '\0';
+
+    char *dir = strtok(path_copy, ":");
+    while(dir != NULL)
+    {
+        char candidate[1024];
+        snprintf(candidate, sizeof(candidate),
+                 "%s/%s", dir, name);
+        if(access(candidate, X_OK) == 0)
+        {
+            strncpy(pathbuf, candidate,
+                    pathbuf_sz - 1);
+            pathbuf[pathbuf_sz - 1] = '\0';
+            return 1;
+        }
+        dir = strtok(NULL, ":");
+    }
+    return 0;
 }
 
 
@@ -2096,15 +2160,13 @@ int cli_script_intercept(const char *line)
         /* Search external executables in PATH */
         if(!found)
         {
-            char sys_cmd[512];
-            snprintf(sys_cmd, sizeof(sys_cmd), "which %s > /dev/null 2>&1", p);
-            if(system(sys_cmd) == 0)
+            char path_found[1024];
+            if(cli_find_in_path(
+                   p,
+                   path_found,
+                   sizeof(path_found)))
             {
-                snprintf(sys_cmd, sizeof(sys_cmd), "which %s", p);
-                if(system(sys_cmd) == -1)
-                {
-                    // Ignore system failure explicitly check
-                }
+                printf("%s\n", path_found);
                 found = 1;
             }
         }
