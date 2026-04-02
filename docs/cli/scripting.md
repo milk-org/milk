@@ -286,7 +286,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
             continue
         fi
     
-# The @s.${s}.prop syntax queries SHM image metadata
+        # The @s.${s}.prop syntax queries SHM image metadata
         # directly; $VAR substitution inside @ tokens is
         # supported so stream names can be dynamic.
         xs=@s.${s}.xsize
