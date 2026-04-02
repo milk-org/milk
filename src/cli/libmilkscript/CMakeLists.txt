@@ -106,7 +106,6 @@ install(FILES
     cli_calc_parser.h
     cli_calc_tokenizer.h
     standalone_dependencies.h
-    multiselect_parse.h
     script_includes.h
     milkscript.h
     DESTINATION include/${SRCNAME})

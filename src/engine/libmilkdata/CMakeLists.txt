@@ -30,7 +30,7 @@ target_link_libraries(${LIBNAME}
 
 install(TARGETS ${LIBNAME}
     EXPORT milkTargets DESTINATION lib)
-install(FILES milkdata.h milkdata_macros.h
+install(FILES milkdata.h milkdata_macros.h milkdata_clicmd.h
     DESTINATION include/libmilkdata)
 
 # Static archive for standalone LTO builds

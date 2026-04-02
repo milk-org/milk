@@ -8,7 +8,7 @@
 #include <termios.h>
 #include <regex.h>
 
-#include "CLIcore/multiselect_parse.h"
+#include "libmilkcommon/multiselect_parse.h"
 
 #include "fps.h"
 #include "fps_FPSremove.h"
