@@ -165,9 +165,9 @@ echo "min=$_lo max=$_hi"
 ```bash
 # Check if stream exists
 if [ -S mystream ]; then
-    _w=${mystream.xsize}
-    _h=${mystream.ysize}
-    _t=${mystream.typename}
+    _w=@s.mystream.xsize
+    _h=@s.mystream.ysize
+    _t=@s.mystream.typename
     echo "Stream: ${_w}x${_h} ${_t}"
 else
     echo "Stream not found"
