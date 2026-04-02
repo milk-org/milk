@@ -1101,6 +1101,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     rl_callback_handler_remove();
 #endif
 
+    cli_trap_run_exit();
+
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
 }
@@ -1732,6 +1734,42 @@ void runCLI_cmd_init()
         "[pattern]",
         "fpslist dm*",
         "cli_cmd_fpslist()");
+
+    RegisterCLIcommand(
+        "fpsdump",
+        __FILE__,
+        cli_cmd_fpsdump,
+        "dump FPS parameters as key=value",
+        "[-t] <fpsname>",
+        "fpsdump loopctrl",
+        "cli_cmd_fpsdump()");
+
+    RegisterCLIcommand(
+        "streamlist",
+        __FILE__,
+        cli_cmd_streamlist,
+        "list live SHM streams",
+        "[-l] [pattern]",
+        "streamlist -l dm*",
+        "cli_cmd_streamlist()");
+
+    RegisterCLIcommand(
+        "proclist",
+        __FILE__,
+        cli_cmd_proclist,
+        "list active processes",
+        "[-l]",
+        "proclist -l",
+        "cli_cmd_proclist()");
+
+    RegisterCLIcommand(
+        "defer",
+        __FILE__,
+        cli_cmd_defer,
+        "register cleanup command (LIFO)",
+        "<command...>",
+        "defer mem.rm _tmp 0",
+        "cli_cmd_defer()");
 
     //  init_modules();
 
