@@ -34,6 +34,7 @@
 #include <fnmatch.h>
 #include <glob.h>
 #include <strings.h>
+#include <spawn.h>
 #include <sys/wait.h>
 
 #include "COREMOD_memory/COREMOD_memory.h"
@@ -613,6 +614,113 @@ static int cli_split_pipe(errno_t *retval)
         return 1;
     }
     return 0;
+}
+
+
+/**
+ * @brief Execute an external command with minimal overhead.
+ *
+ * Prefers a direct fork+exec via posix_spawnp() for simple
+ * commands (no shell metacharacters), saving the extra
+ * /bin/sh layer that system() would otherwise spawn.
+ * Falls back to "/bin/sh -c cmd" only when metacharacters
+ * are detected (pipes, redirects, glob, etc.).
+ *
+ * @param cmd  Fully expanded command string
+ * @return  Exit status (0 = success), 127 if not found,
+ *          -1 on spawn error
+ */
+static int cli_run_external(
+    const char *cmd
+)
+{
+    extern char **environ;
+
+    /* Detect characters that require /bin/sh parsing */
+    static const char sh_meta[] =
+        "|&;<>()`\\\"'\n*?[{$";
+    int needs_shell = 0;
+    for(const char *cp = cmd; *cp; cp++)
+    {
+        if(strchr(sh_meta, *cp))
+        {
+            needs_shell = 1;
+            break;
+        }
+    }
+
+    pid_t pid  = -1;
+    int   ret  = -1;
+    int   status = 0;
+
+    if(needs_shell)
+    {
+        /* Shell metacharacters present:
+         * spawn /bin/sh -c cmd — equivalent to
+         * system() but using posix_spawn for
+         * cleaner signal handling */
+        char *const sh_args[] = {
+            "/bin/sh", "-c",
+            (char *) cmd, NULL
+        };
+        ret = posix_spawn(
+            &pid, "/bin/sh",
+            NULL, NULL,
+            sh_args, environ);
+    }
+    else
+    {
+        /* Simple command: tokenize on whitespace
+         * and exec directly, skipping the shell
+         * layer entirely */
+        char buf[STRINGMAXLEN_CLICMDLINE];
+        strncpy(buf, cmd, sizeof(buf) - 1);
+        buf[sizeof(buf) - 1] = '\0';
+
+        char *argv[256];
+        int   argc = 0;
+        char *tok  = strtok(buf, " \t");
+        while(tok != NULL && argc < 255)
+        {
+            argv[argc++] = tok;
+            tok = strtok(NULL, " \t");
+        }
+        argv[argc] = NULL;
+
+        if(argc == 0)
+        {
+            return 0;
+        }
+
+        ret = posix_spawnp(
+            &pid, argv[0],
+            NULL, NULL,
+            argv, environ);
+        if(ret != 0)
+        {
+            return 127; /* command not found */
+        }
+    }
+
+    if(ret != 0)
+    {
+        return -1;
+    }
+
+    if(waitpid(pid, &status, 0) == -1)
+    {
+        return -1;
+    }
+
+    if(WIFEXITED(status))
+    {
+        return WEXITSTATUS(status);
+    }
+    if(WIFSIGNALED(status))
+    {
+        return 128 + WTERMSIG(status);
+    }
+    return -1;
 }
 
 
@@ -1839,7 +1947,8 @@ errno_t CLI_execute_line()
                 cli_history_log_shell(
                     data.CLIcmdline);
                 cli_export_vars_to_env();
-                system(data.CLIcmdline);
+                cli_run_external(
+                    data.CLIcmdline);
                 free(thetime);
                 return RETURN_SUCCESS;
             }
@@ -1995,7 +2104,8 @@ errno_t CLI_execute_line()
     cli_history_log_cmd(data.CLIcmdline);
 
     //
-    // If line starts with !, use system()
+    // If line starts with !, run as external
+    // command via cli_run_external()
     //
     if(data.CLIcmdline[0] == '!')
     {
@@ -2004,9 +2114,10 @@ errno_t CLI_execute_line()
                "[shell] %s" COLORRST "\n",
                data.CLIcmdline);
         cli_export_vars_to_env();
-        if(system(data.CLIcmdline) != 0)
+        if(cli_run_external(
+               data.CLIcmdline) != 0)
         {
-            PRINT_ERROR("system call error");
+            PRINT_ERROR("shell command error");
             exit(4);
         }
         data.CMDexecuted = 1;
@@ -3691,17 +3802,18 @@ errno_t CLI_execute_line()
 
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
-        /* Attempt transparent OS shell fallback */
+        /* Attempt transparent OS shell fallback.
+         * cli_run_external() uses posix_spawnp()
+         * for simple commands (no shell
+         * metacharacters) and /bin/sh -c only
+         * when required, avoiding the extra shell
+         * layer that system() always spawns. */
         cli_export_vars_to_env();
-        int sys_ret = system(data.CLIcmdline);
-        int os_not_found = 0;
-        
-        /* system() returns 127 << 8 if command not found by sh */
-        if(sys_ret != -1 && ((sys_ret >> 8) & 0xff) == 127)
-        {
-            os_not_found = 1;
-        }
-        else
+        int sys_ret =
+            cli_run_external(data.CLIcmdline);
+        int os_not_found = (sys_ret == 127);
+
+        if(!os_not_found)
         {
             /* OS processed it — print shell tag */
             printf(COLORDIMYELLOW
@@ -3709,7 +3821,7 @@ errno_t CLI_execute_line()
                    data.CLIcmdline);
             if(sys_ret != -1)
             {
-                cli_last_retval = (sys_ret >> 8) & 0xff;
+                cli_last_retval = sys_ret;
             }
         }
 
