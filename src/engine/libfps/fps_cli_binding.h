@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #include "fps.h"
-#include "CLIcore/CLIcore_checkargs.h"
+#include "libmilkdata/milkdata_clicmd.h"
 
 
 /**
