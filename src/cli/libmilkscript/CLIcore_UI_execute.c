@@ -2840,6 +2840,7 @@ errno_t CLI_execute_line()
                         strncpy(prev, cur,
                                 sizeof(prev)
                                 - 1);
+                        prev[sizeof(prev) - 1] = '\0';
                         strncpy(
                             data.CLIcmdline,
                             body,
