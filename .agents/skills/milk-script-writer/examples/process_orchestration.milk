@@ -41,10 +41,10 @@ else
     echo "#   procwait $_proc ACTIVE 10"
     echo ""
     echo "# Read process properties:"
-    echo "#   _pid=@${_proc}.pid"
-    echo "#   _freq=@${_proc}.loopfreq"
-    echo "#   _cnt=@${_proc}.loopcnt"
-    echo "#   _stat=@${_proc}.loopstat"
+    echo "#   _pid=@proc.${_proc}.pid"
+    echo "#   _freq=@proc.${_proc}.loopfreq"
+    echo "#   _cnt=@proc.${_proc}.loopcnt"
+    echo "#   _stat=@proc.${_proc}.loopstat"
     echo ""
     echo "# Pause the process:"
     echo "#   procctl $_proc pause"
@@ -63,9 +63,9 @@ fi
 # --- If process exists, demonstrate control ---
 
 # Read process properties
-_pid=@${_proc}.pid
-_freq=@${_proc}.loopfreq
-_stat=@${_proc}.loopstat
+_pid=@proc.${_proc}.pid
+_freq=@proc.${_proc}.loopfreq
+_stat=@proc.${_proc}.loopstat
 echo "PID:       $_pid"
 echo "Loop freq: $_freq"
 echo "Status:    $_stat"
