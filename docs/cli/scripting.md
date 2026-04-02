@@ -324,7 +324,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
         local s=$1 timeout=${2:-30}
         waitfor_stream $s $timeout
         [ $? -ne 0 ] && die "Stream '$s' not available after ${timeout}s"
-        echo "  [OK] $s  @s.${s}.xsize x @s.${s}.ysize"
+        echo "  [OK] $s"
     }
     
     # ---------- 1. verify hardware streams ----------
