@@ -474,11 +474,89 @@ static void expand_fpsvar_write(
         }
         else if (strcmp(nsp, "proc") == 0)
         {
-            if (strcmp(prop, "ctrlval") == 0) {
-                char cmd[1024];
-                snprintf(cmd, sizeof(cmd), "procctl %s ctrlval %s", name, valstr);
-                // The easiest way to natively leverage existing write capability without reinventing processinfo mapping
-                system(cmd);
+            if (strcmp(prop, "ctrlval") == 0
+                && pinfolist != NULL)
+            {
+                /* Resolve symbolic action names */
+                int ctrlval_int = -1;
+                if (strcmp(valstr, "run") == 0)
+                {
+                    ctrlval_int =
+                        PROCESSINFO_CTRLVAL_RUN;
+                }
+                else if (strcmp(valstr,
+                                "pause") == 0)
+                {
+                    ctrlval_int =
+                        PROCESSINFO_CTRLVAL_PAUSE;
+                }
+                else if (strcmp(valstr,
+                                "step") == 0)
+                {
+                    ctrlval_int =
+                        PROCESSINFO_CTRLVAL_INCR;
+                }
+                else if (strcmp(valstr,
+                                "stop") == 0
+                         || strcmp(valstr,
+                                   "exit") == 0)
+                {
+                    ctrlval_int =
+                        PROCESSINFO_CTRLVAL_EXIT;
+                }
+                else
+                {
+                    ctrlval_int = atoi(valstr);
+                }
+
+                pid_t found_pid = 0;
+                for (int pidx = 0;
+                     pidx < PROCESSINFOLISTSIZE;
+                     pidx++)
+                {
+                    if (pinfolist->active[pidx]
+                        && strcmp(
+                               pinfolist
+                                   ->pnamearray[pidx],
+                               name) == 0)
+                    {
+                        found_pid =
+                            pinfolist
+                                ->PIDarray[pidx];
+                        break;
+                    }
+                }
+                if (found_pid > 0)
+                {
+                    char pfname[
+                        STRINGMAXLEN_FULLFILENAME];
+                    char procdname[
+                        STRINGMAXLEN_DIRNAME];
+                    processinfo_procdirname(
+                        procdname);
+                    snprintf(pfname, sizeof(pfname),
+                             "%s/proc.%d.shm",
+                             procdname,
+                             (int) found_pid);
+                    int pfd = -1;
+                    PROCESSINFO *pi_shm =
+                        processinfo_shm_link(
+                            pfname, &pfd);
+                    if (pi_shm != MAP_FAILED
+                        && pi_shm != NULL)
+                    {
+                        pi_shm->CTRLval =
+                            ctrlval_int;
+                        munmap(pi_shm,
+                               sizeof(
+                                   PROCESSINFO));
+                        close(pfd);
+                    }
+                    else if (pfd >= 0)
+                    {
+                        close(pfd);
+                    }
+                }
             }
         }
     }
