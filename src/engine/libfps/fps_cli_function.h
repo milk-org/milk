@@ -17,7 +17,7 @@
 #include "fps.h"
 #include "fps_cli_binding.h"
 #include "fps_cli_function_registry.h"
-#include "milkdata_clicmd.h"
+#include "libmilkdata/milkdata_clicmd.h"
 
 /** Compute function signature */
 typedef errno_t (*fps_compute_fn)(void);
