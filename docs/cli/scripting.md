@@ -286,9 +286,21 @@ Here are several examples demonstrating how `milk-cli` native features combine w
             continue
         fi
     
-        xs=@s.${s}.xsize
-        ys=@s.${s}.ysize
-        cnt=@s.${s}.cnt0
+        # NOTE:
+        # Dynamic stream names inside @s. are not currently supported by milk-cli.
+        # Parsing stops at '$' and '@' expands before '$VAR', so constructs like
+        #   @s.${s}.xsize
+        # would not resolve to the desired metadata; they would instead yield
+        # literal strings such as "wfs_cam.xsize" rather than numeric values.
+        #
+        # In a loop, prefer either:
+        #   - handling each known stream explicitly with fixed @s.<stream>.field
+        #     expressions, or
+        #   - using placeholder values here and querying detailed metadata with
+        #     dedicated commands outside the loop.
+        xs="N/A"
+        ys="N/A"
+        cnt="N/A"
         printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
     done
     
