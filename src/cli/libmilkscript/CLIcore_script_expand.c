@@ -870,6 +870,8 @@ void cli_expand_fpsvar(
             /* @fps.* — enumerate all params */
             if(strcmp(pname, "*") == 0)
             {
+                int first = 1;
+
                 for(int pi = 0;
                     pi < fps.md->NBparamMAX;
                     pi++)
@@ -877,9 +879,35 @@ void cli_expand_fpsvar(
                     if(fps.parray[pi].fpflag
                        & FPFLAG_ACTIVE)
                     {
-                        printf("%s\n",
+                        const char *kw =
                             fps.parray[pi]
-                                .keyword[0]);
+                                .keyword[0];
+                        int kwlen =
+                            (int) strlen(kw);
+                        int avail =
+                            maxlen - 1 - opos;
+
+                        if(!first
+                           && opos
+                                  < maxlen - 1)
+                        {
+                            out[opos++] = ' ';
+                            avail--;
+                        }
+                        first = 0;
+
+                        if(kwlen > avail)
+                        {
+                            kwlen = avail;
+                        }
+                        if(kwlen > 0)
+                        {
+                            memcpy(out + opos,
+                                   kw,
+                                   (size_t)
+                                       kwlen);
+                            opos += kwlen;
+                        }
                     }
                 }
                 function_parameter_struct_disconnect(

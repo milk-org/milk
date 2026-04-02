@@ -2434,6 +2434,11 @@ errno_t CLI_execute_line()
                     arg = endptr;
                 }
             }
+            else
+            {
+                /* Unknown flag — stop parsing */
+                break;
+            }
             while(*arg == ' '
                   || *arg == '\t')
             {
@@ -2634,13 +2639,29 @@ errno_t CLI_execute_line()
                 {
                     arg++;
                 }
-                loop_count = (int) strtol(
-                    arg, NULL, 10);
-                while(*arg >= '0'
-                      && *arg <= '9')
+                char *endptr = NULL;
+                long nval = strtol(
+                    arg, &endptr, 10);
+                if(endptr == arg
+                   || nval <= 0)
                 {
-                    arg++;
+                    fprintf(stderr,
+                            "Invalid value for"
+                            " -n option: '%s'"
+                            " (expected positive"
+                            " integer)\n",
+                            arg);
                 }
+                else
+                {
+                    loop_count = (int) nval;
+                    arg = endptr;
+                }
+            }
+            else
+            {
+                /* Unknown flag — stop parsing */
+                break;
             }
             while(*arg == ' '
                   || *arg == '\t')

@@ -1427,11 +1427,28 @@ errno_t cli_cmd_defer(void)
  */
 void cli_defer_run(void)
 {
-    for(int i = cli_defer_count - 1;
-        i >= 0; i--)
+    static int running = 0;
+
+    if(running)
     {
-        CLI_execute_string(
-            cli_defer_stack[i]);
+        return;
     }
-    cli_defer_count = 0;
+    running = 1;
+
+    /* Pop-and-execute in LIFO order.
+     * New defers pushed by a deferred command
+     * are picked up because we re-check
+     * cli_defer_count each iteration. */
+    while(cli_defer_count > 0)
+    {
+        cli_defer_count--;
+        char cmd[STRINGMAXLEN_CLICMDLINE];
+        strncpy(cmd,
+                cli_defer_stack[cli_defer_count],
+                STRINGMAXLEN_CLICMDLINE - 1);
+        cmd[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+        CLI_execute_string(cmd);
+    }
+
+    running = 0;
 }
