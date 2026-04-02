@@ -59,8 +59,12 @@ include_directories ("${PROJECT_SOURCE_DIR}/..")
 # Convention: the main souce file is named <libname>.c
 #
 add_library(${LIBNAME} SHARED ${SRCNAME}.c ${SOURCEFILES})
-target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
-												$<INSTALL_INTERFACE:include>)
+target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(${LIBNAME} PRIVATE ${LINKLIBS})
 
 
@@ -81,6 +85,12 @@ if(USE_CFITSIO AND CFITSIO_FOUND)
       PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
