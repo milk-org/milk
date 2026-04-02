@@ -315,6 +315,8 @@ void help_topic_variables(void)
     printf(C_HDR "FPS Parameter Access:\n" C_RST);
     printf("  " C_CMD "@fpsname.param" C_RST
            "    Read FPS parameter\n");
+    printf("  " C_CMD "@seq.NAME.prop" C_RST
+           "    Read Sequencer property\n");
     printf("  " C_CMD "fpsset fps p v" C_RST
            "    Write FPS parameter\n");
     printf("\n");

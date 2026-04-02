@@ -77,10 +77,15 @@ add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
 target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
 if(${CFITSIO_FOUND})
   target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    ${CFITSIO_INCLUDE_DIRS})
   target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
