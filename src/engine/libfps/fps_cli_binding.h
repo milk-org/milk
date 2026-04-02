@@ -12,7 +12,7 @@
 #include <stdint.h>
 
 #include "fps.h"
-#include "milkdata_clicmd.h"
+#include "libmilkdata/milkdata_clicmd.h"
 
 
 /**
