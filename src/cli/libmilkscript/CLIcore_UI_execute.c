@@ -2419,12 +2419,19 @@ errno_t CLI_execute_line()
                 {
                     arg++;
                 }
-                loop_count = (int) strtol(
-                    arg, NULL, 10);
-                while(*arg >= '0'
-                      && *arg <= '9')
+                char *endptr = NULL;
+                long nval = strtol(arg, &endptr, 10);
+                if(endptr == arg || nval <= 0)
                 {
-                    arg++;
+                    fprintf(stderr,
+                            "Invalid value for -n option: '%s' (expected positive integer)\n",
+                            arg);
+                    /* Treat invalid/zero as a no-op for loop_count */
+                }
+                else
+                {
+                    loop_count = (int) nval;
+                    arg = endptr;
                 }
             }
             while(*arg == ' '
