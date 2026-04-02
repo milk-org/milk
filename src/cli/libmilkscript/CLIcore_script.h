@@ -144,6 +144,21 @@ errno_t cli_cmd_printf(void);
 /** fpslist — list live FPS instances */
 errno_t cli_cmd_fpslist(void);
 
+/** fpsdump — dump FPS params as key=value */
+errno_t cli_cmd_fpsdump(void);
+
+/** streamlist — list live SHM streams */
+errno_t cli_cmd_streamlist(void);
+
+/** proclist — list active processes */
+errno_t cli_cmd_proclist(void);
+
+/** defer — push cleanup command to stack */
+errno_t cli_cmd_defer(void);
+
+/** Run deferred cleanup commands (LIFO) */
+void    cli_defer_run(void);
+
 /* ---- Expansion Functions ---- */
 
 /** Unified variable lookup: CLI > special > env */
