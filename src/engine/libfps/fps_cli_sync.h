@@ -8,7 +8,7 @@
 
 #include "fps.h"
 #include "fps_cli_binding.h"
-#include "milkdata_clicmd.h"
+#include "libmilkdata/milkdata_clicmd.h"
 
 /**
  * @brief Set standalone argc/argv for CLI sync.
