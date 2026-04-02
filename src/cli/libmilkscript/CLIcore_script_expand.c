@@ -474,9 +474,16 @@ static void expand_fpsvar_write(
         }
         else if (strcmp(nsp, "proc") == 0)
         {
-            if (strcmp(prop, "ctrlval") == 0
-                && pinfolist != NULL)
+            if (strcmp(prop, "ctrlval") == 0)
             {
+                if (pinfolist == NULL)
+                {
+                    printf(
+                        "@proc write: "
+                        "process list "
+                        "unavailable\n");
+                    return;
+                }
                 /* Resolve symbolic action names */
                 int ctrlval_int = -1;
                 if (strcmp(valstr, "run") == 0)
@@ -556,6 +563,22 @@ static void expand_fpsvar_write(
                     {
                         close(pfd);
                     }
+                    else
+                    {
+                        printf(
+                            "@proc write: "
+                            "cannot map SHM "
+                            "for '%s'\n",
+                            name);
+                    }
+                }
+                else
+                {
+                    printf(
+                        "@proc write: "
+                        "process '%s' "
+                        "not found\n",
+                        name);
                 }
             }
         }
