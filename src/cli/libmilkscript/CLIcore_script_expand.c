@@ -1000,23 +1000,33 @@ void cli_expand_fpsvar(
             /* ---- Strict Namespaces ---- */
             if(strcmp(fpsname, "seq") == 0)
             {
-                expand_fpsvar_seq(pname, out, &opos, maxlen);
-                continue;
+                /* Only stop here on successful expansion; on failure, fall through
+                 * to legacy handling instead of silently dropping the token. */
+                if(expand_fpsvar_seq(pname, out, &opos, maxlen) != 0)
+                {
+                    continue;
+                }
             }
-            if(strcmp(fpsname, "proc") == 0)
+            else if(strcmp(fpsname, "proc") == 0)
             {
-                expand_fpsvar_procinfo_strict(pname, out, &opos, maxlen);
-                continue;
+                if(expand_fpsvar_procinfo_strict(pname, out, &opos, maxlen) != 0)
+                {
+                    continue;
+                }
             }
-            if(strcmp(fpsname, "s") == 0 || strcmp(fpsname, "stream") == 0)
+            else if(strcmp(fpsname, "s") == 0 || strcmp(fpsname, "stream") == 0)
             {
-                expand_fpsvar_stream(pname, out, &opos, maxlen);
-                continue;
+                if(expand_fpsvar_stream(pname, out, &opos, maxlen) != 0)
+                {
+                    continue;
+                }
             }
-            if(strcmp(fpsname, "fps") == 0)
+            else if(strcmp(fpsname, "fps") == 0)
             {
-                expand_fpsvar_fps_strict(pname, out, &opos, maxlen);
-                continue;
+                if(expand_fpsvar_fps_strict(pname, out, &opos, maxlen) != 0)
+                {
+                    continue;
+                }
             }
 
             /* ---- Legacy Fallback (First FPS, then Procinfo) ---- */
