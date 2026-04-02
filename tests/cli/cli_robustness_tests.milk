@@ -794,6 +794,33 @@ mem.rm _clitest_shm_s
 #EXPECT:OK
 !rm -f /tmp/_clitest_redir.txt
 
+#DESC: Defer command evaluation
+#EXPECT:OK
+mem.mk2Dim _defertest 4 4
+defer mem.rm _defertest
+
+#DESC: Defer max limit test
+#EXPECT:ERR
+defer echo 1
+defer echo 2
+defer echo 3
+defer echo 4
+defer echo 5
+defer echo 6
+defer echo 7
+defer echo 8
+defer echo 9
+defer echo 10
+defer echo 11
+defer echo 12
+defer echo 13
+defer echo 14
+defer echo 15
+defer echo 16
+defer echo 17
+
+
+
 #DESC: Final echo
 #EXPECT:OK
 echo CLI_ROBUSTNESS_TESTS_COMPLETE

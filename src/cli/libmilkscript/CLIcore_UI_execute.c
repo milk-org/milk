@@ -2386,15 +2386,54 @@ errno_t CLI_execute_line()
     else if(strncmp(data.CLIcmdline,
                     "on_update ", 10) == 0)
     {
-        /* on_update <stream> { cmd }
+        /* on_update [-l] [-n N] <stream> { cmd }
          * Wait for stream semaphore,
-         * then execute cmd. */
+         * then execute cmd.
+         * -l: loop forever
+         * -n N: loop N times */
         const char *arg =
             data.CLIcmdline + 10;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
         }
+
+        /* Parse flags */
+        int loop_count = 1; /* default: once */
+        while(*arg == '-')
+        {
+            if(strncmp(arg, "-l", 2) == 0
+               && (arg[2] == ' '
+                   || arg[2] == '\t'
+                   || arg[2] == '\0'))
+            {
+                loop_count = -1;
+                arg += 2;
+            }
+            else if(strncmp(arg, "-n", 2)
+                    == 0)
+            {
+                arg += 2;
+                while(*arg == ' '
+                      || *arg == '\t')
+                {
+                    arg++;
+                }
+                loop_count = (int) strtol(
+                    arg, NULL, 10);
+                while(*arg >= '0'
+                      && *arg <= '9')
+                {
+                    arg++;
+                }
+            }
+            while(*arg == ' '
+                  || *arg == '\t')
+            {
+                arg++;
+            }
+        }
+
         /* Parse stream name */
         char sname[200];
         {
@@ -2444,6 +2483,7 @@ errno_t CLI_execute_line()
            || body[0] == '\0')
         {
             printf("Usage: on_update "
+                   "[-l] [-n N] "
                    "<stream> "
                    "{ command }\n");
         }
@@ -2461,18 +2501,84 @@ errno_t CLI_execute_line()
                         &img, 0);
                 if(semidx >= 0)
                 {
-                    ImageStreamIO_semwait(
-                        &img, semidx);
-                    /* Execute body */
-                    strncpy(
-                        data.CLIcmdline,
-                        body,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                    data.CLIcmdline[
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1] = '\0';
-                    CLI_execute_line();
+                    /* Create processinfo for
+                     * loop mode */
+                    PROCESSINFO *procinfo =
+                        NULL;
+                    int is_loop =
+                        (loop_count != 1);
+                    if(is_loop)
+                    {
+                        char pname[64];
+                        snprintf(pname,
+                            sizeof(pname),
+                            "on_update_%s",
+                            sname);
+                        procinfo =
+                            processinfo_shm_create(
+                                pname,
+                                PROCESSINFO_CTRLVAL_RUN);
+                    }
+
+                    int iter = 0;
+                    int keep_going = 1;
+                    while(keep_going
+                          && !cli_break_flag)
+                    {
+                        /* Check procctl */
+                        if(procinfo != NULL)
+                        {
+                            if(procinfo->CTRLval
+                               == PROCESSINFO_CTRLVAL_EXIT)
+                            {
+                                break;
+                            }
+                            while(procinfo
+                                ->CTRLval
+                                == PROCESSINFO_CTRLVAL_PAUSE)
+                            {
+                                usleep(10000);
+                                if(cli_break_flag)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+
+                        ImageStreamIO_semwait(
+                            &img, semidx);
+
+                        /* Execute body */
+                        strncpy(
+                            data.CLIcmdline,
+                            body,
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1);
+                        data.CLIcmdline[
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1] = '\0';
+                        CLI_execute_line();
+
+                        iter++;
+                        if(procinfo != NULL)
+                        {
+                            procinfo->loopcnt
+                                = iter;
+                        }
+                        if(loop_count > 0
+                           && iter
+                           >= loop_count)
+                        {
+                            keep_going = 0;
+                        }
+                    }
+                    cli_break_flag = 0;
+
+                    if(procinfo != NULL)
+                    {
+                        processinfo_cleanExit(
+                            procinfo);
+                    }
                 }
             }
             else
@@ -2488,7 +2594,8 @@ errno_t CLI_execute_line()
                     "on_fpschange ",
                     13) == 0)
     {
-        /* on_fpschange fpsname.param { cmd }
+        /* on_fpschange [-l] [-n N]
+         *   fpsname.param { cmd }
          * Poll FPS parameter, execute body
          * when it changes. */
         const char *arg =
@@ -2498,6 +2605,43 @@ errno_t CLI_execute_line()
         {
             arg++;
         }
+
+        /* Parse flags */
+        int loop_count = 1;
+        while(*arg == '-')
+        {
+            if(strncmp(arg, "-l", 2) == 0
+               && (arg[2] == ' '
+                   || arg[2] == '\t'
+                   || arg[2] == '\0'))
+            {
+                loop_count = -1;
+                arg += 2;
+            }
+            else if(strncmp(arg, "-n", 2)
+                    == 0)
+            {
+                arg += 2;
+                while(*arg == ' '
+                      || *arg == '\t')
+                {
+                    arg++;
+                }
+                loop_count = (int) strtol(
+                    arg, NULL, 10);
+                while(*arg >= '0'
+                      && *arg <= '9')
+                {
+                    arg++;
+                }
+            }
+            while(*arg == ' '
+                  || *arg == '\t')
+            {
+                arg++;
+            }
+        }
+
         /* Extract fpsname.param */
         char fparg[256];
         {
@@ -2593,37 +2737,133 @@ errno_t CLI_execute_line()
                 }
                 else
                 {
+                    /* Create processinfo
+                     * for loop mode */
+                    PROCESSINFO *procinfo =
+                        NULL;
+                    int is_loop =
+                        (loop_count != 1);
+                    if(is_loop)
+                    {
+                        char pname[64];
+                        snprintf(pname,
+                            sizeof(pname),
+                            "on_fpschg_%s",
+                            fpsn);
+                        procinfo =
+                            processinfo_shm_create(
+                                pname,
+                                PROCESSINFO_CTRLVAL_RUN);
+                    }
+
                     char prev[256];
                     functionparameter_GetParamValueString(
                         &fps.parray[pidx],
                         prev,
                         sizeof(prev));
-                    /* Poll until change */
-                    char cur[256];
-                    for(;;)
+
+                    int iter = 0;
+                    int keep_going = 1;
+                    while(keep_going
+                          && !cli_break_flag)
                     {
-                        usleep(100000);
-                        functionparameter_GetParamValueString(
-                            &fps.parray[pidx],
-                            cur,
-                            sizeof(cur));
-                        if(strcmp(cur,
-                                 prev)
-                           != 0)
+                        /* Check procctl */
+                        if(procinfo != NULL)
+                        {
+                            if(procinfo
+                                ->CTRLval
+                               == PROCESSINFO_CTRLVAL_EXIT)
+                            {
+                                break;
+                            }
+                            while(procinfo
+                                ->CTRLval
+                                == PROCESSINFO_CTRLVAL_PAUSE)
+                            {
+                                usleep(10000);
+                                if(cli_break_flag)
+                                {
+                                    break;
+                                }
+                            }
+                        }
+
+                        /* Poll for change */
+                        char cur[256];
+                        for(;;)
+                        {
+                            usleep(100000);
+                            if(cli_break_flag)
+                            {
+                                break;
+                            }
+                            if(procinfo
+                               != NULL
+                               && procinfo
+                                ->CTRLval
+                               != PROCESSINFO_CTRLVAL_RUN)
+                            {
+                                break;
+                            }
+                            functionparameter_GetParamValueString(
+                                &fps
+                                .parray[pidx],
+                                cur,
+                                sizeof(cur));
+                            if(strcmp(cur,
+                                     prev)
+                               != 0)
+                            {
+                                break;
+                            }
+                        }
+                        if(cli_break_flag)
                         {
                             break;
                         }
+                        if(procinfo != NULL
+                           && procinfo
+                            ->CTRLval
+                           != PROCESSINFO_CTRLVAL_RUN)
+                        {
+                            break;
+                        }
+
+                        /* Execute body */
+                        strncpy(prev, cur,
+                                sizeof(prev)
+                                - 1);
+                        strncpy(
+                            data.CLIcmdline,
+                            body,
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1);
+                        data.CLIcmdline[
+                            STRINGMAXLEN_CLICMDLINE
+                            - 1] = '\0';
+                        CLI_execute_line();
+
+                        iter++;
+                        if(procinfo != NULL)
+                        {
+                            procinfo
+                                ->loopcnt
+                                = iter;
+                        }
+                        if(loop_count > 0
+                           && iter
+                           >= loop_count)
+                        {
+                            keep_going = 0;
+                        }
                     }
-                    /* Execute body */
-                    strncpy(
-                        data.CLIcmdline,
-                        body,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                    data.CLIcmdline[
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1] = '\0';
-                    CLI_execute_line();
+                    cli_break_flag = 0;
+
+                    if(procinfo != NULL)
+                    {
+                        processinfo_cleanExit(
+                            procinfo);
+                    }
                 }
                 function_parameter_struct_disconnect(
                     &fps);

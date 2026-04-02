@@ -803,7 +803,8 @@ void cli_expand_fpsvar(
                             line[i])
                         || line[i] == '_'
                         || line[i] == '.'
-                        || line[i] == '-'))
+                        || line[i] == '-'
+                        || line[i] == '*'))
             {
                 token[tlen++] = line[i++];
             }
@@ -864,6 +865,25 @@ void cli_expand_fpsvar(
                 expand_fpsvar_procinfo(
                     fpsname, pname,
                     out, &opos, maxlen);
+                continue;
+            }
+            /* @fps.* — enumerate all params */
+            if(strcmp(pname, "*") == 0)
+            {
+                for(int pi = 0;
+                    pi < fps.md->NBparamMAX;
+                    pi++)
+                {
+                    if(fps.parray[pi].fpflag
+                       & FPFLAG_ACTIVE)
+                    {
+                        printf("%s\n",
+                            fps.parray[pi]
+                                .keyword[0]);
+                    }
+                }
+                function_parameter_struct_disconnect(
+                    &fps);
                 continue;
             }
 
@@ -1156,7 +1176,8 @@ static int test_unary_shm(
         char shmpath[512];
         struct stat sb;
         snprintf(shmpath, sizeof(shmpath),
-                 "/dev/shm/%s.im.shm", arg);
+                 "%s/%s.im.shm",
+                 dcshmdir, arg);
         *result = stat(shmpath, &sb) == 0
                   ? 1 : 0;
         return 1;
@@ -1166,7 +1187,8 @@ static int test_unary_shm(
         char shmpath[512];
         struct stat sb;
         snprintf(shmpath, sizeof(shmpath),
-                 "/dev/shm/fps.%s.shm", arg);
+                 "%s/fps.%s.shm",
+                 dcshmdir, arg);
         *result = stat(shmpath, &sb) == 0
                   ? 1 : 0;
         return 1;
@@ -1187,6 +1209,72 @@ static int test_unary_shm(
                         arg) == 0)
                 {
                     *result = 1;
+                    break;
+                }
+            }
+        }
+        return 1;
+    }
+    if (strcmp(op, "-R") == 0)
+    {
+        /* Process is registered AND running
+         * (CTRLval == RUN). -P just checks
+         * registration, -R requires active. */
+        *result = 0;
+        if (pinfolist != NULL)
+        {
+            for (int pi = 0;
+                 pi < PROCESSINFOLISTSIZE;
+                 pi++)
+            {
+                if (pinfolist->active[pi]
+                    && strcmp(
+                        pinfolist
+                            ->pnamearray[pi],
+                        arg) == 0)
+                {
+                    pid_t fpid =
+                        pinfolist
+                            ->PIDarray[pi];
+                    if (fpid > 0)
+                    {
+                        char pfn[512];
+                        char pdname[256];
+                        processinfo_procdirname(
+                            pdname);
+                        snprintf(
+                            pfn,
+                            sizeof(pfn),
+                            "%s/proc.%d"
+                            ".shm",
+                            pdname,
+                            (int) fpid);
+                        int pfd = -1;
+                        PROCESSINFO *pi_shm =
+                            processinfo_shm_link(
+                                pfn, &pfd);
+                        if (pi_shm
+                            != MAP_FAILED
+                            && pi_shm
+                            != NULL)
+                        {
+                            if (pi_shm
+                                ->CTRLval
+                                == PROCESSINFO_CTRLVAL_RUN)
+                            {
+                                *result = 1;
+                            }
+                            munmap(
+                                pi_shm,
+                                sizeof(
+                                PROCESSINFO));
+                            close(pfd);
+                        }
+                        else if (pfd >= 0)
+                        {
+                            close(pfd);
+                        }
+                    }
                     break;
                 }
             }
@@ -1547,6 +1635,38 @@ void cli_expand_env(
             {
                 is_length = 1;
                 i++;
+            }
+
+            /* ${@fps.param} — FPS inline access */
+            if(has_brace && line[i] == '@')
+            {
+                i++; /* skip @ */
+                char atbuf[512];
+                int  alen = 0;
+                atbuf[alen++] = '@';
+                while(line[i] != '\0'
+                      && line[i] != '}'
+                      && alen < 511)
+                {
+                    atbuf[alen++] = line[i++];
+                }
+                atbuf[alen] = '\0';
+                if(line[i] == '}')
+                {
+                    i++;
+                }
+                /* Expand the @token in-place */
+                cli_expand_fpsvar(
+                    atbuf,
+                    (int) sizeof(atbuf));
+                int rlen = (int) strlen(atbuf);
+                int avail = maxlen - 1 - opos;
+                int clen = rlen < avail
+                           ? rlen : avail;
+                memcpy(out + opos, atbuf,
+                       (size_t) clen);
+                opos += clen;
+                continue;
             }
 
             char varname[256];

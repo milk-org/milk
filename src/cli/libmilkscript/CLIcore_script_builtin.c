@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
@@ -11,6 +12,14 @@
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_script.h"
 #include "CLIcore/cli_calc_parser.h"
+#include "ImageStreamIO/ImageStreamIO.h"
+
+/* processinfo functions — linked
+ * via milkprocessinfo */
+extern PROCESSINFO *processinfo_shm_link(
+    const char *pname, int *fd);
+extern errno_t processinfo_procdirname(
+    char *procdname);
 
 
 /**
@@ -40,6 +49,7 @@ void cli_trap_run(int signum)
  */
 void cli_trap_run_exit(void)
 {
+    cli_defer_run();
     cli_trap_run(0);
 }
 
@@ -930,4 +940,483 @@ errno_t cli_cmd_fpslist(void)
     closedir(d);
 
     return RETURN_SUCCESS;
+}
+
+
+/* ============================================================
+ *  fpsdump — dump all params of an FPS as key=value
+ * ============================================================
+ */
+
+/**
+ * @brief fpsdump command — dump all parameters
+ *
+ * Connects to the named FPS and prints every
+ * active parameter as key=value lines.
+ *
+ * Usage: fpsdump [-t] <fpsname>
+ *   -t  tab-separated: key\tTYPE\tvalue
+ */
+errno_t cli_cmd_fpsdump(void)
+{
+    int tabmode = 0;
+    int arg_idx = 1;
+
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: fpsdump [-t] "
+               "<fpsname>\n");
+        return RETURN_FAILURE;
+    }
+
+    if(data.cmdNBarg >= 3
+       && strcmp(
+           data.cmdargtoken[1].val.string,
+           "-t") == 0)
+    {
+        tabmode = 1;
+        arg_idx = 2;
+    }
+
+    const char *fpsname =
+        data.cmdargtoken[arg_idx].val.string;
+
+    FUNCTION_PARAMETER_STRUCT fps;
+    fps.SMfd = -1;
+    int rc =
+        function_parameter_struct_connect(
+            fpsname, &fps,
+            FPSCONNECT_SIMPLE);
+    if(rc == -1 || fps.md == NULL
+       || fps.parray == NULL)
+    {
+        printf("fpsdump: cannot connect "
+               "to FPS '%s'\n", fpsname);
+        return RETURN_FAILURE;
+    }
+
+    for(int pi = 0;
+        pi < fps.md->NBparamMAX; pi++)
+    {
+        if(!(fps.parray[pi].fpflag
+             & FPFLAG_ACTIVE))
+        {
+            continue;
+        }
+        char vstr[512];
+        functionparameter_GetParamValueString(
+            &fps.parray[pi],
+            vstr,
+            (int) sizeof(vstr));
+
+        if(tabmode)
+        {
+            /* Type name from type enum */
+            const char *tname = "UNKNOWN";
+            switch(fps.parray[pi].type)
+            {
+            case FPTYPE_INT64:
+                tname = "INT64";
+                break;
+            case FPTYPE_FLOAT64:
+                tname = "FLOAT64";
+                break;
+            case FPTYPE_FLOAT32:
+                tname = "FLOAT32";
+                break;
+            case FPTYPE_STRING:
+                tname = "STRING";
+                break;
+            case FPTYPE_ONOFF:
+                tname = "ONOFF";
+                break;
+            case FPTYPE_FILENAME:
+                tname = "FILENAME";
+                break;
+            case FPTYPE_FITSFILENAME:
+                tname = "FITSFILENAME";
+                break;
+            case FPTYPE_EXECFILENAME:
+                tname = "EXECFILENAME";
+                break;
+            case FPTYPE_DIRNAME:
+                tname = "DIRNAME";
+                break;
+            case FPTYPE_STREAMNAME:
+                tname = "STREAMNAME";
+                break;
+            case FPTYPE_FPSNAME:
+                tname = "FPSNAME";
+                break;
+            case FPTYPE_TIMESPEC:
+                tname = "TIMESPEC";
+                break;
+            case FPTYPE_PID:
+                tname = "PID";
+                break;
+            default:
+                break;
+            }
+            printf("%s\t%s\t%s\n",
+                   fps.parray[pi].keyword[0],
+                   tname, vstr);
+        }
+        else
+        {
+            printf("%s=%s\n",
+                   fps.parray[pi].keyword[0],
+                   vstr);
+        }
+    }
+
+    function_parameter_struct_disconnect(&fps);
+
+    return RETURN_SUCCESS;
+}
+
+
+/* ============================================================
+ *  streamlist — enumerate live SHM streams
+ * ============================================================
+ */
+
+/**
+ * @brief streamlist command — list live streams
+ *
+ * Scans SHM directory for *.im.shm files.
+ *
+ * Usage: streamlist [-l] [pattern]
+ *   -l       long format: name WxH type cnt0
+ *   pattern  glob filter (e.g. "dm*")
+ */
+errno_t cli_cmd_streamlist(void)
+{
+    int longmode = 0;
+    const char *pat = NULL;
+    int argpos = 1;
+
+    /* Parse flags */
+    for(int a = 1; a < data.cmdNBarg; a++)
+    {
+        const char *tok =
+            data.cmdargtoken[a].val.string;
+        if(strcmp(tok, "-l") == 0)
+        {
+            longmode = 1;
+            argpos = a + 1;
+        }
+    }
+    if(argpos < data.cmdNBarg)
+    {
+        pat =
+            data.cmdargtoken[argpos]
+                .val.string;
+    }
+
+    const char *shmdname = dcshmdir;
+
+    DIR           *d;
+    struct dirent *de;
+    d = opendir(shmdname);
+    if(d == NULL)
+    {
+        printf("Cannot open SHM dir: %s\n",
+               shmdname);
+        return RETURN_FAILURE;
+    }
+
+    while((de = readdir(d)) != NULL)
+    {
+        char *sfx = strstr(de->d_name,
+                           ".im.shm");
+        if(sfx == NULL)
+        {
+            continue;
+        }
+        /* Skip FPS files */
+        if(strstr(de->d_name,
+                  ".fps.shm") != NULL)
+        {
+            continue;
+        }
+
+        char sname[256];
+        size_t nlen = (size_t)(sfx
+                               - de->d_name);
+        if(nlen >= sizeof(sname))
+        {
+            continue;
+        }
+        strncpy(sname, de->d_name, nlen);
+        sname[nlen] = '\0';
+
+        if(pat != NULL
+           && fnmatch(pat, sname, 0) != 0)
+        {
+            continue;
+        }
+
+        if(!longmode)
+        {
+            printf("%s\n", sname);
+        }
+        else
+        {
+            IMAGE img;
+            memset(&img, 0, sizeof(IMAGE));
+            errno_t sret =
+                ImageStreamIO_openIm(
+                    &img, sname);
+            if(sret == IMAGESTREAMIO_SUCCESS
+               && img.md != NULL)
+            {
+                /* Build size string */
+                char szstr[64];
+                if(img.md->naxis == 1)
+                {
+                    snprintf(szstr,
+                        sizeof(szstr),
+                        "%u",
+                        img.md->size[0]);
+                }
+                else if(img.md->naxis == 2)
+                {
+                    snprintf(szstr,
+                        sizeof(szstr),
+                        "%ux%u",
+                        img.md->size[0],
+                        img.md->size[1]);
+                }
+                else
+                {
+                    snprintf(szstr,
+                        sizeof(szstr),
+                        "%ux%ux%u",
+                        img.md->size[0],
+                        img.md->size[1],
+                        img.md->size[2]);
+                }
+                printf("%-24s %-12s %-7s "
+                       "cnt0=%lu\n",
+                    sname, szstr,
+                    ImageStreamIO_typename(
+                        img.md->datatype),
+                    (unsigned long)
+                        img.md->cnt0);
+                ImageStreamIO_closeIm(&img);
+            }
+            else
+            {
+                printf("%-24s UNAVAIL\n",
+                       sname);
+            }
+        }
+    }
+    closedir(d);
+
+    return RETURN_SUCCESS;
+}
+
+
+/* ============================================================
+ *  proclist — enumerate active processes
+ * ============================================================
+ */
+
+/**
+ * @brief proclist command — list active procs
+ *
+ * Iterates the processinfo list and prints
+ * active process names, one per line.
+ *
+ * Usage: proclist [-l]
+ *   -l  long format: name  state  freq
+ */
+errno_t cli_cmd_proclist(void)
+{
+    int longmode = 0;
+    if(data.cmdNBarg >= 2
+       && strcmp(
+           data.cmdargtoken[1].val.string,
+           "-l") == 0)
+    {
+        longmode = 1;
+    }
+
+    if(pinfolist == NULL)
+    {
+        printf("proclist: processinfo "
+               "not available\n");
+        return RETURN_FAILURE;
+    }
+
+    for(int pi = 0;
+        pi < PROCESSINFOLISTSIZE; pi++)
+    {
+        if(!pinfolist->active[pi])
+        {
+            continue;
+        }
+
+        if(!longmode)
+        {
+            printf("%s\n",
+                   pinfolist
+                       ->pnamearray[pi]);
+        }
+        else
+        {
+            /* Connect to get CTRLval and
+             * loop frequency */
+            pid_t fpid =
+                pinfolist->PIDarray[pi];
+            const char *state = "UNKNOWN";
+            double freq = 0.0;
+
+            if(fpid > 0)
+            {
+                char pfn[512];
+                char pdname[256];
+                processinfo_procdirname(
+                    pdname);
+                snprintf(pfn, sizeof(pfn),
+                         "%s/proc.%d.shm",
+                         pdname,
+                         (int) fpid);
+                int pfd = -1;
+                PROCESSINFO *pi_shm =
+                    processinfo_shm_link(
+                        pfn, &pfd);
+                if(pi_shm != MAP_FAILED
+                   && pi_shm != NULL)
+                {
+                    switch(pi_shm->CTRLval)
+                    {
+                    case PROCESSINFO_CTRLVAL_RUN:
+                        state = "ACTIVE";
+                        break;
+                    case PROCESSINFO_CTRLVAL_PAUSE:
+                        state = "PAUSED";
+                        break;
+                    case PROCESSINFO_CTRLVAL_EXIT:
+                        state = "STOPPED";
+                        break;
+                    default:
+                        state = "OTHER";
+                        break;
+                    }
+                    /* Frequency from median
+                     * iteration timing */
+                    if(pi_shm
+                       ->dtmedian_iter_ns
+                       > 0)
+                    {
+                        freq =
+                            1.0e9
+                            / (double)
+                            pi_shm
+                            ->dtmedian_iter_ns;
+                    }
+                    munmap(pi_shm,
+                           sizeof(
+                               PROCESSINFO));
+                    close(pfd);
+                }
+                else if(pfd >= 0)
+                {
+                    close(pfd);
+                }
+            }
+
+            printf("%-24s %-8s %8.1f Hz\n",
+                   pinfolist
+                       ->pnamearray[pi],
+                   state, freq);
+        }
+    }
+
+    return RETURN_SUCCESS;
+}
+
+
+/* ============================================================
+ *  defer — register LIFO cleanup command
+ * ============================================================
+ */
+
+#define CLI_DEFER_MAX 32
+
+static char cli_defer_stack
+    [CLI_DEFER_MAX][STRINGMAXLEN_CLICMDLINE];
+static int  cli_defer_count = 0;
+
+/**
+ * @brief defer command — register cleanup
+ *
+ * Pushes a command onto a LIFO stack that is
+ * executed in reverse order when the script
+ * exits (integrated with trap EXIT).
+ *
+ * Usage: defer <command ...>
+ */
+errno_t cli_cmd_defer(void)
+{
+    if(data.cmdNBarg < 2)
+    {
+        printf("Usage: defer <command>\n");
+        return RETURN_FAILURE;
+    }
+
+    if(cli_defer_count >= CLI_DEFER_MAX)
+    {
+        printf("defer: stack full "
+               "(max %d)\n", CLI_DEFER_MAX);
+        return RETURN_FAILURE;
+    }
+
+    /* Reconstruct the deferred command from
+     * all tokens after "defer" */
+    char cmd[STRINGMAXLEN_CLICMDLINE];
+    cmd[0] = '\0';
+    for(int a = 1; a < data.cmdNBarg; a++)
+    {
+        if(a > 1)
+        {
+            strncat(cmd, " ",
+                    sizeof(cmd)
+                    - strlen(cmd) - 1);
+        }
+        strncat(cmd,
+                data.cmdargtoken[a]
+                    .val.string,
+                sizeof(cmd)
+                - strlen(cmd) - 1);
+    }
+
+    strncpy(
+        cli_defer_stack[cli_defer_count],
+        cmd,
+        STRINGMAXLEN_CLICMDLINE - 1);
+    cli_defer_stack[cli_defer_count]
+        [STRINGMAXLEN_CLICMDLINE - 1] = '\0';
+    cli_defer_count++;
+
+    return RETURN_SUCCESS;
+}
+
+/**
+ * @brief Execute deferred cleanup commands
+ *
+ * Called from cli_trap_run_exit() to run
+ * all deferred commands in LIFO order.
+ */
+void cli_defer_run(void)
+{
+    for(int i = cli_defer_count - 1;
+        i >= 0; i--)
+    {
+        CLI_execute_string(
+            cli_defer_stack[i]);
+    }
+    cli_defer_count = 0;
 }
