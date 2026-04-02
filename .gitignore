@@ -41,6 +41,8 @@ local-install/
 
 # Documentation build output
 _site/
+site/
+sitemap.xml.gz
 docs/doxygen/
 
 # Performance benchmark results
