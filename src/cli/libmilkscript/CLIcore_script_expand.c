@@ -34,6 +34,7 @@
 
 /* Sequencer SHM API — linked via milkfpsseq */
 #include "fpsseq.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 /* processinfo functions — linked via milkprocessinfo */
 extern PROCESSINFO *processinfo_shm_link(
@@ -453,12 +454,40 @@ static void expand_fpsvar_write(
         valstr, (int) sizeof(valstr));
 
     char tcopy[512];
-    strncpy(tcopy, token,
-            sizeof(tcopy) - 1);
+    strncpy(tcopy, token, sizeof(tcopy) - 1);
     tcopy[sizeof(tcopy) - 1] = '\0';
-    char *dot = strchr(tcopy, '.');
-    *dot = '\0';
-    cli_fps_set_param(tcopy, dot + 1, valstr);
+    
+    char *dot1 = strchr(tcopy, '.');
+    char *dot2 = dot1 ? strchr(dot1 + 1, '.') : NULL;
+    
+    if (dot1 && dot2)
+    {
+        *dot1 = '\0';
+        *dot2 = '\0';
+        const char *nsp = tcopy;
+        const char *name = dot1 + 1;
+        const char *prop = dot2 + 1;
+        
+        if (strcmp(nsp, "fps") == 0)
+        {
+            cli_fps_set_param(name, prop, valstr);
+        }
+        else if (strcmp(nsp, "proc") == 0)
+        {
+            if (strcmp(prop, "ctrlval") == 0) {
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "procctl %s ctrlval %s", name, valstr);
+                // The easiest way to natively leverage existing write capability without reinventing processinfo mapping
+                system(cmd);
+            }
+        }
+    }
+    else if (dot1)
+    {
+        /* Legacy fallback: @fpsname.param=val */
+        *dot1 = '\0';
+        cli_fps_set_param(tcopy, dot1 + 1, valstr);
+    }
 
     /* Insert no-op ":" if this is the entire cmd */
     if (*opos == 0)
@@ -725,6 +754,131 @@ static int expand_fpsvar_procinfo(
     return 1;
 }
 
+static int expand_fpsvar_procinfo_strict(char *pname, char *out, int *opos, int maxlen)
+{
+    char *dot2 = strchr(pname, '.');
+    if (dot2 == NULL) return 0;
+    *dot2 = '\0';
+    return expand_fpsvar_procinfo(pname, dot2 + 1, out, opos, maxlen);
+}
+
+static int expand_fpsvar_stream(char *pname, char *out, int *opos, int maxlen)
+{
+    char *dot2 = strchr(pname, '.');
+    if (dot2 == NULL) return 0;
+    *dot2 = '\0';
+    const char *sname = pname;
+    const char *prop = dot2 + 1;
+
+    char retbuf[512];
+    retbuf[0] = '\0';
+
+    char shmchkpath[STRINGMAXLEN_DIRNAME + 128 + 16];
+    snprintf(shmchkpath, sizeof(shmchkpath), "%s/%s.im.shm", dcshmdir, sname);
+    if(access(shmchkpath, F_OK) != 0) return 0;
+
+    IMAGE img;
+    memset(&img, 0, sizeof(IMAGE));
+    errno_t sret = ImageStreamIO_openIm(&img, sname);
+    if(sret == IMAGESTREAMIO_SUCCESS && img.md != NULL)
+    {
+        int found = 0;
+        if(strcmp(prop, "xsize") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", img.md->size[0]); found = 1; }
+        else if(strcmp(prop, "ysize") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (img.md->naxis > 1 && img.md->size[1] > 0) ? img.md->size[1] : 1U); found = 1; }
+        else if(strcmp(prop, "zsize") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (img.md->naxis > 2 && img.md->size[2] > 0) ? img.md->size[2] : 1U); found = 1; }
+        else if(strcmp(prop, "naxis") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (unsigned)img.md->naxis); found = 1; }
+        else if(strcmp(prop, "type") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (unsigned)img.md->datatype); found = 1; }
+        else if(strcmp(prop, "typename") == 0) { const char *tn = ImageStreamIO_typename(img.md->datatype); if(tn != NULL) { strncpy(retbuf, tn, sizeof(retbuf) - 1); retbuf[sizeof(retbuf) - 1] = '\0'; } else { snprintf(retbuf, sizeof(retbuf), "%u", (unsigned)img.md->datatype); } found = 1; }
+        else if(strcmp(prop, "typeid") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (unsigned)img.md->datatype); found = 1; }
+        else if(strcmp(prop, "cnt0") == 0) { snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long)img.md->cnt0); found = 1; }
+        else if(strcmp(prop, "cnt1") == 0) { snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long)img.md->cnt1); found = 1; }
+        else if(strcmp(prop, "sem") == 0) { snprintf(retbuf, sizeof(retbuf), "%u", (unsigned)img.md->sem); found = 1; }
+        else if(strcmp(prop, "pid") == 0) { snprintf(retbuf, sizeof(retbuf), "%d", (int)img.md->creatorPID); found = 1; }
+        else if(strcmp(prop, "ownerPID") == 0) { snprintf(retbuf, sizeof(retbuf), "%d", (int)img.md->ownerPID); found = 1; }
+        else if(strcmp(prop, "nelement") == 0) { snprintf(retbuf, sizeof(retbuf), "%lu", (unsigned long)img.md->nelement); found = 1; }
+        
+        ImageStreamIO_closeIm(&img);
+
+        if(found)
+        {
+            int vlen = (int) strlen(retbuf);
+            int avail = maxlen - 1 - *opos;
+            int clen = vlen < avail ? vlen : avail;
+            memcpy(out + *opos, retbuf, (size_t) clen);
+            *opos += clen;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int expand_fpsvar_fps_strict(char *pname, char *out, int *opos, int maxlen)
+{
+    char *dot2 = strchr(pname, '.');
+    if (dot2 == NULL) return 0;
+    *dot2 = '\0';
+    const char *fpsname = pname;
+    const char *fprop = dot2 + 1;
+    
+    FUNCTION_PARAMETER_STRUCT fps;
+    int fpsconn = function_parameter_struct_connect(fpsname, &fps, FPSCONNECT_SIMPLE);
+    if(fpsconn == -1 || fps.parray == NULL)
+    {
+        return 0;
+    }
+    if(strcmp(fprop, "*") == 0)
+    {
+        int first = 1;
+        for(int pi = 0; pi < fps.md->NBparamMAX; pi++)
+        {
+            if(fps.parray[pi].fpflag & FPFLAG_ACTIVE)
+            {
+                const char *kw = fps.parray[pi].keyword[0];
+                int kwlen = (int) strlen(kw);
+                int avail = maxlen - 1 - *opos;
+
+                if(!first && *opos < maxlen - 1)
+                {
+                    out[(*opos)++] = ' ';
+                    avail--;
+                }
+                first = 0;
+
+                if(kwlen > avail) kwlen = avail;
+                if(kwlen > 0)
+                {
+                    memcpy(out + *opos, kw, (size_t) kwlen);
+                    *opos += kwlen;
+                }
+            }
+        }
+        function_parameter_struct_disconnect(&fps);
+        return 1;
+    }
+
+    int pindex = functionparameter_GetParamIndex(&fps, fprop);
+    if(pindex < 0)
+    {
+        char dotname[512];
+        snprintf(dotname, sizeof(dotname), ".%s", fprop);
+        pindex = functionparameter_GetParamIndex(&fps, dotname);
+    }
+
+    if(pindex >= 0)
+    {
+        char vstr[512];
+        functionparameter_GetParamValueString(&fps.parray[pindex], vstr, (int) sizeof(vstr));
+
+        int vlen = (int) strlen(vstr);
+        int avail = maxlen - 1 - *opos;
+        int clen = vlen < avail ? vlen : avail;
+        memcpy(out + *opos, vstr, (size_t) clen);
+        *opos += clen;
+    }
+
+    function_parameter_struct_disconnect(&fps);
+    return 1;
+}
 
 /**
  * @brief Expand and query properties from shared memory objects
@@ -843,15 +997,29 @@ void cli_expand_fpsvar(
             const char *fpsname = token;
             char *pname = dot + 1;
 
-            /* ---- Sequencer: @seq.NAME.prop ---- */
+            /* ---- Strict Namespaces ---- */
             if(strcmp(fpsname, "seq") == 0)
             {
-                expand_fpsvar_seq(
-                    pname, out,
-                    &opos, maxlen);
+                expand_fpsvar_seq(pname, out, &opos, maxlen);
+                continue;
+            }
+            if(strcmp(fpsname, "proc") == 0)
+            {
+                expand_fpsvar_procinfo_strict(pname, out, &opos, maxlen);
+                continue;
+            }
+            if(strcmp(fpsname, "s") == 0 || strcmp(fpsname, "stream") == 0)
+            {
+                expand_fpsvar_stream(pname, out, &opos, maxlen);
+                continue;
+            }
+            if(strcmp(fpsname, "fps") == 0)
+            {
+                expand_fpsvar_fps_strict(pname, out, &opos, maxlen);
                 continue;
             }
 
+            /* ---- Legacy Fallback (First FPS, then Procinfo) ---- */
             FUNCTION_PARAMETER_STRUCT fps;
             int fpsconn =
                 function_parameter_struct_connect(

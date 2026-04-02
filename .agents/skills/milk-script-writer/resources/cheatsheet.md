@@ -111,9 +111,9 @@ wait -F name p=v 5       # Wait param=val
 mem.mk2Dim name W H      # Create
 mem.rm name 0             # Delete (0=ign err)
 mem.listim                # List
-${s.xsize}  ${s.ysize}   # Dimensions
-${s.naxis}  ${s.type}    # Axes, datatype
-${s.cnt0}   ${s.nelement}# Counter, size
+@s.s.xsize  @s.s.ysize   # Dimensions
+@s.s.naxis  @s.s.type    # Axes, datatype
+@s.s.cnt0   @s.s.nelement# Counter, size
 waitfor_stream name 10    # Wait for SHM
 wait -S name 5            # Wait for update
 on_update name { cmd }    # Trigger
