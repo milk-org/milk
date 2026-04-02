@@ -159,10 +159,10 @@ Similar to FPS parameters, you can access properties of shared memory streams vi
 
 ```bash
 #!/usr/bin/env milk-cli -s
-echo "Geometry: @s.mystream.xsizex@s.mystream.ysizex@s.mystream.zsize"
-echo "Datatype Code: @s.mystream.type"
-echo "Frame Counter: @s.mystream.cnt0"
-echo "Number of axes: @s.mystream.naxis"
+echo "Geometry: ${@s.mystream.xsize}x${@s.mystream.ysize}x${@s.mystream.zsize}"
+echo "Datatype Code: ${@s.mystream.type}"
+echo "Frame Counter: ${@s.mystream.cnt0}"
+echo "Number of axes: ${@s.mystream.naxis}"
 ```
 
 For FPS compute units, you can check their allocation status:
