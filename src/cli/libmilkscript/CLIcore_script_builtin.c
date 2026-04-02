@@ -1374,25 +1374,40 @@ errno_t cli_cmd_defer(void)
         return RETURN_FAILURE;
     }
 
-    /* Reconstruct the deferred command from
-     * all tokens after "defer" */
+    /* Capture the deferred command from the original
+     * command line after the "defer" keyword, so that
+     * quoting/escaping are preserved. */
     char cmd[STRINGMAXLEN_CLICMDLINE];
     cmd[0] = '\0';
-    for(int a = 1; a < data.cmdNBarg; a++)
+
+    const char *line = data.CLIcmdline;
+    const char *p    = line;
+
+    /* Skip leading whitespace */
+    while(*p == ' ' || *p == '\t')
     {
-        if(a > 1)
-        {
-            strncat(cmd, " ",
-                    sizeof(cmd)
-                    - strlen(cmd) - 1);
-        }
-        strncat(cmd,
-                data.cmdargtoken[a]
-                    .val.string,
-                sizeof(cmd)
-                - strlen(cmd) - 1);
+        p++;
     }
 
+    /* Expect "defer" as the first token */
+    const char keyword[] = "defer";
+    size_t      klen     = sizeof(keyword) - 1;
+
+    if(strncmp(p, keyword, klen) == 0)
+    {
+        p += klen;
+
+        /* Skip whitespace between "defer" and the deferred command */
+        while(*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+    }
+
+    /* p now points to the start of the deferred command
+     * as typed by the user (may be empty if no command). */
+    strncpy(cmd, p, sizeof(cmd) - 1);
+    cmd[sizeof(cmd) - 1] = '\0';
     strncpy(
         cli_defer_stack[cli_defer_count],
         cmd,
