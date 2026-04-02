@@ -1052,18 +1052,75 @@ void cli_expand_fpsvar(
             char token[512];
             int  tlen = 0;
             while(line[i] != '\0'
-                    && tlen < 511
-                    && (isalnum(
-                            (unsigned char)
-                            line[i])
-                        || line[i] == '_'
-                        || line[i] == '.'
-                        || line[i] == '-'
-                        || line[i] == '*'))
+                    && tlen < 510)
             {
-                token[tlen++] = line[i++];
+                char tc = line[i];
+                if(isalnum((unsigned char)tc)
+                   || tc == '_'
+                   || tc == '.'
+                   || tc == '-'
+                   || tc == '*')
+                {
+                    token[tlen++] = line[i++];
+                }
+                else if(tc == '$')
+                {
+                    /* Absorb $identifier or
+                     * ${...} verbatim so that
+                     * $VAR inside @-tokens is
+                     * expanded after collection */
+                    token[tlen++] = line[i++];
+                    if(line[i] == '{')
+                    {
+                        /* ${...} block */
+                        token[tlen++] =
+                            line[i++]; /* '{' */
+                        while(line[i] != '\0'
+                              && line[i] != '}'
+                              && tlen < 510)
+                        {
+                            token[tlen++] =
+                                line[i++];
+                        }
+                        if(line[i] == '}'
+                           && tlen < 511)
+                        {
+                            token[tlen++] =
+                                line[i++];
+                        }
+                    }
+                    else
+                    {
+                        /* $identifier */
+                        while(line[i] != '\0'
+                              && tlen < 510
+                              && (isalnum(
+                                      (unsigned char)
+                                      line[i])
+                                  || line[i] == '_'))
+                        {
+                            token[tlen++] =
+                                line[i++];
+                        }
+                    }
+                }
+                else
+                {
+                    break; /* end of token */
+                }
             }
             token[tlen] = '\0';
+
+            /* Expand any $VAR / ${VAR} embedded
+             * in the token before namespace
+             * dispatch (e.g. @s.${stream}.xsize) */
+            if(strchr(token, '$') != NULL)
+            {
+                cli_expand_env(
+                    token,
+                    (int) sizeof(token));
+                tlen = (int) strlen(token);
+            }
 
             /* ---- Write path: @fps.param=val ---- */
             if(line[i] == '='

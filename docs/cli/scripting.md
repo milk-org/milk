@@ -237,7 +237,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
         fi
     
         # Read stream metadata via @ namespace
-        echo "Ready! Shape: @s.${stream}.xsize x @s.${stream}.ysize"
+        echo "Ready! Shape: ${@s.${stream}.xsize} x ${@s.${stream}.ysize}"
     }
     
     wait_and_monitor wfs_cam
@@ -286,21 +286,12 @@ Here are several examples demonstrating how `milk-cli` native features combine w
             continue
         fi
     
-        # NOTE:
-        # Dynamic stream names inside @s. are not currently supported by milk-cli.
-        # Parsing stops at '$' and '@' expands before '$VAR', so constructs like
-        #   @s.${s}.xsize
-        # would not resolve to the desired metadata; they would instead yield
-        # literal strings such as "wfs_cam.xsize" rather than numeric values.
-        #
-        # In a loop, prefer either:
-        #   - handling each known stream explicitly with fixed @s.<stream>.field
-        #     expressions, or
-        #   - using placeholder values here and querying detailed metadata with
-        #     dedicated commands outside the loop.
-        xs="N/A"
-        ys="N/A"
-        cnt="N/A"
+# The @s.${s}.prop syntax queries SHM image metadata
+        # directly; $VAR substitution inside @ tokens is
+        # supported so stream names can be dynamic.
+        xs=@s.${s}.xsize
+        ys=@s.${s}.ysize
+        cnt=@s.${s}.cnt0
         printf "  %-18s %-6s %-6s %s\n" $s $xs $ys $cnt
     done
     
