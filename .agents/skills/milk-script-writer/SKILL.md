@@ -100,12 +100,19 @@ val=@myfps.gain      # Read FPS param
 fpsset myfps gain 0.5  # Alternate write
 ```
 
-### 3. `${stream.prop}` for stream metadata
+### 3. `@s.name.prop` for stream metadata
+
+Dynamic stream names are supported — use `$VAR` inside
+`@` tokens and it expands before namespace dispatch:
 
 ```bash
 w=@s.myimg.xsize     # Stream width
 h=@s.myimg.ysize     # Stream height
 n=@s.myimg.naxis     # Number of axes
+
+# Dynamic: variable holds the stream name
+stream=myimg
+w=@s.${stream}.xsize
 ```
 
 ### 4. Image variables are SHM streams
@@ -317,13 +324,14 @@ wait -F name p=v 5       # Wait for param=val
 mem.mk2Dim name 64 64   # Create 2D image
 mem.rm name 0            # Delete image
 mem.listim               # List all images
-@s.s.xsize               # Width
-@s.s.ysize               # Height
-@s.s.naxis               # Number of axes
-@s.s.type                # Datatype code
-@s.s.typename            # Datatype name
-@s.s.cnt0                # Frame counter
-@s.s.nelement            # Total elements
+@s.<name>.xsize          # Width
+@s.<name>.ysize          # Height
+@s.<name>.naxis          # Number of axes
+@s.<name>.type           # Datatype code
+@s.<name>.typename       # Datatype name
+@s.<name>.cnt0           # Frame counter
+@s.<name>.nelement       # Total elements
+@s.${var}.xsize          # Dynamic name via $VAR
 waitfor_stream name 10   # Wait up to 10s
 wait -S name 5           # Wait for update
 on_update name { cmd }   # Trigger on write

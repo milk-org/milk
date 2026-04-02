@@ -22,8 +22,9 @@ _mon_img = _mon_img * 0.0 + 3.0
 echo "Filled with constant 3.0"
 
 # --- Read stream metadata ---
-# The ${name.property} syntax queries SHM
+# The @s.${name}.property syntax queries SHM
 # image metadata directly from shared memory.
+# $VAR substitution inside @ tokens is supported.
 _ww=@s.${_mon_img}.xsize
 _hh=@s.${_mon_img}.ysize
 _nax=@s.${_mon_img}.naxis
