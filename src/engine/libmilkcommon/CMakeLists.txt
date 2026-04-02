@@ -16,4 +16,5 @@ install(FILES
     milk_compiler.h 
     pixel_dispatch.h
     milk_types.h
+    multiselect_parse.h
     DESTINATION include/libmilkcommon)

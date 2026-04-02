@@ -67,16 +67,15 @@ target_include_directories(${LIBNAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-    # CLIcore paths: required by public header chain
-    # fps.h -> fps_cli_binding.h -> CLIcore/CLIcore_checkargs.h
-    # TODO: move CLICMDARGDEF types to engine tier (Phase 4)
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    # CLIcore path (src/cli/CLIcore) no longer needed in PUBLIC interface
+    # after extracting CLICMDARGDEF to engine tier.
     $<INSTALL_INTERFACE:include>
 )
 # src/cli and src/coremods: only for guarded .c files
 target_include_directories(${LIBNAME} PRIVATE
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/coremods>
 )
 

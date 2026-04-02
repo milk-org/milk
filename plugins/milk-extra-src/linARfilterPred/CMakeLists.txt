@@ -37,7 +37,13 @@ add_library(${LIBNAME} SHARED ${SOURCEFILES})
 
 if(USE_CUDA)
 	find_package(CUDAToolkit 9.0 REQUIRED)
-	target_include_directories(${LIBNAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+	target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${CUDAToolkit_INCLUDE_DIRS})
 	target_compile_options(${LIBNAME} PUBLIC -DHAVE_CUDA)
 endif(USE_CUDA)
 
@@ -50,7 +56,13 @@ if(OPENBLAS_FOUND)
 message("---- OPENBLAS_LIBRARY_DIRS =  ${OPENBLAS_LIBRARY_DIRS}")
 message("---- OPENBLAS_LIBRARIES    =  ${OPENBLAS_LIBRARIES}" )
 message("---- OPENBLAS_CFLAGS_OTHER =  ${OPENBLAS_CFLAGS_OTHER}" )
-target_include_directories(${LIBNAME} PUBLIC ${OPENBLAS_INCLUDE_DIRS})
+target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${OPENBLAS_INCLUDE_DIRS})
 target_link_directories(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARY_DIRS})
 target_link_libraries(${LIBNAME} PUBLIC ${OPENBLAS_LIBRARIES})
 target_compile_options(${LIBNAME} PUBLIC -DHAVE_OPENBLAS ${OPENBLAS_CFLAGS_OTHER})
@@ -63,7 +75,13 @@ if(MKL_FOUND)
 message("---- MKL_LIBRARY_DIRS =  ${MKL_LIBRARY_DIRS}")
 message("---- MKL_LIBRARIES    =  ${MKL_LIBRARIES}" )
 message("---- MKL_CFLAGS_OTHER =  ${MKL_CFLAGS_OTHER}" )
-target_include_directories(${LIBNAME} PUBLIC ${MKL_INCLUDE_DIRS})
+target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${MKL_INCLUDE_DIRS})
 target_link_directories(${LIBNAME} PUBLIC ${MKL_LIBRARY_DIRS})
 target_link_libraries(${LIBNAME} PUBLIC ${MKL_LIBRARIES})
 target_compile_options(${LIBNAME} PUBLIC -DHAVE_MKL ${MKL_CFLAGS_OTHER})
@@ -73,7 +91,13 @@ endif()
 
 
 if(USE_MAGMA)
-target_include_directories(${LIBNAME} PUBLIC ${MAGMA_INCLUDE_DIRS})
+target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${MAGMA_INCLUDE_DIRS})
 set_target_properties(${LIBNAME} PROPERTIES COMPILE_FLAGS "-DHAVE_CUDA -DHAVE_MAGMA")
 endif(USE_MAGMA)
 

@@ -20,7 +20,7 @@
 
 // Function attributes
 // These values are copied to processinfo upon function startup
-typedef struct
+typedef struct CMDSETTINGS
 {
     uint64_t flags;
 

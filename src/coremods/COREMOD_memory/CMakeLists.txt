@@ -187,12 +187,24 @@ if(USE_CFITSIO)
   if(${CFITSIO_FOUND})
     link_directories(${CFITSIO_LIBRARY_DIRS})
     target_compile_definitions(${LIBNAME} PUBLIC USE_CFITSIO=1)
-    target_include_directories(${LIBNAME} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+    target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${CFITSIO_INCLUDE_DIRS})
     target_link_directories(${LIBNAME} PUBLIC ${CFITSIO_LIBRARY_DIRS})
   endif()
 endif()
 
-target_include_directories(${LIBNAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
+target_include_directories(${LIBNAME} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
                                               $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
                                               $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/streamCTRL>
 											  $<INSTALL_INTERFACE:include>)
@@ -212,10 +224,22 @@ add_library(${LIBNAME_COMPUTE} SHARED ${SOURCEFILES})
 target_compile_definitions(${LIBNAME_COMPUTE} PRIVATE MILK_NO_CLI)
 if(USE_CFITSIO AND CFITSIO_FOUND)
   target_compile_definitions(${LIBNAME_COMPUTE} PUBLIC USE_CFITSIO=1)
-  target_include_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_INCLUDE_DIRS})
+  target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore> ${CFITSIO_INCLUDE_DIRS})
   target_link_directories(${LIBNAME_COMPUTE} PUBLIC ${CFITSIO_LIBRARY_DIRS})
 endif()
 target_include_directories(${LIBNAME_COMPUTE} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
     $<INSTALL_INTERFACE:include>)
 if(USE_CFITSIO AND CFITSIO_LIBRARIES)
@@ -248,6 +272,8 @@ if(USE_STATIC_LTO)
       PUBLIC
       $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/..>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
