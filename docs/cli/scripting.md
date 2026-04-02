@@ -464,7 +464,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     waitfor_stream $STREAMNAME 10
     
     # Fast Native Image Math & FPS
-    mem.mk2Dim mask_img @s.$STREAMNAME.xsize @s.$STREAMNAME.ysize
+    mem.mk2Dim mask_img ${@s.in.xsize} ${@s.in.ysize}
     mask_img = mask_img * 0.0 + 1.0
     
     on_update $STREAMNAME {
