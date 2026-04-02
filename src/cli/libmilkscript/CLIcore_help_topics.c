@@ -566,7 +566,7 @@ void help_topic_milk(void)
     printf(C_TITLE "========================================================\n"
            C_RST);
     printf("\n");
-    printf(C_HDR "Stream Metadata Dot-Expansion:\n" C_RST);
+    printf(C_HDR "Stream Metadata @s.<name>.<prop> namespace:\n" C_RST);
     printf("  " C_CMD "@s.name.xsize" C_RST
            "      Stream width  (size[0])\n");
     printf("  " C_CMD "@s.name.ysize" C_RST
