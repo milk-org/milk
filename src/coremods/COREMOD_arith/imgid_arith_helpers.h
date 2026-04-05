@@ -11,6 +11,7 @@
 #define IMGID_ARITH_HELPERS_H
 
 #include <libfps/IMGID.h>
+#include "COREMOD_memory/imageID.h"
 
 /**
  * @brief Prepare output IMGID for arithmetic
