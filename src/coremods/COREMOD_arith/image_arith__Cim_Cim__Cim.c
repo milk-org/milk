@@ -24,13 +24,16 @@ errno_t
 arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     uint8_t atype1, atype2;
-    imageID ID1;
-    imageID ID2;
+    IMGID img1 = imgid_make_from_name(ID1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID img2 = imgid_make_from_name(ID2_name);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    ID1    = image_ID(ID1_name, dcimg, dcnimg);
-    ID2    = image_ID(ID2_name, dcimg, dcnimg);
-    atype1 = dcimg[ID1].md[0].datatype;
-    atype2 = dcimg[ID2].md[0].datatype;
+    atype1 = img1.md->datatype;
+    atype2 = img2.md->datatype;
+
+    imgid_free(&img1);
+    imgid_free(&img2);
 
     if((atype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (atype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -60,13 +63,16 @@ errno_t
 arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
 {
     uint8_t datatype1, datatype2;
-    imageID ID1;
-    imageID ID2;
+    IMGID img1 = imgid_make_from_name(ID1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID img2 = imgid_make_from_name(ID2_name);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    ID1       = image_ID(ID1_name, dcimg, dcnimg);
-    ID2       = image_ID(ID2_name, dcimg, dcnimg);
-    datatype1 = dcimg[ID1].md[0].datatype;
-    datatype2 = dcimg[ID2].md[0].datatype;
+    datatype1 = img1.md->datatype;
+    datatype2 = img2.md->datatype;
+
+    imgid_free(&img1);
+    imgid_free(&img2);
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -97,13 +103,16 @@ errno_t arith_image_Cmult(const char *ID1_name,
                           const char *ID_out)
 {
     uint8_t datatype1, datatype2;
-    imageID ID1;
-    imageID ID2;
+    IMGID img1 = imgid_make_from_name(ID1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID img2 = imgid_make_from_name(ID2_name);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    ID1       = image_ID(ID1_name, dcimg, dcnimg);
-    ID2       = image_ID(ID2_name, dcimg, dcnimg);
-    datatype1 = dcimg[ID1].md[0].datatype;
-    datatype2 = dcimg[ID2].md[0].datatype;
+    datatype1 = img1.md->datatype;
+    datatype2 = img2.md->datatype;
+
+    imgid_free(&img1);
+    imgid_free(&img2);
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))
@@ -134,13 +143,16 @@ int arith_image_Cdiv(const char *ID1_name,
                      const char *ID_out)
 {
     uint8_t datatype1, datatype2;
-    imageID ID1;
-    imageID ID2;
+    IMGID img1 = imgid_make_from_name(ID1_name);
+    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
+    IMGID img2 = imgid_make_from_name(ID2_name);
+    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    ID1       = image_ID(ID1_name, dcimg, dcnimg);
-    ID2       = image_ID(ID2_name, dcimg, dcnimg);
-    datatype1 = dcimg[ID1].md[0].datatype;
-    datatype2 = dcimg[ID2].md[0].datatype;
+    datatype1 = img1.md->datatype;
+    datatype2 = img2.md->datatype;
+
+    imgid_free(&img1);
+    imgid_free(&img2);
 
     if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
             (datatype2 == _DATATYPE_COMPLEX_FLOAT))

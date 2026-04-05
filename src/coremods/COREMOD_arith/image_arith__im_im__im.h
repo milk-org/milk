@@ -16,14 +16,14 @@ double Ptrunc(double a, double b, double c);
 /* predefined functions    image, image  -> image                                                    */
 /* ------------------------------------------------------------------------- */
 
-int arith_image_fmod_byID(long ID1, long ID2, long IDout);
-int arith_image_pow_byID(long ID1, long ID2, const char *IDout);
-int arith_image_add_byID(long ID1, long ID2, long IDout);
-int arith_image_sub_byID(long ID1, long ID2, long IDout);
-int arith_image_mult_byID(long ID1, long ID2, long IDout);
-int arith_image_div_byID(long ID1, long ID2, long IDout);
-int arith_image_minv_byID(long ID1, long ID2, long IDout);
-int arith_image_maxv_byID(long ID1, long ID2, long IDout);
+
+
+
+
+
+
+
+
 
 int arith_image_fmod(const char *ID1_name,
                      const char *ID2_name,
@@ -88,14 +88,14 @@ int arith_image_and_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 int arith_image_or(const char *ID1_name, const char *ID2_name, const char *ID_out);
 int arith_image_or_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID *imgout);
 
-int arith_image_fmod_inplace_byID(long ID1, long ID2);
-int arith_image_pow_inplace_byID(long ID1, long ID2);
-int arith_image_add_inplace_byID(long ID1, long ID2);
-int arith_image_sub_inplace_byID(long ID1, long ID2);
-int arith_image_mult_inplace_byID(long ID1, long ID2);
-int arith_image_div_inplace_byID(long ID1, long ID2);
-int arith_image_minv_inplace_byID(long ID1, long ID2);
-int arith_image_maxv_inplace_byID(long ID1, long ID2);
+
+
+
+
+
+
+
+
 
 int arith_image_fmod_inplace(const char *ID1_name,
                              const char *ID2_name); // ID1 is output

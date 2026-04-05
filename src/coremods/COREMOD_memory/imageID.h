@@ -138,9 +138,17 @@ static inline imageID resolveIMGID(
     return img->ID;
 }
 
-
-
-
+static inline int imgid_exists(const char *name)
+{
+    if (name == NULL || name[0] == '\0') {
+        return 0;
+    }
+    IMGID img = imgid_make_from_name(name);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    int exists = (img.ID != -1);
+    imgid_free(&img);
+    return exists;
+}
 
 
 static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)
