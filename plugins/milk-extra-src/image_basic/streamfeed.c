@@ -58,22 +58,8 @@ static CLICMDARGDEF farg[] = {
 static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
-static CMDSETTINGS cms = {0};
-
-static __attribute__((constructor))
-void init_cms(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms;
-    }
-}
+FPS_CMDSETTINGS_INIT(
+    streamfeed, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t compute_function()
 {
@@ -208,10 +194,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
             k = 0;
         }
 
-        if((dcsigINT == 1) || (dcsigTERM == 1) ||
-                (dcsigABRT == 1) || (dcsigBUS == 1) ||
-                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
-                (dcsigPIPE == 1))
+        if(DCSIG_ANY_SET())
         {
             loopOK = 0;
         }
