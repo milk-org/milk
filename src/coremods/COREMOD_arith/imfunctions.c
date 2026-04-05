@@ -750,167 +750,7 @@ errno_t arith_image_function_imdd_im__ddd_d(
     return ret;
 }
 
-/* ------------------------------------------------------------------------- */
-/* image  -> image                                                           */
-/* ------------------------------------------------------------------------- */
 
-errno_t arith_image_function_1_1_byID(imageID ID,
-                                      imageID IDout,
-                                      double (*pt2function)(double))
-{
-    uint32_t *naxes = NULL;
-    long      naxis;
-    long      ii;
-    long      nelement;
-    uint8_t   datatype;
-    //, datatypeout;
-    long i;
-
-    //  printf("arith_image_function_1_1\n");
-
-    datatype = dcimg[ID].md[0].datatype;
-    naxis    = dcimg[ID].md[0].naxis;
-    naxes    = (uint32_t *) malloc(sizeof(uint32_t) * naxis);
-    if(naxes == NULL)
-    {
-        PRINT_ERROR("malloc() error");
-        exit(0);
-    }
-
-    for(i = 0; i < naxis; i++)
-    {
-        naxes[i] = dcimg[ID].md[0].size[i];
-    }
-
-    //    datatypeout = _DATATYPE_FLOAT;
-    //    if(datatype == _DATATYPE_DOUBLE)
-    //        datatypeout = _DATATYPE_DOUBLE;
-
-    free(naxes);
-
-    nelement = dcimg[ID].md[0].nelement;
-
-#ifdef _OPENMP
-    #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-    {
-#endif
-
-        if(datatype == _DATATYPE_UINT8)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.UI8[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT16)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.UI16[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT32)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.UI32[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT64)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.UI64[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT8)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.SI8[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT16)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.SI16[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT32)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.SI32[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT64)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.SI64[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_FLOAT)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.F[ii] =
-                    pt2function((double)(dcimg[ID].array.F[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_DOUBLE)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                dcimg[IDout].array.D[ii] =
-                    (double) pt2function((double)(dcimg[ID].array.D[ii]));
-            }
-        }
-#ifdef _OPENMP
-    }
-#endif
-
-    return RETURN_SUCCESS;
-}
 
 errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                                        IMGID *imgout,
@@ -1572,70 +1412,72 @@ errno_t arith_image_function_2_1(
     return ret;
 }
 
-errno_t arith_image_function_2_1_inplace_byID(
-    imageID ID1,
-    imageID ID2,
-    double (*pt2function)(double, double)
-)
+errno_t arith_image_function_2_1_inplace(
+    const char *ID_name1,
+    const char *ID_name2,
+    double (*pt2function)(double, double))
 {
-    long    ii;
-    long    nelement1, nelement2, nelement;
-    uint8_t datatype1, datatype2 __attribute__((unused));
+    IMGID img1 = imgid_make_from_name(ID_name1);
+    IMGID img2 = imgid_make_from_name(ID_name2);
 
-    datatype1 = dcimg[ID1].md[0].datatype;
-    datatype2 = dcimg[ID2].md[0].datatype;
-    nelement1 = dcimg[ID1].md[0].nelement;
-    nelement2 = dcimg[ID2].md[0].nelement;
+    resolveIMGID(
+        &img1, ERRMODE_ABORT, dcimg, dcnimg);
+    resolveIMGID(
+        &img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    nelement = nelement1;
-    if(nelement1 != nelement2)
+    if (img1.im == NULL || img2.im == NULL)
     {
-        PRINT_ERROR("images %ld and %ld have different number of elements\n",
-                    ID1,
-                    ID2);
-        exit(0);
+        imgid_free(&img1);
+        imgid_free(&img2);
+        return RETURN_FAILURE;
     }
 
-    dcimg[ID1].md[0].write = 1;
+    long nelement = img1.md->nelement;
+    if (nelement != (long) img2.md->nelement)
+    {
+        PRINT_ERROR(
+            "images have different nelement");
+        imgid_free(&img1);
+        imgid_free(&img2);
+        return RETURN_FAILURE;
+    }
+
+    uint8_t dt1 = img1.md->datatype;
+    img1.im->md->write = 1;
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
         #pragma omp for simd
 #endif
-        for(ii = 0; ii < nelement; ii++)
+        for (long ii = 0; ii < nelement; ii++)
         {
-            double v1 = get_pixel_double(&dcimg[ID1], ii);
-            double v2 = get_pixel_double(&dcimg[ID2], ii);
-            if (datatype1 == _DATATYPE_FLOAT)
-                dcimg[ID1].array.F[ii] = (float)pt2function(v1, v2);
-            else if (datatype1 == _DATATYPE_DOUBLE)
-                dcimg[ID1].array.D[ii] = pt2function(v1, v2);
+            double v1 =
+                get_pixel_double(img1.im, ii);
+            double v2 =
+                get_pixel_double(img2.im, ii);
+            if (dt1 == _DATATYPE_FLOAT)
+            {
+                img1.im->array.F[ii] =
+                    (float) pt2function(v1, v2);
+            }
+            else if (dt1 == _DATATYPE_DOUBLE)
+            {
+                img1.im->array.D[ii] =
+                    pt2function(v1, v2);
+            }
         }
 #ifdef _OPENMP
     }
 #endif
 
-    dcimg[ID1].md[0].write = 0;
-    dcimg[ID1].md[0].cnt0++;
+    img1.im->md->write = 0;
+    img1.im->md->cnt0++;
 
-    return EXIT_SUCCESS;
-}
+    imgid_free(&img1);
+    imgid_free(&img2);
 
-errno_t arith_image_function_2_1_inplace(
-    const char *ID_name1,
-    const char *ID_name2,
-    double (*pt2function)(double, double))
-{
-    imageID ID1;
-    imageID ID2;
-
-    ID1 = image_ID(ID_name1, dcimg, dcnimg);
-    ID2 = image_ID(ID_name2, dcimg, dcnimg);
-
-    arith_image_function_2_1_inplace_byID(ID1, ID2, pt2function);
-
-    return EXIT_SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 /* ------------------------------------------------------------------------- */
