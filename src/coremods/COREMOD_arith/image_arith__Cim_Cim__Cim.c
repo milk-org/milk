@@ -1,10 +1,11 @@
 /**
  * @file    image_arith__Cim_Cim__Cim.c
- * @brief   arith functions
+ * @brief   Complex-image arithmetic (add/sub/mult/div)
  *
  * input : complex image, complex image
  * output: complex image
  *
+ * All four operations generated via X-macro table.
  */
 
 
@@ -20,160 +21,60 @@
 #include "imfunctions.h"
 #include "mathfuncs.h"
 
-errno_t
-arith_image_Cadd(const char *ID1_name, const char *ID2_name, const char *ID_out)
-{
-    uint8_t atype1, atype2;
-    IMGID img1 = imgid_make_from_name(ID1_name);
-    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
-    IMGID img2 = imgid_make_from_name(ID2_name);
-    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
 
-    atype1 = img1.md->datatype;
-    atype2 = img2.md->datatype;
+/* -------------------------------------------------------
+ * X-macro table: (name, CF func ptr, CD func ptr)
+ * ------------------------------------------------------- */
+#define COMPLEX_OPS(X)                        \
+    X(Cadd,  CPadd_CF_CF,  CPadd_CD_CD)       \
+    X(Csub,  CPsub_CF_CF,  CPsub_CD_CD)       \
+    X(Cmult, CPmult_CF_CF, CPmult_CD_CD)      \
+    X(Cdiv,  CPdiv_CF_CF,  CPdiv_CD_CD)
 
-    imgid_free(&img1);
-    imgid_free(&img2);
 
-    if((atype1 == _DATATYPE_COMPLEX_FLOAT) &&
-            (atype2 == _DATATYPE_COMPLEX_FLOAT))
-    {
-        arith_image_function_CF_CF__CF(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPadd_CF_CF);
-        return RETURN_SUCCESS;
-    }
-
-    if((atype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-            (atype2 == _DATATYPE_COMPLEX_DOUBLE))
-    {
-        arith_image_function_CD_CD__CD(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPadd_CD_CD);
-        return RETURN_SUCCESS;
-    }
-    PRINT_ERROR("data types do not match");
-
-    return RETURN_FAILURE;
+/* -------------------------------------------------------
+ * Stamp macro — one function per operation
+ * ------------------------------------------------------- */
+#define DEFINE_COMPLEX_OP(name, cf_fn, cd_fn)       \
+errno_t arith_image_##name(                          \
+    const char *ID1_name,                            \
+    const char *ID2_name,                            \
+    const char *ID_out)                              \
+{                                                    \
+    IMGID img1 =                                     \
+        imgid_make_from_name(ID1_name);              \
+    resolveIMGID(                                    \
+        &img1, ERRMODE_ABORT, dcimg, dcnimg);        \
+    IMGID img2 =                                     \
+        imgid_make_from_name(ID2_name);              \
+    resolveIMGID(                                    \
+        &img2, ERRMODE_ABORT, dcimg, dcnimg);        \
+                                                     \
+    uint8_t dt1 = img1.md->datatype;                 \
+    uint8_t dt2 = img2.md->datatype;                 \
+                                                     \
+    imgid_free(&img1);                               \
+    imgid_free(&img2);                               \
+                                                     \
+    if (dt1 == _DATATYPE_COMPLEX_FLOAT               \
+        && dt2 == _DATATYPE_COMPLEX_FLOAT)           \
+    {                                                \
+        arith_image_function_CF_CF__CF(              \
+            ID1_name, ID2_name,                      \
+            ID_out, &cf_fn);                         \
+        return RETURN_SUCCESS;                       \
+    }                                                \
+    if (dt1 == _DATATYPE_COMPLEX_DOUBLE              \
+        && dt2 == _DATATYPE_COMPLEX_DOUBLE)          \
+    {                                                \
+        arith_image_function_CD_CD__CD(              \
+            ID1_name, ID2_name,                      \
+            ID_out, &cd_fn);                         \
+        return RETURN_SUCCESS;                       \
+    }                                                \
+    PRINT_ERROR("data types do not match");          \
+    return RETURN_FAILURE;                           \
 }
 
-errno_t
-arith_image_Csub(const char *ID1_name, const char *ID2_name, const char *ID_out)
-{
-    uint8_t datatype1, datatype2;
-    IMGID img1 = imgid_make_from_name(ID1_name);
-    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
-    IMGID img2 = imgid_make_from_name(ID2_name);
-    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
-
-    datatype1 = img1.md->datatype;
-    datatype2 = img2.md->datatype;
-
-    imgid_free(&img1);
-    imgid_free(&img2);
-
-    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
-    {
-        arith_image_function_CF_CF__CF(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPsub_CF_CF);
-        return RETURN_SUCCESS;
-    }
-
-    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
-    {
-        arith_image_function_CD_CD__CD(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPsub_CD_CD);
-        return RETURN_SUCCESS;
-    }
-    PRINT_ERROR("data types do not match");
-
-    return RETURN_FAILURE;
-}
-
-errno_t arith_image_Cmult(const char *ID1_name,
-                          const char *ID2_name,
-                          const char *ID_out)
-{
-    uint8_t datatype1, datatype2;
-    IMGID img1 = imgid_make_from_name(ID1_name);
-    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
-    IMGID img2 = imgid_make_from_name(ID2_name);
-    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
-
-    datatype1 = img1.md->datatype;
-    datatype2 = img2.md->datatype;
-
-    imgid_free(&img1);
-    imgid_free(&img2);
-
-    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
-    {
-        arith_image_function_CF_CF__CF(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPmult_CF_CF);
-        return RETURN_SUCCESS;
-    }
-
-    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
-    {
-        arith_image_function_CD_CD__CD(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPmult_CD_CD);
-        return RETURN_SUCCESS;
-    }
-    PRINT_ERROR("data types do not match");
-
-    return RETURN_FAILURE;
-}
-
-int arith_image_Cdiv(const char *ID1_name,
-                     const char *ID2_name,
-                     const char *ID_out)
-{
-    uint8_t datatype1, datatype2;
-    IMGID img1 = imgid_make_from_name(ID1_name);
-    resolveIMGID(&img1, ERRMODE_ABORT, dcimg, dcnimg);
-    IMGID img2 = imgid_make_from_name(ID2_name);
-    resolveIMGID(&img2, ERRMODE_ABORT, dcimg, dcnimg);
-
-    datatype1 = img1.md->datatype;
-    datatype2 = img2.md->datatype;
-
-    imgid_free(&img1);
-    imgid_free(&img2);
-
-    if((datatype1 == _DATATYPE_COMPLEX_FLOAT) &&
-            (datatype2 == _DATATYPE_COMPLEX_FLOAT))
-    {
-        arith_image_function_CF_CF__CF(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPdiv_CF_CF);
-        return RETURN_SUCCESS;
-    }
-
-    if((datatype1 == _DATATYPE_COMPLEX_DOUBLE) &&
-            (datatype2 == _DATATYPE_COMPLEX_DOUBLE))
-    {
-        arith_image_function_CD_CD__CD(ID1_name,
-                                       ID2_name,
-                                       ID_out,
-                                       &CPdiv_CD_CD);
-        return RETURN_SUCCESS;
-    }
-    PRINT_ERROR("data types do not match");
-
-    return RETURN_FAILURE;
-}
+COMPLEX_OPS(DEFINE_COMPLEX_OP)
+#undef DEFINE_COMPLEX_OP
