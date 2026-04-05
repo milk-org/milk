@@ -209,15 +209,7 @@ CST_INPLACE_OPS(DEFINE_CST_INPLACE)
  * 4. In-place-by-ID wrappers
  * ---------------------------------------------------------- */
 
-#define DEFINE_CST_INPLACE_BYID(op, fptr) \
-int arith_image_cst##op##_inplace_byID(   \
-    long ID,                              \
-    double f1)                            \
-{                                         \
-    arith_image_function_1f_1_inplace_byID( \
-        ID, f1, &fptr);                   \
-    return 0;                             \
-}
 
-CST_INPLACE_OPS(DEFINE_CST_INPLACE_BYID)
-#undef DEFINE_CST_INPLACE_BYID
+
+
+
