@@ -49,6 +49,7 @@
 #endif
 
 #include "image_arith__im_f__im.h"
+#include "imgid_arith_helpers.h"
 #include "mathfuncs.h"
 
 #ifdef _OPENMP
@@ -1808,32 +1809,7 @@ errno_t arith_image_##name##_optimized_IMGID(         \
     {                                                 \
         return RETURN_FAILURE;                        \
     }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgid_copy(imgin, imgout);                    \
-    }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgout->im =                                  \
-            (IMAGE *) calloc(1, sizeof(IMAGE));       \
-    }                                                 \
-    else                                              \
-    {                                                 \
-        if (imgout->im->md                            \
-            && imgout->im->md->shared == 1)           \
-        {                                             \
-            ImageStreamIO_closeIm(imgout->im);        \
-        }                                             \
-        else                                          \
-        {                                             \
-            ImageStreamIO_destroyIm(imgout->im);      \
-        }                                             \
-    }                                                 \
-    imgid_mkimage(imgout);                            \
-    if (imgout->ID == -1 && imgout->im != NULL)       \
-    {                                                 \
-        RegisterIMGID(imgout, dcimg, dcnimg);         \
-    }                                                 \
+    imgid_ensure_output(imgin, imgout);               \
     uint64_t nelement = imgout->md->nelement;         \
     if (imgin->md->datatype == _DATATYPE_FLOAT        \
         && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
@@ -1890,11 +1866,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
 { \
     DEBUG_TRACE_FSTART(); \
     if (imgin1->im == NULL || imgin2->im == NULL) { return RETURN_FAILURE; } \
-    if(imgout->im == NULL) imgid_copy(imgin1, imgout); \
-    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
-    else { if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im); } \
-    imgid_mkimage(imgout); \
-    if (imgout->ID == -1 && imgout->im != NULL) { RegisterIMGID(imgout, dcimg, dcnimg); } \
+    imgid_ensure_output(imgin1, imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
@@ -1930,11 +1902,7 @@ errno_t arith_image_cst##name##_optimized_IMGID(IMGID *imgin, double f1, IMGID *
 { \
     DEBUG_TRACE_FSTART(); \
     if (imgin->im == NULL) { return RETURN_FAILURE; } \
-    if(imgout->im == NULL) imgid_copy(imgin, imgout); \
-    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
-    else { if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im); } \
-    imgid_mkimage(imgout); \
-    if (imgout->ID == -1 && imgout->im != NULL) { RegisterIMGID(imgout, dcimg, dcnimg); } \
+    imgid_ensure_output(imgin, imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
@@ -1968,11 +1936,7 @@ errno_t arith_image_cstpow_optimized_IMGID(IMGID *imgin, double f1, IMGID *imgou
 {
     DEBUG_TRACE_FSTART();
     if (imgin->im == NULL) { return RETURN_FAILURE; }
-    if(imgout->im == NULL) imgid_copy(imgin, imgout);
-    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); }
-    else { if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im); }
-    imgid_mkimage(imgout);
-    if (imgout->ID == -1 && imgout->im != NULL) { RegisterIMGID(imgout, dcimg, dcnimg); }
+    imgid_ensure_output(imgin, imgout);
     uint64_t nelement = imgout->md->nelement;
     if(imgin->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT)
     {
@@ -2030,11 +1994,7 @@ errno_t arith_image_##name##_optimized_IMGID(IMGID *imgin1, IMGID *imgin2, IMGID
 { \
     DEBUG_TRACE_FSTART(); \
     if (imgin1->im == NULL || imgin2->im == NULL) { return RETURN_FAILURE; } \
-    if(imgout->im == NULL) imgid_copy(imgin1, imgout); \
-    if (imgout->im == NULL) { imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE)); } \
-    else { if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im); } \
-    imgid_mkimage(imgout); \
-    if (imgout->ID == -1 && imgout->im != NULL) { RegisterIMGID(imgout, dcimg, dcnimg); } \
+    imgid_ensure_output(imgin1, imgout); \
     uint64_t nelement = imgout->md->nelement; \
     if(imgin1->md->datatype == _DATATYPE_FLOAT && imgin2->md->datatype == _DATATYPE_FLOAT && imgout->mdt->datatype == _DATATYPE_FLOAT) \
     { \
@@ -2081,32 +2041,7 @@ errno_t arith_image_##name##_optimized_IMGID(         \
     {                                                 \
         return RETURN_FAILURE;                        \
     }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgid_copy(imgin1, imgout);                   \
-    }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgout->im =                                  \
-            (IMAGE *) calloc(1, sizeof(IMAGE));       \
-    }                                                 \
-    else                                              \
-    {                                                 \
-        if (imgout->im->md                            \
-            && imgout->im->md->shared == 1)           \
-        {                                             \
-            ImageStreamIO_closeIm(imgout->im);        \
-        }                                             \
-        else                                          \
-        {                                             \
-            ImageStreamIO_destroyIm(imgout->im);      \
-        }                                             \
-    }                                                 \
-    imgid_mkimage(imgout);                            \
-    if (imgout->ID == -1 && imgout->im != NULL)       \
-    {                                                 \
-        RegisterIMGID(imgout, dcimg, dcnimg);         \
-    }                                                 \
+    imgid_ensure_output(imgin1, imgout);              \
     uint64_t nelement = imgout->md->nelement;         \
     if (imgin1->md->datatype == _DATATYPE_FLOAT       \
         && imgin2->md->datatype == _DATATYPE_FLOAT    \
@@ -2207,32 +2142,7 @@ errno_t arith_image_cst##name##_optimized_IMGID(      \
     {                                                 \
         return RETURN_FAILURE;                        \
     }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgid_copy(imgin, imgout);                    \
-    }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgout->im =                                  \
-            (IMAGE *) calloc(1, sizeof(IMAGE));       \
-    }                                                 \
-    else                                              \
-    {                                                 \
-        if (imgout->im->md                            \
-            && imgout->im->md->shared == 1)           \
-        {                                             \
-            ImageStreamIO_closeIm(imgout->im);        \
-        }                                             \
-        else                                          \
-        {                                             \
-            ImageStreamIO_destroyIm(imgout->im);      \
-        }                                             \
-    }                                                 \
-    imgid_mkimage(imgout);                            \
-    if (imgout->ID == -1 && imgout->im != NULL)       \
-    {                                                 \
-        RegisterIMGID(imgout, dcimg, dcnimg);         \
-    }                                                 \
+    imgid_ensure_output(imgin, imgout);               \
     uint64_t nelement = imgout->md->nelement;         \
     if (imgin->md->datatype == _DATATYPE_FLOAT        \
         && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
@@ -2320,32 +2230,7 @@ errno_t arith_image_##name##_optimized_IMGID(         \
     {                                                 \
         return RETURN_FAILURE;                        \
     }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgid_copy(imgin, imgout);                    \
-    }                                                 \
-    if (imgout->im == NULL)                           \
-    {                                                 \
-        imgout->im =                                  \
-            (IMAGE *) calloc(1, sizeof(IMAGE));       \
-    }                                                 \
-    else                                              \
-    {                                                 \
-        if (imgout->im->md                            \
-            && imgout->im->md->shared == 1)           \
-        {                                             \
-            ImageStreamIO_closeIm(imgout->im);        \
-        }                                             \
-        else                                          \
-        {                                             \
-            ImageStreamIO_destroyIm(imgout->im);      \
-        }                                             \
-    }                                                 \
-    imgid_mkimage(imgout);                            \
-    if (imgout->ID == -1 && imgout->im != NULL)       \
-    {                                                 \
-        RegisterIMGID(imgout, dcimg, dcnimg);         \
-    }                                                 \
+    imgid_ensure_output(imgin, imgout);               \
     uint64_t nelement = imgout->md->nelement;         \
     if (imgin->md->datatype == _DATATYPE_FLOAT        \
         && imgout->mdt->datatype == _DATATYPE_FLOAT)  \
