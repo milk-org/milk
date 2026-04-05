@@ -16,8 +16,9 @@
 /**
  * @brief Prepare output IMGID for arithmetic
  *
- * If dst has no metadata yet, copies geometry
- * from src.  Then allocates or re-creates the
+ * If dst has no backing IMAGE yet (`dst->im == NULL`),
+ * copies geometry from src into the unresolved output
+ * description.  Then allocates or re-creates the
  * output IMAGE.  Finally registers in dcimg
  * if it is a new (unregistered) image.
  *
