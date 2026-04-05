@@ -17,6 +17,7 @@
 #include "create_image.h"
 #include "image_ID.h"
 #include "stream_sem.h"
+#include "processinfo_setup.h"
 
 #include "COREMOD_tools/COREMOD_tools.h"
 
@@ -459,17 +460,12 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         // see processtools.c in module CommandLineInterface for details
         //
         char pinfoname[200];
-        sprintf(pinfoname, "streamloop-%s", IDoutname);
-        processinfo           = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = 0; // loop initialization
-
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE, __FILE__);
-        processinfo->source_LINE = __LINE__;
+        snprintf(pinfoname, 200, "streamloop-%s", IDoutname);
 
         char msgstring[200];
-        sprintf(msgstring, "%s->%s", IDinname, IDoutname);
-        processinfo_WriteMessage(processinfo, msgstring);
+        snprintf(msgstring, 200, "%s->%s", IDinname, IDoutname);
+        
+        PROCESSINFO_AUX_SETUP(processinfo, pinfoname, "", msgstring);
     }
 
     if(NBcubes < 1)
