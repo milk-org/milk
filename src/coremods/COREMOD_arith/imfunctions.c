@@ -50,11 +50,15 @@
 
 #include "image_arith__im_f__im.h"
 #include "imgid_arith_helpers.h"
+#include "datatype_dispatch.h"
 #include "mathfuncs.h"
 
 #ifdef _OPENMP
 #include <omp.h>
 #define OMP_NELEMENT_LIMIT 100000
+#define OMP_FOR_SIMD _Pragma("omp for simd")
+#else
+#define OMP_FOR_SIMD
 #endif
 
 /**
@@ -146,120 +150,28 @@ errno_t arith_image_function_im_im__d_d_IMGID(
     {
 #endif
 
-    if(datatype == _DATATYPE_UINT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI8[ii]));
-        }
+#define UNARY_BODY(M)                                 \
+    OMP_FOR_SIMD                                      \
+    for (uint_fast64_t ii = 0; ii < nelement; ii++)   \
+    {                                                 \
+        imgout->im->array.F[ii] =                     \
+            (float) pt2function(                      \
+                (double)(imgin->im->array.M[ii]));    \
     }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-        uint16_t * MILK_RESTRICT out_ptr __attribute__((unused)) = MILK_ASSUME_ALIGNED(imgout->im->array.UI16);
-        const uint16_t * MILK_RESTRICT in_ptr = MILK_ASSUME_ALIGNED(imgin->im->array.UI16);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(in_ptr[ii]));
-        }
+
+#define UNARY_BODY_D                                  \
+    OMP_FOR_SIMD                                      \
+    for (uint_fast64_t ii = 0; ii < nelement; ii++)   \
+    {                                                 \
+        imgout->im->array.D[ii] =                     \
+            pt2function(imgin->im->array.D[ii]);      \
     }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI32[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI64[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI8[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI16[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI32[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI64[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-        float * MILK_RESTRICT out_ptr = MILK_ASSUME_ALIGNED(imgout->im->array.F);
-        const float * MILK_RESTRICT in_ptr = MILK_ASSUME_ALIGNED(imgin->im->array.F);
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            out_ptr[ii] =
-                (float) pt2function((double)(in_ptr[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(uint_fast64_t ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.D[ii] =
-                pt2function(imgin->im->array.D[ii]);
-        }
-    }
+
+    FOR_EACH_DATATYPE(datatype, UNARY_BODY, UNARY_BODY_D)
+
+#undef UNARY_BODY
+#undef UNARY_BODY_D
+
 #ifdef _OPENMP
     }
 #endif
@@ -326,7 +238,6 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     IMGID *imgout,
     double (*pt2function)(double, double))
 {
-    long ii;
 
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
@@ -357,125 +268,29 @@ errno_t arith_image_function_imd_im__dd_d_IMGID(
     {
 #endif
 
-    if(datatype == _DATATYPE_UINT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.UI8[ii]),
-                                    v0);
-        }
+#define CST1_BODY(M)                                  \
+    OMP_FOR_SIMD                                      \
+    for (long ii = 0; ii < (long) nelement; ii++)     \
+    {                                                 \
+        imgout->im->array.F[ii] =                     \
+            (float) pt2function(                      \
+                (double)(imgin->im->array.M[ii]),     \
+                v0);                                  \
     }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI16[ii]),
-                                          v0);
-        }
+
+#define CST1_BODY_D                                   \
+    OMP_FOR_SIMD                                      \
+    for (long ii = 0; ii < (long) nelement; ii++)     \
+    {                                                 \
+        imgout->im->array.D[ii] =                     \
+            pt2function(imgin->im->array.D[ii], v0);  \
     }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI32[ii]),
-                                          v0);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI64[ii]),
-                                          v0);
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.SI8[ii]),
-                                    v0);
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI16[ii]),
-                                          v0);
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI32[ii]),
-                                          v0);
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI64[ii]),
-                                          v0);
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.F[ii]),
-                                    v0);
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.D[ii] =
-                pt2function(imgin->im->array.D[ii], v0);
-        }
-    }
+
+    FOR_EACH_DATATYPE(datatype, CST1_BODY, CST1_BODY_D)
+
+#undef CST1_BODY
+#undef CST1_BODY_D
+
 #ifdef _OPENMP
     }
 #endif
@@ -546,7 +361,6 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
                           double,
                           double))
 {
-    long      ii;
 
     if (imgin->im == NULL) { return RETURN_FAILURE; }
 
@@ -577,134 +391,30 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(
     {
 #endif
 
-    if(datatype == _DATATYPE_UINT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.UI8[ii]),
-                                    v0,
-                                    v1);
-        }
+#define CST2_BODY(M)                                  \
+    OMP_FOR_SIMD                                      \
+    for (long _ii = 0; _ii < (long) nelement; _ii++)  \
+    {                                                 \
+        imgout->im->array.F[_ii] =                    \
+            (float) pt2function(                      \
+                (double)(imgin->im->array.M[_ii]),    \
+                v0, v1);                              \
     }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI16[ii]),
-                                          v0,
-                                          v1);
-        }
+
+#define CST2_BODY_D                                   \
+    OMP_FOR_SIMD                                      \
+    for (long _ii = 0; _ii < (long) nelement; _ii++)  \
+    {                                                 \
+        imgout->im->array.D[_ii] =                    \
+            pt2function(                              \
+                imgin->im->array.D[_ii], v0, v1);     \
     }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI32[ii]),
-                                          v0,
-                                          v1);
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.UI64[ii]),
-                                          v0,
-                                          v1);
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.SI8[ii]),
-                                    v0,
-                                    v1);
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI16[ii]),
-                                          v0,
-                                          v1);
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI32[ii]),
-                                          v0,
-                                          v1);
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] = (float) pt2function(
-                                          (double)(imgin->im->array.SI64[ii]),
-                                          v0,
-                                          v1);
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                (float) pt2function((double)(imgin->im->array.F[ii]),
-                                    v0,
-                                    v1);
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.D[ii] =
-                pt2function(imgin->im->array.D[ii], v0, v1);
-        }
-    }
+
+    FOR_EACH_DATATYPE(datatype, CST2_BODY, CST2_BODY_D)
+
+#undef CST2_BODY
+#undef CST2_BODY_D
+
 #ifdef _OPENMP
     }
 #endif
@@ -931,23 +641,12 @@ errno_t arith_image_function_1_1(const char *ID_name,
 }
 
 // imagein -> imagein (in place)
-errno_t arith_image_function_1_1_inplace_IMGID(IMGID *imgin,
-        double (*pt2function)(double))
+errno_t arith_image_function_1_1_inplace_IMGID(
+    IMGID *imgin,
+    double (*pt2function)(double))
 {
-    long    ii;
-    long    nelement;
-    uint8_t datatype;
-    //, datatypeout;
-
-    // printf("arith_image_function_1_1_inplace\n");
-
-    datatype = imgin->im->md->datatype;
-
-    //datatypeout = _DATATYPE_FLOAT;
-    //if(datatype == _DATATYPE_DOUBLE)
-    //   datatypeout = _DATATYPE_DOUBLE;
-
-    nelement = imgin->im->md->nelement;
+    uint8_t datatype = imgin->im->md->datatype;
+    long nelement = imgin->im->md->nelement;
 
     imgin->im->md->write = 0;
 #ifdef _OPENMP
@@ -955,116 +654,29 @@ errno_t arith_image_function_1_1_inplace_IMGID(IMGID *imgin,
     {
 #endif
 
-        if(datatype == _DATATYPE_UINT8)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.UI8[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT16)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.UI16[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT32)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.UI32[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_UINT64)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.UI64[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT8)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.SI8[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT16)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.SI16[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT32)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.SI32[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_INT64)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.SI64[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_FLOAT)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.F[ii] =
-                    pt2function((double)(imgin->im->array.F[ii]));
-            }
-        }
-        else if(datatype == _DATATYPE_DOUBLE)
-        {
-#ifdef _OPENMP
-            #pragma omp for simd
-#endif
-            for(ii = 0; ii < nelement; ii++)
-            {
-                imgin->im->array.D[ii] =
-                    (double) pt2function((double)(imgin->im->array.D[ii]));
-            }
-        }
+#define INPLACE_BODY(M)                               \
+    OMP_FOR_SIMD                                      \
+    for (long _ii = 0; _ii < nelement; _ii++)         \
+    {                                                 \
+        imgin->im->array.F[_ii] =                     \
+            pt2function(                              \
+                (double)(imgin->im->array.M[_ii]));   \
+    }
+
+#define INPLACE_BODY_D                                \
+    OMP_FOR_SIMD                                      \
+    for (long _ii = 0; _ii < nelement; _ii++)         \
+    {                                                 \
+        imgin->im->array.D[_ii] =                     \
+            (double) pt2function(                     \
+                (double)(imgin->im->array.D[_ii]));   \
+    }
+
+    FOR_EACH_DATATYPE(datatype,
+        INPLACE_BODY, INPLACE_BODY_D)
+
+#undef INPLACE_BODY
+#undef INPLACE_BODY_D
 
 #ifdef _OPENMP
     }
