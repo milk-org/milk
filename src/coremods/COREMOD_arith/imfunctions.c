@@ -61,6 +61,10 @@
 #define OMP_FOR_SIMD
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 #define RESOLVE_CALL_CLEANUP(ID_in, ID_out, CALL_EXPR) \
 do { \
     IMGID _in  = imgid_make_from_name(ID_in); \
