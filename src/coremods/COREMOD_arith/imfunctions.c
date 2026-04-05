@@ -849,7 +849,9 @@ errno_t arith_image_function_2_1_inplace(
     if (nelement != (long) img2.md->nelement)
     {
         PRINT_ERROR(
-            "images have different nelement");
+            "images %s and %s have different nelement\n",
+            ID_name1,
+            ID_name2);
         imgid_free(&img1);
         imgid_free(&img2);
         return RETURN_FAILURE;
