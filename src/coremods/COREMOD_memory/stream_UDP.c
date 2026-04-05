@@ -539,10 +539,7 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         // process signals, increment loop counter
         processinfo_exec_end(processinfo);
 
-        if((dcsigINT == 1) || (dcsigTERM == 1) ||
-                (dcsigABRT == 1) || (dcsigBUS == 1) ||
-                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
-                (dcsigPIPE == 1))
+        if(DCSIG_ANY_SET())
         {
             loopOK = 0;
         }
@@ -1180,9 +1177,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
         // process signals
 
-        if((dcsigTERM | dcsigINT | dcsigABRT |
-                dcsigBUS | dcsigSEGV | dcsigHUP |
-                dcsigPIPE) != 0)
+        if(DCSIG_ANY_SET())
         {
             loopOK = 0;
             if(dcprocinfo == 1)
