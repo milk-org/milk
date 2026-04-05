@@ -23,6 +23,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "stream_net_common.h"
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
@@ -242,10 +243,6 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
     char              *ptr_img_data_slice; // source - offset by slice
     int                res; // Return status for socket ops
     int                byte_sock_count;
-
-    struct timespec ts;
-    long            scnt;
-    int             semval;
     int             semr;
     int             slice, oldslice;
     int             NBslices;
@@ -394,17 +391,9 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         fflush(stdout);
     }
 
-    if((dcimg[ID].md[0].sem == 0) || (do_counter_sync == 1))
-    {
-        processinfo_WriteMessage(processinfo, "sync using counter");
-        use_sem = 0;
-    }
-    else
-    {
-        char msgstring[200];
-        snprintf(msgstring, 200, "sync using semaphore %d", semtrig);
-        processinfo_WriteMessage(processinfo, msgstring);
-    }
+    use_sem = stream_net_decide_sync(
+        dcimg[ID].md[0].sem, do_counter_sync,
+        semtrig, processinfo);
 
     // ===========================
     // Start loop
@@ -427,38 +416,12 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
         }
         else
         {
-            if(clock_gettime(CLOCK_MILK, &ts) == -1)
-            {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-            ts.tv_sec += 2;
+            semr = stream_net_sem_wait(
+                dcimg + ID, semtrig);
 
-            semr = ImageStreamIO_semtimedwait(dcimg + ID, semtrig, &ts);
-
-            if(iter == 0)
-            {
-                processinfo_WriteMessage(processinfo, "Driving sem to 0");
-                printf("Driving semaphore to zero ... ");
-                fflush(stdout);
-                semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
-                int semvalcnt = semval;
-                for(scnt = 0; scnt < semvalcnt; scnt++)
-                {
-                    semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
-                    printf("sem = %d\n", semval);
-                    fflush(stdout);
-                    ImageStreamIO_semtrywait(dcimg + ID, semtrig);
-                }
-                printf("done\n");
-                fflush(stdout);
-
-                semval = ImageStreamIO_semvalue(dcimg + ID, semtrig);
-                printf("-> sem = %d\n", semval);
-                fflush(stdout);
-
-                iter++;
-            }
+            stream_net_sem_drain(
+                dcimg + ID, semtrig,
+                &iter, processinfo);
         }
 
         processinfo_exec_start(processinfo);
@@ -468,20 +431,9 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
             if(semr == 0)
             {
 
-                slice = dcimg[ID].md[0].cnt1;
-                if(slice > oldslice + 1)
-                {
-                    slice = oldslice + 1;
-                }
-                if(NBslices > 1)
-                    if(oldslice == NBslices - 1)
-                    {
-                        slice = 0;
-                    }
-                if(slice > NBslices - 1)
-                {
-                    slice = 0;
-                }
+                slice = stream_net_clamp_slice(
+                    dcimg[ID].md[0].cnt1,
+                    oldslice, NBslices);
 
                 // Fill up the transmission buffer
                 __builtin_memcpy(ptr_buff_metadata,
@@ -615,8 +567,6 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     long                 framesize1;    // pixel data + metadata
     long                 framesizefull; // pixel data + metadata + kw
 
-    struct sched_param schedpar;
-
     PROCESSINFO *processinfo;
     if(dcprocinfo == 1)
     {
@@ -636,53 +586,9 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     // CATCH SIGNALS
-    {
-        if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGTERM\n");
-        }
+    set_signal_catch();
 
-        if(sigaction(SIGINT, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGINT\n");
-        }
-
-        if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGABRT\n");
-        }
-
-        if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGBUS\n");
-        }
-
-        if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGSEGV\n");
-        }
-
-        if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGHUP\n");
-        }
-
-        if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
-        {
-            printf("\ncan't catch SIGPIPE\n");
-        }
-    }
-
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0, SCHED_FIFO, &schedpar);
-    if(seteuid(dcruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    stream_net_rt_sched_set(RT_priority);
 
     // create UDP socket
     if((fds_server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -1182,34 +1088,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
             loopOK = 0;
             if(dcprocinfo == 1)
             {
-                if(dcsigTERM == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGTERM);
-                }
-                else if(dcsigINT == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGINT);
-                }
-                else if(dcsigABRT == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGABRT);
-                }
-                else if(dcsigBUS == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGBUS);
-                }
-                else if(dcsigSEGV == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGSEGV);
-                }
-                else if(dcsigHUP == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGHUP);
-                }
-                else if(dcsigPIPE == 1)
-                {
-                    processinfo_SIGexit(processinfo, SIGPIPE);
-                }
+                DCSIG_PROCESS_EXIT(processinfo);
             }
         }
 
