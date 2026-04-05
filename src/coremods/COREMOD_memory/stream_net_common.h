@@ -105,19 +105,19 @@ static inline void stream_net_signal_catch(void)
     dcsigact.sa_flags = 0;
 
     if (sigaction(SIGTERM, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGTERM\n");
+        PRINT_ERROR("can't catch SIGTERM");
     if (sigaction(SIGINT, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGINT\n");
+        PRINT_ERROR("can't catch SIGINT");
     if (sigaction(SIGABRT, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGABRT\n");
+        PRINT_ERROR("can't catch SIGABRT");
     if (sigaction(SIGBUS, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGBUS\n");
+        PRINT_ERROR("can't catch SIGBUS");
     if (sigaction(SIGSEGV, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGSEGV\n");
+        PRINT_ERROR("can't catch SIGSEGV");
     if (sigaction(SIGHUP, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGHUP\n");
+        PRINT_ERROR("can't catch SIGHUP");
     if (sigaction(SIGPIPE, &dcsigact, NULL) == -1)
-        printf("\ncan't catch SIGPIPE\n");
+        PRINT_ERROR("can't catch SIGPIPE");
 #else
     set_signal_catch();
 #endif
