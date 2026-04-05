@@ -1697,6 +1697,7 @@ errno_t arith_image_function_CF_CF__CF(
 #ifdef _OPENMP
     }
 #endif
+    RegisterIMGID(&imgout, dcimg, dcnimg);
     imgid_free(&img1);
     imgid_free(&img2);
     imgid_free(&imgout);
@@ -1759,6 +1760,7 @@ errno_t arith_image_function_CD_CD__CD(
 #ifdef _OPENMP
     }
 #endif
+    RegisterIMGID(&imgout, dcimg, dcnimg);
     imgid_free(&img1);
     imgid_free(&img2);
     imgid_free(&imgout);
