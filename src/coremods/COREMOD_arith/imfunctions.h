@@ -105,9 +105,7 @@ errno_t arith_image_function_imdd_im__ddd_d_IMGID(IMGID *imgin,
         IMGID *imgout,
         double (*pt2function)(double, double, double));
 
-errno_t arith_image_function_1_1_byID(imageID ID,
-                                      imageID IDout,
-                                      double (*pt2function)(double));
+
 
 errno_t arith_image_function_1_1(const char *ID_name,
                                  const char *ID_out,
@@ -118,7 +116,7 @@ errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
                                        double (*pt2function)(double));
 
 // imagein -> imagein (in place)
-errno_t arith_image_function_1_1_inplace_byID(imageID ID,
+errno_t arith_image_function_1_1_inplace_IMGID(IMGID *imgin,
         double (*pt2function)(double));
 
 // imagein -> imagein (in place)
@@ -141,9 +139,6 @@ errno_t arith_img_function_2_1(
     IMGID *outimg,
     double (*pt2function)(double, double)
 );
-
-errno_t arith_image_function_2_1_inplace_byID(
-    imageID ID1, imageID ID2, double (*pt2function)(double, double));
 
 errno_t arith_image_function_2_1_inplace(const char *ID_name1,
         const char *ID_name2,
@@ -171,8 +166,8 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin,
                                     IMGID *imgout,
                                     double (*pt2function)(double, double));
 
-int arith_image_function_1f_1_inplace_byID(
-    long ID, double f1, double (*pt2function)(double, double));
+int arith_image_function_1f_1_inplace_IMGID(
+    IMGID *imgin, double f1, double (*pt2function)(double, double));
 
 int arith_image_function_1f_1_inplace(const char *ID_name,
                                       double      f1,
@@ -197,7 +192,7 @@ int arith_image_function_1ff_1_inplace(const char *ID_name,
                                                double,
                                                double));
 
-int arith_image_function_1ff_1_inplace_byID(long   ID,
+int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin,
         double f1,
         double f2,
         double (*pt2function)(double,

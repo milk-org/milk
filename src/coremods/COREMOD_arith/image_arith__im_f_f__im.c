@@ -100,11 +100,7 @@ int arith_image_trunc_inplace(const char *ID_name, double f1, double f2)
     return (0);
 }
 
-int arith_image_trunc_inplace_byID(long ID, double f1, double f2)
-{
-    arith_image_function_1ff_1_inplace_byID(ID, f1, f2, &Ptrunc);
-    return (0);
-}
+
 
 
 /* ================================================================
