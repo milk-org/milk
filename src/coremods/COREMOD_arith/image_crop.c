@@ -368,8 +368,17 @@ imageID arith_image_crop(const char *ID_name,
             naxis);
     }
 
-    size_t elemsize =
+    int typesize =
         ImageStreamIO_typesize(datatype);
+    if(typesize <= 0)
+    {
+        PRINT_ERROR("invalid datatype %d",
+                    (int) datatype);
+        free(naxesout);
+        free(naxes);
+        exit(0);
+    }
+    size_t elemsize = (size_t) typesize;
 
     if (naxis == 1)
     {
@@ -377,10 +386,10 @@ imageID arith_image_crop(const char *ID_name,
         if (ncopy > 0)
         {
             __builtin_memcpy(
-                imgout.im->array.raw
+                (char *) imgout.im->array.raw
                     + (start_c[0] - start[0])
                     * elemsize,
-                imgin.im->array.raw
+                (char *) imgin.im->array.raw
                     + start_c[0] * elemsize,
                 (size_t) ncopy * elemsize);
         }
@@ -405,9 +414,9 @@ imageID arith_image_crop(const char *ID_name,
                      + start_c[0])
                     * (long) elemsize;
                 __builtin_memcpy(
-                    imgout.im->array.raw
+                    (char *) imgout.im->array.raw
                         + dst_off,
-                    imgin.im->array.raw
+                    (char *) imgin.im->array.raw
                         + src_off,
                     (size_t) row_elems
                     * elemsize);
@@ -463,6 +472,9 @@ imageID arith_image_crop(const char *ID_name,
         PRINT_ERROR(
             "unsupported naxis = %ld",
             naxis);
+        free(naxesout);
+        free(naxes);
+        exit(0);
     }
 
     free(naxesout);
