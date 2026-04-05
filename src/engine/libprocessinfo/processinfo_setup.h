@@ -38,12 +38,15 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo);
             (pinfo_ptr)->loopstat = 0; \
             strncpy((pinfo_ptr)->source_FUNCTION, __FUNCTION__, \
                 STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1); \
+            (pinfo_ptr)->source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0'; \
             strncpy((pinfo_ptr)->source_FILE, __FILE__, \
                 STRINGMAXLEN_PROCESSINFO_SRCFILE - 1); \
+            (pinfo_ptr)->source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0'; \
             (pinfo_ptr)->source_LINE = __LINE__; \
             if (descr) { \
                 strncpy((pinfo_ptr)->description, (descr), \
                     STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1); \
+                (pinfo_ptr)->description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0'; \
             } \
             if (msg) { \
                 processinfo_WriteMessage((pinfo_ptr), (msg)); \
