@@ -536,30 +536,10 @@ int execute_arith(const char *cmd1)
             word_type[i]    = ARITHTOKENTYPE_VARIABLE;
             found_word_type = 1;
         }
-        if((image_ID(word[i], dcimg, dcnimg) != -1) && (found_word_type == 0))
+        if((imgid_exists(word[i])) && (found_word_type == 0))
         {
             word_type[i]    = ARITHTOKENTYPE_IMAGE;
             found_word_type = 1;
-        }
-        /* If word contains brackets, try bare name */
-        if (found_word_type == 0
-            && strchr(word[i], '[') != NULL)
-        {
-            char bare[100];
-            const char *bk = strchr(word[i], '[');
-            int blen = (int)(bk - word[i]);
-            if (blen > 0 && blen < 100)
-            {
-                memcpy(bare, word[i], blen);
-                bare[blen] = '\0';
-                if (image_ID(bare,
-                             dcimg, dcnimg) != -1)
-                {
-                    word_type[i] =
-                        ARITHTOKENTYPE_IMAGE;
-                    found_word_type = 1;
-                }
-            }
         }
         if(found_word_type == 0)
         {
@@ -696,15 +676,12 @@ int execute_arith(const char *cmd1)
 
             IMGID simg =
                 imgid_make_from_name(word[i]);
-            imageID sid = image_ID(
-                simg.name, dcimg, dcnimg);
-            if (sid < 0)
+            resolveIMGID(&simg, ERRMODE_NULL, dcimg, dcnimg);
+            if (simg.ID < 0)
             {
                 imgid_free(&simg);
                 continue;
             }
-            simg.ID = sid;
-            simg.im = &dcimg[sid];
 
             /* Materialize the slice */
             if (imgid_slice_materialize(
@@ -1928,7 +1905,7 @@ int execute_arith(const char *cmd1)
                 {
                     delete_variable_ID(word[0]);
                 }
-                if(image_ID(word[0], dcimg, dcnimg) != -1)
+                if(imgid_exists(word[0]))
                 {
                     delete_image_ID(word[0], DELETE_IMAGE_ERRMODE_WARNING);
                 }
@@ -1959,7 +1936,7 @@ int execute_arith(const char *cmd1)
             {
                 delete_variable_ID(name);
             }
-            if(image_ID(name, dcimg, dcnimg) != -1)
+            if(imgid_exists(name))
             {
                 delete_image_ID(name, DELETE_IMAGE_ERRMODE_WARNING);
             }

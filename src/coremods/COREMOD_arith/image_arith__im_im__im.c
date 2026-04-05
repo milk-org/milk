@@ -177,15 +177,7 @@ BINARY_OPS_FULL(DEFINE_INPLACE)
  * Only generated for BINARY_OPS_FULL operations.
  * ---------------------------------------------------------- */
 
-#define DEFINE_INPLACE_BYID(op, fptr) \
-int arith_image_##op##_inplace_byID(         \
-    long ID1,                                \
-    long ID2)                                \
-{                                            \
-    arith_image_function_2_1_inplace_byID(   \
-        ID1, ID2, &fptr);                    \
-    return 0;                                \
-}
 
-BINARY_OPS_FULL(DEFINE_INPLACE_BYID)
-#undef DEFINE_INPLACE_BYID
+
+
+

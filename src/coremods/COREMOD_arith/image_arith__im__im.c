@@ -8,7 +8,7 @@
  * All call surfaces are generated from the UNARY_OPS
  * X-macro table:
  *
- *  - arith_image_<op>_byID(ID, IDout)
+
  *    Legacy API using raw image slot indices.
  *  - arith_image_<op>_IMGID(imgin, imgout)
  *    Modern IMGID API.
@@ -66,18 +66,10 @@
  * 1. Legacy by-ID wrappers  (ID, IDout)
  * ---------------------------------------------------------- */
 
-#define DEFINE_BYID(op, fptr) \
-int arith_image_##op##_byID(  \
-    long ID,                  \
-    long IDout)               \
-{                             \
-    arith_image_function_1_1_byID( \
-        ID, IDout, &fptr);    \
-    return 0;                 \
-}
 
-UNARY_OPS(DEFINE_BYID)
-#undef DEFINE_BYID
+
+
+
 
 
 /* ----------------------------------------------------------
@@ -122,17 +114,10 @@ UNARY_OPS(DEFINE_STRING)
  * 4. In-place-by-ID wrappers
  * ---------------------------------------------------------- */
 
-#define DEFINE_INPLACE_BYID(op, fptr) \
-int arith_image_##op##_inplace_byID(  \
-    long ID)                          \
-{                                     \
-    arith_image_function_1_1_inplace_byID( \
-        ID, &fptr);                   \
-    return 0;                         \
-}
 
-UNARY_OPS(DEFINE_INPLACE_BYID)
-#undef DEFINE_INPLACE_BYID
+
+
+
 
 
 /* ----------------------------------------------------------
