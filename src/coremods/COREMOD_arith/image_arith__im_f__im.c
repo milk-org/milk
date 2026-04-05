@@ -31,16 +31,23 @@
 /* ==========================================================
  * X-macro operation tables.
  *
- * CST_OPS_OPTIMIZED — ops with _optimized_IMGID variants
- * CST_OPS_FPTR      — ops that dispatch via function ptr
+ * Table groups used below:
+ *   - CST_OPS_OPT_FULL  : optimized-dispatch ops with
+ *                         inplace variants
+ *   - CST_OPS_FPTR_FULL : function-pointer-dispatch ops with
+ *                         inplace variants
+ *   - CST_OPS_OPT_NOIP  : optimized-dispatch ops without
+ *                         inplace variants
  *
- * Both tables share the same column format:
+ * All tables use the form:
  *   X(op, dispatch)
- *   where dispatch is either an optimized func name
- *   or a function-pointer variable.
  *
- * CST_OPS_FULL — ops that also have inplace variants
- * CST_OPS_NOIP — ops that only have IMGID + string
+ * For optimized-dispatch tables, the 2nd column is a
+ * placeholder token kept for a consistent X-macro shape and
+ * is not used by the optimized wrapper macros.
+ *
+ * For function-pointer tables, the 2nd column is the
+ * function-pointer variable passed to the generic dispatcher.
  * ========================================================== */
 
 /**
