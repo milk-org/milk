@@ -138,9 +138,25 @@ static inline imageID resolveIMGID(
     return img->ID;
 }
 
+static inline int imgid_exists(const char *name)
+{
+    if(name == NULL || name[0] == '\0')
+    {
+        return 0;
+    }
 
+    IMGID img;
+    img.ID        = -1;
+    img.im        = NULL;
+    img.md        = NULL;
+    img.createcnt = 0;
+    strncpy(img.name, name, STRINGMAXLEN_IMAGE_NAME - 1);
+    img.name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
 
+    return (img.ID != -1);
+}
 
 
 static inline IMGID makesetIMGID(CONST_WORD name, imageID ID)

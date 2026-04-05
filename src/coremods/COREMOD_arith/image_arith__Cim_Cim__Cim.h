@@ -13,10 +13,10 @@
 /* ------------------------------------------------------------------------- */
 
 /*
-int arith_image_Cadd_byID(long ID1, long ID2, long IDout);
-int arith_image_Csub_byID(long ID1, long ID2, long IDout);
-int arith_image_Cmult_byID(long ID1, long ID2, long IDout);
-int arith_image_Cdiv_byID(long ID1, long ID2, long IDout);
+
+
+
+
 */
 
 int arith_image_Cadd(const char *ID1_name,
