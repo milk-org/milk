@@ -65,6 +65,31 @@
  * Signal handler installation
  * ========================================================= */
 
+#ifdef MILK_NO_CLI
+/**
+ * stream_net_sig_handler_standalone - set dcsig* flag
+ * for the received signal.
+ *
+ * Used only in MILK_NO_CLI builds where sig_handler()
+ * from CLIcore_standalone.h is a no-op and does not
+ * populate the dcsig* flags needed by DCSIG_ANY_SET().
+ */
+static void stream_net_sig_handler_standalone(int signo)
+{
+    switch (signo)
+    {
+    case SIGTERM: dcsigTERM = 1; break;
+    case SIGINT:  dcsigINT  = 1; break;
+    case SIGABRT: dcsigABRT = 1; break;
+    case SIGBUS:  dcsigBUS  = 1; break;
+    case SIGSEGV: dcsigSEGV = 1; break;
+    case SIGHUP:  dcsigHUP  = 1; break;
+    case SIGPIPE: dcsigPIPE = 1; break;
+    default: break;
+    }
+}
+#endif /* MILK_NO_CLI */
+
 /**
  * stream_net_signal_catch - install signal handlers
  *
@@ -75,7 +100,7 @@
 static inline void stream_net_signal_catch(void)
 {
 #ifdef MILK_NO_CLI
-    dcsigact.sa_handler = sig_handler;
+    dcsigact.sa_handler = stream_net_sig_handler_standalone;
     sigemptyset(&dcsigact.sa_mask);
     dcsigact.sa_flags = 0;
 
