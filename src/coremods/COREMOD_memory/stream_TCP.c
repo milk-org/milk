@@ -25,6 +25,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "stream_net_common.h"
 
 // set to 1 if transfering keywords
 static int TCPTRANSFERKW = 1;
@@ -420,10 +421,6 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
     char              *ptr0; // source
     char              *ptr1; // source - offset by slice
     int                rs;
-
-    struct timespec ts;
-    long            scnt;
-    int             semval;
     int             semr;
     int             slice, oldslice;
     int             NBslices;
@@ -592,17 +589,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         fflush(stdout);
     }
 
-    if((img_p->md->sem == 0) || (mode == 1))
-    {
-        processinfo_WriteMessage(processinfo, "sync using counter");
-        UseSem = 0;
-    }
-    else
-    {
-        char msgstring[200];
-        snprintf(msgstring, 200, "sync using semaphore %d", semtrig);
-        processinfo_WriteMessage(processinfo, msgstring);
-    }
+    UseSem = stream_net_decide_sync(
+        img_p->md->sem, mode, semtrig,
+        processinfo);
 
     long frameincr = 0;
     long cnt0previous = 0;
@@ -628,38 +617,12 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
         }
         else
         {
-            if(clock_gettime(CLOCK_MILK, &ts) == -1)
-            {
-                perror("clock_gettime");
-                exit(EXIT_FAILURE);
-            }
-            ts.tv_sec += 2;
+            semr = stream_net_sem_wait(
+                img_p, semtrig);
 
-            semr = ImageStreamIO_semtimedwait(img_p, semtrig, &ts);
-
-            if(iter == 0)
-            {
-                processinfo_WriteMessage(processinfo, "Driving sem to 0");
-                printf("Driving semaphore to zero ... ");
-                fflush(stdout);
-                semval = ImageStreamIO_semvalue(img_p, semtrig);
-                int semvalcnt = semval;
-                for(scnt = 0; scnt < semvalcnt; scnt++)
-                {
-                    semval = ImageStreamIO_semvalue(img_p, semtrig);
-                    printf("sem = %d\n", semval);
-                    fflush(stdout);
-                    ImageStreamIO_semtrywait(img_p, semtrig);
-                }
-                printf("done\n");
-                fflush(stdout);
-
-                semval = ImageStreamIO_semvalue(img_p, semtrig);
-                printf("-> sem = %d\n", semval);
-                fflush(stdout);
-
-                iter++;
-            }
+            stream_net_sem_drain(
+                img_p, semtrig,
+                &iter, processinfo);
         }
 
         processinfo_exec_start(processinfo);
@@ -672,20 +635,9 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
                 frame_md.cnt0 = img_p->md->cnt0;
                 frame_md.cnt1 = img_p->md->cnt1;
 
-                slice = img_p->md->cnt1;
-                if(slice > oldslice + 1)
-                {
-                    slice = oldslice + 1;
-                }
-                if(NBslices > 1)
-                    if(oldslice == NBslices - 1)
-                    {
-                        slice = 0;
-                    }
-                if(slice > NBslices - 1)
-                {
-                    slice = 0;
-                }
+                slice = stream_net_clamp_slice(
+                    img_p->md->cnt1,
+                    oldslice, NBslices);
 
                 frame_md.cnt1 = slice;
 
@@ -803,8 +755,6 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     //size_t flushsize;
     char *socket_flush_buff;
 
-    struct sched_param schedpar;
-
     PROCESSINFO *processinfo;
     if(dcprocinfo == 1)
     {
@@ -826,32 +776,9 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     }
 
     // CATCH SIGNALS
+    stream_net_signal_catch();
 
-    if(
-        sigaction(SIGTERM, &dcsigact, NULL) == -1 ||
-        sigaction(SIGINT, &dcsigact, NULL) == -1 ||
-        sigaction(SIGABRT, &dcsigact, NULL) == -1 ||
-        sigaction(SIGBUS, &dcsigact, NULL) == -1 ||
-        sigaction(SIGSEGV, &dcsigact, NULL) == -1 ||
-        sigaction(SIGHUP, &dcsigact, NULL) == -1 ||
-        sigaction(SIGPIPE, &dcsigact, NULL) == -1
-    )
-    {
-        printf("\nCan't catch a requested signal (TERM, INT, ABRT, BUS, SEGV, HUP, PIPE)\n");
-    }
-
-    schedpar.sched_priority = RT_priority;
-    if(seteuid(dceuid) != 0)  //This goes up to maximum privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
-    sched_setscheduler(0,
-                       SCHED_FIFO,
-                       &schedpar); //other option is SCHED_RR, might be faster
-    if(seteuid(dcruid) != 0)    //Go back to normal privileges
-    {
-        PRINT_ERROR("seteuid error");
-    }
+    stream_net_rt_sched_set(RT_priority);
 
     // create TCP socket
     if((fds_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1)
@@ -1303,34 +1230,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
             loopOK = 0;
             if(dcprocinfo == 1)
             {
-                if(dcsigTERM)
-                {
-                    processinfo_SIGexit(processinfo, SIGTERM);
-                }
-                else if(dcsigINT)
-                {
-                    processinfo_SIGexit(processinfo, SIGINT);
-                }
-                else if(dcsigABRT)
-                {
-                    processinfo_SIGexit(processinfo, SIGABRT);
-                }
-                else if(dcsigBUS)
-                {
-                    processinfo_SIGexit(processinfo, SIGBUS);
-                }
-                else if(dcsigSEGV)
-                {
-                    processinfo_SIGexit(processinfo, SIGSEGV);
-                }
-                else if(dcsigHUP)
-                {
-                    processinfo_SIGexit(processinfo, SIGHUP);
-                }
-                else if(dcsigPIPE)
-                {
-                    processinfo_SIGexit(processinfo, SIGPIPE);
-                }
+                DCSIG_PROCESS_EXIT(processinfo);
             }
         }
 
