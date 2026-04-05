@@ -41,9 +41,14 @@
  * BINARY_OPS_NOIP — ops with IMGID + string only
  *   (no inplace variants exist in the public API)
  *
+ * Both tables use the same X(op, fptr) shape so they can be
+ * expanded by the shared non-inplace generators below.
+ *
  * Column: X(op, fptr)
  *   op   — operation suffix
- *   fptr — function-pointer for inplace dispatch
+ *   fptr — function-pointer used only for inplace dispatch
+ *          generation from BINARY_OPS_FULL; ignored for
+ *          BINARY_OPS_NOIP entries
  * ========================================================== */
 
 #define BINARY_OPS_FULL(X) \
