@@ -586,7 +586,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     }
 
     // CATCH SIGNALS
-    set_signal_catch();
+    stream_net_signal_catch();
 
     stream_net_rt_sched_set(RT_priority);
 

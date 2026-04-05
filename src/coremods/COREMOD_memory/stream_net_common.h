@@ -13,6 +13,7 @@
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -58,6 +59,44 @@
         else if (dcsigPIPE) \
             processinfo_SIGexit((pinfo), SIGPIPE); \
     } while (0)
+
+
+/* ============================================================
+ * Signal handler installation
+ * ========================================================= */
+
+/**
+ * stream_net_signal_catch - install signal handlers
+ *
+ * In CLI builds delegates to set_signal_catch().
+ * In standalone (MILK_NO_CLI) builds calls sigaction()
+ * directly, since set_signal_catch() is a no-op there.
+ */
+static inline void stream_net_signal_catch(void)
+{
+#ifdef MILK_NO_CLI
+    dcsigact.sa_handler = sig_handler;
+    sigemptyset(&dcsigact.sa_mask);
+    dcsigact.sa_flags = 0;
+
+    if (sigaction(SIGTERM, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGTERM\n");
+    if (sigaction(SIGINT, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGINT\n");
+    if (sigaction(SIGABRT, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGABRT\n");
+    if (sigaction(SIGBUS, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGBUS\n");
+    if (sigaction(SIGSEGV, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGSEGV\n");
+    if (sigaction(SIGHUP, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGHUP\n");
+    if (sigaction(SIGPIPE, &dcsigact, NULL) == -1)
+        printf("\ncan't catch SIGPIPE\n");
+#else
+    set_signal_catch();
+#endif
+}
 
 
 /* ============================================================
