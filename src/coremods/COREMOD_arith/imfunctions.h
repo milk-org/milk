@@ -140,9 +140,6 @@ errno_t arith_img_function_2_1(
     double (*pt2function)(double, double)
 );
 
-errno_t arith_image_function_2_1_inplace_IMGID(
-    IMGID *imgin1, IMGID *imgin2, double (*pt2function)(double, double));
-
 errno_t arith_image_function_2_1_inplace(const char *ID_name1,
         const char *ID_name2,
         double (*pt2function)(double, double));
