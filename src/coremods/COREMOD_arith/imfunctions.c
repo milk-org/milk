@@ -61,6 +61,25 @@
 #define OMP_FOR_SIMD
 #endif
 
+#define RESOLVE_CALL_CLEANUP(ID_in, ID_out, CALL_EXPR) \
+do { \
+    IMGID _in  = imgid_make_from_name(ID_in); \
+    IMGID _out = imgid_make_from_name(ID_out); \
+    resolveIMGID(&_in, ERRMODE_ABORT, dcimg, dcnimg); \
+    resolveIMGID(&_out, ERRMODE_NULL, dcimg, dcnimg); \
+    if (_out.ID == -1) { \
+        _out.mdt->shared = dcshareddft; \
+        _out.mdt->NBkw = NB_KEYWNODE_MAX; \
+    } \
+    errno_t _ret = (CALL_EXPR); \
+    if (_out.ID == -1 && _out.im != NULL) { \
+        RegisterIMGID(&_out, dcimg, dcnimg); \
+    } \
+    imgid_free(&_in); \
+    imgid_free(&_out); \
+    return _ret; \
+} while (0)
+
 /**
  * @brief Read any-type pixel as double
  *
@@ -197,28 +216,8 @@ errno_t arith_image_function_im_im__d_d(
     const char *__restrict ID_out,
     double (*pt2function)(double))
 {
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-    
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
-
-    errno_t ret = arith_image_function_im_im__d_d_IMGID(&imgin,
-        &imgout,
-        pt2function);
-    
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    
-    return ret;
+    RESOLVE_CALL_CLEANUP(ID_name, ID_out,
+        arith_image_function_im_im__d_d_IMGID(&_in, &_out, pt2function));
 }
 
 /**
@@ -315,28 +314,8 @@ errno_t arith_image_function_imd_im__dd_d(
     const char *__restrict ID_out,
     double (*pt2function)(double, double))
 {
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
-
-    errno_t ret = arith_image_function_imd_im__dd_d_IMGID(&imgin,
-        v0,
-        &imgout,
-        pt2function);
-    
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    return ret;
+    RESOLVE_CALL_CLEANUP(ID_name, ID_out,
+        arith_image_function_imd_im__dd_d_IMGID(&_in, v0, &_out, pt2function));
 }
 
 /**
@@ -436,29 +415,9 @@ errno_t arith_image_function_imdd_im__ddd_d(
                           double,
                           double))
 {
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-    
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
+    RESOLVE_CALL_CLEANUP(ID_name, ID_out,
+        arith_image_function_imdd_im__ddd_d_IMGID(&_in, v0, v1, &_out, pt2function));
 
-    errno_t ret = arith_image_function_imdd_im__ddd_d_IMGID(&imgin,
-        v0,
-        v1,
-        &imgout,
-        pt2function);
-
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    return ret;
 }
 
 
@@ -1123,24 +1082,9 @@ int arith_image_function_1f_1_IMGID(IMGID *imgin, double f1, IMGID *imgout, doub
 
 int arith_image_function_1f_1(const char *ID_name, double f1, const char *ID_out, double (*pt2function)(double, double))
 {
-    IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
-    
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-    
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
+    RESOLVE_CALL_CLEANUP(ID_name, ID_out,
+        arith_image_function_1f_1_IMGID(&_in, f1, &_out, pt2function));
 
-    int ret = arith_image_function_1f_1_IMGID(&imgin, f1, &imgout, pt2function);
-    
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    return ret;
 }
 
 int arith_image_function_1f_1_inplace_IMGID(IMGID *imgin, double f1, double (*pt2function)(double, double))
@@ -1199,28 +1143,9 @@ int arith_image_function_1ff_1_IMGID(IMGID *imgin, double f1, double f2, IMGID *
 
 int arith_image_function_1ff_1(const char *ID_name, double f1, double f2, const char *ID_out, double (*pt2function)(double, double, double))
 {
-    IMGID imgin = imgid_make_from_name(ID_name); IMGID imgout = imgid_make_from_name(ID_out);
-    
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-    
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
+    RESOLVE_CALL_CLEANUP(ID_name, ID_out,
+        arith_image_function_1ff_1_IMGID(&_in, f1, f2, &_out, pt2function));
 
-    int ret = arith_image_function_1ff_1_IMGID(&imgin,
-        f1,
-        f2,
-        &imgout,
-        pt2function);
-    
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    return ret;
 }
 
 int arith_image_function_1ff_1_inplace_IMGID(IMGID *imgin, double f1, double f2, double (*pt2function)(double, double, double))
