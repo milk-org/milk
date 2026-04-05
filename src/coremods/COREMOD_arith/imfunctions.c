@@ -463,181 +463,22 @@ errno_t arith_image_function_imdd_im__ddd_d(
 
 
 
-errno_t arith_image_function_1_1_IMGID(IMGID *imgin,
-                                       IMGID *imgout,
-                                       double (*pt2function)(double))
+errno_t arith_image_function_1_1_IMGID(
+    IMGID *imgin,
+    IMGID *imgout,
+    double (*pt2function)(double))
 {
-    long ii;
-
-    if (imgin->im == NULL) { return RETURN_FAILURE; }
-
-    imgout->mdt->naxis = imgin->md->naxis;
-    for(int i = 0; i < imgin->md->naxis; i++)
-    {
-        imgout->mdt->size[i] = imgin->md->size[i];
-    }
-
-    imgout->mdt->datatype = _DATATYPE_FLOAT;
-    if(imgin->md->datatype == _DATATYPE_DOUBLE)
-    {
-        imgout->mdt->datatype = _DATATYPE_DOUBLE;
-    }
-    
-    if (imgout->im == NULL) {
-        imgout->im = (IMAGE*) calloc(1, sizeof(IMAGE));
-    } else {
-        if (imgout->im->md && imgout->im->md->shared == 1) ImageStreamIO_closeIm(imgout->im); else ImageStreamIO_destroyIm(imgout->im);
-    }
-    imgid_mkimage(imgout);
-
-    uint_fast64_t nelement = imgin->md->nelement;
-    uint8_t       datatype = imgin->md->datatype;
-
-#ifdef _OPENMP
-    #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
-    {
-#endif
-
-    if(datatype == _DATATYPE_UINT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.UI8[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_UINT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.UI16[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_UINT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.UI32[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_UINT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.UI64[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT8)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.SI8[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT16)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.SI16[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT32)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.SI32[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_INT64)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.SI64[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_FLOAT)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.F[ii] =
-                pt2function((double)(imgin->im->array.F[ii]));
-        }
-    }
-    else if(datatype == _DATATYPE_DOUBLE)
-    {
-#ifdef _OPENMP
-        #pragma omp for simd
-#endif
-        for(ii = 0; ii < nelement; ii++)
-        {
-            imgout->im->array.D[ii] =
-                (double) pt2function((double)(imgin->im->array.D[ii]));
-        }
-    }
-#ifdef _OPENMP
-    }
-#endif
-
-    return RETURN_SUCCESS;
+    return arith_image_function_im_im__d_d_IMGID(
+        imgin, imgout, pt2function);
 }
 
-errno_t arith_image_function_1_1(const char *ID_name,
-                                 const char *ID_out,
-                                 double (*pt2function)(double))
+errno_t arith_image_function_1_1(
+    const char *ID_name,
+    const char *ID_out,
+    double (*pt2function)(double))
 {
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg);
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg);
-
-    if (imgout.ID == -1) {
-        imgout.mdt->shared = dcshareddft;
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX;
-    }
-
-    errno_t ret = arith_image_function_1_1_IMGID(&imgin, &imgout, pt2function);
-    
-    if (imgout.ID == -1 && imgout.im != NULL) {
-        RegisterIMGID(&imgout, dcimg, dcnimg);
-    }
-    imgid_free(&imgin);
-    imgid_free(&imgout);
-    return ret;
+    return arith_image_function_im_im__d_d(
+        ID_name, ID_out, pt2function);
 }
 
 // imagein -> imagein (in place)
