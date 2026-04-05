@@ -11,7 +11,6 @@
  *  - arith_image_cst<op>_IMGID(imgin, f1, imgout)
  *  - arith_image_cst<op>(name, f1, name_out)
  *  - arith_image_cst<op>_inplace(name, f1)
- *  - arith_image_cst<op>_inplace_byID(ID, f1)
  */
 
 
@@ -203,13 +202,3 @@ int arith_image_cst##op##_inplace(   \
 
 CST_INPLACE_OPS(DEFINE_CST_INPLACE)
 #undef DEFINE_CST_INPLACE
-
-
-/* ----------------------------------------------------------
- * 4. In-place-by-ID wrappers
- * ---------------------------------------------------------- */
-
-
-
-
-
