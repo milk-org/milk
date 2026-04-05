@@ -51,7 +51,20 @@
 #define dcsigHUP      (milk_data.signal_HUP)
 #define dcsigPIPE     (milk_data.signal_PIPE)
 
+/**
+ * True if any fatal signal has been received.
+ *
+ * Use in loop-exit checks instead of repeating
+ * a multi-line OR chain of dcsig* flags.
+ */
+#define DCSIG_ANY_SET() \
+    (dcsigINT  || dcsigTERM || \
+     dcsigABRT || dcsigBUS  || \
+     dcsigSEGV || dcsigHUP  || \
+     dcsigPIPE)
+
 /* Process info */
+
 #define dcpinfo       (milk_data.pinfo)
 #define dcprocinfo    (milk_data.processinfo)
 #define dcprocinfoact (milk_data.processinfoActive)

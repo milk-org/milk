@@ -1816,10 +1816,7 @@ errno_t streamCTRL_CTRLscreen()
         DEBUG_TRACEPOINT(" ");
 
         loopcnt++;
-        if((dcsigTERM == 1) || (dcsigINT == 1) ||
-                (dcsigABRT == 1) || (dcsigBUS == 1) ||
-                (dcsigSEGV == 1) || (dcsigHUP == 1) ||
-                (dcsigPIPE == 1))
+        if(DCSIG_ANY_SET())
         {
             sTUIparam.loopOK = 0;
         }
