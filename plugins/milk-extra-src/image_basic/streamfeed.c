@@ -138,7 +138,41 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
 
     ptr1 = (char *) dcimg[IDs].array.F; // destination
 
-    set_signal_catch();
+    if(sigaction(SIGINT, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGTERM, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGBUS, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGSEGV, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGABRT, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGHUP, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    if(sigaction(SIGPIPE, &dcsigact, NULL) == -1)
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
 
     k      = 0;
     loopOK = 1;
