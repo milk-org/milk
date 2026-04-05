@@ -6,15 +6,12 @@
  * an input image combined with a scalar constant,
  * producing an output image.
  *
- * A convenience macro ARITH_IMAGE_CST_WRAPPER(name)
- * generates the string-based CLI entry point for each
- * operation, which resolves IMGIDs from names and
- * delegates to the _IMGID variant.
+ * All call surfaces are generated from X-macro tables:
  *
- * Supported operations: cstadd, cstsub, cstsubm,
- * cstmult, cstdiv, cstdiv1, cstpow, cstfmod,
- * cstmaxv, cstminv, csttestlt, csttestmt, cstteste,
- * csttestne, csttestle, csttestge, cstand, cstor.
+ *  - arith_image_cst<op>_IMGID(imgin, f1, imgout)
+ *  - arith_image_cst<op>(name, f1, name_out)
+ *  - arith_image_cst<op>_inplace(name, f1)
+ *  - arith_image_cst<op>_inplace_byID(ID, f1)
  */
 
 
@@ -30,292 +27,197 @@
 #include "mathfuncs.h"
 #include "image_arith__im_f__im.h"
 
-#define ARITH_IMAGE_CST_WRAPPER(name) \
-int arith_image_cst##name(const char *ID_name, double f1, const char *ID_out) \
-{ \
-    IMGID imgin  = imgid_make_from_name(ID_name); \
-    IMGID imgout = imgid_make_from_name(ID_out); \
-    resolveIMGID(&imgin, ERRMODE_ABORT, dcimg, dcnimg); \
-    resolveIMGID(&imgout, ERRMODE_NULL, dcimg, dcnimg); \
-    if (imgout.ID == -1) { \
-        imgout.mdt->shared = dcshareddft; \
-        imgout.mdt->NBkw = NB_KEYWNODE_MAX; \
-    } \
-    int ret = arith_image_cst##name##_IMGID(&imgin, f1, &imgout); \
-    if (imgout.ID == -1 && imgout.im != NULL) { \
-        RegisterIMGID(&imgout, dcimg, dcnimg); \
-    } \
-    imgid_free(&imgin); \
-    imgid_free(&imgout); \
-    return ret; \
+
+/* ==========================================================
+ * X-macro operation tables.
+ *
+ * Table groups used below:
+ *   - CST_OPS_OPT_FULL  : optimized-dispatch ops with
+ *                         inplace variants
+ *   - CST_OPS_FPTR_FULL : function-pointer-dispatch ops with
+ *                         inplace variants
+ *   - CST_OPS_OPT_NOIP  : optimized-dispatch ops without
+ *                         inplace variants
+ *
+ * All tables use the form:
+ *   X(op, dispatch)
+ *
+ * For optimized-dispatch tables, the 2nd column is a
+ * placeholder token kept for a consistent X-macro shape and
+ * is not used by the optimized wrapper macros.
+ *
+ * For function-pointer tables, the 2nd column is the
+ * function-pointer variable passed to the generic dispatcher.
+ * ========================================================== */
+
+/**
+ * Ops dispatched to optimized (macro-stamped) IMGID
+ * functions AND that have inplace variants.
+ */
+#define CST_OPS_OPT_FULL(X) \
+    X(add,    optimized)     \
+    X(sub,    optimized)     \
+    X(mult,   optimized)     \
+    X(div,    optimized)     \
+    X(pow,    optimized)     \
+    X(testlt, optimized)     \
+    X(testmt, optimized)
+
+/**
+ * Ops dispatched via function-pointer AND that have
+ * inplace variants.
+ */
+#define CST_OPS_FPTR_FULL(X) \
+    X(fmod,   Pfmod)         \
+    X(subm,   Psubm)         \
+    X(div1,   Pdiv1)         \
+    X(maxv,   Pmaxv)         \
+    X(minv,   Pminv)
+
+/**
+ * Ops dispatched to optimized IMGID, NO inplace variants.
+ */
+#define CST_OPS_OPT_NOIP(X) \
+    X(teste,  optimized)     \
+    X(testne, optimized)     \
+    X(testle, optimized)     \
+    X(testge, optimized)     \
+    X(and,    optimized)     \
+    X(or,     optimized)
+
+
+/* ----------------------------------------------------------
+ * 1. IMGID wrappers — optimized dispatch
+ * ---------------------------------------------------------- */
+
+#define DEFINE_IMGID_OPT(op, tag) \
+int arith_image_cst##op##_IMGID(  \
+    IMGID *imgin,                 \
+    double f1,                    \
+    IMGID *imgout)                \
+{                                 \
+    return arith_image_cst##op##_optimized_IMGID( \
+        imgin, f1, imgout);       \
 }
 
+CST_OPS_OPT_FULL(DEFINE_IMGID_OPT)
+CST_OPS_OPT_NOIP(DEFINE_IMGID_OPT)
+#undef DEFINE_IMGID_OPT
 
 
-int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pfmod);
+/* ----------------------------------------------------------
+ * 1b. IMGID wrappers — function-pointer dispatch
+ * ---------------------------------------------------------- */
+
+#define DEFINE_IMGID_FPTR(op, fptr) \
+int arith_image_cst##op##_IMGID(    \
+    IMGID *imgin,                   \
+    double f1,                      \
+    IMGID *imgout)                  \
+{                                   \
+    return arith_image_function_1f_1_IMGID( \
+        imgin, f1, imgout, &fptr);  \
 }
 
-ARITH_IMAGE_CST_WRAPPER(fmod)
+CST_OPS_FPTR_FULL(DEFINE_IMGID_FPTR)
+#undef DEFINE_IMGID_FPTR
 
-int arith_image_cstadd_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstadd_optimized_IMGID(imgin, f1, imgout);
+
+/* ----------------------------------------------------------
+ * 2. String-based wrapper macro
+ * ---------------------------------------------------------- */
+
+#define DEFINE_CST_STRING(op, tag) \
+int arith_image_cst##op(                     \
+    const char *ID_name,                     \
+    double f1,                               \
+    const char *ID_out)                      \
+{                                            \
+    IMGID imgin =                            \
+        imgid_make_from_name(ID_name);       \
+    IMGID imgout =                           \
+        imgid_make_from_name(ID_out);        \
+                                             \
+    resolveIMGID(&imgin,                     \
+        ERRMODE_ABORT, dcimg, dcnimg);       \
+    resolveIMGID(&imgout,                    \
+        ERRMODE_NULL, dcimg, dcnimg);        \
+                                             \
+    if (imgout.ID == -1) {                   \
+        imgout.mdt->shared = dcshareddft;    \
+        imgout.mdt->NBkw = NB_KEYWNODE_MAX;  \
+    }                                        \
+                                             \
+    int ret = arith_image_cst##op##_IMGID(   \
+        &imgin, f1, &imgout);               \
+                                             \
+    if (imgout.ID == -1                      \
+        && imgout.im != NULL) {              \
+        RegisterIMGID(                       \
+            &imgout, dcimg, dcnimg);         \
+    }                                        \
+    imgid_free(&imgin);                      \
+    imgid_free(&imgout);                     \
+    return ret;                              \
 }
 
-ARITH_IMAGE_CST_WRAPPER(add)
+CST_OPS_OPT_FULL(DEFINE_CST_STRING)
+CST_OPS_FPTR_FULL(DEFINE_CST_STRING)
+CST_OPS_OPT_NOIP(DEFINE_CST_STRING)
+#undef DEFINE_CST_STRING
 
-int arith_image_cstsub_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstsub_optimized_IMGID(imgin, f1, imgout);
+
+/* ----------------------------------------------------------
+ * 3. In-place wrappers  (name, f1 → name modified)
+ *
+ * Function-pointer table for inplace dispatch.
+ * ---------------------------------------------------------- */
+
+/**
+ * Unified inplace function-pointer table.
+ * Maps each operation to its math function pointer.
+ */
+#define CST_INPLACE_OPS(X) \
+    X(fmod,   Pfmod)       \
+    X(add,    Padd)        \
+    X(sub,    Psub)        \
+    X(subm,   Psubm)       \
+    X(mult,   Pmult)       \
+    X(div,    Pdiv)        \
+    X(div1,   Pdiv1)       \
+    X(pow,    Ppow)        \
+    X(maxv,   Pmaxv)       \
+    X(minv,   Pminv)       \
+    X(testlt, Ptestlt)     \
+    X(testmt, Ptestmt)
+
+#define DEFINE_CST_INPLACE(op, fptr) \
+int arith_image_cst##op##_inplace(   \
+    const char *ID_name,             \
+    double f1)                       \
+{                                    \
+    arith_image_function_1f_1_inplace( \
+        ID_name, f1, &fptr);         \
+    return 0;                        \
 }
 
-ARITH_IMAGE_CST_WRAPPER(sub)
+CST_INPLACE_OPS(DEFINE_CST_INPLACE)
+#undef DEFINE_CST_INPLACE
 
-int arith_image_cstsubm_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Psubm);
+
+/* ----------------------------------------------------------
+ * 4. In-place-by-ID wrappers
+ * ---------------------------------------------------------- */
+
+#define DEFINE_CST_INPLACE_BYID(op, fptr) \
+int arith_image_cst##op##_inplace_byID(   \
+    long ID,                              \
+    double f1)                            \
+{                                         \
+    arith_image_function_1f_1_inplace_byID( \
+        ID, f1, &fptr);                   \
+    return 0;                             \
 }
 
-ARITH_IMAGE_CST_WRAPPER(subm)
-
-int arith_image_cstmult_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstmult_optimized_IMGID(imgin, f1, imgout);
-}
-
-ARITH_IMAGE_CST_WRAPPER(mult)
-
-int arith_image_cstdiv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstdiv_optimized_IMGID(imgin, f1, imgout);
-}
-
-ARITH_IMAGE_CST_WRAPPER(div)
-
-int arith_image_cstdiv1_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pdiv1);
-}
-
-ARITH_IMAGE_CST_WRAPPER(div1)
-
-int arith_image_cstpow_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstpow_optimized_IMGID(imgin, f1, imgout);
-}
-
-ARITH_IMAGE_CST_WRAPPER(pow)
-
-int arith_image_cstmaxv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pmaxv);
-}
-
-ARITH_IMAGE_CST_WRAPPER(maxv)
-
-int arith_image_cstminv_IMGID(IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_function_1f_1_IMGID(imgin, f1, imgout, &Pminv);
-}
-
-ARITH_IMAGE_CST_WRAPPER(minv)
-
-int arith_image_csttestlt_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_csttestlt_optimized_IMGID(
-        imgin, f1, imgout);
-}
-
-ARITH_IMAGE_CST_WRAPPER(testlt)
-
-int arith_image_csttestmt_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_csttestmt_optimized_IMGID(
-        imgin, f1, imgout);
-}
-
-ARITH_IMAGE_CST_WRAPPER(testmt)
-
-int arith_image_cstfmod_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pfmod);
-    return (0);
-}
-
-int arith_image_cstadd_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Padd);
-    return (0);
-}
-
-int arith_image_cstsub_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Psub);
-    return (0);
-}
-
-int arith_image_cstmult_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pmult);
-    return (0);
-}
-
-int arith_image_cstdiv_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pdiv);
-    return (0);
-}
-
-int arith_image_cstdiv1_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pdiv1);
-    return (0);
-}
-
-int arith_image_cstpow_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Ppow);
-    return (0);
-}
-
-int arith_image_cstmaxv_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pmaxv);
-    return (0);
-}
-
-int arith_image_cstminv_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Pminv);
-    return (0);
-}
-
-int arith_image_csttestlt_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Ptestlt);
-    return (0);
-}
-
-int arith_image_csttestmt_inplace(const char *ID_name, double f1)
-{
-    arith_image_function_1f_1_inplace(ID_name, f1, &Ptestmt);
-    return (0);
-}
-
-int arith_image_cstfmod_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pfmod);
-    return (0);
-}
-
-int arith_image_cstadd_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Padd);
-    return (0);
-}
-
-int arith_image_cstsub_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Psub);
-    return (0);
-}
-
-int arith_image_cstmult_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pmult);
-    return (0);
-}
-
-int arith_image_cstdiv_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pdiv);
-    return (0);
-}
-
-int arith_image_cstdiv1_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pdiv1);
-    return (0);
-}
-
-int arith_image_cstpow_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Ppow);
-    return (0);
-}
-
-int arith_image_cstmaxv_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pmaxv);
-    return (0);
-}
-
-int arith_image_cstminv_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Pminv);
-    return (0);
-}
-
-int arith_image_csttestlt_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Ptestlt);
-    return (0);
-}
-
-int arith_image_csttestmt_inplace_byID(long ID, double f1)
-{
-    arith_image_function_1f_1_inplace_byID(ID, f1, &Ptestmt);
-    return (0);
-}
-
-int arith_image_cstteste_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstteste_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(teste)
-
-int arith_image_csttestne_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_csttestne_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(testne)
-
-int arith_image_csttestle_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_csttestle_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(testle)
-
-int arith_image_csttestge_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_csttestge_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(testge)
-
-int arith_image_cstand_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstand_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(and)
-
-int arith_image_cstor_IMGID(
-    IMGID *imgin, double f1, IMGID *imgout)
-{
-    return arith_image_cstor_optimized_IMGID(
-        imgin, f1, imgout);
-}
-ARITH_IMAGE_CST_WRAPPER(or)
+CST_INPLACE_OPS(DEFINE_CST_INPLACE_BYID)
+#undef DEFINE_CST_INPLACE_BYID
