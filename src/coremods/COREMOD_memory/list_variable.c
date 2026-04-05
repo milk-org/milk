@@ -71,26 +71,7 @@ static CLICMDDATA CLIcmddata_listvar = {
     CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS default_cmdsettings1 = {0};
-
-static __attribute__((constructor))
-void init_cmdsettings_listvar(void)
-{
-    strncpy(CLIcmddata_listvar.key,
-            FPS_app_info_listvar.cmdkey,
-            sizeof(CLIcmddata_listvar.key)
-            - 1);
-    strncpy(CLIcmddata_listvar.description,
-            FPS_app_info_listvar.description,
-            sizeof(
-                CLIcmddata_listvar.description
-            ) - 1);
-    if (CLIcmddata_listvar.cmdsettings
-        == NULL) {
-        CLIcmddata_listvar.cmdsettings =
-            &default_cmdsettings1;
-    }
-}
+FPS_CMDSETTINGS_INIT(dft1, CLIcmddata_listvar, FPS_app_info_listvar)
 
 static errno_t __attribute__((unused)) compute_listvar()
 {
@@ -137,24 +118,7 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS default_cmdsettings2 = {0};
-
-static __attribute__((constructor))
-void init_cmdsettings_listvarf(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info_listvarf.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info_listvarf.description,
-            sizeof(
-                CLIcmddata.description
-            ) - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &default_cmdsettings2;
-    }
-}
+FPS_CMDSETTINGS_INIT(dft2, CLIcmddata, FPS_app_info_listvarf)
 
 static errno_t __attribute__((unused)) compute_listvarf()
 {

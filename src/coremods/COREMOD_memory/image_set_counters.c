@@ -90,27 +90,7 @@ static CLICMDDATA CLIcmddata_status = {
     CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms1 = {0};
-
-static __attribute__((constructor))
-void init_cms_status(void)
-{
-    strncpy(CLIcmddata_status.key,
-            FPS_app_info_status.cmdkey,
-            sizeof(CLIcmddata_status.key)
-            - 1);
-    strncpy(
-        CLIcmddata_status.description,
-        FPS_app_info_status.description,
-        sizeof(
-            CLIcmddata_status.description
-        ) - 1);
-    if (CLIcmddata_status.cmdsettings
-        == NULL) {
-        CLIcmddata_status.cmdsettings =
-            &cms1;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms1, CLIcmddata_status, FPS_app_info_status)
 
 static errno_t __attribute__((unused)) compute_status()
 {
@@ -149,22 +129,7 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms2 = {0};
-
-static __attribute__((constructor))
-void init_cms_cnt0(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms2;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms2, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
@@ -195,26 +160,7 @@ static CLICMDDATA CLIcmddata_cnt1 = {
     CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms3 = {0};
-
-static __attribute__((constructor))
-void init_cms_cnt1(void)
-{
-    strncpy(CLIcmddata_cnt1.key,
-            FPS_app_info_cnt1.cmdkey,
-            sizeof(CLIcmddata_cnt1.key)
-            - 1);
-    strncpy(CLIcmddata_cnt1.description,
-            FPS_app_info_cnt1.description,
-            sizeof(
-                CLIcmddata_cnt1.description
-            ) - 1);
-    if (CLIcmddata_cnt1.cmdsettings
-        == NULL) {
-        CLIcmddata_cnt1.cmdsettings =
-            &cms3;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms3, CLIcmddata_cnt1, FPS_app_info_cnt1)
 
 static errno_t __attribute__((unused)) compute_cnt1()
 {

@@ -82,23 +82,7 @@ static CLICMDDATA CLIcmddata_cp = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms_cp = {0};
-
-static __attribute__((constructor))
-void init_cms_cp(void)
-{
-    strncpy(CLIcmddata_cp.key,
-            FPS_app_info_cp.cmdkey,
-            sizeof(CLIcmddata_cp.key) - 1);
-    strncpy(CLIcmddata_cp.description,
-            FPS_app_info_cp.description,
-            sizeof(
-                CLIcmddata_cp.description
-            ) - 1);
-    if (CLIcmddata_cp.cmdsettings == NULL) {
-        CLIcmddata_cp.cmdsettings = &cms_cp;
-    }
-}
+FPS_CMDSETTINGS_INIT(cp, CLIcmddata_cp, FPS_app_info_cp)
 
 static errno_t __attribute__((unused)) compute_cp()
 {
@@ -121,23 +105,7 @@ static CLICMDDATA CLIcmddata_mv = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms_mv = {0};
-
-static __attribute__((constructor))
-void init_cms_mv(void)
-{
-    strncpy(CLIcmddata_mv.key,
-            FPS_app_info_mv.cmdkey,
-            sizeof(CLIcmddata_mv.key) - 1);
-    strncpy(CLIcmddata_mv.description,
-            FPS_app_info_mv.description,
-            sizeof(
-                CLIcmddata_mv.description
-            ) - 1);
-    if (CLIcmddata_mv.cmdsettings == NULL) {
-        CLIcmddata_mv.cmdsettings = &cms_mv;
-    }
-}
+FPS_CMDSETTINGS_INIT(mv, CLIcmddata_mv, FPS_app_info_mv)
 
 static errno_t __attribute__((unused)) compute_mv()
 {
@@ -173,22 +141,7 @@ static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms_shm = {0};
-
-static __attribute__((constructor))
-void init_cms_shm(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms_shm;
-    }
-}
+FPS_CMDSETTINGS_INIT(shm, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
