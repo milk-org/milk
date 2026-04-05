@@ -448,9 +448,9 @@ imageID arith_image_crop(const char *ID_name,
                          + start_c[0])
                         * (long) elemsize;
                     __builtin_memcpy(
-                        imgout.im->array.raw
+                        (char *) imgout.im->array.raw
                             + dst_off,
-                        imgin.im->array.raw
+                        (char *) imgin.im->array.raw
                             + src_off,
                         (size_t) row_elems
                         * elemsize);
