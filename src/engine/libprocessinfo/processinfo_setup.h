@@ -36,9 +36,10 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo);
  */
 #define PROCESSINFO_AUX_SETUP(pinfo_ptr, pinfoname, descr, msg) \
     do { \
+        const char *const _paux_name  = (pinfoname); \
         const char *const _paux_descr = (descr); \
         const char *const _paux_msg   = (msg); \
-        PROCESSINFO *_paux_pi = processinfo_shm_create((pinfoname), 0); \
+        PROCESSINFO *_paux_pi = processinfo_shm_create(_paux_name, 0); \
         (pinfo_ptr) = _paux_pi; \
         if (_paux_pi != NULL) { \
             _paux_pi->loopstat = 0; \
