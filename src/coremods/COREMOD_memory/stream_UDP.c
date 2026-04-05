@@ -23,6 +23,7 @@
 #include "list_image.h"
 #include "read_shmim.h"
 #include "stream_sem.h"
+#include "processinfo_setup.h"
 #include "stream_net_common.h"
 
 // set to 1 if transfering keywords
@@ -575,14 +576,8 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
         //
         char pinfoname[STRINGMAXLEN_FILENAME];
         snprintf(pinfoname, STRINGMAXLEN_FILENAME, "ntw-receive-%d", port);
-        processinfo           = processinfo_shm_create(pinfoname, 0);
-        processinfo->loopstat = PROCESSINFO_LOOPSTAT_INIT;
-
-        strcpy(processinfo->source_FUNCTION, __FUNCTION__);
-        strcpy(processinfo->source_FILE, __FILE__);
-        processinfo->source_LINE = __LINE__;
-
-        processinfo_WriteMessage(processinfo, "Waiting for input stream");
+        
+        PROCESSINFO_AUX_SETUP(processinfo, pinfoname, "", "Waiting for input stream");
     }
 
     // CATCH SIGNALS
