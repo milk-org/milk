@@ -10,6 +10,7 @@
 #define FPS_CLI_BINDING_H
 
 #include <stdint.h>
+#include <string.h>
 
 #include "fps.h"
 #include "libmilkdata/milkdata_clicmd.h"
