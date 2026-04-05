@@ -104,22 +104,7 @@ static CLICMDDATA CLIcmddata = {
  * they are defined in one place only.
  * Also provide a valid cmdsettings object.
  */
-static CMDSETTINGS default_cmdsettings = {0};
-
-static __attribute__((constructor))
-void init_cmdsettings(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description) - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &default_cmdsettings;
-    }
-}
+FPS_CMDSETTINGS_INIT(dft, CLIcmddata, FPS_app_info)
 
 
 /* ================================================================
