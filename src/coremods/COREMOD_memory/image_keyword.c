@@ -68,27 +68,7 @@ static CLICMDDATA CLIcmddata_listkw = {
     CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms_listkw = {0};
-
-static __attribute__((constructor))
-void init_cms_listkw(void)
-{
-    strncpy(CLIcmddata_listkw.key,
-            FPS_app_info_listkw.cmdkey,
-            sizeof(CLIcmddata_listkw.key)
-            - 1);
-    strncpy(
-        CLIcmddata_listkw.description,
-        FPS_app_info_listkw.description,
-        sizeof(
-            CLIcmddata_listkw.description
-        ) - 1);
-    if (CLIcmddata_listkw.cmdsettings
-        == NULL) {
-        CLIcmddata_listkw.cmdsettings =
-            &cms_listkw;
-    }
-}
+FPS_CMDSETTINGS_INIT(listkw, CLIcmddata_listkw, FPS_app_info_listkw)
 
 static errno_t __attribute__((unused)) compute_listkw()
 {
@@ -153,23 +133,7 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms_writkw = {0};
-
-static __attribute__((constructor))
-void init_cms_writkw(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &cms_writkw;
-    }
-}
+FPS_CMDSETTINGS_INIT(writkw, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {

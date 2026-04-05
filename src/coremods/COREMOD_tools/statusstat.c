@@ -67,22 +67,7 @@ static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms = {0};
-
-static __attribute__((constructor))
-void init_cms(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms;
-    }
-}
+FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
