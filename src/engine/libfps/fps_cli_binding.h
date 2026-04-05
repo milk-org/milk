@@ -10,6 +10,7 @@
 #define FPS_CLI_BINDING_H
 
 #include <stdint.h>
+#include <string.h>
 
 #include "fps.h"
 #include "libmilkdata/milkdata_clicmd.h"
@@ -78,6 +79,41 @@ typedef struct FPS_CLI_BINDING_
     { fctype, kw, desc, "", \
       flag | (is_primary ? FPFLAG_PRIMARY_CLI_INPUT : 0), \
       NULL, NULL },
+
+
+
+/**
+ * @brief Define CMDSETTINGS + constructor for a command.
+ *
+ * Expands to a static CMDSETTINGS variable and an
+ * __attribute__((constructor)) function that copies
+ * cmdkey / description from the FPS_APP_INFO into
+ * the CLICMDDATA at load time.
+ *
+ * @param suffix  Unique C identifier (per .c file)
+ * @param cmddata CLICMDDATA variable (not a pointer)
+ * @param appinfo FPS_APP_INFO variable (not a pointer)
+ *
+ * Example:
+ *   FPS_CMDSETTINGS_INIT(rx, CLIcmddata_rx,
+ *                        FPS_app_info_rx)
+ */
+#define FPS_CMDSETTINGS_INIT(suffix, cmddata, appinfo) \
+static CMDSETTINGS fps_cms_##suffix = {0};             \
+static __attribute__((constructor))                    \
+void fps_init_cms_##suffix(void)                       \
+{                                                      \
+    strncpy((cmddata).key,                             \
+            (appinfo).cmdkey,                          \
+            sizeof((cmddata).key) - 1);                \
+    strncpy((cmddata).description,                     \
+            (appinfo).description,                     \
+            sizeof((cmddata).description) - 1);        \
+    if ((cmddata).cmdsettings == NULL) {                \
+        (cmddata).cmdsettings =                        \
+            &fps_cms_##suffix;                         \
+    }                                                  \
+}
 
 
 #endif /* FPS_CLI_BINDING_H */
