@@ -93,24 +93,7 @@ static FPS_APP_INFO FPS_app_info_2d = {
 static CLICMDDATA CLIcmddata_2d = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
-static CMDSETTINGS cms_2d = {0};
-
-static __attribute__((constructor))
-void init_cms_2d(void)
-{
-    strncpy(CLIcmddata_2d.key,
-            FPS_app_info_2d.cmdkey,
-            sizeof(CLIcmddata_2d.key) - 1);
-    strncpy(CLIcmddata_2d.description,
-            FPS_app_info_2d.description,
-            sizeof(CLIcmddata_2d.description)
-            - 1);
-    if (CLIcmddata_2d.cmdsettings
-        == NULL) {
-        CLIcmddata_2d.cmdsettings =
-            &cms_2d;
-    }
-}
+FPS_CMDSETTINGS_INIT(2d, CLIcmddata_2d, FPS_app_info_2d)
 
 static errno_t __attribute__((unused)) compute_2d()
 {
@@ -182,22 +165,7 @@ static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms = {0};
-
-static __attribute__((constructor))
-void init_cms(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms;
-    }
-}
+FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
