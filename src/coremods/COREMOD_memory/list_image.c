@@ -58,27 +58,7 @@ static CLICMDDATA CLIcmddata_listim = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms_listim = {0};
-
-static __attribute__((constructor))
-void init_cms_listim(void)
-{
-    strncpy(CLIcmddata_listim.key,
-            FPS_app_info_listim.cmdkey,
-            sizeof(CLIcmddata_listim.key)
-            - 1);
-    strncpy(
-        CLIcmddata_listim.description,
-        FPS_app_info_listim.description,
-        sizeof(
-            CLIcmddata_listim.description
-        ) - 1);
-    if (CLIcmddata_listim.cmdsettings
-        == NULL) {
-        CLIcmddata_listim.cmdsettings =
-            &cms_listim;
-    }
-}
+FPS_CMDSETTINGS_INIT(listim, CLIcmddata_listim, FPS_app_info_listim)
 
 static errno_t __attribute__((unused)) compute_listim()
 {

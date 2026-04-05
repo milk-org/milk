@@ -72,26 +72,7 @@ static CLICMDDATA CLIcmddata_snap = {
     CLICMD_FIELDS_NOPARAM
 };
 
-static CMDSETTINGS cms_snap = {0};
-
-static __attribute__((constructor))
-void init_cms_snap(void)
-{
-    strncpy(CLIcmddata_snap.key,
-            FPS_app_info_snap.cmdkey,
-            sizeof(CLIcmddata_snap.key)
-            - 1);
-    strncpy(CLIcmddata_snap.description,
-            FPS_app_info_snap.description,
-            sizeof(
-                CLIcmddata_snap.description
-            ) - 1);
-    if (CLIcmddata_snap.cmdsettings
-        == NULL) {
-        CLIcmddata_snap.cmdsettings =
-            &cms_snap;
-    }
-}
+FPS_CMDSETTINGS_INIT(snap, CLIcmddata_snap, FPS_app_info_snap)
 
 static errno_t __attribute__((unused)) compute_snap()
 {
@@ -155,22 +136,7 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms_seq = {0};
-
-static __attribute__((constructor))
-void init_cms_seq(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms_seq;
-    }
-}
+FPS_CMDSETTINGS_INIT(seq, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {

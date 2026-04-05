@@ -64,27 +64,7 @@ static FPS_APP_INFO FPS_app_info_rtp = {
 static CLICMDDATA CLIcmddata_rtp = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
-static CMDSETTINGS cms_rtp = {0};
-
-static __attribute__((constructor))
-void init_cms_rtp(void)
-{
-    strncpy(CLIcmddata_rtp.key,
-            FPS_app_info_rtp.cmdkey,
-            sizeof(CLIcmddata_rtp.key)
-            - 1);
-    strncpy(
-        CLIcmddata_rtp.description,
-        FPS_app_info_rtp.description,
-        sizeof(
-            CLIcmddata_rtp.description
-        ) - 1);
-    if (CLIcmddata_rtp.cmdsettings
-        == NULL) {
-        CLIcmddata_rtp.cmdsettings =
-            &cms_rtp;
-    }
-}
+FPS_CMDSETTINGS_INIT(rtp, CLIcmddata_rtp, FPS_app_info_rtp)
 
 static errno_t __attribute__((unused)) compute_rtp()
 {
@@ -113,27 +93,7 @@ static FPS_APP_INFO FPS_app_info_tset = {
 static CLICMDDATA CLIcmddata_tset = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
-static CMDSETTINGS cms_tset = {0};
-
-static __attribute__((constructor))
-void init_cms_tset(void)
-{
-    strncpy(CLIcmddata_tset.key,
-            FPS_app_info_tset.cmdkey,
-            sizeof(CLIcmddata_tset.key)
-            - 1);
-    strncpy(
-        CLIcmddata_tset.description,
-        FPS_app_info_tset.description,
-        sizeof(
-            CLIcmddata_tset.description
-        ) - 1);
-    if (CLIcmddata_tset.cmdsettings
-        == NULL) {
-        CLIcmddata_tset.cmdsettings =
-            &cms_tset;
-    }
-}
+FPS_CMDSETTINGS_INIT(tset, CLIcmddata_tset, FPS_app_info_tset)
 
 static errno_t __attribute__((unused)) compute_tset()
 {
@@ -166,27 +126,7 @@ static FPS_APP_INFO FPS_app_info_tsete = {
 static CLICMDDATA CLIcmddata_tsete = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
-static CMDSETTINGS cms_tsete = {0};
-
-static __attribute__((constructor))
-void init_cms_tsete(void)
-{
-    strncpy(CLIcmddata_tsete.key,
-            FPS_app_info_tsete.cmdkey,
-            sizeof(CLIcmddata_tsete.key)
-            - 1);
-    strncpy(
-        CLIcmddata_tsete.description,
-        FPS_app_info_tsete.description,
-        sizeof(
-            CLIcmddata_tsete.description
-        ) - 1);
-    if (CLIcmddata_tsete.cmdsettings
-        == NULL) {
-        CLIcmddata_tsete.cmdsettings =
-            &cms_tsete;
-    }
-}
+FPS_CMDSETTINGS_INIT(tsete, CLIcmddata_tsete, FPS_app_info_tsete)
 
 static errno_t __attribute__((unused)) compute_tsete()
 {
@@ -210,27 +150,7 @@ static FPS_APP_INFO FPS_app_info_cset = {
 static CLICMDDATA CLIcmddata_cset = {
     "", "", CLICMD_FIELDS_NOPARAM
 };
-static CMDSETTINGS cms_cset = {0};
-
-static __attribute__((constructor))
-void init_cms_cset(void)
-{
-    strncpy(CLIcmddata_cset.key,
-            FPS_app_info_cset.cmdkey,
-            sizeof(CLIcmddata_cset.key)
-            - 1);
-    strncpy(
-        CLIcmddata_cset.description,
-        FPS_app_info_cset.description,
-        sizeof(
-            CLIcmddata_cset.description
-        ) - 1);
-    if (CLIcmddata_cset.cmdsettings
-        == NULL) {
-        CLIcmddata_cset.cmdsettings =
-            &cms_cset;
-    }
-}
+FPS_CMDSETTINGS_INIT(cset, CLIcmddata_cset, FPS_app_info_cset)
 
 static errno_t __attribute__((unused)) compute_cset()
 {
@@ -281,23 +201,7 @@ static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms_main = {0};
-
-static __attribute__((constructor))
-void init_cms_main(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings =
-            &cms_main;
-    }
-}
+FPS_CMDSETTINGS_INIT(main, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {

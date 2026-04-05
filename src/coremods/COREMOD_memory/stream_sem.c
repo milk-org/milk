@@ -127,27 +127,7 @@ static FPS_APP_INFO FPS_app_info_seminfo = {
 static CLICMDDATA CLIcmddata_seminfo = {
     "", "", CLICMD_FIELDS_IMSEM_INFO
 };
-static CMDSETTINGS cms1 = {0};
-
-static __attribute__((constructor))
-void init_cms1(void)
-{
-    strncpy(CLIcmddata_seminfo.key,
-            FPS_app_info_seminfo.cmdkey,
-            sizeof(CLIcmddata_seminfo.key)
-            - 1);
-    strncpy(
-        CLIcmddata_seminfo.description,
-        FPS_app_info_seminfo.description,
-        sizeof(
-            CLIcmddata_seminfo.description
-        ) - 1);
-    if (CLIcmddata_seminfo.cmdsettings
-        == NULL) {
-        CLIcmddata_seminfo.cmdsettings =
-            &cms1;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms1, CLIcmddata_seminfo, FPS_app_info_seminfo)
 
 static errno_t __attribute__((unused)) compute_seminfo()
 {
@@ -170,27 +150,7 @@ static FPS_APP_INFO FPS_app_info_sempost = {
 static CLICMDDATA CLIcmddata_sempost = {
     "", "", CLICMD_FIELDS_IMSEM
 };
-static CMDSETTINGS cms2 = {0};
-
-static __attribute__((constructor))
-void init_cms2(void)
-{
-    strncpy(CLIcmddata_sempost.key,
-            FPS_app_info_sempost.cmdkey,
-            sizeof(CLIcmddata_sempost.key)
-            - 1);
-    strncpy(
-        CLIcmddata_sempost.description,
-        FPS_app_info_sempost.description,
-        sizeof(
-            CLIcmddata_sempost.description
-        ) - 1);
-    if (CLIcmddata_sempost.cmdsettings
-        == NULL) {
-        CLIcmddata_sempost.cmdsettings =
-            &cms2;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms2, CLIcmddata_sempost, FPS_app_info_sempost)
 
 static errno_t __attribute__((unused)) compute_sempost()
 {
@@ -236,22 +196,7 @@ static CLICMDDATA CLIcmddata = {
     "", "", CLICMD_FIELDS_DEFAULTS
 };
 
-static CMDSETTINGS cms3 = {0};
-
-static __attribute__((constructor))
-void init_cms3(void)
-{
-    strncpy(CLIcmddata.key,
-            FPS_app_info.cmdkey,
-            sizeof(CLIcmddata.key) - 1);
-    strncpy(CLIcmddata.description,
-            FPS_app_info.description,
-            sizeof(CLIcmddata.description)
-            - 1);
-    if (CLIcmddata.cmdsettings == NULL) {
-        CLIcmddata.cmdsettings = &cms3;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms3, CLIcmddata, FPS_app_info)
 
 static MILK_HOT errno_t __attribute__((unused)) compute_function()
 {
@@ -279,27 +224,7 @@ static FPS_APP_INFO FPS_app_info_semwait = {
 static CLICMDDATA CLIcmddata_semwait = {
     "", "", CLICMD_FIELDS_IMSEM
 };
-static CMDSETTINGS cms4 = {0};
-
-static __attribute__((constructor))
-void init_cms4(void)
-{
-    strncpy(CLIcmddata_semwait.key,
-            FPS_app_info_semwait.cmdkey,
-            sizeof(CLIcmddata_semwait.key)
-            - 1);
-    strncpy(
-        CLIcmddata_semwait.description,
-        FPS_app_info_semwait.description,
-        sizeof(
-            CLIcmddata_semwait.description
-        ) - 1);
-    if (CLIcmddata_semwait.cmdsettings
-        == NULL) {
-        CLIcmddata_semwait.cmdsettings =
-            &cms4;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms4, CLIcmddata_semwait, FPS_app_info_semwait)
 
 static errno_t __attribute__((unused)) compute_semwait()
 {
@@ -323,27 +248,7 @@ static FPS_APP_INFO FPS_app_info_semflush = {
 static CLICMDDATA CLIcmddata_semflush = {
     "", "", CLICMD_FIELDS_IMSEM
 };
-static CMDSETTINGS cms5 = {0};
-
-static __attribute__((constructor))
-void init_cms5(void)
-{
-    strncpy(CLIcmddata_semflush.key,
-            FPS_app_info_semflush.cmdkey,
-            sizeof(CLIcmddata_semflush.key)
-            - 1);
-    strncpy(
-        CLIcmddata_semflush.description,
-        FPS_app_info_semflush.description,
-        sizeof(
-            CLIcmddata_semflush.description
-        ) - 1);
-    if (CLIcmddata_semflush.cmdsettings
-        == NULL) {
-        CLIcmddata_semflush.cmdsettings =
-            &cms5;
-    }
-}
+FPS_CMDSETTINGS_INIT(cms5, CLIcmddata_semflush, FPS_app_info_semflush)
 
 static errno_t __attribute__((unused)) compute_semflush()
 {
