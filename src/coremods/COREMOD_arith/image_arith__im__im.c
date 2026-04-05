@@ -5,31 +5,19 @@
  * Applies a single math function to every pixel of
  * an input image, producing an output image.
  *
- * Each math operation (acos, sin, sqrt, …) has four
- * function variants:
+ * All call surfaces are generated from the UNARY_OPS
+ * X-macro table:
  *
- *  1. arith_image_<op>_byID(ID, IDout)
- *     Legacy API using raw image slot indices.
- *     Delegates to arith_image_function_1_1_byID()
- *     with a function pointer from mathfuncs.c
- *     (e.g., &Pacos).
- *
- *  2. arith_image_<op>_IMGID(imgin, imgout)
- *     Modern IMGID API. Calls the optimized
- *     macro-stamped variant from imfunctions.c.
- *
- *  3. arith_image_<op>(name_in, name_out)
- *     String-based API used by the CLI parser.
- *     Constructs IMGIDs from names and delegates
- *     to the IMGID variant.
- *
- *  4. arith_image_<op>_inplace_byID(ID)
- *     arith_image_<op>_inplace(name)
- *     In-place variants that overwrite the input.
- *
- * Supported operations: acos, asin, atan, ceil,
- * cos, cosh, exp, fabs, floor, ln, log, sqrt,
- * sin, sinh, tan, tanh, positive.
+ *  - arith_image_<op>_byID(ID, IDout)
+ *    Legacy API using raw image slot indices.
+ *  - arith_image_<op>_IMGID(imgin, imgout)
+ *    Modern IMGID API.
+ *  - arith_image_<op>(name_in, name_out)
+ *    String-based API for CLI use.
+ *  - arith_image_<op>_inplace_byID(ID)
+ *    In-place via legacy image ID.
+ *  - arith_image_<op>_inplace(name)
+ *    In-place via string name.
  */
 
 
@@ -45,481 +33,120 @@
 #include "mathfuncs.h"
 #include "image_arith__im__im.h"
 
-int arith_image_acos_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pacos);
-    return (0);
+
+/* ==========================================================
+ * X-macro table: all unary image operations.
+ *
+ * Columns:  X(op, fptr)
+ *   op   — operation suffix
+ *   fptr — function-pointer variable from mathfuncs.h
+ * ========================================================== */
+
+#define UNARY_OPS(X) \
+    X(acos,     Pacos)     \
+    X(asin,     Pasin)     \
+    X(atan,     Patan)     \
+    X(ceil,     Pceil)     \
+    X(cos,      Pcos)      \
+    X(cosh,     Pcosh)     \
+    X(exp,      Pexp)      \
+    X(fabs,     Pfabs)     \
+    X(floor,    Pfloor)    \
+    X(ln,       Pln)       \
+    X(log,      Plog)      \
+    X(sqrt,     Psqrt)     \
+    X(sin,      Psin)      \
+    X(sinh,     Psinh)     \
+    X(tan,      Ptan)      \
+    X(tanh,     Ptanh)     \
+    X(positive, Ppositive)
+
+
+/* ----------------------------------------------------------
+ * 1. Legacy by-ID wrappers  (ID, IDout)
+ * ---------------------------------------------------------- */
+
+#define DEFINE_BYID(op, fptr) \
+int arith_image_##op##_byID(  \
+    long ID,                  \
+    long IDout)               \
+{                             \
+    arith_image_function_1_1_byID( \
+        ID, IDout, &fptr);    \
+    return 0;                 \
 }
 
-int arith_image_asin_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pasin);
-    return (0);
+UNARY_OPS(DEFINE_BYID)
+#undef DEFINE_BYID
+
+
+/* ----------------------------------------------------------
+ * 2. Modern IMGID wrappers
+ * ---------------------------------------------------------- */
+
+#define DEFINE_IMGID(op, fptr) \
+int arith_image_##op##_IMGID(  \
+    IMGID *imgin,              \
+    IMGID *imgout)             \
+{                              \
+    return arith_image_##op##_optimized_IMGID( \
+        imgin, imgout);        \
 }
 
-int arith_image_atan_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Patan);
-    return (0);
+UNARY_OPS(DEFINE_IMGID)
+#undef DEFINE_IMGID
+
+
+/* ----------------------------------------------------------
+ * 3. String-based wrappers  (name → name)
+ * ---------------------------------------------------------- */
+
+#define DEFINE_STRING(op, fptr) \
+int arith_image_##op(                        \
+    const char *ID_name,                     \
+    const char *ID_out)                      \
+{                                            \
+    IMGID imgin =                            \
+        imgid_make_from_name(ID_name);       \
+    IMGID imgout =                           \
+        imgid_make_from_name(ID_out);        \
+    return arith_image_##op##_IMGID(         \
+        &imgin, &imgout);                    \
 }
 
-int arith_image_ceil_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pceil);
-    return (0);
+UNARY_OPS(DEFINE_STRING)
+#undef DEFINE_STRING
+
+
+/* ----------------------------------------------------------
+ * 4. In-place-by-ID wrappers
+ * ---------------------------------------------------------- */
+
+#define DEFINE_INPLACE_BYID(op, fptr) \
+int arith_image_##op##_inplace_byID(  \
+    long ID)                          \
+{                                     \
+    arith_image_function_1_1_inplace_byID( \
+        ID, &fptr);                   \
+    return 0;                         \
 }
 
-int arith_image_cos_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pcos);
-    return (0);
+UNARY_OPS(DEFINE_INPLACE_BYID)
+#undef DEFINE_INPLACE_BYID
+
+
+/* ----------------------------------------------------------
+ * 5. In-place wrappers  (name → name modified)
+ * ---------------------------------------------------------- */
+
+#define DEFINE_INPLACE(op, fptr) \
+int arith_image_##op##_inplace(   \
+    const char *ID_name)          \
+{                                 \
+    arith_image_function_1_1_inplace( \
+        ID_name, &fptr);          \
+    return 0;                     \
 }
 
-int arith_image_cosh_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pcosh);
-    return (0);
-}
-
-int arith_image_exp_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pexp);
-    return (0);
-}
-
-int arith_image_fabs_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pfabs);
-    return (0);
-}
-
-int arith_image_floor_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pfloor);
-    return (0);
-}
-
-int arith_image_ln_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Pln);
-    return (0);
-}
-
-int arith_image_log_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Plog);
-    return (0);
-}
-
-int arith_image_sqrt_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Psqrt);
-    return (0);
-}
-
-int arith_image_sin_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Psin);
-    return (0);
-}
-
-int arith_image_sinh_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Psinh);
-    return (0);
-}
-
-int arith_image_tan_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Ptan);
-    return (0);
-}
-
-int arith_image_tanh_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Ptanh);
-    return (0);
-}
-
-int arith_image_positive_byID(long ID, long IDout)
-{
-    arith_image_function_1_1_byID(ID, IDout, &Ppositive);
-    return (0);
-}
-
-int arith_image_acos_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_acos_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_acos(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_acos_IMGID(&imgin, &imgout);
-}
-
-int arith_image_asin_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_asin_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_asin(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_asin_IMGID(&imgin, &imgout);
-}
-
-int arith_image_atan_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_atan_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_atan(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_atan_IMGID(&imgin, &imgout);
-}
-
-int arith_image_ceil_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_ceil_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_ceil(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_ceil_IMGID(&imgin, &imgout);
-}
-
-int arith_image_cos_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_cos_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_cos(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_cos_IMGID(&imgin, &imgout);
-}
-
-int arith_image_cosh_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_cosh_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_cosh(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_cosh_IMGID(&imgin, &imgout);
-}
-
-int arith_image_exp_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_exp_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_exp(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_exp_IMGID(&imgin, &imgout);
-}
-
-int arith_image_fabs_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_fabs_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_fabs(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_fabs_IMGID(&imgin, &imgout);
-}
-
-int arith_image_floor_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_floor_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_floor(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_floor_IMGID(&imgin, &imgout);
-}
-
-int arith_image_ln_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_ln_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_ln(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_ln_IMGID(&imgin, &imgout);
-}
-
-int arith_image_log_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_log_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_log(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_log_IMGID(&imgin, &imgout);
-}
-
-int arith_image_sqrt_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_sqrt_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_sqrt(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_sqrt_IMGID(&imgin, &imgout);
-}
-
-int arith_image_sin_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_sin_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_sin(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_sin_IMGID(&imgin, &imgout);
-}
-
-int arith_image_sinh_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_sinh_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_sinh(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_sinh_IMGID(&imgin, &imgout);
-}
-
-int arith_image_tan_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_tan_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_tan(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_tan_IMGID(&imgin, &imgout);
-}
-
-int arith_image_tanh_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_tanh_optimized_IMGID(imgin, imgout);
-}
-
-int arith_image_tanh(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_tanh_IMGID(&imgin, &imgout);
-}
-
-int arith_image_positive_IMGID(IMGID *imgin, IMGID *imgout)
-{
-    return arith_image_positive_optimized_IMGID(
-        imgin, imgout);
-}
-
-int arith_image_positive(const char *ID_name, const char *ID_out)
-{
-    IMGID imgin  = imgid_make_from_name(ID_name);
-    IMGID imgout = imgid_make_from_name(ID_out);
-    return arith_image_positive_IMGID(&imgin, &imgout);
-}
-
-int arith_image_acos_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pacos);
-    return (0);
-}
-int arith_image_asin_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pasin);
-    return (0);
-}
-int arith_image_atan_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Patan);
-    return (0);
-}
-int arith_image_ceil_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pceil);
-    return (0);
-}
-int arith_image_cos_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pcos);
-    return (0);
-}
-int arith_image_cosh_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pcosh);
-    return (0);
-}
-int arith_image_exp_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pexp);
-    return (0);
-}
-int arith_image_fabs_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pfabs);
-    return (0);
-}
-int arith_image_floor_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pfloor);
-    return (0);
-}
-int arith_image_ln_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Pln);
-    return (0);
-}
-int arith_image_log_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Plog);
-    return (0);
-}
-int arith_image_sqrt_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Psqrt);
-    return (0);
-}
-int arith_image_sin_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Psin);
-    return (0);
-}
-int arith_image_sinh_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Psinh);
-    return (0);
-}
-int arith_image_tan_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Ptan);
-    return (0);
-}
-int arith_image_tanh_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Ptanh);
-    return (0);
-}
-int arith_image_positive_inplace_byID(long ID)
-{
-    arith_image_function_1_1_inplace_byID(ID, &Ppositive);
-    return (0);
-}
-
-int arith_image_acos_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pacos);
-    return (0);
-}
-int arith_image_asin_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pasin);
-    return (0);
-}
-int arith_image_atan_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Patan);
-    return (0);
-}
-int arith_image_ceil_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pceil);
-    return (0);
-}
-int arith_image_cos_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pcos);
-    return (0);
-}
-int arith_image_cosh_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pcosh);
-    return (0);
-}
-int arith_image_exp_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pexp);
-    return (0);
-}
-int arith_image_fabs_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pfabs);
-    return (0);
-}
-int arith_image_floor_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pfloor);
-    return (0);
-}
-int arith_image_ln_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Pln);
-    return (0);
-}
-int arith_image_log_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Plog);
-    return (0);
-}
-int arith_image_sqrt_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Psqrt);
-    return (0);
-}
-int arith_image_sin_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Psin);
-    return (0);
-}
-int arith_image_sinh_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Psinh);
-    return (0);
-}
-int arith_image_tan_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Ptan);
-    return (0);
-}
-int arith_image_tanh_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Ptanh);
-    return (0);
-}
-int arith_image_positive_inplace(const char *ID_name)
-{
-    arith_image_function_1_1_inplace(ID_name, &Ppositive);
-    return (0);
-}
+UNARY_OPS(DEFINE_INPLACE)
+#undef DEFINE_INPLACE
