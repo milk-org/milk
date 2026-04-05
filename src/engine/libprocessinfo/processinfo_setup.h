@@ -30,26 +30,35 @@ errno_t processinfo_loopstart(PROCESSINFO *processinfo);
  * @param pinfoname  (const char *) name of the processinfo instance.
  * @param descr      (const char *) description (can be NULL).
  * @param msg        (const char *) status message (can be NULL).
+ *
+ * Each argument is evaluated exactly once via local temporaries,
+ * making the macro safe when arguments have side effects.
  */
 #define PROCESSINFO_AUX_SETUP(pinfo_ptr, pinfoname, descr, msg) \
     do { \
-        (pinfo_ptr) = processinfo_shm_create((pinfoname), 0); \
-        if ((pinfo_ptr) != NULL) { \
-            (pinfo_ptr)->loopstat = 0; \
-            strncpy((pinfo_ptr)->source_FUNCTION, __FUNCTION__, \
+        const char *const _paux_descr = (descr); \
+        const char *const _paux_msg   = (msg); \
+        PROCESSINFO *_paux_pi = processinfo_shm_create((pinfoname), 0); \
+        (pinfo_ptr) = _paux_pi; \
+        if (_paux_pi != NULL) { \
+            _paux_pi->loopstat = 0; \
+            strncpy(_paux_pi->source_FUNCTION, __FUNCTION__, \
                 STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1); \
-            (pinfo_ptr)->source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0'; \
-            strncpy((pinfo_ptr)->source_FILE, __FILE__, \
+            _paux_pi->source_FUNCTION[STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = \
+                '\0'; \
+            strncpy(_paux_pi->source_FILE, __FILE__, \
                 STRINGMAXLEN_PROCESSINFO_SRCFILE - 1); \
-            (pinfo_ptr)->source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0'; \
-            (pinfo_ptr)->source_LINE = __LINE__; \
-            if (descr) { \
-                strncpy((pinfo_ptr)->description, (descr), \
+            _paux_pi->source_FILE[STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = \
+                '\0'; \
+            _paux_pi->source_LINE = __LINE__; \
+            if (_paux_descr) { \
+                strncpy(_paux_pi->description, _paux_descr, \
                     STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1); \
-                (pinfo_ptr)->description[STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0'; \
+                _paux_pi->description[ \
+                    STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0'; \
             } \
-            if (msg) { \
-                processinfo_WriteMessage((pinfo_ptr), (msg)); \
+            if (_paux_msg) { \
+                processinfo_WriteMessage(_paux_pi, _paux_msg); \
             } \
         } \
     } while (0)
