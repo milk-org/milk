@@ -698,6 +698,7 @@ static int cli_run_external(
             argv, environ);
         if(ret != 0)
         {
+            fprintf(stderr, "milk-cli: %s: not found\n", argv[0]);
             return 127; /* command not found */
         }
     }
@@ -2498,15 +2499,18 @@ errno_t CLI_execute_line()
         data.CMDexecuted = 1;
     }
     else if(strncmp(data.CLIcmdline,
-                    "on_update ", 10) == 0)
+                    "on_update ", 10) == 0 ||
+            strcmp(data.CLIcmdline,
+                   "on_update") == 0)
     {
         /* on_update [-l] [-n N] <stream> { cmd }
          * Wait for stream semaphore,
          * then execute cmd.
          * -l: loop forever
          * -n N: loop N times */
-        const char *arg =
-            data.CLIcmdline + 10;
+        const char *arg = data.CLIcmdline;
+        if(strncmp(data.CLIcmdline, "on_update ", 10) == 0) arg += 10;
+        else arg += 9;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;

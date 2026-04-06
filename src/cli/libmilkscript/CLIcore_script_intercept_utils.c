@@ -25,7 +25,7 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
-int cli_intercept_part_44(const char *p)
+int cli_intercept_cmd_basename(const char *p)
 {
     if(starts_with(p, "basename "))
     {
@@ -48,7 +48,7 @@ int cli_intercept_part_44(const char *p)
     return 0;
 }
 
-int cli_intercept_part_45(const char *p)
+int cli_intercept_cmd_dirname(const char *p)
 {
     if(starts_with(p, "dirname "))
     {
@@ -75,7 +75,7 @@ int cli_intercept_part_45(const char *p)
     return 0;
 }
 
-int cli_intercept_part_46(const char *p)
+int cli_intercept_cmd_pushd(const char *p)
 {
     if(starts_with(p, "pushd ")
        || starts_with(p, "pushd\t"))
@@ -126,7 +126,7 @@ int cli_intercept_part_46(const char *p)
     return 0;
 }
 
-int cli_intercept_part_47(const char *p)
+int cli_intercept_cmd_popd(const char *p)
 {
     if(strcmp(p, "popd") == 0)
     {
@@ -174,7 +174,7 @@ int cli_intercept_part_47(const char *p)
     return 0;
 }
 
-int cli_intercept_part_48(const char *p)
+int cli_intercept_cmd_dirs(const char *p)
 {
     if(strcmp(p, "dirs") == 0)
     {
@@ -206,7 +206,7 @@ int cli_intercept_part_48(const char *p)
     return 0;
 }
 
-int cli_intercept_part_49(const char *p)
+int cli_intercept_cmd_seq(const char *p)
 {
     if(starts_with(p, "seq "))
     {
@@ -273,7 +273,7 @@ int cli_intercept_part_49(const char *p)
     return 0;
 }
 
-int cli_intercept_part_50(const char *p)
+int cli_intercept_cmd_waitfor_stream(const char *p)
 {
     if(starts_with(p, "waitfor_stream "))
     {
@@ -341,7 +341,7 @@ int cli_intercept_part_50(const char *p)
     return 0;
 }
 
-int cli_intercept_part_51(const char *p)
+int cli_intercept_cmd_waitfor_fps(const char *p)
 {
     if(starts_with(p, "waitfor_fps "))
     {

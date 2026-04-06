@@ -36,7 +36,9 @@ set(MILKSCRIPT_SOURCES
     CLIcore_script_intercept.c
     CLIcore_script_intercept_process.c
     CLIcore_script_intercept_environment.c
+    CLIcore_script_intercept_env_trap.c
     CLIcore_script_intercept_execution.c
+    CLIcore_script_intercept_exec_waitany.c
     CLIcore_script_intercept_flow.c
     CLIcore_script_intercept_utils.c
     CLIcore_script_builtin.c

@@ -25,7 +25,7 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
-int cli_intercept_part_33(const char *p)
+int cli_intercept_cmd_while(const char *p)
 {
     if(starts_with(p, "while ")
        || starts_with(p, "while\t"))
@@ -52,7 +52,7 @@ int cli_intercept_part_33(const char *p)
     return 0;
 }
 
-int cli_intercept_part_34(const char *p)
+int cli_intercept_cmd_until(const char *p)
 {
     if(starts_with(p, "until ")
        || starts_with(p, "until\t"))
@@ -79,7 +79,7 @@ int cli_intercept_part_34(const char *p)
     return 0;
 }
 
-int cli_intercept_part_35(const char *p)
+int cli_intercept_cmd_for(const char *p)
 {
     if(starts_with(p, "for ")
        || starts_with(p, "for\t"))
@@ -106,7 +106,7 @@ int cli_intercept_part_35(const char *p)
     return 0;
 }
 
-int cli_intercept_part_36(const char *p)
+int cli_intercept_cmd_select(const char *p)
 {
     if(starts_with(p, "select ")
        || starts_with(p, "select\t"))
@@ -135,7 +135,7 @@ int cli_intercept_part_36(const char *p)
     return 0;
 }
 
-int cli_intercept_part_37(const char *p)
+int cli_intercept_cmd_function(const char *p)
 {
     if(starts_with(p, "function ")
        || starts_with(p, "function\t"))
@@ -162,7 +162,7 @@ int cli_intercept_part_37(const char *p)
     return 0;
 }
 
-int cli_intercept_part_38(const char *p)
+int cli_intercept_cmd_case(const char *p)
 {
     if(starts_with(p, "case ")
        || starts_with(p, "case\t"))
@@ -189,7 +189,7 @@ int cli_intercept_part_38(const char *p)
     return 0;
 }
 
-int cli_intercept_part_39(const char *p)
+int cli_intercept_cmd_true(const char *p)
 {
     if(strcmp(p, "true") == 0)
     {
@@ -199,7 +199,7 @@ int cli_intercept_part_39(const char *p)
     return 0;
 }
 
-int cli_intercept_part_40(const char *p)
+int cli_intercept_cmd_false(const char *p)
 {
     if(strcmp(p, "false") == 0)
     {
@@ -209,7 +209,7 @@ int cli_intercept_part_40(const char *p)
     return 0;
 }
 
-int cli_intercept_part_41(const char *p)
+int cli_intercept_cmd_math_eval(const char *p)
 {
     if(starts_with(p, "((")
        && strlen(p) >= 5)
@@ -255,7 +255,7 @@ int cli_intercept_part_41(const char *p)
     return 0;
 }
 
-int cli_intercept_part_42(const char *p)
+int cli_intercept_cmd_alias(const char *p)
 {
     if(starts_with(p, "alias ")
        || starts_with(p, "alias\t")
@@ -373,7 +373,7 @@ int cli_intercept_part_42(const char *p)
     return 0;
 }
 
-int cli_intercept_part_43(const char *p)
+int cli_intercept_cmd_unalias(const char *p)
 {
     if(starts_with(p, "unalias ")
        || starts_with(p, "unalias\t"))
