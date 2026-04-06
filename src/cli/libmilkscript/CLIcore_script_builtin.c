@@ -1805,12 +1805,18 @@ static int emit_streams_json_body(
 
         char nesc[256];
         char tesc[64];
+        const char *dtype_name =
+            ImageStreamIO_typename(
+                img.md->datatype);
+        if(dtype_name == NULL)
+        {
+            dtype_name = "?";
+        }
         json_escape_str(nesc,
                         sizeof(nesc), sname);
         json_escape_str(tesc,
                         sizeof(tesc),
-                        ImageStreamIO_typename(
-                            img.md->datatype));
+                        dtype_name);
 
         if(count > 0)
         {
