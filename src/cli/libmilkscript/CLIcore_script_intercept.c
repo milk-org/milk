@@ -2948,6 +2948,20 @@ int cli_script_intercept(const char *line)
                 NULL, " \t", &sav);
         }
 
+        /* Detect overflow: loop exited
+         * because nevents hit the cap
+         * but tokens remain */
+        if(tok != NULL)
+        {
+            fprintf(stderr,
+                    "ERROR: wait_any: "
+                    "too many events "
+                    "(max %d)\n",
+                    WA_MAX_EVENTS);
+            cli_last_retval = 255;
+            return 1;
+        }
+
         if(nevents == 0)
         {
             printf("Usage: wait_any "
