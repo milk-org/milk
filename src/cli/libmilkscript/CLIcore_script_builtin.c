@@ -2031,6 +2031,18 @@ errno_t cli_cmd_milkquery(void)
         {
             do_procs = 1;
         }
+        else
+        {
+            fprintf(
+                stderr,
+                "milkquery: unknown argument '%s'\n",
+                tok);
+            fprintf(
+                stderr,
+                "usage: milkquery [--fps [pattern]]"
+                " [--streams [pattern]] [--procs]\n");
+            return RETURN_FAILURE;
+        }
     }
 
     /* Default: all sections */
