@@ -636,6 +636,21 @@ int cli_intercept_cmd_assert(const char *p)
                     }
                 }
             }
+            else
+            {
+                printf(
+                    "ERROR: malformed assert: "
+                    "missing closing ']'\n");
+                cli_last_retval = 1;
+            }
+        }
+        else
+        {
+            printf(
+                "ERROR: malformed assert: "
+                "expected '[condition]' after "
+                "'assert'\n");
+            cli_last_retval = 1;
         }
         return 1;
     }
