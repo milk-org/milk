@@ -34,6 +34,8 @@ set(CORE_FILES
     CLIcore/CLIcore_UI_highlight.c
     CLIcore/CLIcore_UI_hintarea.c
     CLIcore/CLIcore_UI_history.c
+    CLIcore/CLIcore_UI_history_display.c
+    CLIcore/CLIcore_UI_history_cmds.c
     CLIcore/CLIcore_UI_prompt.c)
     
     link_directories(${NCURSES_LIBRARY_DIRS})

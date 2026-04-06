@@ -26,6 +26,7 @@ set(SOURCES
         processinfo_WriteMessage.c
         processtools_trigger.c
         quicksort.c
+        quicksort_multiarray.c
         timeutils.c
     )
     
