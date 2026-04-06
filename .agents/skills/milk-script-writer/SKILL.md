@@ -314,6 +314,8 @@ Params: `$1`..`$9`, `shift [N]`,
 @fpsname.param           # Read value
 @fpsname.param=value     # Write value
 fpsset fpsname param val # Write (command)
+fpsdump fpsname          # Dump all params
+fpsdump --json fpsname   # Dump as JSON object
 waitfor_fps name 10      # Wait up to 10s
 wait -F name p=v 5       # Wait for param=val
 ```
@@ -324,6 +326,8 @@ wait -F name p=v 5       # Wait for param=val
 mem.mk2Dim name 64 64   # Create 2D image
 mem.rm name 0            # Delete image
 mem.listim               # List all images
+streamlist               # List SHM streams
+streamlist --json        # List as JSON array
 @s.<name>.xsize          # Width
 @s.<name>.ysize          # Height
 @s.<name>.naxis          # Number of axes
@@ -354,6 +358,11 @@ Process properties via `@name.prop`:
 `pid`, `loopstat`, `loopcnt`, `loopfreq`,
 `exectime`, `rtprio`, `ctrlval`, `trigmode`,
 `statusmsg`, `tmux`, `description`
+
+```bash
+proclist                 # List active procs
+proclist --json          # List as JSON array
+```
 
 ### I/O
 
