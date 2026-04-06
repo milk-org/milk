@@ -1596,6 +1596,7 @@ int cli_script_intercept(const char *line)
                             sizeof(et->param)
                             - 1);
                         et->op = eop;
+                        et->has_cmp = has_cmp;
                         et->cmpval = eval;
                         strncpy(
                             et->cmd, tcmd,
@@ -1606,7 +1607,6 @@ int cli_script_intercept(const char *line)
                         et->max_fires =
                             opt_max_fires;
                         et->used = 1;
-                        (void) has_cmp;
                     }
                 }
                 continue;

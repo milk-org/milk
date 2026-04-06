@@ -212,18 +212,21 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             switch(et->op)
             {
             case CLI_ETRAP_OP_EQ:
-                match =
-                    (strcmp(cur,
-                           et->last_fpsval)
-                     != 0);
-                /* Fire on ANY change
-                 * when op is = with
-                 * a comparison value */
-                if(et->cmpval != 0.0
-                   || et->param[0] != '\0')
+                if(et->has_cmp)
                 {
+                    /* Fire on transition
+                     * into equality */
                     match =
                         (dval == et->cmpval);
+                }
+                else
+                {
+                    /* Fire on any value
+                     * change */
+                    match =
+                        (strcmp(cur,
+                                et->last_fpsval)
+                         != 0);
                 }
                 break;
             case CLI_ETRAP_OP_NE:
@@ -249,8 +252,19 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
                 switch(et->op)
                 {
                 case CLI_ETRAP_OP_EQ:
-                    prev_match =
-                        (pval == et->cmpval);
+                    if(et->has_cmp)
+                    {
+                        prev_match =
+                            (pval
+                             == et->cmpval);
+                    }
+                    else
+                    {
+                        /* Change-detect:
+                         * always transition
+                         * into match */
+                        prev_match = 0;
+                    }
                     break;
                 case CLI_ETRAP_OP_NE:
                     prev_match =

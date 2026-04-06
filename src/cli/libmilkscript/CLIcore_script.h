@@ -366,6 +366,7 @@ typedef struct
     char   target[128];   /**< stream/fps/proc */
     char   param[64];     /**< FPS param name */
     int    op;            /**< comparison op */
+    int    has_cmp;       /**< 1 if op+value given */
     double cmpval;        /**< comparison value */
     int    proc_state;    /**< target loopstat */
     char   cmd[CLI_TRAP_CMDLEN];
