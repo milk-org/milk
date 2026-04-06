@@ -912,15 +912,15 @@ static int emit_fps_json_body(
         uint32_t st = fps.md->status;
         const char *ststr = "IDLE";
         if(st
-           & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
+           & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
         {
-            ststr = "RUN";
+            ststr = "CONF_ON";
         }
         else if(
             st
-            & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
+            & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
         {
-            ststr = "CONF_ON";
+            ststr = "RUN";
         }
 
         char nesc[STRINGMAXLEN_FPS_NAME];
