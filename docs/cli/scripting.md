@@ -146,6 +146,33 @@ elif [ $? -eq 1 ]; then
 fi
 ```
 
+### Engine Event Traps
+
+The `trap` command supports non-blocking engine event handlers using the same prefix syntax as `wait_any`. Traps fire automatically between CLI commands, without blocking the main thread.
+
+```bash
+# Register traps
+trap 'echo "new frame"' STREAM:wfs_cam
+trap 'echo "gain changed"' FPS:dmcomb.loopgain>=0.5
+trap 'echo "loop stopped"' PROC:wfsloop:STOP
+
+# Optional flags (before the quoted command)
+trap -i 200 'echo "throttled"' STREAM:fast_cam   # min 200ms between fires
+trap -n 5 'echo "five times"' STREAM:slow_cam    # fire at most 5 times
+
+# Clear a trap
+trap '' STREAM:wfs_cam
+
+# List all active traps (POSIX + engine)
+trap -l
+```
+
+**Auto-re-arm**: Engine traps automatically re-arm after firing. The baseline state (e.g., stream `cnt0`, FPS parameter value) is updated after each fire, so the same event won't trigger twice.
+
+**Throttle**: A minimum interval (default 100ms) prevents high-frequency streams from flooding the handler. Override with `-i ms` (set to 0 for no throttle). Use `-n N` to limit the total number of fires.
+
+**Supported events**: Same as `wait_any` — `STREAM:name`, `FPS:fps.param<op>val`, `PROC:name:STATE`.
+
 ### System Snapshot (`milkquery`)
 
 The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams, and active processes in one call:

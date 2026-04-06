@@ -386,6 +386,18 @@ milkquery --streams [pat]    # Streams only
 milkquery --procs            # Processes only
 ```
 
+### Engine Event Traps
+
+```bash
+trap 'cmd' STREAM:name       # Non-blocking
+trap 'cmd' FPS:f.p>=v        # fire-on-match
+trap 'cmd' PROC:n:STATE      # proc state
+trap -i 200 'cmd' STREAM:s   # 200ms throttle
+trap -n 5 'cmd' STREAM:s     # fire 5x max
+trap '' STREAM:name           # clear
+trap -l                       # list all
+```
+
 ### I/O
 
 ```bash

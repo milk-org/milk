@@ -331,6 +331,67 @@ void cli_trap_run(int signum);
 /** Run EXIT traps (called at script end). */
 void cli_trap_run_exit(void);
 
+/* ---- Engine Event Traps ---- */
+
+#define CLI_ENGINE_TRAP_MAX    16
+#define CLI_ETRAP_DEFAULT_MS  100
+
+/** Engine event trap types */
+enum
+{
+    CLI_ETRAP_STREAM = 0,
+    CLI_ETRAP_FPS    = 1,
+    CLI_ETRAP_PROC   = 2
+};
+
+/** Comparison operators for FPS traps */
+enum
+{
+    CLI_ETRAP_OP_EQ = 0,
+    CLI_ETRAP_OP_NE = 1,
+    CLI_ETRAP_OP_GE = 2,
+    CLI_ETRAP_OP_LE = 3
+};
+
+/**
+ * @brief Engine event trap entry
+ *
+ * Registered via trap 'cmd' STREAM:name etc.
+ * Polled non-blockingly between CLI commands.
+ */
+typedef struct
+{
+    int    used;
+    int    type;          /**< CLI_ETRAP_* */
+    char   target[128];   /**< stream/fps/proc */
+    char   param[64];     /**< FPS param name */
+    int    op;            /**< comparison op */
+    double cmpval;        /**< comparison value */
+    int    proc_state;    /**< target loopstat */
+    char   cmd[CLI_TRAP_CMDLEN];
+
+    /* Throttle */
+    long   min_interval_ms; /**< min ms between */
+    int    max_fires;     /**< -1 = unlimited */
+    int    fire_count;
+
+    /* Runtime state */
+    int      connected;
+    IMAGE    img;
+    uint64_t last_cnt0;
+    FUNCTION_PARAMETER_STRUCT fps;
+    char     last_fpsval[256];
+    struct timespec last_fire_ts;
+} CLI_ENGINE_TRAP;
+
+extern CLI_ENGINE_TRAP
+    cli_engine_traps[CLI_ENGINE_TRAP_MAX];
+
+/** Poll all engine traps (non-blocking). */
+void cli_engine_traps_poll(void);
+
+/** Disconnect and clean up all engine traps. */
+void cli_engine_traps_cleanup(void);
 
 /* ---- Source Location Tracking ---- */
 

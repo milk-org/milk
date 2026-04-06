@@ -51,7 +51,392 @@ void cli_trap_run(int signum)
 void cli_trap_run_exit(void)
 {
     cli_defer_run();
+    cli_engine_traps_cleanup();
     cli_trap_run(0);
+}
+
+/* ============================================================
+ *  Engine Event Traps — non-blocking poll
+ * ============================================================
+ */
+
+CLI_ENGINE_TRAP
+    cli_engine_traps[CLI_ENGINE_TRAP_MAX];
+
+/**
+ * etrap_connect - lazy-connect a trap handle
+ * @et: engine trap entry
+ *
+ * Opens the SHM stream, FPS, or processinfo
+ * handle on first poll. Returns 1 on success.
+ */
+static int etrap_connect(CLI_ENGINE_TRAP *et)
+{
+    if(et->connected)
+    {
+        return 1;
+    }
+
+    switch(et->type)
+    {
+    case CLI_ETRAP_STREAM:
+    {
+        memset(&et->img, 0,
+               sizeof(IMAGE));
+        if(ImageStreamIO_read_sharedmem_image_toIMAGE(
+               et->target, &et->img)
+           != IMAGESTREAMIO_SUCCESS)
+        {
+            return 0;
+        }
+        et->last_cnt0 =
+            et->img.md->cnt0;
+        et->connected = 1;
+        return 1;
+    }
+
+    case CLI_ETRAP_FPS:
+    {
+        et->fps.SMfd = -1;
+        int rc =
+            function_parameter_struct_connect(
+                et->target, &et->fps,
+                FPSCONNECT_SIMPLE);
+        if(rc == -1 || et->fps.md == NULL
+           || et->fps.parray == NULL)
+        {
+            return 0;
+        }
+        /* Record initial value */
+        for(int pi = 0;
+            pi < et->fps.md->NBparamMAX;
+            pi++)
+        {
+            if(!(et->fps.parray[pi].fpflag
+                 & FPFLAG_ACTIVE))
+            {
+                continue;
+            }
+            if(strcmp(
+                   et->fps.parray[pi]
+                       .keyword[0],
+                   et->param) == 0)
+            {
+                functionparameter_GetParamValueString(
+                    &et->fps.parray[pi],
+                    et->last_fpsval,
+                    (int) sizeof(
+                        et->last_fpsval));
+                break;
+            }
+        }
+        et->connected = 1;
+        return 1;
+    }
+
+    case CLI_ETRAP_PROC:
+        /* No persistent handle needed;
+         * we scan pinfolist each poll */
+        et->connected = 1;
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+
+/**
+ * etrap_check_fire - check if trap should fire
+ * @et: engine trap entry
+ *
+ * Returns 1 if the event has occurred since
+ * the last check.
+ */
+static int etrap_check_fire(CLI_ENGINE_TRAP *et)
+{
+    switch(et->type)
+    {
+    case CLI_ETRAP_STREAM:
+    {
+        if(et->img.md == NULL)
+        {
+            return 0;
+        }
+        uint64_t cur = et->img.md->cnt0;
+        if(cur != et->last_cnt0)
+        {
+            et->last_cnt0 = cur;
+            return 1;
+        }
+        return 0;
+    }
+
+    case CLI_ETRAP_FPS:
+    {
+        if(et->fps.md == NULL
+           || et->fps.parray == NULL)
+        {
+            return 0;
+        }
+        for(int pi = 0;
+            pi < et->fps.md->NBparamMAX;
+            pi++)
+        {
+            if(!(et->fps.parray[pi].fpflag
+                 & FPFLAG_ACTIVE))
+            {
+                continue;
+            }
+            if(strcmp(
+                   et->fps.parray[pi]
+                       .keyword[0],
+                   et->param)
+               != 0)
+            {
+                continue;
+            }
+            char cur[256];
+            functionparameter_GetParamValueString(
+                &et->fps.parray[pi],
+                cur,
+                (int) sizeof(cur));
+
+            /* Compare based on operator */
+            double dval = strtod(cur, NULL);
+            int match = 0;
+            switch(et->op)
+            {
+            case CLI_ETRAP_OP_EQ:
+                match =
+                    (strcmp(cur,
+                           et->last_fpsval)
+                     != 0);
+                /* Fire on ANY change
+                 * when op is = with
+                 * a comparison value */
+                if(et->cmpval != 0.0
+                   || et->param[0] != '\0')
+                {
+                    match =
+                        (dval == et->cmpval);
+                }
+                break;
+            case CLI_ETRAP_OP_NE:
+                match =
+                    (dval != et->cmpval);
+                break;
+            case CLI_ETRAP_OP_GE:
+                match =
+                    (dval >= et->cmpval);
+                break;
+            case CLI_ETRAP_OP_LE:
+                match =
+                    (dval <= et->cmpval);
+                break;
+            }
+
+            /* Only fire on transition */
+            int prev_match = 0;
+            {
+                double pval =
+                    strtod(et->last_fpsval,
+                           NULL);
+                switch(et->op)
+                {
+                case CLI_ETRAP_OP_EQ:
+                    prev_match =
+                        (pval == et->cmpval);
+                    break;
+                case CLI_ETRAP_OP_NE:
+                    prev_match =
+                        (pval != et->cmpval);
+                    break;
+                case CLI_ETRAP_OP_GE:
+                    prev_match =
+                        (pval >= et->cmpval);
+                    break;
+                case CLI_ETRAP_OP_LE:
+                    prev_match =
+                        (pval <= et->cmpval);
+                    break;
+                }
+            }
+
+            strncpy(et->last_fpsval, cur,
+                    sizeof(et->last_fpsval)
+                    - 1);
+
+            if(match && !prev_match)
+            {
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
+    }
+
+    case CLI_ETRAP_PROC:
+    {
+        if(pinfolist == NULL)
+        {
+            return 0;
+        }
+        for(int pi = 0;
+            pi < PROCESSINFOLISTSIZE; pi++)
+        {
+            if(!pinfolist->active[pi])
+            {
+                continue;
+            }
+            if(strcmp(
+                   pinfolist->pnamearray[pi],
+                   et->target) != 0)
+            {
+                continue;
+            }
+            pid_t fpid =
+                pinfolist->PIDarray[pi];
+            if(fpid <= 0)
+            {
+                continue;
+            }
+            char pfn[512];
+            char pdname[256];
+            processinfo_procdirname(pdname);
+            snprintf(pfn, sizeof(pfn),
+                     "%s/proc.%d.shm",
+                     pdname, (int) fpid);
+            int pfd = -1;
+            PROCESSINFO *pi_shm =
+                processinfo_shm_link(
+                    pfn, &pfd);
+            if(pi_shm == MAP_FAILED
+               || pi_shm == NULL)
+            {
+                if(pfd >= 0)
+                {
+                    close(pfd);
+                }
+                continue;
+            }
+            int cur_state =
+                pi_shm->loopstat;
+            munmap(pi_shm,
+                   sizeof(PROCESSINFO));
+            close(pfd);
+
+            if(cur_state == et->proc_state)
+            {
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
+    }
+
+    default:
+        return 0;
+    }
+}
+
+/**
+ * cli_engine_traps_poll - check all traps
+ *
+ * Called at the top of each CLI command cycle.
+ * For each registered trap, checks if the
+ * event occurred and fires the command if so,
+ * respecting throttle settings.
+ */
+void cli_engine_traps_poll(void)
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+
+    for(int i = 0;
+        i < CLI_ENGINE_TRAP_MAX; i++)
+    {
+        CLI_ENGINE_TRAP *et =
+            &cli_engine_traps[i];
+        if(!et->used)
+        {
+            continue;
+        }
+
+        /* Lazy connect */
+        if(!et->connected)
+        {
+            if(!etrap_connect(et))
+            {
+                continue;
+            }
+        }
+
+        /* Check throttle interval */
+        if(et->min_interval_ms > 0)
+        {
+            long elapsed_ms =
+                (now.tv_sec
+                 - et->last_fire_ts.tv_sec)
+                * 1000L
+                + (now.tv_nsec
+                   - et->last_fire_ts
+                         .tv_nsec)
+                / 1000000L;
+            if(elapsed_ms
+               < et->min_interval_ms)
+            {
+                continue;
+            }
+        }
+
+        /* Check fire count limit */
+        if(et->max_fires > 0
+           && et->fire_count
+           >= et->max_fires)
+        {
+            /* Deactivate trap */
+            et->used = 0;
+            et->connected = 0;
+            continue;
+        }
+
+        /* Check event */
+        if(etrap_check_fire(et))
+        {
+            et->fire_count++;
+            et->last_fire_ts = now;
+            CLI_execute_string(et->cmd);
+        }
+    }
+}
+
+/**
+ * cli_engine_traps_cleanup - disconnect all
+ *
+ * Called at script exit to release handles.
+ */
+void cli_engine_traps_cleanup(void)
+{
+    for(int i = 0;
+        i < CLI_ENGINE_TRAP_MAX; i++)
+    {
+        CLI_ENGINE_TRAP *et =
+            &cli_engine_traps[i];
+        if(!et->used)
+        {
+            continue;
+        }
+        if(et->connected)
+        {
+            if(et->type == CLI_ETRAP_FPS)
+            {
+                function_parameter_struct_disconnect(
+                    &et->fps);
+            }
+            et->connected = 0;
+        }
+        et->used = 0;
+    }
 }
 
 /**
