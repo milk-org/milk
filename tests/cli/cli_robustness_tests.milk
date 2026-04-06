@@ -1617,3 +1617,47 @@ iofits.saveFITS im2D_lf "im2D_lf.fits"
 iofits.loadfits "im2D_lf.fits" im2D_lf_loaded 2
 rm "im2D_lf.fits"
 mem.rm "im2D_lf_loaded"
+
+# ============================================
+# SECTION 45: JSON output modes
+# ============================================
+
+#DESC: streamlist --json (no streams required)
+#EXPECT:OK
+streamlist --json
+
+#DESC: streamlist --json with pattern
+#EXPECT:OK
+streamlist --json _nonexist_*
+
+#DESC: streamlist with both -l and --json flags
+#EXPECT:OK
+streamlist -l --json
+
+#DESC: streamlist --json --unknown flag treated as pattern
+#EXPECT:OK
+streamlist --json _nonexist_*
+
+#DESC: fpsdump with no args (usage error)
+#EXPECT:ERR
+fpsdump
+
+#DESC: fpsdump with nonexistent FPS
+#EXPECT:ERR
+fpsdump _no_such_fps_
+
+#DESC: fpsdump --json with nonexistent FPS
+#EXPECT:ERR
+fpsdump --json _no_such_fps_
+
+#DESC: fpsdump -t and --json mutually exclusive
+#EXPECT:ERR
+fpsdump -t --json _no_such_fps_
+
+#DESC: proclist --json (no processes required)
+#EXPECT:OK
+proclist --json
+
+#DESC: proclist with -l and --json
+#EXPECT:OK
+proclist -l --json
