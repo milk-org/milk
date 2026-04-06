@@ -7,6 +7,7 @@ message(" SRCNAME = ${SRCNAME} -> LIBNAME = ${LIBNAME}")
 
 set(SOURCEFILES
 	${SRCNAME}.c
+	${SRCNAME}_fit.c
 	zernike_value.c
 	mkzercube.c
 )
