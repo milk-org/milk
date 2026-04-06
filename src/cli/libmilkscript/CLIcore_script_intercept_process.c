@@ -25,27 +25,8 @@ extern int cli_break_flag;
 extern int CLI_trap_enable;
 extern int cli_cmd_delay_us;
 
-int cli_intercept_part_0(const char *p)
-{
-    if(strcmp(p, "break") == 0)
-    {
-        cli_break_flag = 1;
-        return 1;
-    }
-    return 0;
-}
 
-int cli_intercept_part_1(const char *p)
-{
-    if(strcmp(p, "continue") == 0)
-    {
-        cli_continue_flag = 1;
-        return 1;
-    }
-    return 0;
-}
-
-int cli_intercept_part_2(const char *p)
+int cli_intercept_cmd_return(const char *p)
 {
     if(strcmp(p, "return") == 0
        || starts_with(p, "return ")
@@ -67,7 +48,7 @@ int cli_intercept_part_2(const char *p)
     return 0;
 }
 
-int cli_intercept_part_3(const char *p)
+int cli_intercept_cmd_exit(const char *p)
 {
     if(strcmp(p, "exit") == 0
        || starts_with(p, "exit ")
@@ -95,7 +76,7 @@ int cli_intercept_part_3(const char *p)
     return 0;
 }
 
-int cli_intercept_part_4(const char *p)
+int cli_intercept_cmd_shift(const char *p)
 {
     if(strcmp(p, "shift") == 0
        || starts_with(p, "shift ")
@@ -151,7 +132,7 @@ int cli_intercept_part_4(const char *p)
     return 0;
 }
 
-int cli_intercept_part_5(const char *p)
+int cli_intercept_cmd_procctl(const char *p)
 {
     if(starts_with(p, "procctl ")
        || starts_with(p, "procctl\t"))
@@ -259,7 +240,7 @@ int cli_intercept_part_5(const char *p)
     return 0;
 }
 
-int cli_intercept_part_6(const char *p)
+int cli_intercept_cmd_procwait(const char *p)
 {
     if(starts_with(p, "procwait ")
        || starts_with(p, "procwait\t"))
@@ -401,7 +382,7 @@ int cli_intercept_part_6(const char *p)
     return 0;
 }
 
-int cli_intercept_part_7(const char *p)
+int cli_intercept_cmd_procstat(const char *p)
 {
     if(strcmp(p, "procstat") == 0
        || starts_with(p, "procstat ")
@@ -539,7 +520,7 @@ int cli_intercept_part_7(const char *p)
     return 0;
 }
 
-int cli_intercept_part_8(const char *p)
+int cli_intercept_cmd_time(const char *p)
 {
     if(starts_with(p, "time ")
        || starts_with(p, "time\t"))
@@ -568,7 +549,7 @@ int cli_intercept_part_8(const char *p)
     return 0;
 }
 
-int cli_intercept_part_9(const char *p)
+int cli_intercept_cmd_assert(const char *p)
 {
     if(starts_with(p, "assert ")
        || starts_with(p, "assert\t"))
@@ -661,7 +642,7 @@ int cli_intercept_part_9(const char *p)
     return 0;
 }
 
-int cli_intercept_part_10(const char *p)
+int cli_intercept_cmd_watch(const char *p)
 {
     if(starts_with(p, "watch ")
        || starts_with(p, "watch\t"))
