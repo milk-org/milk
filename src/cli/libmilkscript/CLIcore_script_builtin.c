@@ -107,29 +107,34 @@ static int etrap_connect(CLI_ENGINE_TRAP *et)
         {
             return 0;
         }
-        /* Record initial value */
-        for(int pi = 0;
-            pi < et->fps.md->NBparamMAX;
-            pi++)
+
+        int paramindex =
+            functionparameter_GetParamIndex(
+                &et->fps, et->param);
+        if(paramindex < 0)
         {
-            if(!(et->fps.parray[pi].fpflag
-                 & FPFLAG_ACTIVE))
+            char dottedparam[STRINGMAXLEN_FULLFILENAME];
+            if(snprintf(dottedparam,
+                        sizeof(dottedparam),
+                        ".%s", et->param)
+               >= (int) sizeof(dottedparam))
             {
-                continue;
+                return 0;
             }
-            if(strcmp(
-                   et->fps.parray[pi]
-                       .keyword[0],
-                   et->param) == 0)
-            {
-                functionparameter_GetParamValueString(
-                    &et->fps.parray[pi],
-                    et->last_fpsval,
-                    (int) sizeof(
-                        et->last_fpsval));
-                break;
-            }
+            paramindex =
+                functionparameter_GetParamIndex(
+                    &et->fps, dottedparam);
         }
+        if(paramindex < 0)
+        {
+            return 0;
+        }
+
+        /* Record initial value */
+        functionparameter_GetParamValueString(
+            &et->fps.parray[paramindex],
+            et->last_fpsval,
+            (int) sizeof(et->last_fpsval));
         et->connected = 1;
         return 1;
     }
