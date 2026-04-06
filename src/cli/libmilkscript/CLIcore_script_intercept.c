@@ -2676,11 +2676,21 @@ int cli_script_intercept(const char *line)
             {
                 tok = strtok_r(
                     NULL, " \t", &sav);
-                if(tok != NULL)
+                if(tok == NULL)
                 {
-                    timeout =
-                        strtod(tok, NULL);
+                    fprintf(stderr,
+                            "ERROR: wait_any: "
+                            "missing timeout "
+                            "value after -t\n");
+                    fprintf(stderr,
+                            "USAGE: wait_any "
+                            "[-t timeout] "
+                            "<events...>\n");
+                    return 255;
                 }
+
+                timeout =
+                    strtod(tok, NULL);
                 tok = strtok_r(
                     NULL, " \t", &sav);
                 continue;
