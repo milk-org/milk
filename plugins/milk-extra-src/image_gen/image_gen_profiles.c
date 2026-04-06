@@ -79,6 +79,7 @@ imageID make_psf_from_profile(const char *profile_name,
     if((fp = fopen(profile_name, "r")) == NULL)
     {
         printf("error : can't open file \"%s\"\n", profile_name);
+        abort();
     }
 
     for(i = 0; i < nb_lines; i++)
