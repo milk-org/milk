@@ -438,6 +438,10 @@ void cli_engine_traps_cleanup(void)
                 function_parameter_struct_disconnect(
                     &et->fps);
             }
+            else if(et->type == CLI_ETRAP_STREAM)
+            {
+                ImageStreamIO_closeIm(&et->img);
+            }
             et->connected = 0;
         }
         et->used = 0;
