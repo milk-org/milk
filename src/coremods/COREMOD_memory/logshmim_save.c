@@ -43,7 +43,13 @@
 void *save_telemetry_fits_function(
     void *ptr)
 {
-    static long tret = 0;
+    long *tret_ptr = (long *) malloc(sizeof(long));
+    if(tret_ptr == NULL)
+    {
+        return NULL;
+    }
+    *tret_ptr = 0;
+#define tret (*tret_ptr)
     STREAMSAVE_THREAD_MESSAGE *tmsg;
     tmsg = (STREAMSAVE_THREAD_MESSAGE *) ptr;
 
