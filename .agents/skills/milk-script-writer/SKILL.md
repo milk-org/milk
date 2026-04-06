@@ -364,6 +364,17 @@ proclist                 # List active procs
 proclist --json          # List as JSON array
 ```
 
+### Unified Event Wait
+
+```bash
+# Block until any event fires; $? = event index
+wait_any [-t T] S:stream F:fps.p=v P:proc:STATE
+# Operators: = != >= <=
+wait_any -t 10 S:cam F:dmcomb.gain>=0.5
+wait_any -t -1 P:wfsloop:STOP P:wfsloop:CRASHED
+# $? = 0..N-1 (event), 254 (timeout), 255 (error)
+```
+
 ### I/O
 
 ```bash
