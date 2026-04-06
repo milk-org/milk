@@ -439,6 +439,22 @@ void help_topic_flowcontrol(void)
            C_RST "\n");
     printf("  Waits for stream update then runs cmd\n");
     printf("\n");
+    printf(C_HDR "Unified Event Wait:\n" C_RST);
+    printf("  " C_CMD "wait_any [-t T] "
+           "S:s F:f.p=v P:n:STATE"
+           C_RST "\n");
+    printf("  Block until any event fires; "
+           "returns index as $?\n");
+    printf("  " C_NOTE "S:" C_RST
+           "stream  "
+           C_NOTE "F:" C_RST
+           "fps.param  "
+           C_NOTE "P:" C_RST
+           "proc:state\n");
+    printf("  Comparisons: "
+           C_CMD "= != >= <=" C_RST
+           " (e.g. F:dmcomb.gain>=0.5)\n");
+    printf("\n");
 }
 
 
@@ -601,6 +617,16 @@ void help_topic_milk(void)
            "  Block up to T sec for FPS\n");
     printf("  " C_CMD "on_update <name> { cmd }" C_RST
            "  Trigger on stream write\n");
+    printf("  " C_CMD "wait_any [-t T] events" C_RST
+           "  Multiplex S:/F:/P: events\n");
+    printf("\n");
+    printf(C_HDR "Introspection (JSON):\n" C_RST);
+    printf("  " C_CMD "fpsdump --json <fps>" C_RST
+           "  FPS params as JSON\n");
+    printf("  " C_CMD "streamlist --json   " C_RST
+           "  Streams as JSON\n");
+    printf("  " C_CMD "proclist --json     " C_RST
+           "  Processes as JSON\n");
     printf("\n");
     printf(C_HDR "FPS Parameters:\n" C_RST);
     printf("  " C_CMD "@fpsname.param   " C_RST
