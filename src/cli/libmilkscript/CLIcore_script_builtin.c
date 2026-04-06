@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <fnmatch.h>
+#include <math.h>
 #include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -944,6 +945,69 @@ errno_t cli_cmd_fpslist(void)
 
 
 /* ============================================================
+ *  JSON helpers
+ * ============================================================
+ */
+
+/**
+ * json_escape_str - write JSON-escaped string to buf
+ * @buf:   destination buffer
+ * @bufsz: size of @buf in bytes
+ * @src:   NUL-terminated source string
+ *
+ * Escapes backslash, double-quote, and ASCII
+ * control characters so the result is safe to
+ * embed inside a JSON string literal.
+ */
+static void json_escape_str(
+    char *buf, size_t bufsz, const char *src)
+{
+    size_t bi = 0;
+    for(const char *p = src;
+        *p != '\0' && bi + 6 < bufsz; p++)
+    {
+        unsigned char c = (unsigned char)*p;
+        if(c == '"' || c == '\\')
+        {
+            buf[bi++] = '\\';
+            buf[bi++] = (char)c;
+        }
+        else if(c == '\n')
+        {
+            buf[bi++] = '\\';
+            buf[bi++] = 'n';
+        }
+        else if(c == '\r')
+        {
+            buf[bi++] = '\\';
+            buf[bi++] = 'r';
+        }
+        else if(c == '\t')
+        {
+            buf[bi++] = '\\';
+            buf[bi++] = 't';
+        }
+        else if(c < 0x20)
+        {
+            int n = snprintf(buf + bi,
+                             bufsz - bi,
+                             "\\u%04x",
+                             (unsigned int)c);
+            if(n > 0)
+            {
+                bi += (size_t)n;
+            }
+        }
+        else
+        {
+            buf[bi++] = (char)c;
+        }
+    }
+    buf[bi] = '\0';
+}
+
+
+/* ============================================================
  *  fpsdump — dump all params of an FPS as key=value
  * ============================================================
  */
@@ -954,32 +1018,57 @@ errno_t cli_cmd_fpslist(void)
  * Connects to the named FPS and prints every
  * active parameter as key=value lines.
  *
- * Usage: fpsdump [-t] <fpsname>
- *   -t  tab-separated: key\tTYPE\tvalue
+ * Usage: fpsdump [-t] [--json] <fpsname>
+ *   -t      tab-separated: key\tTYPE\tvalue
+ *   --json  JSON object with raw typed values
  */
 errno_t cli_cmd_fpsdump(void)
 {
     int tabmode = 0;
-    int arg_idx = 1;
+    int jsonmode = 0;
+    int arg_fpsname = -1;
 
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: fpsdump [-t] "
+        printf("Usage: fpsdump [-t] [--json] "
                "<fpsname>\n");
         return RETURN_FAILURE;
     }
 
-    if(data.cmdNBarg >= 3
-       && strcmp(
-           data.cmdargtoken[1].val.string,
-           "-t") == 0)
+    for(int a = 1; a < data.cmdNBarg; a++)
     {
-        tabmode = 1;
-        arg_idx = 2;
+        const char *tok =
+            data.cmdargtoken[a].val.string;
+        if(strcmp(tok, "-t") == 0)
+        {
+            tabmode = 1;
+        }
+        else if(strcmp(tok, "--json") == 0)
+        {
+            jsonmode = 1;
+        }
+        else
+        {
+            arg_fpsname = a;
+        }
+    }
+
+    if(tabmode && jsonmode)
+    {
+        printf("fpsdump: -t and --json are "
+               "mutually exclusive\n");
+        return RETURN_FAILURE;
+    }
+
+    if(arg_fpsname < 0)
+    {
+        printf("Usage: fpsdump [-t] [--json] "
+               "<fpsname>\n");
+        return RETURN_FAILURE;
     }
 
     const char *fpsname =
-        data.cmdargtoken[arg_idx].val.string;
+        data.cmdargtoken[arg_fpsname].val.string;
 
     FUNCTION_PARAMETER_STRUCT fps;
     fps.SMfd = -1;
@@ -994,6 +1083,9 @@ errno_t cli_cmd_fpsdump(void)
                "to FPS '%s'\n", fpsname);
         return RETURN_FAILURE;
     }
+
+    if(jsonmode) { printf("{\n"); }
+    int first_json_item = 1;
 
     for(int pi = 0;
         pi < fps.md->NBparamMAX; pi++)
@@ -1061,6 +1153,68 @@ errno_t cli_cmd_fpsdump(void)
                    fps.parray[pi].keyword[0],
                    tname, vstr);
         }
+        else if(jsonmode)
+        {
+            char kesc[128];
+            char sesc[1024];
+            json_escape_str(kesc, sizeof(kesc),
+                fps.parray[pi].keyword[0]);
+            if(!first_json_item) { printf(",\n"); }
+            first_json_item = 0;
+            switch(fps.parray[pi].type)
+            {
+            case FPTYPE_INT64:
+                printf("  \"%s\": %lld",
+                    kesc,
+                    (long long)
+                    fps.parray[pi].val.i64[0]);
+                break;
+            case FPTYPE_FLOAT64:
+            {
+                double v =
+                    fps.parray[pi].val.f64[0];
+                if(isfinite(v))
+                {
+                    printf("  \"%s\": %g",
+                           kesc, v);
+                }
+                else
+                {
+                    printf("  \"%s\": null",
+                           kesc);
+                }
+                break;
+            }
+            case FPTYPE_FLOAT32:
+            {
+                float v =
+                    fps.parray[pi].val.f32[0];
+                if(isfinite(v))
+                {
+                    printf("  \"%s\": %g",
+                           kesc, (double)v);
+                }
+                else
+                {
+                    printf("  \"%s\": null",
+                           kesc);
+                }
+                break;
+            }
+            case FPTYPE_ONOFF:
+                printf("  \"%s\": %d",
+                    kesc,
+                    (int)
+                    fps.parray[pi].val.i64[0]);
+                break;
+            default:
+                json_escape_str(sesc,
+                    sizeof(sesc), vstr);
+                printf("  \"%s\": \"%s\"",
+                       kesc, sesc);
+                break;
+            }
+        }
         else
         {
             printf("%s=%s\n",
@@ -1068,6 +1222,8 @@ errno_t cli_cmd_fpsdump(void)
                    vstr);
         }
     }
+
+    if(jsonmode) { printf("\n}\n"); }
 
     function_parameter_struct_disconnect(&fps);
 
@@ -1085,13 +1241,15 @@ errno_t cli_cmd_fpsdump(void)
  *
  * Scans SHM directory for *.im.shm files.
  *
- * Usage: streamlist [-l] [pattern]
+ * Usage: streamlist [-l] [--json] [pattern]
  *   -l       long format: name WxH type cnt0
+ *   --json   JSON array of stream metadata
  *   pattern  glob filter (e.g. "dm*")
  */
 errno_t cli_cmd_streamlist(void)
 {
     int longmode = 0;
+    int jsonmode = 0;
     const char *pat = NULL;
     int argpos = 1;
 
@@ -1103,6 +1261,11 @@ errno_t cli_cmd_streamlist(void)
         if(strcmp(tok, "-l") == 0)
         {
             longmode = 1;
+            argpos = a + 1;
+        }
+        else if(strcmp(tok, "--json") == 0)
+        {
+            jsonmode = 1;
             argpos = a + 1;
         }
     }
@@ -1124,6 +1287,9 @@ errno_t cli_cmd_streamlist(void)
                shmdname);
         return RETURN_FAILURE;
     }
+
+    if(jsonmode) { printf("[\n"); }
+    int first_json_item = 1;
 
     while((de = readdir(d)) != NULL)
     {
@@ -1156,7 +1322,7 @@ errno_t cli_cmd_streamlist(void)
             continue;
         }
 
-        if(!longmode)
+        if(!longmode && !jsonmode)
         {
             printf("%s\n", sname);
         }
@@ -1170,7 +1336,51 @@ errno_t cli_cmd_streamlist(void)
             if(sret == IMAGESTREAMIO_SUCCESS
                && img.md != NULL)
             {
-                /* Build size string */
+                if(jsonmode)
+                {
+                    char nesc[256];
+                    char tesc[64];
+                    json_escape_str(nesc,
+                        sizeof(nesc), sname);
+                    json_escape_str(tesc,
+                        sizeof(tesc),
+                        ImageStreamIO_typename(
+                            img.md->datatype));
+                    if(!first_json_item)
+                    {
+                        printf(",\n");
+                    }
+                    first_json_item = 0;
+
+                    printf("  {\n");
+                    printf("    \"name\": \"%s\",\n",
+                           nesc);
+                    printf("    \"naxis\": %u,\n",
+                           img.md->naxis);
+
+                    printf("    \"size\": [");
+                    for(int ax = 0;
+                        ax < img.md->naxis; ax++)
+                    {
+                        if(ax > 0)
+                        {
+                            printf(", ");
+                        }
+                        printf("%u",
+                               img.md->size[ax]);
+                    }
+                    printf("],\n");
+
+                    printf("    \"type\": \"%s\",\n",
+                           tesc);
+                    printf("    \"cnt0\": %lu\n",
+                           (unsigned long)
+                           img.md->cnt0);
+                    printf("  }");
+                }
+                else
+                {
+                    /* Build size string */
                 char szstr[64];
                 if(img.md->naxis == 1)
                 {
@@ -1203,15 +1413,20 @@ errno_t cli_cmd_streamlist(void)
                         img.md->datatype),
                     (unsigned long)
                         img.md->cnt0);
+                }
                 ImageStreamIO_closeIm(&img);
             }
             else
             {
-                printf("%-24s UNAVAIL\n",
-                       sname);
+                if(!jsonmode) {
+                    printf("%-24s UNAVAIL\n",
+                           sname);
+                }
             }
         }
     }
+    
+    if(jsonmode) { printf("\n]\n"); }
     closedir(d);
 
     return RETURN_SUCCESS;
@@ -1229,18 +1444,24 @@ errno_t cli_cmd_streamlist(void)
  * Iterates the processinfo list and prints
  * active process names, one per line.
  *
- * Usage: proclist [-l]
- *   -l  long format: name  state  freq
+ * Usage: proclist [-l] [--json]
+ *   -l      long format: name  state  freq
+ *   --json  JSON array of process metadata
  */
 errno_t cli_cmd_proclist(void)
 {
     int longmode = 0;
-    if(data.cmdNBarg >= 2
-       && strcmp(
-           data.cmdargtoken[1].val.string,
-           "-l") == 0)
+    int jsonmode = 0;
+    for(int a = 1; a < data.cmdNBarg; a++)
     {
-        longmode = 1;
+        if(strcmp(data.cmdargtoken[a].val.string, "-l") == 0)
+        {
+            longmode = 1;
+        }
+        else if(strcmp(data.cmdargtoken[a].val.string, "--json") == 0)
+        {
+            jsonmode = 1;
+        }
     }
 
     if(pinfolist == NULL)
@@ -1250,6 +1471,9 @@ errno_t cli_cmd_proclist(void)
         return RETURN_FAILURE;
     }
 
+    if(jsonmode) { printf("[\n"); }
+    int first_json_item = 1;
+
     for(int pi = 0;
         pi < PROCESSINFOLISTSIZE; pi++)
     {
@@ -1258,7 +1482,7 @@ errno_t cli_cmd_proclist(void)
             continue;
         }
 
-        if(!longmode)
+        if(!longmode && !jsonmode)
         {
             printf("%s\n",
                    pinfolist
@@ -1328,12 +1552,42 @@ errno_t cli_cmd_proclist(void)
                 }
             }
 
-            printf("%-24s %-8s %8.1f Hz\n",
-                   pinfolist
-                       ->pnamearray[pi],
-                   state, freq);
+            if(jsonmode)
+            {
+                char nesc[256];
+                char sesc[64];
+                json_escape_str(nesc,
+                    sizeof(nesc),
+                    pinfolist->pnamearray[pi]);
+                json_escape_str(sesc,
+                    sizeof(sesc), state);
+                if(!first_json_item)
+                {
+                    printf(",\n");
+                }
+                first_json_item = 0;
+                printf("  {\n");
+                printf("    \"name\": \"%s\",\n",
+                       nesc);
+                printf("    \"state\": \"%s\",\n",
+                       sesc);
+                printf("    \"pid\": %d,\n",
+                       (int)fpid);
+                printf("    \"freq_hz\": %g\n",
+                       freq);
+                printf("  }");
+            }
+            else
+            {
+                printf("%-24s %-8s %8.1f Hz\n",
+                       pinfolist
+                           ->pnamearray[pi],
+                       state, freq);
+            }
         }
     }
+
+    if(jsonmode) { printf("\n]\n"); }
 
     return RETURN_SUCCESS;
 }
