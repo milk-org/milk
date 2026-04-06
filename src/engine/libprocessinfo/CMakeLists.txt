@@ -26,6 +26,7 @@ set(SOURCES
         processinfo_WriteMessage.c
         processtools_trigger.c
         quicksort.c
+        quicksort_multiarray.c
         timeutils.c
     )
     
@@ -39,6 +40,7 @@ set(SOURCES
             procCTRL/procCTRL_PIDcollectSystemInfo.c
             procCTRL/procCTRL_processinfo_scan.c
             procCTRL/procCTRL_TUI.c
+            procCTRL/procCTRL_TUI_sort.c
         )
         
         add_library(milkprocessinfoTUI SHARED ${SOURCES_TUI})
