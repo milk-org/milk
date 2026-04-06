@@ -153,6 +153,9 @@ errno_t cli_cmd_streamlist(void);
 /** proclist — list active processes */
 errno_t cli_cmd_proclist(void);
 
+/** milkquery — unified JSON system snapshot */
+errno_t cli_cmd_milkquery(void);
+
 /** defer — push cleanup command to stack */
 errno_t cli_cmd_defer(void);
 

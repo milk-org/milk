@@ -1731,8 +1731,8 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_fpslist,
         "list live FPS instances",
-        "[pattern]",
-        "fpslist dm*",
+        "[--json] [pattern]",
+        "fpslist --json dm*",
         "cli_cmd_fpslist()");
 
     RegisterCLIcommand(
@@ -1761,6 +1761,16 @@ void runCLI_cmd_init()
         "[-l] [--json]",
         "proclist -l",
         "cli_cmd_proclist()");
+
+    RegisterCLIcommand(
+        "milkquery",
+        __FILE__,
+        cli_cmd_milkquery,
+        "unified JSON system snapshot",
+        "[--fps [pat]] [--streams [pat]]"
+        " [--procs]",
+        "milkquery --fps dm*",
+        "cli_cmd_milkquery()");
 
     RegisterCLIcommand(
         "defer",
