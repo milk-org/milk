@@ -1740,7 +1740,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_fpsdump,
         "dump FPS parameters as key=value",
-        "[-t|--json] <fpsname>",
+        "[-t] [--json] <fpsname>",
         "fpsdump loopctrl",
         "cli_cmd_fpsdump()");
 
