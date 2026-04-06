@@ -964,30 +964,26 @@ static void json_escape_str(
 {
     size_t bi = 0;
     for(const char *p = src;
-        *p != '\0' && bi + 2 < bufsz; p++)
+        *p != '\0' && bi + 6 < bufsz; p++)
     {
         unsigned char c = (unsigned char)*p;
         if(c == '"' || c == '\\')
         {
-            if(bi + 2 >= bufsz) { break; }
             buf[bi++] = '\\';
             buf[bi++] = (char)c;
         }
         else if(c == '\n')
         {
-            if(bi + 2 >= bufsz) { break; }
             buf[bi++] = '\\';
             buf[bi++] = 'n';
         }
         else if(c == '\r')
         {
-            if(bi + 2 >= bufsz) { break; }
             buf[bi++] = '\\';
             buf[bi++] = 'r';
         }
         else if(c == '\t')
         {
-            if(bi + 2 >= bufsz) { break; }
             buf[bi++] = '\\';
             buf[bi++] = 't';
         }
