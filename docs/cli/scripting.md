@@ -115,6 +115,37 @@ if [ $? -eq 0 ]; then
 fi
 ```
 
+### Unified Event Multiplexing
+
+The `wait_any` command blocks until **any one** of multiple heterogeneous events fires, eliminating polling loops in orchestration scripts:
+
+```bash
+wait_any [-t timeout] event1 [event2] [event3] ...
+```
+
+Each event is a single token with a prefix:
+
+| Prefix | Fires when | Example |
+|--------|------------|---------|
+| `S:<stream>` | Stream `cnt0` changes | `S:wfs_cam` |
+| `F:<fps>.<param><op><val>` | FPS param matches | `F:dmcomb.abort=1` |
+| `P:<proc>:<state>` | Process reaches state | `P:wfsloop:STOP` |
+
+FPS comparison operators: `=`, `!=`, `>=`, `<=`.
+
+The return value `$?` is the 0-based index of the event that fired, `254` on timeout, or `255` on parse error.
+
+```bash
+#!/usr/bin/env milk-cli -s
+# Wait for new frame OR operator abort
+wait_any -t 60 S:wfs_cam F:dmcomb.abort=1
+if [ $? -eq 0 ]; then
+    echo "New frame arrived"
+elif [ $? -eq 1 ]; then
+    echo "Operator requested abort"
+fi
+```
+
 ### FPS Parameter Expansion
 
 You can effortlessly read FPS (Function Processing System) parameters directly into bash variables using the native `@fpsname.param` syntax:
