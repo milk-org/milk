@@ -623,10 +623,14 @@ void help_topic_milk(void)
     printf(C_HDR "Introspection (JSON):\n" C_RST);
     printf("  " C_CMD "fpsdump --json <fps>" C_RST
            "  FPS params as JSON\n");
+    printf("  " C_CMD "fpslist --json      " C_RST
+           "  FPS instances as JSON\n");
     printf("  " C_CMD "streamlist --json   " C_RST
            "  Streams as JSON\n");
     printf("  " C_CMD "proclist --json     " C_RST
            "  Processes as JSON\n");
+    printf("  " C_CMD "milkquery           " C_RST
+           "  Unified system snapshot\n");
     printf("\n");
     printf(C_HDR "FPS Parameters:\n" C_RST);
     printf("  " C_CMD "@fpsname.param   " C_RST
