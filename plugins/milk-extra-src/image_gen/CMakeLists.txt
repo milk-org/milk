@@ -11,6 +11,9 @@ set(SOURCEFILES
 	mkspdisk.c
 	mkrandomim.c
 	voronoi.c
+	image_gen_basic_shapes.c
+	image_gen_polygons.c
+	image_gen_profiles.c
 )
 
 
