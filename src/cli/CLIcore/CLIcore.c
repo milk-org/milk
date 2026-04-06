@@ -1758,7 +1758,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_proclist,
         "list active processes",
-        "[-l|--json]",
+        "[-l] [--json]",
         "proclist -l",
         "cli_cmd_proclist()");
 
