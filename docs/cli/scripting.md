@@ -171,7 +171,7 @@ trap -l
 
 **Throttle**: A minimum interval (default 100ms) prevents high-frequency streams from flooding the handler. Override with `-i ms` (set to 0 for no throttle). Use `-n N` to limit the total number of fires.
 
-**Supported events**: Same as `wait_any` — `STREAM:name`, `FPS:fps.param<op>val`, `PROC:name:STATE`.
+**Supported events**: Same event types as `wait_any`, using the engine-trap forms `STREAM:name`, `FPS:fps.param<op>val`, and `PROC:name:STATE`.
 
 ### System Snapshot (`milkquery`)
 
