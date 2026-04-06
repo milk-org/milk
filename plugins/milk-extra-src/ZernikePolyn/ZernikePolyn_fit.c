@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <fitsio.h>
-
 #include "CLIcore.h"
 
 #include "COREMOD_arith/COREMOD_arith.h"
