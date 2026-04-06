@@ -1661,3 +1661,39 @@ proclist --json
 #DESC: proclist with -l and --json
 #EXPECT:OK
 proclist -l --json
+
+#DESC: fpslist --json (no FPS required)
+#EXPECT:OK
+fpslist --json
+
+#DESC: fpslist --json with nonexistent pattern
+#EXPECT:OK
+fpslist --json _nonexist_*
+
+#DESC: milkquery default (full snapshot, no FPS/streams/procs required)
+#EXPECT:OK
+milkquery
+
+#DESC: milkquery --fps only
+#EXPECT:OK
+milkquery --fps
+
+#DESC: milkquery --fps with nonexistent pattern
+#EXPECT:OK
+milkquery --fps _nonexist_*
+
+#DESC: milkquery --streams only
+#EXPECT:OK
+milkquery --streams
+
+#DESC: milkquery --procs only
+#EXPECT:OK
+milkquery --procs
+
+#DESC: milkquery --fps --streams --procs combined
+#EXPECT:OK
+milkquery --fps --streams --procs
+
+#DESC: milkquery unknown argument returns error
+#EXPECT:ERR
+milkquery foo

@@ -316,6 +316,8 @@ Params: `$1`..`$9`, `shift [N]`,
 fpsset fpsname param val # Write (command)
 fpsdump fpsname          # Dump all params
 fpsdump --json fpsname   # Dump as JSON object
+fpslist                  # List FPS instances
+fpslist --json           # List as JSON array
 waitfor_fps name 10      # Wait up to 10s
 wait -F name p=v 5       # Wait for param=val
 ```
@@ -373,6 +375,15 @@ wait_any [-t T] S:stream F:fps.p=v P:proc:STATE
 wait_any -t 10 S:cam F:dmcomb.gain>=0.5
 wait_any -t -1 P:wfsloop:STOP P:wfsloop:CRASHED
 # $? = 0..N-1 (event), 254 (timeout), 255 (error)
+```
+
+### System Snapshot
+
+```bash
+milkquery                    # Full JSON snapshot
+milkquery --fps [pattern]    # FPS only
+milkquery --streams [pat]    # Streams only
+milkquery --procs            # Processes only
 ```
 
 ### I/O
