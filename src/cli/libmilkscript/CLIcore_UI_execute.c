@@ -1602,6 +1602,9 @@ errno_t CLI_execute_line()
         return RETURN_SUCCESS;
     }
 
+    /* Poll engine event traps */
+    cli_engine_traps_poll();
+
     /* Expand aliases before anything else */
     cli_alias_expand();
 

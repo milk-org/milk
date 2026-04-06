@@ -1215,12 +1215,137 @@ int cli_script_intercept(const char *line)
         }
     }
 
-    /* trap 'cmd' SIGNAL [SIGNAL...] */
+    /* trap 'cmd' SIGNAL [SIGNAL...]
+     * trap -l
+     * Engine events: STREAM:name FPS:f.p=v
+     *                PROC:name:STATE */
     if(starts_with(p, "trap ")
        || starts_with(p, "trap\t"))
     {
         p += 4;
         p = strip_ws(p);
+
+        /* trap -l — list active traps */
+        if(strncmp(p, "-l", 2) == 0
+           && (p[2] == '\0'
+               || p[2] == ' '
+               || p[2] == '\t'))
+        {
+            printf("POSIX traps:\n");
+            for(int i = 0;
+                i < CLI_TRAP_MAXSIGS; i++)
+            {
+                if(cli_traps[i].used)
+                {
+                    printf("  sig=%d "
+                           "cmd='%s'\n",
+                           cli_traps[i]
+                               .signum,
+                           cli_traps[i].cmd);
+                }
+            }
+            printf("Engine traps:\n");
+            for(int i = 0;
+                i < CLI_ENGINE_TRAP_MAX;
+                i++)
+            {
+                CLI_ENGINE_TRAP *et =
+                    &cli_engine_traps[i];
+                if(!et->used)
+                {
+                    continue;
+                }
+                const char *tstr = "?";
+                if(et->type
+                   == CLI_ETRAP_STREAM)
+                {
+                    tstr = "STREAM";
+                }
+                else if(et->type
+                        == CLI_ETRAP_FPS)
+                {
+                    tstr = "FPS";
+                }
+                else if(et->type
+                        == CLI_ETRAP_PROC)
+                {
+                    tstr = "PROC";
+                }
+                printf("  %s:%s",
+                       tstr, et->target);
+                if(et->type
+                   == CLI_ETRAP_FPS)
+                {
+                    printf(".%s",
+                           et->param);
+                }
+                printf(
+                    " ival=%ldms"
+                    " n=%d/%d"
+                    " cmd='%s'\n",
+                    et->min_interval_ms,
+                    et->fire_count,
+                    et->max_fires,
+                    et->cmd);
+            }
+            return 1;
+        }
+
+        /* Parse optional flags before
+         * the quoted command */
+        long opt_interval_ms =
+            CLI_ETRAP_DEFAULT_MS;
+        int  opt_max_fires = -1;
+
+        while(*p == '-')
+        {
+            if(strncmp(p, "-n", 2) == 0)
+            {
+                p += 2;
+                while(*p == ' '
+                      || *p == '\t')
+                {
+                    p++;
+                }
+                char *endp = NULL;
+                long nv =
+                    strtol(p, &endp, 10);
+                if(endp != p && nv > 0)
+                {
+                    opt_max_fires =
+                        (int) nv;
+                    p = endp;
+                }
+            }
+            else if(strncmp(p, "-i", 2)
+                    == 0)
+            {
+                p += 2;
+                while(*p == ' '
+                      || *p == '\t')
+                {
+                    p++;
+                }
+                char *endp = NULL;
+                long iv =
+                    strtol(p, &endp, 10);
+                if(endp != p && iv >= 0)
+                {
+                    opt_interval_ms = iv;
+                    p = endp;
+                }
+            }
+            else
+            {
+                break;
+            }
+            while(*p == ' '
+                  || *p == '\t')
+            {
+                p++;
+            }
+        }
+
         /* Extract quoted command */
         char tcmd[CLI_TRAP_CMDLEN];
         tcmd[0] = '\0';
@@ -1241,15 +1366,16 @@ int cli_script_intercept(const char *line)
             }
         }
         p = strip_ws(p);
-        /* Parse signal names */
+
+        /* Parse signal / event names */
         while(*p != '\0')
         {
-            char sname[32];
+            char sname[128];
             int si = 0;
             while(*p != '\0'
                   && *p != ' '
                   && *p != '\t'
-                  && si < 31)
+                  && si < 127)
             {
                 sname[si++] = *p++;
             }
@@ -1259,9 +1385,363 @@ int cli_script_intercept(const char *line)
             {
                 break;
             }
+
+            /* Check for engine event
+             * prefix */
+            if(strncmp(sname, "STREAM:",
+                       7) == 0)
+            {
+                const char *nm =
+                    sname + 7;
+                /* Find or alloc slot */
+                int slot = -1;
+                for(int i = 0;
+                    i < CLI_ENGINE_TRAP_MAX;
+                    i++)
+                {
+                    if(cli_engine_traps[i]
+                           .used
+                       && cli_engine_traps[i]
+                              .type
+                       == CLI_ETRAP_STREAM
+                       && strcmp(
+                              cli_engine_traps
+                                  [i].target,
+                              nm)
+                       == 0)
+                    {
+                        slot = i;
+                        break;
+                    }
+                }
+                if(slot < 0)
+                {
+                    for(int i = 0;
+                        i
+                        < CLI_ENGINE_TRAP_MAX;
+                        i++)
+                    {
+                        if(!cli_engine_traps
+                                [i].used)
+                        {
+                            slot = i;
+                            break;
+                        }
+                    }
+                }
+                if(slot >= 0)
+                {
+                    CLI_ENGINE_TRAP *et =
+                        &cli_engine_traps
+                             [slot];
+                    if(tcmd[0] == '\0')
+                    {
+                        /* Clear trap */
+                        et->used = 0;
+                        et->connected = 0;
+                    }
+                    else
+                    {
+                        memset(et, 0,
+                            sizeof(*et));
+                        et->type =
+                            CLI_ETRAP_STREAM;
+                        strncpy(
+                            et->target, nm,
+                            sizeof(
+                                et->target)
+                            - 1);
+                        strncpy(
+                            et->cmd, tcmd,
+                            CLI_TRAP_CMDLEN
+                            - 1);
+                        et->min_interval_ms =
+                            opt_interval_ms;
+                        et->max_fires =
+                            opt_max_fires;
+                        et->used = 1;
+                    }
+                }
+                continue;
+            }
+
+            if(strncmp(sname, "FPS:",
+                       4) == 0)
+            {
+                const char *fp =
+                    sname + 4;
+                /* Split fpsname.param
+                 * and optional op+val */
+                char fpsn[128];
+                char parn[64];
+                int eop = CLI_ETRAP_OP_EQ;
+                double eval = 0.0;
+                int has_cmp = 0;
+                {
+                    char tmp[128];
+                    strncpy(tmp, fp,
+                            sizeof(tmp) - 1);
+                    tmp[sizeof(tmp) - 1] =
+                        '\0';
+
+                    /* Find operator */
+                    char *opp = NULL;
+                    char *p_ne =
+                        strstr(tmp, "!=");
+                    char *p_ge =
+                        strstr(tmp, ">=");
+                    char *p_le =
+                        strstr(tmp, "<=");
+                    char *p_eq =
+                        strchr(tmp, '=');
+
+                    if(p_ne)
+                    {
+                        opp = p_ne;
+                        eop = CLI_ETRAP_OP_NE;
+                        *opp = '\0';
+                        eval = strtod(
+                            opp + 2, NULL);
+                        has_cmp = 1;
+                    }
+                    else if(p_ge)
+                    {
+                        opp = p_ge;
+                        eop = CLI_ETRAP_OP_GE;
+                        *opp = '\0';
+                        eval = strtod(
+                            opp + 2, NULL);
+                        has_cmp = 1;
+                    }
+                    else if(p_le)
+                    {
+                        opp = p_le;
+                        eop = CLI_ETRAP_OP_LE;
+                        *opp = '\0';
+                        eval = strtod(
+                            opp + 2, NULL);
+                        has_cmp = 1;
+                    }
+                    else if(p_eq)
+                    {
+                        opp = p_eq;
+                        eop = CLI_ETRAP_OP_EQ;
+                        *opp = '\0';
+                        eval = strtod(
+                            opp + 1, NULL);
+                        has_cmp = 1;
+                    }
+
+                    /* Split at dot */
+                    char *dot =
+                        strchr(tmp, '.');
+                    if(dot)
+                    {
+                        *dot = '\0';
+                        strncpy(fpsn, tmp,
+                            sizeof(fpsn) - 1);
+                        fpsn[sizeof(fpsn)
+                             - 1] = '\0';
+                        strncpy(parn,
+                            dot + 1,
+                            sizeof(parn) - 1);
+                        parn[sizeof(parn)
+                             - 1] = '\0';
+                    }
+                    else
+                    {
+                        strncpy(fpsn, tmp,
+                            sizeof(fpsn) - 1);
+                        fpsn[sizeof(fpsn)
+                             - 1] = '\0';
+                        parn[0] = '\0';
+                    }
+                }
+
+                int slot = -1;
+                for(int i = 0;
+                    i < CLI_ENGINE_TRAP_MAX;
+                    i++)
+                {
+                    if(!cli_engine_traps
+                            [i].used)
+                    {
+                        slot = i;
+                        break;
+                    }
+                }
+                if(slot >= 0)
+                {
+                    CLI_ENGINE_TRAP *et =
+                        &cli_engine_traps
+                             [slot];
+                    if(tcmd[0] == '\0')
+                    {
+                        et->used = 0;
+                        et->connected = 0;
+                    }
+                    else
+                    {
+                        memset(et, 0,
+                            sizeof(*et));
+                        et->type =
+                            CLI_ETRAP_FPS;
+                        strncpy(
+                            et->target, fpsn,
+                            sizeof(
+                                et->target)
+                            - 1);
+                        strncpy(
+                            et->param, parn,
+                            sizeof(et->param)
+                            - 1);
+                        et->op = eop;
+                        et->has_cmp = has_cmp;
+                        et->cmpval = eval;
+                        strncpy(
+                            et->cmd, tcmd,
+                            CLI_TRAP_CMDLEN
+                            - 1);
+                        et->min_interval_ms =
+                            opt_interval_ms;
+                        et->max_fires =
+                            opt_max_fires;
+                        et->used = 1;
+                    }
+                }
+                continue;
+            }
+
+            if(strncmp(sname, "PROC:",
+                       5) == 0)
+            {
+                const char *pp =
+                    sname + 5;
+                char pname[128];
+                int pstate = 0;
+                {
+                    char *col =
+                        strchr(pp, ':');
+                    if(col)
+                    {
+                        size_t len =
+                            (size_t)(col
+                                     - pp);
+                        if(len
+                           >= sizeof(pname))
+                        {
+                            len = sizeof(
+                                      pname)
+                                  - 1;
+                        }
+                        strncpy(pname, pp,
+                                len);
+                        pname[len] = '\0';
+                        const char *ss =
+                            col + 1;
+                        if(strcasecmp(
+                               ss, "ACTIVE")
+                           == 0)
+                        {
+                            pstate =
+                                PROCESSINFO_LOOPSTAT_ACTIVE;
+                        }
+                        else if(strcasecmp(
+                                    ss,
+                                    "STOP")
+                                == 0)
+                        {
+                            pstate =
+                                PROCESSINFO_LOOPSTAT_STOP;
+                        }
+                        else if(strcasecmp(
+                                    ss,
+                                    "PAUSE")
+                                == 0)
+                        {
+                            pstate =
+                                PROCESSINFO_LOOPSTAT_PAUSE;
+                        }
+                        else if(strcasecmp(
+                                    ss,
+                                    "CRASHED")
+                                == 0)
+                        {
+                            pstate =
+                                PROCESSINFO_LOOPSTAT_CRASHED;
+                        }
+                        else if(strcasecmp(
+                                    ss,
+                                    "ERROR")
+                                == 0)
+                        {
+                            pstate =
+                                PROCESSINFO_LOOPSTAT_ERROR;
+                        }
+                    }
+                    else
+                    {
+                        strncpy(pname, pp,
+                            sizeof(pname)
+                            - 1);
+                        pname[sizeof(pname)
+                              - 1] = '\0';
+                    }
+                }
+
+                int slot = -1;
+                for(int i = 0;
+                    i < CLI_ENGINE_TRAP_MAX;
+                    i++)
+                {
+                    if(!cli_engine_traps
+                            [i].used)
+                    {
+                        slot = i;
+                        break;
+                    }
+                }
+                if(slot >= 0)
+                {
+                    CLI_ENGINE_TRAP *et =
+                        &cli_engine_traps
+                             [slot];
+                    if(tcmd[0] == '\0')
+                    {
+                        et->used = 0;
+                        et->connected = 0;
+                    }
+                    else
+                    {
+                        memset(et, 0,
+                            sizeof(*et));
+                        et->type =
+                            CLI_ETRAP_PROC;
+                        strncpy(
+                            et->target,
+                            pname,
+                            sizeof(
+                                et->target)
+                            - 1);
+                        et->proc_state =
+                            pstate;
+                        strncpy(
+                            et->cmd, tcmd,
+                            CLI_TRAP_CMDLEN
+                            - 1);
+                        et->min_interval_ms =
+                            opt_interval_ms;
+                        et->max_fires =
+                            opt_max_fires;
+                        et->used = 1;
+                    }
+                }
+                continue;
+            }
+
+            /* POSIX signal name */
             int sn =
                 cli_trap_signum(sname);
-            /* Find or alloc slot */
             int slot = -1;
             for(int i = 0;
                 i < CLI_TRAP_MAXSIGS;

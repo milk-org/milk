@@ -455,6 +455,28 @@ void help_topic_flowcontrol(void)
            C_CMD "= != >= <=" C_RST
            " (e.g. F:dmcomb.gain>=0.5)\n");
     printf("\n");
+    printf(C_HDR "Engine Event Traps:\n" C_RST);
+    printf("  " C_CMD "trap 'cmd' "
+           "STREAM:name" C_RST
+           "  fire on stream update\n");
+    printf("  " C_CMD "trap 'cmd' "
+           "FPS:f.p=v" C_RST
+           "    fire on FPS match\n");
+    printf("  " C_CMD "trap 'cmd' "
+           "PROC:n:STATE" C_RST
+           "  fire on state\n");
+    printf("  " C_CMD "trap '' "
+           "STREAM:name" C_RST
+           "    clear trap\n");
+    printf("  " C_CMD "trap -l" C_RST
+           "              list traps\n");
+    printf("  Flags: "
+           C_CMD "-i ms" C_RST
+           " throttle interval (def 100ms)"
+           "  "
+           C_CMD "-n N" C_RST
+           " fire count limit\n");
+    printf("\n");
 }
 
 
