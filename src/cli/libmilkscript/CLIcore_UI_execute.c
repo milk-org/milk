@@ -31,6 +31,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
+#include <errno.h>
 #include <fnmatch.h>
 #include <glob.h>
 #include <strings.h>
@@ -698,8 +699,28 @@ static int cli_run_external(
             argv, environ);
         if(ret != 0)
         {
-            fprintf(stderr, "milk-cli: %s: not found\n", argv[0]);
-            return 127; /* command not found */
+            if(ret == ENOENT)
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: not found\n",
+                        argv[0]);
+                return 127; /* command not found */
+            }
+            else if(ret == EACCES)
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: permission"
+                        " denied\n",
+                        argv[0]);
+                return 126; /* permission denied */
+            }
+            else
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: %s\n",
+                        argv[0], strerror(ret));
+                return 1;
+            }
         }
     }
 
