@@ -47,8 +47,6 @@
 
 /* LIKELY/UNLIKELY macros from milk_compiler.h */
 
-static long tret = 0;
-
 
 /* ================================================================
  * 1.  FPS COMPONENT IDENTITY
@@ -801,9 +799,11 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                                     " -> waiting\n",
                                     __LINE__);
                             }
+                            void *tret_ptr = NULL;
                             pthread_join(
                                 thread_savefits,
-                                NULL);
+                                &tret_ptr);
+                            free(tret_ptr);
                             if(VERBOSE > 0)
                             {
                                 printf(
