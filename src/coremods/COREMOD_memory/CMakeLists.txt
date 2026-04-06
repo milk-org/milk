@@ -39,6 +39,7 @@ set(SOURCEFILES
     list_image.c
     list_variable.c
     logshmim.c
+    logshmim_save.c
     read_shmim.c
     read_shmim_size.c
     read_shmimall.c
@@ -57,7 +58,9 @@ set(SOURCEFILES
     stream_poke.c
     stream_sem.c
     stream_TCP.c
+    stream_TCP_receive.c
     stream_UDP.c
+    stream_UDP_receive.c
     stream_updateloop.c
     stream_slice.c
     variable_ID.c
