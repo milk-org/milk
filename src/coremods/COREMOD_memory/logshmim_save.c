@@ -174,10 +174,6 @@ void *save_telemetry_fits_function(
             " at exposure end",
             TZ_MILK_STR);
 
-    printf(">>>>>>>> [%5d] tmsg->iname"
-           "  = \"%s\"\n",
-           __LINE__, tmsg->iname);
-
 #ifdef USE_CFITSIO
     saveFITS_opt_trunc(tmsg->iname,
                        tmsg->partial
