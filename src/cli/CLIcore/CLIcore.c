@@ -1740,7 +1740,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_fpsdump,
         "dump FPS parameters as key=value",
-        "[-t] <fpsname>",
+        "[-t|--json] <fpsname>",
         "fpsdump loopctrl",
         "cli_cmd_fpsdump()");
 
@@ -1749,7 +1749,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_streamlist,
         "list live SHM streams",
-        "[-l] [pattern]",
+        "[-l|--json] [pattern]",
         "streamlist -l dm*",
         "cli_cmd_streamlist()");
 
@@ -1758,7 +1758,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_proclist,
         "list active processes",
-        "[-l]",
+        "[-l|--json]",
         "proclist -l",
         "cli_cmd_proclist()");
 

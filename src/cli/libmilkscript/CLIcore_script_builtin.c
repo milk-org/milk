@@ -954,28 +954,35 @@ errno_t cli_cmd_fpslist(void)
  * Connects to the named FPS and prints every
  * active parameter as key=value lines.
  *
- * Usage: fpsdump [-t] <fpsname>
- *   -t  tab-separated: key\tTYPE\tvalue
+ * Usage: fpsdump [-t|--json] <fpsname>
+ *   -t      tab-separated: key\tTYPE\tvalue
+ *   --json  JSON object with raw typed values
  */
 errno_t cli_cmd_fpsdump(void)
 {
     int tabmode = 0;
+    int jsonmode = 0;
     int arg_idx = 1;
 
     if(data.cmdNBarg < 2)
     {
-        printf("Usage: fpsdump [-t] "
+        printf("Usage: fpsdump [-t|--json] "
                "<fpsname>\n");
         return RETURN_FAILURE;
     }
 
-    if(data.cmdNBarg >= 3
-       && strcmp(
-           data.cmdargtoken[1].val.string,
-           "-t") == 0)
+    if(data.cmdNBarg >= 3)
     {
-        tabmode = 1;
-        arg_idx = 2;
+        if(strcmp(data.cmdargtoken[1].val.string, "-t") == 0)
+        {
+            tabmode = 1;
+            arg_idx = 2;
+        }
+        else if(strcmp(data.cmdargtoken[1].val.string, "--json") == 0)
+        {
+            jsonmode = 1;
+            arg_idx = 2;
+        }
     }
 
     const char *fpsname =
@@ -994,6 +1001,9 @@ errno_t cli_cmd_fpsdump(void)
                "to FPS '%s'\n", fpsname);
         return RETURN_FAILURE;
     }
+
+    if(jsonmode) { printf("{\n"); }
+    int first_json_item = 1;
 
     for(int pi = 0;
         pi < fps.md->NBparamMAX; pi++)
@@ -1061,6 +1071,29 @@ errno_t cli_cmd_fpsdump(void)
                    fps.parray[pi].keyword[0],
                    tname, vstr);
         }
+        else if(jsonmode)
+        {
+            if(!first_json_item) { printf(",\n"); }
+            first_json_item = 0;
+            switch(fps.parray[pi].type)
+            {
+            case FPTYPE_INT64:
+                printf("  \"%s\": %lld", fps.parray[pi].keyword[0], (long long)fps.parray[pi].val.i64[0]);
+                break;
+            case FPTYPE_FLOAT64:
+                printf("  \"%s\": %g", fps.parray[pi].keyword[0], fps.parray[pi].val.f64[0]);
+                break;
+            case FPTYPE_FLOAT32:
+                printf("  \"%s\": %g", fps.parray[pi].keyword[0], fps.parray[pi].val.f32[0]);
+                break;
+            case FPTYPE_ONOFF:
+                printf("  \"%s\": %d", fps.parray[pi].keyword[0], (int)fps.parray[pi].val.i64[0]);
+                break;
+            default:
+                printf("  \"%s\": \"%s\"", fps.parray[pi].keyword[0], vstr);
+                break;
+            }
+        }
         else
         {
             printf("%s=%s\n",
@@ -1068,6 +1101,8 @@ errno_t cli_cmd_fpsdump(void)
                    vstr);
         }
     }
+
+    if(jsonmode) { printf("\n}\n"); }
 
     function_parameter_struct_disconnect(&fps);
 
@@ -1085,13 +1120,15 @@ errno_t cli_cmd_fpsdump(void)
  *
  * Scans SHM directory for *.im.shm files.
  *
- * Usage: streamlist [-l] [pattern]
+ * Usage: streamlist [-l|--json] [pattern]
  *   -l       long format: name WxH type cnt0
+ *   --json   JSON array of stream metadata
  *   pattern  glob filter (e.g. "dm*")
  */
 errno_t cli_cmd_streamlist(void)
 {
     int longmode = 0;
+    int jsonmode = 0;
     const char *pat = NULL;
     int argpos = 1;
 
@@ -1103,6 +1140,11 @@ errno_t cli_cmd_streamlist(void)
         if(strcmp(tok, "-l") == 0)
         {
             longmode = 1;
+            argpos = a + 1;
+        }
+        else if(strcmp(tok, "--json") == 0)
+        {
+            jsonmode = 1;
             argpos = a + 1;
         }
     }
@@ -1124,6 +1166,9 @@ errno_t cli_cmd_streamlist(void)
                shmdname);
         return RETURN_FAILURE;
     }
+
+    if(jsonmode) { printf("[\n"); }
+    int first_json_item = 1;
 
     while((de = readdir(d)) != NULL)
     {
@@ -1156,7 +1201,7 @@ errno_t cli_cmd_streamlist(void)
             continue;
         }
 
-        if(!longmode)
+        if(!longmode && !jsonmode)
         {
             printf("%s\n", sname);
         }
@@ -1170,7 +1215,30 @@ errno_t cli_cmd_streamlist(void)
             if(sret == IMAGESTREAMIO_SUCCESS
                && img.md != NULL)
             {
-                /* Build size string */
+                if(jsonmode)
+                {
+                    if(!first_json_item) { printf(",\n"); }
+                    first_json_item = 0;
+                    
+                    printf("  {\n");
+                    printf("    \"name\": \"%s\",\n", sname);
+                    printf("    \"naxis\": %u,\n", img.md->naxis);
+                    
+                    printf("    \"size\": [");
+                    for(int ax = 0; ax < img.md->naxis; ax++)
+                    {
+                        if(ax > 0) printf(", ");
+                        printf("%u", img.md->size[ax]);
+                    }
+                    printf("],\n");
+                    
+                    printf("    \"type\": \"%s\",\n", ImageStreamIO_typename(img.md->datatype));
+                    printf("    \"cnt0\": %lu\n", (unsigned long)img.md->cnt0);
+                    printf("  }");
+                }
+                else
+                {
+                    /* Build size string */
                 char szstr[64];
                 if(img.md->naxis == 1)
                 {
@@ -1203,15 +1271,20 @@ errno_t cli_cmd_streamlist(void)
                         img.md->datatype),
                     (unsigned long)
                         img.md->cnt0);
+                }
                 ImageStreamIO_closeIm(&img);
             }
             else
             {
-                printf("%-24s UNAVAIL\n",
-                       sname);
+                if(!jsonmode) {
+                    printf("%-24s UNAVAIL\n",
+                           sname);
+                }
             }
         }
     }
+    
+    if(jsonmode) { printf("\n]\n"); }
     closedir(d);
 
     return RETURN_SUCCESS;
@@ -1229,18 +1302,24 @@ errno_t cli_cmd_streamlist(void)
  * Iterates the processinfo list and prints
  * active process names, one per line.
  *
- * Usage: proclist [-l]
- *   -l  long format: name  state  freq
+ * Usage: proclist [-l] [--json]
+ *   -l      long format: name  state  freq
+ *   --json  JSON array of process metadata
  */
 errno_t cli_cmd_proclist(void)
 {
     int longmode = 0;
-    if(data.cmdNBarg >= 2
-       && strcmp(
-           data.cmdargtoken[1].val.string,
-           "-l") == 0)
+    int jsonmode = 0;
+    for(int a = 1; a < data.cmdNBarg; a++)
     {
-        longmode = 1;
+        if(strcmp(data.cmdargtoken[a].val.string, "-l") == 0)
+        {
+            longmode = 1;
+        }
+        else if(strcmp(data.cmdargtoken[a].val.string, "--json") == 0)
+        {
+            jsonmode = 1;
+        }
     }
 
     if(pinfolist == NULL)
@@ -1250,6 +1329,9 @@ errno_t cli_cmd_proclist(void)
         return RETURN_FAILURE;
     }
 
+    if(jsonmode) { printf("[\n"); }
+    int first_json_item = 1;
+
     for(int pi = 0;
         pi < PROCESSINFOLISTSIZE; pi++)
     {
@@ -1258,7 +1340,7 @@ errno_t cli_cmd_proclist(void)
             continue;
         }
 
-        if(!longmode)
+        if(!longmode && !jsonmode)
         {
             printf("%s\n",
                    pinfolist
@@ -1328,12 +1410,28 @@ errno_t cli_cmd_proclist(void)
                 }
             }
 
-            printf("%-24s %-8s %8.1f Hz\n",
-                   pinfolist
-                       ->pnamearray[pi],
-                   state, freq);
+            if(jsonmode)
+            {
+                if(!first_json_item) { printf(",\n"); }
+                first_json_item = 0;
+                printf("  {\n");
+                printf("    \"name\": \"%s\",\n", pinfolist->pnamearray[pi]);
+                printf("    \"state\": \"%s\",\n", state);
+                printf("    \"pid\": %d,\n", (int)fpid);
+                printf("    \"freq_hz\": %f\n", freq);
+                printf("  }");
+            }
+            else
+            {
+                printf("%-24s %-8s %8.1f Hz\n",
+                       pinfolist
+                           ->pnamearray[pi],
+                       state, freq);
+            }
         }
     }
+
+    if(jsonmode) { printf("\n]\n"); }
 
     return RETURN_SUCCESS;
 }
