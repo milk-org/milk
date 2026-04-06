@@ -1749,7 +1749,7 @@ void runCLI_cmd_init()
         __FILE__,
         cli_cmd_streamlist,
         "list live SHM streams",
-        "[-l|--json] [pattern]",
+        "[-l] [--json] [pattern]",
         "streamlist -l dm*",
         "cli_cmd_streamlist()");
 
