@@ -31,6 +31,7 @@
 #include "CLIcore_script.h"
 #include "CLIcore_UI_execute.h"
 
+#include <errno.h>
 #include <fnmatch.h>
 #include <glob.h>
 #include <strings.h>
@@ -698,7 +699,28 @@ static int cli_run_external(
             argv, environ);
         if(ret != 0)
         {
-            return 127; /* command not found */
+            if(ret == ENOENT)
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: not found\n",
+                        argv[0]);
+                return 127; /* command not found */
+            }
+            else if(ret == EACCES)
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: permission"
+                        " denied\n",
+                        argv[0]);
+                return 126; /* permission denied */
+            }
+            else
+            {
+                fprintf(stderr,
+                        "milk-cli: %s: %s\n",
+                        argv[0], strerror(ret));
+                return 1;
+            }
         }
     }
 
@@ -2498,15 +2520,18 @@ errno_t CLI_execute_line()
         data.CMDexecuted = 1;
     }
     else if(strncmp(data.CLIcmdline,
-                    "on_update ", 10) == 0)
+                    "on_update ", 10) == 0 ||
+            strcmp(data.CLIcmdline,
+                   "on_update") == 0)
     {
         /* on_update [-l] [-n N] <stream> { cmd }
          * Wait for stream semaphore,
          * then execute cmd.
          * -l: loop forever
          * -n N: loop N times */
-        const char *arg =
-            data.CLIcmdline + 10;
+        const char *arg = data.CLIcmdline;
+        if(strncmp(data.CLIcmdline, "on_update ", 10) == 0) arg += 10;
+        else arg += 9;
         while(*arg == ' ' || *arg == '\t')
         {
             arg++;
