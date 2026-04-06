@@ -2627,7 +2627,10 @@ int cli_script_intercept(const char *line)
             CMP_GE,
             CMP_LE
         };
-#define WA_MAX_EVENTS 16
+        enum
+        {
+            WA_MAX_EVENTS = 16
+        };
 
         struct wa_event
         {
