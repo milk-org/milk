@@ -146,6 +146,27 @@ elif [ $? -eq 1 ]; then
 fi
 ```
 
+### System Snapshot (`milkquery`)
+
+The `milkquery` command emits a unified JSON object containing FPS instances, shared-memory streams, and active processes in one call:
+
+```bash
+milkquery                     # Full snapshot
+milkquery --fps [pattern]     # FPS instances only
+milkquery --streams [pattern] # Streams only
+milkquery --procs             # Active processes only
+```
+
+Output is a JSON object with top-level keys `"fps"`, `"streams"`, and `"processes"`, each containing an array of entries. When a filter flag is used, only the requested section(s) appear.
+
+Individual list commands also support `--json`:
+
+```bash
+fpslist --json [pattern]      # Same as milkquery --fps
+streamlist --json [pattern]   # Same as milkquery --streams
+proclist --json               # Same as milkquery --procs
+```
+
 ### FPS Parameter Expansion
 
 You can effortlessly read FPS (Function Processing System) parameters directly into bash variables using the native `@fpsname.param` syntax:
