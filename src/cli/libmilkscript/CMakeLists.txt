@@ -34,6 +34,11 @@ set(MILKSCRIPT_SOURCES
     CLIcore_setSHMdir.c
     CLIcore_script.c
     CLIcore_script_intercept.c
+    CLIcore_script_intercept_process.c
+    CLIcore_script_intercept_environment.c
+    CLIcore_script_intercept_execution.c
+    CLIcore_script_intercept_flow.c
+    CLIcore_script_intercept_utils.c
     CLIcore_script_builtin.c
     CLIcore_script_case.c
     CLIcore_script_expand.c
