@@ -27,6 +27,7 @@ set(MILKSCRIPT_SOURCES
     CLIcore_checkargs_fps.c
     CLIcore_datainit.c
     CLIcore_help.c
+    CLIcore_help_command.c
     CLIcore_help_topics.c
     CLIcore_memory.c
     CLIcore_modules.c
@@ -44,6 +45,7 @@ set(MILKSCRIPT_SOURCES
     cli_calc_tokenizer.c
     cli_calc_parser.c
     cli_calc_functions.c
+    cli_calc_binops.c
     cli_calc_eval.c
     milkscript_stubs.c
     milkscript_api.c
