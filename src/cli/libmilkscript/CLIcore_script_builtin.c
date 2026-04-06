@@ -1120,7 +1120,7 @@ errno_t cli_cmd_fpsdump(void)
  *
  * Scans SHM directory for *.im.shm files.
  *
- * Usage: streamlist [-l|--json] [pattern]
+ * Usage: streamlist [-l] [--json] [pattern]
  *   -l       long format: name WxH type cnt0
  *   --json   JSON array of stream metadata
  *   pattern  glob filter (e.g. "dm*")
