@@ -1155,7 +1155,7 @@ void cli_pipe_setup(
         return;
     }
 
-    printf("\033[2;33m[shell pipe] %s\033[0m\n", rhs);
+    printf(COLORDIMYELLOW "[shell pipe] %s" COLORRST "\n", rhs);
     cli_export_vars_to_env();
     *pipe_fp = popen(rhs, "w");
     if(*pipe_fp != NULL)
