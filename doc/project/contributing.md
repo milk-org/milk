@@ -22,7 +22,7 @@ If you're reading this, you probably have a sense of how the package is organize
 Preferred public channels:
 - gitter for short bump message
 - github repository issues (with either `discussion` or a more appropriate label).
-  - Preferred for developper interaction.
+  - Preferred for developer interaction.
   - We may find an alternate means of communication if requests from non-developer users become significant.
 of course, maintain your best public & professional persona, and avoid sharing confidential information.
 
@@ -53,7 +53,7 @@ Your code can be in a separate repo entirely, a fork of MILK, directly in MILK. 
 
 ### Core engine developer:
 
-You're now contribution to the milk core engine, macros, common routines, so as to fix or expand them for your application. The core engine refers to code that is used and distributed across all the expansion modules.
+You're now contributing to the milk core engine, macros, common routines, so as to fix or expand them for your application. The core engine refers to code that is used and distributed across all the expansion modules.
 - You're expected to discuss your features and approach with the maintainers
 - Please document your work (traceable commits and docs do count here)
 - Provide testing, argue for significant changes (including of course your own intended application)
@@ -62,7 +62,7 @@ You're now contribution to the milk core engine, macros, common routines, so as 
 ### Maintainer
 
 - You get to make decisions.
-- You must promise to help everyone else and to review your code and to discuss any new things within the reasonable lmits of time and sanity.
+- You must promise to help everyone else and to review your code and to discuss any new things within the reasonable limits of time and sanity.
 - Besides critical project management decisions, you should strive to keep yourself out of the critical path.
 
 
@@ -89,7 +89,7 @@ Key points are (to be better sorted in the future):
 
 In this day and age, it seems we need to take a stance. Contributing with AI agents in MILK and CACAO is acceptable, under the following conditions (on top of all the other requirements that apply to content submitted to the repository).
 
-These specific rules are warranted by the enourmous power that is wielded. This enables modifications and submissions with a scope and speed that we haven't seen before; therefore, special rules apply, see `ai_guidelines.md`.
+These specific rules are warranted by the enormous power that is wielded. This enables modifications and submissions with a scope and speed that we haven't seen before; therefore, special rules apply, see `ai_guidelines.md`.
 The executive summary is the following:
 - Be reasonable
 - Maintain accountability

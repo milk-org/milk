@@ -21,9 +21,9 @@ Be mindful to generate content that is concise, meaningful, and scoped. Its volu
 
 AI should not be used to code, develop, and commit anything that is beyond the developers' knowledge and capability. It should enhance, not supersede.
 Therefore, we request contributors _avoid_:
-  - submitting software, docs, tooling, that they do not personnally understand;
-  - nor content they wouldn't have been able to do, given sufficient time, motivation, incentive;
-  - nor content they isn't justify, in its relevance, performance, project milestones, or otherwise project utility.
+  - submitting software, documentation, or tooling that they do not personally understand;
+  - submitting content they would not have been able to produce themselves, given sufficient time, motivation, and incentive;
+  - submitting content whose relevance, performance, alignment with project milestones, or overall utility to the project they cannot justify.
 
 ### **Principle of traceability**.
 

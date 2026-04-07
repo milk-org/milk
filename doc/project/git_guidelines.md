@@ -14,7 +14,7 @@ The workflow is one of upstream merging through github pull requests.
 - Configure your `git config pull.rebase true`. We do not want merge commits between the local and remote refs of the same branch. Ever.
 - Install the `pre-commit` package, which performs local check upon making a commit.
 ```bash
-milk>$ pip-install pre-commit # Installs pre-commit on your system
+milk>$ pip install pre-commit # Installs pre-commit on your system
 #OR
 milk>$ sudo apt install pre-commit
 milk>$ pre-commit install # Install the action hooks in the milk repository
@@ -32,7 +32,7 @@ If you undertake something major (feature, refactor, performance), open an issue
 
 A commit should be focused on a single _intent_, which can be one of the following:
 - Fixing a bug,
-- Implementating a new function,
+- Implementing a new function,
 - or feature,
 - or the skeleton thereof,
 - typos,
@@ -46,7 +46,7 @@ Long sequences of debug / incremental commits should be squashed and/or fixup'd.
 > [!NOTE]
 > If going back and forth between your local machine and a testing server, it is convenient to
 > - Make a temporary branch just for this purpose
-> - Use ssh-copy-id to forward you github identity to the server
+> - Use ssh-copy-id to forward your GitHub identity to the server
 > - At the end, perform an _interactive rebase_ and _squash_ all the debug commits into one.
 
 ## Pull requests
@@ -74,7 +74,7 @@ Increment the version number just prior to merge (FIXME: maybe we can make an ac
   - Collaborative branches should be `<intent>/<topic>` e.g. `feature/new_super_nice_hack`
   - Solo branches should be `<name>/<feature>` e.g. `vd/boring-repo-admin`
 - Perform your development. You can open a draft PR to have a place to engage in conversation with other contributors, users, or maintainers.
-- Run checks locally, preferably before submitting the PR / changing it to non-draft. You can definitily push to the remote so as to have backup and/or transit branch to a testing environment.
+- Run checks locally, preferably before submitting the PR / changing it to non-draft. You can definitely push to the remote so as to have backup and/or transit branch to a testing environment.
 - We will implement __blocking__ workflows for build, test failures, and various code hygiene criteria. They are blocking in the sense that Github won't let you merge.
 
 ### PR merging

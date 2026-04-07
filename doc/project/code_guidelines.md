@@ -16,7 +16,7 @@ This action installs git _hooks_, ie. actions that are run automatically when so
 Now, when you run a commit, `pre-commit` will run on all modified files and perform a number of actions:
 - if the commit is non-compliant, the commit is blocked.
 - for style/linting and other things, hooks will modify files into compliance automatically.
-  - but they will _not_ be stage; add them back to the git index
+  - but they will _not_ be staged; add them back to the git index
   - and commit again. This time, pre-commit will pass.
 
 You can bypass pre-commit and still perform a commit. Use `git commit -n|--no-verify`.
@@ -64,7 +64,7 @@ __Broader documentation expectations__
 
 ### Structural things (important)
 
-- No non-trivial or non-inline definitions in headers files.
+- No non-trivial or non-inline definitions in header files.
 - Do not use non-ascii characters (except for very specific reasons, eg. pipe or block symbols in progress bars...)
 - Keep changes minimal and scoped.
 - Variable names are absolutely crucial. We'll establish key conventions, but for instance use `d_` for anything that points to GPU memory
@@ -89,7 +89,7 @@ __Broader documentation expectations__
 
 ## Architecture and templating
 
-- For _module devs_, follow the template provided in `milk-module-example` and fill in the blanks ! More [somewhere].
+- For _module devs_, follow the template provided in `src/milk_module_example` and fill in the blanks ! More [somewhere].
 - For _core devs_... there's probably a lot to say. We must abide by conventions and ensure the overall coherence of the codebase. Always remember: less is more, in particular when what we're counting is technical debt.
 
 
@@ -104,4 +104,4 @@ There should be a refactoring and careful study of internal/external header file
 
 In an additional module, the licensing plan we've chosen allow you to combine your work, your license, and the milk core engine with pretty much any other dependencies' license, as long if it's for your own use. The milk core engine licensing strategy would also allow you to do things with very little restrictions as long as you keep it to dynamic linking. This may not be the case of your 3rd party licences.
 
-Since 3rd party licences may be concerning in their compatibility with LPGL, or on the contrary be GPL and compatible with nothing else, we request that any inclusing of an additional dependency, optional or not, goes through a conversation, review, and approval with the maintainers.
+Since 3rd party licences may be concerning in their compatibility with LGPL, or on the contrary be GPL and compatible with nothing else, we request that any inclusing of an additional dependency, optional or not, goes through a conversation, review, and approval with the maintainers.

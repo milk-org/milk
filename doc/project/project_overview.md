@@ -1,7 +1,7 @@
 # Project overview
 
 This document is to describe CACAO++ project structure, work packages, and be a reference for planning and execution.
-I want to provide a high-level view of progress and milestones, and keep track of various KPI.
+I want to provide a high-level view of progress and milestones, and keep track of various KPIs.
 
 ## Summary
 
