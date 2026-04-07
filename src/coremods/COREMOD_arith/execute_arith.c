@@ -1208,7 +1208,10 @@ int execute_arith(const char *cmd1)
                     }
                     else if(a1var && a2im)
                     {
-                        printf("function not available\n");
+                        PRINT_ERROR(
+                            "Function fmod not available "
+                            "for VARIABLE x IMAGE inputs");
+                        exit(0);
                     }
                     else if(a1im && a2var)
                     {
@@ -1310,6 +1313,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function testlt");
+                        exit(0);
                     }
                 }
                 else if(strcmp(fn, "testmt") == 0)
@@ -1343,6 +1347,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function testmt");
+                        exit(0);
                     }
                 }
                 else if(strcmp(fn, "perc") == 0)
@@ -1351,6 +1356,7 @@ int execute_arith(const char *cmd1)
                     {
                         PRINT_ERROR(
                             "Wrong input to function perc");
+                        exit(0);
                     }
                     else
                     {
@@ -1380,8 +1386,10 @@ int execute_arith(const char *cmd1)
                     }
                     else
                     {
-                        printf("Syntax error with "
-                               "function trunc\n");
+                        PRINT_ERROR(
+                            "Syntax error with "
+                            "function trunc");
+                        exit(0);
                     }
                 }
 
