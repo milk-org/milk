@@ -292,78 +292,24 @@ errno_t CLI_execute_line()
     /* ---- Calc expression evaluation ---- */
     /* Try native mathematical evaluation for
      * expressions like: crop1 = wfs + 1.0
-     * This works in all modes (interactive,
-     * -c flag, FIFO input).
-     * Must run BEFORE cli_try_var_assign()
-     * because var_assign intercepts space-
-     * separated = signs and doesn't handle
-     * image arithmetic or rename. */
-    if (data.CLIcmdline[0] != '\0'
-        && data.CLIcmdline[0] != '!')
+     * Must run BEFORE cli_try_var_assign().
+     * Skip if this is a known internal keyword
+     * or registered command, but NOT on the
+     * basis of '=' alone — "a=b+1" is arithmetic. */
+    if(data.CLIcmdline[0] != '\0'
+       && data.CLIcmdline[0] != '!')
     {
         char firstword[2048];
-        if (sscanf(data.CLIcmdline,
-                   " %2047s",
-                   firstword) == 1)
+        if(sscanf(data.CLIcmdline,
+                  " %2047s",
+                  firstword) == 1
+           && !is_internal_cmd(firstword, 0))
         {
-            int is_internal = 0;
-            if (strcmp(firstword, "if") == 0
-                || strcmp(firstword,
-                         "elif") == 0
-                || strcmp(firstword,
-                         "else") == 0
-                || strcmp(firstword,
-                         "fi") == 0
-                || strcmp(firstword,
-                         "for") == 0
-                || strcmp(firstword,
-                         "while") == 0
-                || strcmp(firstword,
-                         "do") == 0
-                || strcmp(firstword,
-                         "done") == 0
-                || strcmp(firstword,
-                         ".") == 0
-                || strcmp(firstword,
-                         "source") == 0)
+            if(cli_calc_eval_line(
+                   data.CLIcmdline))
             {
-                is_internal = 1;
-            }
-            if (!is_internal)
-            {
-                for (long i = 0;
-                     i < (long) data.NBcmd;
-                     i++)
-                {
-                    size_t cmdlen =
-                        strlen(
-                            data.cmd[i].key);
-                    if (strncmp(
-                            firstword,
-                            data.cmd[i].key,
-                            cmdlen) == 0
-                        && (firstword[cmdlen]
-                                == '\0'
-                            || firstword[
-                                   cmdlen]
-                                   == ':'
-                            || firstword[
-                                   cmdlen]
-                                   == ' '))
-                    {
-                        is_internal = 1;
-                        break;
-                    }
-                }
-            }
-            if (!is_internal)
-            {
-                if (cli_calc_eval_line(
-                        data.CLIcmdline))
-                {
-                    free(thetime);
-                    return RETURN_SUCCESS;
-                }
+                free(thetime);
+                return RETURN_SUCCESS;
             }
         }
     }
@@ -378,238 +324,44 @@ errno_t CLI_execute_line()
     }
 
     /* ---- Smart Shell Fallback Bypass ---- */
-    /* If the command does not start with an
-     * internal milk command, alias, or script
-     * keyword, bypass manual pipe/redirect
-     * parsing and instantly delegate the
-     * full pipeline to bash. */
-    if (data.CLIcmdline[0] != '\0'
-        && data.CLIcmdline[0] != '!'
-        && data.CLIloopON == 1)
+    /* If the first token is not a known internal
+     * milk keyword or command, instantly delegate
+     * the full line to the OS shell. */
+    if(data.CLIcmdline[0] != '\0'
+       && data.CLIcmdline[0] != '!'
+       && data.CLIloopON == 1)
     {
         char firstword[2048];
-        if (sscanf(data.CLIcmdline,
-                   " %2047s",
-                   firstword) == 1)
+        if(sscanf(data.CLIcmdline,
+                  " %2047s",
+                  firstword) == 1
+           && !is_internal_cmd(firstword, 1))
         {
-            int is_internal = 0;
-            if (strcmp(firstword, "if") == 0
-                || strcmp(firstword,
-                         "elif") == 0
-                || strcmp(firstword,
-                         "else") == 0
-                || strcmp(firstword,
-                         "fi") == 0
-                || strcmp(firstword,
-                         "for") == 0
-                || strcmp(firstword,
-                         "while") == 0
-                || strcmp(firstword,
-                         "do") == 0
-                || strcmp(firstword,
-                         "done") == 0
-                || strcmp(firstword,
-                         ".") == 0
-                || strcmp(firstword,
-                         "source") == 0)
-            {
-                is_internal = 1;
-            }
-            if (!is_internal)
-            {
-                const char *eq =
-                    strchr(firstword, '=');
-                if (eq != NULL)
-                {
-                    is_internal = 1;
-                }
-            }
-
-            if (!is_internal)
-            {
-                for (long i = 0;
-                     i < (long) data.NBcmd;
-                     i++)
-                {
-                    size_t cmdlen =
-                        strlen(
-                            data.cmd[i].key);
-                    if (strncmp(
-                            firstword,
-                            data.cmd[i].key,
-                            cmdlen) == 0
-                        && (firstword[cmdlen]
-                                == '\0'
-                            || firstword[
-                                   cmdlen]
-                                   == ':'
-                            || firstword[
-                                   cmdlen]
-                                   == ' '))
-                    {
-                        is_internal = 1;
-                        break;
-                    }
-                }
-            }
-            if (!is_internal)
-            {
-                printf(
-                    COLORDIMYELLOW
-                    "[shell bypass] %s"
-                    COLORRST "\n",
-                    data.CLIcmdline);
-                cli_history_log_shell(
-                    data.CLIcmdline);
-                cli_export_vars_to_env();
-                cli_run_external(
-                    data.CLIcmdline);
-                free(thetime);
-                return RETURN_SUCCESS;
-            }
+            printf(COLORDIMYELLOW
+                   "[shell bypass] %s"
+                   COLORRST "\n",
+                   data.CLIcmdline);
+            cli_history_log_shell(
+                data.CLIcmdline);
+            cli_export_vars_to_env();
+            cli_run_external(
+                data.CLIcmdline);
+            free(thetime);
+            return RETURN_SUCCESS;
         }
     }
 
     /* ---- Pipe to shell ---- */
     FILE *pipe_fp = NULL;
     int   saved_stdout_fd = -1;
-    {
-        char *pipe_pos = NULL;
-        {
-            int depth = 0;
-            int in_sq = 0;
-            int in_dq = 0;
-            for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
-            {
-                char c = data.CLIcmdline[si];
-                if(c == '\'' && !in_dq)
-                {
-                    in_sq = !in_sq;
-                }
-                else if(c == '"' && !in_sq)
-                {
-                    in_dq = !in_dq;
-                }
-                else if(!in_sq && !in_dq)
-                {
-                    if(c == '(')
-                    {
-                        depth++;
-                    }
-                    else if(c == ')' && depth > 0)
-                    {
-                        depth--;
-                    }
-                    else if(depth == 0 && c == '|')
-                    {
-                        pipe_pos = data.CLIcmdline + si;
-                        break;
-                    }
-                }
-            }
-        }
-        if(pipe_pos != NULL)
-        {
-            *pipe_pos = '\0';
-            const char *rhs = pipe_pos + 1;
-            while(*rhs == ' ' || *rhs == '\t')
-            {
-                rhs++;
-            }
-            if(*rhs != '\0')
-            {
-                printf(COLORDIMYELLOW
-                       "[shell pipe] %s"
-                       COLORRST "\n", rhs);
-                cli_export_vars_to_env();
-                pipe_fp = popen(rhs, "w");
-                if(pipe_fp != NULL)
-                {
-                    saved_stdout_fd =
-                        dup(STDOUT_FILENO);
-                    dup2(fileno(pipe_fp),
-                         STDOUT_FILENO);
-                }
-            }
-        }
-    }
+    cli_pipe_setup(&pipe_fp, &saved_stdout_fd);
 
     /* ---- Output redirect to file ---- */
     FILE *redir_fp = NULL;
     int   saved_stdout_redir = -1;
     if(pipe_fp == NULL)
     {
-        char *redir_pos = NULL;
-        {
-            int depth = 0;
-            int in_sq = 0;
-            int in_dq = 0;
-            for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
-            {
-                char c = data.CLIcmdline[si];
-                if(c == '\'' && !in_dq)
-                {
-                    in_sq = !in_sq;
-                }
-                else if(c == '"' && !in_sq)
-                {
-                    in_dq = !in_dq;
-                }
-                else if(!in_sq && !in_dq)
-                {
-                    if(c == '(')
-                    {
-                        depth++;
-                    }
-                    else if(c == ')' && depth > 0)
-                    {
-                        depth--;
-                    }
-                    else if(depth == 0 && c == '>')
-                    {
-                        redir_pos = data.CLIcmdline + si;
-                        break;
-                    }
-                }
-            }
-        }
-        if(redir_pos != NULL)
-        {
-            *redir_pos = '\0';
-            const char *fname = redir_pos + 1;
-            while(*fname == ' '
-                    || *fname == '\t')
-            {
-                fname++;
-            }
-            if(*fname != '\0')
-            {
-                char fpath[500];
-                strncpy(fpath, fname, 499);
-                fpath[499] = '\0';
-                {
-                    size_t fl = strlen(fpath);
-                    while(fl > 0
-                            && (fpath[fl - 1]
-                                == ' '
-                                || fpath[fl - 1]
-                                == '\t'
-                                || fpath[fl - 1]
-                                == '\n'))
-                    {
-                        fpath[--fl] = '\0';
-                    }
-                }
-                redir_fp = fopen(fpath, "w");
-                if(redir_fp != NULL)
-                {
-                    saved_stdout_redir =
-                        dup(STDOUT_FILENO);
-                    dup2(fileno(redir_fp),
-                         STDOUT_FILENO);
-                }
-            }
-        }
+        cli_redir_setup(&redir_fp, &saved_stdout_redir);
     }
 
     /* Log resolved command (type C) to
@@ -945,99 +697,34 @@ errno_t CLI_execute_line()
     if((data.CMDexecuted == 0) && (data.CLIloopON == 1))
     {
         /* Attempt transparent OS shell fallback.
-         * cli_run_external() uses posix_spawnp()
-         * for simple commands (no shell
-         * metacharacters) and /bin/sh -c only
-         * when required, avoiding the extra shell
-         * layer that system() always spawns. */
+         * Uses posix_spawnp() for simple commands
+         * and /bin/sh -c only when needed. */
         cli_export_vars_to_env();
         int sys_ret =
             cli_run_external(data.CLIcmdline);
         int os_not_found = (sys_ret == 127);
 
-        if(!os_not_found)
+        if(!os_not_found && sys_ret != -1)
         {
-            /* OS processed it — print shell tag */
             printf(COLORDIMYELLOW
                    "[shell] %s" COLORRST "\n",
                    data.CLIcmdline);
-            if(sys_ret != -1)
-            {
-                cli_last_retval = sys_ret;
-            }
+            cli_last_retval = sys_ret;
         }
 
         if(os_not_found)
         {
-#ifdef USE_READLINE
-            if(data.cmdNBarg > 0 && strlen(data.cmdargtoken[0].val.string) > 0)
-            {
-                const char *input_cmd = data.cmdargtoken[0].val.string;
-                
-                struct MatchNode {
-                    int dist;
-                    const char *cmd;
-                } matches[3] = { {9999, NULL}, {9999, NULL}, {9999, NULL} };
-
-                for(unsigned int i = 0; i < data.NBcmd; i++) {
-                    int d = levenshtein_distance((const char*)input_cmd,
-                        (const char*)data.cmd[i].key);
-                    
-                    if (d < matches[2].dist) {
-                        matches[2].dist = d;
-                        matches[2].cmd = data.cmd[i].key;
-                        
-                        if (matches[2].dist < matches[1].dist) {
-                            struct MatchNode tmp = matches[1];
-                            matches[1] = matches[2];
-                            matches[2] = tmp;
-                        }
-                        if (matches[1].dist < matches[0].dist) {
-                            struct MatchNode tmp = matches[0];
-                            matches[0] = matches[1];
-                            matches[1] = tmp;
-                        }
-                    }
-                }
-
-                if(matches[0].dist <= 4 && matches[0].cmd != NULL) {
-                    printf(COLORRED "Command '%s' not found. " COLORRESET
-                           "Did you mean:\n", input_cmd);
-                    for (int m = 0; m < 3; m++) {
-                        if (matches[m].cmd && matches[m].dist <= 4 && matches[m].dist < 9999) {
-                            printf("  - " COLORHBOLDCYAN "%s" COLORRESET "\n", matches[m].cmd);
-                        }
-                    }
-                } else {
-                    printf(COLORRED "Command not found, or command with no effect\n" COLORRESET);
-                }
-            }
-            else
-#endif
-            {
-                printf(COLORRED
-                       "Command not found, or command with no effect\n" COLORRESET);
-            }
+            const char *bad_cmd =
+                (data.cmdNBarg > 0)
+                ? data.cmdargtoken[0].val.string
+                : NULL;
+            handle_did_you_mean(bad_cmd);
         }
     }
 
-    /* Restore stdout if pipe was active */
-    if(pipe_fp != NULL)
-    {
-        fflush(stdout);
-        dup2(saved_stdout_fd, STDOUT_FILENO);
-        close(saved_stdout_fd);
-        pclose(pipe_fp);
-    }
-    /* Restore stdout if redirect was active */
-    if(redir_fp != NULL)
-    {
-        fflush(stdout);
-        dup2(saved_stdout_redir,
-             STDOUT_FILENO);
-        close(saved_stdout_redir);
-        fclose(redir_fp);
-    }
+    /* Restore stdout if pipe or redirect was active */
+    cli_pipe_teardown(pipe_fp, saved_stdout_fd);
+    cli_redir_teardown(redir_fp, saved_stdout_redir);
 
     free(thetime);
 
