@@ -485,20 +485,35 @@ int cli_handle_input_redir(
                 FILE *tf = fdopen(fd, "w");
                 if (tf)
                 {
-                    size_t bytes =
+                    int typesize =
                         ImageStreamIO_typesize(
-                            img->md->datatype)
-                        * img->md->nelement;
-                    fwrite(img->array.raw,
-                           1, bytes, tf);
-                    fclose(tf);
+                            img->md->datatype);
+                    if (typesize > 0)
+                    {
+                        size_t bytes =
+                            (size_t) typesize
+                            * img->md->nelement;
+                        fwrite(img->array.raw,
+                               1, bytes, tf);
+                        fclose(tf);
+                        ifp = fopen(tempname, "r");
+                        unlink(tempname);
+                    }
+                    else
+                    {
+                        fprintf(stderr,
+                                "stream redirection: "
+                                "invalid datatype for "
+                                "stream %s\n",
+                                sname);
+                        fclose(tf);
+                        unlink(tempname);
+                    }
                 }
                 else
                 {
                     close(fd);
                 }
-                ifp = fopen(tempname, "r");
-                unlink(tempname);
             }
             ImageStreamIO_closeIm(img);
         }
