@@ -40,6 +40,7 @@ int functionparameter_FPSprocess_cmdfile(
                                                  fps,
                                                  &taskstatus);
         }
+        free(FPScmdline);
         fclose(fpinputcmd);
     }
 
