@@ -661,33 +661,98 @@ errno_t cli_cmd_printf(void)
         /* Format specifiers */
         if(*p == '%')
         {
-            p++;
-            if(*p == '%')
+            const char *q = p + 1;
+
+            if(*q == '%')
             {
                 putchar('%');
+                p = q;
                 continue;
             }
-            if(*p == '\0')
+            if(*q == '\0')
             {
                 break;
             }
 
-            /* Collect full specifier */
+            /* Accept only: flags, numeric width, numeric precision,
+             * and conversions in diouxXfFeEgGsc.
+             * Reject '*', length modifiers, and unknown conversions.
+             */
             char spec[32];
-            int si = 0;
+            int  si = 0;
+            char fc;
+            int  valid = 1;
+
             spec[si++] = '%';
-            while(*p != '\0' && si < 30
-                  && strchr(
-                      "diouxXeEfFgGscpl",
-                      *p) == NULL)
+
+            while(*q != '\0'
+                  && strchr("-+ #0", *q) != NULL
+                  && si < (int) sizeof(spec) - 2)
             {
-                spec[si++] = *p++;
+                spec[si++] = *q++;
             }
-            if(*p == '\0')
+
+            if(*q == '*')
             {
-                break;
+                valid = 0;
             }
-            spec[si++] = *p;
+
+            while(valid
+                  && *q != '\0'
+                  && *q >= '0'
+                  && *q <= '9'
+                  && si < (int) sizeof(spec) - 2)
+            {
+                spec[si++] = *q++;
+            }
+
+            if(valid && *q == '.')
+            {
+                if(si >= (int) sizeof(spec) - 2)
+                {
+                    valid = 0;
+                }
+                else
+                {
+                    spec[si++] = *q++;
+                }
+
+                if(valid && *q == '*')
+                {
+                    valid = 0;
+                }
+
+                while(valid
+                      && *q != '\0'
+                      && *q >= '0'
+                      && *q <= '9'
+                      && si < (int) sizeof(spec) - 2)
+                {
+                    spec[si++] = *q++;
+                }
+            }
+
+            if(valid
+                  && *q != '\0'
+                  && strchr("hlLjzt", *q) != NULL)
+            {
+                valid = 0;
+            }
+
+            if(!valid || *q == '\0')
+            {
+                putchar('%');
+                continue;
+            }
+
+            fc = *q;
+            if(strchr("diouxXfFeEgGsc", fc) == NULL)
+            {
+                putchar('%');
+                continue;
+            }
+
+            spec[si++] = fc;
             spec[si] = '\0';
 
             const char *aval = "";
@@ -699,42 +764,51 @@ errno_t cli_cmd_printf(void)
                 ai++;
             }
 
-            /* Dispatch by conversion char */
-            char fc = spec[si - 1];
-            if(fc == 's' || fc == 'c')
             {
-                printf(spec, aval);
+                char outbuf[256];
+                int  nw = -1;
+
+                if(fc == 's')
+                {
+                    nw = snprintf(outbuf,
+                                  sizeof(outbuf),
+                                  spec, aval);
+                }
+                else if(fc == 'c')
+                {
+                    nw = snprintf(outbuf,
+                                  sizeof(outbuf),
+                                  spec,
+                                  (unsigned char) aval[0]);
+                }
+                else if(fc == 'd' || fc == 'i'
+                        || fc == 'o'
+                        || fc == 'u'
+                        || fc == 'x'
+                        || fc == 'X')
+                {
+                    long lv = strtol(aval,
+                                     NULL, 0);
+                    nw = snprintf(outbuf,
+                                  sizeof(outbuf),
+                                  spec, lv);
+                }
+                else
+                {
+                    double dv =
+                        strtod(aval, NULL);
+                    nw = snprintf(outbuf,
+                                  sizeof(outbuf),
+                                  spec, dv);
+                }
+
+                if(nw >= 0)
+                {
+                    fputs(outbuf, stdout);
+                }
             }
-            else if(fc == 'd' || fc == 'i'
-                    || fc == 'o'
-                    || fc == 'u'
-                    || fc == 'x'
-                    || fc == 'X')
-            {
-                long lv = strtol(aval,
-                                 NULL, 0);
-                printf(spec, lv);
-            }
-            else if(fc == 'f' || fc == 'F'
-                    || fc == 'e'
-                    || fc == 'E'
-                    || fc == 'g'
-                    || fc == 'G')
-            {
-                double dv =
-                    strtod(aval, NULL);
-                printf(spec, dv);
-            }
-            else if(fc == 'l')
-            {
-                long lv = strtol(aval,
-                                 NULL, 0);
-                printf(spec, lv);
-            }
-            else
-            {
-                printf("%s", aval);
-            }
+
+            p = q;
             continue;
         }
 
