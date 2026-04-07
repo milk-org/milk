@@ -6,7 +6,7 @@
  * Adding a new operation requires only one edit:
  * add a row to the appropriate table below.
  *
- * Up to four call surfaces per operation:
+ * Up to three call surfaces per operation:
  *   arith_image_<op>_IMGID(in1, in2, out)
  *   arith_image_<op>(name1, name2, name_out)
  *   arith_image_<op>_inplace(name1, name2)  [FULL ops only]
