@@ -1114,6 +1114,14 @@ int execute_arith(const char *cmd1)
                             tmp_name_index++;
                             type = ARITHTOKENTYPE_VARIABLE;
                         }
+                        else
+                        {
+                            PRINT_ERROR(
+                                "Function %s only "
+                                "applicable on images",
+                                fname);
+                            exit(0);
+                        }
                         break;
                     }
 
