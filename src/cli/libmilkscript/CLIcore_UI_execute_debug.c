@@ -122,7 +122,8 @@ errno_t CLI_execute_string(const char *cmd)
     char save_cmdline[STRINGMAXLEN_CLICMDLINE];
     strncpy(save_cmdline,
             data.CLIcmdline,
-            STRINGMAXLEN_CLICMDLINE);
+            STRINGMAXLEN_CLICMDLINE - 1);
+    save_cmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     strncpy(data.CLIcmdline,
             cmd,
             STRINGMAXLEN_CLICMDLINE - 1);
@@ -131,6 +132,8 @@ errno_t CLI_execute_string(const char *cmd)
     errno_t ret = CLI_execute_line();
     strncpy(data.CLIcmdline,
             save_cmdline,
-            STRINGMAXLEN_CLICMDLINE);
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] =
+        '\0';
     return ret;
 }
