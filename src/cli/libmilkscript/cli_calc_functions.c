@@ -41,6 +41,231 @@
  * closing ')'.
  */
 /**
+ * func_where - evaluate the where(cond, T, F) function.
+ * @cur_func:     pointer to current token accessor
+ * @advance_func: pointer to advance token accessor
+ *
+ * Parses three arguments and returns T where cond != 0,
+ * else F. Works for both scalar and image arguments.
+ * Extracted from parse_funccall() to reduce nesting depth.
+ */
+static val_t func_where(
+    cli_token *(*cur_func)(void),
+    cli_token *(*advance_func)(void)
+)
+{
+    val_t cond = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+
+    if(cur_func()->type != TOK_COMMA)
+    {
+        parse_errmsg("Expected ','");
+        return mk_double(0);
+    }
+    advance_func();
+
+    val_t argT = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+
+    if(cur_func()->type != TOK_COMMA)
+    {
+        parse_errmsg("Expected ','");
+        return mk_double(0);
+    }
+    advance_func();
+
+    val_t argF = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+
+    if(cur_func()->type != TOK_RPAREN)
+    {
+        parse_errmsg("Expected ')'");
+        return mk_double(0);
+    }
+    advance_func();
+
+    /* Scalar condition */
+    if(cond.type != VAL_STRING)
+    {
+        double c = to_double(cond);
+        return (c != 0) ? argT : argF;
+    }
+
+    /* Image condition — build mask and anti-mask */
+    char tmp_mask[200], tmp_imask[200];
+    char tmp_tpart[200], tmp_fpart[200], tmpn[200];
+    snprintf(tmp_mask,  200, "%s", alloc_tmpname());
+    snprintf(tmp_imask, 200, "%s", alloc_tmpname());
+    snprintf(tmp_tpart, 200, "%s", alloc_tmpname());
+    snprintf(tmp_fpart, 200, "%s", alloc_tmpname());
+    snprintf(tmpn,      200, "%s", alloc_tmpname());
+
+    if(!check_image(cond.sval))
+    {
+        return mk_string("");
+    }
+
+    arith_image_csttestne(cond.sval, 0.0, tmp_mask);
+    arith_image_cstteste( cond.sval, 0.0, tmp_imask);
+
+    if(argT.type == VAL_STRING)
+    {
+        if(!check_image(argT.sval))
+        {
+            return mk_string("");
+        }
+        arith_image_mult(argT.sval, tmp_mask, tmp_tpart);
+    }
+    else
+    {
+        arith_image_cstmult(tmp_mask,
+                            to_double(argT),
+                            tmp_tpart);
+    }
+
+    if(argF.type == VAL_STRING)
+    {
+        if(!check_image(argF.sval))
+        {
+            return mk_string("");
+        }
+        arith_image_mult(argF.sval, tmp_imask, tmp_fpart);
+    }
+    else
+    {
+        arith_image_cstmult(tmp_imask,
+                            to_double(argF),
+                            tmp_fpart);
+    }
+
+    arith_image_add(tmp_tpart, tmp_fpart, tmpn);
+    return mk_string(tmpn);
+}
+
+
+/**
+ * func_replace - evaluate the replace(s, old, new) function.
+ * @cur_func:     pointer to current token accessor
+ * @advance_func: pointer to advance token accessor
+ *
+ * Parses three string arguments and returns a new string
+ * with all occurrences of old replaced by new.
+ * Extracted from parse_funccall() to reduce nesting depth.
+ */
+static val_t func_replace(
+    cli_token *(*cur_func)(void),
+    cli_token *(*advance_func)(void)
+)
+{
+    val_t arg1 = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+    if(cur_func()->type != TOK_COMMA)
+    {
+        parse_errmsg("replace: need 3 args");
+        return mk_double(0);
+    }
+    advance_func();
+
+    val_t arg2 = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+    if(cur_func()->type != TOK_COMMA)
+    {
+        parse_errmsg("replace: need 3 args");
+        return mk_double(0);
+    }
+    advance_func();
+
+    val_t arg3 = parse_expr(0);
+    if(parse_error || eval_error)
+    {
+        return mk_double(0);
+    }
+    if(cur_func()->type != TOK_RPAREN)
+    {
+        parse_errmsg("Expected ')'");
+        return mk_double(0);
+    }
+    advance_func();
+
+    const char *s1 = NULL;
+    const char *s2 = NULL;
+    const char *s3 = NULL;
+    if(arg1.type == VAL_STRING)
+    {
+        const char *cv = cli_var_get(arg1.sval);
+        s1 = cv ? cv : arg1.sval;
+    }
+    if(arg2.type == VAL_STRING)
+    {
+        const char *cv = cli_var_get(arg2.sval);
+        s2 = cv ? cv : arg2.sval;
+    }
+    if(arg3.type == VAL_STRING)
+    {
+        const char *cv = cli_var_get(arg3.sval);
+        s3 = cv ? cv : arg3.sval;
+    }
+    if(!s1 || !s2 || !s3)
+    {
+        parse_errmsg("replace: all args must be strings");
+        return mk_double(0);
+    }
+
+    char result[CLI_CALC_TOKEN_MAXLEN];
+    result[0] = '\0';
+    int s2len = (int) strlen(s2);
+    if(s2len == 0)
+    {
+        strncpy(result, s1, sizeof(result) - 1);
+        result[sizeof(result) - 1] = '\0';
+    }
+    else
+    {
+        const char *p   = s1;
+        char       *w   = result;
+        char       *end = result + sizeof(result) - 1;
+        while(*p && w < end)
+        {
+            if(strncmp(p, s2, (size_t) s2len) == 0)
+            {
+                int rlen = (int) strlen(s3);
+                if(w + rlen < end)
+                {
+                    memcpy(w, s3, (size_t) rlen);
+                    w += rlen;
+                }
+                p += s2len;
+            }
+            else
+            {
+                *w++ = *p++;
+            }
+        }
+        *w = '\0';
+    }
+
+    const char *tmpn = alloc_tmpname();
+    cli_var_set(tmpn, result);
+    return mk_string(tmpn);
+}
+
+
+/**
  * @brief Evaluate mathematical or programmatic functions in CLI expressions
  *
  * This function dispatches supported calculator functions based on the
@@ -54,6 +279,7 @@
  */
 val_t parse_funccall(cli_token *ftok)
 {
+
     cli_token *(*cur_func)(void);
     cli_token *(*advance_func)(void);
 
@@ -273,87 +499,9 @@ val_t parse_funccall(cli_token *ftok)
         );
     }
 
-    if (ftok->type == TOK_FUNC_WHERE)
+    if(ftok->type == TOK_FUNC_WHERE)
     {
-        val_t cond = parse_expr(0);
-        if (parse_error || eval_error)
-            return mk_double(0);
-
-        if (cur_func()->type != TOK_COMMA)
-        {
-            parse_errmsg("Expected ','");
-            return mk_double(0);
-        }
-        advance_func();
-
-        val_t argT = parse_expr(0);
-        if (parse_error || eval_error)
-            return mk_double(0);
-
-        if (cur_func()->type != TOK_COMMA)
-        {
-            parse_errmsg("Expected ','");
-            return mk_double(0);
-        }
-        advance_func();
-
-        val_t argF = parse_expr(0);
-        if (parse_error || eval_error)
-            return mk_double(0);
-
-        if (cur_func()->type != TOK_RPAREN)
-        {
-            parse_errmsg("Expected ')'");
-            return mk_double(0);
-        }
-        advance_func();
-
-        /* If cond is scalar */
-        if (cond.type != VAL_STRING)
-        {
-            double c = to_double(cond);
-            if (c != 0) return argT;
-            else return argF;
-        }
-
-        /* cond is an image. Handle T/F types */
-        char tmp_mask[200], tmp_imask[200], tmp_tpart[200], tmp_fpart[200], tmpn[200];
-        snprintf(tmp_mask, 200, "%s", alloc_tmpname());
-        snprintf(tmp_imask, 200, "%s", alloc_tmpname());
-        snprintf(tmp_tpart, 200, "%s", alloc_tmpname());
-        snprintf(tmp_fpart, 200, "%s", alloc_tmpname());
-        snprintf(tmpn, 200, "%s", alloc_tmpname());
-
-        if (!check_image(cond.sval))
-            return mk_string("");
-
-        /* mask = (cond != 0) */
-        arith_image_csttestne(cond.sval, 0.0, tmp_mask);
-        /* imask = (cond == 0) */
-        arith_image_cstteste(cond.sval, 0.0, tmp_imask);
-
-        if (argT.type == VAL_STRING)
-        {
-            if (!check_image(argT.sval)) return mk_string("");
-            arith_image_mult(argT.sval, tmp_mask, tmp_tpart);
-        }
-        else
-        {
-            arith_image_cstmult(tmp_mask, to_double(argT), tmp_tpart);
-        }
-
-        if (argF.type == VAL_STRING)
-        {
-            if (!check_image(argF.sval)) return mk_string("");
-            arith_image_mult(argF.sval, tmp_imask, tmp_fpart);
-        }
-        else
-        {
-            arith_image_cstmult(tmp_imask, to_double(argF), tmp_fpart);
-        }
-
-        arith_image_add(tmp_tpart, tmp_fpart, tmpn);
-        return mk_string(tmpn);
+        return func_where(cur_func, advance_func);
     }
 
     if (ftok->type == TOK_FUNC_IMIM_D)
@@ -653,115 +801,9 @@ val_t parse_funccall(cli_token *ftok)
     }
 
     /* replace(s, old, new) -> string */
-    if (ftok->type == TOK_FUNC_SSS_S)
+    if(ftok->type == TOK_FUNC_SSS_S)
     {
-        val_t arg1 = parse_expr(0);
-        if (parse_error || eval_error)
-        {
-            return mk_double(0);
-        }
-        if (cur_func()->type != TOK_COMMA)
-        {
-            parse_errmsg(
-                "replace: need 3 args");
-            return mk_double(0);
-        }
-        advance_func();
-        val_t arg2 = parse_expr(0);
-        if (parse_error || eval_error)
-        {
-            return mk_double(0);
-        }
-        if (cur_func()->type != TOK_COMMA)
-        {
-            parse_errmsg(
-                "replace: need 3 args");
-            return mk_double(0);
-        }
-        advance_func();
-        val_t arg3 = parse_expr(0);
-        if (parse_error || eval_error)
-        {
-            return mk_double(0);
-        }
-        if (cur_func()->type != TOK_RPAREN)
-        {
-            parse_errmsg("Expected ')'");
-            return mk_double(0);
-        }
-        advance_func();
-
-        const char *s1 = NULL;
-        const char *s2 = NULL;
-        const char *s3 = NULL;
-        if (arg1.type == VAL_STRING)
-        {
-            const char *cv =
-                cli_var_get(arg1.sval);
-            s1 = cv ? cv : arg1.sval;
-        }
-        if (arg2.type == VAL_STRING)
-        {
-            const char *cv =
-                cli_var_get(arg2.sval);
-            s2 = cv ? cv : arg2.sval;
-        }
-        if (arg3.type == VAL_STRING)
-        {
-            const char *cv =
-                cli_var_get(arg3.sval);
-            s3 = cv ? cv : arg3.sval;
-        }
-        if (!s1 || !s2 || !s3)
-        {
-            parse_errmsg(
-                "replace: all args "
-                "must be strings");
-            return mk_double(0);
-        }
-
-        char result[CLI_CALC_TOKEN_MAXLEN];
-        result[0] = '\0';
-        int s2len = (int) strlen(s2);
-        if (s2len == 0)
-        {
-            strncpy(result, s1,
-                    sizeof(result) - 1);
-            result[sizeof(result) - 1]
-                = '\0';
-        }
-        else
-        {
-            const char *p = s1;
-            char *w = result;
-            char *end = result
-                + sizeof(result) - 1;
-            while (*p && w < end)
-            {
-                if (strncmp(p, s2,
-                    (size_t) s2len) == 0)
-                {
-                    int rlen =
-                        (int) strlen(s3);
-                    if (w + rlen < end)
-                    {
-                        memcpy(w, s3,
-                            (size_t) rlen);
-                        w += rlen;
-                    }
-                    p += s2len;
-                }
-                else
-                {
-                    *w++ = *p++;
-                }
-            }
-            *w = '\0';
-        }
-
-        const char *tmpn = alloc_tmpname();
-        cli_var_set(tmpn, result);
-        return mk_string(tmpn);
+        return func_replace(cur_func, advance_func);
     }
 
     /* hex(n), oct(n), bin(n) -> string */
