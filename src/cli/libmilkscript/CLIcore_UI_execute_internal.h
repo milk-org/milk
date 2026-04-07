@@ -121,4 +121,10 @@ int cli_handle_herestring_early(errno_t *retval);
  */
 int cli_handle_background(errno_t *retval);
 
+/**
+ * @brief Handle shell built-in commands.
+ * @return 1 if consumed, 0 otherwise
+ */
+int cli_handle_shell_builtins(void);
+
 #endif /* CLICORE_UI_EXECUTE_INTERNAL_H */
