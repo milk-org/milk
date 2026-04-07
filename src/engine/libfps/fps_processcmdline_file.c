@@ -23,6 +23,11 @@ int functionparameter_FPSprocess_cmdfile(
     FILE *fpinputcmd;
     fpinputcmd = fopen(infname, "r");
 
+    if(fpinputcmd == NULL)
+    {
+        fprintf(stderr, "ERROR: cannot open command file %s\n", infname);
+        return RETURN_FAILURE;
+    }
     if(fpinputcmd != NULL)
     {
         char   *FPScmdline = NULL;
