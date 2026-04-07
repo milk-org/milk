@@ -127,4 +127,65 @@ int cli_handle_background(errno_t *retval);
  */
 int cli_handle_shell_builtins(void);
 
+/**
+ * @brief Test whether firstword names an internal
+ * milk command, keyword, or assignment.
+ * @param firstword  First token of the command line
+ * @return 1 if internal, 0 if external
+ */
+int is_internal_cmd(const char *firstword);
+
+/**
+ * @brief Set up pipe-to-shell stdout redirect.
+ * Splits cmd at the first unquoted '|', opens
+ * popen() on the RHS, and dup2s stdout.  Caller
+ * must call cli_pipe_teardown() when done.
+ * @param[out] pipe_fp           opened popen handle (or NULL)
+ * @param[out] saved_stdout_fd   dup'd original stdout fd
+ */
+void cli_pipe_setup(
+    FILE **pipe_fp,
+    int   *saved_stdout_fd
+);
+
+/**
+ * @brief Restore stdout after pipe and close the pipe.
+ * @param pipe_fp          handle returned by cli_pipe_setup
+ * @param saved_stdout_fd  fd returned by cli_pipe_setup
+ */
+void cli_pipe_teardown(
+    FILE *pipe_fp,
+    int   saved_stdout_fd
+);
+
+/**
+ * @brief Set up file-redirect stdout (> file).
+ * Splits cmd at the first unquoted '>', opens the
+ * file, and dup2s stdout.  Caller must call
+ * cli_redir_teardown() when done.
+ * @param[out] redir_fp           opened file handle (or NULL)
+ * @param[out] saved_stdout_fd    dup'd original stdout fd
+ */
+void cli_redir_setup(
+    FILE **redir_fp,
+    int   *saved_stdout_fd
+);
+
+/**
+ * @brief Restore stdout after file redirect.
+ * @param redir_fp         handle returned by cli_redir_setup
+ * @param saved_stdout_fd  fd returned by cli_redir_setup
+ */
+void cli_redir_teardown(
+    FILE *redir_fp,
+    int   saved_stdout_fd
+);
+
+/**
+ * @brief Print "did you mean?" suggestions for an
+ * unknown command using Levenshtein distance.
+ * @param input_cmd  The command string that was not found
+ */
+void handle_did_you_mean(const char *input_cmd);
+
 #endif /* CLICORE_UI_EXECUTE_INTERNAL_H */
