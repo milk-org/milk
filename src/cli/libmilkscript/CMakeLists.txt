@@ -22,6 +22,9 @@ pkg_check_modules(CFITSIO cfitsio)
 
 set(MILKSCRIPT_SOURCES
     CLIcore_UI_execute.c
+    CLIcore_UI_execute_debug.c
+    CLIcore_UI_execute_preproc.c
+    CLIcore_UI_execute_redir.c
     CLIcore_UI_alias.c
     CLIcore_checkargs.c
     CLIcore_checkargs_fps.c
