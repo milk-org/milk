@@ -313,6 +313,8 @@ static int etrap_check_fire(CLI_ENGINE_TRAP *et)
             strncpy(et->last_fpsval, cur,
                     sizeof(et->last_fpsval)
                     - 1);
+            et->last_fpsval[sizeof(et->last_fpsval)
+                            - 1] = '\0';
 
             if(match && !prev_match)
             {
