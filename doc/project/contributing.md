@@ -14,8 +14,8 @@ If you're reading this, you probably have a sense of how the package is organize
 
 - `code_guidelines.md`: style and in-code documentation rules.
 - `git_guidelines.md`: branching and pull request process.
-- `ai_guidelines.md`: philosophical comments about the use of AI agents for work in MILK.
-- `project_trace.md`: keep trace of project milestones, publication (and policy thereof), contributing teams and groups, and development directions.
+- `ai_guidelines.md`: guidelines for the use of AI agents for work in MILK.
+- `project_trace.md`: keeping trace of project milestones, publication (and policy thereof), contributing teams and groups, and development directions.
 
 ## Communication channels
 
@@ -27,7 +27,6 @@ Preferred public channels:
 of course, maintain your best public & professional persona, and avoid sharing confidential information.
 
 We strive for the reduction of noise, so please avoid using emails or DMs unless necessary, and similarly avoid tagging people excessively.
-It is my experience that people eventually mute means of communication that result in too much spam notifications.
 
 ## Peoples' roles
 
