@@ -27,22 +27,12 @@
  */
 
 
-/*
- * ============================================================
- *  History Expansion (!! and !$)
- * ============================================================
- *
- * Called at the very start of CLI_execute_line(),
- * before alias expansion.
- *
- * !!    → replace with last executed command
- * !$    → replace with last argument of previous cmd
- * !<prefix> → last command starting with <prefix>
- */
-
 /**
  * @brief Expand history references in the
  *        current command line.
+ *
+ * Called at the very start of CLI_execute_line(),
+ * before alias expansion.
  *
  * Supports:
  *   !!        — replay last command
@@ -188,12 +178,6 @@ void cli_save_last_argument(void)
 }
 
 
-/*
- * ============================================================
- *  Save History — export readline history
- * ============================================================
- */
-
 /**
  * @brief Write readline command history to a file.
  *
@@ -227,12 +211,6 @@ errno_t cli_savehistory(void)
 #endif
 }
 
-
-/*
- * ============================================================
- *  History <N> Command
- * ============================================================
- */
 
 /**
  * @brief Show recent readline history entries.
@@ -277,12 +255,6 @@ errno_t cli_history_show(void)
     return RETURN_SUCCESS;
 }
 
-
-/*
- * ============================================================
- *  Fuzzy History Search (searchhist)
- * ============================================================
- */
 
 /**
  * @brief Case-insensitive substring search
