@@ -48,7 +48,8 @@ set(SOURCEFILES
     fps_scan.c
     fps_tmux.c
     fps_processinfo.c
-    fps_processcmdline.c
+    fps_processcmdline_interactive.c
+    fps_processcmdline_file.c
     fps_process_fpsCMDarray.c
     fps_read_fpsCMD_fifo.c
     fps_userinputsetparamvalue.c
@@ -188,6 +189,7 @@ install(FILES
     fps_types.h
     fps_internal.h
     fps_globals.h
+    fps_processcmdline.h
     fps_cli_binding.h
     fps_cli_function.h
     fps_cli_function_registry.h
