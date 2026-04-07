@@ -119,14 +119,14 @@ int cli_fps_set_param(
     else if(ptype & FPTYPE_INT64)
     {
         fps.parray[pindex].val.i64[0] =
-            (int64_t) strtol(
+            (int64_t) strtoll(
                 valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
     else if(ptype & FPTYPE_UINT64)
     {
         fps.parray[pindex].val.ui64[0] =
-            (uint64_t) strtoul(
+            (uint64_t) strtoull(
                 valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
@@ -182,7 +182,9 @@ int cli_fps_set_param(
     else
     {
         printf("Error: unsupported param "
-               "type 0x%x\n", ptype);
+               "type 0x%x for '%s' in "
+               "FPS '%s'\n",
+               ptype, pname, fpsname);
         function_parameter_struct_disconnect(
             &fps);
         return -1;
