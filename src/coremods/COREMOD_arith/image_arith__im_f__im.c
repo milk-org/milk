@@ -27,7 +27,7 @@
 #include "image_arith__im_f__im.h"
 
 
-/* CST_OPS_* tables are defined in image_arith__im_f__im.h */
+/* MILK_CST_OPS_* tables are defined in image_arith__im_f__im.h */
 
 
 
@@ -46,8 +46,8 @@ int arith_image_cst##op##_IMGID(  \
         imgin, f1, imgout);       \
 }
 
-CST_OPS_OPT_FULL(DEFINE_IMGID_OPT)
-CST_OPS_OPT_NOIP(DEFINE_IMGID_OPT)
+MILK_CST_OPS_OPT_FULL(DEFINE_IMGID_OPT)
+MILK_CST_OPS_OPT_NOIP(DEFINE_IMGID_OPT)
 #undef DEFINE_IMGID_OPT
 
 
@@ -65,7 +65,7 @@ int arith_image_cst##op##_IMGID(    \
         imgin, f1, imgout, &fptr);  \
 }
 
-CST_OPS_FPTR_FULL(DEFINE_IMGID_FPTR)
+MILK_CST_OPS_FPTR_FULL(DEFINE_IMGID_FPTR)
 #undef DEFINE_IMGID_FPTR
 
 
@@ -107,9 +107,9 @@ int arith_image_cst##op(                     \
     return ret;                              \
 }
 
-CST_OPS_OPT_FULL(DEFINE_CST_STRING)
-CST_OPS_FPTR_FULL(DEFINE_CST_STRING)
-CST_OPS_OPT_NOIP(DEFINE_CST_STRING)
+MILK_CST_OPS_OPT_FULL(DEFINE_CST_STRING)
+MILK_CST_OPS_FPTR_FULL(DEFINE_CST_STRING)
+MILK_CST_OPS_OPT_NOIP(DEFINE_CST_STRING)
 #undef DEFINE_CST_STRING
 
 

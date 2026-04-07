@@ -5,7 +5,7 @@
  * Applies a single math function to every pixel of
  * an input image, producing an output image.
  *
- * All call surfaces are generated from the UNARY_OPS
+ * All call surfaces are generated from the MILK_UNARY_OPS
  * X-macro table:
  *
  *  - arith_image_<op>_IMGID(imgin, imgout)
@@ -30,7 +30,7 @@
 #include "image_arith__im__im.h"
 
 
-/* UNARY_OPS table is defined in image_arith__im__im.h */
+/* MILK_UNARY_OPS table is defined in image_arith__im__im.h */
 
 
 
@@ -47,7 +47,7 @@ int arith_image_##op##_IMGID(  \
         imgin, imgout);        \
 }
 
-UNARY_OPS(DEFINE_IMGID)
+MILK_UNARY_OPS(DEFINE_IMGID)
 #undef DEFINE_IMGID
 
 
@@ -68,7 +68,7 @@ int arith_image_##op(                        \
         &imgin, &imgout);                    \
 }
 
-UNARY_OPS(DEFINE_STRING)
+MILK_UNARY_OPS(DEFINE_STRING)
 #undef DEFINE_STRING
 
 
@@ -85,5 +85,5 @@ int arith_image_##op##_inplace(   \
     return 0;                     \
 }
 
-UNARY_OPS(DEFINE_INPLACE)
+MILK_UNARY_OPS(DEFINE_INPLACE)
 #undef DEFINE_INPLACE

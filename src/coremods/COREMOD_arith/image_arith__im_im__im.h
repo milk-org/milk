@@ -12,8 +12,8 @@
  *   arith_image_<op>_inplace(name1, name2)  [FULL ops only]
  */
 
-#ifndef IMAGE_ARITH__IM_IM__IM_H
-#define IMAGE_ARITH__IM_IM__IM_H
+#ifndef IMAGE_ARITH_IM_IM_IM_H
+#define IMAGE_ARITH_IM_IM_IM_H
 
 #include <libfps/IMGID.h>
 
@@ -23,10 +23,10 @@ double Ptrunc(double a, double b, double c);
 /* ==========================================================
  * X-macro operation tables.
  *
- * BINARY_OPS_FULL — ops with all call surfaces
+ * MILK_BINARY_OPS_FULL — ops with all call surfaces
  *   (IMGID, string, inplace)
  *
- * BINARY_OPS_NOIP — ops with IMGID + string only
+ * MILK_BINARY_OPS_NOIP — ops with IMGID + string only
  *   (no inplace variants in the public API)
  *
  * X(op, fptr)
@@ -34,29 +34,29 @@ double Ptrunc(double a, double b, double c);
  *   fptr — function-pointer (for inplace dispatch)
  * ========================================================== */
 
-#define BINARY_OPS_FULL(X) \
-    X(fmod,   Pfmod)       \
-    X(pow,    Ppow)        \
-    X(add,    Padd)        \
-    X(sub,    Psub)        \
-    X(mult,   Pmult)       \
-    X(div,    Pdiv)        \
-    X(minv,   Pminv)       \
-    X(maxv,   Pmaxv)       \
-    X(testlt, Ptestlt)     \
+#define MILK_BINARY_OPS_FULL(X) \
+    X(fmod,   Pfmod)            \
+    X(pow,    Ppow)             \
+    X(add,    Padd)             \
+    X(sub,    Psub)             \
+    X(mult,   Pmult)            \
+    X(div,    Pdiv)             \
+    X(minv,   Pminv)            \
+    X(maxv,   Pmaxv)            \
+    X(testlt, Ptestlt)          \
     X(testmt, Ptestmt)
 
-#define BINARY_OPS_NOIP(X) \
-    X(teste,  Pteste)      \
-    X(testne, Ptestne)     \
-    X(testle, Ptestle)     \
-    X(testge, Ptestge)     \
-    X(and,    Pand)        \
+#define MILK_BINARY_OPS_NOIP(X) \
+    X(teste,  Pteste)           \
+    X(testne, Ptestne)          \
+    X(testle, Ptestle)          \
+    X(testge, Ptestge)          \
+    X(and,    Pand)             \
     X(or,     Por)
 
-#define BINARY_OPS_ALL(X) \
-    BINARY_OPS_FULL(X)    \
-    BINARY_OPS_NOIP(X)
+#define MILK_BINARY_OPS_ALL(X)  \
+    MILK_BINARY_OPS_FULL(X)     \
+    MILK_BINARY_OPS_NOIP(X)
 
 
 /* ----------------------------------------------------------
@@ -73,7 +73,7 @@ int arith_image_##op(                 \
     const char *ID2_name,             \
     const char *ID_out);
 
-BINARY_OPS_ALL(MILK_DECLARE_BINARY)
+MILK_BINARY_OPS_ALL(MILK_DECLARE_BINARY)
 #undef MILK_DECLARE_BINARY
 
 
@@ -86,7 +86,7 @@ int arith_image_##op##_inplace(               \
     const char *ID1_name,                     \
     const char *ID2_name);
 
-BINARY_OPS_FULL(MILK_DECLARE_BINARY_INPLACE)
+MILK_BINARY_OPS_FULL(MILK_DECLARE_BINARY_INPLACE)
 #undef MILK_DECLARE_BINARY_INPLACE
 
-#endif /* IMAGE_ARITH__IM_IM__IM_H */
+#endif /* IMAGE_ARITH_IM_IM_IM_H */

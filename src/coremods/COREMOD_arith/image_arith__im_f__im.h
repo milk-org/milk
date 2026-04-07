@@ -12,8 +12,8 @@
  *   arith_image_cst<op>_inplace(name, f1)   [FULL ops only]
  */
 
-#ifndef IMAGE_ARITH__IM_F__IM_H
-#define IMAGE_ARITH__IM_F__IM_H
+#ifndef IMAGE_ARITH_IM_F_IM_H
+#define IMAGE_ARITH_IM_F_IM_H
 
 #include <libfps/IMGID.h>
 
@@ -21,45 +21,45 @@
 /* ==========================================================
  * X-macro operation tables.
  *
- * CST_OPS_OPT_FULL  — optimized dispatch, with inplace
- * CST_OPS_FPTR_FULL — function-pointer dispatch, with inplace
- * CST_OPS_OPT_NOIP  — optimized dispatch, no inplace
+ * MILK_CST_OPS_OPT_FULL  — optimized dispatch, with inplace
+ * MILK_CST_OPS_FPTR_FULL — function-pointer dispatch, with inplace
+ * MILK_CST_OPS_OPT_NOIP  — optimized dispatch, no inplace
  *
  * X(op, tag_or_fptr)
  * ========================================================== */
 
 /** Optimized dispatch + inplace variants */
-#define CST_OPS_OPT_FULL(X) \
-    X(add,    optimized)     \
-    X(sub,    optimized)     \
-    X(mult,   optimized)     \
-    X(div,    optimized)     \
-    X(pow,    optimized)     \
-    X(testlt, optimized)     \
+#define MILK_CST_OPS_OPT_FULL(X) \
+    X(add,    optimized)          \
+    X(sub,    optimized)          \
+    X(mult,   optimized)          \
+    X(div,    optimized)          \
+    X(pow,    optimized)          \
+    X(testlt, optimized)          \
     X(testmt, optimized)
 
 /** Function-pointer dispatch + inplace variants */
-#define CST_OPS_FPTR_FULL(X) \
-    X(fmod,   Pfmod)         \
-    X(subm,   Psubm)         \
-    X(div1,   Pdiv1)         \
-    X(maxv,   Pmaxv)         \
+#define MILK_CST_OPS_FPTR_FULL(X) \
+    X(fmod,   Pfmod)               \
+    X(subm,   Psubm)               \
+    X(div1,   Pdiv1)               \
+    X(maxv,   Pmaxv)               \
     X(minv,   Pminv)
 
 /** Optimized dispatch, no inplace variant */
-#define CST_OPS_OPT_NOIP(X) \
-    X(teste,  optimized)     \
-    X(testne, optimized)     \
-    X(testle, optimized)     \
-    X(testge, optimized)     \
-    X(and,    optimized)     \
+#define MILK_CST_OPS_OPT_NOIP(X) \
+    X(teste,  optimized)          \
+    X(testne, optimized)          \
+    X(testle, optimized)          \
+    X(testge, optimized)          \
+    X(and,    optimized)          \
     X(or,     optimized)
 
 /** Expand all three tables for macros that apply to all */
-#define CST_OPS_ALL(X)    \
-    CST_OPS_OPT_FULL(X)   \
-    CST_OPS_FPTR_FULL(X)  \
-    CST_OPS_OPT_NOIP(X)
+#define MILK_CST_OPS_ALL(X)      \
+    MILK_CST_OPS_OPT_FULL(X)     \
+    MILK_CST_OPS_FPTR_FULL(X)    \
+    MILK_CST_OPS_OPT_NOIP(X)
 
 
 /* ----------------------------------------------------------
@@ -76,7 +76,7 @@ int arith_image_cst##op(                 \
     double f1,                           \
     const char *ID_out);
 
-CST_OPS_ALL(IMAGE_ARITH_DECLARE_CST)
+MILK_CST_OPS_ALL(IMAGE_ARITH_DECLARE_CST)
 #undef IMAGE_ARITH_DECLARE_CST
 
 
@@ -89,8 +89,8 @@ int arith_image_cst##op##_inplace(               \
     const char *ID_name,                         \
     double f1);
 
-CST_OPS_OPT_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
-CST_OPS_FPTR_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+MILK_CST_OPS_OPT_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+MILK_CST_OPS_FPTR_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
 #undef IMAGE_ARITH_DECLARE_CST_INPLACE
 
-#endif /* IMAGE_ARITH__IM_F__IM_H */
+#endif /* IMAGE_ARITH_IM_F_IM_H */

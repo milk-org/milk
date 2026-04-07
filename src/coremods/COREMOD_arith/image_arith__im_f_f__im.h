@@ -3,8 +3,8 @@
  * @brief Image arithmetic: image + float + float → image
  */
 
-#ifndef IMAGE_ARITH__IM_F_F__IM_H
-#define IMAGE_ARITH__IM_F_F__IM_H
+#ifndef IMAGE_ARITH_IM_F_F_IM_H
+#define IMAGE_ARITH_IM_F_F_IM_H
 
 #include <libfps/IMGID.h>
 
@@ -28,4 +28,4 @@ int arith_image_trunc_inplace(const char *ID_name,
                               double f1,
                               double f2);
 
-#endif /* IMAGE_ARITH__IM_F_F__IM_H */
+#endif /* IMAGE_ARITH_IM_F_F_IM_H */

@@ -32,7 +32,7 @@
 #include "image_arith__im_im__im.h"
 
 
-/* BINARY_OPS_* tables are defined in image_arith__im_im__im.h */
+/* MILK_BINARY_OPS_* tables are defined in image_arith__im_im__im.h */
 
 
 
@@ -54,7 +54,7 @@ int arith_image_##op##_IMGID( \
         imgin1, imgin2, imgout);              \
 }
 
-BINARY_OPS_ALL(DEFINE_IMGID)
+MILK_BINARY_OPS_ALL(DEFINE_IMGID)
 #undef DEFINE_IMGID
 
 
@@ -104,7 +104,7 @@ int arith_image_##op(                        \
     return ret;                              \
 }
 
-BINARY_OPS_ALL(DEFINE_STRING)
+MILK_BINARY_OPS_ALL(DEFINE_STRING)
 #undef DEFINE_STRING
 
 
@@ -113,7 +113,7 @@ BINARY_OPS_ALL(DEFINE_STRING)
  *
  * Uses function-pointer dispatch via
  * arith_image_function_2_1_inplace().
- * Only generated for BINARY_OPS_FULL operations.
+ * Only generated for MILK_BINARY_OPS_FULL operations.
  * ---------------------------------------------------------- */
 
 #define DEFINE_INPLACE(op, fptr) \
@@ -126,7 +126,7 @@ int arith_image_##op##_inplace(              \
     return 0;                                \
 }
 
-BINARY_OPS_FULL(DEFINE_INPLACE)
+MILK_BINARY_OPS_FULL(DEFINE_INPLACE)
 #undef DEFINE_INPLACE
 
 
@@ -134,7 +134,7 @@ BINARY_OPS_FULL(DEFINE_INPLACE)
  * 4. In-place-by-ID wrappers  (ID,ID → ID1 modified)
  *
  * Legacy API using raw image slot indices.
- * Only generated for BINARY_OPS_FULL operations.
+ * Only generated for MILK_BINARY_OPS_FULL operations.
  * ---------------------------------------------------------- */
 
 
