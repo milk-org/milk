@@ -233,7 +233,9 @@ arith_image_dy_wrap(
  * expression is reduced iteratively by executing the
  * highest-priority unresolved operation at each step.
  *
- * Return: 0 on success, non-zero on parse error.
+ * Return: 0. Parse/runtime errors are reported through
+ * logging/error handling paths, and fatal errors may
+ * terminate execution instead of being returned.
  */
 int execute_arith(const char *cmd1)
 {
