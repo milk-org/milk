@@ -66,8 +66,9 @@ errno_t write_tracedebugfile()
                 /* Extract last word from path */
                 char str[STRINGMAXLEN_FULLFILENAME];
                 strcpy(str, dctestptarr[j].file);
+                char *slash = strrchr(str, '/');
                 char *lastword =
-                    strrchr(str, '/') + 1;
+                    (slash != NULL) ? (slash + 1) : str;
 
                 fprintf(fp,
                         "T %6ld %s %-20s"
