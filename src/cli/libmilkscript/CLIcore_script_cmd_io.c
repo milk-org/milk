@@ -45,8 +45,10 @@
  * both the fpsset command and the @fpsname.param=value
  * expansion syntax.
  *
- * Supports all FPS parameter types: INT64, FLOAT64,
- * FLOAT32, ONOFF, STRING.
+ * Supports FPS parameter types: INT32, UINT32,
+ * INT64, UINT64, FLOAT32, FLOAT64, ONOFF, PID, and
+ * all string-like types (STRING, FILENAME, DIRNAME,
+ * STREAMNAME, FPSNAME, etc.).
  *
  * @param fpsname  FPS shared-memory name
  * @param pname    Parameter key inside FPS
@@ -100,10 +102,31 @@ int cli_fps_set_param(
     uint32_t ptype =
         fps.parray[pindex].type;
 
-    if(ptype & FPTYPE_INT64)
+    if(ptype & FPTYPE_INT32)
+    {
+        fps.parray[pindex].val.i32[0] =
+            (int32_t) strtol(
+                valstr, NULL, 0);
+        fps.parray[pindex].cnt0++;
+    }
+    else if(ptype & FPTYPE_UINT32)
+    {
+        fps.parray[pindex].val.ui32[0] =
+            (uint32_t) strtoul(
+                valstr, NULL, 0);
+        fps.parray[pindex].cnt0++;
+    }
+    else if(ptype & FPTYPE_INT64)
     {
         fps.parray[pindex].val.i64[0] =
             (int64_t) strtol(
+                valstr, NULL, 0);
+        fps.parray[pindex].cnt0++;
+    }
+    else if(ptype & FPTYPE_UINT64)
+    {
+        fps.parray[pindex].val.ui64[0] =
+            (uint64_t) strtoul(
                 valstr, NULL, 0);
         fps.parray[pindex].cnt0++;
     }
@@ -135,7 +158,14 @@ int cli_fps_set_param(
         }
         fps.parray[pindex].cnt0++;
     }
-    else if(ptype & FPTYPE_STRING)
+    else if(ptype & FPTYPE_PID)
+    {
+        fps.parray[pindex].val.pid[0] =
+            (pid_t) strtol(
+                valstr, NULL, 0);
+        fps.parray[pindex].cnt0++;
+    }
+    else if(FPTYPE_IS_STRING(ptype))
     {
         strncpy(
             fps.parray[pindex]
@@ -151,8 +181,11 @@ int cli_fps_set_param(
     }
     else
     {
-        printf("Warning: unsupported param "
+        printf("Error: unsupported param "
                "type 0x%x\n", ptype);
+        function_parameter_struct_disconnect(
+            &fps);
+        return -1;
     }
 
     function_parameter_struct_disconnect(&fps);
