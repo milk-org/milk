@@ -63,30 +63,30 @@ double Ptrunc(double a, double b, double c);
  * Generated prototypes — IMGID and string APIs (all ops)
  * ---------------------------------------------------------- */
 
-#define _DECLARE_BINARY(op, fptr)   \
-int arith_image_##op##_IMGID(       \
-    IMGID *imgin1,                  \
-    IMGID *imgin2,                  \
-    IMGID *imgout);                 \
-int arith_image_##op(               \
-    const char *ID1_name,           \
-    const char *ID2_name,           \
+#define MILK_DECLARE_BINARY(op, fptr) \
+int arith_image_##op##_IMGID(         \
+    IMGID *imgin1,                    \
+    IMGID *imgin2,                    \
+    IMGID *imgout);                   \
+int arith_image_##op(                 \
+    const char *ID1_name,             \
+    const char *ID2_name,             \
     const char *ID_out);
 
-BINARY_OPS_ALL(_DECLARE_BINARY)
-#undef _DECLARE_BINARY
+BINARY_OPS_ALL(MILK_DECLARE_BINARY)
+#undef MILK_DECLARE_BINARY
 
 
 /* ----------------------------------------------------------
  * Generated prototypes — inplace API (FULL ops only)
  * ---------------------------------------------------------- */
 
-#define _DECLARE_BINARY_INPLACE(op, fptr) \
-int arith_image_##op##_inplace(           \
-    const char *ID1_name,                 \
+#define MILK_DECLARE_BINARY_INPLACE(op, fptr) \
+int arith_image_##op##_inplace(               \
+    const char *ID1_name,                     \
     const char *ID2_name);
 
-BINARY_OPS_FULL(_DECLARE_BINARY_INPLACE)
-#undef _DECLARE_BINARY_INPLACE
+BINARY_OPS_FULL(MILK_DECLARE_BINARY_INPLACE)
+#undef MILK_DECLARE_BINARY_INPLACE
 
 #endif /* IMAGE_ARITH__IM_IM__IM_H */
