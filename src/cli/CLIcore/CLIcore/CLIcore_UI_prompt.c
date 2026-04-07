@@ -146,15 +146,6 @@ errno_t cli_setprompt(void)
 }
 
 
-/*
- * ============================================================
- *  Brace Expansion
- * ============================================================
- *
- * Expand {N..M} into space-separated integers,
- * and {N..M..S} with step S.
- */
-
 /**
  * @brief Expand {N..M} and {N..M..S} brace ranges
  *

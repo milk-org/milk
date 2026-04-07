@@ -19,12 +19,6 @@
 
 
 
-/*
- * ============================================================
- *  Watch Command
- * ============================================================
- */
-
 /**
  * @brief CLI handler: watch <interval_ms> <command>
  *
@@ -150,12 +144,6 @@ watch_done:
 }
 
 
-/*
- * ============================================================
- *  Startup Script (~/.milkrc)
- * ============================================================
- */
-
 /**
  * @brief Source ~/.milkrc on startup.
  *
@@ -204,12 +192,6 @@ void cli_milkrc_load(void)
     fclose(fp);
 }
 
-
-/*
- * ============================================================
- *  Command Timing
- * ============================================================
- */
 
 /**
  * @brief Measure and report wall-clock execution
@@ -262,12 +244,6 @@ errno_t cli_time(void)
     return RETURN_SUCCESS;
 }
 
-
-/*
- * ============================================================
- *  Command Statistics
- * ============================================================
- */
 
 /**
  * @brief Display per-command invocation counts.
@@ -331,12 +307,6 @@ errno_t cli_cmdstats(void)
     return RETURN_SUCCESS;
 }
 
-
-/*
- * ============================================================
- *  Syntax Highlighting (optional, ON by default)
- * ============================================================
- */
 
 /**
  * @brief Toggle command execution timing display.
@@ -420,12 +390,6 @@ errno_t cli_syntax_highlight_toggle(void)
 }
 #endif
 
-
-/*
- * ============================================================
- *  Source Command — execute a milk script file
- * ============================================================
- */
 
 /**
  * @brief Execute a milk script file (source cmd).
@@ -527,12 +491,6 @@ errno_t cli_source(void)
 }
 
 
-/*
- * ============================================================
- *  Save Script — export variables and functions
- * ============================================================
- */
-
 /**
  * @brief Write all CLI variables and user functions
  *        to a file that can be sourced later.
@@ -602,12 +560,6 @@ errno_t cli_savescript(void)
     return RETURN_SUCCESS;
 }
 
-
-/*
- * ============================================================
- *  Session Logging
- * ============================================================
- */
 
 FILE *session_log_fp = NULL;
 struct timespec session_log_t0;
@@ -725,12 +677,6 @@ void cli_session_log_cmd(
         fflush(session_log_fp);
     }
 }
-
-/*
- * ============================================================
- *  Built-in cd / pwd
- * ============================================================
- */
 
 /**
  * @brief Change the current working directory.
