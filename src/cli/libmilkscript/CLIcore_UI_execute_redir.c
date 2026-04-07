@@ -858,20 +858,38 @@ int cli_handle_output_redir(
             if (ImageStreamIO_read_sharedmem_image_toIMAGE(
                     sname, img) == 0)
             {
+                int do_update = 0;
                 FILE *tf = fopen(tempname, "r");
                 if (tf)
                 {
-                    size_t bytes =
+                    int typesize =
                         ImageStreamIO_typesize(
-                            img->md->datatype)
-                        * img->md->nelement;
-                    size_t bread = fread(
-                        img->array.raw, 1,
-                        bytes, tf);
-                    (void)bread;
+                            img->md->datatype);
+                    if (typesize > 0)
+                    {
+                        size_t bytes =
+                            (size_t) typesize
+                            * img->md->nelement;
+                        size_t bread = fread(
+                            img->array.raw, 1,
+                            bytes, tf);
+                        (void)bread;
+                        do_update = 1;
+                    }
+                    else
+                    {
+                        printf(
+                            "stream redirection: "
+                            "invalid datatype for "
+                            "stream %s\n",
+                            sname);
+                    }
                     fclose(tf);
                 }
-                ImageStreamIO_UpdateIm(img);
+                if (do_update)
+                {
+                    ImageStreamIO_UpdateIm(img);
+                }
                 ImageStreamIO_closeIm(img);
             }
             else
