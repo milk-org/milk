@@ -606,8 +606,14 @@ void cli_expand_env(
                 && line[i + 1] == '$')
         {
             /* Escaped $: pass both chars */
-            out[opos++] = line[i++];
-            out[opos++] = line[i++];
+            if(opos < maxlen - 1)
+            {
+                out[opos++] = line[i++];
+            }
+            if(opos < maxlen - 1)
+            {
+                out[opos++] = line[i++];
+            }
         }
         else
         {
