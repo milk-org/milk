@@ -30,32 +30,8 @@
 #include "image_arith__im__im.h"
 
 
-/* ==========================================================
- * X-macro table: all unary image operations.
- *
- * Columns:  X(op, fptr)
- *   op   — operation suffix
- *   fptr — function-pointer variable from mathfuncs.h
- * ========================================================== */
+/* UNARY_OPS table is defined in image_arith__im__im.h */
 
-#define UNARY_OPS(X) \
-    X(acos,     Pacos)     \
-    X(asin,     Pasin)     \
-    X(atan,     Patan)     \
-    X(ceil,     Pceil)     \
-    X(cos,      Pcos)      \
-    X(cosh,     Pcosh)     \
-    X(exp,      Pexp)      \
-    X(fabs,     Pfabs)     \
-    X(floor,    Pfloor)    \
-    X(ln,       Pln)       \
-    X(log,      Plog)      \
-    X(sqrt,     Psqrt)     \
-    X(sin,      Psin)      \
-    X(sinh,     Psinh)     \
-    X(tan,      Ptan)      \
-    X(tanh,     Ptanh)     \
-    X(positive, Ppositive)
 
 
 /* ----------------------------------------------------------
