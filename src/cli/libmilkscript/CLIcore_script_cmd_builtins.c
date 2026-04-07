@@ -982,8 +982,7 @@ int cli_handle_shell_builtins(void)
         }
         data.CMDexecuted = 1;
     }
-    else if(strncmp(data.CLIcmdline,
-                    "printf ", 7) == 0)
+    else if(0) /* duplicate printf handler removed: printf is already handled earlier */
     {
         /* printf "fmt" arg1 arg2 ...
          * Supports %d %f %s %% \n \t */
