@@ -44,181 +44,107 @@
 #define ARITHTOKENTYPE_IMAGE    10
 #define ARITHTOKENTYPE_MULTFUNC 11 // function of several variables/images, returning one variable/image
 
-int isoperand(const char *word)
+/* -------------------------------------------------------
+ * Classifier tables
+ *
+ * These NULL-terminated arrays replace the former chains
+ * of bare if(strcmp(word,"...")) blocks.  Lookups are
+ * simple linear scans — the tables are small (< 30 entries)
+ * and this path is not on the real-time hot path.
+ * ------------------------------------------------------- */
+
+/** Known single-character binary operators */
+static const char * const operand_names[] = {
+    "+", "-", "*", "/", "^", NULL
+};
+
+/**
+ * Known unary functions (token type ARITHTOKENTYPE_FUNCTION).
+ * Functions beginning with 'i' that reduce an image to a
+ * scalar (imedian, itot, imean, imin, imax) are included here;
+ * they are handled with a separate image_reducer sub-table
+ * in the dispatch step.
+ */
+static const char * const unary_func_names[] = {
+    "acos", "asin", "atan", "ceil",
+    "cos",  "cosh", "exp",  "fabs",
+    "floor",
+    "imedian", "itot", "imean", "imin", "imax",
+    "ln",  "log",  "sqrt", "sin",
+    "sinh", "tan",  "tanh", "posi",
+    "imdx", "imdy",
+    NULL
+};
+
+/**
+ * Multi-arg functions: returns the number of input arguments
+ * (2 or 3), or 0 if the name is not a multi-arg function.
+ */
+struct multfunc_entry {
+    const char *name;
+    int         nargs; /* number of scalar/image arguments */
+};
+
+static const struct multfunc_entry multfunc_table[] = {
+    { "fmod",   2 },
+    { "trunc",  3 },
+    { "perc",   2 },
+    { "min",    2 },
+    { "max",    2 },
+    { "testlt", 2 },
+    { "testmt", 2 },
+    { NULL,     0 }
+};
+
+/**
+ * isoperand - test whether a token is a binary operator.
+ * @word: token string
+ * Return: 1 if the token is +, -, *, /, or ^; 0 otherwise.
+ */
+static int isoperand(const char *word)
 {
-    int value = 0;
-
-    if(strcmp(word, "+") == 0)
+    for(int i = 0; operand_names[i] != NULL; i++)
     {
-        value = 1;
+        if(strcmp(word, operand_names[i]) == 0)
+        {
+            return 1;
+        }
     }
-    if(strcmp(word, "-") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "/") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "*") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "^") == 0)
-    {
-        value = 1;
-    }
-
-    return (value);
+    return 0;
 }
 
-int isfunction(const char *word)
+/**
+ * isfunction - test whether a token is a unary function name.
+ * @word: token string
+ * Return: 1 if recognised, 0 otherwise.
+ */
+static int isfunction(const char *word)
 {
-    int value = 0;
-
-    if(strcmp(word, "acos") == 0)
+    for(int i = 0; unary_func_names[i] != NULL; i++)
     {
-        value = 1;
+        if(strcmp(word, unary_func_names[i]) == 0)
+        {
+            return 1;
+        }
     }
-    if(strcmp(word, "asin") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "atan") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "ceil") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "cos") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "cosh") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "exp") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "fabs") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "floor") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imedian") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "itot") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imean") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imin") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imax") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "ln") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "log") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "sqrt") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "sin") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "sinh") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "tan") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "tanh") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "posi") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imdx") == 0)
-    {
-        value = 1;
-    }
-    if(strcmp(word, "imdy") == 0)
-    {
-        value = 1;
-    }
-
-    /*  if (!strcmp(word,"pow"))
-        value = 1;
-      if (!strcmp(word,"max"))
-        value = 1;
-      if (!strcmp(word,"min"))
-        value = 1;
-      if (!strcmp(word,"median"))
-        value = 1;
-    */
-    return (value);
+    return 0;
 }
 
-int isfunction_sev_var(const char *word)
+/**
+ * isfunction_sev_var - return arg count for multi-arg functions.
+ * @word: token string
+ * Return: number of arguments (2 or 3), or 0 if not recognised.
+ */
+static int isfunction_sev_var(const char *word)
 {
-    int value = 0; /* number of input variables */
-
-    if(strcmp(word, "fmod") == 0)
+    for(int i = 0; multfunc_table[i].name != NULL; i++)
     {
-        value = 2;
+        if(strcmp(word, multfunc_table[i].name) == 0)
+        {
+            return multfunc_table[i].nargs;
+        }
     }
-    if(strcmp(word, "trunc") == 0)
-    {
-        value = 3;
-    }
-    if(strcmp(word, "perc") == 0)
-    {
-        value = 2;
-    }
-    if(strcmp(word, "min") == 0)
-    {
-        value = 2;
-    }
-    if(strcmp(word, "max") == 0)
-    {
-        value = 2;
-    }
-    if(strcmp(word, "testlt") == 0)
-    {
-        value = 2;
-    }
-    if(strcmp(word, "testmt") == 0)
-    {
-        value = 2;
-    }
-
-    return (value);
+    return 0;
 }
 
 int isanumber(const char *word)
@@ -269,27 +195,48 @@ arith_make_slopexy(const char *ID_name, long l1, long l2, double sx, double sy)
     return ID;
 }
 
-/*^-----------------------------------------------------------------------------
-| int
-| execute_arith :
-|     const char *cmd :
-|
-|
-|    0 : unknown
-|    1 : non-existing variable or image
-|    2 : existing variable
-|    3 : number
-|    4 : operand
-|    5 : opening brace
-|    6 : closing brace
-|    7 : coma
-|    8 : function
-|    9 : equal sign
-|    10 : existing image
-|    11 : function of several variables/images, returning one variable/image
-|
-|
-+-----------------------------------------------------------------------------*/
+/*
+ * arith_image_dx_wrap / arith_image_dy_wrap
+ *
+ * Thin wrappers that adapt arith_image_dx/dy (which return
+ * imageID = long) to the uniform image_fn_t signature used
+ * in the unary dispatch table (return int).
+ * The imageID return value is intentionally discarded.
+ */
+static int
+arith_image_dx_wrap(
+    const char *in,
+    const char *out)
+{
+    arith_image_dx(in, out);
+    return 0;
+}
+
+static int
+arith_image_dy_wrap(
+    const char *in,
+    const char *out)
+{
+    arith_image_dy(in, out);
+    return 0;
+}
+
+
+/**
+ * execute_arith - evaluate an arithmetic expression on
+ *   images and scalar variables.
+ * @cmd1: null-terminated expression string
+ *
+ * Tokens are classified as numbers, variables, images,
+ * operands (+,-,*,/,^), unary functions (sin, cos, ...)
+ * or multi-arg functions (fmod, min, max, ...).  The
+ * expression is reduced iteratively by executing the
+ * highest-priority unresolved operation at each step.
+ *
+ * Return: 0. Parse/runtime errors are reported through
+ * logging/error handling paths, and fatal errors may
+ * terminate execution instead of being returned.
+ */
 int execute_arith(const char *cmd1)
 {
     char word[100][100];
@@ -878,268 +825,195 @@ int execute_arith(const char *cmd1)
             */
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_OPERAND)
             {
-                // name of image/variable where output is written
+                /* Aliases to reduce line length */
+                int hpi = highest_priority_index;
                 CREATE_IMAGENAME(name,
                                  "_tmp%d_%d",
                                  tmp_name_index,
                                  (int) getpid());
 
-                if(strcmp(word[highest_priority_index], "+") == 0)
+                int lt = word_type[hpi - 1];
+                int rt = word_type[hpi + 1];
+                const char *lw = word[hpi - 1];
+                const char *rw = word[hpi + 1];
+                int lvar = (lt == ARITHTOKENTYPE_VARIABLE);
+                int rvar = (rt == ARITHTOKENTYPE_VARIABLE);
+                int lim  = (lt == ARITHTOKENTYPE_IMAGE);
+                int rim  = (rt == ARITHTOKENTYPE_IMAGE);
+                double lval = lvar
+                    ? dcvar[variable_ID(lw)].value.f : 0.0;
+                double rval = rvar
+                    ? dcvar[variable_ID(rw)].value.f : 0.0;
+
+                const char *op = word[hpi];
+
+                if(strcmp(op, "+") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
+                    if(lvar && rvar)
                     {
-                        tmp_prec =
-                            dcvar[variable_ID(word[highest_priority_index - 1])].value.f +
-                            dcvar[variable_ID(word[highest_priority_index + 1])].value.f;
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(name, lval + rval);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
+                    else if(lvar && rim)
                     {
-                        arith_image_cstadd(
-                            word[highest_priority_index + 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                            name);
+                        arith_image_cstadd(rw, lval, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
+                    else if(lim && rvar)
                     {
-                        arith_image_cstadd(
-                            word[highest_priority_index - 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f,
-                            name);
+                        arith_image_cstadd(lw, rval, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
+                    else if(lim && rim)
                     {
-                        arith_image_add(word[highest_priority_index - 1],
-                                        word[highest_priority_index + 1],
-                                        name);
+                        arith_image_add(lw, rw, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "-") == 0)
+                else if(strcmp(op, "-") == 0)
                 {
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
+                    if(lvar && rvar)
                     {
-                        tmp_prec =
-                            dcvar[variable_ID(word[highest_priority_index - 1])].value.f -
-                            dcvar[variable_ID(word[highest_priority_index + 1])].value.f;
+                        create_variable_ID(name, lval - rval);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(lvar && rim)
+                    {
+                        /* scalar - image: -(image - scalar) */
+                        CREATE_IMAGENAME(name1,
+                                         "_tmp1%d_%d",
+                                         tmp_name_index,
+                                         (int) getpid());
+                        arith_image_cstsub(rw, lval, name1);
+                        arith_image_cstmult(name1, -1.0, name);
+                        delete_image_ID(name1,
+                            DELETE_IMAGE_ERRMODE_WARNING);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rvar)
+                    {
+                        arith_image_cstsub(lw, rval, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rim)
+                    {
+                        arith_image_sub(lw, rw, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                }
+                else if(strcmp(op, "*") == 0)
+                {
+                    if(lvar && rvar)
+                    {
+                        create_variable_ID(name, lval * rval);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(lvar && rim)
+                    {
+                        arith_image_cstmult(rw, lval, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rvar)
+                    {
+                        arith_image_cstmult(lw, rval, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rim)
+                    {
+                        arith_image_mult(lw, rw, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                }
+                else if(strcmp(op, "/") == 0)
+                {
+                    if(lvar && rvar)
+                    {
+                        create_variable_ID(name, lval / rval);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(lvar && rim)
+                    {
+                        arith_image_cstdiv1(rw, lval, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rvar)
+                    {
+                        arith_image_cstdiv(lw, rval, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                    else if(lim && rim)
+                    {
+                        arith_image_div(lw, rw, name);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_IMAGE;
+                    }
+                }
+                else if(strcmp(op, "^") == 0)
+                {
+                    if(lvar && rvar)
+                    {
+                        /* Handle negative exponent */
+                        tmp_prec = (rval < 0)
+                            ? 1.0 / pow(lval, -rval)
+                            : pow(lval, rval);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
+                    else if(lvar && rim)
                     {
                         CREATE_IMAGENAME(name1,
                                          "_tmp1%d_%d",
                                          tmp_name_index,
                                          (int) getpid());
-                        arith_image_cstsub(
-                            word[highest_priority_index + 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                            name1);
-                        arith_image_cstmult(name1, (double) -1.0, name);
-                        delete_image_ID(name1, DELETE_IMAGE_ERRMODE_WARNING);
+                        arith_image_cstadd(rw, lval, name1);
+                        arith_image_pow(name1, rw, name);
+                        delete_image_ID(name1,
+                            DELETE_IMAGE_ERRMODE_WARNING);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
+                    else if(lim && rvar)
                     {
-                        arith_image_cstsub(
-                            word[highest_priority_index - 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f,
-                            name);
+                        arith_image_cstpow(lw, rval, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
+                    else if(lim && rim)
                     {
-                        arith_image_sub(word[highest_priority_index - 1],
-                                        word[highest_priority_index + 1],
-                                        name);
+                        arith_image_pow(lw, rw, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
 
-                if(strcmp(word[highest_priority_index], "*") == 0)
-                {
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        tmp_prec =
-                            dcvar[variable_ID(word[highest_priority_index - 1])].value.f *
-                            dcvar[variable_ID(word[highest_priority_index + 1])].value.f;
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_cstmult(
-                            word[highest_priority_index + 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        arith_image_cstmult(
-                            word[highest_priority_index - 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_mult(word[highest_priority_index - 1],
-                                         word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "/") == 0)
-                {
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        tmp_prec =
-                            dcvar[variable_ID(word[highest_priority_index - 1])].value.f /
-                            dcvar[variable_ID(word[highest_priority_index + 1])].value.f;
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        //    printf("CASE 1\n");
-                        arith_image_cstdiv1(
-                            word[highest_priority_index + 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        arith_image_cstdiv(
-                            word[highest_priority_index - 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_div(word[highest_priority_index - 1],
-                                        word[highest_priority_index + 1],
-                                        name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-
-                }
-
-                if(strcmp(word[highest_priority_index], "^") == 0)
-                {
-
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        if(dcvar[variable_ID(word[highest_priority_index + 1])].value.f < 0)
-                        {
-                            tmp_prec =
-                                pow(dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                                    -dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                            tmp_prec = 1.0 / tmp_prec;
-                        }
-                        else
-                        {
-                            tmp_prec =
-                                pow(dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                                    dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        }
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        CREATE_IMAGENAME(name1,
-                                         "_tmp1%d_%d",
-                                         tmp_name_index,
-                                         (int) getpid());
-                        arith_image_cstadd(
-                            word[highest_priority_index + 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index - 1])].value.f,
-                            name1);
-                        arith_image_pow(name1,
-                                        word[highest_priority_index + 1],
-                                        name);
-                        delete_image_ID(name1, DELETE_IMAGE_ERRMODE_WARNING);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE))
-                    {
-                        arith_image_cstpow(
-                            word[highest_priority_index - 1],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f,name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    if((word_type[highest_priority_index - 1] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_pow(word[highest_priority_index - 1],
-                                        word[highest_priority_index + 1],
-                                        name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                strcpy(word[highest_priority_index - 1], name);
-                word_type[highest_priority_index - 1] = type;
-                for(j = highest_priority_index; j < nbword - 2; j++)
+                strcpy(word[hpi - 1], name);
+                word_type[hpi - 1] = type;
+                for(j = hpi; j < nbword - 2; j++)
                 {
                     strcpy(word[j], word[j + 2]);
                     word_type[j] = word_type[j + 2];
                 }
                 nbword = nbword - 2;
             }
+
+
+
 
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_FUNCTION)
             {
@@ -1148,404 +1022,146 @@ int execute_arith(const char *cmd1)
                                  tmp_name_index,
                                  (int) getpid());
 
-                if(strcmp(word[highest_priority_index], "acos") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = acos(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_acos(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
+                /*
+                 * Unary function dispatch table.
+                 *
+                 * scalar_fn  — C math function applied to a
+                 *   scalar variable; NULL means image-only
+                 *   (error printed if a variable is passed).
+                 * image_fn   — arith_image_* transform that
+                 *   maps image -> image.
+                 * reducer_fn — arith_image_* function that
+                 *   maps image -> double (e.g. imedian).
+                 *   When set, scalar_fn and image_fn are
+                 *   ignored and the result is stored as a
+                 *   VARIABLE not an IMAGE.
+                 *
+                 * Exactly one of (scalar_fn+image_fn) OR
+                 * reducer_fn must be non-NULL per entry.
+                 */
+                typedef double  (*scalar_fn_t)(double);
+                typedef int     (*image_fn_t)(
+                    const char *, const char *);
+                typedef double  (*reducer_fn_t)(const char *);
 
-                if(strcmp(word[highest_priority_index], "asin") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = asin(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_asin(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
+                struct unary_dispatch_entry {
+                    const char   *name;
+                    scalar_fn_t   scalar_fn;
+                    image_fn_t    image_fn;
+                    reducer_fn_t  reducer_fn;
+                };
 
-                if(strcmp(word[highest_priority_index], "atan") == 0)
+                static const struct unary_dispatch_entry
+                    unary_dispatch[] =
                 {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = atan(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_atan(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
+                    /* name      scalar      image               reducer */
+                    { "acos",  acos,  arith_image_acos,     NULL },
+                    { "asin",  asin,  arith_image_asin,     NULL },
+                    { "atan",  atan,  arith_image_atan,     NULL },
+                    { "ceil",  ceil,  arith_image_ceil,     NULL },
+                    { "cos",   cos,   arith_image_cos,      NULL },
+                    { "cosh",  cosh,  arith_image_cosh,     NULL },
+                    { "exp",   exp,   arith_image_exp,      NULL },
+                    { "fabs",  fabs,  arith_image_fabs,     NULL },
+                    { "floor", floor, arith_image_floor,    NULL },
+                    { "ln",    log,   arith_image_ln,       NULL },
+                    { "log",   log10, arith_image_log,      NULL },
+                    { "sqrt",  sqrt,  arith_image_sqrt,     NULL },
+                    { "sin",   sin,   arith_image_sin,      NULL },
+                    { "sinh",  sinh,  arith_image_sinh,     NULL },
+                    { "tan",   tan,   arith_image_tan,      NULL },
+                    { "tanh",  tanh,  arith_image_tanh,     NULL },
+                    { "posi",  Ppositive, arith_image_positive, NULL },
+                    /* image-only transforms (scalar is error) */
+                    { "imdx", NULL, arith_image_dx_wrap, NULL },
+                    { "imdy", NULL, arith_image_dy_wrap, NULL },
+                    /* image reducers -> scalar */
+                    { "imedian", NULL, NULL, arith_image_median },
+                    { "itot",    NULL, NULL, arith_image_total  },
+                    { "imean",   NULL, NULL, arith_image_mean   },
+                    { "imin",    NULL, NULL, arith_image_min    },
+                    { "imax",    NULL, NULL, arith_image_max    },
+                    { NULL, NULL, NULL, NULL }
+                };
 
-                if(strcmp(word[highest_priority_index], "ceil") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = (double) ceil(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_ceil(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
+                const char *fname =
+                    word[highest_priority_index];
+                int arg_wtype =
+                    word_type[highest_priority_index + 1];
+                const char *arg_word =
+                    word[highest_priority_index + 1];
 
-                if(strcmp(word[highest_priority_index], "cos") == 0)
+                for(int ui = 0;
+                    unary_dispatch[ui].name != NULL;
+                    ui++)
                 {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
+                    if(strcmp(fname,
+                              unary_dispatch[ui].name) != 0)
                     {
-                        tmp_prec = cos(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
+                        continue;
                     }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_cos(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
 
-                if(strcmp(word[highest_priority_index], "cosh") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
+                    /* Image reducer: image -> scalar */
+                    if(unary_dispatch[ui].reducer_fn != NULL)
                     {
-                        tmp_prec = cosh(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
+                        if(arg_wtype == ARITHTOKENTYPE_IMAGE)
+                        {
+                            tmp_prec =
+                                unary_dispatch[ui]
+                                    .reducer_fn(arg_word);
+                            create_variable_ID(
+                                name, tmp_prec);
+                            tmp_name_index++;
+                            type = ARITHTOKENTYPE_VARIABLE;
+                        }
+                        else
+                        {
+                            PRINT_ERROR(
+                                "Function %s only "
+                                "applicable on images",
+                                fname);
+                            exit(0);
+                        }
+                        break;
                     }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_cosh(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
 
-                if(strcmp(word[highest_priority_index], "exp") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
+                    /* Transform: scalar -> scalar */
+                    if(arg_wtype == ARITHTOKENTYPE_VARIABLE)
                     {
-                        tmp_prec = exp(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_exp(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "fabs") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = fabs(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_fabs(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "floor") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = floor(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_floor(word[highest_priority_index + 1],
-                                          name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "imedian") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        tmp_prec = arith_image_median(
-                                       word[highest_priority_index + 1]);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "itot") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
+                        if(unary_dispatch[ui].scalar_fn
+                           == NULL)
+                        {
+                            PRINT_ERROR(
+                                "Function %s only "
+                                "applicable on images",
+                                fname);
+                            exit(0);
+                        }
                         tmp_prec =
-                            arith_image_total(word[highest_priority_index + 1]);
+                            unary_dispatch[ui].scalar_fn(
+                                dcvar[variable_ID(
+                                    arg_word)].value.f);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                }
 
-                if(strcmp(word[highest_priority_index], "imean") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
+                    /* Transform: image -> image */
+                    if(arg_wtype == ARITHTOKENTYPE_IMAGE)
                     {
-                        tmp_prec =
-                            arith_image_mean(word[highest_priority_index + 1]);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "imin") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        tmp_prec =
-                            arith_image_min(word[highest_priority_index + 1]);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "imax") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        tmp_prec =
-                            arith_image_max(word[highest_priority_index + 1]);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "ln") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = log(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_ln(word[highest_priority_index + 1], name);
+                        unary_dispatch[ui].image_fn(
+                            arg_word, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                }
-
-                if(strcmp(word[highest_priority_index], "log") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = log10(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_log(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "sqrt") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = sqrt(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_sqrt(word[highest_priority_index + 1],
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "sin") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = sin(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_sin(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "sinh") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = sinh(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_sinh(word[highest_priority_index + 1],
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "tan") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = tan(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_tan(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "tanh") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec = tanh(dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_tanh(word[highest_priority_index + 1],
-                                         name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "posi") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        tmp_prec =
-                            Ppositive((double) dcvar[variable_ID(word[highest_priority_index + 1])].value.f);
-                        create_variable_ID(name, tmp_prec);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_VARIABLE;
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_positive(word[highest_priority_index + 1],
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "imdx") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        PRINT_ERROR(
-                            "Function imdx only applicable "
-                            "on images");
-                        exit(0);
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_dx(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                }
-
-                if(strcmp(word[highest_priority_index], "imdy") == 0)
-                {
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_VARIABLE)
-                    {
-                        PRINT_ERROR(
-                            "Function imdy only applicable "
-                            "on images");
-                        exit(0);
-                    }
-                    if(word_type[highest_priority_index + 1] == ARITHTOKENTYPE_IMAGE)
-                    {
-                        arith_image_dy(word[highest_priority_index + 1], name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
+                    break;
                 }
 
                 strcpy(word[highest_priority_index], name);
                 word_type[highest_priority_index] = type;
-                for(j = highest_priority_index + 1; j < nbword - 1; j++)
+                for(j = highest_priority_index + 1;
+                    j < nbword - 1;
+                    j++)
                 {
                     strcpy(word[j], word[j + 1]);
                     word_type[j] = word_type[j + 1];
@@ -1553,323 +1169,244 @@ int execute_arith(const char *cmd1)
                 nbword = nbword - 1;
             }
 
+
+
+
             if(word_type[highest_priority_index] == ARITHTOKENTYPE_MULTFUNC)
             {
-                nbvarinput = isfunction_sev_var(word[highest_priority_index]);
+                nbvarinput = isfunction_sev_var(
+                    word[highest_priority_index]);
                 CREATE_IMAGENAME(name,
                                  "_tmp%d_%d",
                                  tmp_name_index,
                                  (int) getpid());
 
-                if(strcmp(word[highest_priority_index], "fmod") == 0)
+                /* Aliases for the two primary arguments */
+                int hpi    = highest_priority_index;
+                const char *fn   = word[hpi];
+                int a1t = word_type[hpi + 2];
+                int a2t = word_type[hpi + 4];
+                const char *a1w  = word[hpi + 2];
+                const char *a2w  = word[hpi + 4];
+                int a1var = (a1t == ARITHTOKENTYPE_VARIABLE);
+                int a2var = (a2t == ARITHTOKENTYPE_VARIABLE);
+                int a1im  = (a1t == ARITHTOKENTYPE_IMAGE);
+                int a2im  = (a2t == ARITHTOKENTYPE_IMAGE);
+                double a1v = a1var
+                    ? dcvar[variable_ID(a1w)].value.f : 0.0;
+                double a2v = a2var
+                    ? dcvar[variable_ID(a2w)].value.f : 0.0;
+
+                if(strcmp(fn, "fmod") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
+                    if(a1var && a2var)
                     {
-                        tmp_prec = fmod(
-                                       dcvar[variable_ID( word[highest_priority_index + 2])].value.f,
-                                       dcvar[variable_ID(word[highest_priority_index + 4])].value.f);
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(
+                            name, fmod(a1v, a2v));
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1var && a2im)
                     {
-                        printf("function not available\n");
+                        PRINT_ERROR(
+                            "Function fmod not available "
+                            "for VARIABLE x IMAGE inputs");
+                        exit(0);
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
+                    else if(a1im && a2var)
                     {
-                        arith_image_cstfmod(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,
-                            name);
+                        arith_image_cstfmod(a1w, a2v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2im)
                     {
-                        arith_image_fmod(word[highest_priority_index + 2],
-                                         word[highest_priority_index + 4],
-                                         name);
+                        arith_image_fmod(a1w, a2w, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "min") == 0)
+                else if(strcmp(fn, "min") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
+                    if(a1var && a2var)
                     {
-                        if(dcvar[variable_ID(word[highest_priority_index + 2])].value.f <
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f)
-                        {
-                            tmp_prec =
-                                dcvar[variable_ID(word[highest_priority_index + 2])].value.f;
-                        }
-                        else
-                        {
-                            tmp_prec =
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f;
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(
+                            name, (a1v < a2v) ? a1v : a2v);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1var && a2im)
                     {
-                        arith_image_cstminv(
-                            word[highest_priority_index + 4],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 2])].value.f,
-                            name);
+                        arith_image_cstminv(a2w, a1v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
+                    else if(a1im && a2var)
                     {
-                        arith_image_cstminv(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,name);
+                        arith_image_cstminv(a1w, a2v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2im)
                     {
-                        arith_image_minv(word[highest_priority_index + 2],
-                                         word[highest_priority_index + 4],
-                                         name);
+                        arith_image_minv(a1w, a2w, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "max") == 0)
+                else if(strcmp(fn, "max") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    if(a1var && a2var)
                     {
-                        if(dcvar[variable_ID(word[highest_priority_index + 2])].value.f >
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f)
-                        {
-                            tmp_prec =
-                                dcvar[variable_ID(word[highest_priority_index + 2])].value.f;
-                        }
-                        else
-                        {
-                            tmp_prec =
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f;
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(
+                            name, (a1v > a2v) ? a1v : a2v);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(a1var && a2im)
+                    {
+                        arith_image_cstmaxv(a2w, a1v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2var)
                     {
-                        arith_image_cstmaxv(
-                            word[highest_priority_index + 4],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 2])].value.f,
-                            name);
+                        arith_image_cstmaxv(a1w, a2v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE))
+                    else if(a1im && a2im)
                     {
-                        arith_image_cstmaxv(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_maxv(word[highest_priority_index + 2],
-                                         word[highest_priority_index + 4],
-                                         name);
+                        arith_image_maxv(a1w, a2w, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "testlt") == 0)
+                else if(strcmp(fn, "testlt") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    if(a1var && a2var)
                     {
-                        if(dcvar[variable_ID(word[highest_priority_index + 2])].value.f >
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f)
-                        {
-                            tmp_prec = 0.0;
-                        }
-                        else
-                        {
-                            tmp_prec = 1.0;
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(
+                            name, (a1v < a2v) ? 1.0 : 0.0);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(a1var && a2im)
+                    {
+                        arith_image_csttestmt(a2w, a1v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2var)
                     {
-                        arith_image_csttestmt(
-                            word[highest_priority_index + 4],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 2])].value.f,
-                            name);
+                        arith_image_csttestlt(a1w, a2v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2im)
                     {
-                        arith_image_csttestlt(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_testlt(word[highest_priority_index + 2],
-                                           word[highest_priority_index + 4],
-                                           name);
+                        arith_image_testlt(a1w, a2w, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                     else
                     {
                         PRINT_ERROR(
-                            "Wrong input to function "
-                            "testlt");
+                            "Wrong input to function testlt");
+                        exit(0);
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "testmt") == 0)
+                else if(strcmp(fn, "testmt") == 0)
                 {
-                    printf("Image testmt\n");
-
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    if(a1var && a2var)
                     {
-                        if(dcvar[variable_ID(word[highest_priority_index + 2])].value.f >
-                                dcvar[variable_ID(word[highest_priority_index + 4])].value.f)
-                        {
-                            tmp_prec = 1.0;
-                        }
-                        else
-                        {
-                            tmp_prec = 0.0;
-                        }
-                        create_variable_ID(name, tmp_prec);
+                        create_variable_ID(
+                            name, (a1v > a2v) ? 1.0 : 0.0);
+                        tmp_name_index++;
+                        type = ARITHTOKENTYPE_VARIABLE;
+                    }
+                    else if(a1var && a2im)
+                    {
+                        arith_image_csttestlt(a2w, a1v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2var)
                     {
-                        arith_image_csttestlt(
-                            word[highest_priority_index + 4],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 2])].value.f,
-                            name);
+                        arith_image_csttestmt(a1w, a2v, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
-                    else if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
+                    else if(a1im && a2im)
                     {
-                        arith_image_csttestmt(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,
-                            name);
-                        tmp_name_index++;
-                        type = ARITHTOKENTYPE_IMAGE;
-                    }
-                    else if((word_type[highest_priority_index + 2] ==  ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_IMAGE))
-                    {
-                        arith_image_testmt(word[highest_priority_index + 2],
-                                           word[highest_priority_index + 4],
-                                           name);
+                        arith_image_testmt(a1w, a2w, name);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                     else
                     {
                         PRINT_ERROR(
-                            "Wrong input to function "
-                            "testlt");
+                            "Wrong input to function testmt");
+                        exit(0);
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "perc") == 0)
+                else if(strcmp(fn, "perc") == 0)
                 {
-                    if((word_type[highest_priority_index + 2] != ARITHTOKENTYPE_IMAGE) ||
-                            (word_type[highest_priority_index + 4] != 2))
+                    if(!a1im || !a2var)
                     {
                         PRINT_ERROR(
-                            "Wrong input to function "
-                            "perc\n");
+                            "Wrong input to function perc");
+                        exit(0);
                     }
                     else
                     {
-                        printf("Running percentile args = %s  %f\n",
-                               word[highest_priority_index + 2],
-                               (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f
-                              );
-
-
                         tmp_prec = arith_image_percentile(
-                                       word[highest_priority_index + 2],
-                                       (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f);
+                            a1w, a2v);
                         create_variable_ID(name, tmp_prec);
                         tmp_name_index++;
                         type = ARITHTOKENTYPE_VARIABLE;
                     }
                 }
-
-                if(strcmp(word[highest_priority_index], "trunc") == 0)
+                else if(strcmp(fn, "trunc") == 0)
                 {
-                    printf("Image trunction\n");
-                    if((word_type[highest_priority_index + 2] == ARITHTOKENTYPE_IMAGE) &&
-                            (word_type[highest_priority_index + 4] == ARITHTOKENTYPE_VARIABLE) &&
-                            (word_type[highest_priority_index + 6] == ARITHTOKENTYPE_VARIABLE))
+                    int a3t = word_type[hpi + 6];
+                    const char *a3w = word[hpi + 6];
+                    int a3var =
+                        (a3t == ARITHTOKENTYPE_VARIABLE);
+                    double a3v = a3var
+                        ? dcvar[variable_ID(a3w)].value.f
+                        : 0.0;
+
+                    if(a1im && a2var && a3var)
                     {
                         tmp_name_index++;
                         arith_image_trunc(
-                            word[highest_priority_index + 2],
-                            (double) dcvar[variable_ID(word[highest_priority_index + 4])].value.f,
-                            (double) dcvar[variable_ID(word[highest_priority_index + 6])].value.f,
-                            name);
+                            a1w, a2v, a3v, name);
                         type = ARITHTOKENTYPE_IMAGE;
                     }
                     else
                     {
-                        printf(
-                            "Syntax error with function "
-                            "trunc\n");
+                        PRINT_ERROR(
+                            "Syntax error with "
+                            "function trunc");
+                        exit(0);
                     }
                 }
 
                 strcpy(word[highest_priority_index], name);
                 word_type[highest_priority_index] = type;
-                for(j = highest_priority_index + 1; j < nbword - (nbvarinput * 2 + 1); j++)
+                for(j = highest_priority_index + 1;
+                    j < nbword - (nbvarinput * 2 + 1);
+                    j++)
                 {
-                    strcpy(word[j], word[j + (nbvarinput * 2 + 1)]);
-                    word_type[j] = word_type[j + (nbvarinput * 2 + 1)];
+                    strcpy(word[j],
+                           word[j + (nbvarinput * 2 + 1)]);
+                    word_type[j] =
+                        word_type[j + (nbvarinput * 2 + 1)];
                 }
                 nbword = nbword - nbvarinput * 2 - 1;
             }
+
 
             /*      printf("after : ");
               for (i=0;i<nbword;i++)
