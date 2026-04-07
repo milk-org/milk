@@ -66,31 +66,31 @@
  * Generated prototypes — IMGID and string APIs (all ops)
  * ---------------------------------------------------------- */
 
-#define _DECLARE_CST(op, tag) \
-int arith_image_cst##op##_IMGID( \
-    IMGID *imgin,                \
-    double f1,                   \
-    IMGID *imgout);              \
-int arith_image_cst##op(         \
-    const char *ID_name,         \
-    double f1,                   \
+#define IMAGE_ARITH_DECLARE_CST(op, tag) \
+int arith_image_cst##op##_IMGID(         \
+    IMGID *imgin,                        \
+    double f1,                           \
+    IMGID *imgout);                      \
+int arith_image_cst##op(                 \
+    const char *ID_name,                 \
+    double f1,                           \
     const char *ID_out);
 
-CST_OPS_ALL(_DECLARE_CST)
-#undef _DECLARE_CST
+CST_OPS_ALL(IMAGE_ARITH_DECLARE_CST)
+#undef IMAGE_ARITH_DECLARE_CST
 
 
 /* ----------------------------------------------------------
  * Generated prototypes — inplace API (FULL ops only)
  * ---------------------------------------------------------- */
 
-#define _DECLARE_CST_INPLACE(op, tag) \
-int arith_image_cst##op##_inplace(    \
-    const char *ID_name,              \
+#define IMAGE_ARITH_DECLARE_CST_INPLACE(op, tag) \
+int arith_image_cst##op##_inplace(               \
+    const char *ID_name,                         \
     double f1);
 
-CST_OPS_OPT_FULL(_DECLARE_CST_INPLACE)
-CST_OPS_FPTR_FULL(_DECLARE_CST_INPLACE)
-#undef _DECLARE_CST_INPLACE
+CST_OPS_OPT_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+CST_OPS_FPTR_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+#undef IMAGE_ARITH_DECLARE_CST_INPLACE
 
 #endif /* IMAGE_ARITH__IM_F__IM_H */
