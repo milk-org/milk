@@ -1355,8 +1355,8 @@ void handle_did_you_mean(const char *input_cmd)
                    && matches[m].dist <= 4
                    && matches[m].dist < 9999)
                 {
-                    printf("  - \001\e[0;96m\002%s"
-                           "\001\033[0m\002\n",
+                    printf("  - \033[0;96m%s"
+                           "\033[0m\n",
                            matches[m].cmd);
                 }
             }
