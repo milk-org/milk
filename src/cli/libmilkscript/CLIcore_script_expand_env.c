@@ -88,8 +88,9 @@ static void expand_env_array_all(
     const char **out_val
 )
 {
+    *out_val    = NULL;
     int elems_count = 0;
-    out_buf[0] = '\0';
+    out_buf[0]  = '\0';
 
     /* Search associative arrays first */
     for(int a = 0; a < CLI_MAX_ASSOC; a++)
@@ -160,8 +161,9 @@ static void expand_env_array_all(
         }
     }
 
-    /* When is_length, overwrite buf with the count */
-    if(is_length && *out_val != NULL)
+    /* When is_length, overwrite buf with the element count.
+     * elems_count is 0 when no array was found, giving "0". */
+    if(is_length)
     {
         char cnt_buf[32];
         snprintf(cnt_buf, sizeof(cnt_buf), "%d", elems_count);
@@ -169,6 +171,11 @@ static void expand_env_array_all(
                 STRINGMAXLEN_CLICMDLINE - 1);
         out_buf[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
     }
+
+    /* Always point out_val at out_buf: empty string when the
+     * array was not found, "0" for is_length on a missing array,
+     * preserving shell-like semantics. */
+    *out_val = out_buf;
 }
 
 
@@ -192,6 +199,8 @@ static void expand_env_array_index(
     const char **out_val
 )
 {
+    *out_val = NULL;
+
     /* Search associative arrays by key */
     for(int a = 0; a < CLI_MAX_ASSOC; a++)
     {
@@ -248,11 +257,12 @@ static void expand_env_array_index(
 
 /**
  * apply_modifier - apply a ${VAR:op:arg} modifier to *val.
- * @varname:  Variable name (used by := to store defaults)
- * @mod_op:   Two-char operator string, e.g. ":-", ":="
- * @mod_arg:  Argument after the operator
- * @val_buf:  Caller-supplied scratch buffer (size 256)
- * @val:      Pointer to current value; updated in place
+ * @varname:      Variable name (used by := to store defaults)
+ * @mod_op:       Two-char operator string, e.g. ":-", ":="
+ * @mod_arg:      Argument after the operator
+ * @val_buf:      Caller-supplied scratch buffer
+ * @val_buf_size: Size of @val_buf in bytes
+ * @val:          Pointer to current value; updated in place
  *
  * Supported operators:
  *   :-  use mod_arg if val is NULL or empty
@@ -266,6 +276,7 @@ static void apply_modifier(
     const char  *mod_op,
     char        *mod_arg,
     char        *val_buf,
+    int          val_buf_size,
     const char **val
 )
 {
@@ -357,6 +368,11 @@ static void apply_modifier(
     if(offset + length > vlen)
     {
         length = vlen - offset;
+    }
+    /* Clamp to val_buf capacity to prevent overflow */
+    if(length > val_buf_size - 1)
+    {
+        length = val_buf_size - 1;
     }
 
     strncpy(val_buf, *val + offset, (size_t) length);
@@ -606,7 +622,8 @@ void cli_expand_env(
         if(mod_op[0] != '\0')
         {
             apply_modifier(varname, mod_op, mod_arg,
-                           val_buf, &val);
+                           val_buf, (int) sizeof(val_buf),
+                           &val);
         }
 
         /* ---- Emit result ---- */
