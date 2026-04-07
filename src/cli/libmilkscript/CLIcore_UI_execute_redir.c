@@ -31,6 +31,14 @@
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_UI_execute_internal.h"
 
+/* Local color macros (plain escapes — no readline wrap) */
+#ifndef COLORDIMYELLOW
+#define COLORDIMYELLOW "\033[2;33m"
+#endif
+#ifndef COLORRST
+#define COLORRST       "\033[0m"
+#endif
+
 extern int cli_last_retval;
 
 #include "ImageStreamIO.h"
@@ -1031,4 +1039,347 @@ int cli_handle_background(
     }
     *retval = 0;
     return 1;
+}
+
+
+/* ============================================================
+ *  is_internal_cmd
+ * ============================================================ */
+
+/**
+ * is_internal_cmd - return 1 if firstword is a built-in
+ *      keyword, variable assignment, or registered CLI
+ *      command; 0 if it looks like an external command.
+ * @firstword:    first token of the command line
+ * @check_assign: when non-zero, a token containing '='
+ *                is treated as an internal assignment.
+ *                Pass 0 on the calc-eval path so that
+ *                no-space arithmetic like "a=b+1" is
+ *                still evaluated by the calc engine.
+ */
+int is_internal_cmd(const char *firstword, int check_assign)
+{
+    static const char *keywords[] = {
+        "if", "elif", "else", "fi",
+        "for", "while", "do", "done",
+        ".", "source", NULL
+    };
+
+    for(int k = 0; keywords[k] != NULL; k++)
+    {
+        if(strcmp(firstword, keywords[k]) == 0)
+        {
+            return 1;
+        }
+    }
+
+    if(check_assign && strchr(firstword, '=') != NULL)
+    {
+        return 1;
+    }
+
+    for(long i = 0; i < (long) data.NBcmd; i++)
+    {
+        size_t cmdlen = strlen(data.cmd[i].key);
+        if(strncmp(firstword,
+                   data.cmd[i].key,
+                   cmdlen) == 0
+           && (firstword[cmdlen] == '\0'
+               || firstword[cmdlen] == ':'
+               || firstword[cmdlen] == ' '))
+        {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+
+/* ============================================================
+ *  cli_pipe_setup / cli_pipe_teardown
+ * ============================================================ */
+
+/**
+ * cli_pipe_setup - detect unquoted '|' in CLIcmdline,
+ *      split at it, and redirect stdout into a popen() pipe.
+ * @pipe_fp:         set to the opened pipe, or NULL
+ * @saved_stdout_fd: set to dup'd original stdout fd, or -1
+ *
+ * Replaces '|' with NUL so the LHS can execute normally.
+ * Caller must restore with cli_pipe_teardown().
+ */
+void cli_pipe_setup(
+    FILE **pipe_fp,
+    int   *saved_stdout_fd
+)
+{
+    *pipe_fp         = NULL;
+    *saved_stdout_fd = -1;
+
+    char *pipe_pos = NULL;
+    {
+        int depth = 0;
+        int in_sq = 0;
+        int in_dq = 0;
+        for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
+        {
+            char c = data.CLIcmdline[si];
+            if(c == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+            }
+            else if(c == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+            }
+            else if(!in_sq && !in_dq)
+            {
+                if(c == '(')
+                {
+                    depth++;
+                }
+                else if(c == ')' && depth > 0)
+                {
+                    depth--;
+                }
+                else if(depth == 0 && c == '|')
+                {
+                    pipe_pos = data.CLIcmdline + si;
+                    break;
+                }
+            }
+        }
+    }
+
+    if(pipe_pos == NULL)
+    {
+        return;
+    }
+
+    *pipe_pos = '\0';
+    const char *rhs = pipe_pos + 1;
+    while(*rhs == ' ' || *rhs == '\t')
+    {
+        rhs++;
+    }
+    if(*rhs == '\0')
+    {
+        return;
+    }
+
+    printf(COLORDIMYELLOW "[shell pipe] %s" COLORRST "\n", rhs);
+    cli_export_vars_to_env();
+    *pipe_fp = popen(rhs, "w");
+    if(*pipe_fp != NULL)
+    {
+        *saved_stdout_fd = dup(STDOUT_FILENO);
+        dup2(fileno(*pipe_fp), STDOUT_FILENO);
+    }
+}
+
+/**
+ * cli_pipe_teardown - restore stdout after a pipe and close it.
+ * @pipe_fp:         handle from cli_pipe_setup
+ * @saved_stdout_fd: fd from cli_pipe_setup
+ */
+void cli_pipe_teardown(
+    FILE *pipe_fp,
+    int   saved_stdout_fd
+)
+{
+    if(pipe_fp == NULL)
+    {
+        return;
+    }
+    fflush(stdout);
+    dup2(saved_stdout_fd, STDOUT_FILENO);
+    close(saved_stdout_fd);
+    pclose(pipe_fp);
+}
+
+
+/* ============================================================
+ *  cli_redir_setup / cli_redir_teardown
+ * ============================================================ */
+
+/**
+ * cli_redir_setup - detect unquoted '>' in CLIcmdline,
+ *      split at it, and redirect stdout to a file.
+ * @redir_fp:        set to the opened file, or NULL
+ * @saved_stdout_fd: set to dup'd original stdout fd, or -1
+ *
+ * Replaces '>' with NUL so the LHS can execute normally.
+ * Caller must restore with cli_redir_teardown().
+ */
+void cli_redir_setup(
+    FILE **redir_fp,
+    int   *saved_stdout_fd
+)
+{
+    *redir_fp        = NULL;
+    *saved_stdout_fd = -1;
+
+    char *redir_pos = NULL;
+    {
+        int depth = 0;
+        int in_sq = 0;
+        int in_dq = 0;
+        for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
+        {
+            char c = data.CLIcmdline[si];
+            if(c == '\'' && !in_dq)
+            {
+                in_sq = !in_sq;
+            }
+            else if(c == '"' && !in_sq)
+            {
+                in_dq = !in_dq;
+            }
+            else if(!in_sq && !in_dq)
+            {
+                if(c == '(')
+                {
+                    depth++;
+                }
+                else if(c == ')' && depth > 0)
+                {
+                    depth--;
+                }
+                else if(depth == 0 && c == '>')
+                {
+                    redir_pos = data.CLIcmdline + si;
+                    break;
+                }
+            }
+        }
+    }
+
+    if(redir_pos == NULL)
+    {
+        return;
+    }
+
+    *redir_pos = '\0';
+    const char *fname = redir_pos + 1;
+    while(*fname == ' ' || *fname == '\t')
+    {
+        fname++;
+    }
+    if(*fname == '\0')
+    {
+        return;
+    }
+
+    char fpath[500];
+    strncpy(fpath, fname, 499);
+    fpath[499] = '\0';
+    {
+        size_t fl = strlen(fpath);
+        while(fl > 0
+              && (fpath[fl - 1] == ' '
+                  || fpath[fl - 1] == '\t'
+                  || fpath[fl - 1] == '\n'))
+        {
+            fpath[--fl] = '\0';
+        }
+    }
+
+    *redir_fp = fopen(fpath, "w");
+    if(*redir_fp != NULL)
+    {
+        *saved_stdout_fd = dup(STDOUT_FILENO);
+        dup2(fileno(*redir_fp), STDOUT_FILENO);
+    }
+}
+
+/**
+ * cli_redir_teardown - restore stdout after a file redirect.
+ * @redir_fp:        handle from cli_redir_setup
+ * @saved_stdout_fd: fd from cli_redir_setup
+ */
+void cli_redir_teardown(
+    FILE *redir_fp,
+    int   saved_stdout_fd
+)
+{
+    if(redir_fp == NULL)
+    {
+        return;
+    }
+    fflush(stdout);
+    dup2(saved_stdout_fd, STDOUT_FILENO);
+    close(saved_stdout_fd);
+    fclose(redir_fp);
+}
+
+
+/* ============================================================
+ *  handle_did_you_mean
+ * ============================================================ */
+
+/**
+ * handle_did_you_mean - print typo suggestions for an
+ *      unknown command using Levenshtein distance.
+ * @input_cmd: first token that was not resolved
+ *
+ * Scans the registered command table for the 3 closest
+ * matches (distance ≤ 4) and prints them as suggestions.
+ */
+void handle_did_you_mean(const char *input_cmd)
+{
+#ifdef USE_READLINE
+    if(input_cmd != NULL && input_cmd[0] != '\0')
+    {
+        struct distmatch { int dist; const char *cmd; };
+        struct distmatch matches[3] = {
+            {9999, NULL}, {9999, NULL}, {9999, NULL}
+        };
+
+        for(unsigned int i = 0; i < data.NBcmd; i++)
+        {
+            int d = levenshtein_distance(input_cmd,
+                                         data.cmd[i].key);
+            if(d < matches[2].dist)
+            {
+                matches[2].dist = d;
+                matches[2].cmd  = data.cmd[i].key;
+                if(matches[2].dist < matches[1].dist)
+                {
+                    struct distmatch tmp = matches[1];
+                    matches[1] = matches[2];
+                    matches[2] = tmp;
+                }
+                if(matches[1].dist < matches[0].dist)
+                {
+                    struct distmatch tmp = matches[0];
+                    matches[0] = matches[1];
+                    matches[1] = tmp;
+                }
+            }
+        }
+
+        if(matches[0].dist <= 4 && matches[0].cmd != NULL)
+        {
+            printf("\033[31mCommand '%s' not found. \033[0m"
+                   "Did you mean:\n", input_cmd);
+            for(int m = 0; m < 3; m++)
+            {
+                if(matches[m].cmd
+                   && matches[m].dist <= 4
+                   && matches[m].dist < 9999)
+                {
+                    printf("  - \033[0;96m%s"
+                           "\033[0m\n",
+                           matches[m].cmd);
+                }
+            }
+            return;
+        }
+    }
+#else
+    (void) input_cmd;
+#endif
+    printf("\033[31mCommand not found, "
+           "or command with no effect\n\033[0m");
 }
