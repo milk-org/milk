@@ -562,13 +562,127 @@ static void sighandler(int sig)
 }
 
 /**
+ * readline_lazy_init - initialize readline on first call.
+ * @prompt:  prompt string to install with the callback handler
+ * @flag:    pointer to the initialized flag; set to 1 on init
+ *
+ * Idempotent: does nothing if *flag is already 1.
+ * Extracted from runCLI() to eliminate a copy-pasted block.
+ */
+static void readline_lazy_init(
+    const char *prompt,
+    int        *flag
+)
+{
+    if(*flag != 0)
+    {
+        return;
+    }
+    *flag = 1;
+#ifdef USE_READLINE
+    DEBUG_TRACEPOINT("initialize readline");
+    rl_attempted_completion_function = CLI_completion;
+    rl_initialize();
+    signal(SIGWINCH, sighandler);
+    CLI_setup_hint_area();
+    rl_callback_handler_install(
+        prompt,
+        (rl_vcpfunc_t *) &rl_cb_linehandler);
+    CLI_configure_readline();
+#else
+    (void) prompt;
+#endif
+}
+
+
+/**
+ * handle_fifo_input - read one line from the FIFO and execute it.
+ * @prompt:  CLI prompt string (printed after execution for feedback)
+ *
+ * Reads bytes one at a time from data.fifofd until a newline is
+ * received, then calls CLI_execute_line() on the accumulated buffer.
+ * Returns 1 if a line was consumed, 0 if the FIFO fd was not set.
+ *
+ * Extracted from runCLI() to reduce depth-8 nesting.
+ */
+static int handle_fifo_input(const char *prompt)
+{
+    if(!(data.fifoON == 1
+         && data.fifofd >= 0
+         && FD_ISSET(data.fifofd, &cli_fdin_set)))
+    {
+        return 0;
+    }
+
+    ssize_t bytes;
+    size_t  total_bytes = 0;
+    char    buf0[1];
+    char    buf1[1024];
+
+    for(;;)
+    {
+        bytes = read(data.fifofd, buf0, 1);
+        if(bytes > 0)
+        {
+            buf1[total_bytes] = buf0[0];
+            total_bytes      += (size_t) bytes;
+        }
+        else
+        {
+            if(errno == EWOULDBLOCK)
+            {
+                break;
+            }
+            else
+            {
+                perror("read");
+                return -1; /* signal error */
+            }
+        }
+
+        if(buf0[0] == '\n')
+        {
+            buf1[total_bytes - 1] = '\0';
+            strncpy(data.CLIcmdline,
+                    buf1,
+                    STRINGMAXLEN_CLICMDLINE - 1);
+
+            printf("\033[36m[fifo]\033[0m \u2190 \"%s\"\n",
+                   data.CLIcmdline);
+
+            struct timespec ft0, ft1;
+            clock_gettime(CLOCK_MONOTONIC, &ft0);
+
+            cli_history_log_prompt(data.CLIcmdline);
+            CLI_execute_line();
+
+            clock_gettime(CLOCK_MONOTONIC, &ft1);
+            {
+                double fe =
+                    (double)(ft1.tv_sec  - ft0.tv_sec)
+                    + 1.0e-9
+                    * (double)(ft1.tv_nsec - ft0.tv_nsec);
+                printf("\033[36m[fifo]\033[0m \u2713 (%.3fs)\n",
+                       fe);
+            }
+
+            printf("%s", prompt);
+            fflush(stdout);
+            break;
+        }
+    }
+    return 1;
+}
+
+
+/**
  * @brief Main entry point for the interactive CLI read-eval-print loop (REPL)
  *
  * This function is the heart of the milk command-line interface. It performs:
  * 1. Environment initialization (signals, paths, shared memory).
  * 2. Loading of user config, aliases, and history.
  * 3. Loading of core and dynamically requested modules.
- * 4. The main REPL: reading input (from stdin, readline, or FIFO), 
+ * 4. The main REPL: reading input (from stdin, readline, or FIFO),
  *    parsing it, and executing commands via `CLI_execute_line()`.
  *
  * @param argc          Number of command-line arguments passed to the host process
@@ -581,13 +695,14 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 {
     DEBUG_TRACE_FSTART();
 
+
     int fdmax;
     int n;
 
-    ssize_t bytes;
-    size_t  total_bytes;
-    char    buf0[1];
-    char    buf1[1024];
+    ssize_t bytes __attribute__((unused));
+    size_t  total_bytes __attribute__((unused));
+    char    buf0[1] __attribute__((unused));
+    char    buf1[1024] __attribute__((unused));
 
     int initstartup = 0; /// becomes 1 after startup
 
@@ -842,26 +957,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
         if(data.fifoON == 0)
         {
-            if(realine_initialized == 0)
-            {
-                realine_initialized = 1;
-#ifdef USE_READLINE
-                // initialize readline
-                DEBUG_TRACEPOINT("initialize readline");
-                // Tell readline to use custom completion function
-                rl_attempted_completion_function = CLI_completion;
-                rl_initialize();
-
-                /* Handle window size changes when readline is not active and reading
-                     characters. */
-                signal(SIGWINCH, sighandler);
-                CLI_setup_hint_area();
-                rl_callback_handler_install(
-                    prompt,
-                    (rl_vcpfunc_t *) &rl_cb_linehandler);
-                CLI_configure_readline();
-#endif
-            }
+            readline_lazy_init(prompt,
+                               &realine_initialized);
         }
 
         DEBUG_TRACEPOINT("loop entry");
@@ -944,130 +1041,25 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 
             blockCLIinput = 0;
 
-            if(data.fifoON == 1
-               && data.fifofd >= 0)
+            DEBUG_TRACEPOINT("fifo ON");
             {
-                DEBUG_TRACEPOINT("fifo ON");
-                if(FD_ISSET(
-                    data.fifofd,
-                    &cli_fdin_set))
+                int fifo_ret = handle_fifo_input(prompt);
+                if(fifo_ret == -1)
                 {
-                    total_bytes = 0;
-                    for(;;)
-                    {
-                        bytes = read(
-                            data.fifofd,
-                            buf0, 1);
-                        if(bytes > 0)
-                        {
-                            buf1[total_bytes] =
-                                buf0[0];
-                            total_bytes +=
-                                (size_t) bytes;
-                        }
-                        else
-                        {
-                            if(errno
-                               == EWOULDBLOCK)
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                perror("read");
-                                DEBUG_TRACE_FEXIT();
-                                return
-                                    EXIT_FAILURE;
-                            }
-                        }
-                        if(buf0[0] == '\n')
-                        {
-                            buf1[
-                                total_bytes - 1]
-                                = '\0';
-                            strncpy(
-                                data.CLIcmdline,
-                                buf1,
-                                STRINGMAXLEN_CLICMDLINE
-                                - 1);
-
-                            /* FIFO ingestion
-                             * feedback */
-                            printf(
-                                "\033[36m"
-                                "[fifo]\033[0m"
-                                " \u2190 \"%s\""
-                                "\n",
-                                data.CLIcmdline);
-
-                            struct timespec
-                                ft0;
-                            struct timespec
-                                ft1;
-                            clock_gettime(
-                                CLOCK_MONOTONIC,
-                                &ft0);
-
-                            cli_history_log_prompt(
-                                data.CLIcmdline);
-
-                            CLI_execute_line();
-
-                            clock_gettime(
-                                CLOCK_MONOTONIC,
-                                &ft1);
-                            {
-                                double fe =
-                                    (double)
-                                    (ft1.tv_sec
-                                     - ft0.tv_sec)
-                                    + 1.0e-9
-                                    * (double)
-                                    (ft1.tv_nsec
-                                     - ft0.tv_nsec);
-                                printf(
-                                    "\033[36m"
-                                    "[fifo]"
-                                    "\033[0m"
-                                    " \u2713 "
-                                    "(%.3fs)"
-                                    "\n",
-                                    fe);
-                            }
-
-                            printf("%s",
-                                   prompt);
-                            fflush(stdout);
-                            break;
-                        }
-                    }
+                    DEBUG_TRACE_FEXIT();
+                    return EXIT_FAILURE;
+                }
+                if(fifo_ret == 1)
+                {
                     blockCLIinput = 1;
                 }
             }
 
-            if(blockCLIinput == 0)  // fifo has been cleared
+            if(blockCLIinput == 0)  /* fifo cleared */
             {
                 DEBUG_TRACEPOINT("fifo cleared");
-                if(realine_initialized == 0)
-                {
-                    realine_initialized = 1;
-#ifdef USE_READLINE
-                    // initialize readline
-                    DEBUG_TRACEPOINT("initialize readline");
-                    // Tell readline to use custom completion function
-                    rl_attempted_completion_function = CLI_completion;
-                    rl_initialize();
-
-                    /* Handle window size changes when readline is not active and reading
-                         characters. */
-                    signal(SIGWINCH, sighandler);
-                    CLI_setup_hint_area();
-                    rl_callback_handler_install(
-                        prompt,
-                        (rl_vcpfunc_t *) &rl_cb_linehandler);
-                    CLI_configure_readline();
-#endif
-                }
+                readline_lazy_init(prompt,
+                                   &realine_initialized);
             }
 
             //printf("fifo cleared, accepting user input through CLI\n");
