@@ -46,6 +46,7 @@ set(MILKSCRIPT_SOURCES
     CLIcore_script_intercept_utils.c
     CLIcore_script_builtin.c
     CLIcore_script_traps.c
+    CLIcore_script_cmd_builtins.c
     CLIcore_script_cmd_io.c
     CLIcore_script_cmd_inspect.c
     CLIcore_script_cmd_defer.c
