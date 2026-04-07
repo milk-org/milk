@@ -16,8 +16,8 @@
  * RegisterCLIcommand(), so no header declarations
  * are needed.
  *
- * Public API (declared in CLIcore.h / forward-
- * referenced in CLIcore.c):
+ * Internal entry point defined in this file and
+ * forward-referenced from CLIcore.c:
  *   runCLI_cmd_init()
  */
 
