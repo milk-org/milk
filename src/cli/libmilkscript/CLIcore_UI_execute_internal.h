@@ -130,10 +130,15 @@ int cli_handle_shell_builtins(void);
 /**
  * @brief Test whether firstword names an internal
  * milk command, keyword, or assignment.
- * @param firstword  First token of the command line
+ * @param firstword    First token of the command line
+ * @param check_assign When non-zero, a token containing
+ *                     '=' is also treated as internal
+ *                     (variable assignment). Pass 0 to
+ *                     skip this check (e.g. calc-eval
+ *                     path where "a=b+1" is arithmetic).
  * @return 1 if internal, 0 if external
  */
-int is_internal_cmd(const char *firstword);
+int is_internal_cmd(const char *firstword, int check_assign);
 
 /**
  * @brief Set up pipe-to-shell stdout redirect.

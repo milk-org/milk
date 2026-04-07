@@ -31,6 +31,14 @@
 #include "CLIcore_UI_execute.h"
 #include "CLIcore_UI_execute_internal.h"
 
+/* Local color macros (plain escapes — no readline wrap) */
+#ifndef COLORDIMYELLOW
+#define COLORDIMYELLOW "\033[2;33m"
+#endif
+#ifndef COLORRST
+#define COLORRST       "\033[0m"
+#endif
+
 extern int cli_last_retval;
 
 #include "ImageStreamIO.h"
@@ -1042,9 +1050,14 @@ int cli_handle_background(
  * is_internal_cmd - return 1 if firstword is a built-in
  *      keyword, variable assignment, or registered CLI
  *      command; 0 if it looks like an external command.
- * @firstword: first token of the command line
+ * @firstword:    first token of the command line
+ * @check_assign: when non-zero, a token containing '='
+ *                is treated as an internal assignment.
+ *                Pass 0 on the calc-eval path so that
+ *                no-space arithmetic like "a=b+1" is
+ *                still evaluated by the calc engine.
  */
-int is_internal_cmd(const char *firstword)
+int is_internal_cmd(const char *firstword, int check_assign)
 {
     static const char *keywords[] = {
         "if", "elif", "else", "fi",
@@ -1060,7 +1073,7 @@ int is_internal_cmd(const char *firstword)
         }
     }
 
-    if(strchr(firstword, '=') != NULL)
+    if(check_assign && strchr(firstword, '=') != NULL)
     {
         return 1;
     }
@@ -1318,7 +1331,8 @@ void handle_did_you_mean(const char *input_cmd)
 #ifdef USE_READLINE
     if(input_cmd != NULL && input_cmd[0] != '\0')
     {
-        struct { int dist; const char *cmd; } matches[3] = {
+        struct distmatch { int dist; const char *cmd; };
+        struct distmatch matches[3] = {
             {9999, NULL}, {9999, NULL}, {9999, NULL}
         };
 
@@ -1332,13 +1346,13 @@ void handle_did_you_mean(const char *input_cmd)
                 matches[2].cmd  = data.cmd[i].key;
                 if(matches[2].dist < matches[1].dist)
                 {
-                    typeof(matches[0]) tmp = matches[1];
+                    struct distmatch tmp = matches[1];
                     matches[1] = matches[2];
                     matches[2] = tmp;
                 }
                 if(matches[1].dist < matches[0].dist)
                 {
-                    typeof(matches[0]) tmp = matches[0];
+                    struct distmatch tmp = matches[0];
                     matches[0] = matches[1];
                     matches[1] = tmp;
                 }

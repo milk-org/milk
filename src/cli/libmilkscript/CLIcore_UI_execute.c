@@ -294,7 +294,8 @@ errno_t CLI_execute_line()
      * expressions like: crop1 = wfs + 1.0
      * Must run BEFORE cli_try_var_assign().
      * Skip if this is a known internal keyword
-     * or registered command. */
+     * or registered command, but NOT on the
+     * basis of '=' alone — "a=b+1" is arithmetic. */
     if(data.CLIcmdline[0] != '\0'
        && data.CLIcmdline[0] != '!')
     {
@@ -302,7 +303,7 @@ errno_t CLI_execute_line()
         if(sscanf(data.CLIcmdline,
                   " %2047s",
                   firstword) == 1
-           && !is_internal_cmd(firstword))
+           && !is_internal_cmd(firstword, 0))
         {
             if(cli_calc_eval_line(
                    data.CLIcmdline))
@@ -334,7 +335,7 @@ errno_t CLI_execute_line()
         if(sscanf(data.CLIcmdline,
                   " %2047s",
                   firstword) == 1
-           && !is_internal_cmd(firstword))
+           && !is_internal_cmd(firstword, 1))
         {
             printf(COLORDIMYELLOW
                    "[shell bypass] %s"
