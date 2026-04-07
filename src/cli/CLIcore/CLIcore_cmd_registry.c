@@ -321,7 +321,7 @@ void runCLI_cmd_init()
                        set_default_precision_double,
                        "Set default precision to double",
                        "no argument",
-                       "dpdouple",
+                       "dpdouble",
                        "dcprecision = 1");
 
     // process info
