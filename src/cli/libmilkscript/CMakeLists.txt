@@ -46,7 +46,10 @@ set(MILKSCRIPT_SOURCES
     CLIcore_script_intercept_utils.c
     CLIcore_script_builtin.c
     CLIcore_script_case.c
-    CLIcore_script_expand.c
+    CLIcore_script_expand_arith.c
+    CLIcore_script_expand_fps.c
+    CLIcore_script_expand_test.c
+    CLIcore_script_expand_env.c
     CLIcore_script_flow.c
     CLIcore_script_func.c
     CLIcore_script_var.c
