@@ -1,0 +1,47 @@
+/**
+ * @file    fps_processcmdline_file.c
+ * @brief   FPS process command file batch execution
+ */
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
+
+#include "fps.h"
+#include "fps_processcmdline.h"
+
+int functionparameter_FPSprocess_cmdfile(
+    char                      *infname,
+    FUNCTION_PARAMETER_STRUCT *fps,
+    KEYWORD_TREE_NODE         *keywnode,
+    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
+{
+    FILE *fpinputcmd;
+    fpinputcmd = fopen(infname, "r");
+
+    if(fpinputcmd != NULL)
+    {
+        char   *FPScmdline = NULL;
+        size_t  len        = 0;
+        ssize_t read;
+
+        while((read = getline(&FPScmdline, &len, fpinputcmd)) != -1)
+        {
+            uint64_t taskstatus = 0;
+            printf("Processing line : %s\n", FPScmdline);
+            functionparameter_FPSprocess_cmdline(FPScmdline,
+                                                 fpsctrlqueuelist,
+                                                 keywnode,
+                                                 fpsCTRLvar,
+                                                 fps,
+                                                 &taskstatus);
+        }
+        fclose(fpinputcmd);
+    }
+
+    return RETURN_SUCCESS;
+}
