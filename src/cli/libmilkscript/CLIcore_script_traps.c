@@ -67,6 +67,7 @@ void cli_trap_run(int signum)
                 cli_traps[i].cmd,
                 STRINGMAXLEN_CLICMDLINE
                 - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             CLI_execute_line();
         }
     }
