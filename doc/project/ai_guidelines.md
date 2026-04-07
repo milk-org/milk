@@ -27,4 +27,4 @@ Therefore, we request contributors _avoid_:
 
 ### **Principle of traceability**.
 
-Provide the verbatim prompts as a top-level comment to your AI-assisted pull requests, unless reasonably unfeasible. In which case, include a faithful summary and attach the verbatim prompt in a follow-up (and also, if prompts are unreasonably long maybe one should review their approach to AI usage in reflection to the principle of economy (of resources and human time) listed above.)
+Provide the verbatim prompts as a top-level comment to your AI-assisted pull requests, unless reasonably unfeasible or irrelevant to the code changes (for example, back and forth debug of of your local filesystem setup). In which case, include a faithful summary and you may attach the verbatim prompt.
