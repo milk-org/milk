@@ -1,33 +1,30 @@
 /**
- * @file    fps_processcmdline.c
- * @brief   FPS process command line
+ * @file    fps_processcmdline_interactive.c
+ * @brief   FPS process command line interactive execution
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdlib.h>
+#include <string.h>
 
 #include "fps.h"
 #include "fps_internal.h"
 #include "fps_globals.h"
-
 #include "fps_scan.h"
-
 #include "fps_CONFstart.h"
 #include "fps_CONFstop.h"
-
 #include "fps_RUNstart.h"
 #include "fps_RUNstop.h"
-
 #include "fps_tmux.h"
-
 #include "fps_FPSremove.h"
-
 #include "fps_outlog.h"
 #include "fps_paramvalue.h"
 #include "fps_save2disk.h"
-
 #include "fps_WriteParameterToDisk.h"
 #include "fps_printparameter_valuestring.h"
-
 
 /** @brief process command line
  *
@@ -1315,35 +1312,3 @@ int functionparameter_FPSprocess_cmdline(
 }
 
 
-int functionparameter_FPSprocess_cmdfile(
-    char                      *infname,
-    FUNCTION_PARAMETER_STRUCT *fps,
-    KEYWORD_TREE_NODE         *keywnode,
-    FPSCTRL_TASK_QUEUE   *fpsctrlqueuelist,
-    FPSCTRL_PROCESS_VARS *fpsCTRLvar)
-{
-    FILE *fpinputcmd;
-    fpinputcmd = fopen(infname, "r");
-
-    if(fpinputcmd != NULL)
-    {
-        char   *FPScmdline = NULL;
-        size_t  len        = 0;
-        ssize_t read;
-
-        while((read = getline(&FPScmdline, &len, fpinputcmd)) != -1)
-        {
-            uint64_t taskstatus = 0;
-            printf("Processing line : %s\n", FPScmdline);
-            functionparameter_FPSprocess_cmdline(FPScmdline,
-                                                 fpsctrlqueuelist,
-                                                 keywnode,
-                                                 fpsCTRLvar,
-                                                 fps,
-                                                 &taskstatus);
-        }
-        fclose(fpinputcmd);
-    }
-
-    return RETURN_SUCCESS;
-}

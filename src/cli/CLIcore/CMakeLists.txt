@@ -27,6 +27,7 @@ find_package(Threads REQUIRED)
 
 set(CORE_FILES
     CLIcore.c
+    CLIcore_cmd_registry.c
     CLIcore/CLIcore_help_tui.c
     CLIcore/CLIcore_UI_bookmark.c
     CLIcore/CLIcore_UI_builtins.c
