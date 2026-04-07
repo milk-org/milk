@@ -59,7 +59,7 @@ int cli_run_external(
 
     /* Detect characters that require /bin/sh parsing */
     static const char sh_meta[] =
-        "|&;<>`\\\\"
+        "|&;<>`()\\\\"
         "\"'\n*?[{$";
     int needs_shell = 0;
     for(const char *cp = cmd; *cp; cp++)
