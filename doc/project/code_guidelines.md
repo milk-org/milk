@@ -54,11 +54,11 @@ __File-Level Documentation__
 
 __Function Declaration Documentation__
   - Pick all naming so that the function declaration are self-explanatory to an experienced developer
-  - Add a short `/** ... */` details block only when needed.
+  - Add a short `/** ... */` details block only when needed (when not obvious from reading the code).
 
 __Broader documentation expectations__
   - New modules or significant features require a user-facing doc page or update to an existing one.
-  - When touching a file, improve documentation quality across the entire file, not just the lines you changed.
+  - When touching a file, try improving documentation quality across the entire file, not just the lines you changed.
   - Documentation-only PRs are welcome and encouraged.
 
 
