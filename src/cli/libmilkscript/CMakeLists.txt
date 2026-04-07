@@ -45,6 +45,10 @@ set(MILKSCRIPT_SOURCES
     CLIcore_script_intercept_flow.c
     CLIcore_script_intercept_utils.c
     CLIcore_script_builtin.c
+    CLIcore_script_traps.c
+    CLIcore_script_cmd_io.c
+    CLIcore_script_cmd_inspect.c
+    CLIcore_script_cmd_defer.c
     CLIcore_script_case.c
     CLIcore_script_expand.c
     CLIcore_script_flow.c
