@@ -37,13 +37,13 @@ if(BUILD_TESTING)
     # Verify that the 'seq.list' command is available via the CLI.
     add_test(
         NAME sequencer_cmd_help_seq_list
-        COMMAND ${CMAKE_BINARY_DIR}/milk-cli cmd? seq.list
+        COMMAND milk-exec "-T" "cmd? seq.list"
     )
 
     # Verify that the 'seq.start' command is available via the CLI.
     add_test(
         NAME sequencer_cmd_help_seq_start
-        COMMAND ${CMAKE_BINARY_DIR}/milk-cli cmd? seq.start
+        COMMAND milk-exec "-T" "cmd? seq.start"
     )
 
 endif()
