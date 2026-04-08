@@ -1,104 +1,96 @@
 /**
- * @file image_arith__im_f__im.h
- * @brief Image arith  im f  im module
+ * @file  image_arith__im_f__im.h
+ * @brief Image + scalar arithmetic prototypes (img,float → img).
+ *
+ * All prototypes are generated from X-macro op tables.
+ * Adding a new operation requires only one edit:
+ * add a row to the appropriate table below.
+ *
+ * Three call surfaces per operation:
+ *   arith_image_cst<op>_IMGID(imgin, f1, imgout)
+ *   arith_image_cst<op>(name, f1, name_out)
+ *   arith_image_cst<op>_inplace(name, f1)   [FULL ops only]
  */
 
-/**
- * @file    image_arith__im_f__im.h
- *
- */
+#ifndef IMAGE_ARITH_IM_F_IM_H
+#define IMAGE_ARITH_IM_F_IM_H
 
 #include <libfps/IMGID.h>
 
-int arith_image_cstfmod(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstfmod_IMGID(IMGID *imgin, double f1, IMGID *imgout);
 
-int arith_image_cstadd(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstadd_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+/* ==========================================================
+ * X-macro operation tables.
+ *
+ * MILK_CST_OPS_OPT_FULL  — optimized dispatch, with inplace
+ * MILK_CST_OPS_FPTR_FULL — function-pointer dispatch, with inplace
+ * MILK_CST_OPS_OPT_NOIP  — optimized dispatch, no inplace
+ *
+ * X(op, tag_or_fptr)
+ * ========================================================== */
 
-int arith_image_cstsub(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstsub_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+/** Optimized dispatch + inplace variants */
+#define MILK_CST_OPS_OPT_FULL(X) \
+    X(add,    optimized)          \
+    X(sub,    optimized)          \
+    X(mult,   optimized)          \
+    X(div,    optimized)          \
+    X(pow,    optimized)          \
+    X(testlt, optimized)          \
+    X(testmt, optimized)
 
-int arith_image_cstsubm(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstsubm_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+/** Function-pointer dispatch + inplace variants */
+#define MILK_CST_OPS_FPTR_FULL(X) \
+    X(fmod,   Pfmod)               \
+    X(subm,   Psubm)               \
+    X(div1,   Pdiv1)               \
+    X(maxv,   Pmaxv)               \
+    X(minv,   Pminv)
 
-int arith_image_cstmult(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstmult_IMGID(IMGID *imgin, double f1, IMGID *imgout);
+/** Optimized dispatch, no inplace variant */
+#define MILK_CST_OPS_OPT_NOIP(X) \
+    X(teste,  optimized)          \
+    X(testne, optimized)          \
+    X(testle, optimized)          \
+    X(testge, optimized)          \
+    X(and,    optimized)          \
+    X(or,     optimized)
 
-int arith_image_cstdiv(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstdiv_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstdiv1(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstdiv1_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstpow(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstpow_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstmaxv(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstmaxv_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstminv(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstminv_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_csttestlt(const char *ID_name, double f1, const char *ID_out);
-int arith_image_csttestlt_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_csttestmt(const char *ID_name, double f1, const char *ID_out);
-int arith_image_csttestmt_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstteste(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstteste_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-int arith_image_csttestne(const char *ID_name, double f1, const char *ID_out);
-int arith_image_csttestne_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-int arith_image_csttestle(const char *ID_name, double f1, const char *ID_out);
-int arith_image_csttestle_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-int arith_image_csttestge(const char *ID_name, double f1, const char *ID_out);
-int arith_image_csttestge_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-int arith_image_cstand(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstand_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-int arith_image_cstor(const char *ID_name, double f1, const char *ID_out);
-int arith_image_cstor_IMGID(IMGID *imgin, double f1, IMGID *imgout);
-
-int arith_image_cstfmod_inplace(const char *ID_name, double f1);
-
-int arith_image_cstadd_inplace(const char *ID_name, double f1);
-
-int arith_image_cstsub_inplace(const char *ID_name, double f1);
-
-int arith_image_cstmult_inplace(const char *ID_name, double f1);
-
-int arith_image_cstdiv_inplace(const char *ID_name, double f1);
-
-int arith_image_cstdiv1_inplace(const char *ID_name, double f1);
-
-int arith_image_cstpow_inplace(const char *ID_name, double f1);
-
-int arith_image_cstmaxv_inplace(const char *ID_name, double f1);
-
-int arith_image_cstminv_inplace(const char *ID_name, double f1);
-
-int arith_image_csttestlt_inplace(const char *ID_name, double f1);
-
-int arith_image_csttestmt_inplace(const char *ID_name, double f1);
+/** Expand all three tables for macros that apply to all */
+#define MILK_CST_OPS_ALL(X)      \
+    MILK_CST_OPS_OPT_FULL(X)     \
+    MILK_CST_OPS_FPTR_FULL(X)    \
+    MILK_CST_OPS_OPT_NOIP(X)
 
 
+/* ----------------------------------------------------------
+ * Generated prototypes — IMGID and string APIs (all ops)
+ * ---------------------------------------------------------- */
+
+#define IMAGE_ARITH_DECLARE_CST(op, tag) \
+int arith_image_cst##op##_IMGID(         \
+    IMGID *imgin,                        \
+    double f1,                           \
+    IMGID *imgout);                      \
+int arith_image_cst##op(                 \
+    const char *ID_name,                 \
+    double f1,                           \
+    const char *ID_out);
+
+MILK_CST_OPS_ALL(IMAGE_ARITH_DECLARE_CST)
+#undef IMAGE_ARITH_DECLARE_CST
 
 
+/* ----------------------------------------------------------
+ * Generated prototypes — inplace API (FULL ops only)
+ * ---------------------------------------------------------- */
 
+#define IMAGE_ARITH_DECLARE_CST_INPLACE(op, tag) \
+int arith_image_cst##op##_inplace(               \
+    const char *ID_name,                         \
+    double f1);
 
+MILK_CST_OPS_OPT_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+MILK_CST_OPS_FPTR_FULL(IMAGE_ARITH_DECLARE_CST_INPLACE)
+#undef IMAGE_ARITH_DECLARE_CST_INPLACE
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif /* IMAGE_ARITH_IM_F_IM_H */
