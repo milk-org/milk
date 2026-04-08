@@ -326,8 +326,24 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     EXECUTE_SYSTEM_COMMAND(
         "mkdir -p %s", dirname);
 
-    IDtrig = image_ID(
-        IDtrig_name, dcimg, dcnimg);
+    {
+        IMGID imgtrig =
+            imgid_make_from_name(IDtrig_name);
+        resolveIMGID(
+            &imgtrig, ERRMODE_NULL,
+            dcimg, dcnimg);
+        IDtrig = imgtrig.ID;
+        if(IDtrig == -1)
+        {
+            fprintf(stderr,
+                    "ERROR: trigger stream \"%s\" not found\n",
+                    IDtrig_name);
+            free(IDarray);
+            free(IDarrayout);
+            free(imsizearray);
+            return RETURN_FAILURE;
+        }
+    }
 
     printf("Creating arrays\n");
     fflush(stdout);

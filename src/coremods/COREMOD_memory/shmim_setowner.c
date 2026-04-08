@@ -23,30 +23,28 @@
 /** @brief set owner to creator */
 imageID shmim_setowner_creator(const char *name)
 {
-    imageID ID;
-
-    ID = image_ID(name, dcimg, dcnimg);
-    if(ID != -1)
+    IMGID img = imgid_make_from_name(name);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    if(img.ID != -1)
     {
-        dcimg[ID].md[0].ownerPID =
-            dcimg[ID].md[0].creatorPID;
+        img.im->md[0].ownerPID =
+            img.im->md[0].creatorPID;
     }
 
-    return ID;
+    return img.ID;
 }
 
 /** @brief set owner to current PID */
 imageID shmim_setowner_current(const char *name)
 {
-    imageID ID;
-
-    ID = image_ID(name, dcimg, dcnimg);
-    if(ID != -1)
+    IMGID img = imgid_make_from_name(name);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    if(img.ID != -1)
     {
-        dcimg[ID].md[0].ownerPID = getpid();
+        img.im->md[0].ownerPID = getpid();
     }
 
-    return ID;
+    return img.ID;
 }
 
 /**
@@ -56,15 +54,14 @@ imageID shmim_setowner_current(const char *name)
  */
 imageID shmim_setowner_init(const char *name)
 {
-    imageID ID;
-
-    ID = image_ID(name, dcimg, dcnimg);
-    if(ID != -1)
+    IMGID img = imgid_make_from_name(name);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    if(img.ID != -1)
     {
-        dcimg[ID].md[0].ownerPID = 1;
+        img.im->md[0].ownerPID = 1;
     }
 
-    return ID;
+    return img.ID;
 }
 
 

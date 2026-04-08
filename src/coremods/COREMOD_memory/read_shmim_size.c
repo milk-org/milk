@@ -79,11 +79,11 @@ imageID read_sharedmem_image_size(
     IMAGE_METADATA *map;
     int             i;
     FILE           *fp;
-    imageID         ID = -1;
 
-    if((ID = image_ID(
-            name, dcimg,
-            dcnimg)) == -1)
+    IMGID img = imgid_make_from_name(name);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+
+    if(img.ID == -1)
     {
         WRITE_FULLFILENAME(
             SM_fname, "%s/%s.im.shm",
@@ -141,19 +141,18 @@ imageID read_sharedmem_image_size(
     {
         fp = fopen(fname, "w");
         for(i = 0;
-             i < dcimg[ID].md[0].naxis;
+             i < img.im->md[0].naxis;
              i++)
         {
             fprintf(
                 fp, "%ld ",
-                (long) dcimg[ID]
-                    .md[0].size[i]);
+                (long) img.im->md[0].size[i]);
         }
         fprintf(fp, "\n");
         fclose(fp);
     }
 
-    return ID;
+    return img.ID;
 }
 
 
