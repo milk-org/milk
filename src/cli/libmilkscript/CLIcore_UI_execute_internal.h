@@ -63,6 +63,28 @@ int cli_split_semicolon(errno_t *retval);
  */
 int cli_rewrite_dot_source(void);
 
+/* ---- Shared scanning helpers ---- */
+
+/**
+ * @brief Find first unquoted operator character.
+ *
+ * Scans @line for the first occurrence of @primary
+ * outside quotes and parentheses.  When @reject is
+ * non-zero, any match followed by @reject is skipped
+ * (e.g. '<' with reject='<' skips '<<').  When
+ * @accept is non-zero, only matches followed by
+ * @accept count (e.g. '|' with accept='>' matches
+ * '|>' only).
+ *
+ * @return Index of the matched character, or -1
+ */
+int cli_find_unquoted_op(
+    const char *line,
+    char        primary,
+    char        reject,
+    char        accept
+);
+
 /* ---- I/O Redirection handlers (redir.c) ---- */
 
 /**
