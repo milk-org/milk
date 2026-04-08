@@ -840,16 +840,17 @@ int functionparameter_SetParamValue_fromString(
 
         case FPTYPE_ONOFF:
         {
-            /* Require exact match (null or newline terminator after
-             * prefix) to avoid treating "ONCE" as ON or "OFFLINE"
+            /* Use exact case-insensitive comparison (with or without
+             * trailing newline, consistent with numeric parsers above)
+             * to avoid silently accepting "ONCE" as ON or "OFFLINE"
              * as OFF.
              */
-            int is_on  = (strncasecmp(strval, "ON",  2) == 0 &&
-                          (strval[2] == '\0' || strval[2] == '\n'))
-                         || strcmp(strval, "1") == 0;
-            int is_off = (strncasecmp(strval, "OFF", 3) == 0 &&
-                          (strval[3] == '\0' || strval[3] == '\n'))
-                         || strcmp(strval, "0") == 0;
+            int is_on  = strcasecmp(strval, "ON")   == 0 ||
+                         strcasecmp(strval, "ON\n")  == 0 ||
+                         strcmp(strval, "1") == 0;
+            int is_off = strcasecmp(strval, "OFF")  == 0 ||
+                         strcasecmp(strval, "OFF\n") == 0 ||
+                         strcmp(strval, "0") == 0;
 
             if (is_on)
             {
