@@ -185,24 +185,24 @@ int cli_split_logical_op(errno_t *retval)
     int op_len = 0;
     int op_is_and = 0;
 
-    /* Try && first */
-    split_pos = cli_find_unquoted_op(
+    /* Find first unquoted && and || and pick earliest */
+    int pos_and = cli_find_unquoted_op(
         src, '&', 0, '&');
-    if (split_pos >= 0)
+    int pos_or = cli_find_unquoted_op(
+        src, '|', 0, '|');
+
+    if (pos_and >= 0 &&
+        (pos_or < 0 || pos_and < pos_or))
     {
-        op_len = 2;
+        split_pos = pos_and;
+        op_len    = 2;
         op_is_and = 1;
     }
-    else
+    else if (pos_or >= 0)
     {
-        /* Try || */
-        split_pos = cli_find_unquoted_op(
-            src, '|', 0, '|');
-        if (split_pos >= 0)
-        {
-            op_len = 2;
-            op_is_and = 0;
-        }
+        split_pos = pos_or;
+        op_len    = 2;
+        op_is_and = 0;
     }
     if (split_pos < 0)
     {
