@@ -20,6 +20,10 @@
  * compare [0] vs [3] to detect changes.
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
 #include "fps.h"
 #include "fps_internal.h"
 
@@ -693,4 +697,107 @@ uint64_t *functionparameter_GetParamPtr_fpflag(
     ptr      = &fps->parray[fpsi].fpflag;
 
     return ptr;
+}
+
+
+/* ============================================================
+ * Generic string-to-typed setter
+ * ========================================================== */
+
+/**
+ * functionparameter_SetParamValue_fromString -
+ *      set an FPS parameter from a string value.
+ * @fps:      connected FPS structure
+ * @pindex:   index into fps->parray[]
+ * @strval:   NUL-terminated string representation
+ *
+ * Looks up the parameter type and dispatches to the
+ * appropriate typed setter.  Handles ONOFF parsing
+ * ("ON"/"OFF"/"1"/"0") and all numeric/string types.
+ *
+ * Returns 0 on success, -1 if pindex is out of range.
+ */
+int functionparameter_SetParamValue_fromString(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int                        pindex,
+    const char                *strval
+)
+{
+    if (pindex < 0
+        || pindex >= fps->md->NBparamMAX)
+    {
+        return -1;
+    }
+
+    const char *kw =
+        fps->parray[pindex].keyword[0];
+
+    switch (fps->parray[pindex].type)
+    {
+        case FPTYPE_INT32:
+            functionparameter_SetParamValue_INT32(
+                fps, kw,
+                (int32_t) strtol(strval, NULL, 10));
+            break;
+
+        case FPTYPE_UINT32:
+            functionparameter_SetParamValue_UINT32(
+                fps, kw,
+                (uint32_t) strtoul(
+                    strval, NULL, 10));
+            break;
+
+        case FPTYPE_INT64:
+        case FPTYPE_PID:
+            functionparameter_SetParamValue_INT64(
+                fps, kw,
+                strtoll(strval, NULL, 10));
+            break;
+
+        case FPTYPE_UINT64:
+            functionparameter_SetParamValue_UINT64(
+                fps, kw,
+                strtoull(strval, NULL, 10));
+            break;
+
+        case FPTYPE_FLOAT32:
+            functionparameter_SetParamValue_FLOAT32(
+                fps, kw,
+                strtof(strval, NULL));
+            break;
+
+        case FPTYPE_FLOAT64:
+            functionparameter_SetParamValue_FLOAT64(
+                fps, kw,
+                strtod(strval, NULL));
+            break;
+
+        case FPTYPE_TIMESPEC:
+            functionparameter_SetParamValue_TIMESPEC(
+                fps, kw,
+                strtof(strval, NULL));
+            break;
+
+        case FPTYPE_ONOFF:
+            if (strcasecmp(strval, "ON") == 0
+                || strcmp(strval, "1") == 0)
+            {
+                functionparameter_SetParamValue_ONOFF(
+                    fps, kw, 1);
+            }
+            else if (
+                strcasecmp(strval, "OFF") == 0
+                || strcmp(strval, "0") == 0)
+            {
+                functionparameter_SetParamValue_ONOFF(
+                    fps, kw, 0);
+            }
+            break;
+
+        default:
+            functionparameter_SetParamValue_STRING(
+                fps, kw, strval);
+            break;
+    }
+    return 0;
 }
