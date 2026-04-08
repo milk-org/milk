@@ -195,94 +195,13 @@ int main(int argc, char *argv[])
 
     int type = fps.parray[pindex].type;
     int vOK = 1;
-    char *endptr;
-    long lval;
-    double fval;
-
-    switch(type) {
-        case FPTYPE_INT32:
-            lval = strtol(value_str, &endptr, 10);
-            if (*endptr != '\0') vOK = 0;
-            else fps.parray[pindex].val.i32[0] = (int32_t)lval;
-            break;
-        case FPTYPE_UINT32:
-            lval = strtol(value_str, &endptr, 10);
-            if (*endptr != '\0' || lval < 0) vOK = 0;
-            else fps.parray[pindex].val.ui32[0] = (uint32_t)lval;
-            break;
-        case FPTYPE_INT64:
-            lval = strtol(value_str, &endptr, 10);
-            if (*endptr != '\0') vOK = 0;
-            else fps.parray[pindex].val.i64[0] = (int64_t)lval;
-            break;
-        case FPTYPE_UINT64:
-            lval = strtol(value_str, &endptr, 10);
-            if (*endptr != '\0' || lval < 0) vOK = 0;
-            else fps.parray[pindex].val.ui64[0] = (uint64_t)lval;
-            break;
-        case FPTYPE_FLOAT32:
-            fval = strtod(value_str, &endptr);
-            if (*endptr != '\0') vOK = 0;
-            else fps.parray[pindex].val.f32[0] = (float)fval;
-            break;
-        case FPTYPE_FLOAT64:
-            fval = strtod(value_str, &endptr);
-            if (*endptr != '\0') vOK = 0;
-            else fps.parray[pindex].val.f64[0] = fval;
-            break;
-        case FPTYPE_STRING:
-        case FPTYPE_FILENAME:
-        case FPTYPE_FITSFILENAME:
-        case FPTYPE_EXECFILENAME:
-        case FPTYPE_DIRNAME:
-        case FPTYPE_STREAMNAME:
-        case FPTYPE_FPSNAME:
-            strncpy(fps.parray[pindex].val.string[0],
-                value_str,
-                FUNCTION_PARAMETER_STRMAXLEN-1);
-            break;
-        case FPTYPE_ONOFF:
-            if(strcasecmp(value_str, "ON") == 0 || strcmp(value_str, "1") == 0) {
-                fps.parray[pindex].fpflag |= FPFLAG_ONOFF;
-                fps.parray[pindex].val.i64[0] = 1;
-            } else if(strcasecmp(value_str, "OFF") == 0 || strcmp(value_str, "0") == 0) {
-                fps.parray[pindex].fpflag &= ~FPFLAG_ONOFF;
-                fps.parray[pindex].val.i64[0] = 0;
-            } else {
-                vOK = 0;
-            }
-            break;
-        case FPTYPE_TIMESPEC:
-            fval = strtod(value_str, &endptr);
-            if (*endptr != '\0') vOK = 0;
-            else {
-                struct timespec ts;
-                ts.tv_sec = (time_t)fval;
-                ts.tv_nsec = (long)((fval - (double)ts.tv_sec) * 1000000000.0);
-                if (ts.tv_nsec < 0) ts.tv_nsec = 0;
-                if (ts.tv_nsec >= 1000000000) ts.tv_nsec = 999999999;
-                
-                fps.parray[pindex].val.ts[0] = ts;
-            }
-            break;
-        default:
-            fprintf(stderr, "Error: Unsupported parameter type '%s' (0x%x) for CLI setting.\n", get_type_name(type), type);
-            vOK = 0;
-    }
-
-    if (!vOK) {
+    if (functionparameter_SetParamValue_fromString(&fps, pindex, value_str) == RETURN_SUCCESS) {
+        printf("Parameter '%s' set to '%s'\n", fullkey, value_str);
+    } else {
+        vOK = 0;
         fprintf(stderr, "Error: Failed to set parameter '%s'. Type mismatch or invalid format.\n", fullkey);
         fprintf(stderr, "       Parameter Type: %s\n", get_type_name(type));
         fprintf(stderr, "       Input Value:    '%s'\n", value_str);
-    } else {
-        fps.parray[pindex].cnt0++;
-        fps.parray[pindex].value_cnt++;
-
-        fps.md->signal |= FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-        
-        functionparameter_outlog("SETVAL", "%s %s", fps.parray[pindex].keywordfull, value_str);
-        
-        printf("Parameter '%s' set to '%s'\n", fullkey, value_str);
     }
 
     function_parameter_struct_disconnect(&fps);

@@ -79,160 +79,6 @@ static int check_and_reconnect(FPS_VALKEY_CTX *vctx)
     return 0;
 }
 
-/**
- * @brief Parse type string and write value to FPS
- *        parameter in shared memory
- *
- * Mirrors the type-aware write logic from
- * milk-fps-set.c. Writes directly to the SHM
- * parameter array entry.
- *
- * @param fp        Parameter entry pointer
- * @param value_str Value as a string
- * @param typestr   Type name (e.g. "FLOAT64")
- * @return 0 on success, -1 on parse/type error
- */
-static int apply_value_to_param(
-    FUNCTION_PARAMETER *fp,
-    const char *value_str,
-    const char *typestr
-)
-{
-    char *endptr;
-    long lval;
-    double fval;
-
-    (void) typestr; /* type comes from fp->type */
-
-    switch (fp->type)
-    {
-    case FPTYPE_INT32:
-        lval = strtol(value_str, &endptr, 10);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        fp->val.i32[0] = (int32_t) lval;
-        break;
-
-    case FPTYPE_UINT32:
-        lval = strtol(value_str, &endptr, 10);
-        if (*endptr != '\0' || lval < 0)
-        {
-            return -1;
-        }
-        fp->val.ui32[0] = (uint32_t) lval;
-        break;
-
-    case FPTYPE_INT64:
-        lval = strtol(value_str, &endptr, 10);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        fp->val.i64[0] = (int64_t) lval;
-        break;
-
-    case FPTYPE_UINT64:
-        lval = strtol(value_str, &endptr, 10);
-        if (*endptr != '\0' || lval < 0)
-        {
-            return -1;
-        }
-        fp->val.ui64[0] = (uint64_t) lval;
-        break;
-
-    case FPTYPE_FLOAT32:
-        fval = strtod(value_str, &endptr);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        fp->val.f32[0] = (float) fval;
-        break;
-
-    case FPTYPE_FLOAT64:
-        fval = strtod(value_str, &endptr);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        fp->val.f64[0] = fval;
-        break;
-
-    case FPTYPE_ONOFF:
-        if (strcasecmp(value_str, "ON") == 0
-            || strcmp(value_str, "1") == 0)
-        {
-            fp->fpflag |= FPFLAG_ONOFF;
-            fp->val.i64[0] = 1;
-        }
-        else if (strcasecmp(value_str, "OFF") == 0
-                 || strcmp(value_str, "0") == 0)
-        {
-            fp->fpflag &= ~FPFLAG_ONOFF;
-            fp->val.i64[0] = 0;
-        }
-        else
-        {
-            return -1;
-        }
-        break;
-
-    case FPTYPE_TIMESPEC:
-        fval = strtod(value_str, &endptr);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        {
-            struct timespec ts;
-            ts.tv_sec = (time_t) fval;
-            ts.tv_nsec = (long) (
-                (fval - (double) ts.tv_sec)
-                * 1000000000.0);
-            if (ts.tv_nsec < 0)
-            {
-                ts.tv_nsec = 0;
-            }
-            if (ts.tv_nsec >= 1000000000)
-            {
-                ts.tv_nsec = 999999999;
-            }
-            fp->val.ts[0] = ts;
-        }
-        break;
-
-    case FPTYPE_PID:
-        lval = strtol(value_str, &endptr, 10);
-        if (*endptr != '\0')
-        {
-            return -1;
-        }
-        fp->val.pid[0] = (pid_t) lval;
-        break;
-
-    case FPTYPE_STRING:
-    case FPTYPE_FILENAME:
-    case FPTYPE_FITSFILENAME:
-    case FPTYPE_EXECFILENAME:
-    case FPTYPE_DIRNAME:
-    case FPTYPE_STREAMNAME:
-    case FPTYPE_FPSNAME:
-    case FPTYPE_PROCESS:
-    case FPTYPE_STRING_NOT_STREAM:
-        strncpy(fp->val.string[0], value_str,
-            FUNCTION_PARAMETER_STRMAXLEN - 1);
-        fp->val.string[0][
-            FUNCTION_PARAMETER_STRMAXLEN - 1] = '\0';
-        break;
-
-    default:
-        return -1;
-    }
-
-    return 0;
-}
 
 /**
  * @brief Get simple value string for a parameter
@@ -423,17 +269,11 @@ static void *subscriber_loop(void *arg)
                 continue;
             }
 
-            int ret = apply_value_to_param(
-                &fps.parray[pidx],
-                msg_value, msg_type);
+            int ret = functionparameter_SetParamValue_fromString(
+                &fps, pidx, msg_value);
 
-            if (ret == 0)
+            if (ret == RETURN_SUCCESS)
             {
-                fps.parray[pidx].cnt0++;
-                fps.parray[pidx].value_cnt++;
-                fps.md->signal |=
-                    FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
-
                 printf("[fpsvalkey] PULL %s %s.%s"
                        " = %s (from %s)\n",
                     msg_type, msg_fpsname,
