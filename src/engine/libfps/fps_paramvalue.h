@@ -184,4 +184,14 @@ errno_t functionparameter_SetParamValue_ONOFF(FUNCTION_PARAMETER_STRUCT *fps,
 uint64_t *functionparameter_GetParamPtr_fpflag(FUNCTION_PARAMETER_STRUCT *fps,
         const char *paramname);
 
+// =====================================================================
+// Generic string-to-typed setter
+// =====================================================================
+
+/** Set parameter at @pindex from string @strval */
+int functionparameter_SetParamValue_fromString(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int                        pindex,
+    const char                *strval);
+
 #endif

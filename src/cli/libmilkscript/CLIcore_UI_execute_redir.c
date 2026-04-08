@@ -47,6 +47,124 @@ extern int cli_last_retval;
 
 
 /**
+ * cli_find_unquoted_op - find the first unquoted,
+ *      un-nested occurrence of an operator character.
+ * @line:      NUL-terminated command string to scan
+ * @primary:   character to match (e.g. '<', '>', '|')
+ * @reject:    if non-zero, skip when line[i+1] == reject
+ *             (e.g. reject='<' skips '<<')
+ * @accept:    if non-zero, only match when
+ *             line[i+1] == accept (e.g. accept='>'
+ *             matches '|>' but not '|' alone).
+ *             Mutually exclusive with @reject.
+ *
+ * Tracks single-quote, double-quote, and parenthesis
+ * depth so that operators inside quotes or subshells
+ * are ignored.
+ *
+ * Returns the index of the matched character, or -1
+ * if no unquoted match was found.
+ */
+int cli_find_unquoted_op(
+    const char *line,
+    char        primary,
+    char        reject,
+    char        accept
+)
+{
+    int in_sq = 0;
+    int in_dq = 0;
+    int depth = 0;
+
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        char c = line[i];
+        if (c == '\'' && !in_dq)
+        {
+            in_sq = !in_sq;
+        }
+        else if (c == '"' && !in_sq)
+        {
+            in_dq = !in_dq;
+        }
+        else if (!in_sq && !in_dq)
+        {
+            if (c == '(')
+            {
+                depth++;
+            }
+            else if (c == ')' && depth > 0)
+            {
+                depth--;
+            }
+            else if (depth == 0 && c == primary)
+            {
+                if (reject != 0
+                    && line[i + 1] == reject)
+                {
+                    continue;
+                }
+                if (accept != 0
+                    && line[i + 1] != accept)
+                {
+                    continue;
+                }
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+
+/**
+ * @brief Helper to safely create and open a temporary file
+ */
+static FILE *cli_mkstemp_open(
+    char *namebuf, size_t sz,
+    const char *prefix,
+    const char *mode)
+{
+    snprintf(namebuf, sz, "%s_XXXXXX", prefix);
+    int fd = mkstemp(namebuf);
+    if (fd >= 0)
+    {
+        FILE *tf = fdopen(fd, mode);
+        if (tf)
+        {
+            return tf;
+        }
+        close(fd);
+        unlink(namebuf);
+    }
+    return NULL;
+}
+
+/**
+ * @brief Helper to safely redirect a file descriptor and save it
+ */
+static void cli_fd_redirect(
+    int target_fd,
+    int new_fd,
+    int *saved_fd)
+{
+    *saved_fd = dup(target_fd);
+    dup2(new_fd, target_fd);
+}
+
+/**
+ * @brief Helper to restore a saved file descriptor
+ */
+static void cli_fd_restore(
+    int target_fd,
+    int saved_fd)
+{
+    dup2(saved_fd, target_fd);
+    close(saved_fd);
+}
+
+
+/**
  * @brief Execute an external command with minimal overhead.
  *
  * Prefers a direct fork+exec via posix_spawnp() for simple
@@ -299,12 +417,11 @@ int cli_handle_herestring_late(
         wr_ignore = write(pfd[1], "\n", 1);
         (void) wr_ignore;
         close(pfd[1]);
-        int sv = dup(STDIN_FILENO);
-        dup2(pfd[0], STDIN_FILENO);
+        int sv;
+        cli_fd_redirect(STDIN_FILENO, pfd[0], &sv);
         close(pfd[0]);
         CLI_execute_string(hcmd);
-        dup2(sv, STDIN_FILENO);
-        close(sv);
+        cli_fd_restore(STDIN_FILENO, sv);
     }
     *retval = 0;
     return 1;
@@ -354,10 +471,10 @@ int cli_handle_stderr_redir(
     {
         target++;
     }
-    int sv_err = dup(STDERR_FILENO);
+    int sv_err = -1;
     if (strncmp(target, "&1", 2) == 0)
     {
-        dup2(STDOUT_FILENO, STDERR_FILENO);
+        cli_fd_redirect(STDERR_FILENO, STDOUT_FILENO, &sv_err);
     }
     else
     {
@@ -375,14 +492,15 @@ int cli_handle_stderr_redir(
         FILE *ef = fopen(fname, "w");
         if (ef != NULL)
         {
-            dup2(fileno(ef),
-                 STDERR_FILENO);
+            cli_fd_redirect(STDERR_FILENO, fileno(ef), &sv_err);
             fclose(ef);
         }
     }
     CLI_execute_string(scmd);
-    dup2(sv_err, STDERR_FILENO);
-    close(sv_err);
+    if (sv_err != -1)
+    {
+        cli_fd_restore(STDERR_FILENO, sv_err);
+    }
     *retval = 0;
     return 1;
 }
@@ -402,40 +520,8 @@ int cli_handle_input_redir(
     errno_t *retval
 )
 {
-    const char *cl4 = data.CLIcmdline;
-    int in_sq4 = 0, in_dq4 = 0, depth4 = 0;
-    int inr_pos = -1;
-
-    for (int ri = 0; cl4[ri] != '\0'; ri++)
-    {
-        if (cl4[ri] == '\'' && !in_dq4)
-        {
-            in_sq4 = !in_sq4;
-        }
-        else if (cl4[ri] == '"' && !in_sq4)
-        {
-            in_dq4 = !in_dq4;
-        }
-        else if (!in_sq4 && !in_dq4)
-        {
-            if (cl4[ri] == '(')
-            {
-                depth4++;
-            }
-            else if (cl4[ri] == ')'
-                     && depth4 > 0)
-            {
-                depth4--;
-            }
-            else if (depth4 == 0
-                     && cl4[ri] == '<'
-                     && cl4[ri + 1] != '<')
-            {
-                inr_pos = ri;
-                break;
-            }
-        }
-    }
+    int inr_pos = cli_find_unquoted_op(
+        data.CLIcmdline, '<', '<', 0);
     if (inr_pos < 0)
     {
         return 0;
@@ -484,43 +570,34 @@ int cli_handle_input_redir(
         if (ImageStreamIO_read_sharedmem_image_toIMAGE(
                 sname, img) == 0)
         {
-            snprintf(tempname,
-                     sizeof(tempname),
-                     "/tmp/milk_cli_inredir_XXXXXX");
-            int fd = mkstemp(tempname);
-            if (fd >= 0)
+            FILE *tf = cli_mkstemp_open(
+                tempname, sizeof(tempname),
+                "/tmp/milk_cli_inredir", "w");
+            if (tf)
             {
-                FILE *tf = fdopen(fd, "w");
-                if (tf)
+                int typesize =
+                    ImageStreamIO_typesize(
+                        img->md->datatype);
+                if (typesize > 0)
                 {
-                    int typesize =
-                        ImageStreamIO_typesize(
-                            img->md->datatype);
-                    if (typesize > 0)
-                    {
-                        size_t bytes =
-                            (size_t) typesize
-                            * img->md->nelement;
-                        fwrite(img->array.raw,
-                               1, bytes, tf);
-                        fclose(tf);
-                        ifp = fopen(tempname, "r");
-                        unlink(tempname);
-                    }
-                    else
-                    {
-                        fprintf(stderr,
-                                "stream redirection: "
-                                "invalid datatype for "
-                                "stream %s\n",
-                                sname);
-                        fclose(tf);
-                        unlink(tempname);
-                    }
+                    size_t bytes =
+                        (size_t) typesize
+                        * img->md->nelement;
+                    fwrite(img->array.raw,
+                           1, bytes, tf);
+                    fclose(tf);
+                    ifp = fopen(tempname, "r");
+                    unlink(tempname);
                 }
                 else
                 {
-                    close(fd);
+                    fprintf(stderr,
+                            "stream redirection: "
+                            "invalid datatype for "
+                            "stream %s\n",
+                            sname);
+                    fclose(tf);
+                    unlink(tempname);
                 }
             }
             ImageStreamIO_closeIm(img);
@@ -541,13 +618,12 @@ int cli_handle_input_redir(
 
     if (ifp != NULL)
     {
-        int sv_in = dup(STDIN_FILENO);
-        dup2(fileno(ifp), STDIN_FILENO);
+        int sv_in;
+        cli_fd_redirect(STDIN_FILENO, fileno(ifp), &sv_in);
 
         *retval = CLI_execute_line();
 
-        dup2(sv_in, STDIN_FILENO);
-        close(sv_in);
+        cli_fd_restore(STDIN_FILENO, sv_in);
         fclose(ifp);
 
         return 1;
@@ -564,6 +640,169 @@ int cli_handle_input_redir(
         *retval = RETURN_FAILURE;
         return 1;
     }
+}
+
+
+/**
+ * cli_redir_fps_writeback - write captured stdout
+ *      text to an FPS parameter.
+ * @rfile:    redirect target (e.g. "@F:fps.param")
+ * @tempname: path to the captured-output tmpfile
+ *
+ * Reads the tmpfile, strips trailing newlines,
+ * connects to the FPS, and sets the parameter
+ * from the string value.
+ */
+static void cli_redir_fps_writeback(
+    char *rfile,
+    const char *tempname
+)
+{
+    char *fpspath = rfile + 3;
+    char *dot = strchr(fpspath, '.');
+    if (dot == NULL)
+    {
+        printf(
+            "fps redirection: format"
+            " must be @F:fpsname.param\n");
+        unlink(tempname);
+        return;
+    }
+
+    *dot = '\0';
+    char *fpsname = fpspath;
+    char *param = dot + 1;
+
+    FILE *tf = fopen(tempname, "r");
+    if (tf == NULL)
+    {
+        unlink(tempname);
+        return;
+    }
+
+    char valbuf[2048] = {0};
+    size_t rn = fread(
+        valbuf, 1, sizeof(valbuf) - 1, tf);
+    valbuf[rn] = '\0';
+    fclose(tf);
+
+    while (rn > 0
+           && (valbuf[rn - 1] == '\n'
+               || valbuf[rn - 1] == '\r'))
+    {
+        valbuf[--rn] = '\0';
+    }
+
+    FUNCTION_PARAMETER_STRUCT fps_s;
+    if (function_parameter_struct_connect(
+            fpsname, &fps_s,
+            FPSCONNECT_SIMPLE) == -1
+        || fps_s.parray == NULL)
+    {
+        printf(
+            "fps redirection: "
+            "could not connect to %s\n",
+            fpsname);
+        unlink(tempname);
+        return;
+    }
+
+    int pidx =
+        functionparameter_GetParamIndex(
+            &fps_s, param);
+    if (pidx < 0)
+    {
+        char dotname[512];
+        snprintf(dotname,
+                 sizeof(dotname),
+                 ".%s", param);
+        pidx =
+            functionparameter_GetParamIndex(
+                &fps_s, dotname);
+    }
+    if (pidx >= 0)
+    {
+        functionparameter_SetParamValue_fromString(
+            &fps_s, pidx, valbuf);
+    }
+    else
+    {
+        printf(
+            "fps redirection: "
+            "param %s not found"
+            " in %s\n",
+            param, fpsname);
+    }
+    function_parameter_struct_disconnect(
+        &fps_s);
+    unlink(tempname);
+}
+
+
+/**
+ * cli_redir_stream_writeback - write captured stdout
+ *      bytes into a SHM stream.
+ * @rfile:    redirect target (e.g. "@S:stream")
+ * @tempname: path to the captured-output tmpfile
+ *
+ * Opens the tmpfile, connects to the SHM stream,
+ * reads raw bytes into the image array, and posts
+ * a semaphore update.
+ */
+static void cli_redir_stream_writeback(
+    const char *rfile,
+    const char *tempname
+)
+{
+    char *sname = (char *)(rfile + 3);
+    IMAGE *img =
+        (IMAGE *) malloc(sizeof(IMAGE));
+    if (ImageStreamIO_read_sharedmem_image_toIMAGE(
+            sname, img) == 0)
+    {
+        int do_update = 0;
+        FILE *tf = fopen(tempname, "r");
+        if (tf)
+        {
+            int typesize =
+                ImageStreamIO_typesize(
+                    img->md->datatype);
+            if (typesize > 0)
+            {
+                size_t bytes =
+                    (size_t) typesize
+                    * img->md->nelement;
+                size_t bread = fread(
+                    img->array.raw, 1,
+                    bytes, tf);
+                (void)bread;
+                do_update = 1;
+            }
+            else
+            {
+                printf(
+                    "stream redirection: "
+                    "invalid datatype for "
+                    "stream %s\n",
+                    sname);
+            }
+            fclose(tf);
+        }
+        if (do_update)
+        {
+            ImageStreamIO_UpdateIm(img);
+        }
+        ImageStreamIO_closeIm(img);
+    }
+    else
+    {
+        printf(
+            "stream redirection: "
+            "stream %s not found\n",
+            sname);
+    }
+    free(img);
+    unlink(tempname);
 }
 
 
@@ -585,51 +824,17 @@ int cli_handle_output_redir(
     errno_t *retval
 )
 {
-    int redir_mode = 0; /* 1=trunc 2=append */
-    int redir_pos = -1;
-    int in_sq2 = 0, in_dq2 = 0, depth2 = 0;
-    const char *cl2 = data.CLIcmdline;
-
-    for (int ri = 0; cl2[ri] != '\0'; ri++)
-    {
-        if (cl2[ri] == '\'' && !in_dq2)
-        {
-            in_sq2 = !in_sq2;
-        }
-        else if (cl2[ri] == '"' && !in_sq2)
-        {
-            in_dq2 = !in_dq2;
-        }
-        else if (!in_sq2 && !in_dq2)
-        {
-            if (cl2[ri] == '(')
-            {
-                depth2++;
-            }
-            else if (cl2[ri] == ')'
-                     && depth2 > 0)
-            {
-                depth2--;
-            }
-            else if (depth2 == 0
-                     && cl2[ri] == '>')
-            {
-                if (cl2[ri + 1] == '>')
-                {
-                    redir_mode = 2;
-                }
-                else
-                {
-                    redir_mode = 1;
-                }
-                redir_pos = ri;
-            }
-        }
-    }
+    int redir_pos = cli_find_unquoted_op(
+        data.CLIcmdline, '>', 0, 0);
     if (redir_pos < 0)
     {
         return 0;
     }
+
+    /* 1=truncate, 2=append (>>) */
+    int redir_mode =
+        (data.CLIcmdline[redir_pos + 1] == '>')
+        ? 2 : 1;
 
     int fstart = redir_pos
                  + ((redir_mode == 2) ? 2 : 1);
@@ -666,249 +871,50 @@ int cli_handle_output_redir(
     FILE *rfp = NULL;
     int is_fps = 0;
     int is_stream = 0;
-    char tempname[256];
+    char tempname[256] = "";
+    const char *fmode =
+        (redir_mode == 2) ? "a" : "w";
 
     if (strncmp(rfile, "@F:", 3) == 0)
     {
         is_fps = 1;
-        snprintf(tempname, sizeof(tempname),
-                 "/tmp/milk_cli_fredir_XXXXXX");
-        int fd = mkstemp(tempname);
-        if (fd >= 0)
-        {
-            rfp = fdopen(fd,
-                         (redir_mode == 2)
-                         ? "a" : "w");
-            if (!rfp) close(fd);
-        }
+        rfp = cli_mkstemp_open(
+            tempname, sizeof(tempname),
+            "/tmp/milk_cli_fredir", fmode);
     }
     else if (strncmp(rfile, "@S:", 3) == 0)
     {
         is_stream = 1;
-        snprintf(tempname, sizeof(tempname),
-                 "/tmp/milk_cli_sredir_XXXXXX");
-        int fd = mkstemp(tempname);
-        if (fd >= 0)
-        {
-            rfp = fdopen(fd,
-                         (redir_mode == 2)
-                         ? "a" : "w");
-            if (!rfp) close(fd);
-        }
+        rfp = cli_mkstemp_open(
+            tempname, sizeof(tempname),
+            "/tmp/milk_cli_sredir", fmode);
     }
     else
     {
-        rfp = fopen(rfile,
-                    (redir_mode == 2)
-                    ? "a" : "w");
+        rfp = fopen(rfile, fmode);
     }
 
     if (rfp != NULL)
     {
         fflush(stdout);
-        int sv_out = dup(STDOUT_FILENO);
-        dup2(fileno(rfp), STDOUT_FILENO);
+        int sv_out;
+        cli_fd_redirect(STDOUT_FILENO, fileno(rfp), &sv_out);
 
         *retval = CLI_execute_line();
 
         fflush(stdout);
-        dup2(sv_out, STDOUT_FILENO);
-        close(sv_out);
+        cli_fd_restore(STDOUT_FILENO, sv_out);
         fclose(rfp);
 
         if (is_fps)
         {
-            /* Write captured value to FPS param */
-            char *fpspath = rfile + 3;
-            char *dot = strchr(fpspath, '.');
-            if (dot != NULL)
-            {
-                *dot = '\0';
-                char *fpsname = fpspath;
-                char *param = dot + 1;
-
-                FILE *tf = fopen(tempname, "r");
-                if (tf)
-                {
-                    char valbuf[2048] = {0};
-                    size_t rn = fread(
-                        valbuf, 1,
-                        sizeof(valbuf) - 1, tf);
-                    valbuf[rn] = '\0';
-                    fclose(tf);
-
-                    while(rn > 0
-                          && (valbuf[rn - 1] == '\n'
-                              || valbuf[rn - 1]
-                              == '\r'))
-                    {
-                        valbuf[--rn] = '\0';
-                    }
-
-                    FUNCTION_PARAMETER_STRUCT fps_s;
-                    if (function_parameter_struct_connect(
-                            fpsname, &fps_s,
-                            FPSCONNECT_SIMPLE) != -1
-                        && fps_s.parray != NULL)
-                    {
-                        int pidx =
-                            functionparameter_GetParamIndex(
-                                &fps_s, param);
-                        if (pidx < 0)
-                        {
-                            char dotname[512];
-                            snprintf(dotname,
-                                     sizeof(dotname),
-                                     ".%s", param);
-                            pidx =
-                                functionparameter_GetParamIndex(
-                                    &fps_s, dotname);
-                        }
-                        if (pidx >= 0)
-                        {
-                            const char *kw =
-                                fps_s.parray[pidx]
-                                .keyword[0];
-                            switch (fps_s.parray[pidx].type)
-                            {
-                                case FPTYPE_INT32:
-                                    functionparameter_SetParamValue_INT32(
-                                        &fps_s, kw,
-                                        strtol(valbuf, NULL, 10));
-                                    break;
-                                case FPTYPE_UINT32:
-                                    functionparameter_SetParamValue_UINT32(
-                                        &fps_s, kw,
-                                        strtoul(valbuf, NULL, 10));
-                                    break;
-                                case FPTYPE_INT64:
-                                case FPTYPE_PID:
-                                    functionparameter_SetParamValue_INT64(
-                                        &fps_s, kw,
-                                        strtoll(valbuf, NULL, 10));
-                                    break;
-                                case FPTYPE_UINT64:
-                                    functionparameter_SetParamValue_UINT64(
-                                        &fps_s, kw,
-                                        strtoull(valbuf, NULL, 10));
-                                    break;
-                                case FPTYPE_FLOAT32:
-                                    functionparameter_SetParamValue_FLOAT32(
-                                        &fps_s, kw,
-                                        strtof(valbuf, NULL));
-                                    break;
-                                case FPTYPE_FLOAT64:
-                                    functionparameter_SetParamValue_FLOAT64(
-                                        &fps_s, kw,
-                                        strtod(valbuf, NULL));
-                                    break;
-                                case FPTYPE_TIMESPEC:
-                                    functionparameter_SetParamValue_TIMESPEC(
-                                        &fps_s, kw,
-                                        strtof(valbuf, NULL));
-                                    break;
-                                case FPTYPE_ONOFF:
-                                    if (strcasecmp(valbuf, "ON") == 0
-                                        || strcmp(valbuf, "1") == 0)
-                                    {
-                                        functionparameter_SetParamValue_ONOFF(
-                                            &fps_s, kw, 1);
-                                    }
-                                    else if (
-                                        strcasecmp(valbuf, "OFF") == 0
-                                        || strcmp(valbuf, "0") == 0)
-                                    {
-                                        functionparameter_SetParamValue_ONOFF(
-                                            &fps_s, kw, 0);
-                                    }
-                                    break;
-                                default:
-                                    functionparameter_SetParamValue_STRING(
-                                        &fps_s, kw, valbuf);
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            printf(
-                                "fps redirection: "
-                                "param %s not found"
-                                " in %s\n",
-                                param, fpsname);
-                        }
-                        function_parameter_struct_disconnect(
-                            &fps_s);
-                    }
-                    else
-                    {
-                        printf(
-                            "fps redirection: "
-                            "could not connect"
-                            " to %s\n",
-                            fpsname);
-                    }
-                }
-            }
-            else
-            {
-                printf(
-                    "fps redirection: format"
-                    " must be @F:fpsname.param\n");
-            }
-            unlink(tempname);
+            cli_redir_fps_writeback(
+                rfile, tempname);
         }
         else if (is_stream)
         {
-            /* Write captured bytes to SHM stream */
-            char *sname = rfile + 3;
-            IMAGE *img =
-                (IMAGE *) malloc(sizeof(IMAGE));
-            if (ImageStreamIO_read_sharedmem_image_toIMAGE(
-                    sname, img) == 0)
-            {
-                int do_update = 0;
-                FILE *tf = fopen(tempname, "r");
-                if (tf)
-                {
-                    int typesize =
-                        ImageStreamIO_typesize(
-                            img->md->datatype);
-                    if (typesize > 0)
-                    {
-                        size_t bytes =
-                            (size_t) typesize
-                            * img->md->nelement;
-                        size_t bread = fread(
-                            img->array.raw, 1,
-                            bytes, tf);
-                        (void)bread;
-                        do_update = 1;
-                    }
-                    else
-                    {
-                        printf(
-                            "stream redirection: "
-                            "invalid datatype for "
-                            "stream %s\n",
-                            sname);
-                    }
-                    fclose(tf);
-                }
-                if (do_update)
-                {
-                    ImageStreamIO_UpdateIm(img);
-                }
-                ImageStreamIO_closeIm(img);
-            }
-            else
-            {
-                printf(
-                    "stream redirection: "
-                    "stream %s not found\n",
-                    sname);
-            }
-            free(img);
-            unlink(tempname);
+            cli_redir_stream_writeback(
+                rfile, tempname);
         }
         return 1;
     }
@@ -977,13 +983,12 @@ int cli_handle_herestring_early(
     {
         fprintf(hsfp, "%s\n", hvbuf);
         rewind(hsfp);
-        int sv_in = dup(STDIN_FILENO);
-        dup2(fileno(hsfp), STDIN_FILENO);
+        int sv_in;
+        cli_fd_redirect(STDIN_FILENO, fileno(hsfp), &sv_in);
 
         *retval = CLI_execute_line();
 
-        dup2(sv_in, STDIN_FILENO);
-        close(sv_in);
+        cli_fd_restore(STDIN_FILENO, sv_in);
         fclose(hsfp);
         return 1;
     }
@@ -1117,40 +1122,12 @@ void cli_pipe_setup(
     *pipe_fp         = NULL;
     *saved_stdout_fd = -1;
 
-    char *pipe_pos = NULL;
-    {
-        int depth = 0;
-        int in_sq = 0;
-        int in_dq = 0;
-        for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
-        {
-            char c = data.CLIcmdline[si];
-            if(c == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-            }
-            else if(c == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-            }
-            else if(!in_sq && !in_dq)
-            {
-                if(c == '(')
-                {
-                    depth++;
-                }
-                else if(c == ')' && depth > 0)
-                {
-                    depth--;
-                }
-                else if(depth == 0 && c == '|')
-                {
-                    pipe_pos = data.CLIcmdline + si;
-                    break;
-                }
-            }
-        }
-    }
+    int pipe_idx = cli_find_unquoted_op(
+        data.CLIcmdline, '|', 0, 0);
+    char *pipe_pos =
+        (pipe_idx >= 0)
+        ? data.CLIcmdline + pipe_idx
+        : NULL;
 
     if(pipe_pos == NULL)
     {
@@ -1173,8 +1150,7 @@ void cli_pipe_setup(
     *pipe_fp = popen(rhs, "w");
     if(*pipe_fp != NULL)
     {
-        *saved_stdout_fd = dup(STDOUT_FILENO);
-        dup2(fileno(*pipe_fp), STDOUT_FILENO);
+        cli_fd_redirect(STDOUT_FILENO, fileno(*pipe_fp), saved_stdout_fd);
     }
 }
 
@@ -1193,8 +1169,7 @@ void cli_pipe_teardown(
         return;
     }
     fflush(stdout);
-    dup2(saved_stdout_fd, STDOUT_FILENO);
-    close(saved_stdout_fd);
+    cli_fd_restore(STDOUT_FILENO, saved_stdout_fd);
     pclose(pipe_fp);
 }
 
@@ -1220,40 +1195,12 @@ void cli_redir_setup(
     *redir_fp        = NULL;
     *saved_stdout_fd = -1;
 
-    char *redir_pos = NULL;
-    {
-        int depth = 0;
-        int in_sq = 0;
-        int in_dq = 0;
-        for(int si = 0; data.CLIcmdline[si] != '\0'; si++)
-        {
-            char c = data.CLIcmdline[si];
-            if(c == '\'' && !in_dq)
-            {
-                in_sq = !in_sq;
-            }
-            else if(c == '"' && !in_sq)
-            {
-                in_dq = !in_dq;
-            }
-            else if(!in_sq && !in_dq)
-            {
-                if(c == '(')
-                {
-                    depth++;
-                }
-                else if(c == ')' && depth > 0)
-                {
-                    depth--;
-                }
-                else if(depth == 0 && c == '>')
-                {
-                    redir_pos = data.CLIcmdline + si;
-                    break;
-                }
-            }
-        }
-    }
+    int redir_idx = cli_find_unquoted_op(
+        data.CLIcmdline, '>', 0, 0);
+    char *redir_pos =
+        (redir_idx >= 0)
+        ? data.CLIcmdline + redir_idx
+        : NULL;
 
     if(redir_pos == NULL)
     {
@@ -1288,8 +1235,7 @@ void cli_redir_setup(
     *redir_fp = fopen(fpath, "w");
     if(*redir_fp != NULL)
     {
-        *saved_stdout_fd = dup(STDOUT_FILENO);
-        dup2(fileno(*redir_fp), STDOUT_FILENO);
+        cli_fd_redirect(STDOUT_FILENO, fileno(*redir_fp), saved_stdout_fd);
     }
 }
 
@@ -1308,8 +1254,7 @@ void cli_redir_teardown(
         return;
     }
     fflush(stdout);
-    dup2(saved_stdout_fd, STDOUT_FILENO);
-    close(saved_stdout_fd);
+    cli_fd_restore(STDOUT_FILENO, saved_stdout_fd);
     fclose(redir_fp);
 }
 
