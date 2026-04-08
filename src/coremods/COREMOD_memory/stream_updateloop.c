@@ -319,7 +319,14 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     schedpar.sched_priority = RT_priority;
     sched_setscheduler(0, SCHED_FIFO, &schedpar);
 
-    IDin            = image_ID(IDin_name, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDin_name);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        IDin = img.ID;
+    }
     long      naxis = dcimg[IDin].md[0].naxis;
     uint32_t *arraysize;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
@@ -335,7 +342,14 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
     int     NBslice  = arraysize[2];
 
     // check that IDout has same format
-    IDout = image_ID(IDout_name, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDout_name);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        IDout = img.ID;
+    }
     if(dcimg[IDout].md[0].size[0] != dcimg[IDin].md[0].size[0])
     {
         printf("ERROR: in and out have different size\n");
@@ -479,10 +493,24 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     SyncSlice = 0;
     if(NBcubes == 1)
     {
-        IDin[0] = image_ID(IDinname, dcimg, dcnimg);
+        {
+            IMGID img = imgid_make_from_name(
+                IDinname);
+            resolveIMGID(
+                &img, ERRMODE_ABORT,
+                dcimg, dcnimg);
+            IDin[0] = img.ID;
+        }
 
         // in single cube mode, optional sync stream drives updates to next slice within cube
-        IDsync = image_ID(IDsync_name, dcimg, dcnimg);
+        {
+            IMGID img = imgid_make_from_name(
+                IDsync_name);
+            resolveIMGID(
+                &img, ERRMODE_NULL,
+                dcimg, dcnimg);
+            IDsync = img.ID;
+        }
         if(IDsync != -1)
         {
             SyncSlice = 1;
@@ -492,14 +520,34 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
     }
     else
     {
-        IDsync = image_ID(IDsync_name, dcimg, dcnimg);
-        sync_semwaitindex =
-            ImageStreamIO_getsemwaitindex(&dcimg[IDsync], semtrig);
-
-        for(cubeindex = 0; cubeindex < NBcubes; cubeindex++)
         {
-            sprintf(imname, "%s_%03ld", IDinname, cubeindex);
-            IDin[cubeindex] = image_ID(imname, dcimg, dcnimg);
+            IMGID img = imgid_make_from_name(
+                IDsync_name);
+            resolveIMGID(
+                &img, ERRMODE_NULL,
+                dcimg, dcnimg);
+            IDsync = img.ID;
+        }
+        sync_semwaitindex =
+            ImageStreamIO_getsemwaitindex(
+                &dcimg[IDsync], semtrig);
+
+        for(cubeindex = 0;
+            cubeindex < NBcubes;
+            cubeindex++)
+        {
+            sprintf(imname,
+                "%s_%03ld",
+                IDinname, cubeindex);
+            {
+                IMGID img =
+                    imgid_make_from_name(
+                        imname);
+                resolveIMGID(
+                    &img, ERRMODE_ABORT,
+                    dcimg, dcnimg);
+                IDin[cubeindex] = img.ID;
+            }
         }
         offsetfr = (long)(0.5 + 1.0 * offsetus / usperiod);
 
@@ -524,8 +572,14 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
 
     datatype = dcimg[IDin[0]].md[0].datatype;
 
-    IDout = image_ID(
-        IDoutname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDoutname);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
+            dcimg, dcnimg);
+        IDout = img.ID;
+    }
     if(IDout == -1)
     {
         IMGID imgout_tmp =
@@ -748,7 +802,14 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
     printf("Creating / connecting to image stream ...\n");
     fflush(stdout);
 
-    IDin      = image_ID(IDinname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDinname);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        IDin = img.ID;
+    }
     naxis     = dcimg[IDin].md[0].naxis;
     arraysize = (uint32_t *) malloc(sizeof(uint32_t) * 3);
     if(naxis != 3)
@@ -762,8 +823,14 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
 
     datatype = dcimg[IDin].md[0].datatype;
 
-    IDout = image_ID(
-        IDoutname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDoutname);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
+            dcimg, dcnimg);
+        IDout = img.ID;
+    }
     if(IDout == -1)
     {
         IMGID imgout_tmp =
@@ -790,7 +857,14 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
                 dcimg[IDin].md[0].size[1] *
                 ImageStreamIO_typesize(datatype);
 
-    IDsync = image_ID(IDsync_name, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            IDsync_name);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
+            dcimg, dcnimg);
+        IDsync = img.ID;
+    }
 
     kk  = 0;
     kk1 = 0;
