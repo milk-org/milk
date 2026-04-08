@@ -326,8 +326,14 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     EXECUTE_SYSTEM_COMMAND(
         "mkdir -p %s", dirname);
 
-    IDtrig = image_ID(
-        IDtrig_name, dcimg, dcnimg);
+    {
+        IMGID imgtrig =
+            imgid_make_from_name(IDtrig_name);
+        resolveIMGID(
+            &imgtrig, ERRMODE_NULL,
+            dcimg, dcnimg);
+        IDtrig = imgtrig.ID;
+    }
 
     printf("Creating arrays\n");
     fflush(stdout);

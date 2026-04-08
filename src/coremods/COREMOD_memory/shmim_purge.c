@@ -88,22 +88,26 @@ errno_t shmim_purge(const char *strfilter)
         printf(" STREAM %3d   %s\n",
                sindex,
                streaminfo[sindex].sname);
-        imageID ID = image_ID(
-            streaminfo[sindex].sname,
+        IMGID img = imgid_make_from_name(
+            streaminfo[sindex].sname);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
             dcimg, dcnimg);
-        if(ID == -1)
+        if(img.ID == -1)
         {
-            ID = read_sharedmem_image(
+            imageID fid = read_sharedmem_image(
                 streaminfo[sindex].sname,
                 dcimg, dcnimg);
+            img.ID = fid;
+            img.im = &dcimg[fid];
         }
         DEBUG_TRACEPOINT(
             "stream %s loaded ID %ld",
             streaminfo[sindex].sname,
-            (long) ID);
+            (long) img.ID);
 
         pid_t opid;
-        opid = dcimg[ID].md[0].ownerPID;
+        opid = img.im->md[0].ownerPID;
         DEBUG_TRACEPOINT("owner PID : %ld",
                          (long) opid);
         printf("owner PID : %ld\n",
@@ -120,16 +124,14 @@ errno_t shmim_purge(const char *strfilter)
             {
                 printf("Purging stream %s\n",
                        streaminfo[sindex].sname);
-                ImageStreamIO_destroyIm(
-                    &dcimg[ID]);
+                ImageStreamIO_destroyIm(img.im);
             }
         }
         else
         {
             printf("Purging stream %s\n",
                    streaminfo[sindex].sname);
-            ImageStreamIO_destroyIm(
-                &dcimg[ID]);
+            ImageStreamIO_destroyIm(img.im);
         }
     }
 
