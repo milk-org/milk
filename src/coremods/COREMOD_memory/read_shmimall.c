@@ -81,10 +81,7 @@ errno_t read_sharedmem_image_all(
     for(int sindex = 0;
          sindex < NBstream; sindex++)
     {
-        imageID ID = image_ID(
-            streaminfo[sindex].sname,
-            dcimg, dcnimg);
-        if(ID == -1)
+        if(!imgid_exists(streaminfo[sindex].sname))
         {
             read_sharedmem_image(
                 streaminfo[sindex].sname,
