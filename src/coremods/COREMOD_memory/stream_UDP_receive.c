@@ -212,11 +212,19 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd[0].name, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            imgmd[0].name);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
+            dcimg, dcnimg);
+        ID = img.ID;
+    }
     if(ID == -1)
     {
         // is it in shared memory ?
-        ID = read_sharedmem_image(imgmd[0].name, dcimg, dcnimg);
+        ID = read_sharedmem_image(
+            imgmd[0].name, dcimg, dcnimg);
     }
 
     list_image_ID();

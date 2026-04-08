@@ -232,7 +232,14 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
     // is image already in memory ?
     OKim = 0;
 
-    ID = image_ID(imgmd->name, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(
+            imgmd->name);
+        resolveIMGID(
+            &img, ERRMODE_NULL,
+            dcimg, dcnimg);
+        ID = img.ID;
+    }
     printf("ID: %ld\n", ID);
 
     if(ID == -1)

@@ -311,7 +311,13 @@ errno_t COREMOD_MEMORY_testfunction_semaphore(const char *IDname,
     int     rv;
     long    loopcnt = 0;
 
-    ID = image_ID(IDname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(IDname);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        ID = img.ID;
+    }
     IMAGE *img_p = &dcimg[ID];
 
     char pinfomsg[200];
@@ -474,7 +480,13 @@ imageID COREMOD_MEMORY_image_NETWORKtransmit(
 
     int loopOK = 1;
 
-    ID = image_ID(IDname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(IDname);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        ID = img.ID;
+    }
     img_p = &dcimg[ID];
 
     if((fds_client = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
