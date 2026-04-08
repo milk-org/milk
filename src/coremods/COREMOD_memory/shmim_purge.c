@@ -98,8 +98,22 @@ errno_t shmim_purge(const char *strfilter)
             imageID fid = read_sharedmem_image(
                 streaminfo[sindex].sname,
                 dcimg, dcnimg);
-            img.ID = fid;
-            img.im = &dcimg[fid];
+            if(fid == -1)
+            {
+                printf("Failed to load stream %s\n",
+                       streaminfo[sindex].sname);
+                continue;
+            }
+
+            resolveIMGID(
+                &img, ERRMODE_NULL,
+                dcimg, dcnimg);
+            if(img.ID == -1 || img.im == NULL)
+            {
+                printf("Failed to resolve stream %s after load\n",
+                       streaminfo[sindex].sname);
+                continue;
+            }
         }
         DEBUG_TRACEPOINT(
             "stream %s loaded ID %ld",
