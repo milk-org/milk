@@ -181,52 +181,27 @@ int cli_check_unquoted_restricted_symbols(
 int cli_split_logical_op(errno_t *retval)
 {
     const char *src = data.CLIcmdline;
-    int depth = 0;
-    int in_sq = 0;
-    int in_dq = 0;
     int split_pos = -1;
     int op_len = 0;
     int op_is_and = 0;
 
-    for (int si = 0; src[si] != '\0'; si++)
+    /* Try && first */
+    split_pos = cli_find_unquoted_op(
+        src, '&', 0, '&');
+    if (split_pos >= 0)
     {
-        char c = src[si];
-        if (c == '\'' && !in_dq)
+        op_len = 2;
+        op_is_and = 1;
+    }
+    else
+    {
+        /* Try || */
+        split_pos = cli_find_unquoted_op(
+            src, '|', 0, '|');
+        if (split_pos >= 0)
         {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == '(')
-            {
-                depth++;
-            }
-            else if (c == ')' && depth > 0)
-            {
-                depth--;
-            }
-            else if (depth == 0
-                     && c == '&'
-                     && src[si + 1] == '&')
-            {
-                split_pos = si;
-                op_len = 2;
-                op_is_and = 1;
-                break;
-            }
-            else if (depth == 0
-                     && c == '|'
-                     && src[si + 1] == '|')
-            {
-                split_pos = si;
-                op_len = 2;
-                op_is_and = 0;
-                break;
-            }
+            op_len = 2;
+            op_is_and = 0;
         }
     }
     if (split_pos < 0)
@@ -288,41 +263,8 @@ int cli_rewrite_stream_pipe(
 )
 {
     const char *src = data.CLIcmdline;
-    int depth = 0;
-    int in_sq = 0;
-    int in_dq = 0;
-    int gpipe = -1;
-
-    for (int si = 0; src[si] != '\0'; si++)
-    {
-        char c = src[si];
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == '(')
-            {
-                depth++;
-            }
-            else if (c == ')' && depth > 0)
-            {
-                depth--;
-            }
-            else if (depth == 0
-                     && c == '|'
-                     && src[si + 1] == '>')
-            {
-                gpipe = si;
-                break;
-            }
-        }
-    }
+    int gpipe = cli_find_unquoted_op(
+        src, '|', 0, '>');
     if (gpipe < 0)
     {
         return 0;
@@ -390,41 +332,13 @@ int cli_rewrite_stream_pipe(
 int cli_split_pipe(errno_t *retval)
 {
     const char *src = data.CLIcmdline;
-    int depth = 0;
-    int in_sq = 0;
-    int in_dq = 0;
-    int pipe_pos = -1;
-
-    for (int si = 0; src[si] != '\0'; si++)
+    int pipe_pos = cli_find_unquoted_op(
+        src, '|', '|', 0);
+    /* Also reject |> (stream pipe) */
+    if (pipe_pos >= 0
+        && src[pipe_pos + 1] == '>')
     {
-        char c = src[si];
-        if (c == '\'' && !in_dq)
-        {
-            in_sq = !in_sq;
-        }
-        else if (c == '"' && !in_sq)
-        {
-            in_dq = !in_dq;
-        }
-        else if (!in_sq && !in_dq)
-        {
-            if (c == '(')
-            {
-                depth++;
-            }
-            else if (c == ')' && depth > 0)
-            {
-                depth--;
-            }
-            else if (depth == 0
-                     && c == '|'
-                     && src[si + 1] != '|'
-                     && src[si + 1] != '>')
-            {
-                pipe_pos = si;
-                break;
-            }
-        }
+        pipe_pos = -1;
     }
     if (pipe_pos < 0)
     {
@@ -524,49 +438,31 @@ int cli_split_semicolon(
     fullline[STRINGMAXLEN_CLICMDLINE - 1] =
         '\0';
 
+    int p_semi = cli_find_unquoted_op(fullline, ';', 0, 0);
+    int p_and  = cli_find_unquoted_op(fullline, '&', 0, '&');
+    int p_or   = cli_find_unquoted_op(fullline, '|', 0, '|');
+
     int chain_type = 0; /* 1=; 2=&& 3=|| */
     int chain_off = -1;
     int chain_len = 0;
-    for (int ci = 0;
-         fullline[ci] != '\0'; ci++)
+
+    if (p_semi >= 0 && (chain_off < 0 || p_semi < chain_off))
     {
-        if (fullline[ci] == '"')
-        {
-            ci++;
-            while (fullline[ci] != '\0'
-                   && fullline[ci] != '"')
-            {
-                ci++;
-            }
-            if (fullline[ci] == '\0')
-            {
-                break;
-            }
-            continue;
-        }
-        if (fullline[ci] == ';')
-        {
-            chain_type = 1;
-            chain_off = ci;
-            chain_len = 1;
-            break;
-        }
-        if (fullline[ci] == '&'
-            && fullline[ci + 1] == '&')
-        {
-            chain_type = 2;
-            chain_off = ci;
-            chain_len = 2;
-            break;
-        }
-        if (fullline[ci] == '|'
-            && fullline[ci + 1] == '|')
-        {
-            chain_type = 3;
-            chain_off = ci;
-            chain_len = 2;
-            break;
-        }
+        chain_off = p_semi;
+        chain_type = 1;
+        chain_len = 1;
+    }
+    if (p_and >= 0 && (chain_off < 0 || p_and < chain_off))
+    {
+        chain_off = p_and;
+        chain_type = 2;
+        chain_len = 2;
+    }
+    if (p_or >= 0 && (chain_off < 0 || p_or < chain_off))
+    {
+        chain_off = p_or;
+        chain_type = 3;
+        chain_len = 2;
     }
     if (chain_off < 0)
     {
