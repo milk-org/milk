@@ -840,17 +840,30 @@ int functionparameter_SetParamValue_fromString(
 
         case FPTYPE_ONOFF:
         {
-            if (strncasecmp(strval, "ON", 2) == 0 || strcmp(strval, "1") == 0)
+            /* Require exact match (null or newline terminator after
+             * prefix) to avoid treating "ONCE" as ON or "OFFLINE"
+             * as OFF.
+             */
+            int is_on  = (strncasecmp(strval, "ON",  2) == 0 &&
+                          (strval[2] == '\0' || strval[2] == '\n'))
+                         || strcmp(strval, "1") == 0;
+            int is_off = (strncasecmp(strval, "OFF", 3) == 0 &&
+                          (strval[3] == '\0' || strval[3] == '\n'))
+                         || strcmp(strval, "0") == 0;
+
+            if (is_on)
             {
-                if (functionparameter_SetParamValue_ONOFF(fps, kw, 1) == EXIT_SUCCESS)
+                if (functionparameter_SetParamValue_ONOFF(fps, kw, 1)
+                    == EXIT_SUCCESS)
                 {
                     functionparameter_outlog("SETVAL", "%s ONOFF ON", kwf);
                     return 0;
                 }
             }
-            else if (strncasecmp(strval, "OFF", 3) == 0 || strcmp(strval, "0") == 0)
+            else if (is_off)
             {
-                if (functionparameter_SetParamValue_ONOFF(fps, kw, 0) == EXIT_SUCCESS)
+                if (functionparameter_SetParamValue_ONOFF(fps, kw, 0)
+                    == EXIT_SUCCESS)
                 {
                     functionparameter_outlog("SETVAL", "%s ONOFF OFF", kwf);
                     return 0;
