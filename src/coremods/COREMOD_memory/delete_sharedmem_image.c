@@ -57,14 +57,13 @@ static char imname[FUNCTION_PARAMETER_STRMAXLEN]
 errno_t destroy_shared_image_ID(
     const char *__restrict imname)
 {
-    imageID ID;
+    IMGID img = imgid_make_from_name(imname);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
 
-    ID = image_ID(
-        imname, dcimg, dcnimg);
-    if((ID != -1)
-        && (dcimg[ID].md[0].shared == 1))
+    if((img.ID != -1)
+        && (img.im->md[0].shared == 1))
     {
-        ImageStreamIO_destroyIm(&dcimg[ID]);
+        ImageStreamIO_destroyIm(img.im);
     }
     else
     {
