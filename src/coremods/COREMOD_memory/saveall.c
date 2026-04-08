@@ -333,6 +333,16 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
             &imgtrig, ERRMODE_NULL,
             dcimg, dcnimg);
         IDtrig = imgtrig.ID;
+        if(IDtrig == -1)
+        {
+            fprintf(stderr,
+                    "ERROR: trigger stream \"%s\" not found\n",
+                    IDtrig_name);
+            free(IDarray);
+            free(IDarrayout);
+            free(imsizearray);
+            return RETURN_FAILURE;
+        }
     }
 
     printf("Creating arrays\n");
