@@ -224,10 +224,11 @@ long image_write_keyword_L(
     long        value,
     const char *comment)
 {
-    imageID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    long ID = img.ID;
     long    kw, NBkw, kw0;
 
-    ID   = image_ID(IDname, dcimg, dcnimg);
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
@@ -272,12 +273,13 @@ long image_write_keyword_D(
     double      value,
     const char *comment)
 {
-    imageID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    long ID = img.ID;
     long    kw;
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname, dcimg, dcnimg);
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
@@ -322,12 +324,13 @@ long image_write_keyword_S(
     const char *value,
     const char *comment)
 {
-    imageID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    long ID = img.ID;
     long    kw;
     long    NBkw;
     long    kw0;
 
-    ID   = image_ID(IDname, dcimg, dcnimg);
     NBkw = dcimg[ID].md[0].NBkw;
 
     kw = 0;
@@ -370,10 +373,10 @@ long image_write_keyword_S(
 imageID image_list_keywords(
     const char *restrict IDname)
 {
-    imageID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_ABORT, dcimg, dcnimg);
+    long ID = img.ID;
     long    kw;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
 
     int kwcnt = 0;
     for(kw = 0;
@@ -433,11 +436,13 @@ long image_read_keyword_D(
     const char *kname,
     double *val)
 {
-    variableID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    if(img.ID == -1) return -1;
+    long ID = img.ID;
     long       kw;
     long       kw0;
-
-    ID  = image_ID(IDname, dcimg, dcnimg);
+    
     kw0 = -1;
     for(kw = 0;
         kw < dcimg[ID].md[0].NBkw;
@@ -471,11 +476,13 @@ long image_read_keyword_L(
     const char *kname,
     long *val)
 {
-    variableID ID;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+    if(img.ID == -1) return -1;
+    long ID = img.ID;
     long       kw;
     long       kw0;
-
-    ID  = image_ID(IDname, dcimg, dcnimg);
+    
     kw0 = -1;
     for(kw = 0;
         kw < dcimg[ID].md[0].NBkw;

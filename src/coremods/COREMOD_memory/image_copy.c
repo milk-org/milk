@@ -349,7 +349,7 @@ imageID chname_image_ID_IMGID(
 {
     resolveIMGID(imgin, ERRMODE_ABORT, dcimg, dcnimg);
 
-    if((image_ID(new_name, dcimg, dcnimg) == -1) && (variable_ID(new_name) == -1))
+    if((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
         strcpy(imgin->im->name, new_name);
         strcpy(imgin->name, new_name);
