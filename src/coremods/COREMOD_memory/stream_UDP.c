@@ -305,7 +305,13 @@ imageID COREMOD_MEMORY_image_NETUDPtransmit(const char *IDname,
 
     int loopOK = 1; // Master flag
 
-    ID = image_ID(IDname, dcimg, dcnimg);
+    {
+        IMGID img = imgid_make_from_name(IDname);
+        resolveIMGID(
+            &img, ERRMODE_ABORT,
+            dcimg, dcnimg);
+        ID = img.ID;
+    }
 
     if((fds_client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
     {
