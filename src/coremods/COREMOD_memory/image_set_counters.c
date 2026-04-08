@@ -23,10 +23,12 @@
 errno_t COREMOD_MEMORY_image_set_status(
     const char *IDname, int status)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
-    dcimg[ID].md[0].status = status;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
+    if(img.ID != -1)
+    {
+        img.im->md[0].status = status;
+    }
 
     return RETURN_SUCCESS;
 }
@@ -34,10 +36,12 @@ errno_t COREMOD_MEMORY_image_set_status(
 errno_t COREMOD_MEMORY_image_set_cnt0(
     const char *IDname, int cnt0)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
-    dcimg[ID].md[0].cnt0 = cnt0;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
+    if(img.ID != -1)
+    {
+        img.im->md[0].cnt0 = cnt0;
+    }
 
     return RETURN_SUCCESS;
 }
@@ -45,10 +49,12 @@ errno_t COREMOD_MEMORY_image_set_cnt0(
 errno_t COREMOD_MEMORY_image_set_cnt1(
     const char *IDname, int cnt1)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
-    dcimg[ID].md[0].cnt1 = cnt1;
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
+    if(img.ID != -1)
+    {
+        img.im->md[0].cnt1 = cnt1;
+    }
 
     return RETURN_SUCCESS;
 }

@@ -30,6 +30,7 @@
 #include "create_image.h"
 #include "delete_image.h"
 #include "image_ID.h"
+#include "COREMOD_memory/imageID.h"
 #include "list_image.h"
 #include "stream_sem.h"
 #include <fps.h>
@@ -57,7 +58,10 @@ errno_t create_image_ID_IMGID(
                      img->mdt->shared,
                      img->mdt->NBkw,
                      img->mdt->CBsize);
-    if(image_ID(img->name, dcimg, dcnimg) == -1)
+    IMGID exist_img = imgid_make_from_name(img->name);
+    resolveIMGID(&exist_img, ERRMODE_NULL, dcimg, dcnimg);
+
+    if(exist_img.ID == -1)
     {
         img->ID = next_avail_image_ID(img->ID);
         ImageStreamIO_createIm(&dcimg[img->ID],
@@ -72,9 +76,7 @@ errno_t create_image_ID_IMGID(
     else
     {
         // Image name already in use — check compatibility
-        img->ID = image_ID(img->name,
-                           dcimg,
-                           dcnimg);
+        img->ID = exist_img.ID;
 
         int mismatch = 0;
 

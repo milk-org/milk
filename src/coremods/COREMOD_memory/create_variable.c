@@ -12,22 +12,20 @@
 #include "libmilkdata/milkdata.h"
 #endif
 #include "image_ID.h"
+#include "COREMOD_memory/imageID.h"
 #include "variable_ID.h"
 
 /* creates floating point variable */
 variableID create_variable_ID(const char *name, double value)
 {
     variableID ID;
-    long       i1, i2;
-
+    long       i2;
 
     ID = -1;
 
-    i1 = image_ID(name, dcimg, dcnimg);
-
     i2 = variable_ID(name);
 
-    if(i1 != -1)
+    if(imgid_exists(name))
     {
         printf(
             "ERROR: cannot create variable \"%s\": name already used as an "
@@ -58,13 +56,12 @@ variableID create_variable_ID(const char *name, double value)
 variableID create_variable_long_ID(const char *name, long value)
 {
     variableID ID;
-    long       i1, i2;
+    long       i2;
 
     ID = -1;
-    i1 = image_ID(name, dcimg, dcnimg);
     i2 = variable_ID(name);
 
-    if(i1 != -1)
+    if(imgid_exists(name))
     {
         printf(
             "ERROR: cannot create variable \"%s\": name already used as an "
@@ -96,13 +93,12 @@ variableID create_variable_long_ID(const char *name, long value)
 variableID create_variable_string_ID(const char *name, const char *value)
 {
     variableID ID;
-    long       i1, i2;
+    long       i2;
 
     ID = -1;
-    i1 = image_ID(name, dcimg, dcnimg);
     i2 = variable_ID(name);
 
-    if(i1 != -1)
+    if(imgid_exists(name))
     {
         printf(
             "ERROR: cannot create variable \"%s\": name already used as an "

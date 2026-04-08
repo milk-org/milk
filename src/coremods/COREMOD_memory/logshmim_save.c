@@ -257,9 +257,11 @@ void *save_telemetry_fits_function(
         fclose(fp);
     }
 
-    tret = image_ID(tmsg->iname,
-                    dcimg,
-                    dcnimg);
+    {
+        IMGID img = imgid_make_from_name(tmsg->iname);
+        resolveIMGID(&img, ERRMODE_NULL, dcimg, dcnimg);
+        tret = img.ID;
+    }
 
     struct timespec tend;
     clock_gettime(CLOCK_MILK, &tend);
