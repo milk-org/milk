@@ -369,9 +369,10 @@ CLIADDCMD_COREMOD_memory__stream_sem()
 imageID COREMOD_MEMORY_image_seminfo(
     const char *IDname)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(
+        &img, ERRMODE_WARN, dcimg, dcnimg);
+    imageID ID = img.ID;
 
     printf("  cnt0 = %ld \n", dcimg[ID].md->cnt0);
     printf("  cnt1 = %ld \n", dcimg[ID].md->cnt1);
@@ -416,12 +417,14 @@ imageID COREMOD_MEMORY_image_seminfo(
 imageID COREMOD_MEMORY_image_set_sempost(
     const char *IDname, long index)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(
+        &img, ERRMODE_NULL, dcimg, dcnimg);
+    imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(
+            IDname, dcimg, dcnimg);
     }
 
     ImageStreamIO_sempost(&dcimg[ID], index);
@@ -476,12 +479,14 @@ COREMOD_MEMORY_image_set_sempost_loop(
     const char *IDname, long index,
     long dtus)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(
+        &img, ERRMODE_NULL, dcimg, dcnimg);
+    imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(
+            IDname, dcimg, dcnimg);
     }
 
     ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
@@ -501,12 +506,14 @@ COREMOD_MEMORY_image_set_sempost_loop(
 imageID COREMOD_MEMORY_image_set_semwait(
     const char *IDname, long index)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(
+        &img, ERRMODE_NULL, dcimg, dcnimg);
+    imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(
+            IDname, dcimg, dcnimg);
     }
 
     ImageStreamIO_semwait(&dcimg[ID], index);
@@ -655,12 +662,14 @@ errno_t COREMOD_MEMORY_image_set_semflush_IDarray(
 imageID COREMOD_MEMORY_image_set_semflush(
     const char *IDname, long index)
 {
-    imageID ID;
-
-    ID = image_ID(IDname, dcimg, dcnimg);
+    IMGID img = imgid_make_from_name(IDname);
+    resolveIMGID(
+        &img, ERRMODE_NULL, dcimg, dcnimg);
+    imageID ID = img.ID;
     if(ID == -1)
     {
-        ID = read_sharedmem_image(IDname, dcimg, dcnimg);
+        ID = read_sharedmem_image(
+            IDname, dcimg, dcnimg);
     }
 
     ImageStreamIO_semflush(&dcimg[ID], index);
