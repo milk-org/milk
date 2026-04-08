@@ -728,7 +728,7 @@ int functionparameter_SetParamValue_fromString(
         return -1;
     }
 
-    const char *kw  = fps->parray[pindex].keyword[0];
+    const char *kw  = fps->parray[pindex].keywordfull;
     const char *kwf = fps->parray[pindex].keywordfull;
     char       *endptr;
 
