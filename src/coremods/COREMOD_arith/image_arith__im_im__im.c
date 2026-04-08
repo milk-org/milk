@@ -32,49 +32,9 @@
 #include "image_arith__im_im__im.h"
 
 
-/* ==========================================================
- * X-macro operation tables.
- *
- * BINARY_OPS_FULL — ops with all 4 call surfaces
- *   (IMGID, string, inplace, inplace_byID)
- *
- * BINARY_OPS_NOIP — ops with IMGID + string only
- *   (no inplace variants exist in the public API)
- *
- * Both tables use the same X(op, fptr) shape so they can be
- * expanded by the shared non-inplace generators below.
- *
- * Column: X(op, fptr)
- *   op   — operation suffix
- *   fptr — function-pointer used only for inplace dispatch
- *          generation from BINARY_OPS_FULL; ignored for
- *          BINARY_OPS_NOIP entries
- * ========================================================== */
+/* MILK_BINARY_OPS_* tables are defined in image_arith__im_im__im.h */
 
-#define BINARY_OPS_FULL(X) \
-    X(fmod,   Pfmod)       \
-    X(pow,    Ppow)        \
-    X(add,    Padd)        \
-    X(sub,    Psub)        \
-    X(mult,   Pmult)       \
-    X(div,    Pdiv)        \
-    X(minv,   Pminv)       \
-    X(maxv,   Pmaxv)       \
-    X(testlt, Ptestlt)     \
-    X(testmt, Ptestmt)
 
-#define BINARY_OPS_NOIP(X) \
-    X(teste,  Pteste)      \
-    X(testne, Ptestne)     \
-    X(testle, Ptestle)     \
-    X(testge, Ptestge)     \
-    X(and,    Pand)        \
-    X(or,     Por)
-
-/** Expand both tables for macros that apply to all */
-#define BINARY_OPS_ALL(X) \
-    BINARY_OPS_FULL(X)    \
-    BINARY_OPS_NOIP(X)
 
 
 /* ----------------------------------------------------------
@@ -94,7 +54,7 @@ int arith_image_##op##_IMGID( \
         imgin1, imgin2, imgout);              \
 }
 
-BINARY_OPS_ALL(DEFINE_IMGID)
+MILK_BINARY_OPS_ALL(DEFINE_IMGID)
 #undef DEFINE_IMGID
 
 
@@ -144,7 +104,7 @@ int arith_image_##op(                        \
     return ret;                              \
 }
 
-BINARY_OPS_ALL(DEFINE_STRING)
+MILK_BINARY_OPS_ALL(DEFINE_STRING)
 #undef DEFINE_STRING
 
 
@@ -153,7 +113,7 @@ BINARY_OPS_ALL(DEFINE_STRING)
  *
  * Uses function-pointer dispatch via
  * arith_image_function_2_1_inplace().
- * Only generated for BINARY_OPS_FULL operations.
+ * Only generated for MILK_BINARY_OPS_FULL operations.
  * ---------------------------------------------------------- */
 
 #define DEFINE_INPLACE(op, fptr) \
@@ -166,7 +126,7 @@ int arith_image_##op##_inplace(              \
     return 0;                                \
 }
 
-BINARY_OPS_FULL(DEFINE_INPLACE)
+MILK_BINARY_OPS_FULL(DEFINE_INPLACE)
 #undef DEFINE_INPLACE
 
 
@@ -174,7 +134,7 @@ BINARY_OPS_FULL(DEFINE_INPLACE)
  * 4. In-place-by-ID wrappers  (ID,ID → ID1 modified)
  *
  * Legacy API using raw image slot indices.
- * Only generated for BINARY_OPS_FULL operations.
+ * Only generated for MILK_BINARY_OPS_FULL operations.
  * ---------------------------------------------------------- */
 
 
