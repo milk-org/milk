@@ -416,7 +416,7 @@ Known legacy patterns to preserve:
 ```
 Files:        snake_case.c/h
 Dirs:         snake_case (new), COREMOD_X (legacy)
-Public funcs: SubSystem_verbObject()
+Public funcs: subsystem_verb_object()
 Static funcs: verb_object()
 Variables:    snake_case, length ∝ scope
 Loop indices: ii, jj, kk (not i, j, k)
