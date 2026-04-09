@@ -11,11 +11,14 @@ trigger: always_on
 - Function prototypes with arguments should be multi-line,
   with one line per argument.
 - Document functions using Kernel-Doc style.
+- Put a brief API-facing description in the `.h` file for
+  declarations, and place the full Kernel-Doc comment above
+  the function definition in the `.c` file.
+- In `.c` files, Kernel-Doc may also include implementation
+  details when useful (algorithm notes, design rationale,
+  non-obvious logic), but the `.h` file should remain brief.
 - Use the Linux kernel's C coding style if it doesn't
   conflict with the above rules.
-- Document the function's **purpose** in the `.h` file.
-  In `.c` files, document only **implementation details**
-  (algorithm notes, design rationale, non-obvious logic).
 - Enable and enforce compiler warnings (`-Wall`, `-Wextra`)
   during development to catch missing declarations early.
   Treat them as errors (`-Werror`) in CI/CD.
