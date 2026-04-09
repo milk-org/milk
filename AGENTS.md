@@ -226,6 +226,7 @@ and enforced. Know what they require:
 | `help-consistency.md` | Cross-check all sibling help sources |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
 | `module-deps-declaration.md` | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros |
+| `naming-conventions.md` | File, function, variable, macro naming; loop index types |
 | `performance-practices.md` | SIMD, BLAS, pointer alignment, type dispatch, CPU pinning |
 | `readme-update.md` | Update module README when files change |
 | `run-milk-commands.md` | Environment setup, SHM cleanup, tmux guidance |

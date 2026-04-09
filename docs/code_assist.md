@@ -44,7 +44,7 @@ requiring you to remember every checklist.
 | Agent docs update | [`agent-docs-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/agent-docs-update.md) | Update AGENTS.md and code_assist.md when agent files change. |
 | Architecture principles | [`architecture-principles.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/architecture-principles.md) | Minimize cross-module deps; consult `dependency_graph.md` before adding new ones. |
 | CMake conventions | [`cmake-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/cmake-conventions.md) | Use `PUBLIC`/`INTERFACE` properties; each module owns its headers. |
-| Code style | [`code-style-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/code-style-guide.md) | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
+| Code style | [`code-style-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/code-style-guide.md) | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes. |
 | Compile after edit | [`compile-after-edit.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/compile-after-edit.md) | Always run `/compile-test` after modifying C/CMake. |
 | Concurrency practices | [`concurrency-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/concurrency-practices.md) | Semaphore protocol, FPS sync, process coordination. |
 | Documentation site | [`documentation-site.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/documentation-site.md) | MkDocs structure, page creation, tag categories. |
@@ -55,6 +55,7 @@ requiring you to remember every checklist.
 | Help consistency | [`help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
 | Programmer's Guide | [`maintain-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
 | Module dependencies | [`module-deps-declaration.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/module-deps-declaration.md) | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros. |
+| Naming conventions | [`naming-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/naming-conventions.md) | File, function, variable, macro naming; loop index types. |
 | Performance practices | [`performance-practices.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/performance-practices.md) | SIMD, BLAS, pointer alignment, type dispatch, memory allocation, CPU pinning. |
 | README updates | [`readme-update.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/readme-update.md) | Update module README when source files are added/removed. |
 | Running commands | [`run-milk-commands.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/run-milk-commands.md) | Environment setup, SHM cleanup, tmux session management. |
