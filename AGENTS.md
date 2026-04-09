@@ -350,8 +350,9 @@ milk modules, but use `add_cacao_standalone()` or
 
 - **Line length**: ≤ 100 characters
 - **Style**: Linux kernel C coding style
-- **Documentation**: Kernel-Doc (`/** ... */`) above
-  functions in `.c` files; brief descriptions in `.h`
+- **Documentation**: Document each function’s purpose in
+  the corresponding `.h`; keep `.c` comments focused on
+  implementation details
 - **Includes**: Every `.c` file includes exactly what it
   needs — no implicit transitive includes
 - **Variable scope**: Use code blocks `{ }` to minimize
