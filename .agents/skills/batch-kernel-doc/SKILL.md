@@ -66,7 +66,7 @@ Order by impact:
  *
  * Detailed description of what the function does,
  * why it exists, and any important algorithmic
- * notes. Keep lines ≤ 80 characters.
+ * notes. Keep lines ≤ 100 characters.
  *
  * Context: any important usage context (e.g.,
  * "called from the main loop", "must hold lock").
@@ -173,7 +173,7 @@ with correctness:
   neighboring functions — read each function's
   actual implementation
 - **Line length**: doc comment lines must respect
-  the 80-character limit
+  the 100-character limit
 - **Missing `@param`**: every parameter must be
   documented, even obvious ones like `name`
 - **Static functions**: document them too, but

@@ -32,7 +32,7 @@ Generated scripts MUST:
 3. Clean up streams/images at end of script
 4. Use functions for reusable logic
 5. Document purpose with comments
-6. Keep lines ≤ 80 characters
+6. Keep lines ≤ 100 characters
 7. Use descriptive variable names (≥ 3 chars)
 8. Prefer milk-native commands over shell calls
 
