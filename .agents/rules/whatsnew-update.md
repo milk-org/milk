@@ -41,7 +41,7 @@ if the month doesn't exist yet.
 
 ### Rules
 
-1. Keep the description to **one line** (≤ 80 chars
+1. Keep the description to **one line** (≤ 100 chars
    before the tag+link continuation line).
 2. Use one or more tags from: `#cli`,
    `#performance`, `#streams`, `#fps`, `#build`,
