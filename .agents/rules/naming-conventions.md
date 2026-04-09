@@ -35,7 +35,7 @@
 
 ### 1.3 Scripts
 
-(See also `script-naming.md`.)
+Use the following patterns for script names.
 
 | Type           | Pattern                    | Examples                  |
 |----------------|----------------------------|---------------------------|
