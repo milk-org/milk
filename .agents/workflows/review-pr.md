@@ -20,7 +20,7 @@ git diff framework-dev..HEAD
 
 For each modified `.c` and `.h` file, verify:
 
-- [ ] Lines ≤ 80 characters
+- [ ] Lines ≤ 100 characters
 - [ ] Linux kernel C coding style
 - [ ] Kernel-Doc comments above functions
 - [ ] Explicit `#include` for every header used

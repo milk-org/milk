@@ -192,7 +192,7 @@ float *data = img.im->array.F;
    after architectural changes (the
    `maintain-programmers-guide` rule enforces this).
 
-5. **Lines > 80 characters.** The project enforces short
+5. **Lines > 100 characters.** The project enforces
    lines for readability.
 
 6. **Using placeholders in module READMEs.** Always write
@@ -214,7 +214,7 @@ and enforced. Know what they require:
 | `agent-docs-update.md` | Update AGENTS.md and code_assist.md when agent files change |
 | `architecture-principles.md` | Check dependency graph before adding deps |
 | `cmake-conventions.md` | Use `PUBLIC`/`INTERFACE` properties; modules own their headers |
-| `code-style-guide.md` | 80-char lines, Kernel-Doc, Linux kernel style, explicit includes |
+| `code-style-guide.md` | 100-char lines, Kernel-Doc, Linux kernel style, explicit includes |
 | `compile-after-edit.md` | Always compile-test after C/CMake changes |
 | `concurrency-practices.md` | Semaphore protocol, FPS sync, process coordination |
 | `documentation-site.md` | MkDocs structure, page creation, tag categories |
@@ -347,7 +347,7 @@ milk modules, but use `add_cacao_standalone()` or
 
 ## 12. Coding Style Summary
 
-- **Line length**: ≤ 80 characters
+- **Line length**: ≤ 100 characters
 - **Style**: Linux kernel C coding style
 - **Documentation**: Kernel-Doc (`/** ... */`) above
   functions in `.c` files; brief descriptions in `.h`
