@@ -162,8 +162,8 @@ for vectorization (see §3.8).
 
 ### 3.6 Boolean / Flag Variables
 
-- Type: `int` for boolean-intent variables (C has no native bool;
-  `int` matches kernel style and avoids `<stdbool.h>` dependency).
+- Type: `int` for boolean-intent variables (project preference:
+  `int` matches kernel style and avoids a `<stdbool.h>` dependency).
 - Prefix with `is_`, `has_`, `do_`, or `flag_`:
   ```c
   int is_shared  = img.shared;
