@@ -25,6 +25,14 @@ Therefore, we request contributors _avoid_:
   - submitting content they would not have been able to produce themselves, given sufficient time, motivation, and incentive;
   - submitting content whose relevance, performance, alignment with project milestones, or overall utility to the project they cannot justify.
 
+In extension of this principles of control, __we disallow two things specifically__ to be done with AI agents, as we believe they encompass too many things that can go wrong:
+- Executing agents on a server that controls experimental hardware, such as for instance the servers controlling an actual adaptive optics testbed when performing on-site development (e.g. with an IDE connected using an SSH plugin directly onto the instrument server).
+- Using agents to directly interact with the public facing GitHub repository __in particular but not restricted to__:
+  - Pushing to shared branches
+  - Force pushing therein
+  - Pushing to pull requests that merge therein.
+
+
 ### **Principle of traceability**.
 
 Provide the verbatim prompts as a top-level comment to your AI-assisted pull requests, unless reasonably unfeasible or irrelevant to the code changes (for example, back and forth debug of of your local filesystem setup). In which case, include a faithful summary and you may attach the verbatim prompt.

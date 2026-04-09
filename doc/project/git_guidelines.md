@@ -27,6 +27,18 @@ If you wish to work on something minor and well-scoped, branch off `dev` and go.
 
 If you undertake something major (feature, refactor, performance), open an issue first so as to have a place for conversation with the maintainers. We can discuss the intent, architecture, strategy, and follow your progress while making sure other developers don't accidentally set up traps for your progress (and vice-versa).
 
+## Communication style and verbosity
+
+Commits that end up in a branch shared among multiple developers, or pushed to an open pull requests, as well as messages to open issues, discussions, and pull-request are in capacity of notifying a number of contributors that watch the repository.
+
+The rule is simple: consider a PR commit, post, etc, etc to create the _equivalent effect_ as sending an email to a mailing list.
+- Consider if you would send an email for something such as "I fixed a typo" (which may be completely fine!).
+- Or if you would follow that one email by 10 separate emails saying "I found and fixed another typo". Please refrain.
+- Or if you would send an email saying "I did this" without any explanation.
+
+On our shared repository, all actions and modifications are both _content_ and _interaction_ among the developer community. Using private branches, working in a forked repo, etc, are all good techniques to work quietly until you're ready to propose work and accompanying communication to the rest of the contributors.
+
+
 
 ## Commits
 
