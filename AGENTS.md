@@ -193,7 +193,7 @@ float *data = img.im->array.F;
    `maintain-programmers-guide` rule enforces this).
 
 5. **Lines > 100 characters.** The project enforces
-   lines for readability.
+   short lines for readability.
 
 6. **Using placeholders in module READMEs.** Always write
    accurate descriptions derived from source code.
