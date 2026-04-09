@@ -193,7 +193,7 @@ float *data = img.im->array.F;
    `maintain-programmers-guide` rule enforces this).
 
 5. **Lines > 100 characters.** The project enforces
-   lines for readability.
+   short lines for readability.
 
 6. **Using placeholders in module READMEs.** Always write
    accurate descriptions derived from source code.
@@ -350,8 +350,9 @@ milk modules, but use `add_cacao_standalone()` or
 
 - **Line length**: ≤ 100 characters
 - **Style**: Linux kernel C coding style
-- **Documentation**: Kernel-Doc (`/** ... */`) above
-  functions in `.c` files; brief descriptions in `.h`
+- **Documentation**: Document each function’s purpose in
+  the corresponding `.h`; keep `.c` comments focused on
+  implementation details
 - **Includes**: Every `.c` file includes exactly what it
   needs — no implicit transitive includes
 - **Variable scope**: Use code blocks `{ }` to minimize

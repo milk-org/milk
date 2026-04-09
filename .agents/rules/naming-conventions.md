@@ -35,7 +35,7 @@
 
 ### 1.3 Scripts
 
-(See also `script-naming.md`.)
+Use the following patterns for script names.
 
 | Type           | Pattern                    | Examples                  |
 |----------------|----------------------------|---------------------------|
@@ -52,7 +52,7 @@
 
 | Scope                      | Convention                          |
 |----------------------------|-------------------------------------|
-| **Public API** (in `.h`)   | `<subsystem>_<verb><Object>()`      |
+| **Public API** (in `.h`)   | `<subsystem>_<verb>_<object>()`     |
 | **Module-internal static** | `<verb>_<object>()` or descriptive  |
 | **CLI registration**       | `CLIADDCMD_<module>__<func>()`      |
 | **CLI entry point**        | `CLIfunction()`                     |
@@ -162,8 +162,8 @@ for vectorization (see §3.8).
 
 ### 3.6 Boolean / Flag Variables
 
-- Type: `int` for boolean-intent variables (C has no native bool;
-  `int` matches kernel style and avoids `<stdbool.h>` dependency).
+- Type: `int` for boolean-intent variables (project preference:
+  `int` matches kernel style and avoids a `<stdbool.h>` dependency).
 - Prefix with `is_`, `has_`, `do_`, or `flag_`:
   ```c
   int is_shared  = img.shared;
@@ -416,7 +416,7 @@ Known legacy patterns to preserve:
 ```
 Files:        snake_case.c/h
 Dirs:         snake_case (new), COREMOD_X (legacy)
-Public funcs: SubSystem_verbObject()
+Public funcs: subsystem_verb_object()
 Static funcs: verb_object()
 Variables:    snake_case, length ∝ scope
 Loop indices: ii, jj, kk (not i, j, k)
