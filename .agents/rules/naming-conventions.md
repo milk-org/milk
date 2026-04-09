@@ -52,7 +52,7 @@ Use the following patterns for script names.
 
 | Scope                      | Convention                          |
 |----------------------------|-------------------------------------|
-| **Public API** (in `.h`)   | `<subsystem>_<verb><Object>()`      |
+| **Public API** (in `.h`)   | `<subsystem>_<verb>_<object>()`     |
 | **Module-internal static** | `<verb>_<object>()` or descriptive  |
 | **CLI registration**       | `CLIADDCMD_<module>__<func>()`      |
 | **CLI entry point**        | `CLIfunction()`                     |
