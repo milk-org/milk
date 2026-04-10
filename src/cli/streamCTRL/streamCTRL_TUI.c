@@ -46,8 +46,14 @@ typedef int errno_t;
 #define ctrl(x) ((x) &0x1f)
 
 /* Tab definitions: (display_mode, key_label, tab_label)
- * Used by the tab-bar renderer via RENDER_ONE_TAB.
- * To add a tab, append one X() row here.
+ * Used by the tab-bar renderer via RENDER_ONE_TAB and to derive TAB_COUNT
+ * for CTRL+L/R wrap-around.
+ *
+ * To add a tab, you must also:
+ *   1. Add a DISPLAY_MODE_* constant in streamCTRL_TUI.h.
+ *   2. Add a case handler (case KEY_F(n) or case 'c') in
+ *      streamCTRL_keyinput_process() in this file.
+ *   3. Add a help entry in the DISPLAY_MODE_HELP section below.
  */
 #define TAB_LIST(X) \
     X(DISPLAY_MODE_HELP,    "h",  "Help") \
@@ -57,6 +63,10 @@ typedef int errno_t;
     X(DISPLAY_MODE_SPTRACE, "F5", \
       "process traces") \
     X(DISPLAY_MODE_FUSER,   "F6", "access")
+
+/* Number of tabs — derived from TAB_LIST so CTRL+L/R wrap stays in sync */
+#define TAB_COUNT_ONE(mode, key, label) +1
+#define TAB_COUNT (0 TAB_LIST(TAB_COUNT_ONE))
 
 
 static short unsigned int wrow, wcol;
@@ -106,7 +116,8 @@ static errno_t streamCTRL_keyinput_process(
     case 564:
     case 554:
         sTUIparam.DisplayMode--;
-        if (sTUIparam.DisplayMode < 1) sTUIparam.DisplayMode = 6;
+        if (sTUIparam.DisplayMode < DISPLAY_MODE_HELP)
+            sTUIparam.DisplayMode = TAB_COUNT;
         break;
 
     case 561: // CTRL+RIGHT
@@ -115,7 +126,8 @@ static errno_t streamCTRL_keyinput_process(
     case 565:
     case 569:
         sTUIparam.DisplayMode++;
-        if (sTUIparam.DisplayMode > 6) sTUIparam.DisplayMode = 1;
+        if (sTUIparam.DisplayMode > TAB_COUNT)
+            sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
         break;
 
     case 'x': // Exit control screen
