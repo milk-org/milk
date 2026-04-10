@@ -45,6 +45,29 @@ typedef int errno_t;
 
 #define ctrl(x) ((x) &0x1f)
 
+/* Tab definitions: (display_mode, key_label, tab_label)
+ * Used by the tab-bar renderer via RENDER_ONE_TAB and to derive TAB_COUNT
+ * for CTRL+L/R wrap-around.
+ *
+ * To add a tab, you must also:
+ *   1. Add a DISPLAY_MODE_* constant in streamCTRL_TUI.h.
+ *   2. Add a case handler (case KEY_F(n) or case 'c') in
+ *      streamCTRL_keyinput_process() in this file.
+ *   3. Add a help entry in the DISPLAY_MODE_HELP section below.
+ */
+#define TAB_LIST(X) \
+    X(DISPLAY_MODE_HELP,    "h",  "Help") \
+    X(DISPLAY_MODE_SUMMARY, "F2", "summary") \
+    X(DISPLAY_MODE_WRITE,   "F3", "write PIDs") \
+    X(DISPLAY_MODE_READ,    "F4", "read PIDs") \
+    X(DISPLAY_MODE_SPTRACE, "F5", \
+      "process traces") \
+    X(DISPLAY_MODE_FUSER,   "F6", "access")
+
+/* Number of tabs — derived from TAB_LIST so CTRL+L/R wrap stays in sync */
+#define TAB_COUNT_ONE(mode, key, label) +1
+#define TAB_COUNT (0 TAB_LIST(TAB_COUNT_ONE))
+
 
 static short unsigned int wrow, wcol;
 
@@ -93,7 +116,8 @@ static errno_t streamCTRL_keyinput_process(
     case 564:
     case 554:
         sTUIparam.DisplayMode--;
-        if (sTUIparam.DisplayMode < 1) sTUIparam.DisplayMode = 6;
+        if (sTUIparam.DisplayMode < DISPLAY_MODE_HELP)
+            sTUIparam.DisplayMode = TAB_COUNT;
         break;
 
     case 561: // CTRL+RIGHT
@@ -102,7 +126,8 @@ static errno_t streamCTRL_keyinput_process(
     case 565:
     case 569:
         sTUIparam.DisplayMode++;
-        if (sTUIparam.DisplayMode > 6) sTUIparam.DisplayMode = 1;
+        if (sTUIparam.DisplayMode > TAB_COUNT)
+            sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
         break;
 
     case 'x': // Exit control screen
@@ -604,77 +629,19 @@ errno_t streamCTRL_CTRLscreen()
         else
         {
             DEBUG_TRACEPOINT(" ");
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_HELP)  // Inaccessible.
-            {
-                screenprint_setreverse();
-                TUI_printfw("[h] Help");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[h] Help");
-            }
-            TUI_printfw("   ");
+            /* Tab bar — rendered from TAB_LIST */
+#define RENDER_ONE_TAB(mode, key, label) \
+    { \
+        if (sTUIparam.DisplayMode == (mode)) \
+            screenprint_setreverse(); \
+        TUI_printfw("[%s] %s", (key), (label)); \
+        if (sTUIparam.DisplayMode == (mode)) \
+            screenprint_unsetreverse(); \
+        TUI_printfw("   "); \
+    }
 
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_SUMMARY)
-            {
-                screenprint_setreverse();
-                TUI_printfw("[F2] summary");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[F2] summary");
-            }
-            TUI_printfw("   ");
-
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_WRITE)
-            {
-                screenprint_setreverse();
-                TUI_printfw("[F3] write PIDs");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[F3] write PIDs");
-            }
-            TUI_printfw("   ");
-
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_READ)
-            {
-                screenprint_setreverse();
-                TUI_printfw("[F4] read PIDs");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[F4] read PIDs");
-            }
-            TUI_printfw("   ");
-
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_SPTRACE)
-            {
-                screenprint_setreverse();
-                TUI_printfw("[F5] process traces");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[F5] process traces");
-            }
-            TUI_printfw("   ");
-
-            if(sTUIparam.DisplayMode == DISPLAY_MODE_FUSER)
-            {
-                screenprint_setreverse();
-                TUI_printfw("[F6] access");
-                screenprint_unsetreverse();
-            }
-            else
-            {
-                TUI_printfw("[F6] access");
-            }
-            TUI_printfw("   ");
+            TAB_LIST(RENDER_ONE_TAB)
+#undef RENDER_ONE_TAB
             TUI_newline();
 
             TUI_printfw(
