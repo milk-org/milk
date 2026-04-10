@@ -630,21 +630,15 @@ errno_t streamCTRL_CTRLscreen()
         {
             DEBUG_TRACEPOINT(" ");
             /* Tab bar — rendered from TAB_LIST */
-#define RENDER_ONE_TAB(mode, key, label)        \
-    do                                           \
-    {                                            \
-        if(sTUIparam.DisplayMode == (mode))      \
-        {                                        \
-            screenprint_setreverse();            \
-        }                                        \
-        TUI_printfw("[%s] %s", (key), (label));  \
-        if(sTUIparam.DisplayMode == (mode))      \
-        {                                        \
-            screenprint_unsetreverse();          \
-        }                                        \
-        TUI_printfw("   ");                      \
-    }                                            \
-    while(0)
+#define RENDER_ONE_TAB(mode, key, label) \
+    { \
+        if (sTUIparam.DisplayMode == (mode)) \
+            screenprint_setreverse(); \
+        TUI_printfw("[%s] %s", (key), (label)); \
+        if (sTUIparam.DisplayMode == (mode)) \
+            screenprint_unsetreverse(); \
+        TUI_printfw("   "); \
+    }
 
             TAB_LIST(RENDER_ONE_TAB)
 #undef RENDER_ONE_TAB
