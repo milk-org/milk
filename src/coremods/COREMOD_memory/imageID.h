@@ -125,7 +125,7 @@ static inline imageID resolveIMGID(
     if(img->ID == -1)
     {
         const char *imgname =
-            (img->name != NULL && img->name[0] != '\0')
+            (img->name[0] != '\0')
             ? img->name
             : "<empty name — FPS stream parameter not set>";
 
