@@ -125,11 +125,12 @@ imageID COREMOD_IOFITS_LoadMemStream(
         if (imarray != NULL)
         {
             char shmpath_n[512];
-            snprintf(shmpath_n,
-                     sizeof(shmpath_n),
-                     "/milk/shm/%s.im.shm",
-                     name);
-            if (access(shmpath_n, F_OK) == 0)
+            if (ImageStreamIO_filename(
+                        shmpath_n,
+                        sizeof(shmpath_n),
+                        name)
+                    == IMAGESTREAMIO_SUCCESS &&
+                access(shmpath_n, F_OK) == 0)
             {
                 IMAGE tmpimg;
                 if (ImageStreamIO_openIm(
