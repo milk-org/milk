@@ -8,6 +8,7 @@
 #include <math.h>
 #include <ncurses.h>
 #include <time.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 #include "fps.h"
@@ -243,7 +244,18 @@ errno_t fpsCTRL_FPSdisplay(
             {
                 IMAGE tmpimg;
                 FPS_STREAMNAME_PARSED sp_sum = fps_streamname_parse(fpsarray[fpsidx].parray[pidx].val.string[0]);
-                if (ImageStreamIO_openIm(&tmpimg, sp_sum.name) == IMAGESTREAMIO_SUCCESS)
+                char shmpath_sum[STRINGMAXLEN_FILE_NAME];
+                int shm_sum_ok =
+                    (ImageStreamIO_filename(
+                         shmpath_sum,
+                         sizeof(shmpath_sum),
+                         sp_sum.name)
+                     == IMAGESTREAMIO_SUCCESS)
+                    && (access(shmpath_sum, F_OK) == 0);
+                if (shm_sum_ok
+                    && ImageStreamIO_openIm(
+                           &tmpimg, sp_sum.name)
+                        == IMAGESTREAMIO_SUCCESS)
                 {
                     char stream_info[256];
                     char size_str[64];
