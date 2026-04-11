@@ -50,6 +50,10 @@ static int kill_proc(
     const char *name,
     int         verbose)
 {
+    /*
+     * An invalid or non-existent PID means there is nothing to
+     * terminate; treat as success so removal can proceed.
+     */
     if (pid <= 0 || getpgid(pid) < 0)
         return 0;
 
@@ -75,8 +79,13 @@ static int kill_proc(
 
     usleep(200000); /* 200 ms */
 
-    if (kill(pid, 0) != 0)
-        return 0; /* gone after SIGTERM */
+    {
+        int rc = kill(pid, 0);
+        int chk_errno = errno;
+
+        if (rc == -1 && chk_errno == ESRCH)
+            return 0; /* gone after SIGTERM */
+    }
 
     if (verbose)
         printf("Process did not exit cleanly,"
@@ -101,16 +110,20 @@ static int kill_proc(
 
     usleep(50000); /* 50 ms */
 
-    if (kill(pid, 0) == 0)
     {
+        int rc = kill(pid, 0);
+        int chk_errno = errno;
+
+        if (rc == -1 && chk_errno == ESRCH)
+            return 0; /* confirmed gone */
+
+        /* rc == 0 (alive) or rc == -1 with EPERM (still exists) */
         fprintf(stderr,
                 "Error: %s (PID %d) still"
                 " running after SIGKILL.\n",
                 label, (int)pid);
         return 1;
     }
-
-    return 0;
 }
 
 /**
@@ -147,8 +160,7 @@ static int remove_fps(
     {
         pid_t cpid = fps.md->confpid;
 
-        if (cpid > 0 && getpgid(cpid) >= 0
-            && kill(cpid, 0) == 0)
+        if (cpid > 0 && getpgid(cpid) >= 0)
         {
             if (force)
             {
@@ -173,8 +185,7 @@ static int remove_fps(
     {
         pid_t rpid = fps.md->runpid;
 
-        if (rpid > 0 && getpgid(rpid) >= 0
-            && kill(rpid, 0) == 0)
+        if (rpid > 0 && getpgid(rpid) >= 0)
         {
             if (force)
             {
