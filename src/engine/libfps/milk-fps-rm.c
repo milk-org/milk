@@ -23,6 +23,7 @@ void print_help(const char *progname) {
     printf("A regex can be provided to filter the list.\n");
     printf("\n");
     printf("Options:\n");
+    printf("  -f, --force     Force removal by killing running processes\n");
     printf("  -v, --verbose   Verbose mode\n");
     printf("  -h, --help      Show this help message\n");
 }
@@ -37,7 +38,8 @@ void print_help(const char *progname) {
  */
 static int remove_fps(
     const char *name,
-    int         verbose)
+    int         verbose,
+    int         force)
 {
     FUNCTION_PARAMETER_STRUCT fps;
 
@@ -58,33 +60,61 @@ static int remove_fps(
         & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
     {
         if (kill(fps.md->confpid, 0) == 0) {
-            fprintf(stderr,
-                    "Error: conf process"
-                    " (PID %d) running"
-                    " for '%s'.\n",
-                    (int) fps.md->confpid,
-                    name);
-            running = 1;
+            if (force) {
+                if (verbose) {
+                    printf("Terminating conf process (PID %d) for '%s'...\n", (int)fps.md->confpid, name);
+                }
+                kill(fps.md->confpid, SIGTERM);
+                usleep(200000); // 200 ms wait
+                if (kill(fps.md->confpid, 0) == 0) {
+                    if (verbose) {
+                        printf("Process did not exit cleanly, sending SIGKILL...\n");
+                    }
+                    kill(fps.md->confpid, SIGKILL);
+                }
+            } else {
+                fprintf(stderr,
+                        "Error: conf process"
+                        " (PID %d) running"
+                        " for '%s'.\n",
+                        (int) fps.md->confpid,
+                        name);
+                running = 1;
+            }
         }
     }
     if (fps.md->status
         & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
     {
         if (kill(fps.md->runpid, 0) == 0) {
-            fprintf(stderr,
-                    "Error: run process"
-                    " (PID %d) running"
-                    " for '%s'.\n",
-                    (int) fps.md->runpid,
-                    name);
-            running = 1;
+            if (force) {
+                if (verbose) {
+                    printf("Terminating run process (PID %d) for '%s'...\n", (int)fps.md->runpid, name);
+                }
+                kill(fps.md->runpid, SIGTERM);
+                usleep(200000); // 200 ms wait
+                if (kill(fps.md->runpid, 0) == 0) {
+                    if (verbose) {
+                        printf("Process did not exit cleanly, sending SIGKILL...\n");
+                    }
+                    kill(fps.md->runpid, SIGKILL);
+                }
+            } else {
+                fprintf(stderr,
+                        "Error: run process"
+                        " (PID %d) running"
+                        " for '%s'.\n",
+                        (int) fps.md->runpid,
+                        name);
+                running = 1;
+            }
         }
     }
 
     if (running) {
         fprintf(stderr,
                 "Abort: stop processes"
-                " before removing '%s'.\n",
+                " before removing '%s' (or use -f/--force).\n",
                 name);
         function_parameter_struct_disconnect(
             &fps);
@@ -106,20 +136,25 @@ static int remove_fps(
 int main(int argc, char *argv[])
 {
     int verbose = 0;
+    int force = 0;
     int opt;
 
     static struct option long_options[] = {
+        {"force",   no_argument,       0, 'f'},
         {"verbose", no_argument,       0, 'v'},
         {"help",    no_argument,       0, 'h'},
         {0, 0, 0, 0}
     };
 
     while ((opt = getopt_long(argc, argv,
-                              "vh",
+                              "fvh",
                               long_options,
                               NULL)) != -1)
     {
         switch (opt) {
+            case 'f':
+                force = 1;
+                break;
             case 'v':
                 verbose = 1;
                 break;
@@ -212,7 +247,7 @@ int main(int argc, char *argv[])
             /* Exactly one match for a CLI arg:
              * remove without interactive prompt */
             int rc = remove_fps(
-                names[0], verbose);
+                names[0], verbose, force);
             for (int i = 0;
                  i < matched_count; i++)
             {
@@ -317,7 +352,7 @@ int main(int argc, char *argv[])
         {
             if (selected[i]) {
                 errors += remove_fps(
-                    names[i], verbose);
+                    names[i], verbose, force);
             }
         }
 

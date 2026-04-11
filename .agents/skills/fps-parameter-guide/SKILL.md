@@ -72,17 +72,18 @@ X-macro in section 3 of the V2 layout:
 ### String-Type Parameters
 
 For any `FPTYPE_STRING` (or string subtypes like
-`FPTYPE_FILENAME`), the C variable must be `char*`
-and passed as `&ptr`:
+`FPTYPE_FILENAME`), the C variable must be a `char`
+array of size `FUNCTION_PARAMETER_STRMAXLEN` and
+passed directly (as it decays to a pointer):
 
 ```c
 // Section 2 — local variables
-static char *in_name;
+static char in_name[FUNCTION_PARAMETER_STRMAXLEN] = "";
 
 // Section 3 — FPS_PARAMS
 X(FPTYPE_STRING, ".in_name", "stream01",
   "Input stream name",
-  FPFLAG_DEFAULT_INPUT, &in_name)
+  FPFLAG_DEFAULT_INPUT, in_name)
 ```
 
 ### Numeric Parameters
@@ -182,8 +183,13 @@ X(FPTYPE_ONOFF, ".enabled", "ON",            \
    `int64_t` for `FPTYPE_INT64` — causes undefined
    behavior on 32-bit targets.
 
-2. **Forgetting `&` on string pointers**: for
-   `char*` params, pass `&ptr` not `ptr`.
+2. **Using Pointers Instead of Buffers**: for
+   `FPTYPE_STRING`, using `static char *var` and
+   passing `&var` will cause the FPS engine to
+   overwrite the pointer location itself, causing
+   a severe buffer overflow and `SIGSEGV`. 
+   Always use `static char var[FUNCTION_PARAMETER_STRMAXLEN]`
+   and pass `var` without the `&`. Use `&` only for scalar primitives.
 
 3. **Missing `FPFLAG_PRIMARY_CLI_INPUT`**: the
    parameter won't count toward `nbarg` and
