@@ -28,10 +28,10 @@ X-macro in section 3 of the V2 layout:
 #define FPS_PARAMS                              \
     X(FPTYPE_STRING, ".in_name",  "input",      \
       "Input stream",                           \
-      FPFLAG_DEFAULT_INPUT, &in_name)           \
+      FPFLAG_DEFAULT_INPUT, in_name)            \
     X(FPTYPE_STRING, ".out_name", "output",     \
       "Output stream",                          \
-      FPFLAG_DEFAULT_OUTPUT, &out_name)         \
+      FPFLAG_DEFAULT_OUTPUT, out_name)          \
     X(FPTYPE_FLOAT64, ".gain",   "0.5",         \
       "Loop gain",                              \
       FPFLAG_DEFAULT_INPUT                      \
@@ -57,14 +57,14 @@ X-macro in section 3 of the V2 layout:
 | `FPTYPE_INT64` | `int64_t` | `"100"` |
 | `FPTYPE_FLOAT64` | `double` | `"0.5"` |
 | `FPTYPE_FLOAT32` | `float` | `"1.0"` |
-| `FPTYPE_STRING` | `char*` | `"stream01"` |
+| `FPTYPE_STRING` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"stream01"` |
 | `FPTYPE_ONOFF` | `int64_t` | `"ON"` or `"OFF"` |
-| `FPTYPE_FILENAME` | `char*` | `"/tmp/file.fits"` |
-| `FPTYPE_FITSFILENAME` | `char*` | `"data.fits"` |
-| `FPTYPE_EXECFILENAME` | `char*` | `"/usr/bin/prog"` |
-| `FPTYPE_DIRNAME` | `char*` | `"/tmp/outdir"` |
-| `FPTYPE_STREAMNAME` | `char*` | `"wfs0"` |
-| `FPTYPE_FPSNAME` | `char*` | `"myfps"` |
+| `FPTYPE_FILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/tmp/file.fits"` |
+| `FPTYPE_FITSFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"data.fits"` |
+| `FPTYPE_EXECFILENAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/usr/bin/prog"` |
+| `FPTYPE_DIRNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"/tmp/outdir"` |
+| `FPTYPE_STREAMNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"wfs0"` |
+| `FPTYPE_FPSNAME` | `char[FUNCTION_PARAMETER_STRMAXLEN]` | `"myfps"` |
 | `FPTYPE_PROCESS_PID` | `int64_t` | `"0"` |
 | `FPTYPE_TIMESPEC` | `double` | `"0.001"` |
 | `FPTYPE_AUTO` | *(varies)* | Auto-detect |
@@ -152,10 +152,10 @@ or in a `customCONFcheck()`.
 #define FPS_PARAMS                            \
     X(FPTYPE_STRING, ".in_name", "in",        \
       "Input stream",                         \
-      FPFLAG_DEFAULT_INPUT, &in_name)         \
+      FPFLAG_DEFAULT_INPUT, in_name)          \
     X(FPTYPE_STRING, ".out_name", "out",      \
       "Output stream",                        \
-      FPFLAG_DEFAULT_OUTPUT, &out_name)
+      FPFLAG_DEFAULT_OUTPUT, out_name)
 ```
 
 ### Tunable gain with limits

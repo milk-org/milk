@@ -124,15 +124,27 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
         if (imarray != NULL)
         {
-            IMAGE tmpimg;
-            if (ImageStreamIO_openIm(
-                    &tmpimg, name)
-                == IMAGESTREAMIO_SUCCESS)
+            char shmpath_n[512];
+            if (ImageStreamIO_filename(
+                        shmpath_n,
+                        sizeof(shmpath_n),
+                        name)
+                    == IMAGESTREAMIO_SUCCESS &&
+                access(shmpath_n, F_OK) == 0)
             {
-                ImageStreamIO_closeIm(&tmpimg);
-                printf("@N modifier: \"%s\" "
-                       "exists in SHM\n", name);
-                return -1;
+                IMAGE tmpimg;
+                if (ImageStreamIO_openIm(
+                        &tmpimg, name)
+                    == IMAGESTREAMIO_SUCCESS)
+                {
+                    ImageStreamIO_closeIm(
+                        &tmpimg);
+                    printf(
+                        "@N modifier: \"%s\" "
+                        "exists in SHM\n",
+                        name);
+                    return -1;
+                }
             }
         }
     }
@@ -163,17 +175,24 @@ imageID COREMOD_IOFITS_LoadMemStream(
          * No image array (pure library context).
          * Just check SHM existence.
          */
+        char shmpath_lib[STRINGMAXLEN_FILE_NAME];
+        if (ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) != IMAGESTREAMIO_SUCCESS || access(shmpath_lib, F_OK) != 0)
+        {
+            if (sp.must_exist)
+            {
+                 printf("@E modifier: \"%s\" "
+                        "not found in SHM\n",
+                        name);
+            }
+            return -1;
+        }
+
         IMAGE tmpimg;
         if (ImageStreamIO_openIm(&tmpimg, name)
             == IMAGESTREAMIO_SUCCESS)
         {
             *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             ImageStreamIO_closeIm(&tmpimg);
-
-            if (sp.must_exist == 0)
-            {
-                return 0;
-            }
             return 0;
         }
         if (sp.must_exist)

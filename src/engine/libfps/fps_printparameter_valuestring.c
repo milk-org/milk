@@ -7,6 +7,32 @@
 #include "fps_internal.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
+#include <unistd.h>
+#include <string.h>
+
+static void fps_printparameter_bare_stream_name(
+    const char *streamspec,
+    char *streamname,
+    size_t streamname_size
+)
+{
+    const char *basename = streamspec;
+
+    if((streamspec != NULL) &&
+            (streamspec[0] == '@') &&
+            (streamspec[1] != '\0') &&
+            (streamspec[2] == ':'))
+    {
+        basename = streamspec + 3;
+    }
+
+    if(streamname_size > 0)
+    {
+        strncpy(streamname, basename, streamname_size - 1);
+        streamname[streamname_size - 1] = '\0';
+    }
+}
+
 errno_t functionparameter_PrintParameter_ValueString(
     FUNCTION_PARAMETER *fpsentry,
     char *outstring,
@@ -188,8 +214,28 @@ errno_t functionparameter_GetParamValueString(
             {
                 int _slen = snprintf(outstring, stringmaxlen, "%s", fpsentry->val.string[0]);
                 if (_slen >= 0) {
+                    char stream_name_pv[STRINGMAXLEN_FILE_NAME];
+                    fps_printparameter_bare_stream_name(
+                        fpsentry->val.string[0],
+                        stream_name_pv,
+                        sizeof(stream_name_pv));
+                    char shmpath_pv[
+                        STRINGMAXLEN_FILE_NAME];
+                    int shm_ok =
+                        (ImageStreamIO_filename(
+                             shmpath_pv,
+                             sizeof(shmpath_pv),
+                             stream_name_pv)
+                         == IMAGESTREAMIO_SUCCESS)
+                        && (access(shmpath_pv,
+                                   F_OK) == 0);
                     IMAGE tmpimg;
-                    if (ImageStreamIO_openIm(&tmpimg, fpsentry->val.string[0]) == IMAGESTREAMIO_SUCCESS) {
+                    if (shm_ok
+                        && ImageStreamIO_openIm(
+                               &tmpimg,
+                               stream_name_pv)
+                            == IMAGESTREAMIO_SUCCESS)
+                    {
                         const char* type_str = ImageStreamIO_typename(tmpimg.md->datatype);
                         
                         char size_str[64];

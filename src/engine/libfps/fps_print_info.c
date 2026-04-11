@@ -6,10 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "fps.h"
 #include "fps_print_info.h"
 #include "fps_printparameter_valuestring.h"
+#include "ImageStreamIO/ImageStreamIO.h"
 
 #define C_TITLE  "\033[1;36m"
 #define C_HDR    "\033[1;35m"
@@ -157,8 +159,25 @@ int function_parameter_print_info(
                    fps->parray[pindex].description);
 
             if (show_info && fps->parray[pindex].type == FPTYPE_STREAMNAME) {
+                char shmpath_pi[STRINGMAXLEN_FILE_NAME];
+                int shm_ok = 0;
                 IMAGE tmpimg;
-                if (ImageStreamIO_openIm(&tmpimg, fps->parray[pindex].val.string[0]) == IMAGESTREAMIO_SUCCESS) {
+                FPS_STREAMNAME_PARSED sp = fps_streamname_parse(fps->parray[pindex].val.string[0]);
+
+                if (!sp.error) {
+                    shm_ok =
+                        (ImageStreamIO_filename(
+                             shmpath_pi,
+                             sizeof(shmpath_pi),
+                             sp.name)
+                         == IMAGESTREAMIO_SUCCESS)
+                        && (access(shmpath_pi, F_OK) == 0);
+                }
+
+                if (shm_ok
+                    && ImageStreamIO_openIm(&tmpimg, sp.name)
+                        == IMAGESTREAMIO_SUCCESS)
+                {
                     const char* dtype_str = ImageStreamIO_typename(tmpimg.md->datatype);
                     char size_str[64];
                     if (tmpimg.md->naxis == 1) snprintf(size_str, 64, "%u", tmpimg.md->size[0]);

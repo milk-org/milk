@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
@@ -30,9 +31,107 @@ void print_help(const char *progname) {
 }
 
 /**
+ * kill_proc() - Terminate a process with SIGTERM→SIGKILL escalation
+ * @pid:     Process ID to terminate; must be > 0
+ * @label:   Human-readable label used in diagnostic messages
+ * @name:    FPS name used in diagnostic messages
+ * @verbose: Print progress messages when non-zero
+ *
+ * Validates that @pid is positive and the process group exists
+ * before signaling.  Sends SIGTERM, waits 200 ms, then escalates
+ * to SIGKILL if the process is still alive.  Waits an additional
+ * 50 ms after SIGKILL and confirms the process has exited.
+ *
+ * Returns 0 if the process is gone, 1 on error or if the process
+ * is still running after SIGKILL.
+ */
+static int kill_proc(
+    pid_t       pid,
+    const char *label,
+    const char *name,
+    int         verbose)
+{
+    /*
+     * An invalid or non-existent PID means there is nothing to
+     * terminate; treat as success so removal can proceed.
+     */
+    if (pid <= 0 || getpgid(pid) < 0)
+        return 0;
+
+    if (verbose)
+        printf("Terminating %s process"
+               " (PID %d) for '%s'...\n",
+               label, (int)pid, name);
+
+    if (kill(pid, SIGTERM) == -1)
+    {
+        int saved_errno = errno;
+
+        if (saved_errno == ESRCH)
+            return 0; /* already gone */
+
+        fprintf(stderr,
+                "Error: cannot send SIGTERM"
+                " to %s (PID %d): %s\n",
+                label, (int)pid,
+                strerror(saved_errno));
+        return 1;
+    }
+
+    usleep(200000); /* 200 ms */
+
+    {
+        int rc = kill(pid, 0);
+        int chk_errno = errno;
+
+        if (rc == -1 && chk_errno == ESRCH)
+            return 0; /* gone after SIGTERM */
+    }
+
+    if (verbose)
+        printf("Process did not exit cleanly,"
+               " sending SIGKILL to %s"
+               " (PID %d)...\n",
+               label, (int)pid);
+
+    if (kill(pid, SIGKILL) == -1)
+    {
+        int saved_errno = errno;
+
+        if (saved_errno == ESRCH)
+            return 0; /* gone between checks */
+
+        fprintf(stderr,
+                "Error: cannot send SIGKILL"
+                " to %s (PID %d): %s\n",
+                label, (int)pid,
+                strerror(saved_errno));
+        return 1;
+    }
+
+    usleep(50000); /* 50 ms */
+
+    {
+        int rc = kill(pid, 0);
+        int chk_errno = errno;
+
+        if (rc == -1 && chk_errno == ESRCH)
+            return 0; /* confirmed gone */
+
+        /* rc == 0 (alive) or rc == -1 with EPERM (still exists) */
+        fprintf(stderr,
+                "Error: %s (PID %d) still"
+                " running after SIGKILL.\n",
+                label, (int)pid);
+        return 1;
+    }
+}
+
+/**
  * remove_fps() - Remove a single FPS by name
  * @name:    FPS name
  * @verbose: extra output if true
+ * @force:   kill running processes instead of aborting
  *
  * Connects, checks for running processes,
  * removes, disconnects.  Returns 0 on success.
@@ -123,6 +222,7 @@ static int remove_fps(
             }
         }
     }
+
     if (fps.md->status
         & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
     {
