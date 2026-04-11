@@ -93,7 +93,12 @@ static inline imageID RegisterIMGID(
  * ERRMODE_FAIL : error
  * ERRMODE_ABORT : abort
  */
-static inline imageID resolveIMGID(
+#define resolveIMGID(...) _resolveIMGID_impl(__FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+
+static inline imageID _resolveIMGID_impl(
+    const char *caller_file,
+    int caller_line,
+    const char *caller_func,
     IMGID *img,
     int ERRMODE,
     IMAGE *imagearray __attribute__((unused)),
@@ -124,18 +129,28 @@ static inline imageID resolveIMGID(
     //
     if(img->ID == -1)
     {
-        const char *imgname =
-            (img->name[0] != '\0')
-            ? img->name
-            : "<empty name — FPS stream parameter not set>";
-
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            PRINT_ERROR("Cannot resolve image \"%s\"\n", imgname);
-            abort();
+            if (img->name[0] == '\0')
+            {
+                fprintf(stderr,
+                        "\n\033[1;31mABORT\033[0m resolveIMGID: "
+                        "stream name is empty or NULL.\n"
+                        "  Called from: %s:%d in %s()\n"
+                        "  A required FPS stream parameter (or hardcoded stream name) has not been configured.\n",
+                        caller_file, caller_line, caller_func);
+                fflush(stderr);
+                abort();
+            }
+            else
+            {
+                PRINT_ERROR("Cannot resolve image \"%s\"\n", img->name);
+                abort();
+            }
         }
         else if(ERRMODE == ERRMODE_WARN)
         {
+            const char *imgname = (img->name[0] != '\0') ? img->name : "<empty name>";
             PRINT_WARNING("Cannot resolve image \"%s\"\n", imgname);
         }
     }
