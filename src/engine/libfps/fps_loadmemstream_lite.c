@@ -173,10 +173,20 @@ imageID COREMOD_IOFITS_LoadMemStream(
     {
         /*
          * No image array (pure library context).
-         * Let ImageStreamIO resolve the SHM path so this
-         * stays consistent with MILK_SHM_DIR and fallback
-         * directory logic.
+         * Just check SHM existence.
          */
+        char shmpath_lib[STRINGMAXLEN_FILE_NAME];
+        if (ImageStreamIO_filename(shmpath_lib, sizeof(shmpath_lib), name) != IMAGESTREAMIO_SUCCESS || access(shmpath_lib, F_OK) != 0)
+        {
+            if (sp.must_exist)
+            {
+                 printf("@E modifier: \"%s\" "
+                        "not found in SHM\n",
+                        name);
+            }
+            return -1;
+        }
+
         IMAGE tmpimg;
         if (ImageStreamIO_openIm(&tmpimg, name)
             == IMAGESTREAMIO_SUCCESS)

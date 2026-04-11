@@ -162,27 +162,20 @@ int function_parameter_print_info(
                 char shmpath_pi[STRINGMAXLEN_FILE_NAME];
                 int shm_ok = 0;
                 IMAGE tmpimg;
-                FPS_STREAMNAME fps_streamname;
+                FPS_STREAMNAME_PARSED sp = fps_streamname_parse(fps->parray[pindex].val.string[0]);
 
-                if (fps_streamname_parse(
-                        fps->parray[pindex].val.string[0],
-                        &fps_streamname)
-                    == 0)
-                {
+                if (!sp.error) {
                     shm_ok =
                         (ImageStreamIO_filename(
                              shmpath_pi,
                              sizeof(shmpath_pi),
-                             fps_streamname.name)
+                             sp.name)
                          == IMAGESTREAMIO_SUCCESS)
-                        && (access(shmpath_pi,
-                                   F_OK) == 0);
+                        && (access(shmpath_pi, F_OK) == 0);
                 }
 
                 if (shm_ok
-                    && ImageStreamIO_openIm(
-                           &tmpimg,
-                           fps_streamname.name)
+                    && ImageStreamIO_openIm(&tmpimg, sp.name)
                         == IMAGESTREAMIO_SUCCESS)
                 {
                     const char* dtype_str = ImageStreamIO_typename(tmpimg.md->datatype);
