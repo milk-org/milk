@@ -124,14 +124,19 @@ static inline imageID resolveIMGID(
     //
     if(img->ID == -1)
     {
+        const char *imgname =
+            (img->name != NULL && img->name[0] != '\0')
+            ? img->name
+            : "<empty name — FPS stream parameter not set>";
+
         if((ERRMODE == ERRMODE_FAIL) || (ERRMODE == ERRMODE_ABORT))
         {
-            PRINT_ERROR("Cannot resolve image %s\n", img->name);
+            PRINT_ERROR("Cannot resolve image \"%s\"\n", imgname);
             abort();
         }
         else if(ERRMODE == ERRMODE_WARN)
         {
-            PRINT_WARNING("Cannot resolve image %s\n", img->name);
+            PRINT_WARNING("Cannot resolve image \"%s\"\n", imgname);
         }
     }
 
@@ -332,13 +337,46 @@ static inline imageID imcreateIMGID(IMGID *img)
 
 
 
-static inline IMGID stream_connect_create_2D(
+/**
+ * @brief Internal implementation — do not call directly.
+ *
+ * Use the stream_connect_create_2D() or stream_connect_create_2Df32()
+ * macros below, which inject caller context for actionable diagnostics.
+ */
+static inline IMGID _stream_connect_create_2D_impl(
     const char *__restrict imname,
     uint32_t xsize,
     uint32_t ysize,
-    uint8_t  datatype
+    uint8_t  datatype,
+    const char *caller_file,
+    int        caller_line,
+    const char *caller_func
 )
 {
+    /* Guard: an empty or NULL stream name means a required FPS
+     * parameter was never configured.  Detect here and abort with
+     * a clear, actionable message rather than crashing deep inside
+     * ImageStreamIO with a cryptic "Cannot allocate memory".
+     *
+     * The caller location printed below (file:line in func) shows
+     * which module variable was empty — look it up in source to
+     * find the associated FPS parameter key.
+     */
+    if (imname == NULL || imname[0] == '\0')
+    {
+        fprintf(stderr,
+                "\n\033[1;31mABORT\033[0m stream_connect_create_2D: "
+                "stream name is empty or NULL.\n"
+                "  Called from: %s:%d in %s()\n"
+                "  A required FPS stream parameter has not been configured.\n"
+                "  Identify the FPS key from the '[empty]' probe entries above,\n"
+                "  then set the missing parameter, e.g.:\n"
+                "    milk-fps-set <fps_name> <key> <stream_name>\n",
+                caller_file, caller_line, caller_func);
+        fflush(stderr);
+        abort();
+    }
+
     IMGID img = imgid_make_from_name(imname);
     resolveIMGID(&img, ERRMODE_WARN, dcimg, dcnimg);
 
@@ -396,24 +434,26 @@ static inline IMGID stream_connect_create_2D(
 }
 
 /**
- * @brief Connnect to stream or create if doesn't exist
+ * @brief Connect to a 2D stream or create it if missing.
  *
- * If stream exists but has wrong size type, recreate
- *
- * @param imname  stream name
- * @param xsize   x size
- * @param ysize   y size
- * @return IMGID
+ * Macro wrapper around _stream_connect_create_2D_impl that captures
+ * the caller's __FILE__, __LINE__, and __FUNCTION__ at compile time.
+ * On an empty stream name the abort message will identify the exact
+ * source location, making it easy to trace back to the FPS parameter.
  */
-static inline IMGID
-stream_connect_create_2Df32(
-    const char *__restrict imname,
-    uint32_t xsize,
-    uint32_t ysize
-)
-{
-    return stream_connect_create_2D(imname, xsize, ysize, _DATATYPE_FLOAT);
-}
+#define stream_connect_create_2D(imname, xsize, ysize, datatype) \
+    _stream_connect_create_2D_impl(imname, xsize, ysize, datatype, \
+                                   __FILE__, __LINE__, __FUNCTION__)
+
+/**
+ * @brief Connect to a float32 2D stream or create it if missing.
+ *
+ * Convenience macro — equivalent to stream_connect_create_2D with
+ * datatype = _DATATYPE_FLOAT.  Caller context is captured automatically.
+ */
+#define stream_connect_create_2Df32(imname, xsize, ysize) \
+    _stream_connect_create_2D_impl(imname, xsize, ysize, _DATATYPE_FLOAT, \
+                                   __FILE__, __LINE__, __FUNCTION__)
 
 static inline IMGID stream_connect_create_3D(
     const char *__restrict imname,
