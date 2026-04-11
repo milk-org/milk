@@ -110,26 +110,50 @@ imageID functionparameter_LoadStream(
         &(fps->parray[pindex].fpflag),
         &imLOC);
 
-    /* Concise one-line status */
-    printf("  stream \"%s\"", sp.name);
-    if (sp.loc != '\0' ||
-        sp.must_exist || sp.must_new)
+    /* Concise one-line status — include the FPS key so empty stream
+     * names can be traced back to the parameter that caused them.
+     * Tags appended:
+     *   [empty]         — parameter value was never set
+     *   [RUN-REQUIRED]  — runstart will abort if not found
+     *   [CONF-REQUIRED] — confstart will abort if not found
+     */
+    int name_empty = (sp.name[0] == '\0');
+    int run_req  = (fpsconnectmode == FPSCONNECT_RUN) &&
+                   (fps->parray[pindex].fpflag & FPFLAG_STREAM_RUN_REQUIRED);
+    int conf_req = (fpsconnectmode == FPSCONNECT_CONF) &&
+                   (fps->parray[pindex].fpflag & FPFLAG_STREAM_CONF_REQUIRED);
+
+    printf("  stream [%s] \"%s\"",
+           fps->parray[pindex].keywordfull, sp.name);
+    if (name_empty)
+    {
+        printf(" \033[33m[empty]\033[0m");
+    }
+    if (run_req)
+    {
+        printf(" \033[1;31m[RUN-REQUIRED]\033[0m");
+    }
+    if (conf_req)
+    {
+        printf(" \033[1;31m[CONF-REQUIRED]\033[0m");
+    }
+    if (sp.loc != '\0' || sp.must_exist || sp.must_new)
     {
         char label[8];
-        fps_streamname_modifier_label(
-            &sp, label, sizeof(label));
+        fps_streamname_modifier_label(&sp, label, sizeof(label));
         printf(" %s", label);
     }
     if (ID >= 0)
     {
-        printf(" -> \033[32mFOUND\033[0m"
-               " (ID %ld)\n",
-               (long) ID);
+        printf(" -> \033[32mFOUND\033[0m (ID %ld)\n", (long) ID);
+    }
+    else if (name_empty)
+    {
+        printf(" -> \033[90m[skipped: parameter not configured]\033[0m\n");
     }
     else
     {
-        printf(" -> \033[33mNOT FOUND\033[0m"
-               "\n");
+        printf(" -> \033[33mNOT FOUND\033[0m\n");
     }
 
     /* Restore original flags */
@@ -168,43 +192,60 @@ imageID functionparameter_LoadStream(
         exit(EXIT_FAILURE);
     }
 
-    /* Standard required-stream checks */
-    if (fpsconnectmode == FPSCONNECT_CONF)
+    /* Required-stream enforcement: abort with a clear message
+     * identifying the parameter and stream name that blocked startup. */
+    if (conf_req && ID == -1)
     {
-        if (fps->parray[pindex].fpflag
-            & FPFLAG_STREAM_CONF_REQUIRED)
+        if (name_empty)
         {
-            printf("    FPFLAG_STREAM_CONF_"
-                   "REQUIRED\n");
-            if (ID == -1)
-            {
-                printf(
-                    "FAILURE: FPSCONNECT_CONF "
-                    "Required stream %s could "
-                    "not be loaded\n",
-                    sp.name);
-                exit(EXIT_FAILURE);
-            }
+            fprintf(stderr,
+                    "\n\033[1;31mABORT\033[0m confstart: "
+                    "required stream parameter [%s] has no name set.\n"
+                    "  Fix: milk-fps-set %s %s <stream_name>\n",
+                    fps->parray[pindex].keywordfull,
+                    fps->md->name,
+                    fps->parray[pindex].keywordfull);
         }
+        else
+        {
+            fprintf(stderr,
+                    "\n\033[1;31mABORT\033[0m confstart: "
+                    "required stream \"%s\" (parameter [%s]) "
+                    "could not be loaded.\n"
+                    "  Fix: create the stream or "
+                    "update the parameter value.\n",
+                    sp.name,
+                    fps->parray[pindex].keywordfull);
+        }
+        fflush(stderr);
+        exit(EXIT_FAILURE);
     }
 
-    if (fpsconnectmode == FPSCONNECT_RUN)
+    if (run_req && ID == -1)
     {
-        if (fps->parray[pindex].fpflag
-            & FPFLAG_STREAM_RUN_REQUIRED)
+        if (name_empty)
         {
-            printf("    FPFLAG_STREAM_RUN_"
-                   "REQUIRED\n");
-            if (ID == -1)
-            {
-                printf(
-                    "FAILURE: FPSCONNECT_RUN "
-                    "Required stream %s could "
-                    "not be loaded\n",
-                    sp.name);
-                exit(EXIT_FAILURE);
-            }
+            fprintf(stderr,
+                    "\n\033[1;31mABORT\033[0m runstart: "
+                    "required stream parameter [%s] has no name set.\n"
+                    "  Fix: milk-fps-set %s %s <stream_name>\n",
+                    fps->parray[pindex].keywordfull,
+                    fps->md->name,
+                    fps->parray[pindex].keywordfull);
         }
+        else
+        {
+            fprintf(stderr,
+                    "\n\033[1;31mABORT\033[0m runstart: "
+                    "required stream \"%s\" (parameter [%s]) "
+                    "could not be loaded.\n"
+                    "  Fix: create the stream or "
+                    "update the parameter value.\n",
+                    sp.name,
+                    fps->parray[pindex].keywordfull);
+        }
+        fflush(stderr);
+        exit(EXIT_FAILURE);
     }
 
     return ID;
