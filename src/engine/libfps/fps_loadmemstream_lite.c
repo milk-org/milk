@@ -124,15 +124,26 @@ imageID COREMOD_IOFITS_LoadMemStream(
 
         if (imarray != NULL)
         {
-            IMAGE tmpimg;
-            if (ImageStreamIO_openIm(
-                    &tmpimg, name)
-                == IMAGESTREAMIO_SUCCESS)
+            char shmpath_n[512];
+            snprintf(shmpath_n,
+                     sizeof(shmpath_n),
+                     "/milk/shm/%s.im.shm",
+                     name);
+            if (access(shmpath_n, F_OK) == 0)
             {
-                ImageStreamIO_closeIm(&tmpimg);
-                printf("@N modifier: \"%s\" "
-                       "exists in SHM\n", name);
-                return -1;
+                IMAGE tmpimg;
+                if (ImageStreamIO_openIm(
+                        &tmpimg, name)
+                    == IMAGESTREAMIO_SUCCESS)
+                {
+                    ImageStreamIO_closeIm(
+                        &tmpimg);
+                    printf(
+                        "@N modifier: \"%s\" "
+                        "exists in SHM\n",
+                        name);
+                    return -1;
+                }
             }
         }
     }
@@ -163,17 +174,26 @@ imageID COREMOD_IOFITS_LoadMemStream(
          * No image array (pure library context).
          * Just check SHM existence.
          */
+        char shmpath_lib[512];
+        snprintf(shmpath_lib,
+                 sizeof(shmpath_lib),
+                 "/milk/shm/%s.im.shm", name);
+        if (access(shmpath_lib, F_OK) != 0)
+        {
+            if (sp.must_exist)
+            {
+                printf("@E modifier: \"%s\" "
+                       "not found in SHM\n",
+                       name);
+            }
+            return -1;
+        }
         IMAGE tmpimg;
         if (ImageStreamIO_openIm(&tmpimg, name)
             == IMAGESTREAMIO_SUCCESS)
         {
             *imLOC = STREAM_LOAD_SOURCE_SHAREMEM;
             ImageStreamIO_closeIm(&tmpimg);
-
-            if (sp.must_exist == 0)
-            {
-                return 0;
-            }
             return 0;
         }
         if (sp.must_exist)

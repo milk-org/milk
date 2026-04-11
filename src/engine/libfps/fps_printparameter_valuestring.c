@@ -7,6 +7,8 @@
 #include "fps_internal.h"
 #include "ImageStreamIO/ImageStreamIO.h"
 
+#include <unistd.h>
+
 errno_t functionparameter_PrintParameter_ValueString(
     FUNCTION_PARAMETER *fpsentry,
     char *outstring,
@@ -188,8 +190,25 @@ errno_t functionparameter_GetParamValueString(
             {
                 int _slen = snprintf(outstring, stringmaxlen, "%s", fpsentry->val.string[0]);
                 if (_slen >= 0) {
+                    char shmpath_pv[
+                        STRINGMAXLEN_FILE_NAME];
+                    int shm_ok =
+                        (ImageStreamIO_filename(
+                             shmpath_pv,
+                             sizeof(shmpath_pv),
+                             fpsentry->val
+                                 .string[0])
+                         == IMAGESTREAMIO_SUCCESS)
+                        && (access(shmpath_pv,
+                                   F_OK) == 0);
                     IMAGE tmpimg;
-                    if (ImageStreamIO_openIm(&tmpimg, fpsentry->val.string[0]) == IMAGESTREAMIO_SUCCESS) {
+                    if (shm_ok
+                        && ImageStreamIO_openIm(
+                               &tmpimg,
+                               fpsentry->val
+                                   .string[0])
+                            == IMAGESTREAMIO_SUCCESS)
+                    {
                         const char* type_str = ImageStreamIO_typename(tmpimg.md->datatype);
                         
                         char size_str[64];
