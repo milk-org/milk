@@ -53,21 +53,23 @@ static int kill_proc(
     if (pid <= 0 || getpgid(pid) < 0)
         return 0;
 
-    if (kill(pid, 0) != 0)
-        return 0; /* already gone */
-
     if (verbose)
         printf("Terminating %s process"
                " (PID %d) for '%s'...\n",
                label, (int)pid, name);
 
-    if (kill(pid, SIGTERM) == -1 && errno != ESRCH)
+    if (kill(pid, SIGTERM) == -1)
     {
+        int saved_errno = errno;
+
+        if (saved_errno == ESRCH)
+            return 0; /* already gone */
+
         fprintf(stderr,
                 "Error: cannot send SIGTERM"
                 " to %s (PID %d): %s\n",
                 label, (int)pid,
-                strerror(errno));
+                strerror(saved_errno));
         return 1;
     }
 
@@ -82,13 +84,18 @@ static int kill_proc(
                " (PID %d)...\n",
                label, (int)pid);
 
-    if (kill(pid, SIGKILL) == -1 && errno != ESRCH)
+    if (kill(pid, SIGKILL) == -1)
     {
+        int saved_errno = errno;
+
+        if (saved_errno == ESRCH)
+            return 0; /* gone between checks */
+
         fprintf(stderr,
                 "Error: cannot send SIGKILL"
                 " to %s (PID %d): %s\n",
                 label, (int)pid,
-                strerror(errno));
+                strerror(saved_errno));
         return 1;
     }
 
