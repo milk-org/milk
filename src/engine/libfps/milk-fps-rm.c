@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
@@ -29,9 +30,87 @@ void print_help(const char *progname) {
 }
 
 /**
+ * kill_proc() - Terminate a process with SIGTERM→SIGKILL escalation
+ * @pid:     Process ID to terminate; must be > 0
+ * @label:   Human-readable label used in diagnostic messages
+ * @name:    FPS name used in diagnostic messages
+ * @verbose: Print progress messages when non-zero
+ *
+ * Validates that @pid is positive and the process group exists
+ * before signaling.  Sends SIGTERM, waits 200 ms, then escalates
+ * to SIGKILL if the process is still alive.  Waits an additional
+ * 50 ms after SIGKILL and confirms the process has exited.
+ *
+ * Returns 0 if the process is gone, 1 on error or if the process
+ * is still running after SIGKILL.
+ */
+static int kill_proc(
+    pid_t       pid,
+    const char *label,
+    const char *name,
+    int         verbose)
+{
+    if (pid <= 0 || getpgid(pid) < 0)
+        return 0;
+
+    if (kill(pid, 0) != 0)
+        return 0; /* already gone */
+
+    if (verbose)
+        printf("Terminating %s process"
+               " (PID %d) for '%s'...\n",
+               label, (int)pid, name);
+
+    if (kill(pid, SIGTERM) == -1 && errno != ESRCH)
+    {
+        fprintf(stderr,
+                "Error: cannot send SIGTERM"
+                " to %s (PID %d): %s\n",
+                label, (int)pid,
+                strerror(errno));
+        return 1;
+    }
+
+    usleep(200000); /* 200 ms */
+
+    if (kill(pid, 0) != 0)
+        return 0; /* gone after SIGTERM */
+
+    if (verbose)
+        printf("Process did not exit cleanly,"
+               " sending SIGKILL to %s"
+               " (PID %d)...\n",
+               label, (int)pid);
+
+    if (kill(pid, SIGKILL) == -1 && errno != ESRCH)
+    {
+        fprintf(stderr,
+                "Error: cannot send SIGKILL"
+                " to %s (PID %d): %s\n",
+                label, (int)pid,
+                strerror(errno));
+        return 1;
+    }
+
+    usleep(50000); /* 50 ms */
+
+    if (kill(pid, 0) == 0)
+    {
+        fprintf(stderr,
+                "Error: %s (PID %d) still"
+                " running after SIGKILL.\n",
+                label, (int)pid);
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
  * remove_fps() - Remove a single FPS by name
  * @name:    FPS name
  * @verbose: extra output if true
+ * @force:   kill running processes instead of aborting
  *
  * Connects, checks for running processes,
  * removes, disconnects.  Returns 0 on success.
@@ -59,53 +138,50 @@ static int remove_fps(
     if (fps.md->status
         & FUNCTION_PARAMETER_STRUCT_STATUS_CONF)
     {
-        if (kill(fps.md->confpid, 0) == 0) {
-            if (force) {
-                if (verbose) {
-                    printf("Terminating conf process (PID %d) for '%s'...\n", (int)fps.md->confpid, name);
-                }
-                kill(fps.md->confpid, SIGTERM);
-                usleep(200000); // 200 ms wait
-                if (kill(fps.md->confpid, 0) == 0) {
-                    if (verbose) {
-                        printf("Process did not exit cleanly, sending SIGKILL...\n");
-                    }
-                    kill(fps.md->confpid, SIGKILL);
-                }
-            } else {
+        pid_t cpid = fps.md->confpid;
+
+        if (cpid > 0 && getpgid(cpid) >= 0
+            && kill(cpid, 0) == 0)
+        {
+            if (force)
+            {
+                if (kill_proc(cpid, "conf",
+                              name, verbose))
+                    running = 1;
+            }
+            else
+            {
                 fprintf(stderr,
                         "Error: conf process"
                         " (PID %d) running"
                         " for '%s'.\n",
-                        (int) fps.md->confpid,
-                        name);
+                        (int)cpid, name);
                 running = 1;
             }
         }
     }
+
     if (fps.md->status
         & FUNCTION_PARAMETER_STRUCT_STATUS_RUN)
     {
-        if (kill(fps.md->runpid, 0) == 0) {
-            if (force) {
-                if (verbose) {
-                    printf("Terminating run process (PID %d) for '%s'...\n", (int)fps.md->runpid, name);
-                }
-                kill(fps.md->runpid, SIGTERM);
-                usleep(200000); // 200 ms wait
-                if (kill(fps.md->runpid, 0) == 0) {
-                    if (verbose) {
-                        printf("Process did not exit cleanly, sending SIGKILL...\n");
-                    }
-                    kill(fps.md->runpid, SIGKILL);
-                }
-            } else {
+        pid_t rpid = fps.md->runpid;
+
+        if (rpid > 0 && getpgid(rpid) >= 0
+            && kill(rpid, 0) == 0)
+        {
+            if (force)
+            {
+                if (kill_proc(rpid, "run",
+                              name, verbose))
+                    running = 1;
+            }
+            else
+            {
                 fprintf(stderr,
                         "Error: run process"
                         " (PID %d) running"
                         " for '%s'.\n",
-                        (int) fps.md->runpid,
-                        name);
+                        (int)rpid, name);
                 running = 1;
             }
         }
