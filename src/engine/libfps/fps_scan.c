@@ -4,6 +4,8 @@
  */
 
 #include <dirent.h>
+#include <string.h>
+
 #include <libgen.h>   // basename
 #include <sys/stat.h> // fstat
 
@@ -54,7 +56,7 @@ errno_t functionparameter_scan_fps(
 
     for(int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
     {
-        keywnode[kindex].NBchild = 0;
+        memset(&keywnode[kindex], 0, sizeof(KEYWORD_TREE_NODE));
     }
 
 

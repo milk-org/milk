@@ -492,6 +492,18 @@ errno_t functionparameter_CTRLscreen(
             } else if (fpsCTRLvar.NBfps == 0) {
                 fpsCTRLvar.fpsindexSelected = 0;
             }
+
+            // Clamping node indices to the keyword array bounds
+            if (fpsCTRLvar.nodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0) {
+                fpsCTRLvar.nodeSelected = fpsCTRLvar.NBkwn - 1;
+            } else if (fpsCTRLvar.NBkwn == 0) {
+                fpsCTRLvar.nodeSelected = 0;
+            }
+            if (fpsCTRLvar.directorynodeSelected >= fpsCTRLvar.NBkwn && fpsCTRLvar.NBkwn > 0) {
+                fpsCTRLvar.directorynodeSelected = 0; // fallback to ROOT
+            } else if (fpsCTRLvar.NBkwn == 0) {
+                fpsCTRLvar.directorynodeSelected = 0;
+            }
         }
         
         int NBtaskLaunched = 0;
@@ -605,7 +617,7 @@ errno_t functionparameter_CTRLscreen(
                 }
                 TUI_printfw("\n");
 
-                if (fpsCTRLvar.NBfps > 0)
+                if (fpsCTRLvar.NBfps > 0 && fpsarray[fpsCTRLvar.fpsindexSelected].md != NULL)
                 {
                     TUI_printfw("    FPS keywords     :  %s\n", fpsarray[fpsCTRLvar.fpsindexSelected].md->keywordarray);
                 }
