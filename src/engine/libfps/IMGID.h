@@ -95,6 +95,11 @@ typedef struct
     uint64_t    slice_last_cnt0;  // source frame counter
     int         slice_shared;    // 1 if @S: requested
 
+    // FPS parameter key that sourced this stream name.
+    // Set by imgid_setfpskeyword(); empty if not from FPS.
+    // Used by resolveIMGID to produce actionable errors.
+    char fpskeyword[128];
+
 } IMGID;
 
 
@@ -135,6 +140,8 @@ static inline IMGID imgid_make()
     img.slice_im       = NULL;
     img.slice_last_cnt0 = 0;
     img.slice_shared   = 0;
+
+    img.fpskeyword[0] = '\0';
 
     return img;
 }
@@ -334,6 +341,47 @@ static inline IMGID imgid_make_from_name(CONST_WORD name)
     return img;
 }
 
+
+/**
+ * @brief Tag an IMGID with its originating FPS key.
+ *
+ * When resolveIMGID fails, this key is printed in the
+ * error message so the user knows which
+ * milk-fps-set command to run.
+ *
+ * @param img      IMGID to tag
+ * @param fpsname  FPS instance name (e.g. "mfilt-00")
+ * @param key      Parameter suffix  (e.g. ".inmval")
+ */
+static inline void imgid_setfpskeyword(
+    IMGID      *img,
+    const char *fpsname,
+    const char *key
+)
+{
+    snprintf(img->fpskeyword,
+             sizeof(img->fpskeyword),
+             "%s%s", fpsname, key);
+}
+
+
+/**
+ * @brief Create IMGID from a stream name and tag it
+ *        with the FPS key that provided the name.
+ *
+ * Convenience wrapper combining imgid_make_from_name
+ * and imgid_setfpskeyword.
+ */
+static inline IMGID imgid_make_from_fpskey(
+    CONST_WORD  name,
+    const char *fpsname,
+    const char *key
+)
+{
+    IMGID img = imgid_make_from_name(name);
+    imgid_setfpskeyword(&img, fpsname, key);
+    return img;
+}
 
 
 

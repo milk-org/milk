@@ -133,25 +133,45 @@ static inline imageID _resolveIMGID_impl(
         {
             if (img->name[0] == '\0')
             {
+                const char *fpskey =
+                    (img->fpskeyword[0] != '\0')
+                    ? img->fpskeyword
+                    : "<unknown — use imgid_setfpskeyword()>";
+
                 fprintf(stderr,
-                        "\n\033[1;31mABORT\033[0m resolveIMGID: "
-                        "stream name is empty or NULL.\n"
-                        "  Called from: %s:%d in %s()\n"
-                        "  A required FPS stream parameter (or hardcoded stream name) has not been configured.\n",
-                        caller_file, caller_line, caller_func);
+                    "\n\033[1;31mABORT\033[0m "
+                    "resolveIMGID: stream name "
+                    "is empty.\n"
+                    "  FPS parameter : %s\n"
+                    "  Called from   : %s:%d"
+                    " in %s()\n"
+                    "  Fix: set the missing "
+                    "parameter, e.g.:\n"
+                    "    milk-fps-set %s"
+                    " <stream_name>\n",
+                    fpskey,
+                    caller_file, caller_line,
+                    caller_func,
+                    fpskey);
                 fflush(stderr);
                 abort();
             }
             else
             {
-                PRINT_ERROR("Cannot resolve image \"%s\"\n", img->name);
+                PRINT_ERROR(
+                    "Cannot resolve image \"%s\"\n",
+                    img->name);
                 abort();
             }
         }
         else if(ERRMODE == ERRMODE_WARN)
         {
-            const char *imgname = (img->name[0] != '\0') ? img->name : "<empty name>";
-            PRINT_WARNING("Cannot resolve image \"%s\"\n", imgname);
+            const char *imgname =
+                (img->name[0] != '\0')
+                ? img->name : "<empty name>";
+            PRINT_WARNING(
+                "Cannot resolve image \"%s\"\n",
+                imgname);
         }
     }
 
