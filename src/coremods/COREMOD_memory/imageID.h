@@ -136,23 +136,44 @@ static inline imageID _resolveIMGID_impl(
                 const char *fpskey =
                     (img->fpskeyword[0] != '\0')
                     ? img->fpskeyword
-                    : "<unknown — use imgid_setfpskeyword()>";
+                    : "<unknown>";
 
-                fprintf(stderr,
-                    "\n\033[1;31mABORT\033[0m "
-                    "resolveIMGID: stream name "
-                    "is empty.\n"
-                    "  FPS parameter : %s\n"
-                    "  Called from   : %s:%d"
-                    " in %s()\n"
-                    "  Fix: set the missing "
-                    "parameter, e.g.:\n"
-                    "    milk-fps-set %s"
-                    " <stream_name>\n",
-                    fpskey,
-                    caller_file, caller_line,
-                    caller_func,
-                    fpskey);
+                if(img->fpskeyword[0] != '\0')
+                {
+                    fprintf(stderr,
+                        "\n\033[1;31mABORT\033[0m "
+                        "resolveIMGID: stream name "
+                        "is empty.\n"
+                        "  FPS parameter : %s\n"
+                        "  Called from   : %s:%d"
+                        " in %s()\n"
+                        "  Fix: set the missing "
+                        "parameter, e.g.:\n"
+                        "    milk-fps-set %s"
+                        " <stream_name>\n",
+                        fpskey,
+                        caller_file, caller_line,
+                        caller_func,
+                        fpskey);
+                }
+                else
+                {
+                    fprintf(stderr,
+                        "\n\033[1;31mABORT\033[0m "
+                        "resolveIMGID: stream name "
+                        "is empty.\n"
+                        "  FPS parameter : %s\n"
+                        "  Called from   : %s:%d"
+                        " in %s()\n"
+                        "  Fix: set the missing "
+                        "parameter and tag this "
+                        "IMGID with imgid_setfpskeyword() "
+                        "to enable a specific "
+                        "milk-fps-set suggestion.\n",
+                        fpskey,
+                        caller_file, caller_line,
+                        caller_func);
+                }
                 fflush(stderr);
                 abort();
             }
