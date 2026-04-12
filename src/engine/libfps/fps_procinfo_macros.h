@@ -226,6 +226,9 @@ typedef struct
         triggertimeout.tv_nsec = 0;      \
     if (dcfpsptr != NULL)               \
     {                                    \
+        CLIcmddata.cmdsettings->flags   \
+            |= (dcfpsptr->cmdset.flags  \
+                & CLICMDFLAG_PROCINFO); \
         CLIcmddata.cmdsettings->        \
             RT_priority =                \
             dcfpsptr->cmdset.RT_priority;\
