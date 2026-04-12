@@ -54,10 +54,7 @@ errno_t functionparameter_scan_fps(
     static char shmdname[STRINGMAXLEN_SHMDIRNAME] = {0};
 
 
-    for(int kindex = 0; kindex < NB_KEYWNODE_MAX; kindex++)
-    {
-        memset(&keywnode[kindex], 0, sizeof(KEYWORD_TREE_NODE));
-    }
+    memset(keywnode, 0, NB_KEYWNODE_MAX * sizeof(*keywnode));
 
 
     // scan filesystem for fps entries
