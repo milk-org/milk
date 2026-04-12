@@ -13,6 +13,7 @@
 
 #include "ImageStreamIO/ImageStreamIO.h"
 #include "fps_streamname_parse.h"
+#include "fps_types.h"
 #include "imgid_slice.h"
 
 
@@ -29,6 +30,16 @@ typedef int errno_t;
 #endif
 
 #define IMGID_NB_KEYWO_MAX 10
+
+/* Buffer for a full FPS parameter key, e.g.
+ * "mfilt-00.inmval": FPS name (STRINGMAXLEN_FPS_NAME)
+ * plus dotted keyword suffix
+ * (FUNCTION_PARAMETER_KEYWORD_STRMAXLEN).
+ * See fps_types.h for the component limits.
+ */
+#define IMGID_FPSKEYWORD_STRMAXLEN \
+    (STRINGMAXLEN_FPS_NAME + \
+     FUNCTION_PARAMETER_KEYWORD_STRMAXLEN)
 
 #define IMGID_CONNECT_NOCHECK      0
 #define IMGID_CONNECT_CHECK_FAIL   1
@@ -98,7 +109,7 @@ typedef struct
     // FPS parameter key that sourced this stream name.
     // Set by imgid_setfpskeyword(); empty if not from FPS.
     // Used by resolveIMGID to produce actionable errors.
-    char fpskeyword[128];
+    char fpskeyword[IMGID_FPSKEYWORD_STRMAXLEN];
 
 } IMGID;
 
