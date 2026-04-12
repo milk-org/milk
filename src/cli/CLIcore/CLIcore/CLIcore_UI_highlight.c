@@ -104,6 +104,26 @@ void cli_highlight_redisplay(void)
         return;
     }
 
+    /* Comment lines: color entire line dim green */
+    if(rl_line_buffer[ws] == '#')
+    {
+        fprintf(rl_outstream, "\033[s");
+        {
+            int back = rl_point;
+            if(back > 0)
+            {
+                fprintf(rl_outstream,
+                        "\033[%dD", back);
+            }
+        }
+        fprintf(rl_outstream,
+                "\033[2;32m%s\033[0m",
+                rl_line_buffer);
+        fprintf(rl_outstream, "\033[u");
+        fflush(rl_outstream);
+        return;
+    }
+
     /* Extract first word */
     char firstword[200];
     int fwlen = we - ws;
@@ -120,6 +140,17 @@ void cli_highlight_redisplay(void)
     if(cli_is_command(firstword))
     {
         col = "\033[32m"; /* green */
+    }
+    else if(strchr(firstword, '=')
+            || strchr(firstword, '+')
+            || strchr(firstword, '*')
+            || strchr(firstword, '/')
+            || strchr(firstword, '('))
+    {
+        /* Math expression or assignment —
+         * leave in default color */
+        fflush(rl_outstream);
+        return;
     }
     else
     {

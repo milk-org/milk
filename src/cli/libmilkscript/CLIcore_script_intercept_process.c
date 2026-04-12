@@ -1,4 +1,6 @@
 #include <stddef.h>
+#include <math.h>
+#include "CLIcore/cli_calc_parser.h"
 extern int cli_find_in_path(const char *cmd, char *outpath, size_t outsize);
 extern int processinfo_procdirname(char *procdirname);
 #include <sys/mman.h>
@@ -548,6 +550,294 @@ int cli_intercept_cmd_time(const char *p)
     return 0;
 }
 
+/**
+ * cli_assert_eval - evaluate an expression to double.
+ * @expr: expression string (trimmed)
+ * @out:  result written here
+ *
+ * Return: 1 on success, 0 on failure.
+ */
+static int cli_assert_eval(
+    const char *expr,
+    double     *out
+)
+{
+    int type = 0;
+    long lval = 0;
+    double dval = 0.0;
+    int ok = cli_calc_eval_math_to_val(
+        expr, &type, &lval, &dval);
+    if(!ok)
+    {
+        return 0;
+    }
+    *out = (type == 1)
+           ? (double) lval : dval;
+    return 1;
+}
+
+/**
+ * cli_cmp_ok - evaluate a single comparison.
+ * @a:     left value
+ * @b:     right value
+ * @op_ch: '<' or '>'
+ * @op_eq: 1 if operator includes '='
+ *
+ * Return: 1 if comparison holds, 0 otherwise.
+ */
+static int cli_cmp_ok(
+    double a,
+    double b,
+    char   op_ch,
+    int    op_eq
+)
+{
+    if(op_ch == '<')
+    {
+        return op_eq ? (a <= b) : (a < b);
+    }
+    return op_eq ? (a >= b) : (a > b);
+}
+
+/** Operator symbol string for display. */
+static const char *cli_cmp_sym(
+    char op_ch,
+    int  op_eq
+)
+{
+    if(op_ch == '<')
+    {
+        return op_eq ? "<=" : "<";
+    }
+    return op_eq ? ">=" : ">";
+}
+
+/**
+ * cli_assert_trim - copy src into dst, trim
+ *      leading and trailing whitespace.
+ * @dst:  output buffer
+ * @sz:   sizeof(dst)
+ * @src:  source string
+ * @len:  number of chars to copy from src
+ */
+static void cli_assert_trim(
+    char       *dst,
+    size_t      sz,
+    const char *src,
+    int         len
+)
+{
+    if(len >= (int) sz)
+    {
+        len = (int) sz - 1;
+    }
+    /* skip leading ws */
+    while(len > 0
+          && (*src == ' ' || *src == '\t'))
+    {
+        src++;
+        len--;
+    }
+    memcpy(dst, src, (size_t) len);
+    dst[len] = '\0';
+    /* strip trailing ws */
+    int ri = len - 1;
+    while(ri >= 0
+          && (dst[ri] == ' '
+              || dst[ri] == '\t'))
+    {
+        dst[ri--] = '\0';
+    }
+}
+
+/**
+ * cli_assert_cmp - handle comparison assert.
+ * @ap: text after "assert " (trimmed)
+ *
+ * Supports:
+ *   assert expr<val   assert expr<=val
+ *   assert expr>val   assert expr>=val
+ *   assert lo<expr<hi (range, any combo of
+ *          <, <=, >, >=)
+ *
+ * Return: 1 if a comparison was found and
+ *         handled, 0 if no comparison operator.
+ */
+static int cli_assert_cmp(const char *ap)
+{
+    /* Find first < or > */
+    const char *op1 = NULL;
+    for(const char *s = ap; *s; s++)
+    {
+        if(*s == '<' || *s == '>')
+        {
+            op1 = s;
+            break;
+        }
+    }
+    if(op1 == NULL)
+    {
+        return 0;
+    }
+
+    char   o1ch = *op1;
+    int    o1eq = (*(op1 + 1) == '=');
+    int    o1len = 1 + o1eq;
+
+    char part1[512];
+    cli_assert_trim(
+        part1, sizeof(part1),
+        ap, (int)(op1 - ap));
+
+    const char *after1 = op1 + o1len;
+
+    /* Look for second < or > (range) */
+    const char *op2 = NULL;
+    for(const char *s = after1; *s; s++)
+    {
+        if(*s == '<' || *s == '>')
+        {
+            op2 = s;
+            break;
+        }
+    }
+
+    if(op2 != NULL)
+    {
+        /* Range: part1 op1 part2 op2 part3 */
+        char o2ch = *op2;
+        int  o2eq = (*(op2 + 1) == '=');
+        int  o2len = 1 + o2eq;
+
+        char part2[512];
+        cli_assert_trim(
+            part2, sizeof(part2),
+            after1,
+            (int)(op2 - after1));
+
+        char part3[512];
+        const char *after2 = op2 + o2len;
+        cli_assert_trim(
+            part3, sizeof(part3),
+            after2,
+            (int) strlen(after2));
+
+        double v1, v2, v3;
+        if(!cli_assert_eval(part1, &v1)
+           || !cli_assert_eval(part2, &v2)
+           || !cli_assert_eval(part3, &v3))
+        {
+            printf(
+                "\033[1;31m"
+                "[ASSERT FAIL] "
+                "cannot evaluate: "
+                "%s %s %s %s %s"
+                "\033[0m\n",
+                part1,
+                cli_cmp_sym(o1ch, o1eq),
+                part2,
+                cli_cmp_sym(o2ch, o2eq),
+                part3);
+            cli_last_retval = 1;
+            return 1;
+        }
+
+        int ok = cli_cmp_ok(
+                     v1, v2, o1ch, o1eq)
+                 && cli_cmp_ok(
+                     v2, v3, o2ch, o2eq);
+        if(ok)
+        {
+            printf(
+                "\033[1;32m"
+                "[ASSERT PASS] "
+                "%.15g %s %s(=%.15g) "
+                "%s %.15g"
+                "\033[0m\n",
+                v1,
+                cli_cmp_sym(o1ch, o1eq),
+                part2, v2,
+                cli_cmp_sym(o2ch, o2eq),
+                v3);
+        }
+        else
+        {
+            printf(
+                "\033[1;31m"
+                "[ASSERT FAIL] "
+                "%.15g %s %s(=%.15g) "
+                "%s %.15g"
+                "\033[0m\n",
+                v1,
+                cli_cmp_sym(o1ch, o1eq),
+                part2, v2,
+                cli_cmp_sym(o2ch, o2eq),
+                v3);
+            cli_last_retval = 1;
+            if(cli_flag_errexit)
+            {
+                cli_trap_run(-1);
+            }
+        }
+    }
+    else
+    {
+        /* Single: part1 op1 rhs */
+        char rhs[512];
+        cli_assert_trim(
+            rhs, sizeof(rhs),
+            after1,
+            (int) strlen(after1));
+
+        double v1, v2;
+        if(!cli_assert_eval(part1, &v1)
+           || !cli_assert_eval(rhs, &v2))
+        {
+            printf(
+                "\033[1;31m"
+                "[ASSERT FAIL] "
+                "cannot evaluate: "
+                "%s %s %s"
+                "\033[0m\n",
+                part1,
+                cli_cmp_sym(o1ch, o1eq),
+                rhs);
+            cli_last_retval = 1;
+            return 1;
+        }
+
+        if(cli_cmp_ok(v1, v2, o1ch, o1eq))
+        {
+            printf(
+                "\033[1;32m"
+                "[ASSERT PASS] "
+                "%s(=%.15g) %s %.15g"
+                "\033[0m\n",
+                part1, v1,
+                cli_cmp_sym(o1ch, o1eq),
+                v2);
+        }
+        else
+        {
+            printf(
+                "\033[1;31m"
+                "[ASSERT FAIL] "
+                "%s(=%.15g) NOT %s "
+                "%.15g"
+                "\033[0m\n",
+                part1, v1,
+                cli_cmp_sym(o1ch, o1eq),
+                v2);
+            cli_last_retval = 1;
+            if(cli_flag_errexit)
+            {
+                cli_trap_run(-1);
+            }
+        }
+    }
+    return 1;
+}
+
 int cli_intercept_cmd_assert(const char *p)
 {
     if(starts_with(p, "assert ")
@@ -558,8 +848,11 @@ int cli_intercept_cmd_assert(const char *p)
         {
             ap++;
         }
+
         if(*ap == '[')
         {
+            /* Bracket syntax:
+             * assert [ condition ] "msg" */
             ap++;
             const char *end =
                 strrchr(ap, ']');
@@ -580,7 +873,14 @@ int cli_intercept_cmd_assert(const char *p)
                 cs[clen] = '\0';
                 int result =
                     cli_eval_test(cs);
-                if(!result)
+                if(result)
+                {
+                    printf(
+                        "\033[1;32m"
+                        "[ASSERT PASS]"
+                        "\033[0m\n");
+                }
+                else
                 {
                     const char *msg =
                         end + 1;
@@ -589,7 +889,6 @@ int cli_intercept_cmd_assert(const char *p)
                     {
                         msg++;
                     }
-                    /* strip quotes */
                     if(*msg == '"'
                        || *msg == '\'')
                     {
@@ -617,16 +916,18 @@ int cli_intercept_cmd_assert(const char *p)
                                 = '\0';
                         }
                         printf(
-                            "ASSERT "
-                            "FAILED: "
-                            "%s\n", mb);
+                            "\033[1;31m"
+                            "[ASSERT FAIL] "
+                            "%s\033[0m\n",
+                            mb);
                     }
                     else
                     {
                         printf(
-                            "ASSERT "
-                            "FAILED: "
-                            "%s\n", msg);
+                            "\033[1;31m"
+                            "[ASSERT FAIL] "
+                            "%s\033[0m\n",
+                            msg);
                     }
                     cli_last_retval = 1;
                     if(cli_flag_errexit)
@@ -638,18 +939,154 @@ int cli_intercept_cmd_assert(const char *p)
             else
             {
                 printf(
-                    "ERROR: malformed assert: "
-                    "missing closing ']'\n");
+                    "\033[1;31m"
+                    "[ASSERT] missing ']'"
+                    "\033[0m\n");
                 cli_last_retval = 1;
             }
         }
+        else if(cli_assert_cmp(ap))
+        {
+            /* Comparison handled */
+        }
         else
         {
-            printf(
-                "ERROR: malformed assert: "
-                "expected '[condition]' after "
-                "'assert'\n");
-            cli_last_retval = 1;
+            /* Equality syntax:
+             * assert expr=expected [~tol] */
+            const char *eq = strchr(ap, '=');
+            if(eq == NULL)
+            {
+                printf(
+                    "\033[1;31m"
+                    "[ASSERT] syntax: "
+                    "assert expr=expected "
+                    "[~tol] or expr<val"
+                    "\033[0m\n");
+                cli_last_retval = 1;
+            }
+            else
+            {
+                char lhs[512];
+                int llen = (int)(eq - ap);
+                if(llen > 511)
+                {
+                    llen = 511;
+                }
+                memcpy(lhs, ap,
+                       (size_t) llen);
+                lhs[llen] = '\0';
+
+                const char *rp = eq + 1;
+                char rhs[512];
+                double tol = 0.0;
+
+                const char *tilde =
+                    strchr(rp, '~');
+                if(tilde != NULL)
+                {
+                    int rlen =
+                        (int)(tilde - rp);
+                    if(rlen > 511)
+                    {
+                        rlen = 511;
+                    }
+                    memcpy(rhs, rp,
+                           (size_t) rlen);
+                    rhs[rlen] = '\0';
+                    tol = fabs(strtod(
+                        tilde + 1, NULL));
+                }
+                else
+                {
+                    strncpy(rhs, rp, 511);
+                    rhs[511] = '\0';
+                }
+
+                /* Trim trailing ws */
+                {
+                    int ri = (int)
+                        strlen(rhs) - 1;
+                    while(ri >= 0
+                          && (rhs[ri] == ' '
+                              || rhs[ri]
+                                 == '\t'))
+                    {
+                        rhs[ri--] = '\0';
+                    }
+                }
+
+                int ltype = 0;
+                long llval = 0;
+                double ldval = 0.0;
+                int lok =
+                    cli_calc_eval_math_to_val(
+                        lhs, &ltype,
+                        &llval, &ldval);
+                if(lok && ltype == 1)
+                {
+                    ldval = (double) llval;
+                }
+
+                int rtype = 0;
+                long rlval = 0;
+                double rdval = 0.0;
+                int rok =
+                    cli_calc_eval_math_to_val(
+                        rhs, &rtype,
+                        &rlval, &rdval);
+                if(rok && rtype == 1)
+                {
+                    rdval = (double) rlval;
+                }
+
+                if(!lok || !rok)
+                {
+                    printf(
+                        "\033[1;31m"
+                        "[ASSERT FAIL] "
+                        "cannot evaluate: "
+                        "%s = %s"
+                        "\033[0m\n",
+                        lhs, rhs);
+                    cli_last_retval = 1;
+                }
+                else
+                {
+                    double diff =
+                        fabs(ldval - rdval);
+                    if(diff <= tol)
+                    {
+                        printf(
+                            "\033[1;32m"
+                            "[ASSERT PASS] "
+                            "%s = %.15g"
+                            " (expected "
+                            "%.15g ~%.15g)"
+                            "\033[0m\n",
+                            lhs, ldval,
+                            rdval, tol);
+                    }
+                    else
+                    {
+                        printf(
+                            "\033[1;31m"
+                            "[ASSERT FAIL] "
+                            "%s = %.15g"
+                            " (expected "
+                            "%.15g ~%.15g,"
+                            " diff=%.15g)"
+                            "\033[0m\n",
+                            lhs, ldval,
+                            rdval, tol,
+                            diff);
+                        cli_last_retval = 1;
+                        if(cli_flag_errexit)
+                        {
+                            cli_trap_run(-1);
+                        }
+                    }
+                }
+            }
         }
         return 1;
     }
