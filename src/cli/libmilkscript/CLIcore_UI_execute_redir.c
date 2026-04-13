@@ -1067,7 +1067,8 @@ int is_internal_cmd(const char *firstword, int check_assign)
     static const char *keywords[] = {
         "if", "elif", "else", "fi",
         "for", "while", "do", "done",
-        ".", "source", "assert", NULL
+        ".", "source", "assert",
+        "dpdigits", NULL
     };
 
     for(int k = 0; keywords[k] != NULL; k++)

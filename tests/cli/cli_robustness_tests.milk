@@ -1656,6 +1656,34 @@ echo comment_ok # this is a comment and should not error
 echo indented_comment_ok   # indented comment
 
 # ============================================
+# ---- dpdigits (float precision) ----
+# ============================================
+
+#DESC: dpdigits query default
+#EXPECT:OK
+dpdigits
+
+#DESC: dpdigits set to 6
+#EXPECT:OK
+dpdigits 6
+
+#DESC: dpdigits set to 3
+#EXPECT:OK
+dpdigits 3
+
+#DESC: dpdigits clamp below 1
+#EXPECT:OK
+dpdigits 0
+
+#DESC: dpdigits clamp above 17
+#EXPECT:OK
+dpdigits 99
+
+#DESC: dpdigits restore default
+#EXPECT:OK
+dpdigits 15
+
+# ============================================
 # ---- trap ERR ----
 # ============================================
 
