@@ -105,16 +105,10 @@ errno_t CLI_execute_line()
         (struct timespec *) malloc(sizeof(struct timespec));
     char calctmpimname[STRINGMAXLEN_IMGNAME];
 
-    /* Expand history (!! and !$) first */
-    cli_history_expand();
-    if(data.CLIcmdline[0] == '\0')
-    {
-        free(thetime);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_SUCCESS;
-    }
-
-    /* Lines starting with # are comments — skip */
+    /* Lines starting with # are comments —
+     * skip before ANY expansion so $, !, @
+     * tokens inside comments are never
+     * processed. */
     {
         const char *p = data.CLIcmdline;
         while (*p == ' ' || *p == '\t')
@@ -127,6 +121,15 @@ errno_t CLI_execute_line()
             DEBUG_TRACE_FEXIT();
             return RETURN_SUCCESS;
         }
+    }
+
+    /* Expand history (!! and !$) first */
+    cli_history_expand();
+    if(data.CLIcmdline[0] == '\0')
+    {
+        free(thetime);
+        DEBUG_TRACE_FEXIT();
+        return RETURN_SUCCESS;
     }
 
     /* Poll engine event traps */
