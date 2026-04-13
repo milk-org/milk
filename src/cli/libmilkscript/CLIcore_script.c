@@ -48,6 +48,7 @@ int     cli_last_retval = 0;
 /* ---- set flags ---- */
 int     cli_flag_errexit = 0;  /* set -e */
 int     cli_flag_xtrace  = 0;  /* set -x */
+int     cli_float_digits = 15;
 
 /* ---- Trap Handlers ---- */
 CLI_TRAP cli_traps[CLI_TRAP_MAXSIGS];
