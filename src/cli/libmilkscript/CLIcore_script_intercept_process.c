@@ -879,6 +879,7 @@ int cli_intercept_cmd_assert(const char *p)
                         "\033[1;32m"
                         "[ASSERT PASS]"
                         "\033[0m\n");
+                    cli_last_retval = 0;
                 }
                 else
                 {
