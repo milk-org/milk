@@ -62,7 +62,7 @@ void cli_var_set(
                     } else if (mtype == 2) {
                         type = 0; // double
                         numf = mdval;
-                        snprintf(valbuf, CLI_VAR_VALLEN, "%g", numf);
+                        snprintf(valbuf, CLI_VAR_VALLEN, "%.15g", numf);
                     } else {
                         type = 2; // string
                     }
@@ -275,7 +275,7 @@ int cli_try_var_assign(const char *line)
                     }
                     else if (cli_vars[i].type == 0)
                     {
-                        printf("    double: %g\n",
+                        printf("    double: %.15g\n",
                                cli_vars[i].num.f);
                     }
                     else
@@ -336,6 +336,30 @@ int cli_try_array_assign(const char *line)
     aname[nlen] = '\0';
 
     p += 2; /* skip =( */
+
+    /* Pre-scan: if the closing ')' is followed by
+     * non-whitespace this is a math expression like
+     * a=(1+2)/3, not an array assignment.  Do this
+     * check BEFORE mutating cli_arrays. */
+    {
+        const char *scan = p;
+        while(*scan != '\0' && *scan != ')')
+        {
+            scan++;
+        }
+        if(*scan == ')')
+        {
+            const char *q = scan + 1;
+            while(*q == ' ' || *q == '\t')
+            {
+                q++;
+            }
+            if(*q != '\0' && *q != '\n')
+            {
+                return 0;
+            }
+        }
+    }
 
     /* Find or create array slot */
     int slot = -1;
@@ -405,6 +429,7 @@ int cli_try_array_assign(const char *line)
             .elem[idx][ei] = '\0';
         cli_arrays[slot].nelem++;
     }
+
     return 1;
 }
 

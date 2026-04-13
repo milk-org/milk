@@ -409,7 +409,7 @@ val_t parse_primary(void)
             {
                 char numv[64];
                 snprintf(
-                    numv, 64, "%g",
+                    numv, 64, "%.15g",
                     to_double(v)
                 );
                 if (parse_mode == 1)

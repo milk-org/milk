@@ -1572,6 +1572,89 @@ assert [ 1 -eq 1 ] "should pass"
 #EXPECT:OK
 assert [ 1 -eq 2 ] "expected failure"
 
+#DESC: Assert numerical exact match
+#EXPECT:OK
+_av=1.23
+assert _av=1.23
+
+#DESC: Assert numerical within tolerance
+#EXPECT:OK
+_av=1.23
+assert _av=1.25 ~0.1
+
+#DESC: Assert numerical outside tolerance
+#EXPECT:OK
+_av=1.23
+assert _av=1.25 ~0.01
+
+#DESC: Assert numerical no tolerance mismatch
+#EXPECT:OK
+_av=1.23
+assert _av=5.0
+
+#DESC: Assert with math expression
+#EXPECT:OK
+_bv=(437.06+58.47)/5
+assert _bv=99.106 ~0.001
+
+#DESC: Assert bad syntax no equals
+#EXPECT:OK
+assert noequals
+
+#DESC: Assert less-than pass
+#EXPECT:OK
+_av=1.23
+assert _av<2
+
+#DESC: Assert less-than fail
+#EXPECT:OK
+assert _av<1
+
+#DESC: Assert greater-than pass
+#EXPECT:OK
+assert _av>1
+
+#DESC: Assert greater-than fail
+#EXPECT:OK
+assert _av>2
+
+#DESC: Assert less-or-equal at boundary
+#EXPECT:OK
+assert _av<=1.23
+
+#DESC: Assert greater-or-equal at boundary
+#EXPECT:OK
+assert _av>=1.23
+
+#DESC: Assert range pass
+#EXPECT:OK
+assert 0<_av<2
+
+#DESC: Assert range fail
+#EXPECT:OK
+assert 0<_av<1
+
+#DESC: Assert range with equality
+#EXPECT:OK
+assert 1<=_av<=2
+
+#DESC: Assert cleanup
+#EXPECT:OK
+unset _av
+unset _bv
+
+# ============================================
+# ---- Comment handling ----
+# ============================================
+
+#DESC: Inline comment silently consumed
+#EXPECT:OK
+echo comment_ok # this is a comment and should not error
+
+#DESC: Inline comment with extra whitespace before hash
+#EXPECT:OK
+echo indented_comment_ok   # indented comment
+
 # ============================================
 # ---- trap ERR ----
 # ============================================
