@@ -337,6 +337,30 @@ int cli_try_array_assign(const char *line)
 
     p += 2; /* skip =( */
 
+    /* Pre-scan: if the closing ')' is followed by
+     * non-whitespace this is a math expression like
+     * a=(1+2)/3, not an array assignment.  Do this
+     * check BEFORE mutating cli_arrays. */
+    {
+        const char *scan = p;
+        while(*scan != '\0' && *scan != ')')
+        {
+            scan++;
+        }
+        if(*scan == ')')
+        {
+            const char *q = scan + 1;
+            while(*q == ' ' || *q == '\t')
+            {
+                q++;
+            }
+            if(*q != '\0' && *q != '\n')
+            {
+                return 0;
+            }
+        }
+    }
+
     /* Find or create array slot */
     int slot = -1;
     for(int i = 0;
@@ -404,22 +428,6 @@ int cli_try_array_assign(const char *line)
         cli_arrays[slot]
             .elem[idx][ei] = '\0';
         cli_arrays[slot].nelem++;
-    }
-
-    /* If ')' is followed by non-whitespace,
-     * this is a math expression like
-     * a=(1+2)/3, not an array assignment. */
-    if(*p == ')')
-    {
-        const char *q = p + 1;
-        while(*q == ' ' || *q == '\t')
-        {
-            q++;
-        }
-        if(*q != '\0' && *q != '\n')
-        {
-            return 0;
-        }
     }
 
     return 1;
