@@ -38,6 +38,10 @@ extern int     cli_continue_flag;
 extern int     cli_flag_errexit;  /* set -e */
 extern int     cli_flag_xtrace;   /* set -x */
 
+/** Number of significant digits for
+ *  double display (1–17, default 15). */
+extern int     cli_float_digits;
+
 /* ---- Array Variables ---- */
 
 #define CLI_MAX_ARRAYS    64

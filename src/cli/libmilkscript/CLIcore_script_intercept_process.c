@@ -751,28 +751,30 @@ static int cli_assert_cmp(const char *ap)
             printf(
                 "\033[1;32m"
                 "[ASSERT PASS] "
-                "%.15g %s %s(=%.15g) "
-                "%s %.15g"
+                "%.*g %s %s(=%.*g) "
+                "%s %.*g"
                 "\033[0m\n",
-                v1,
+                cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
+                cli_float_digits,
                 part2, v2,
                 cli_cmp_sym(o2ch, o2eq),
-                v3);
+                cli_float_digits, v3);
         }
         else
         {
             printf(
                 "\033[1;31m"
                 "[ASSERT FAIL] "
-                "%.15g %s %s(=%.15g) "
-                "%s %.15g"
+                "%.*g %s %s(=%.*g) "
+                "%s %.*g"
                 "\033[0m\n",
-                v1,
+                cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
+                cli_float_digits,
                 part2, v2,
                 cli_cmp_sym(o2ch, o2eq),
-                v3);
+                cli_float_digits, v3);
             cli_last_retval = 1;
             if(cli_flag_errexit)
             {
@@ -811,23 +813,25 @@ static int cli_assert_cmp(const char *ap)
             printf(
                 "\033[1;32m"
                 "[ASSERT PASS] "
-                "%s(=%.15g) %s %.15g"
+                "%s(=%.*g) %s %.*g"
                 "\033[0m\n",
-                part1, v1,
+                part1,
+                cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                v2);
+                cli_float_digits, v2);
         }
         else
         {
             printf(
                 "\033[1;31m"
                 "[ASSERT FAIL] "
-                "%s(=%.15g) NOT %s "
-                "%.15g"
+                "%s(=%.*g) NOT %s "
+                "%.*g"
                 "\033[0m\n",
-                part1, v1,
+                part1,
+                cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                v2);
+                cli_float_digits, v2);
             cli_last_retval = 1;
             if(cli_flag_errexit)
             {
@@ -1060,25 +1064,36 @@ int cli_intercept_cmd_assert(const char *p)
                         printf(
                             "\033[1;32m"
                             "[ASSERT PASS] "
-                            "%s = %.15g"
+                            "%s = %.*g"
                             " (expected "
-                            "%.15g ~%.15g)"
+                            "%.*g ~%.*g)"
                             "\033[0m\n",
-                            lhs, ldval,
-                            rdval, tol);
+                            lhs,
+                            cli_float_digits,
+                            ldval,
+                            cli_float_digits,
+                            rdval,
+                            cli_float_digits,
+                            tol);
                     }
                     else
                     {
                         printf(
                             "\033[1;31m"
                             "[ASSERT FAIL] "
-                            "%s = %.15g"
+                            "%s = %.*g"
                             " (expected "
-                            "%.15g ~%.15g,"
-                            " diff=%.15g)"
+                            "%.*g ~%.*g,"
+                            " diff=%.*g)"
                             "\033[0m\n",
-                            lhs, ldval,
-                            rdval, tol,
+                            lhs,
+                            cli_float_digits,
+                            ldval,
+                            cli_float_digits,
+                            rdval,
+                            cli_float_digits,
+                            tol,
+                            cli_float_digits,
                             diff);
                         cli_last_retval = 1;
                         if(cli_flag_errexit)
@@ -1089,6 +1104,51 @@ int cli_intercept_cmd_assert(const char *p)
                 }
             }
         }
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * cli_intercept_cmd_dpdigits - set/query
+ *     float display precision.
+ * @p: full input line
+ *
+ * Syntax:
+ *   dpdigits       — print current value
+ *   dpdigits N     — set to N (1–17)
+ *
+ * Return: 1 if handled, 0 if not dpdigits.
+ */
+int cli_intercept_cmd_dpdigits(const char *p)
+{
+    const char *sp = strip_ws(p);
+    if(strcmp(sp, "dpdigits") == 0)
+    {
+        printf("dpdigits = %d\n",
+               cli_float_digits);
+        return 1;
+    }
+    if(starts_with(sp, "dpdigits ")
+       || starts_with(sp, "dpdigits\t"))
+    {
+        const char *ap = sp + 9;
+        while(*ap == ' ' || *ap == '\t')
+        {
+            ap++;
+        }
+        int val = (int) strtol(ap, NULL, 10);
+        if(val < 1)
+        {
+            val = 1;
+        }
+        if(val > 17)
+        {
+            val = 17;
+        }
+        cli_float_digits = val;
+        printf("dpdigits = %d\n",
+               cli_float_digits);
         return 1;
     }
     return 0;
