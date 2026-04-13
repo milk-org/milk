@@ -1647,13 +1647,13 @@ unset _bv
 # ---- Comment handling ----
 # ============================================
 
-#DESC: Comment line silently consumed
+#DESC: Inline comment silently consumed
 #EXPECT:OK
-# this is a comment and should not error
+echo comment_ok # this is a comment and should not error
 
-#DESC: Comment with leading whitespace
+#DESC: Inline comment with extra whitespace before hash
 #EXPECT:OK
-  # indented comment
+echo indented_comment_ok   # indented comment
 
 # ============================================
 # ---- trap ERR ----
