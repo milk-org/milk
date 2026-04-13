@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <math.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <sys/stat.h>
