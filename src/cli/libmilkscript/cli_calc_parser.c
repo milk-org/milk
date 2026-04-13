@@ -358,7 +358,7 @@ int cli_calc_eval_line(const char *input)
     }
     else if (result.type == VAL_DOUBLE)
     {
-        printf("    double: %g\n", result.dval);
+        printf("    double: %.15g\n", result.dval);
     }
     else if (result.type == VAL_STRING)
     {
