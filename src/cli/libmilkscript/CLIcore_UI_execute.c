@@ -114,6 +114,21 @@ errno_t CLI_execute_line()
         return RETURN_SUCCESS;
     }
 
+    /* Lines starting with # are comments — skip */
+    {
+        const char *p = data.CLIcmdline;
+        while (*p == ' ' || *p == '\t')
+        {
+            p++;
+        }
+        if (*p == '#')
+        {
+            free(thetime);
+            DEBUG_TRACE_FEXIT();
+            return RETURN_SUCCESS;
+        }
+    }
+
     /* Poll engine event traps */
     cli_engine_traps_poll();
 
