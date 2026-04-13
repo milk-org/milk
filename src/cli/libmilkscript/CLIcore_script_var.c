@@ -62,7 +62,8 @@ void cli_var_set(
                     } else if (mtype == 2) {
                         type = 0; // double
                         numf = mdval;
-                        snprintf(valbuf, CLI_VAR_VALLEN, "%.15g", numf);
+                        snprintf(valbuf, CLI_VAR_VALLEN, "%.*g",
+                                 cli_float_digits, numf);
                     } else {
                         type = 2; // string
                     }
@@ -275,7 +276,8 @@ int cli_try_var_assign(const char *line)
                     }
                     else if (cli_vars[i].type == 0)
                     {
-                        printf("    double: %.15g\n",
+                        printf("    double: %.*g\n",
+                               cli_float_digits,
                                cli_vars[i].num.f);
                     }
                     else

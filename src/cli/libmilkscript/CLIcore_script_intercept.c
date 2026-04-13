@@ -10,6 +10,7 @@ int cli_intercept_cmd_procwait(const char *p);
 int cli_intercept_cmd_procstat(const char *p);
 int cli_intercept_cmd_time(const char *p);
 int cli_intercept_cmd_assert(const char *p);
+int cli_intercept_cmd_dpdigits(const char *p);
 int cli_intercept_cmd_watch(const char *p);
 int cli_intercept_cmd_trap(const char *p);
 int cli_intercept_cmd_set(const char *p);
@@ -624,6 +625,7 @@ int cli_script_intercept(const char *line)
     if(cli_intercept_cmd_procstat(p)) return 1;
     if(cli_intercept_cmd_time(p)) return 1;
     if(cli_intercept_cmd_assert(p)) return 1;
+    if(cli_intercept_cmd_dpdigits(p)) return 1;
     if(cli_intercept_cmd_watch(p)) return 1;
     if(cli_intercept_cmd_trap(p)) return 1;
     if(cli_intercept_cmd_set(p)) return 1;
