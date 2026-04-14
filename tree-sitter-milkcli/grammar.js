@@ -74,21 +74,37 @@ module.exports = grammar({
             "$", $.identifier,
         ),
 
-        expansion: $ => seq(
+        expansion: $ => prec.left(1, seq(
             "${",
-            /[^}]+/,
+            repeat1(choice(
+                $.expansion,
+                $.simple_expansion,
+                /[^}$]+/,
+            )),
             "}",
-        ),
+        )),
 
         /* ---- milk-specific extensions ---- */
 
-        /** @fps.name.param */
-        fps_variable: $ =>
-            /@fps\.[a-zA-Z0-9_.-]+/,
+        /** @fps.name.param  or  @fps.${VAR}.param */
+        fps_variable: $ => prec.left(2, seq(
+            "@fps.",
+            repeat1(choice(
+                $.expansion,
+                $.simple_expansion,
+                /[a-zA-Z0-9_.-]+/,
+            )),
+        )),
 
-        /** @seq.name.field */
-        seq_variable: $ =>
-            /@seq\.[a-zA-Z0-9_.-]+/,
+        /** @seq.name.field  or  @seq.${VAR}.field */
+        seq_variable: $ => prec.left(2, seq(
+            "@seq.",
+            repeat1(choice(
+                $.expansion,
+                $.simple_expansion,
+                /[a-zA-Z0-9_.-]+/,
+            )),
+        )),
 
         /** ${s.stream.field} */
         stream_metadata: $ =>

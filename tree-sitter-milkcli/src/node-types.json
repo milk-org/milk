@@ -637,7 +637,21 @@
   {
     "type": "expansion",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        },
+        {
+          "type": "simple_expansion",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "for_statement",
@@ -756,6 +770,25 @@
         },
         {
           "type": "while_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "fps_variable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        },
+        {
+          "type": "simple_expansion",
           "named": true
         }
       ]
@@ -1099,6 +1132,25 @@
         },
         {
           "type": "while_statement",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "seq_variable",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "expansion",
+          "named": true
+        },
+        {
+          "type": "simple_expansion",
           "named": true
         }
       ]
@@ -1553,6 +1605,14 @@
     "named": false
   },
   {
+    "type": "@fps.",
+    "named": false
+  },
+  {
+    "type": "@seq.",
+    "named": false
+  },
+  {
     "type": "[",
     "named": false
   },
@@ -1621,10 +1681,6 @@
     "named": false
   },
   {
-    "type": "fps_variable",
-    "named": true
-  },
-  {
     "type": "function",
     "named": false
   },
@@ -1683,10 +1739,6 @@
   {
     "type": "savescript",
     "named": false
-  },
-  {
-    "type": "seq_variable",
-    "named": true
   },
   {
     "type": "stream_metadata",

@@ -299,9 +299,9 @@ local hl = {
         fg = "#eeffff",
     },
 
-    -- Variable expansions ($VAR, ${VAR}): coral
+    -- Variable expansions ($VAR, ${VAR}): amber
     ["@variable.builtin.milkcli"] = {
-        fg = "#ff5370",
+        fg = "#e2b93d",
     },
 
     -- Operators (=, |, |>, &&, ||)
