@@ -32,8 +32,13 @@ errno_t fpsCTRL_scheduler_display(
         if (milkseq_list(names, 1) > 0) {
             fpsCTRLvar->milkseq_state = milkseq_connect(names[0]);
             if (fpsCTRLvar->milkseq_state) {
-                strncpy(fpsCTRLvar->milkseq_name, names[0], 79);
-                fpsCTRLvar->milkseq_name[79] = '\0';
+                strncpy(fpsCTRLvar->milkseq_name,
+                        names[0],
+                        sizeof(fpsCTRLvar->milkseq_name)
+                        - 1);
+                fpsCTRLvar->milkseq_name[
+                    sizeof(fpsCTRLvar->milkseq_name)
+                    - 1] = '\0';
             }
         }
     }

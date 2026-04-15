@@ -57,7 +57,11 @@ errno_t processinfo_waitoninputstream_init(
         // convention : stream name single space : inactive
         DEBUG_TRACEPOINT("Setting trigger stream name to single space");
         processinfo->triggerstreaminode = 0;
-        strcpy(processinfo->triggerstreamname, " ");
+        strncpy(processinfo->triggerstreamname,
+                " ",
+                STRINGMAXLEN_IMAGE_NAME - 1);
+        processinfo->triggerstreamname[
+            STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
     }
 
     processinfo->triggermissedframe_cumul = 0;

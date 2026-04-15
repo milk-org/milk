@@ -370,7 +370,10 @@ int COREMOD_TOOLS_mvProcRTPrio(const int rtprio)
         return RETURN_FAILURE;
     }
 
-    sprintf(command, "chrt -f -p %d %d\n", rtprio, getpid());
+    snprintf(command,
+             sizeof(command),
+             "chrt -f -p %d %d\n",
+             rtprio, getpid());
     printf("Executing command: %s\n", command);
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
@@ -415,7 +418,10 @@ int COREMOD_TOOLS_mvProcTsetExt(const int pid, const char *tsetspec)
         PRINT_ERROR("seteuid/setuid error");
     }
 
-    sprintf(command, "taskset -pc %s %d\n", tsetspec, pid);
+    snprintf(command,
+             sizeof(command),
+             "taskset -pc %s %d\n",
+             tsetspec, pid);
     printf("Executing command: %s\n", command);
 
     EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);
@@ -457,10 +463,12 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
         PRINT_ERROR("seteuid/setuid error");
     }
 
-    sprintf(command,
-            "cset proc --threads --force -m -p %d -t %s\n",
-            pid,
-            csetname);
+    snprintf(command,
+             sizeof(command),
+             "cset proc --threads --force"
+             " -m -p %d -t %s\n",
+             pid,
+             csetname);
     printf("Executing command: %s\n", command);
 
     if(system("which cset > /dev/null 2>&1"))
@@ -490,7 +498,10 @@ int COREMOD_TOOLS_mvProcCPUsetExt(const int   pid,
 
     if(rtprio > 0)
     {
-        sprintf(command, "chrt -f -p %d %d\n", rtprio, pid);
+        snprintf(command,
+                 sizeof(command),
+                 "chrt -f -p %d %d\n",
+                 rtprio, pid);
         printf("Executing command: %s\n", command);
 
         EXECUTE_SYSTEM_COMMAND_ERRCHECK("%s", command);

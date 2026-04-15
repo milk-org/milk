@@ -46,7 +46,9 @@ variableID create_variable_ID(const char *name, double value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 0; /** floating point double */
-        strcpy(dcvar[ID].name, name);
+        snprintf(dcvar[ID].name,
+                 sizeof(dcvar[ID].name),
+                 "%s", name);
         dcvar[ID].value.f = value;
     }
     return ID;
@@ -82,7 +84,9 @@ variableID create_variable_long_ID(const char *name, long value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 1; /** long */
-        strcpy(dcvar[ID].name, name);
+        snprintf(dcvar[ID].name,
+                 sizeof(dcvar[ID].name),
+                 "%s", name);
         dcvar[ID].value.l = value;
     }
 
@@ -119,8 +123,12 @@ variableID create_variable_string_ID(const char *name, const char *value)
 
         dcvar[ID].used = 1;
         dcvar[ID].type = 2; /** string */
-        strcpy(dcvar[ID].name, name);
-        strcpy(dcvar[ID].value.s, value);
+        snprintf(dcvar[ID].name,
+                 sizeof(dcvar[ID].name),
+                 "%s", name);
+        snprintf(dcvar[ID].value.s,
+                 sizeof(dcvar[ID].value.s),
+                 "%s", value);
     }
 
     return ID;

@@ -56,7 +56,10 @@ errno_t image_keywords_list(IMGID img)
                 break;
 
             case 'S':
-                sprintf(tmpkwvalstr, "'%s'", img.im->kw[kw].value.valstr);
+                snprintf(tmpkwvalstr,
+                         sizeof(tmpkwvalstr),
+                         "'%s'",
+                         img.im->kw[kw].value.valstr);
                 printf("[S] %-8s= %-20s / %s\n",
                        img.im->kw[kw].name,
                        tmpkwvalstr,

@@ -290,11 +290,18 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     int NBkw = dcimg[IDin].md[0].NBkw;
     for(int kw = 0; kw < NBkw; ++kw)
     {
-        strcpy(dcimg[IDout].kw[kw].name, dcimg[IDin].kw[kw].name);
-        dcimg[IDout].kw[kw].type  = dcimg[IDin].kw[kw].type;
-        dcimg[IDout].kw[kw].value = dcimg[IDin].kw[kw].value;
-        strcpy(dcimg[IDout].kw[kw].comment,
-               dcimg[IDin].kw[kw].comment);
+        snprintf(dcimg[IDout].kw[kw].name,
+                 KEYWORD_MAX_STRING,
+                 "%s",
+                 dcimg[IDin].kw[kw].name);
+        dcimg[IDout].kw[kw].type  =
+            dcimg[IDin].kw[kw].type;
+        dcimg[IDout].kw[kw].value =
+            dcimg[IDin].kw[kw].value;
+        snprintf(dcimg[IDout].kw[kw].comment,
+                 KEYWORD_MAX_COMMENT,
+                 "%s",
+                 dcimg[IDin].kw[kw].comment);
     }
 
     dtarray = (double *) malloc(sizeof(double) * NBslice);

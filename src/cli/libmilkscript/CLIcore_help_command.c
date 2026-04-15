@@ -421,7 +421,8 @@ errno_t help_command(
                         }
 
                         char cursorCopy[strlen(cursor) + 1];
-                        strcpy(cursorCopy, cursor);
+                        memcpy(cursorCopy, cursor,
+                               strlen(cursor) + 1);
                         cursorCopy[groupArray[g].rm_eo] = 0;
                         /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
                                g, groupArray[g].rm_so, groupArray[g].rm_eo,
@@ -555,7 +556,8 @@ errno_t command_info_search(const char *restrict searchstring)
                     }
 
                     char cursorCopy[strlen(cursor) + 1];
-                    strcpy(cursorCopy, cursor);
+                    memcpy(cursorCopy, cursor,
+                           strlen(cursor) + 1);
                     cursorCopy[groupArray[g].rm_eo] = 0;
                     /*printf("\t    Match Group %u: [%2u-%2u]: %s\n",
                            g, groupArray[g].rm_so, groupArray[g].rm_eo,

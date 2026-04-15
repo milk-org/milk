@@ -202,10 +202,13 @@ errno_t list_image_ID_ofp(FILE *fo)
                          "%s x %6ld",
                          str,
                          (long) dcimg[i].md[0].size[j]);
-                strcpy(str, str1);
+                snprintf(str, strmaxlen,
+                         "%s", str1);
             }
-            snprintf(str1, str1maxlen, "%s]", str);
-            strcpy(str, str1);
+            snprintf(str1, str1maxlen,
+                     "%s]", str);
+            snprintf(str, strmaxlen,
+                     "%s", str1);
 
             fprintf(fo, "%-32s", str);
 

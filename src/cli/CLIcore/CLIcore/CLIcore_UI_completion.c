@@ -99,8 +99,9 @@ char *dupstr(char *s)
 {
     char *r;
 
-    r = (char *) xmalloc((strlen(s) + 1));
-    strcpy(r, s);
+    size_t len = strlen(s) + 1;
+    r = (char *) xmalloc(len);
+    memcpy(r, s, len);
     return (r);
 }
 

@@ -137,7 +137,8 @@ int function_parameter_print_info(
             }
             else
             {
-                strcpy(cli_idx_str, "---");
+                snprintf(cli_idx_str,
+                         sizeof(cli_idx_str), "---");
             }
 
             const char *display_keyword = fps->parray[pindex].keywordfull;

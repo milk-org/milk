@@ -619,56 +619,81 @@ int CLIhelp_make_argstring(CLICMDARGDEF fpscliarg[],
             switch(fpscliarg[arg].type)
             {
             case CLIARG_FLOAT32:
-                strcpy(typestring, "FLOAT32");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "FLOAT32");
                 break;
 
             case CLIARG_FLOAT64:
-                strcpy(typestring, "FLOAT64");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "FLOAT64");
                 break;
 
             case CLIARG_INT32:
-                strcpy(typestring, "INT32");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "INT32");
                 break;
 
             case CLIARG_UINT32:
-                strcpy(typestring, "UINT32");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "UINT32");
                 break;
 
             case CLIARG_INT64:
-                strcpy(typestring, "INT64");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "INT64");
                 break;
 
             case CLIARG_UINT64:
-                strcpy(typestring, "UINT64");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "UINT64");
                 break;
 
             case CLIARG_STR_NOT_IMG:
-                strcpy(typestring, "STRING");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "STRING");
                 break;
 
             case CLIARG_IMG:
-                strcpy(typestring, "STREAMNAME");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "STREAMNAME");
                 break;
 
             case CLIARG_STR:
-                strcpy(typestring, "STRING");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "STRING");
                 break;
 
             case CLIARG_ONOFF:
-                strcpy(typestring, "ONOFF");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "ONOFF");
                 break;
 
             case CLIARG_FILENAME:
-                strcpy(typestring, "FILENAME");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "FILENAME");
                 break;
 
             case CLIARG_FITSFILENAME:
-                strcpy(typestring,
-                       "FITSFILENAME");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "FITSFILENAME");
                 break;
 
             case CLIARG_FPSNAME:
-                strcpy(typestring, "FPSNAME");
+                snprintf(typestring,
+                         sizeof(typestring),
+                         "FPSNAME");
                 break;
             }
 

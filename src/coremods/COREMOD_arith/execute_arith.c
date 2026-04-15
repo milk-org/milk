@@ -601,7 +601,9 @@ int execute_arith(const char *cmd1)
                                  (int) getpid());
 
                 create_variable_ID(name, 1.0 * strtod(word[i], NULL));
-                strcpy(word[i], name);
+                snprintf(word[i],
+                         sizeof(word[i]),
+                         "%s", name);
                 word_type[i] = ARITHTOKENTYPE_VARIABLE;
                 tmp_name_index++;
             }
@@ -682,7 +684,7 @@ int execute_arith(const char *cmd1)
                     nbytes);
             }
 
-            strcpy(word[i], name);
+            snprintf(word[i], sizeof(word[i]), "%s", name);
             tmp_name_index++;
             imgid_free(&simg);
         }
@@ -711,11 +713,11 @@ int execute_arith(const char *cmd1)
                 if((word_type[i] == ARITHTOKENTYPE_OPENPAR) &&
                         (word_type[i + 2] == ARITHTOKENTYPE_CLOSEPAR))
                 {
-                    strcpy(word[i], word[i + 1]);
+                    snprintf(word[i], sizeof(word[i]), "%s", word[i + 1]);
                     word_type[i] = word_type[i + 1];
                     for(j = i + 1; j < nbword - 2; j++)
                     {
-                        strcpy(word[j], word[j + 2]);
+                        snprintf(word[j], sizeof(word[j]), "%s", word[j + 2]);
                         word_type[j] = word_type[j + 2];
                     }
                     nbword = nbword - 2;
@@ -728,11 +730,11 @@ int execute_arith(const char *cmd1)
                 {
                     dcvar[variable_ID(word[i + 2])].value.f =
                         -dcvar[variable_ID(word[i + 2])].value.f;
-                    strcpy(word[i], word[i + 2]);
+                    snprintf(word[i], sizeof(word[i]), "%s", word[i + 2]);
                     word_type[i] = word_type[i + 2];
                     for(j = i + 2; j < nbword - 3; j++)
                     {
-                        strcpy(word[j], word[j + 3]);
+                        snprintf(word[j], sizeof(word[j]), "%s", word[j + 3]);
                         word_type[j] = word_type[j + 3];
                     }
                     nbword = nbword - 3;
@@ -1002,11 +1004,11 @@ int execute_arith(const char *cmd1)
                     }
                 }
 
-                strcpy(word[hpi - 1], name);
+                snprintf(word[hpi - 1], sizeof(word[hpi - 1]), "%s", name);
                 word_type[hpi - 1] = type;
                 for(j = hpi; j < nbword - 2; j++)
                 {
-                    strcpy(word[j], word[j + 2]);
+                    snprintf(word[j], sizeof(word[j]), "%s", word[j + 2]);
                     word_type[j] = word_type[j + 2];
                 }
                 nbword = nbword - 2;
@@ -1157,13 +1159,13 @@ int execute_arith(const char *cmd1)
                     break;
                 }
 
-                strcpy(word[highest_priority_index], name);
+                snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
                 for(j = highest_priority_index + 1;
                     j < nbword - 1;
                     j++)
                 {
-                    strcpy(word[j], word[j + 1]);
+                    snprintf(word[j], sizeof(word[j]), "%s", word[j + 1]);
                     word_type[j] = word_type[j + 1];
                 }
                 nbword = nbword - 1;
@@ -1393,13 +1395,15 @@ int execute_arith(const char *cmd1)
                     }
                 }
 
-                strcpy(word[highest_priority_index], name);
+                snprintf(word[highest_priority_index], sizeof(word[highest_priority_index]), "%s", name);
                 word_type[highest_priority_index] = type;
                 for(j = highest_priority_index + 1;
                     j < nbword - (nbvarinput * 2 + 1);
                     j++)
                 {
-                    strcpy(word[j],
+                    snprintf(word[j],
+                           sizeof(word[j]),
+                           "%s",
                            word[j + (nbvarinput * 2 + 1)]);
                     word_type[j] =
                         word_type[j + (nbvarinput * 2 + 1)];

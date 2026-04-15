@@ -78,10 +78,14 @@ errno_t image_keyword_addL(IMGID img, char *kwname, long kwval, char *comment)
     }
     else
     {
-        strcpy(img.im->kw[kw].name, kwname);
+        snprintf(img.im->kw[kw].name,
+                 KEYWORD_MAX_STRING,
+                 "%s", kwname);
         img.im->kw[kw].type       = 'L';
         img.im->kw[kw].value.numl = kwval;
-        strcpy(img.im->kw[kw].comment, comment);
+        snprintf(img.im->kw[kw].comment,
+                 KEYWORD_MAX_COMMENT,
+                 "%s", comment);
     }
 
     return RETURN_SUCCESS;

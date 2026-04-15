@@ -92,8 +92,12 @@ int main(int argc, char *argv[])
                 switch(pinfolist->active[i]) {
                     case 1: 
                         snprintf(status_str, 32, C_NAME "RUNNING" C_RST); 
-                        strcpy(pid_color, C_NAME);
-                        strcpy(pid_reset, C_RST);
+                        snprintf(pid_color,
+                                 sizeof(pid_color),
+                                 "%s", C_NAME);
+                        snprintf(pid_reset,
+                                 sizeof(pid_reset),
+                                 "%s", C_RST);
                         break;
                     case 2: snprintf(status_str, 32, C_TYPE "STOPPED" C_RST); break;
                     case 3: snprintf(status_str, 32, C_ERR "CRASHED" C_RST); break;
