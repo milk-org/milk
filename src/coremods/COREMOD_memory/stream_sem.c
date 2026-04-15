@@ -373,6 +373,13 @@ imageID COREMOD_MEMORY_image_seminfo(
     resolveIMGID(
         &img, ERRMODE_WARN, dcimg, dcnimg);
     imageID ID = img.ID;
+    if(ID == -1)
+    {
+        PRINT_WARNING(
+            "image \"%s\" not found",
+            IDname);
+        return -1;
+    }
 
     printf("  cnt0 = %ld \n", dcimg[ID].md->cnt0);
     printf("  cnt1 = %ld \n", dcimg[ID].md->cnt1);
@@ -426,6 +433,13 @@ imageID COREMOD_MEMORY_image_set_sempost(
         ID = read_sharedmem_image(
             IDname, dcimg, dcnimg);
     }
+    if(ID == -1)
+    {
+        PRINT_WARNING(
+            "image \"%s\" not found",
+            IDname);
+        return -1;
+    }
 
     ImageStreamIO_sempost(&dcimg[ID], index);
 
@@ -442,6 +456,10 @@ imageID COREMOD_MEMORY_image_set_sempost(
 imageID COREMOD_MEMORY_image_set_sempost_byID(
     imageID ID, long index)
 {
+    if(ID < 0 || ID >= dcnimg)
+    {
+        return -1;
+    }
     ImageStreamIO_sempost(&dcimg[ID], index);
 
     return ID;
@@ -457,6 +475,10 @@ imageID COREMOD_MEMORY_image_set_sempost_byID(
 imageID COREMOD_MEMORY_image_set_sempost_excl_byID(
     imageID ID, long index)
 {
+    if(ID < 0 || ID >= dcnimg)
+    {
+        return -1;
+    }
     ImageStreamIO_sempost_excl(&dcimg[ID], index);
 
     return ID;
@@ -488,8 +510,16 @@ COREMOD_MEMORY_image_set_sempost_loop(
         ID = read_sharedmem_image(
             IDname, dcimg, dcnimg);
     }
+    if(ID == -1)
+    {
+        PRINT_WARNING(
+            "image \"%s\" not found",
+            IDname);
+        return -1;
+    }
 
-    ImageStreamIO_sempost_loop(&dcimg[ID], index, dtus);
+    ImageStreamIO_sempost_loop(
+        &dcimg[ID], index, dtus);
 
     return ID;
 }
@@ -514,6 +544,13 @@ imageID COREMOD_MEMORY_image_set_semwait(
     {
         ID = read_sharedmem_image(
             IDname, dcimg, dcnimg);
+    }
+    if(ID == -1)
+    {
+        PRINT_WARNING(
+            "image \"%s\" not found",
+            IDname);
+        return -1;
     }
 
     ImageStreamIO_semwait(&dcimg[ID], index);
@@ -670,6 +707,13 @@ imageID COREMOD_MEMORY_image_set_semflush(
     {
         ID = read_sharedmem_image(
             IDname, dcimg, dcnimg);
+    }
+    if(ID == -1)
+    {
+        PRINT_WARNING(
+            "image \"%s\" not found",
+            IDname);
+        return -1;
     }
 
     ImageStreamIO_semflush(&dcimg[ID], index);
