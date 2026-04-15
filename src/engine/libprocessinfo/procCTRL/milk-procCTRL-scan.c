@@ -383,10 +383,8 @@ int main(int argc, char *argv[]) {
                             long dtexec_array[PROCESSINFO_NBtimer - 1];
                             
                             for(int tindex = 0; tindex < PROCESSINFO_NBtimer - 1; tindex++) {
-                                int ti1 = pinfo_mappings[i]->timerindex - tindex;
-                                int ti0 = ti1 - 1;
-                                if(ti0 < 0) ti0 += PROCESSINFO_NBtimer;
-                                if(ti1 < 0) ti1 += PROCESSINFO_NBtimer;
+                                int ti1 = (pinfo_mappings[i]->timerindex - tindex + PROCESSINFO_NBtimer) % PROCESSINFO_NBtimer;
+                                int ti0 = (ti1 - 1 + PROCESSINFO_NBtimer) % PROCESSINFO_NBtimer;
 
                                 dtiter_array[tindex] = (pinfo_mappings[i]->texecstart[ti1].tv_nsec - pinfo_mappings[i]->texecstart[ti0].tv_nsec) + 
                                                        1000000000L * (pinfo_mappings[i]->texecstart[ti1].tv_sec - pinfo_mappings[i]->texecstart[ti0].tv_sec);
