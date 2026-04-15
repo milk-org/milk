@@ -187,17 +187,21 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
     }
 
     char pinfoname[200]; // short name for the processinfo instance
-    sprintf(pinfoname, "decode-%s-to-%s", inputstream_name, IDout_name);
+    snprintf(pinfoname, sizeof(pinfoname),
+             "decode-%s-to-%s",
+             inputstream_name, IDout_name);
     char pinfodescr[200];
-    sprintf(pinfodescr,
-            "%ldx%ldx%ld->%ldx%ld",
-            (long) xsizein,
-            (long) ysizein,
-            NBslice,
-            (long) xsizeim,
-            (long) ysizeim);
+    snprintf(pinfodescr, sizeof(pinfodescr),
+             "%ldx%ldx%ld->%ldx%ld",
+             (long) xsizein,
+             (long) ysizein,
+             NBslice,
+             (long) xsizeim,
+             (long) ysizeim);
     char msgstring[200];
-    sprintf(msgstring, "%s->%s", inputstream_name, IDout_name);
+    snprintf(msgstring, sizeof(msgstring),
+             "%s->%s",
+             inputstream_name, IDout_name);
 
     processinfo = processinfo_setup(
                       pinfoname, // short name for the processinfo instance, no spaces, no dot, name should be human-readable
