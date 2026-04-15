@@ -668,7 +668,7 @@ int GPU_loop_MultMat_execute(int   index,
 
     if(gpumatmultconf[index].CM_cnt !=
             dcimg[gpumatmultconf[index].CM_ID].md[0].cnt0)
-        if(dcimg[gpumatmultconf[index].CM_ID].md[0].write == 0)
+        if(SHMIM_WRITE_LOAD(&dcimg[gpumatmultconf[index].CM_ID].md[0]) == 0)
         {
             printf("New CM detected (cnt : %ld)\n",
                    dcimg[gpumatmultconf[index].CM_ID].md[0].cnt0);
@@ -849,7 +849,7 @@ int GPU_loop_MultMat_execute(int   index,
         TimerIndex++;
     }
 
-    dcimg[gpumatmultconf[index].IDout].md[0].write = 1;
+    SHMIM_WRITE_ACQUIRE(&dcimg[gpumatmultconf[index].IDout].md[0]);
 
     for(uint32_t m = 0; m < gpumatmultconf[index].M; m++)
     {
@@ -880,9 +880,9 @@ int GPU_loop_MultMat_execute(int   index,
         TimerIndex++;
     }
 
-    dcimg[gpumatmultconf[index].IDout].md[0].cnt0++;
+    SHMIM_CNT0_INCREMENT(&dcimg[gpumatmultconf[index].IDout].md[0]);
     COREMOD_MEMORY_image_set_sempost_byID(gpumatmultconf[index].IDout, -1);
-    dcimg[gpumatmultconf[index].IDout].md[0].write = 0;
+    SHMIM_WRITE_RELEASE(&dcimg[gpumatmultconf[index].IDout].md[0]);
 
 #ifdef _PRINT_TEST
     printf("[%s] [%d] - DONE\n", __FILE__, __LINE__);

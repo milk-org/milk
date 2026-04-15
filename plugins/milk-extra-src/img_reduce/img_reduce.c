@@ -1065,7 +1065,7 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
             OKloop = 0;
         }
 
-        dcimg[IDout].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
 
         memcpy(dcimg[IDout].array.F,
                dcimg[ID].array.F,
@@ -1107,8 +1107,8 @@ imageID IMG_REDUCE_cleanbadpix_fast(const char *IDname,
                 ImageStreamIO_sempost(dcimg+IDout, 0);
             }
         }
-        dcimg[IDout].md[0].write = 0;
-        dcimg[IDout].md[0].cnt0++;
+        SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
+        SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
     }
 
     free(sizearray);
@@ -1412,15 +1412,15 @@ imageID IMG_REDUCE_centernormim(const char *IDin_name,
         }
         else
         {
-            dcimg[IDout].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
             for(ii = 0; ii < xsize; ii++)
                 for(jj = 0; jj < ysize; jj++)
                 {
                     dcimg[IDout].array.F[jj * xsize + ii] =
                         dcimg[IDtout].array.F[jj * xsize + ii];
                 }
-            dcimg[IDout].md[0].write = 0;
-            dcimg[IDout].md[0].cnt0++;
+            SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
+            SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
             dcimg[IDout].md[0].cnt1++;
             COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
         }

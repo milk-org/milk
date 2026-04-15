@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     // ------------------------------------------------------------------------
     while(keep_running) {
         // Set 'write' flag to 1 to notify consumers that data is currently unstable
-        image.md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&image.md[0]);
 
         // Generate a simple moving pattern
         for(uint32_t y=0; y<height; y++) {

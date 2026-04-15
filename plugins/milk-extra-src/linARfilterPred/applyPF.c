@@ -463,7 +463,7 @@ static MILK_HOT errno_t compute_function()
     else // if using CPU
     {
         // compute output : matrix vector mult with a CPU-based loop
-        imgout.md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgout.md);
         for(long mi = 0; mi < NBmodeOUT; mi++)
         {
             imgout.im->array.F[mi] = 0.0;
@@ -475,8 +475,8 @@ static MILK_HOT errno_t compute_function()
             }
         }
         COREMOD_MEMORY_image_set_sempost_byID(imgout.ID, -1);
-        imgout.md->write = 0;
-        imgout.md->cnt0++;
+        SHMIM_WRITE_RELEASE(imgout.md);
+        SHMIM_CNT0_INCREMENT(imgout.md);
     }
 
 

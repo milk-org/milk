@@ -714,7 +714,7 @@ static MILK_HOT errno_t compute_function()
                 }
                 else
                 {
-                    out_img.im->md->write = TRUE;
+                    SHMIM_WRITE_ACQUIRE(out_img.im->md);
                     simple_desat_finalize(
                         &last_valid[1 - buf_pp][warp_offset],
                         &save_first_read[1 - buf_pp][warp_offset],
@@ -727,7 +727,7 @@ static MILK_HOT errno_t compute_function()
             }
             else // UTR
             {
-                out_img.im->md->write = TRUE;
+                SHMIM_WRITE_ACQUIRE(out_img.im->md);
                 utr_finalize(&sum_x[1 - buf_pp][warp_offset],
                              &sum_y[1 - buf_pp][warp_offset],
                              &sum_xy[1 - buf_pp][warp_offset],

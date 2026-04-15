@@ -153,7 +153,7 @@ static errno_t streamprocess(
     // outimg is pre-created before the loop.
     // No allocation here.
 
-    outimg->md->write = 1;
+    SHMIM_WRITE_ACQUIRE(outimg->md);
 
     for(uint64_t ii = 0; ii < xysize; ii++)
     {

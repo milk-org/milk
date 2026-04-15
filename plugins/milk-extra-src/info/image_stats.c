@@ -232,8 +232,8 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         printf(" ]\n");
 
         printf("write = %d   cnt0 = %ld   cnt1 = %ld\n",
-               dcimg[ID].md[0].write,
-               dcimg[ID].md[0].cnt0,
+               SHMIM_WRITE_LOAD(&dcimg[ID].md[0]),
+               SHMIM_CNT0_LOAD(&dcimg[ID].md[0]),
                dcimg[ID].md[0].cnt1);
 
         switch(datatype)

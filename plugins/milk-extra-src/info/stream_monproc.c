@@ -413,7 +413,7 @@ errno_t stream_monitor_run(
         char *cbptr_raw = (char*) cbimg.im->array.raw + (cb_idx * xysize * typesize);
         memcpy(cbptr_raw, inimg.im->array.raw, xysize * typesize);
         cbimg.md->cnt1 = cb_idx;
-        cbimg.md->write = 1;
+        SHMIM_WRITE_ACQUIRE(cbimg.md);
         processinfo_update_output_stream(processinfo, cbimg.im, NULL);
 
         // --------------------------------------------------------------------
@@ -424,7 +424,7 @@ errno_t stream_monitor_run(
         cbtptr[cb_idx * 2 + 0] = (uint64_t) tnow.tv_sec;
         cbtptr[cb_idx * 2 + 1] = (uint64_t) tnow.tv_nsec;
         cbtimg.md->cnt1 = cb_idx;
-        cbtimg.md->write = 1;
+        SHMIM_WRITE_ACQUIRE(cbtimg.md);
         processinfo_update_output_stream(processinfo, cbtimg.im, NULL);
 
 
@@ -528,8 +528,8 @@ errno_t stream_monitor_run(
                 float *outrmsptr = imgoutbinrms[b].im->array.F;
                 double invcount  = 1.0 / bincounter[b];
 
-                imgoutbin[b].md->write = 1;
-                imgoutbinrms[b].md->write = 1;
+                SHMIM_WRITE_ACQUIRE(imgoutbin[b].md);
+                SHMIM_WRITE_ACQUIRE(imgoutbinrms[b].md);
 
                 for (uint64_t pixi = 0; pixi < xysize; pixi++)
                 {

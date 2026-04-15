@@ -97,7 +97,7 @@ static errno_t extract_slice_to_2D(
     // Image is created once before the loop;
     // do not allocate inside the hot path.
 
-    outimg->md->write = 1;
+    SHMIM_WRITE_ACQUIRE(outimg->md);
 
     long framesize =
         xsize * ysize

@@ -580,7 +580,7 @@ imageID COREMOD_MEMORY_image_NETUDPreceive(
 
             monitorindex++;
 
-            dcimg[ID].md[0].cnt0++;
+            SHMIM_CNT0_INCREMENT(&dcimg[ID].md[0]);
             for(semnb = 0; semnb < dcimg[ID].md[0].sem; semnb++)
             {
                 semval = ImageStreamIO_semvalue(dcimg + ID, semnb);

@@ -180,11 +180,11 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
     {
         ptr0 = (char *) dcimg[ID].array.F;
         ptr0 += sizeof(float) * xysize * k;
-        dcimg[IDs].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDs].md[0]);
         memcpy((void *) ptr1, (void *) ptr0, sizeof(float) * xysize);
 
-        dcimg[IDs].md[0].write = 0;
-        dcimg[IDs].md[0].cnt0++;
+        SHMIM_WRITE_RELEASE(&dcimg[IDs].md[0]);
+        SHMIM_CNT0_INCREMENT(&dcimg[IDs].md[0]);
         COREMOD_MEMORY_image_set_sempost_byID(IDs, -1);
 
         usleep(tdelay);
@@ -200,7 +200,7 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
         }
     }
 
-    dcimg[IDs].md[0].write = 1;
+    SHMIM_WRITE_ACQUIRE(&dcimg[IDs].md[0]);
     for(ii = 0; ii < xysize; ii++)
     {
         dcimg[IDs].array.F[ii] = 0.0f;
@@ -213,8 +213,8 @@ long IMAGE_BASIC_streamfeed(const char *__restrict IDname,
             ImageStreamIO_sempost(dcimg+IDs, 0);
         }
     }
-    dcimg[IDs].md[0].write = 0;
-    dcimg[IDs].md[0].cnt0++;
+    SHMIM_WRITE_RELEASE(&dcimg[IDs].md[0]);
+    SHMIM_CNT0_INCREMENT(&dcimg[IDs].md[0]);
 
     return (0);
 }

@@ -147,7 +147,7 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
                 img0.im, semtrig);
         }
 
-        imgout.md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgout.md);
         if(ptrm == NULL)
         {
             for(uint64_t ii = 0;
@@ -167,8 +167,8 @@ imageID MILK_HOT COREMOD_MEMORY_streamDiff(
         }
         COREMOD_MEMORY_image_set_sempost_byID(
             imgout.ID, -1);
-        imgout.md->cnt0++;
-        imgout.md->write = 0;
+        SHMIM_CNT0_INCREMENT(imgout.md);
+        SHMIM_WRITE_RELEASE(imgout.md);
     }
 
     return imgout.ID;

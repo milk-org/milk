@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
         processinfo_exec_start(processinfo);
 
         // [D] Work Step
-        output_image.md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&output_image.md[0]);
         for(uint32_t y=0; y<roi_h; y++) {
             for(uint32_t x=0; x<roi_w; x++) {
                 float sum = 0.0;

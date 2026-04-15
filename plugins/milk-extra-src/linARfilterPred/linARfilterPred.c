@@ -2035,17 +2035,17 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
         if(LOOPmode == 1)
         {
-            dcimg[IDoutPF2Draw].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDoutPF2Draw].md[0]);
             memcpy(dcimg[IDoutPF2Draw].array.F,
                    dcimg[IDoutPF2Dn].array.F,
                    sizeof(float) * NBpixout * NBpixin * PForder);
             COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
-            dcimg[IDoutPF2Draw].md[0].cnt0++;
-            dcimg[IDoutPF2Draw].md[0].write = 0;
+            SHMIM_CNT0_INCREMENT(&dcimg[IDoutPF2Draw].md[0]);
+            SHMIM_WRITE_RELEASE(&dcimg[IDoutPF2Draw].md[0]);
         }
 
         // Mix current PF with last one
-        dcimg[IDoutPF2D].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDoutPF2D].md[0]);
         if(LOOPmode == 0)
         {
             memcpy(dcimg[IDoutPF2D].array.F,
@@ -2076,8 +2076,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
             fflush(stdout);
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
-        dcimg[IDoutPF2D].md[0].cnt0++;
-        dcimg[IDoutPF2D].md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&dcimg[IDoutPF2D].md[0]);
+        SHMIM_WRITE_RELEASE(&dcimg[IDoutPF2D].md[0]);
 
         if(testmode == 2)
         {
@@ -2285,14 +2285,14 @@ imageID LINARFILTERPRED_Apply_LinPredictor_RT(const char *IDfilt_name,
                                 inarray[ii];
             }
 
-        dcimg[IDout].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
         for(uint32_t jj = 0; jj < NBpix_out; jj++)
         {
             dcimg[IDout].array.F[jj] = outarray[jj];
         }
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-        dcimg[IDout].md[0].cnt0++;
-        dcimg[IDout].md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
+        SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
     }
 
     free(inarray);
@@ -2467,7 +2467,7 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
     }
     free(sizearray);
 
-    dcimg[IDPFM].md[0].write = 1;
+    SHMIM_WRITE_ACQUIRE(&dcimg[IDPFM].md[0]);
     for(outmode = 0; outmode < NBmode; outmode++)
     {
         for(tstep = 0; tstep < NBtstep; tstep++)
@@ -2481,8 +2481,8 @@ imageID LINARFILTERPRED_PF_updatePFmatrix(const char *IDPF_name,
                                                       outmode * NBmode + inmode];
     }
     COREMOD_MEMORY_image_set_sempost_byID(IDPFM, -1);
-    dcimg[IDPFM].md[0].write = 0;
-    dcimg[IDPFM].md[0].cnt0++;
+    SHMIM_WRITE_RELEASE(&dcimg[IDPFM].md[0]);
+    SHMIM_CNT0_INCREMENT(&dcimg[IDPFM].md[0]);
 
     return IDPFM;
 }
@@ -2838,7 +2838,7 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
         else // if using CPU
         {
             // compute output : matrix vector mult with a CPU-based loop
-            dcimg[IDPFout].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDPFout].md[0]);
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
                 dcimg[IDPFout].array.F[mode] = 0.0f;
@@ -2852,8 +2852,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
                 }
             }
             COREMOD_MEMORY_image_set_sempost_byID(IDPFout, -1);
-            dcimg[IDPFout].md[0].write = 0;
-            dcimg[IDPFout].md[0].cnt0++;
+            SHMIM_WRITE_RELEASE(&dcimg[IDPFout].md[0]);
+            SHMIM_CNT0_INCREMENT(&dcimg[IDPFout].md[0]);
         }
 
         if(iter == 0)
@@ -2921,15 +2921,15 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
         if(IDmasterout != -1)
         {
-            dcimg[IDmasterout].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDmasterout].md[0]);
             for(mode = 0; mode < NBmodeOUT; mode++)
             {
                 dcimg[IDmasterout].array.F[outmaskindex[mode]] =
                     dcimg[IDPFout].array.F[mode];
             }
             COREMOD_MEMORY_image_set_sempost_byID(IDmasterout, -1);
-            dcimg[IDmasterout].md[0].write = 0;
-            dcimg[IDmasterout].md[0].cnt0++;
+            SHMIM_WRITE_RELEASE(&dcimg[IDmasterout].md[0]);
+            SHMIM_CNT0_INCREMENT(&dcimg[IDmasterout].md[0]);
         }
 
         iter++;

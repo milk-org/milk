@@ -97,7 +97,7 @@ errno_t image_copy_shm_IMGID(
         createimagefromIMGID(imgshm);
     }
 
-    imgshm->md->write = 1;
+    SHMIM_WRITE_ACQUIRE(imgshm->md);
     memcpy(imgshm->im->array.raw,
            img->im->array.raw,
            ImageStreamIO_typesize(
@@ -110,8 +110,8 @@ errno_t image_copy_shm_IMGID(
 
     COREMOD_MEMORY_image_set_sempost_byID(
         imgshm->ID, -1);
-    imgshm->md->cnt0++;
-    imgshm->md->write = 0;
+    SHMIM_CNT0_INCREMENT(imgshm->md);
+    SHMIM_WRITE_RELEASE(imgshm->md);
 
     return RETURN_SUCCESS;
 }

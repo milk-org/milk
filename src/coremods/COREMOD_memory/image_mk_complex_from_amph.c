@@ -126,7 +126,7 @@ errno_t mk_complex_from_amph_IMGID(
             createimagefromIMGID(imgoutC);
         }
 
-        imgoutC->md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgoutC->md);
         float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
         float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.F);
         complex_float * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CF);
@@ -158,8 +158,8 @@ errno_t mk_complex_from_amph_IMGID(
 #ifdef _OPENMP
         }
 #endif
-        imgoutC->md->cnt0++;
-        imgoutC->md->write = 0;
+        SHMIM_CNT0_INCREMENT(imgoutC->md);
+        SHMIM_WRITE_RELEASE(imgoutC->md);
     }
     else if((datatype_am == _DATATYPE_FLOAT)
             && (datatype_ph == _DATATYPE_DOUBLE))
@@ -171,7 +171,7 @@ errno_t mk_complex_from_amph_IMGID(
             createimagefromIMGID(imgoutC);
         }
 
-        imgoutC->md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgoutC->md);
         float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.F);
         double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.D);
         complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
@@ -203,8 +203,8 @@ errno_t mk_complex_from_amph_IMGID(
 #ifdef _OPENMP
         }
 #endif
-        imgoutC->md->cnt0++;
-        imgoutC->md->write = 0;
+        SHMIM_CNT0_INCREMENT(imgoutC->md);
+        SHMIM_WRITE_RELEASE(imgoutC->md);
     }
     else if((datatype_am == _DATATYPE_DOUBLE)
             && (datatype_ph == _DATATYPE_FLOAT))
@@ -216,7 +216,7 @@ errno_t mk_complex_from_amph_IMGID(
             createimagefromIMGID(imgoutC);
         }
 
-        imgoutC->md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgoutC->md);
         double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);
         float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.F);
         complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
@@ -248,8 +248,8 @@ errno_t mk_complex_from_amph_IMGID(
 #ifdef _OPENMP
         }
 #endif
-        imgoutC->md->cnt0++;
-        imgoutC->md->write = 0;
+        SHMIM_CNT0_INCREMENT(imgoutC->md);
+        SHMIM_WRITE_RELEASE(imgoutC->md);
     }
     else if((datatype_am == _DATATYPE_DOUBLE)
             && (datatype_ph == _DATATYPE_DOUBLE))
@@ -261,7 +261,7 @@ errno_t mk_complex_from_amph_IMGID(
             createimagefromIMGID(imgoutC);
         }
 
-        imgoutC->md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgoutC->md);
         double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imginamp->im->array.D);
         double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imginpha->im->array.D);
         complex_double * MILK_RESTRICT ptr_out = MILK_ASSUME_ALIGNED(imgoutC->im->array.CD);
@@ -293,8 +293,8 @@ errno_t mk_complex_from_amph_IMGID(
 #ifdef _OPENMP
         }
 #endif
-        imgoutC->md->cnt0++;
-        imgoutC->md->write = 0;
+        SHMIM_CNT0_INCREMENT(imgoutC->md);
+        SHMIM_WRITE_RELEASE(imgoutC->md);
     }
     else
     {

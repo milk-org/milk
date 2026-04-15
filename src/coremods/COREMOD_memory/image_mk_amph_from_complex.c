@@ -102,8 +102,8 @@ errno_t mk_amph_from_complex_IMGID(
             createimagefromIMGID(imgpha);
         }
 
-        imgamp->md[0].write = 1;
-        imgpha->md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&imgamp->md[0]);
+        SHMIM_WRITE_ACQUIRE(&imgpha->md[0]);
         complex_float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CF);
         float * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.F);
         float * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.F);
@@ -138,10 +138,10 @@ errno_t mk_amph_from_complex_IMGID(
                 COREMOD_MEMORY_image_set_sempost_byID(
                     imgpha->ID, -1));
         }
-        imgamp->md[0].cnt0++;
-        imgpha->md[0].cnt0++;
-        imgamp->md[0].write = 0;
-        imgpha->md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&imgamp->md[0]);
+        SHMIM_CNT0_INCREMENT(&imgpha->md[0]);
+        SHMIM_WRITE_RELEASE(&imgamp->md[0]);
+        SHMIM_WRITE_RELEASE(&imgpha->md[0]);
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
     {
@@ -159,8 +159,8 @@ errno_t mk_amph_from_complex_IMGID(
             createimagefromIMGID(imgpha);
         }
 
-        imgamp->md[0].write = 1;
-        imgpha->md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&imgamp->md[0]);
+        SHMIM_WRITE_ACQUIRE(&imgpha->md[0]);
         complex_double * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CD);
         double * MILK_RESTRICT ptr_am = MILK_ASSUME_ALIGNED(imgamp->im->array.D);
         double * MILK_RESTRICT ptr_ph = MILK_ASSUME_ALIGNED(imgpha->im->array.D);
@@ -193,10 +193,10 @@ errno_t mk_amph_from_complex_IMGID(
             COREMOD_MEMORY_image_set_sempost_byID(
                 imgpha->ID, -1);
         }
-        imgamp->md[0].cnt0++;
-        imgpha->md[0].cnt0++;
-        imgamp->md[0].write = 0;
-        imgpha->md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&imgamp->md[0]);
+        SHMIM_CNT0_INCREMENT(&imgpha->md[0]);
+        SHMIM_WRITE_RELEASE(&imgamp->md[0]);
+        SHMIM_WRITE_RELEASE(&imgpha->md[0]);
     }
     else
     {

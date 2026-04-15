@@ -1047,7 +1047,7 @@ static MILK_HOT errno_t compute_function()
 #endif
 
             // update output
-            dcimg[imgout.ID].md->write = 1;
+            SHMIM_WRITE_ACQUIRE(dcimg[imgout.ID].md);
             for(int jj = 0; jj < n; jj++)
             {
                 imgout.im->array.F[jj] = outarray[jj] / normcoeff[jj];
@@ -1158,7 +1158,7 @@ static MILK_HOT errno_t compute_function()
             }
 
             // copy result
-            imgout.md->write = 1;
+            SHMIM_WRITE_ACQUIRE(imgout.md);
 
             if(initref == 0)
             {

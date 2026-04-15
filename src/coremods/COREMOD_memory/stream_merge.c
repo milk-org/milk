@@ -162,7 +162,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                 img_in_arr[kk].im,
                 sem_idxs[kk]);
         }
-        img_out.md->write = TRUE;
+        SHMIM_WRITE_ACQUIRE(img_out.md);
         for(int kk = 0; kk < n_input; kk++)
         {
             __builtin_memcpy(

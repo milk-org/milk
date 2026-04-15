@@ -694,18 +694,18 @@ static MILK_HOT errno_t compute_function()
     printf("DONE\n");
 
 //printf("IDoutPF2Draw = %ld\n", IDoutPF2Draw);
-    dcimg[IDoutPF2Draw].md[0].write = 1;
+    SHMIM_WRITE_ACQUIRE(&dcimg[IDoutPF2Draw].md[0]);
     memcpy(dcimg[IDoutPF2Draw].array.F,
            dcimg[IDoutPF2Dn].array.F,
            sizeof(float) * NBpixout * NBpixin * *PForder);
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2Draw, -1);
-    dcimg[IDoutPF2Draw].md[0].cnt0++;
-    dcimg[IDoutPF2Draw].md[0].write = 0;
+    SHMIM_CNT0_INCREMENT(&dcimg[IDoutPF2Draw].md[0]);
+    SHMIM_WRITE_RELEASE(&dcimg[IDoutPF2Draw].md[0]);
 
 
 //printf("IDoutPF2D = %ld\n", IDoutPF2D);
 // Mix current PF with last one
-    dcimg[IDoutPF2D].md[0].write = 1;
+    SHMIM_WRITE_ACQUIRE(&dcimg[IDoutPF2D].md[0]);
 
 
 // on first iteration, set loopgain to 1 to initalize content
@@ -741,8 +741,8 @@ static MILK_HOT errno_t compute_function()
 
 
     COREMOD_MEMORY_image_set_sempost_byID(IDoutPF2D, -1);
-    dcimg[IDoutPF2D].md[0].cnt0++;
-    dcimg[IDoutPF2D].md[0].write = 0;
+    SHMIM_CNT0_INCREMENT(&dcimg[IDoutPF2D].md[0]);
+    SHMIM_WRITE_RELEASE(&dcimg[IDoutPF2D].md[0]);
 
     if(*out3Dwrite == 1)
     {

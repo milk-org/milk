@@ -489,7 +489,7 @@ imageID COREMOD_MEMORY_image_NETWORKreceive(int                         port,
                 continue;
             }
 
-            img_p->md->write = 1;
+            SHMIM_WRITE_ACQUIRE(img_p->md);
             img_p->md->cnt1 = frame_md_p->cnt1;
 
             // copy pixel data

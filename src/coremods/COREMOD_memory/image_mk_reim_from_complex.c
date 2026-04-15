@@ -102,8 +102,8 @@ errno_t mk_reim_from_complex_IMGID(
             createimagefromIMGID(imgim);
         }
 
-        imgre->md[0].write = 1;
-        imgim->md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&imgre->md[0]);
+        SHMIM_WRITE_ACQUIRE(&imgim->md[0]);
         complex_float * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CF);
         float * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.F);
         float * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.F);
@@ -132,10 +132,10 @@ errno_t mk_reim_from_complex_IMGID(
             COREMOD_MEMORY_image_set_sempost_byID(
                 imgim->ID, -1);
         }
-        imgre->md[0].cnt0++;
-        imgim->md[0].cnt0++;
-        imgre->md[0].write = 0;
-        imgim->md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&imgre->md[0]);
+        SHMIM_CNT0_INCREMENT(&imgim->md[0]);
+        SHMIM_WRITE_RELEASE(&imgre->md[0]);
+        SHMIM_WRITE_RELEASE(&imgim->md[0]);
     }
     else if(datatype == _DATATYPE_COMPLEX_DOUBLE)
     {
@@ -153,8 +153,8 @@ errno_t mk_reim_from_complex_IMGID(
             createimagefromIMGID(imgim);
         }
 
-        imgre->md[0].write = 1;
-        imgim->md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&imgre->md[0]);
+        SHMIM_WRITE_ACQUIRE(&imgim->md[0]);
         complex_double * MILK_RESTRICT ptr_in = MILK_ASSUME_ALIGNED(imgin->im->array.CD);
         double * MILK_RESTRICT ptr_re = MILK_ASSUME_ALIGNED(imgre->im->array.D);
         double * MILK_RESTRICT ptr_im = MILK_ASSUME_ALIGNED(imgim->im->array.D);
@@ -183,10 +183,10 @@ errno_t mk_reim_from_complex_IMGID(
             COREMOD_MEMORY_image_set_sempost_byID(
                 imgim->ID, -1);
         }
-        imgre->md[0].cnt0++;
-        imgim->md[0].cnt0++;
-        imgre->md[0].write = 0;
-        imgim->md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&imgre->md[0]);
+        SHMIM_CNT0_INCREMENT(&imgim->md[0]);
+        SHMIM_WRITE_RELEASE(&imgre->md[0]);
+        SHMIM_WRITE_RELEASE(&imgim->md[0]);
     }
     else
     {

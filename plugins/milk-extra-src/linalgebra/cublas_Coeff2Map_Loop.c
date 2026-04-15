@@ -567,7 +567,7 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             }
 
             // copy result
-            dcimg[IDoutmap].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDoutmap].md[0]);
             cudaStat = cudaMemcpy(dcimg[IDoutmap].array.F,
                                   d_outmap,
                                   sizeof(float) * mdim,
@@ -582,8 +582,8 @@ errno_t LINALGEBRA_Coeff2Map_Loop(
             {
                 ImageStreamIO_sempost(dcimg + IDoutmap, 1);
             }
-            dcimg[IDoutmap].md[0].cnt0++;
-            dcimg[IDoutmap].md[0].write = 0;
+            SHMIM_CNT0_INCREMENT(&dcimg[IDoutmap].md[0]);
+            SHMIM_WRITE_RELEASE(&dcimg[IDoutmap].md[0]);
         }
 
         if((dcsigINT == 1) || (dcsigTERM == 1) ||

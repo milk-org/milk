@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         ImageStreamIO_semwait(&input_image, 0);
 
         // Notify that we are writing to the output
-        output_image.md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&output_image.md[0]);
 
         // ROI SUM OPERATION
         // For each pixel in the 50x50 output, sum pixels from 4 corners of input

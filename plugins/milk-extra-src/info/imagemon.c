@@ -311,7 +311,7 @@ errno_t printstatus(imageID ID)
         TUI_printfw("%-28s\n", str);
     }
 
-    TUI_printfw("[write %d] ", image->md->write);
+    TUI_printfw("[write %d] ", SHMIM_WRITE_LOAD(image->md));
     TUI_printfw("[status %2d] ", image->md->status);
 
     {

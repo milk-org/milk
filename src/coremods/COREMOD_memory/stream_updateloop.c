@@ -388,11 +388,11 @@ errno_t COREMOD_MEMORY_image_streamburst(const char *IDin_name,
         ptr0 = ptr0s + slice * framesize;
 
         ptr0                          = ptr0s + slice * framesize;
-        dcimg[IDout].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
         memcpy((void *) ptr1, (void *) ptr0, framesize);
         dcimg[IDout].md[0].cnt1 = slice;
-        dcimg[IDout].md[0].cnt0++;
-        dcimg[IDout].md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
+        SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
     }
 
@@ -684,11 +684,11 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
         clock_gettime(CLOCK_MILK, &t0);
 
         ptr0                          = ptr0s + kk * framesize;
-        dcimg[IDout].md[0].write = 1;
+        SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
         memcpy((void *) ptr1, (void *) ptr0, framesize);
         dcimg[IDout].md[0].cnt1 = kk;
-        dcimg[IDout].md[0].cnt0++;
-        dcimg[IDout].md[0].write = 0;
+        SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
+        SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
         COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
 
         kk++;
@@ -892,11 +892,11 @@ imageID COREMOD_MEMORY_image_streamupdateloop_semtrig(
             }
             usleep(offsetus);
             ptr0                          = ptr0s + kk1 * framesize;
-            dcimg[IDout].md[0].write = 1;
+            SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
             memcpy((void *) ptr1, (void *) ptr0, framesize);
             COREMOD_MEMORY_image_set_sempost_byID(IDout, -1);
-            dcimg[IDout].md[0].cnt0++;
-            dcimg[IDout].md[0].write = 0;
+            SHMIM_CNT0_INCREMENT(&dcimg[IDout].md[0]);
+            SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
         }
     }
 

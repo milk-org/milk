@@ -476,7 +476,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
 
                 //   clock_gettime(CLOCK_MILK, &tarray[slice]);
                 //  dtarray[slice] = 1.0*tarray[slice].tv_sec + 1.0e-9*tarray[slice].tv_nsec;
-                dcimg[IDout].md[0].write = 1;
+                SHMIM_WRITE_ACQUIRE(&dcimg[IDout].md[0]);
 
                 if(reverse == 0)  // legacy forward lookup mode
                 {
@@ -531,7 +531,7 @@ imageID COREMOD_MEMORY_PixMapDecode_U(
                     ImageStreamIO_sempost(dcimg + IDout, 3);
                 }
 
-                dcimg[IDout].md[0].write = 0;
+                SHMIM_WRITE_RELEASE(&dcimg[IDout].md[0]);
 
                 oldslice = slice;
             }

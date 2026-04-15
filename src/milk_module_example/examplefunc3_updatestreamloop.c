@@ -63,7 +63,7 @@ static MILK_HOT errno_t compute_function()
 
     // Notify that the image is being changed.
     // This is required prior to modifying image content so that consumers can be informed.
-    img.md->write = 1;
+    SHMIM_WRITE_ACQUIRE(img.md);
 
     // Insert code, or function(s) that perform operation(s) on image
     // If the code is very brief, it can be insterted right here, otherwise

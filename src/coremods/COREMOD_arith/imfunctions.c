@@ -452,7 +452,7 @@ errno_t arith_image_function_1_1_inplace_IMGID(
     uint8_t datatype = imgin->im->md->datatype;
     long nelement = imgin->im->md->nelement;
 
-    imgin->im->md->write = 0;
+    SHMIM_WRITE_RELEASE(imgin->im->md);
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
     {
@@ -486,8 +486,8 @@ errno_t arith_image_function_1_1_inplace_IMGID(
     }
 #endif
 
-    imgin->im->md->write = 0;
-    imgin->im->md->cnt0++;
+    SHMIM_WRITE_RELEASE(imgin->im->md);
+    SHMIM_CNT0_INCREMENT(imgin->im->md);
 
     return RETURN_SUCCESS;
 }
@@ -862,7 +862,7 @@ errno_t arith_image_function_2_1_inplace(
     }
 
     uint8_t dt1 = img1.md->datatype;
-    img1.im->md->write = 1;
+    SHMIM_WRITE_ACQUIRE(img1.im->md);
 
 #ifdef _OPENMP
     #pragma omp parallel if (nelement > OMP_NELEMENT_LIMIT)
@@ -890,8 +890,8 @@ errno_t arith_image_function_2_1_inplace(
     }
 #endif
 
-    img1.im->md->write = 0;
-    img1.im->md->cnt0++;
+    SHMIM_WRITE_RELEASE(img1.im->md);
+    SHMIM_CNT0_INCREMENT(img1.im->md);
 
     imgid_free(&img1);
     imgid_free(&img2);

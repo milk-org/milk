@@ -197,7 +197,7 @@ errno_t ave_finalize(IMGID out_ave_img, void *sum_x, int n_frames_acc)
     int n_pixels = out_ave_img.md->size[0] * out_ave_img.md->size[1];
     // TODO MACRO this if a third type may occur
 
-    out_ave_img.md->write = TRUE;
+    SHMIM_WRITE_ACQUIRE(out_ave_img.md);
 
     // Two possible datatypes: float or double
     if(out_ave_img.md->datatype == _DATATYPE_FLOAT)
@@ -229,7 +229,7 @@ std_finalize(IMGID out_std_img, void *sum_x, void *sum_xx, int n_frames_acc)
 {
     int n_pixels = out_std_img.md->size[0] * out_std_img.md->size[1];
 
-    out_std_img.md->write = TRUE;
+    SHMIM_WRITE_ACQUIRE(out_std_img.md);
 
     // Two possible datatypes: float or double
     if(out_std_img.md->datatype == _DATATYPE_FLOAT)

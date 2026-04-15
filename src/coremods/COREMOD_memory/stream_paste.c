@@ -143,7 +143,7 @@ imageID COREMOD_MEMORY_streamPaste(
 
         long Xoffset = FrameIndex * xsize;
 
-        imgout.md->write = 1;
+        SHMIM_WRITE_ACQUIRE(imgout.md);
 
 #define PASTE_CASE_(DT, ACC, CT)                    \
     case DT:                                         \
@@ -195,10 +195,10 @@ imageID COREMOD_MEMORY_streamPaste(
         {
             COREMOD_MEMORY_image_set_sempost_byID(
                 imgout.ID, -1);
-            imgout.md->cnt0++;
+            SHMIM_CNT0_INCREMENT(imgout.md);
         }
         imgout.md->cnt1  = FrameIndex;
-        imgout.md->write = 0;
+        SHMIM_WRITE_RELEASE(imgout.md);
 
         FrameIndex = (FrameIndex == 0) ? 1 : 0;
     }
