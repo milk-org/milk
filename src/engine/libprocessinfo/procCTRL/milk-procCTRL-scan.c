@@ -219,8 +219,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    signal(SIGINT, handle_signal);
-    signal(SIGTERM, handle_signal);
+    {
+        struct sigaction sa;
+        sa.sa_handler = handle_signal;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+    }
 
     // 1. Create/Open Process List SHM
     if (processinfo_shm_list_create() == -1) {
