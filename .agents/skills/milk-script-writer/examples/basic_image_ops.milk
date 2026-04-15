@@ -1,4 +1,4 @@
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # basic_image_ops.milk
 # Demonstrates native calculator and image math.

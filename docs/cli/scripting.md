@@ -23,10 +23,17 @@ See also: [CLI Syntax](CLIcore.md) · [FPS](../fps.md) · [Streams](../streams.m
 
 ### Running Scripts
 
-You can execute a `milk-cli` script file by passing the `-s` flag to the binary or by using the `source` (or `.`) command from within an active interactive session:
+You can execute a milk script file in several ways:
+
+- **Shebang**: Use `#!/usr/bin/env milk-script` as the first line.
+  The standalone `milk-script` binary runs the file
+  non-interactively with no readline/ncurses dependency.
+- **Command line**: Run `milk-cli -s script.milk` from a shell.
+- **Interactive**: Use the `source` (or `.`) command from within
+  an active `milk-cli` session.
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 
 # setup.milk — initialize processing pipeline
 mem.mk2Dim wfs 128 128
@@ -44,7 +51,7 @@ source setup.milk
 This is useful for loading helper function libraries without redundant evaluation:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 include_once helpers.milk
 include_once helpers.milk   # no-op
 ```
@@ -59,14 +66,14 @@ Use this file to define persistent aliases, load standard variables, or register
 Export all current variables, aliases, and function definitions to a file so they can be reloaded later:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 savescript state.milk
 ```
 
 Similarly, write your interactive Readline command history to a replayable script text file:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 savehistory replay.milk
 ```
 
@@ -81,7 +88,7 @@ The `on_update` command blocks execution until a shared-memory stream posts its 
 This is extremely useful for event-driven processing and synchronous scripts:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 on_update wfs_cam { echo "New WFS frame received!" }
 ```
 
@@ -99,7 +106,7 @@ The native interpreter supports a robust set of file and logic tests inside `[ ]
 You can tell your script to pause and wait for shared memory streams or FPS parameter blocks to be initialized by other compute units before proceeding:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 waitfor_stream wfs_cam 30    # wait up to 30s for the stream
 waitfor_fps dmcomb 10        # wait up to 10s for the FPS
 ```
@@ -108,7 +115,7 @@ This returns `0` on success and `1` on timeout. The default timeout if omitted i
 This allows for robust orchestration in startup scripts:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 waitfor_stream wfs_cam 60
 if [ $? -eq 0 ]; then
     echo "Stream is ready!"
@@ -136,7 +143,7 @@ FPS comparison operators: `=`, `!=`, `>=`, `<=`.
 The return value `$?` is the 0-based index of the event that fired, `254` on timeout, or `255` on parse error.
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 # Wait for new frame OR operator abort
 wait_any -t 60 S:wfs_cam F:dmcomb.abort=1
 if [ $? -eq 0 ]; then
@@ -199,7 +206,7 @@ proclist --json               # Same as milkquery --procs
 You can effortlessly read FPS (Function Processing System) parameters directly into bash variables using the native `@fpsname.param` syntax:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 echo "The current gain is: @myloop.loopgain"
 
 # Store in a variable
@@ -209,7 +216,7 @@ g=@myloop.loopgain
 To write FPS parameters programmatically, natively use the `fpsset` command:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 # Note: Do not use the '@' prefix when writing
 fpsset myloop loopgain 0.5
 ```
@@ -237,7 +244,7 @@ For mathematical expressions, the `$(( ... ))` expansion natively supports stand
 Similar to FPS parameters, you can access properties of shared memory streams via the `@s.` namespace expansion:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 echo "Geometry: ${@s.mystream.xsize}x${@s.mystream.ysize}x${@s.mystream.zsize}"
 echo "Datatype Code: ${@s.mystream.type}"
 echo "Frame Counter: ${@s.mystream.cnt0}"
@@ -247,7 +254,7 @@ echo "Number of axes: ${@s.mystream.naxis}"
 For FPS compute units, you can check their allocation status:
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 echo "Status: ${myfps.status}"     # 1 if exists, 0 if unconnected
 ```
 
@@ -260,7 +267,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Because `milk-cli` correctly delegates back to `bash`, you can safely use standard recursive shell expansions (e.g. `##` suffix stripping) to quickly parse paths:
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     function process_image {
         local img_path=${1:-/data/default.fits}
         local filename=${img_path##*/}   # strip path prefix
@@ -284,7 +291,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Combine Linux shell utilities directly with native `milk-cli` commands. In scripts, there is no need to prefix standard bash commands with `!` like inside interactive mode.
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     prefix="output_"
     ext=".fits"
     
@@ -304,7 +311,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Block until multiple shared-memory streams become available during startup, then dynamically read their geometry properties via native dot-expansion:
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     function wait_and_monitor {
         local stream=$1
         echo "Waiting for stream ${stream}..."
@@ -328,7 +335,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Read and write FPS parameters from a script to automate configuration changes across multiple compute units, leveraging standard bash `for` loop integer evaluation to calculate vector indices:
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     
     # Retrieve current value and log it
     gain=$(milk-fps-set dmcomb.loopgain)
@@ -351,7 +358,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Collect live metadata from multiple streams and natively format a compact diagnostic table using string expansion and alignment flags.
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     streams=(wfs_cam dm_disp wfs_ref)
     
     echo "--------------------------------------------"
@@ -383,7 +390,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     A complete startup script that initialises an AO loop step by step, verifies each stage using `milk-cli` conditionals, and aborts cleanly on hardware failure:
     
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     
     # ---------- helpers ----------
     function die {
@@ -437,7 +444,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     Use FPS parameters to configure `procinfo` settings, binding a compute unit to trigger automatically on a stream and monitoring its health from the script.
 
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     
     # 1. Start the compute unit process
     milk-fpsexec-examplefunc2_FPS -tmux &
@@ -466,7 +473,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     You can run mathematical expressions natively, manipulate image values directly with constants, and calculate norms and conditions efficiently without needing external parsing like `bc` or `awk`.
 
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
     
     # 1. Provide an initial constant to initialize variables
     a = 2 + 3 * 4
@@ -498,7 +505,7 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     `milk-cli` natively exports all active workspace variables to the underlying POSIX environment when dispatching shell commands (like `!cmd` or pipes), and can concurrently read standard Linux environment variables without requiring manual exports.
 
     ```bash
-    #!/usr/bin/env milk-cli -s
+    #!/usr/bin/env milk-script
 
     # 1. Read standard OS variables natively (Inward Sync)
     echo "Operating as user: $USER in home directory: $HOME"
