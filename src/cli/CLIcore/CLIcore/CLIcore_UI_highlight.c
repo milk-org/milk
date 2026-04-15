@@ -34,15 +34,18 @@
 
 
 /**
- * @brief Check if a word is a registered CLI command
+ * @brief Check if a word is a valid CLI command
  *
- * Scans the command table for an exact match.
+ * Checks the registered command table, built-in
+ * scripting keywords, intercept commands, and
+ * shell builtins.
  *
  * @param word  The word to look up
  * @return 1 if found, 0 otherwise
  */
 int cli_is_command(const char *word)
 {
+    /* Registered module commands */
     for(uint32_t i = 0; i < data.NBcmd; i++)
     {
         if(strcmp(data.cmd[i].key, word) == 0)
@@ -50,6 +53,56 @@ int cli_is_command(const char *word)
             return 1;
         }
     }
+
+    /* Built-in scripting keywords, intercept
+     * commands, and shell builtins.
+     * Covers: is_internal_cmd keywords,
+     * cli_script_intercept dispatch chain,
+     * and cli_handle_shell_builtins. */
+    static const char *builtins[] = {
+        /* Flow control keywords */
+        "if", "elif", "else", "fi",
+        "for", "while", "until",
+        "do", "done",
+        "case", "esac",
+        "select",
+        "function",
+        ".", "source",
+        "break", "continue", "return",
+        "true", "false",
+        /* Script intercept commands */
+        "exit", "shift",
+        "assert", "assigncheck",
+        "dpdigits",
+        "set", "export", "readonly",
+        "local", "declare", "let",
+        "eval", "type", "command",
+        "trap", "watch", "time",
+        "timeout", "wait",
+        "printf", "echo",
+        "getopts", "mapfile",
+        "alias", "unalias",
+        "basename", "dirname",
+        "pushd", "popd", "dirs",
+        "seq", "[[",
+        /* Process and FPS commands */
+        "procctl", "procwait", "procstat",
+        "waitfor_stream", "waitfor_fps",
+        /* Shell builtins */
+        "on_update", "on_fpschange",
+        "include_once",
+        "savescript", "savehistory",
+        NULL
+    };
+
+    for(int k = 0; builtins[k] != NULL; k++)
+    {
+        if(strcmp(word, builtins[k]) == 0)
+        {
+            return 1;
+        }
+    }
+
     return 0;
 }
 

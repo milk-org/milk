@@ -1110,6 +1110,153 @@ int cli_intercept_cmd_assert(const char *p)
 }
 
 /**
+ * cli_intercept_cmd_assigncheck - check and assign value
+ * @p: full input line
+ *
+ * Syntax:
+ *   assigncheck [-e] <varname> <value> <tolerance>
+ *
+ * Evaluates <value> and <tolerance>. If <varname> existed,
+ * checks if abs(old - new) <= tolerance. Sets <varname> to <value>.
+ * If -e is set (or cli_flag_errexit is 1) and check fails, trap/exit.
+ *
+ * Return: 1 if handled, 0 if not assigncheck.
+ */
+int cli_intercept_cmd_assigncheck(const char *p)
+{
+    const char *sp = strip_ws(p);
+    if (!starts_with(sp, "assigncheck ") && !starts_with(sp, "assigncheck\t"))
+        return 0;
+
+    sp += 11; // skip "assigncheck"
+    while(*sp == ' ' || *sp == '\t') sp++;
+
+    int errexit_local = 0;
+    if (starts_with(sp, "-e ") || starts_with(sp, "-e\t")) {
+        errexit_local = 1;
+        sp += 2;
+        while(*sp == ' ' || *sp == '\t') sp++;
+    }
+
+    char buf[512];
+    strncpy(buf, sp, 511);
+    buf[511] = '\0';
+    
+    int len = (int)strlen(buf);
+    while (len > 0 && (buf[len-1] == ' ' || buf[len-1] == '\t' || buf[len-1] == '\n' || buf[len-1] == '\r')) {
+        buf[--len] = '\0';
+    }
+
+    char *tol_ptr = NULL;
+    for (int i = len - 1; i >= 0; i--) {
+        if (buf[i] == ' ' || buf[i] == '\t') {
+            buf[i] = '\0';
+            tol_ptr = &buf[i + 1];
+            while (i > 0 && (buf[i-1] == ' ' || buf[i-1] == '\t')) {
+                i--;
+                buf[i] = '\0';
+            }
+            break;
+        }
+    }
+
+    if (!tol_ptr) goto usage_err;
+
+    char *var_ptr = buf;
+    char *val_ptr = NULL;
+    for (int i = 0; buf[i] != '\0'; i++) {
+        if (buf[i] == ' ' || buf[i] == '\t') {
+            buf[i] = '\0';
+            val_ptr = &buf[i + 1];
+            while (*val_ptr == ' ' || *val_ptr == '\t') val_ptr++;
+            break;
+        }
+    }
+
+    if (!val_ptr || val_ptr[0] == '\0') goto usage_err;
+
+    int vtype = 0; long vlval = 0; double new_val = 0.0;
+    if (!cli_calc_eval_math_to_val(val_ptr, &vtype, &vlval, &new_val)) {
+        printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate value: %s\033[0m\n", val_ptr);
+        cli_last_retval = 1;
+        if (errexit_local || cli_flag_errexit) {
+            cli_trap_run(-1);
+            cli_trap_run_exit();
+            exit(cli_last_retval);
+        }
+        return 1;
+    }
+    if (vtype == 1) new_val = (double)vlval;
+
+    int ttype = 0; long tlval = 0; double tol_val = 0.0;
+    if (!cli_calc_eval_math_to_val(tol_ptr, &ttype, &tlval, &tol_val)) {
+        printf("\033[1;31m[ASSIGNCHECK FAIL] cannot evaluate tolerance: %s\033[0m\n", tol_ptr);
+        cli_last_retval = 1;
+        if (errexit_local || cli_flag_errexit) {
+            cli_trap_run(-1);
+            cli_trap_run_exit();
+            exit(cli_last_retval);
+        }
+        return 1;
+    }
+    if (ttype == 1) tol_val = (double)tlval;
+
+    const char *oldv_str = cli_var_lookup(var_ptr);
+    double old_val = 0.0;
+    int has_old = 0;
+    if (oldv_str) {
+        has_old = 1;
+        int otype = 0; long olval = 0;
+        if (cli_calc_eval_math_to_val(oldv_str, &otype, &olval, &old_val)) {
+            if (otype == 1) old_val = (double)olval;
+        }
+    }
+
+    char obuf[128];
+    snprintf(obuf, sizeof(obuf), "%.*g", cli_float_digits, new_val);
+    cli_var_set(var_ptr, obuf);
+
+    if (has_old) {
+        double diff = fabs(old_val - new_val);
+        if (diff <= tol_val) {
+            printf("\033[1;32m[ASSIGNCHECK PASS] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
+                   var_ptr,
+                   cli_float_digits, old_val,
+                   cli_float_digits, new_val,
+                   cli_float_digits, diff,
+                   cli_float_digits, tol_val);
+        } else {
+            printf("\033[1;31m[ASSIGNCHECK FAIL] %s: old=%.*g new=%.*g diff=%.*g (tol %.*g)\033[0m\n",
+                   var_ptr,
+                   cli_float_digits, old_val,
+                   cli_float_digits, new_val,
+                   cli_float_digits, diff,
+                   cli_float_digits, tol_val);
+            cli_last_retval = 1;
+            if (errexit_local || cli_flag_errexit) {
+                cli_trap_run(-1);
+                cli_trap_run_exit();
+                exit(cli_last_retval);
+            }
+        }
+    } else {
+        printf("\033[1;32m[ASSIGNCHECK NEW] %s initialized to %.*g\033[0m\n", 
+               var_ptr, cli_float_digits, new_val);
+    }
+    return 1;
+
+usage_err:
+    printf("\033[1;31m[ASSIGNCHECK FAIL] Usage: assigncheck [-e] <var> <val> <tol>\033[0m\n");
+    cli_last_retval = 1;
+    if (errexit_local || cli_flag_errexit) {
+        cli_trap_run(-1);
+        cli_trap_run_exit();
+        exit(cli_last_retval);
+    }
+    return 1;
+}
+
+/**
  * cli_intercept_cmd_dpdigits - set/query
  *     float display precision.
  * @p: full input line

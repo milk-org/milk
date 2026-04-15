@@ -1,0 +1,36 @@
+{
+  "name": "tree-sitter-milkcli",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for milk-cli scripting language",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milk-org/tree-sitter-milkcli"
+  },
+  "main": "bindings/node",
+  "keywords": [
+    "tree-sitter",
+    "parser",
+    "milk",
+    "adaptive-optics",
+    "cli"
+  ],
+  "files": [
+    "grammar.js",
+    "binding.gyp",
+    "bindings/",
+    "queries/",
+    "src/"
+  ],
+  "dependencies": {
+    "nan": "^2.18.0"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.24.0"
+  },
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "tree-sitter test",
+    "parse": "tree-sitter parse"
+  }
+}
