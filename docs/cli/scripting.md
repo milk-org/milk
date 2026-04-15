@@ -544,5 +544,85 @@ Here are several examples demonstrating how `milk-cli` native features combine w
     EOF
     ```
 
+## Syntax Highlighting (Neovim)
+
+The `tree-sitter-milkcli` package provides a
+[tree-sitter](https://tree-sitter.github.io/) grammar
+for `.milk` script files, enabling rich syntax
+highlighting in **Neovim** (≥ 0.9) and other
+tree-sitter-capable editors.
+
+### Quick Setup
+
+From the milk source tree:
+
+```bash
+cd tree-sitter-milkcli
+
+# 1. Build the parser from the grammar
+./scripts/build.sh
+
+# 2. Install into Neovim (queries + config)
+./scripts/nvim-install.sh
+
+# 3. Open a .milk file — highlighting is active
+nvim examples/demo.milk
+```
+
+The install script copies highlight queries to
+`~/.config/nvim/after/queries/milkcli/` and creates
+a Lua config snippet at
+`~/.config/nvim/plugin/milkcli-treesitter.lua`.
+
+### What Gets Highlighted
+
+| Syntax Element | Highlight Group | Example |
+|----------------|-----------------|---------|
+| Flow control | `@keyword` | `if`, `for`, `while`, `fi` |
+| Shell builtins | `@function.builtin` | `echo`, `export`, `source` |
+| milk commands | `@function.macro` | `assigncheck`, `procctl` |
+| FPS variables | `@property` | `@fps.loop.gain` |
+| Stream metadata | `@type` | `${s.wfs.cnt0}` |
+| Variables | `@variable.builtin` | `$VAR`, `${VAR}` |
+| Strings | `@string` | `"hello"`, `'literal'` |
+| Numbers | `@number` | `42`, `3.14` |
+| Comments | `@comment` | `# comment` |
+
+### Dynamic Module Commands
+
+Module commands (`listim`, `saveFITS`, `imcrop`, etc.)
+are registered at runtime, not hardcoded in the grammar.
+To highlight them, run the generator script after
+installing new milk modules:
+
+```bash
+# Generate and install module highlight queries
+./scripts/gen-module-highlights.sh --install
+
+# Or generate to stdout for inspection
+./scripts/gen-module-highlights.sh --stdout
+```
+
+### Management
+
+```bash
+# Check installation status (dry-run)
+./scripts/nvim-install.sh --check
+
+# Remove from Neovim
+./scripts/nvim-install.sh --uninstall
+
+# Rebuild parser after grammar changes
+./scripts/build.sh
+./scripts/build.sh --test    # build + parse example
+./scripts/build.sh --clean   # remove generated files
+```
+
+!!! info "Requirements"
+    - **Node.js** — for the `tree-sitter-cli` build tool
+    - **Neovim ≥ 0.9** — with built-in tree-sitter support
+    - **nvim-treesitter** plugin — installed automatically
+      by `nvim-install.sh`
+
 ---
 ← [CLI Syntax](CLIcore.md) · [Documentation Index](../index.md)
