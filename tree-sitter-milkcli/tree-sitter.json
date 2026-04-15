@@ -1,0 +1,31 @@
+{
+  "grammars": [
+    {
+      "name": "milkcli",
+      "camelcase": "Milkcli",
+      "scope": "source.milkcli",
+      "path": ".",
+      "file-types": [
+        "milk"
+      ],
+      "highlights": "queries/highlights.scm",
+      "injection-regex": "milkcli"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Tree-sitter grammar for milk-cli scripting language",
+    "links": {
+      "repository": "https://github.com/milk-org/tree-sitter-milkcli"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

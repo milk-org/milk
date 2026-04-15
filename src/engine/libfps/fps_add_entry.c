@@ -295,73 +295,47 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
 
         if(valueptr != NULL)  // allocate value requested by function call
         {
-            int32_t         *valueptr_INT32;
-            uint32_t        *valueptr_UINT32;
-            int64_t         *valueptr_INT64;
-            uint64_t        *valueptr_UINT64;
-            double          *valueptr_FLOAT64;
-            float           *valueptr_FLOAT32;
-            struct timespec *valueptr_ts;
-
             switch(funcparamarray[pindex].type)
             {
 
                 case FPTYPE_INT32:
-                    valueptr_INT32                    = (int32_t *) valueptr;
-                    funcparamarray[pindex].val.i32[0] = valueptr_INT32[0];
-                    funcparamarray[pindex].val.i32[1] = valueptr_INT32[1];
-                    funcparamarray[pindex].val.i32[2] = valueptr_INT32[2];
-                    funcparamarray[pindex].val.i32[3] = valueptr_INT32[3];
+                    funcparamarray[pindex].val.i32[0] =
+                        *((int32_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_UINT32:
-                    valueptr_UINT32                    = (uint32_t *) valueptr;
-                    funcparamarray[pindex].val.ui32[0] = valueptr_UINT32[0];
-                    funcparamarray[pindex].val.ui32[1] = valueptr_UINT32[1];
-                    funcparamarray[pindex].val.ui32[2] = valueptr_UINT32[2];
-                    funcparamarray[pindex].val.ui32[3] = valueptr_UINT32[3];
+                    funcparamarray[pindex].val.ui32[0] =
+                        *((uint32_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_INT64:
-                    valueptr_INT64                    = (int64_t *) valueptr;
-                    funcparamarray[pindex].val.i64[0] = valueptr_INT64[0];
-                    funcparamarray[pindex].val.i64[1] = valueptr_INT64[1];
-                    funcparamarray[pindex].val.i64[2] = valueptr_INT64[2];
-                    funcparamarray[pindex].val.i64[3] = valueptr_INT64[3];
+                    funcparamarray[pindex].val.i64[0] =
+                        *((int64_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_UINT64:
-                    valueptr_UINT64                    = (uint64_t *) valueptr;
-                    funcparamarray[pindex].val.ui64[0] = valueptr_UINT64[0];
-                    funcparamarray[pindex].val.ui64[1] = valueptr_UINT64[1];
-                    funcparamarray[pindex].val.ui64[2] = valueptr_UINT64[2];
-                    funcparamarray[pindex].val.ui64[3] = valueptr_UINT64[3];
+                    funcparamarray[pindex].val.ui64[0] =
+                        *((uint64_t *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FLOAT64:
-                    valueptr_FLOAT64                  = (double *) valueptr;
-                    funcparamarray[pindex].val.f64[0] = valueptr_FLOAT64[0];
-                    funcparamarray[pindex].val.f64[1] = valueptr_FLOAT64[1];
-                    funcparamarray[pindex].val.f64[2] = valueptr_FLOAT64[2];
-                    funcparamarray[pindex].val.f64[3] = valueptr_FLOAT64[3];
+                    funcparamarray[pindex].val.f64[0] =
+                        *((double *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
 
                 case FPTYPE_FLOAT32:
-                    valueptr_FLOAT32                  = (float *) valueptr;
-                    funcparamarray[pindex].val.f32[0] = valueptr_FLOAT32[0];
-                    funcparamarray[pindex].val.f32[1] = valueptr_FLOAT32[1];
-                    funcparamarray[pindex].val.f32[2] = valueptr_FLOAT32[2];
-                    funcparamarray[pindex].val.f32[3] = valueptr_FLOAT32[3];
+                    funcparamarray[pindex].val.f32[0] =
+                        *((float *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
@@ -373,8 +347,8 @@ errno_t function_parameter_add_entry(FUNCTION_PARAMETER_STRUCT *fps,
                     break;
 
                 case FPTYPE_TIMESPEC:
-                    valueptr_ts                      = (struct timespec *) valueptr;
-                    funcparamarray[pindex].val.ts[0] = *valueptr_ts;
+                    funcparamarray[pindex].val.ts[0] =
+                        *((struct timespec *) valueptr);
                     funcparamarray[pindex].cnt0++;
                     funcparamarray[pindex].value_cnt++;
                     break;
