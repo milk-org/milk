@@ -657,34 +657,54 @@ errno_t CLI_checkarg_array(
         switch(fpscliarg[arg].type)
         {
             case CLIARG_FLOAT32:
-                strcpy(argtypestring, "FLT32");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "FLT32");
                 break;
             case CLIARG_FLOAT64:
-                strcpy(argtypestring, "FLT64");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "FLT64");
                 break;
             case CLIARG_ONOFF:
-                strcpy(argtypestring, "ONOFF");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "ONOFF");
                 break;
             case CLIARG_INT32:
-                strcpy(argtypestring, "INT32");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "INT32");
                 break;
             case CLIARG_UINT32:
-                strcpy(argtypestring, "UINT32");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "UINT32");
                 break;
             case CLIARG_INT64:
-                strcpy(argtypestring, "INT64");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "INT64");
                 break;
             case CLIARG_UINT64:
-                strcpy(argtypestring, "UINT64");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "UINT64");
                 break;
             case CLIARG_STR_NOT_IMG:
-                strcpy(argtypestring, "STRnIMG");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "STRnIMG");
                 break;
             case CLIARG_IMG:
-                strcpy(argtypestring, "STREAM");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "STREAM");
                 break;
             case CLIARG_STR:
-                strcpy(argtypestring, "STRING");
+                snprintf(argtypestring,
+                         sizeof(argtypestring),
+                         "STRING");
                 break;
         }
 

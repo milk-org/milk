@@ -683,8 +683,12 @@ int functionparameter_FPSprocess_cmdline(
     int kwnindex = -1;
     if(cmdFOUND == 0)
     {
-        strcpy(FPSentryname, FPSarg0);
-        strcpy(FPScmdarg1, FPSarg1);
+        snprintf(FPSentryname,
+                 sizeof(FPSentryname),
+                 "%s", FPSarg0);
+        snprintf(FPScmdarg1,
+                 sizeof(FPScmdarg1),
+                 "%s", FPSarg1);
 
         // look for entry, if found, kwnindex points to it
         if(nbword > 1)

@@ -178,13 +178,14 @@ int read_config_parameter(const char *config_file,
         abort();
     }
 
-    strcpy(content, "---");
+    snprintf(content, SBUFFERSIZE, "---");
     while(fgets(line, 1000, fp) != NULL)
     {
         sscanf(line, "%100s %100s", keyw, cont);
         if(strcmp(keyw, keyword) == 0)
         {
-            strcpy(content, cont);
+            snprintf(content, SBUFFERSIZE,
+                     "%s", cont);
             read = 1;
         }
         /*      printf("KEYWORD : \"%s\"   CONTENT : \"%s\"\n",keyw,cont);*/
@@ -194,7 +195,7 @@ int read_config_parameter(const char *config_file,
         PRINT_ERROR("parameter \"%s\" does not exist in file \"%s\"",
                     keyword,
                     config_file);
-        sprintf(content, "-");
+        snprintf(content, SBUFFERSIZE, "-");
         //  exit(0);
     }
 

@@ -77,8 +77,10 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
     char input_name[200];
     for(int ii = 0; ii < n_input; ++ii)
     {
-        sprintf(input_name, "%s_%d",
-                stream_basename, ii);
+        snprintf(input_name,
+                 sizeof(input_name),
+                 "%s_%d",
+                 stream_basename, ii);
         img_in_arr[ii] =
             imgid_make_from_name(input_name);
         resolveIMGID(

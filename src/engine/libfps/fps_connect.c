@@ -325,8 +325,16 @@ long function_parameter_struct_connect(
             {
                 if(fps->parray[pindex].type == FPTYPE_STREAMNAME)
                 {
-                    strcpy(fps->cmdset.triggerstreamname,
-                           fps->parray[pindex].val.string[0]);
+                    strncpy(
+                        fps->cmdset.triggerstreamname,
+                        fps->parray[pindex].val.string[0],
+                        sizeof(fps->cmdset
+                               .triggerstreamname)
+                        - 1);
+                    fps->cmdset.triggerstreamname[
+                        sizeof(fps->cmdset
+                               .triggerstreamname)
+                        - 1] = '\0';
                 }
             }
         }

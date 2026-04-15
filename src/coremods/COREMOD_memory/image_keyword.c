@@ -247,12 +247,14 @@ long image_write_keyword_L(
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name,
-               kname);
+        snprintf(dcimg[ID].kw[kw].name,
+                 KEYWORD_MAX_STRING,
+                 "%s", kname);
         dcimg[ID].kw[kw].type       = 'L';
         dcimg[ID].kw[kw].value.numl = value;
-        strcpy(dcimg[ID].kw[kw].comment,
-               comment);
+        snprintf(dcimg[ID].kw[kw].comment,
+                 KEYWORD_MAX_COMMENT,
+                 "%s", comment);
     }
 
     return kw0;
@@ -298,12 +300,14 @@ long image_write_keyword_D(
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name,
-               kname);
+        snprintf(dcimg[ID].kw[kw].name,
+                 KEYWORD_MAX_STRING,
+                 "%s", kname);
         dcimg[ID].kw[kw].type       = 'D';
         dcimg[ID].kw[kw].value.numf = value;
-        strcpy(dcimg[ID].kw[kw].comment,
-               comment);
+        snprintf(dcimg[ID].kw[kw].comment,
+                 KEYWORD_MAX_COMMENT,
+                 "%s", comment);
     }
 
     return kw0;
@@ -349,13 +353,17 @@ long image_write_keyword_S(
     }
     else
     {
-        strcpy(dcimg[ID].kw[kw].name,
-               kname);
+        snprintf(dcimg[ID].kw[kw].name,
+                 KEYWORD_MAX_STRING,
+                 "%s", kname);
         dcimg[ID].kw[kw].type = 'D';
-        strcpy(dcimg[ID].kw[kw].value.valstr,
-               value);
-        strcpy(dcimg[ID].kw[kw].comment,
-               comment);
+        snprintf(
+            dcimg[ID].kw[kw].value.valstr,
+            KEYWORD_MAX_STRING,
+            "%s", value);
+        snprintf(dcimg[ID].kw[kw].comment,
+                 KEYWORD_MAX_COMMENT,
+                 "%s", comment);
     }
 
     return kw0;

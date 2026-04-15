@@ -246,7 +246,7 @@ int LINALGEBRA_magma_compute_SVDpseudoInverse_SVD(
     //printf("sgesvd gpu time: %7.5f\n", gpu_time );
 
     // Write eigenvalues
-    sprintf(fname, "eigenv.dat.magma");
+    snprintf(fname, sizeof(fname),\n             "eigenv.dat.magma");
     if((fp = fopen(fname, "w")) == NULL)
     {
         printf("ERROR: cannot create file \"%s\"\n", fname);

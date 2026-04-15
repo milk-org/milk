@@ -1261,7 +1261,9 @@ errno_t streamCTRL_CTRLscreen()
                                         abort(); // can't handle this error any other way
                                     }
                                 }
-                                strcpy(str, str1);
+                                snprintf(str,
+                                         STRINGMAXLEN_DEFAULT,
+                                         "%s", str1);
                             }
                             {
                                 int slen = snprintf(str1,
@@ -1284,7 +1286,9 @@ errno_t streamCTRL_CTRLscreen()
                                 }
                             }
 
-                            strcpy(str, str1);
+                            snprintf(str,
+                                     STRINGMAXLEN_DEFAULT,
+                                     "%s", str1);
                         }
 
                         DEBUG_TRACEPOINT(" ");

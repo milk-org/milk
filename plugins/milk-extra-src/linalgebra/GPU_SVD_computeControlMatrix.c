@@ -325,7 +325,7 @@ errno_t GPU_SVD_computeControlMatrix(int         device,
         exit(EXIT_FAILURE);
     }
 
-    sprintf(fname, "eigenv.dat.gsl");
+    snprintf(fname, sizeof(fname),\n             "eigenv.dat.gsl");
     if((fp = fopen(fname, "w")) == NULL)
     {
         printf("ERROR: cannot create file \"%s\"\n", fname);

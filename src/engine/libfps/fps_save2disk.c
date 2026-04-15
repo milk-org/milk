@@ -345,7 +345,7 @@ static char *remove_filename_ext(const char *filename)
     {
         return NULL;
     }
-    strcpy(tmpstring, filename);
+    memcpy(tmpstring, filename, strlen(filename) + 1);
     char *lastdot = strrchr(tmpstring, '.');
     if(lastdot != NULL)
     {

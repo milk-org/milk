@@ -44,142 +44,142 @@ int processinfo_SIGexit(PROCESSINFO *processinfo, int SignalNumber)
     {
 
         case SIGHUP: // Hangup detected on controlling terminal or death of controlling process
-            strcpy(SIGstr, "SIGHUP");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGHUP");
             SIGflag = 1;
             break;
 
         case SIGINT: // Interrupt from keyboard
-            strcpy(SIGstr, "SIGINT");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGINT");
             SIGflag = 1;
             break;
 
         case SIGQUIT: // Quit from keyboard
-            strcpy(SIGstr, "SIGQUIT");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGQUIT");
             SIGflag = 1;
             break;
 
         case SIGILL: // Illegal Instruction
-            strcpy(SIGstr, "SIGILL");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGILL");
             SIGflag = 1;
             break;
 
         case SIGABRT: // Abort signal from abort
-            strcpy(SIGstr, "SIGABRT");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGABRT");
             SIGflag = 1;
             break;
 
         case SIGFPE: // Floating-point exception
-            strcpy(SIGstr, "SIGFPE");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGFPE");
             SIGflag = 1;
             break;
 
         case SIGKILL: // Kill signal
-            strcpy(SIGstr, "SIGKILL");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGKILL");
             SIGflag = 1;
             break;
 
         case SIGSEGV: // Invalid memory reference
-            strcpy(SIGstr, "SIGSEGV");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGSEGV");
             SIGflag = 1;
             break;
 
         case SIGPIPE: // Broken pipe: write to pipe with no readers
-            strcpy(SIGstr, "SIGPIPE");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGPIPE");
             SIGflag = 1;
             break;
 
         case SIGALRM: // Timer signal from alarm
-            strcpy(SIGstr, "SIGALRM");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGALRM");
             SIGflag = 1;
             break;
 
         case SIGTERM: // Termination signal
-            strcpy(SIGstr, "SIGTERM");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGTERM");
             SIGflag = 1;
             break;
 
         case SIGUSR1: // User-defined signal 1
-            strcpy(SIGstr, "SIGUSR1");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGUSR1");
             SIGflag = 1;
             break;
 
         case SIGUSR2: // User-defined signal 1
-            strcpy(SIGstr, "SIGUSR2");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGUSR2");
             SIGflag = 1;
             break;
 
         case SIGCHLD: // Child stopped or terminated
-            strcpy(SIGstr, "SIGCHLD");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGCHLD");
             SIGflag = 1;
             break;
 
         case SIGCONT: // Continue if stoppedshmimTCPtransmit
-            strcpy(SIGstr, "SIGCONT");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGCONT");
             SIGflag = 1;
             break;
 
         case SIGSTOP: // Stop process
-            strcpy(SIGstr, "SIGSTOP");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGSTOP");
             SIGflag = 1;
             break;
 
         case SIGTSTP: // Stop typed at terminal
-            strcpy(SIGstr, "SIGTSTP");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGTSTP");
             SIGflag = 1;
             break;
 
         case SIGTTIN: // Terminal input for background process
-            strcpy(SIGstr, "SIGTTIN");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGTTIN");
             SIGflag = 1;
             break;
 
         case SIGTTOU: // Terminal output for background process
-            strcpy(SIGstr, "SIGTTOU");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGTTOU");
             SIGflag = 1;
             break;
 
         case SIGBUS: // Bus error (bad memory access)
-            strcpy(SIGstr, "SIGBUS");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGBUS");
             SIGflag = 1;
             break;
 
         case SIGPOLL: // Pollable event (Sys V).
-            strcpy(SIGstr, "SIGPOLL");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGPOLL");
             SIGflag = 1;
             break;
 
         case SIGPROF: // Profiling timer expired
-            strcpy(SIGstr, "SIGPROF");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGPROF");
             SIGflag = 1;
             break;
 
         case SIGSYS: // Bad system call (SVr4)
-            strcpy(SIGstr, "SIGSYS");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGSYS");
             SIGflag = 1;
             break;
 
         case SIGTRAP: // Trace/breakpoint trap
-            strcpy(SIGstr, "SIGTRAP");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGTRAP");
             SIGflag = 1;
             break;
 
         case SIGURG: // Urgent condition on socket (4.2BSD)
-            strcpy(SIGstr, "SIGURG");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGURG");
             SIGflag = 1;
             break;
 
         case SIGVTALRM: // Virtual alarm clock (4.2BSD)
-            strcpy(SIGstr, "SIGVTALRM");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGVTALRM");
             SIGflag = 1;
             break;
 
         case SIGXCPU: // CPU time limit exceeded (4.2BSD)
-            strcpy(SIGstr, "SIGXCPU");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGXCPU");
             SIGflag = 1;
             break;
 
         case SIGXFSZ: // File size limit exceeded (4.2BSD)
-            strcpy(SIGstr, "SIGXFSZ");
+            snprintf(SIGstr, sizeof(SIGstr), "SIGXFSZ");
             SIGflag = 1;
             break;
     }

@@ -550,7 +550,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
                 exit(0);
             }
 
-            sprintf(sname,
+            snprintf(sname, sizeof(sname),
                     "loop%02ld_i%02d_gpu%02d_sem1_%06d",
                     loopnb,
                     index,
@@ -564,7 +564,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
             }
             sem_init(gpumatmultconf[index].semptr1[device], 1, 0);
 
-            sprintf(sname,
+            snprintf(sname, sizeof(sname),
                     "loop%02ld_i%02d_gpu%02d_sem2_%06d",
                     loopnb,
                     index,
@@ -578,7 +578,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
             }
             sem_init(gpumatmultconf[index].semptr2[device], 1, 0);
 
-            sprintf(sname,
+            snprintf(sname, sizeof(sname),
                     "loop%02ld_i%02d_gpu%02d_sem3_%06d",
                     loopnb,
                     index,
@@ -592,7 +592,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
             }
             sem_init(gpumatmultconf[index].semptr3[device], 1, 0);
 
-            sprintf(sname,
+            snprintf(sname, sizeof(sname),
                     "loop%02ld_i%02d_gpu%02d_sem4_%06d",
                     loopnb,
                     index,
@@ -606,7 +606,7 @@ errno_t GPU_loop_MultMat_setup(int         index,
             }
             sem_init(gpumatmultconf[index].semptr4[device], 1, 0);
 
-            sprintf(sname,
+            snprintf(sname, sizeof(sname),
                     "loop%02ld_i%02d_gpu%02d_sem5_%06d",
                     loopnb,
                     index,
