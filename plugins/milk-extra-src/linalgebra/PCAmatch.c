@@ -130,7 +130,9 @@ errno_t PCAmatch(
 
     // A->B coeff remapping matrix
     IMGID imgAtoB;
-    strcpy(imgAtoB.name, "matAtoB");
+    snprintf(imgAtoB.name,
+             sizeof(imgAtoB.name),
+             "%s", "matAtoB");
     computeSGEMM(
         imgmodesB,
         imgmodesA,
@@ -141,7 +143,9 @@ errno_t PCAmatch(
 
     // B->A coeff remapping matrix
     IMGID imgBtoA;
-    strcpy(imgBtoA.name, "matBtoA");
+    snprintf(imgBtoA.name,
+             sizeof(imgBtoA.name),
+             "%s", "matBtoA");
     computeSGEMM(
         imgmodesA,
         imgmodesB,

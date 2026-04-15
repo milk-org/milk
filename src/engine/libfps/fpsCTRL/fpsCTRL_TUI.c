@@ -230,7 +230,8 @@ inline static void fpsCTRLscreen_print_FPShelp(
                  "%smload %s;",
                  mloadstring,
                  fpsarray[keywnode[fpsCTRLvar->nodeSelected].fpsindex].md->modulename[m]);
-        strcpy(mloadstring, mloadstringcp);
+        snprintf(mloadstring, mloadstring_maxlen,
+                 "%s", mloadstringcp);
     }
 
     char helpfunctionstring[2000] = {0};
@@ -328,7 +329,8 @@ errno_t functionparameter_CTRLscreen(
         struct timespec tnow = {0};
         clock_gettime(CLOCK_REALTIME, &tnow);
         FPS_TIMESTAMP = tnow.tv_sec;
-        strcpy(FPS_PROCESS_TYPE, "ctrl");
+        snprintf(FPS_PROCESS_TYPE,
+                 STRINGMAXLEN_FPSPROCESSTYPE, "ctrl");
     }
 
 
@@ -336,7 +338,7 @@ errno_t functionparameter_CTRLscreen(
         char cwd[PATH_MAX];
         if ( getcwd(cwd, sizeof(cwd)) == NULL )
         {
-            strcpy(cwd, "ERROR");
+            snprintf(cwd, sizeof(cwd), "ERROR");
         }
         functionparameter_outlog("FPSCTRLSTART", "%s", cwd);
     }
@@ -354,8 +356,16 @@ errno_t functionparameter_CTRLscreen(
     fpsCTRLvar.directorynodeSelected = 0;
     fpsCTRLvar.currentlevel          = 0;
     fpsCTRLvar.direction             = 1;
-    strcpy(fpsCTRLvar.fpsnamemask, fpsnamemask);
-    strcpy(fpsCTRLvar.fpsCTRLfifoname, fpsCTRLfifoname);
+    strncpy(fpsCTRLvar.fpsnamemask, fpsnamemask,
+            sizeof(fpsCTRLvar.fpsnamemask) - 1);
+    fpsCTRLvar.fpsnamemask[
+        sizeof(fpsCTRLvar.fpsnamemask) - 1] = '\0';
+    strncpy(fpsCTRLvar.fpsCTRLfifoname,
+            fpsCTRLfifoname,
+            sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1);
+    fpsCTRLvar.fpsCTRLfifoname[
+        sizeof(fpsCTRLvar.fpsCTRLfifoname) - 1]
+        = '\0';
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
@@ -365,7 +375,7 @@ errno_t functionparameter_CTRLscreen(
 
     for(int kn = 0; kn < NB_KEYWNODE_MAX; kn++)
     {
-        strcpy(keywnode[kn].keywordfull, "");
+        keywnode[kn].keywordfull[0] = '\0';
         for(int ch = 0; ch < MAX_NB_CHILD; ch++)
         {
             keywnode[kn].child[ch] = 0;
@@ -686,7 +696,7 @@ errno_t functionparameter_CTRLscreen(
         char cwd[PATH_MAX];
         if ( getcwd(cwd, sizeof(cwd)) == NULL )
         {
-            strcpy(cwd, "ERROR");
+            snprintf(cwd, sizeof(cwd), "ERROR");
         }
         functionparameter_outlog("FPSCTRLSTOP", "%s", cwd);
     }

@@ -78,101 +78,128 @@ void *save_telemetry_fits_function(
         malloc(sizeof(IMAGE_KEYWORD)
                * NBcustomKW);
 
-    strcpy(imkwarray->name, "UT");
+    snprintf(imkwarray->name,
+             KEYWORD_MAX_STRING, "UT");
     imkwarray->type = 'S';
 
-    strcpy(imkwarray->value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               0.5 * tmsg->arraytime[0]
-               + 0.5 * tmsg->arraytime[
-                   tmsg->cubesize - 1]));
-    strcpy(imkwarray->comment,
-           "HH:MM:SS.SS typical UTC"
-           " at exposure");
+    snprintf(imkwarray->value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 0.5 * tmsg->arraytime[0]
+                 + 0.5 * tmsg->arraytime[
+                     tmsg->cubesize - 1]));
+    snprintf(imkwarray->comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS typical UTC"
+             " at exposure");
 
-    strcpy(imkwarray[1].name, "UT-STR");
+    snprintf(imkwarray[1].name,
+             KEYWORD_MAX_STRING, "UT-STR");
     imkwarray[1].type = 'S';
-    strcpy(imkwarray[1].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[0]));
-    strcpy(imkwarray[1].comment,
-           "HH:MM:SS.SS UTC at exposure start");
+    snprintf(imkwarray[1].value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 tmsg->arraytime[0]));
+    snprintf(imkwarray[1].comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS UTC at"
+             " exposure start");
 
-    strcpy(imkwarray[2].name, "UT-END");
+    snprintf(imkwarray[2].name,
+             KEYWORD_MAX_STRING, "UT-END");
     imkwarray[2].type = 'S';
-    strcpy(imkwarray[2].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[
-                   tmsg->cubesize - 1]));
-    strcpy(imkwarray[2].comment,
-           "HH:MM:SS.SS UTC at exposure end");
+    snprintf(imkwarray[2].value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 tmsg->arraytime[
+                     tmsg->cubesize - 1]));
+    snprintf(imkwarray[2].comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS UTC at"
+             " exposure end");
 
-    strcpy(imkwarray[3].name, "MJD");
+    snprintf(imkwarray[3].name,
+             KEYWORD_MAX_STRING, "MJD");
     imkwarray[3].type = 'D';
     imkwarray[3].value.numf =
         (0.5 * tmsg->arraytime[0]
          + 0.5 * tmsg->arraytime[
              tmsg->cubesize - 1])
         / 86400.0 + 40587.0;
-    strcpy(imkwarray[3].comment,
-           "Modified Julian Day at exposure");
+    snprintf(imkwarray[3].comment,
+             KEYWORD_MAX_COMMENT,
+             "Modified Julian Day"
+             " at exposure");
 
-    strcpy(imkwarray[4].name, "MJD-STR");
+    snprintf(imkwarray[4].name,
+             KEYWORD_MAX_STRING, "MJD-STR");
     imkwarray[4].type = 'D';
     imkwarray[4].value.numf =
         tmsg->arraytime[0]
         / 86400.0 + 40587.0;
-    strcpy(imkwarray[4].comment,
-           "Modified Julian Day at"
-           " exposure start");
+    snprintf(imkwarray[4].comment,
+             KEYWORD_MAX_COMMENT,
+             "Modified Julian Day at"
+             " exposure start");
 
-    strcpy(imkwarray[5].name, "MJD-END");
+    snprintf(imkwarray[5].name,
+             KEYWORD_MAX_STRING, "MJD-END");
     imkwarray[5].type = 'D';
     imkwarray[5].value.numf =
         (tmsg->arraytime[tmsg->cubesize - 1]
          / 86400.0) + 40587.0;
-    strcpy(imkwarray[5].comment,
-           "Modified Julian Day at"
-           " exposure end");
+    snprintf(imkwarray[5].comment,
+             KEYWORD_MAX_COMMENT,
+             "Modified Julian Day at"
+             " exposure end");
 
-    sprintf(imkwarray[6].name, "%s",
-            TZ_MILK_STR);
+    snprintf(imkwarray[6].name,
+             KEYWORD_MAX_STRING, "%s",
+             TZ_MILK_STR);
     imkwarray[6].type = 'S';
-    strcpy(imkwarray[6].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               (0.5 * tmsg->arraytime[0]
-                + 0.5 * tmsg->arraytime[
-                    tmsg->cubesize - 1])
-               + TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[6].comment,
-            "HH:MM:SS.SS typical %s"
-            " at exposure",
-            TZ_MILK_STR);
+    snprintf(imkwarray[6].value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 (0.5 * tmsg->arraytime[0]
+                  + 0.5 * tmsg->arraytime[
+                      tmsg->cubesize - 1])
+                 + TZ_MILK_UTC_OFF));
+    snprintf(imkwarray[6].comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS typical %s"
+             " at exposure",
+             TZ_MILK_STR);
 
-    sprintf(imkwarray[7].name, "%s-STR",
-            TZ_MILK_STR);
+    snprintf(imkwarray[7].name,
+             KEYWORD_MAX_STRING, "%s-STR",
+             TZ_MILK_STR);
     imkwarray[7].type = 'S';
-    strcpy(imkwarray[7].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[0]
-               + TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[7].comment,
-            "HH:MM:SS.SS typical %s"
-            " at exposure start",
-            TZ_MILK_STR);
+    snprintf(imkwarray[7].value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 tmsg->arraytime[0]
+                 + TZ_MILK_UTC_OFF));
+    snprintf(imkwarray[7].comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS typical %s"
+             " at exposure start",
+             TZ_MILK_STR);
 
-    sprintf(imkwarray[8].name, "%s-END",
-            TZ_MILK_STR);
+    snprintf(imkwarray[8].name,
+             KEYWORD_MAX_STRING, "%s-END",
+             TZ_MILK_STR);
     imkwarray[8].type = 'S';
-    strcpy(imkwarray[8].value.valstr,
-           timedouble_to_UTC_timeofdaystring(
-               tmsg->arraytime[
-                   tmsg->cubesize - 1]
-               + TZ_MILK_UTC_OFF));
-    sprintf(imkwarray[8].comment,
-            "HH:MM:SS.SS typical %s"
-            " at exposure end",
-            TZ_MILK_STR);
+    snprintf(imkwarray[8].value.valstr,
+             KEYWORD_MAX_STRING, "%s",
+             timedouble_to_UTC_timeofdaystring(
+                 tmsg->arraytime[
+                     tmsg->cubesize - 1]
+                 + TZ_MILK_UTC_OFF));
+    snprintf(imkwarray[8].comment,
+             KEYWORD_MAX_COMMENT,
+             "HH:MM:SS.SS typical %s"
+             " at exposure end",
+             TZ_MILK_STR);
 
 #ifdef USE_CFITSIO
     saveFITS_opt_trunc(tmsg->iname,

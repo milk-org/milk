@@ -124,7 +124,9 @@ PROCESSINFO *processinfo_shm_create(
     pinfolist->createtime[pindex] =
         1.0 * pinfo->createtime.tv_sec + 1.0e-9 * pinfo->createtime.tv_nsec;
 
-    strcpy(pinfo->name, pname);
+    strncpy(pinfo->name, pname,
+            STRINGMAXLEN_PROCESSINFO_NAME - 1);
+    pinfo->name[STRINGMAXLEN_PROCESSINFO_NAME - 1] = '\0';
 
     pinfolist->active[pindex] = 1;
 

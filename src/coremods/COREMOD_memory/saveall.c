@@ -350,8 +350,10 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
 
     for(i = 0; i < imcnt; i++)
     {
-        sprintf(imnameout, "%s_out",
-                dcimg[IDarray[i]].name);
+        snprintf(imnameout,
+                 sizeof(imnameout),
+                 "%s_out",
+                 dcimg[IDarray[i]].name);
         imsizearray[i] =
             sizeof(float)
             * dcimg[IDarray[i]].md[0].size[0]
@@ -409,10 +411,14 @@ errno_t COREMOD_MEMORY_SaveAll_sequ(
     for(i = 0; i < imcnt; i++)
     {
         ID = IDarray[i];
-        sprintf(imnameout, "%s_out",
-                dcimg[ID].name);
-        sprintf(fnameout, "./%s/%s_out.fits",
-                dirname, dcimg[ID].name);
+        snprintf(imnameout,
+                 sizeof(imnameout),
+                 "%s_out",
+                 dcimg[ID].name);
+        snprintf(fnameout,
+                 sizeof(fnameout),
+                 "./%s/%s_out.fits",
+                 dirname, dcimg[ID].name);
         save_fits(imnameout, fnameout);
     }
 #else

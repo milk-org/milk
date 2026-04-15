@@ -297,7 +297,8 @@ retry_fuzzy:
             }
             else
             {
-                strcpy(dirpart, ".");
+                snprintf(dirpart,
+                         sizeof(dirpart), ".");
                 strncpy(prefix, text,
                         sizeof(prefix) - 1);
                 prefix[sizeof(prefix) - 1] =

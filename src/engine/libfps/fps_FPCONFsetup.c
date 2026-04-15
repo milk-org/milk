@@ -36,7 +36,8 @@ FUNCTION_PARAMETER_STRUCT function_parameter_FPCONFsetup_sized(
 
 
     FPS_TIMESTAMP = 0;
-    strcpy(FPS_PROCESS_TYPE, "UNDEF");
+    snprintf(FPS_PROCESS_TYPE,
+             STRINGMAXLEN_FPSPROCESSTYPE, "UNDEF");
 
 
     if(CMDmode & FPSCMDCODE_FPSINITCREATE)  // (re-)create fps even if it exists

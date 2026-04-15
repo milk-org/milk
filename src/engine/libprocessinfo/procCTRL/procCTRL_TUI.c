@@ -95,9 +95,16 @@ static int processinfo_CPUsets_List(STRINGLISTENTRY *CPUsetList, int has_cset)
     int setindex = 0;
 
     while(NBset < 1000 && fgets(line, 199, fp) != NULL) {
-        sscanf(line, "%s %s", word, word1);
-        strcpy(CPUsetList[setindex].name, word);
-        strcpy(CPUsetList[setindex].description, word1);
+        sscanf(line, "%199s %199s", word, word1);
+        strncpy(CPUsetList[setindex].name, word,
+                sizeof(CPUsetList[setindex].name) - 1);
+        CPUsetList[setindex].name[
+            sizeof(CPUsetList[setindex].name) - 1] = '\0';
+        strncpy(CPUsetList[setindex].description, word1,
+                sizeof(CPUsetList[setindex].description) - 1);
+        CPUsetList[setindex].description[
+            sizeof(CPUsetList[setindex].description) - 1]
+            = '\0';
         setindex++;
         NBset++;
     }
@@ -741,7 +748,9 @@ errno_t processinfo_CTRLscreen()
                                 long usec = (long)((pinfolist->createtime[pindex] - sec) * 1000000);
                                 struct tm *tm_info = gmtime(&sec);
                                 strftime(tbuf, 20, "%Y%m%dT%H:%M:%S", tm_info);
-                                sprintf(tbuf + 19, ".%06ld", usec);
+                                snprintf(tbuf + 19,
+                                         sizeof(tbuf) - 19,
+                                         ".%06ld", usec);
                                 TUI_printfw("%s ", tbuf);
                                 if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
                             }

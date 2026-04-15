@@ -221,7 +221,9 @@ errno_t compute_SVD(
             TranspA = 0;
             TranspB = 1;
         }
-        strcpy(imgATA.name, "ATA");
+        snprintf(imgATA.name,
+                 sizeof(imgATA.name),
+                 "%s", "ATA");
         computeSGEMM(imgin, imgin, &imgATA, TranspA, TranspB, GPUdev);
     }
 
@@ -480,7 +482,9 @@ errno_t compute_SVD(
             {
                 int TranspA = 0;
                 int TranspB = 1;
-                strcpy(imgpsinv.name, "psinv");
+                snprintf(imgpsinv.name,
+                         sizeof(imgpsinv.name),
+                         "%s", "psinv");
                 computeSGEMM(imgmNsvec1, *imgmMsvec, &imgpsinv, TranspA, TranspB, GPUdev);
 
                 delete_image(&imgmNsvec1, DELETE_IMAGE_ERRMODE_EXIT);
