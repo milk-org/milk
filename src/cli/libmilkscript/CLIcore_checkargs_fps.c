@@ -60,7 +60,20 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
     int NBarg_processed = 0;
     int cmdi = data.cmdindex;
 
-    for(int arg = 0; arg < nbarg; arg++)
+    /*
+     * Limit iteration to the number of CLI args
+     * actually registered (and thus allocated in
+     * argdata).  The caller may pass nb_bindings
+     * as nbarg, which can exceed nbparam when the
+     * CLIcmddata uses CLICMD_FIELDS_NOPARAM.
+     */
+    int nreg = data.cmd[cmdi].nbparam;
+    if (data.cmd[cmdi].argdata == NULL) {
+        nreg = 0;
+    }
+    int nlimit = (nbarg < nreg) ? nbarg : nreg;
+
+    for(int arg = 0; arg < nlimit; arg++)
     {
         // if argument is part of FPS
         switch(fpscliarg[arg].type)
@@ -561,8 +574,16 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             printf("Command %ld: updating triggerstreamname to value %s\n",
                    data.cmdindex,
                    data.cmdargtoken[2].val.string);
-            strcpy(data.cmd[data.cmdindex].cmdsettings.triggerstreamname,
-                   data.cmdargtoken[2].val.string);
+            strncpy(
+                data.cmd[data.cmdindex]
+                    .cmdsettings.triggerstreamname,
+                data.cmdargtoken[2].val.string,
+                STRINGMAXLEN_IMAGE_NAME - 1);
+            data.cmd[data.cmdindex]
+                .cmdsettings
+                .triggerstreamname[
+                    STRINGMAXLEN_IMAGE_NAME - 1]
+                = '\0';
             dcfpscode = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
@@ -679,7 +700,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             if(data.processnameflag == 1)
             {
                 // Automatically set fps name to be process name up to first instance of character '.'
-                strcpy(FPS_name, data.processname0);
+                strncpy(FPS_name,
+                        data.processname0,
+                        STRINGMAXLEN_FPS_NAME - 1);
+                FPS_name[
+                    STRINGMAXLEN_FPS_NAME - 1]
+                    = '\0';
             }
             else // otherwise, construct name as follows
             {
