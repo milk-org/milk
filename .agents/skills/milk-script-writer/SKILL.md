@@ -27,7 +27,7 @@ scripts.
 
 Generated scripts MUST:
 
-1. Start with `#!/usr/bin/env milk-cli -s`
+1. Start with `#!/usr/bin/env milk-script`
 2. Use `set -e` for error safety
 3. Clean up streams/images at end of script
 4. Use functions for reusable logic
@@ -39,7 +39,7 @@ Generated scripts MUST:
 ## Script Template
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # script_name.milk
 # Brief description of what this script does.

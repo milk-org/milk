@@ -19,7 +19,7 @@ When creating or editing markdown documentation in the
 4. **Shell prompts:** Do NOT use `$` or `milk-cli >`
    prompts in code blocks — they prevent copy-paste.
    Instead, start milk-cli code blocks with
-   `#!/usr/bin/env milk-cli -s` (the shebang line).
+   `#!/usr/bin/env milk-script` (the shebang line).
    Use `#` for comments inside code blocks.
 5. **No V1 macros:** Do not reference `FPS_MAIN_STANDALONE`
    (the V1 macro). Always use `FPS_MAIN_STANDALONE_V2` or

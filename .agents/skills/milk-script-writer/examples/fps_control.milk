@@ -1,4 +1,4 @@
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # fps_control.milk
 # Demonstrates FPS parameter read/write and waits.

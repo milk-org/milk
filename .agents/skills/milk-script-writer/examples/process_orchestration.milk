@@ -1,4 +1,4 @@
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # process_orchestration.milk
 # Demonstrates process lifecycle management.
