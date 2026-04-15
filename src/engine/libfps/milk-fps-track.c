@@ -182,7 +182,17 @@ int main(int argc, char *argv[])
             track_list[track_idx].active = 1;
 
             if(fpsarray[i].md->NBparamMAX != track_list[track_idx].NBparam) {
-                track_list[track_idx].params = (PARAM_TRACK *) realloc(track_list[track_idx].params, fpsarray[i].md->NBparamMAX * sizeof(PARAM_TRACK));
+                PARAM_TRACK *tmp = (PARAM_TRACK *) realloc(
+                    track_list[track_idx].params,
+                    fpsarray[i].md->NBparamMAX
+                    * sizeof(PARAM_TRACK));
+                if (tmp == NULL) {
+                    fprintf(stderr,
+                        "realloc failed for %s params\n",
+                        track_list[track_idx].name);
+                    continue;
+                }
+                track_list[track_idx].params = tmp;
                 // Initialize new ones if any
                 for(int p = track_list[track_idx].NBparam; p < fpsarray[i].md->NBparamMAX; p++) {
                     if (fpsarray[i].parray[p].fpflag & FPFLAG_ACTIVE) {
