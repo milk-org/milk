@@ -19,8 +19,18 @@
 
 void fpsCTRL_crash_handler(int sig)
 {
-    // Restore terminal state
-    endwin();
+    /*
+     * endwin() is NOT async-signal-safe.
+     * Use raw write() + ANSI escapes to reset the
+     * terminal to a usable state:
+     *   \033[?1049l  — leave alternate screen
+     *   \033[?25h    — show cursor
+     *   \033[0m      — reset attributes
+     */
+    static const char reset_seq[] =
+        "\033[?1049l\033[?25h\033[0m\n";
+    (void) write(STDERR_FILENO,
+                 reset_seq, sizeof(reset_seq) - 1);
 
     // Reset signal handler to default and re-raise
     struct sigaction sa_dfl;
