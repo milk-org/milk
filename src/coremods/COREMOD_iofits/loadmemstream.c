@@ -125,7 +125,10 @@ imageID COREMOD_IOFITS_LoadMemStream(
                                    "%s SUCCESS STREAM_LOAD_FORCE_LOCALMEM",
                                    sname);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
-                    sprintf(msg, "%s imLOC %u", sname, *imLOC);
+                    SNPRINTF_CHECK(msg,
+                                   STRINGMAXLEN_FPS_LOGMSG,
+                                   "%s imLOC %u",
+                                   sname, *imLOC);
                     functionparameter_outlog("LOADMEMSTREAM", msg);
                 }
             }
@@ -539,7 +542,10 @@ imageID COREMOD_IOFITS_LoadMemStream(
             char  streamfname[200] = "";
             int   fscanfcnt        = 0;
 
-            sprintf(fname, "./conf/shmim.%s.fname.txt", sname);
+            snprintf(fname,
+                     sizeof(fname),
+                     "./conf/shmim.%s.fname.txt",
+                     sname);
 
             fp = fopen(fname, "r");
             if(fp == NULL)
@@ -712,35 +718,43 @@ imageID COREMOD_IOFITS_LoadMemStream(
         {
 
             case STREAM_LOAD_SOURCE_NOTFOUND:
-                strcpy(locstring, STREAM_LOAD_SOURCE_NOTFOUND_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_NOTFOUND_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_LOCALMEM:
-                strcpy(locstring, STREAM_LOAD_SOURCE_LOCALMEM_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_LOCALMEM_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_SHAREMEM:
-                strcpy(locstring, STREAM_LOAD_SOURCE_SHAREMEM_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_SHAREMEM_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_CONFFITS:
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFFITS_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_CONFFITS_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_CONFNAME:
-                strcpy(locstring, STREAM_LOAD_SOURCE_CONFNAME_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_CONFNAME_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_NULL:
-                strcpy(locstring, STREAM_LOAD_SOURCE_NULL_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_NULL_STRING);
                 break;
 
             case STREAM_LOAD_SOURCE_EXITFAILURE:
-                strcpy(locstring, STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
+                snprintf(locstring, sizeof(locstring),
+                         "%s", STREAM_LOAD_SOURCE_EXITFAILURE_STRING);
                 break;
 
             default:
-                strcpy(locstring, "unknown");
+                snprintf(locstring, sizeof(locstring),
+                         "unknown");
                 break;
         }
 

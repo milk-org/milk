@@ -43,7 +43,10 @@ errno_t write_process_log()
         {
             // extract last word
             char str[STRINGMAXLEN_FULLFILENAME];
-            strcpy(str, dctestpoint.file);
+            snprintf(str,
+                     sizeof(str),
+                     "%s",
+                     dctestpoint.file);
             char *lastword = strrchr(str, '/') + 1;
             fprintf(fplog, " %s", lastword);
         }

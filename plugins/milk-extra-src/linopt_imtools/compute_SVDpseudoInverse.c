@@ -300,7 +300,7 @@ linopt_compute_SVDpseudoInverse(
     }
 
     /* Write eigenvalues to file */
-    sprintf(fname, "eigenv.dat");
+    snprintf(fname, sizeof(fname), "eigenv.dat");
     fp = fopen(fname, "w");
     if(fp == NULL)
     {

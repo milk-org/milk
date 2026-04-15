@@ -46,7 +46,11 @@ static void expand_vars(SCRIPT_CTX *ctx, char *line) {
                 int found = 0;
                 for (int i = 0; i < ctx->num_vars; i++) {
                     if (strcmp(ctx->vars[i].name, var_name) == 0) {
-                        strcpy(r, ctx->vars[i].value);
+                        snprintf(r,
+                                 sizeof(result)
+                                     - (r - result),
+                                 "%s",
+                                 ctx->vars[i].value);
                         r += strlen(ctx->vars[i].value);
                         found = 1;
                         break;
@@ -63,7 +67,7 @@ static void expand_vars(SCRIPT_CTX *ctx, char *line) {
         }
     }
     *r = '\0';
-    strcpy(line, result);
+    snprintf(line, MAX_LINE_LEN, "%s", result);
 }
 
 #include "fps_GetParamIndex.h"
@@ -100,14 +104,20 @@ static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
                 int found = 0;
                 for (int i = 0; i < ctx->num_vars; i++) {
                     if (strcmp(ctx->vars[i].name, vname) == 0) {
-                        strcpy(ctx->vars[i].value, vval);
+                        snprintf(ctx->vars[i].value,
+                                 sizeof(ctx->vars[i].value),
+                                 "%s", vval);
                         found = 1;
                         break;
                     }
                 }
                 if (!found && ctx->num_vars < MAX_VARS) {
-                    strcpy(ctx->vars[ctx->num_vars].name, vname);
-                    strcpy(ctx->vars[ctx->num_vars].value, vval);
+                    snprintf(ctx->vars[ctx->num_vars].name,
+                             sizeof(ctx->vars[0].name),
+                             "%s", vname);
+                    snprintf(ctx->vars[ctx->num_vars].value,
+                             sizeof(ctx->vars[0].value),
+                             "%s", vval);
                     ctx->num_vars++;
                 }
             }
@@ -116,7 +126,9 @@ static int load_and_preprocess(SCRIPT_CTX *ctx, const char *filename, int depth)
             expand_vars(ctx, line);
 
             if (ctx->num_lines < MAX_SCRIPT_LINES) {
-                strcpy(ctx->lines[ctx->num_lines++], line);
+                snprintf(ctx->lines[ctx->num_lines],
+                         MAX_LINE_LEN, "%s", line);
+                ctx->num_lines++;
             } else {
                 printf("Error: Script too large\n");
                 fclose(fp);
@@ -206,7 +218,9 @@ errno_t milkseq_load_script(
                     // Inject block
                     for (int j = i + 1; j < end_idx; j++) {
                         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
-                        strcpy(state->tasklist[t_idx].cmdstring, ctx.lines[j]);
+                        snprintf(state->tasklist[t_idx].cmdstring,
+                                 sizeof(state->tasklist[t_idx].cmdstring),
+                                 "%s", ctx.lines[j]);
                         state->tasklist[t_idx].queue = queue;
                         state->tasklist[t_idx].flag = current_error_policy;
                         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;
@@ -236,7 +250,9 @@ errno_t milkseq_load_script(
                 for (int c = 0; c < count; c++) {
                     for (int j = i + 1; j < end_idx; j++) {
                         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
-                        strcpy(state->tasklist[t_idx].cmdstring, ctx.lines[j]);
+                        snprintf(state->tasklist[t_idx].cmdstring,
+                                 sizeof(state->tasklist[t_idx].cmdstring),
+                                 "%s", ctx.lines[j]);
                         state->tasklist[t_idx].queue = queue;
                         state->tasklist[t_idx].flag = current_error_policy;
                         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;
@@ -251,7 +267,9 @@ errno_t milkseq_load_script(
         }
 
         uint32_t t_idx = state->task_input_counter % NB_FPSCTRL_TASK_MAX;
-        strcpy(state->tasklist[t_idx].cmdstring, cmd);
+        snprintf(state->tasklist[t_idx].cmdstring,
+                 sizeof(state->tasklist[t_idx].cmdstring),
+                 "%s", cmd);
         state->tasklist[t_idx].queue = queue;
         state->tasklist[t_idx].flag = current_error_policy;
         state->tasklist[t_idx].status = FPSTASK_STATUS_ACTIVE | FPSTASK_STATUS_WAITING;

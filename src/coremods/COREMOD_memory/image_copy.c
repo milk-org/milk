@@ -352,8 +352,12 @@ imageID chname_image_ID_IMGID(
 
     if((!imgid_exists(new_name)) && (variable_ID(new_name) == -1))
     {
-        strcpy(imgin->im->name, new_name);
-        strcpy(imgin->name, new_name);
+        snprintf(imgin->im->name,
+                 STRINGMAXLEN_IMAGE_NAME,
+                 "%s", new_name);
+        snprintf(imgin->name,
+                 STRINGMAXLEN_IMAGE_NAME,
+                 "%s", new_name);
     }
     else
     {

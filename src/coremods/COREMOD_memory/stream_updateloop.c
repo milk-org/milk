@@ -536,7 +536,8 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
             cubeindex < NBcubes;
             cubeindex++)
         {
-            sprintf(imname,
+            snprintf(imname,
+                sizeof(imname),
                 "%s_%03ld",
                 IDinname, cubeindex);
             {
@@ -739,12 +740,15 @@ COREMOD_MEMORY_image_streamupdateloop(const char                 *IDinname,
                 clock_gettime(CLOCK_MILK, &tstop);
                 tstoptm = gmtime(&tstop.tv_sec);
 
-                sprintf(msgstring,
-                        "CTRLexit at %02d:%02d:%02d.%03d",
+                snprintf(msgstring,
+                        sizeof(msgstring),
+                        "CTRLexit at"
+                        " %02d:%02d:%02d.%03d",
                         tstoptm->tm_hour,
                         tstoptm->tm_min,
                         tstoptm->tm_sec,
-                        (int)(0.000001 * (tstop.tv_nsec)));
+                        (int)(0.000001
+                              * (tstop.tv_nsec)));
                 strncpy(processinfo->statusmsg,
                         msgstring,
                         STRINGMAXLEN_PROCESSINFO_STATUSMSG - 1);

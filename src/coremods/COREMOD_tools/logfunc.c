@@ -112,7 +112,10 @@ void CORE_logFunctionCall(const int                           funclevel,
 
         FILE *fp;
 
-        sprintf(fname, ".%s.funccalls.log", FunctionName);
+        snprintf(fname,
+                 sizeof(fname),
+                 ".%s.funccalls.log",
+                 FunctionName);
 
         struct tm *uttime;
         tnow   = time(NULL);

@@ -98,7 +98,8 @@ int functionparameter_FPS_tmux_init(
                  "%s %s",
                  argstring,
                  fps->md->nameindexW[i]);
-        strcpy(argstring, argstringcp);
+        snprintf(argstring, argstring_maxlen,
+                 "%s", argstringcp);
     }
 
     // module load string
@@ -112,7 +113,8 @@ int functionparameter_FPS_tmux_init(
                  "%smload %s;",
                  mloadstring,
                  fps->md->modulename[m]);
-        strcpy(mloadstring, mloadstringcp);
+        snprintf(mloadstring, mloadstring_maxlen,
+                 "%s", mloadstringcp);
     }
 
     EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" bash\" C-m",
