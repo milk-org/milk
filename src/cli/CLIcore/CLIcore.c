@@ -584,7 +584,13 @@ static void readline_lazy_init(
     DEBUG_TRACEPOINT("initialize readline");
     rl_attempted_completion_function = CLI_completion;
     rl_initialize();
-    signal(SIGWINCH, sighandler);
+    {
+        struct sigaction sa_winch;
+        sa_winch.sa_handler = sighandler;
+        sigemptyset(&sa_winch.sa_mask);
+        sa_winch.sa_flags = SA_RESTART;
+        sigaction(SIGWINCH, &sa_winch, NULL);
+    }
     CLI_setup_hint_area();
     rl_callback_handler_install(
         prompt,
