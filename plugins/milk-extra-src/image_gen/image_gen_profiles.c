@@ -37,7 +37,8 @@ imageID make_psf_from_profile(const char *profile_name,
     naxes[1] = dcimg[ID].md[0].size[1];
 
     /* compute number of lines */
-    sprintf(lstring, "wc -l %s > tmpcnt.txt", profile_name);
+    snprintf(lstring, sizeof(lstring),
+             "wc -l %s > tmpcnt.txt", profile_name);
     if(system(lstring) == -1)
     {
         printf("ERROR: system(\"%s\"), %s line %d\n",
