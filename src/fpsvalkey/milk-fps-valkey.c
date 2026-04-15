@@ -303,8 +303,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    signal(SIGINT, sigint_handler);
-    signal(SIGTERM, sigint_handler);
+    {
+        struct sigaction sa;
+        sa.sa_handler = sigint_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+    }
 
     /* Connect to Valkey */
     FPS_VALKEY_CTX vctx;

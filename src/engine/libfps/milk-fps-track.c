@@ -99,7 +99,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    signal(SIGINT, sigint_handler);
+    {
+        struct sigaction sa;
+        sa.sa_handler = sigint_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, NULL);
+    }
 
     // Initialize global arrays for scan
     fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));
