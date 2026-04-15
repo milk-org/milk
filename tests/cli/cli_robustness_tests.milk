@@ -1,4 +1,4 @@
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # CLI Robustness Test Suite
 # =========================
