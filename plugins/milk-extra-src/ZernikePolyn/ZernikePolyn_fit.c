@@ -45,8 +45,10 @@ double get_zer(const char *ID_name, long zer_nb, double radius)
     SIZE = dcimg[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius);
 
-    sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
-    sprintf(fname1, "Z_%ld", zer_nb);
+    snprintf(fname, sizeof(fname),
+             "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
+    snprintf(fname1, sizeof(fname1),
+             "Z_%ld", zer_nb);
 
     if((ID = image_ID(fname1, dcimg, dcnimg)) == -1)
     {
@@ -84,8 +86,10 @@ get_zer_crop(const char *ID_name, long zer_nb, double radius, double radius1)
     SIZE = dcimg[ID].md[0].size[0];
     make_disk("disktmp", SIZE, SIZE, 0.5 * SIZE, 0.5 * SIZE, radius1);
 
-    sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
-    sprintf(fname1, "Z_%ld", zer_nb);
+    snprintf(fname, sizeof(fname),
+             "/RAID0/tmp/Zernike/Z_%ld", zer_nb);
+    snprintf(fname1, sizeof(fname1),
+             "Z_%ld", zer_nb);
 
     if((ID = image_ID(fname1, dcimg, dcnimg)) == -1)
     {
@@ -284,8 +288,10 @@ double fit_zer(const char *ID_name,
     {
         for(i = 0; i < maxzer_nb; i++)
         {
-            sprintf(fname, "/RAID0/tmp/Zernike/Z_%ld", i);
-            sprintf(fname1, "Z_%ld", i);
+            snprintf(fname, sizeof(fname),
+                     "/RAID0/tmp/Zernike/Z_%ld", i);
+            snprintf(fname1, sizeof(fname1),
+                     "Z_%ld", i);
 
             if((IDZ = image_ID(fname1, dcimg, dcnimg)) == -1)
             {
