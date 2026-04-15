@@ -60,7 +60,20 @@ int CLIargs_to_FPSparams_setval(CLICMDARGDEF               fpscliarg[],
     int NBarg_processed = 0;
     int cmdi = data.cmdindex;
 
-    for(int arg = 0; arg < nbarg; arg++)
+    /*
+     * Limit iteration to the number of CLI args
+     * actually registered (and thus allocated in
+     * argdata).  The caller may pass nb_bindings
+     * as nbarg, which can exceed nbparam when the
+     * CLIcmddata uses CLICMD_FIELDS_NOPARAM.
+     */
+    int nreg = data.cmd[cmdi].nbparam;
+    if (data.cmd[cmdi].argdata == NULL) {
+        nreg = 0;
+    }
+    int nlimit = (nbarg < nreg) ? nbarg : nreg;
+
+    for(int arg = 0; arg < nlimit; arg++)
     {
         // if argument is part of FPS
         switch(fpscliarg[arg].type)
