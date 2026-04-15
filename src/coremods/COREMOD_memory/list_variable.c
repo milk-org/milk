@@ -13,27 +13,83 @@
 #include "fps.h"
 #include "COREMOD_memory/COREMOD_memory.h"
 
+#include <regex.h>
+#include <string.h>
+
 
 /* ================================================================
  *  COMPUTATION LOGIC
  * ============================================================= */
 
-errno_t list_variable_ID()
+/**
+ * @brief List variables, optionally filtered by regex
+ *
+ * @param regexstr  POSIX extended regex pattern to match
+ *                  variable names. NULL or empty string
+ *                  matches all variables.
+ */
+errno_t list_variable_ID(const char *regexstr)
 {
-    variableID i;
+    regex_t re;
+    int     use_regex = 0;
 
-    for(i = 0; i < dcnvar; i++)
-        if(dcvar[i].used == 1)
+    if(regexstr != NULL && regexstr[0] != '\0')
+    {
+        int rc = regcomp(&re, regexstr,
+                         REG_EXTENDED | REG_NOSUB);
+        if(rc != 0)
         {
-            printf("%4ld %16s %25.18g\n",
-                   i,
-                   dcvar[i].name,
-                   dcvar[i].value.f);
+            char errbuf[128];
+            regerror(rc, &re, errbuf, sizeof(errbuf));
+            printf("ERROR: bad regex \"%s\": %s\n",
+                   regexstr, errbuf);
+            return RETURN_FAILURE;
         }
+        use_regex = 1;
+    }
+
+    for(variableID i = 0; i < dcnvar; i++)
+    {
+        if(dcvar[i].used != 1)
+        {
+            continue;
+        }
+
+        if(use_regex)
+        {
+            if(regexec(&re, dcvar[i].name,
+                       0, NULL, 0) != 0)
+            {
+                continue;
+            }
+        }
+
+        printf("%4ld %16s ", i, dcvar[i].name);
+        if(dcvar[i].type == 0)
+        {
+            printf("%25.18g\n", dcvar[i].value.f);
+        }
+        else if(dcvar[i].type == 1)
+        {
+            printf("%25ld\n", dcvar[i].value.l);
+        }
+        else if(dcvar[i].type == 2)
+        {
+            printf("%25s\n", dcvar[i].value.s);
+        }
+    }
+
+    if(use_regex)
+    {
+        regfree(&re);
+    }
 
     return RETURN_SUCCESS;
 }
 
+/**
+ * @brief List variables to file
+ */
 errno_t list_variable_ID_file(const char *fname)
 {
     imageID i;
@@ -41,13 +97,29 @@ errno_t list_variable_ID_file(const char *fname)
 
     fp = fopen(fname, "w");
     for(i = 0; i < dcnvar; i++)
+    {
         if(dcvar[i].used == 1)
         {
-            fprintf(fp,
-                    "%s=%.18g\n",
+            if(dcvar[i].type == 0)
+            {
+                fprintf(fp, "%s=%.18g\n",
                     dcvar[i].name,
                     dcvar[i].value.f);
+            }
+            else if(dcvar[i].type == 1)
+            {
+                fprintf(fp, "%s=%ld\n",
+                    dcvar[i].name,
+                    dcvar[i].value.l);
+            }
+            else if(dcvar[i].type == 2)
+            {
+                fprintf(fp, "%s=%s\n",
+                    dcvar[i].name,
+                    dcvar[i].value.s);
+            }
         }
+    }
 
     fclose(fp);
 
@@ -65,17 +137,45 @@ static FPS_APP_INFO FPS_app_info_listvar = {
     .description = "list variables in memory"
 };
 
+static char p_regex[FUNCTION_PARAMETER_STRMAXLEN]
+    = "";
+
+#define FPS_PARAMS_listvar(X) \
+    X(".regex", p_regex, \
+      FPTYPE_STRING, 1, \
+      FPFLAG_DEFAULT_INPUT, \
+      "regex filter (empty = all)")
+
+static FPS_CLI_BINDING my_bindings_listvar[] = {
+    FPS_PARAMS_listvar(FPS_X_BINDING)
+};
+
+static const int __attribute__((unused))
+    nb_bindings_listvar =
+    sizeof(my_bindings_listvar) /
+    sizeof(FPS_CLI_BINDING);
+
+static CLICMDARGDEF farg_listvar[] = {
+    FPS_PARAMS_listvar(FPS_X_FARG)
+};
+
 static CLICMDDATA CLIcmddata_listvar = {
     "",
     "",
-    CLICMD_FIELDS_NOPARAM
+    __FILE__,
+    sizeof(farg_listvar) / sizeof(CLICMDARGDEF),
+    farg_listvar, CLICMDFLAG_FPS,
+    NULL, NULL, NULL
 };
 
-FPS_CMDSETTINGS_INIT(dft1, CLIcmddata_listvar, FPS_app_info_listvar)
+FPS_CMDSETTINGS_INIT(
+    dft1, CLIcmddata_listvar,
+    FPS_app_info_listvar)
 
-static errno_t __attribute__((unused)) compute_listvar()
+static errno_t __attribute__((unused))
+compute_listvar()
 {
-    FUNC_CHECK_RETURN(list_variable_ID());
+    FUNC_CHECK_RETURN(list_variable_ID(p_regex));
     return RETURN_SUCCESS;
 }
 
@@ -118,9 +218,11 @@ static CLICMDDATA CLIcmddata = {
     CLICMD_FIELDS_DEFAULTS
 };
 
-FPS_CMDSETTINGS_INIT(dft2, CLIcmddata, FPS_app_info_listvarf)
+FPS_CMDSETTINGS_INIT(
+    dft2, CLIcmddata, FPS_app_info_listvarf)
 
-static errno_t __attribute__((unused)) compute_listvarf()
+static errno_t __attribute__((unused))
+compute_listvarf()
 {
     DEBUG_TRACE_FSTART();
     INSERT_STD_PROCINFO_COMPUTEFUNC_START
@@ -142,8 +244,9 @@ static errno_t CLIfunction_listvar(void)
 {
     return safe_fps_generic_CLIfunction(
         &FPS_app_info_listvar,
-        NULL, &CLIcmddata_listvar,
-        NULL, 0,
+        farg_listvar, &CLIcmddata_listvar,
+        my_bindings_listvar,
+        nb_bindings_listvar,
         compute_listvar);
 }
 
@@ -160,6 +263,10 @@ errno_t
 CLIADDCMD_COREMOD_memory__list_variable()
 {
     {
+        safe_fps_fill_farg_examples(
+            farg_listvar, my_bindings_listvar,
+            nb_bindings_listvar);
+
         int cmdi = RegisterCLIcmd(
             CLIcmddata_listvar,
             CLIfunction_listvar);
