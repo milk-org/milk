@@ -182,6 +182,7 @@ errno_t functionparameter_scan_fps(
 
                     regcomp(&reegex, FPSlist[fpsi], REG_EXTENDED | REG_NEWLINE);
                     int rmatch = regexec(&reegex, dir->d_name, 0, NULL, 0);
+                    regfree(&reegex);
 
                     if(rmatch == 0)
                     {
