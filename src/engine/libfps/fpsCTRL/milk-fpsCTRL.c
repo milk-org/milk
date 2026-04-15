@@ -23,8 +23,12 @@ void fpsCTRL_crash_handler(int sig)
     endwin();
 
     // Reset signal handler to default and re-raise
-    signal(sig, SIG_DFL);
-    kill(getpid(), sig);
+    struct sigaction sa_dfl;
+    sa_dfl.sa_handler = SIG_DFL;
+    sigemptyset(&sa_dfl.sa_mask);
+    sa_dfl.sa_flags = 0;
+    sigaction(sig, &sa_dfl, NULL);
+    raise(sig);
 }
 
 // Standalone main for milk-fpsCTRL
@@ -32,19 +36,40 @@ void fpsCTRL_crash_handler(int sig)
 void print_usage(const char *progname) {
     printf("Usage: %s [options]\n", progname);
     printf("Options:\n");
-    printf("  -m, --match       Force match with fpscmd/fpslist.txt (default: 0)\n");
-    printf("  -n, --name NAME   Filter FPS by name mask (default: \"_ALL\")\n");
-    printf("  -f, --fifo FIFO   Input FIFO name (default: based on terminal name)\n");
-    printf("  -q, --quiet       Quiet mode (suppress TUI output)\n");
-    printf("  -s, --stdio       Use stdio instead of ncurses\n");
-    printf("  -h, --help        Show this help message\n");
+    printf("  -m, --match       "
+        "Force match with "
+        "fpscmd/fpslist.txt "
+        "(default: 0)\n");
+    printf("  -n, --name NAME   "
+        "Filter FPS by name mask "
+        "(default: \"_ALL\")\n");
+    printf("  -f, --fifo FIFO   "
+        "Input FIFO name "
+        "(default: based on "
+        "terminal name)\n");
+    printf("  -q, --quiet       "
+        "Quiet mode (suppress "
+        "TUI output)\n");
+    printf("  -s, --stdio       "
+        "Use stdio instead of "
+        "ncurses\n");
+    printf("  -h, --help        "
+        "Show this help message\n");
     printf("\n");
     printf("Environment Variables:\n");
-    printf("  MILK_FPS_LOGFILE            output logfile for milk-fpsCTRL\n");
-    printf("  FPS_FILTSTRING_NAME         filter by name\n");
-    printf("  FPS_FILTSTRING_KEYWORD      filter by keyword\n");
-    printf("  FPS_FILTSTRING_CALLFUNC     filter by call function in source code\n");
-    printf("  FPS_FILTSTRING_MODULE       filter by source code module\n");
+    printf("  MILK_FPS_LOGFILE     "
+        "       output logfile for "
+        "milk-fpsCTRL\n");
+    printf("  FPS_FILTSTRING_NAME  "
+        "       filter by name\n");
+    printf("  FPS_FILTSTRING_KEYWORD"
+        "      filter by keyword\n");
+    printf("  FPS_FILTSTRING_CALLFUNC"
+        "     filter by call function"
+        " in source code\n");
+    printf("  FPS_FILTSTRING_MODULE"
+        "       filter by source code"
+        " module\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -53,13 +78,19 @@ int main(int argc, char *argv[]) {
     char fpsnamemask[256] = "_ALL";
     char fifoname[512] = "";
 
-    // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
+    // Silence ImageStreamIO library
     // ImageStreamIO_set_verbosity(0);
 
-    // Install crash handlers to ensure terminal settings are restored
-    signal(SIGSEGV, fpsCTRL_crash_handler);
-    signal(SIGBUS, fpsCTRL_crash_handler);
-    signal(SIGABRT, fpsCTRL_crash_handler);
+    // Install crash handlers via sigaction()
+    {
+        struct sigaction sa_crash;
+        sa_crash.sa_handler = fpsCTRL_crash_handler;
+        sigemptyset(&sa_crash.sa_mask);
+        sa_crash.sa_flags = 0;
+        sigaction(SIGSEGV, &sa_crash, NULL);
+        sigaction(SIGBUS, &sa_crash, NULL);
+        sigaction(SIGABRT, &sa_crash, NULL);
+    }
 
     // Allocate global fpsarray
     fpsarray = (FUNCTION_PARAMETER_STRUCT *) calloc(NB_FPS_MAX, sizeof(FUNCTION_PARAMETER_STRUCT));

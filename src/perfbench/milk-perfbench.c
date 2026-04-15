@@ -2308,8 +2308,14 @@ int main(int argc, char *argv[])
 
     /* Register cleanup */
     atexit(cleanup);
-    signal(SIGINT,  sig_handler);
-    signal(SIGTERM, sig_handler);
+    {
+        struct sigaction sa;
+        sa.sa_handler = sig_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+    }
 
     /* FPS setup */
     printf("[1/4] fpsinit -procinfo ...\n");
