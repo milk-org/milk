@@ -496,24 +496,52 @@ errno_t functionparameter_scan_fps(
                                     for(l = 0; l < level; l++)
                                     {
                                         char tmpstring[200];
-                                        strcpy(keywnode[kwnindex].keyword[l],
-                                               fps[fpsindex]
-                                               .parray[pindex0]
-                                               .keyword[l]);
-                                        //printf(" %s", keywnode[kwnindex].keyword[l]);
+                                        strncpy(
+                                            keywnode[kwnindex]
+                                                .keyword[l],
+                                            fps[fpsindex]
+                                                .parray[pindex0]
+                                                .keyword[l],
+                                            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
+                                            - 1);
+                                        keywnode[kwnindex]
+                                            .keyword[l][
+                                            FUNCTION_PARAMETER_KEYWORD_STRMAXLEN
+                                            - 1] = '\0';
                                         if(l == 0)
                                         {
-                                            strcpy(keywnode[kwnindex].keywordfull,
-                                                   keywnode[kwnindex].keyword[l]);
+                                            strncpy(
+                                                keywnode[kwnindex]
+                                                    .keywordfull,
+                                                keywnode[kwnindex]
+                                                    .keyword[l],
+                                                sizeof(keywnode[kwnindex]
+                                                       .keywordfull)
+                                                - 1);
+                                            keywnode[kwnindex]
+                                                .keywordfull[
+                                                sizeof(keywnode[kwnindex]
+                                                       .keywordfull)
+                                                - 1] = '\0';
                                         }
                                         else
                                         {
-                                            snprintf(tmpstring,
-                                                     200,
-                                                     ".%s",
-                                                     keywnode[kwnindex].keyword[l]);
-                                            strcat(keywnode[kwnindex].keywordfull,
-                                                   tmpstring);
+                                            snprintf(
+                                                tmpstring,
+                                                sizeof(tmpstring),
+                                                ".%s",
+                                                keywnode[kwnindex]
+                                                    .keyword[l]);
+                                            strncat(
+                                                keywnode[kwnindex]
+                                                    .keywordfull,
+                                                tmpstring,
+                                                sizeof(keywnode[kwnindex]
+                                                       .keywordfull)
+                                                - strlen(
+                                                    keywnode[kwnindex]
+                                                        .keywordfull)
+                                                - 1);
                                         }
                                     }
 

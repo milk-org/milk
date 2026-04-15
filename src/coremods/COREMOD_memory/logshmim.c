@@ -338,11 +338,15 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
     char FITSffilename[
         STRINGMAXLEN_FULLFILENAME];
-    strcpy(FITSffilename, "null");
+    snprintf(FITSffilename,
+             sizeof(FITSffilename),
+             "null");
 
     char ASCIITIMEffilename[
         STRINGMAXLEN_FULLFILENAME];
-    strcpy(ASCIITIMEffilename, "null");
+    snprintf(ASCIITIMEffilename,
+             sizeof(ASCIITIMEffilename),
+             "null");
 
     double *array_time =
         (double *) malloc(sizeof(double)
@@ -461,10 +465,12 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                         uttimeStart = gmtime(&t);
 
                         char hrminstring[6];
-                        sprintf(hrminstring,
-                                "%02d:%02d",
-                                uttimeStart->tm_hour,
-                                uttimeStart->tm_min);
+                        snprintf(
+                            hrminstring,
+                            sizeof(hrminstring),
+                            "%02d:%02d",
+                            uttimeStart->tm_hour,
+                            uttimeStart->tm_min);
                         if(VERBOSE > 0)
                         {
                             printf("hrmin: %s\n",
@@ -701,10 +707,17 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     static int
                         iret_savefits;
 
-                    strcpy(tmsg->fname,
-                           FITSffilename);
-                    strcpy(tmsg->fnameascii,
-                           ASCIITIMEffilename);
+                    snprintf(
+                        tmsg->fname,
+                        sizeof(tmsg->fname),
+                        "%s",
+                        FITSffilename);
+                    snprintf(
+                        tmsg->fnameascii,
+                        sizeof(
+                            tmsg->fnameascii),
+                        "%s",
+                        ASCIITIMEffilename);
                     tmsg->saveascii = 1;
                     tmsg->cubesize =
                         frameindex;
@@ -721,9 +734,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
                     if(buffindex == 0)
                     {
-                        strcpy(tmsg->iname,
-                               imgbuff0.md
-                               ->name);
+                        snprintf(
+                            tmsg->iname,
+                            sizeof(
+                                tmsg->iname),
+                            "%s",
+                            imgbuff0.md
+                            ->name);
                         tmsg->arrayindex =
                             array_cnt0;
                         tmsg->arraycnt0 =
@@ -737,9 +754,13 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
                     }
                     else
                     {
-                        strcpy(tmsg->iname,
-                               imgbuff1.md
-                               ->name);
+                        snprintf(
+                            tmsg->iname,
+                            sizeof(
+                                tmsg->iname),
+                            "%s",
+                            imgbuff1.md
+                            ->name);
                         tmsg->arrayindex =
                             &array_cnt0[
                                 cubesize];
@@ -766,16 +787,22 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
                     if(compressON == 0)
                     {
-                        strcpy(
+                        snprintf(
                             tmsg
                             ->compress_string,
+                            sizeof(
+                                tmsg
+                                ->compress_string),
                             "");
                     }
                     else
                     {
-                        strcpy(
+                        snprintf(
                             tmsg
                             ->compress_string,
+                            sizeof(
+                                tmsg
+                                ->compress_string),
                             "[compress R"
                             " 1,1,10000]");
                     }

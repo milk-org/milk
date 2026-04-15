@@ -102,8 +102,16 @@ int fpsCTRL_TUI_process_user_key(
                     }
                     fpsCTRLvar->milkseq_state = milkseq_connect(names[next_idx]);
                     if (fpsCTRLvar->milkseq_state) {
-                        strncpy(fpsCTRLvar->milkseq_name, names[next_idx], 79);
-                        fpsCTRLvar->milkseq_name[79] = '\0';
+                        strncpy(
+                            fpsCTRLvar->milkseq_name,
+                            names[next_idx],
+                            sizeof(fpsCTRLvar
+                                   ->milkseq_name)
+                            - 1);
+                        fpsCTRLvar->milkseq_name[
+                            sizeof(fpsCTRLvar
+                                   ->milkseq_name)
+                            - 1] = '\0';
                     } else {
                         fpsCTRLvar->milkseq_name[0] = '\0';
                     }

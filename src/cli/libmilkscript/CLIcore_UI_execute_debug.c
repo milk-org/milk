@@ -65,7 +65,10 @@ errno_t write_tracedebugfile()
 
                 /* Extract last word from path */
                 char str[STRINGMAXLEN_FULLFILENAME];
-                strcpy(str, dctestptarr[j].file);
+                snprintf(str,
+                         sizeof(str),
+                         "%s",
+                         dctestptarr[j].file);
                 char *slash = strrchr(str, '/');
                 char *lastword =
                     (slash != NULL) ? (slash + 1) : str;

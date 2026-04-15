@@ -119,7 +119,10 @@ int find_streams(
                     }
                     else
                     {
-                        strcpy(linkname, basename(linknamefull));
+                        snprintf(linkname,
+                                 sizeof(linkname),
+                                 "%s",
+                                 basename(linknamefull));
 
                         int          lOK = 1;
                         unsigned int ii  = 0;
