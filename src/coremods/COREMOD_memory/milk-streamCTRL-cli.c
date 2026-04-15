@@ -315,8 +315,14 @@ int main(int argc, char *argv[])
     }
 
     // ImageStreamIO_set_verbosity(0);
-    signal(SIGINT, sighandler);
-    signal(SIGTERM, sighandler);
+    {
+        struct sigaction sa;
+        sa.sa_handler = sighandler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+    }
 
     const char   *shmdir = get_shmdir();
     stream_entry  entries[MAX_STREAMS];
