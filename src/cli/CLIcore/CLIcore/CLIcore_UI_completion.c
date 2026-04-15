@@ -173,7 +173,9 @@ void rl_cb_linehandler(char *linein)
     data.CLIexecuteCMDready = 1;
 
     // copy input into data.CLIcmdline
-    strcpy(data.CLIcmdline, linein);
+    strncpy(data.CLIcmdline, linein,
+            STRINGMAXLEN_CLICMDLINE - 1);
+    data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
     /* Record raw prompt in readline history
      * and structured log BEFORE any expansion

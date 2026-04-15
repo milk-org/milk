@@ -87,6 +87,44 @@ retry_fuzzy:
     if(data.CLImatchMode
        == CLICOMPLETIONMODE_COMMANDS)
     {
+        /* Built-in keywords not in data.cmd[] */
+        static const char *builtins[] = {
+            "if", "elif", "else", "fi",
+            "for", "while", "until",
+            "do", "done",
+            "case", "esac", "select",
+            "function",
+            ".", "source",
+            "break", "continue", "return",
+            "true", "false",
+            "exit", "shift",
+            "assert", "assigncheck",
+            "dpdigits",
+            "set", "export", "readonly",
+            "local", "declare", "let",
+            "eval", "type", "command",
+            "trap", "watch", "time",
+            "timeout", "wait", "wait_any",
+            "printf", "echo",
+            "getopts", "mapfile",
+            "alias", "unalias",
+            "basename", "dirname",
+            "pushd", "popd", "dirs",
+            "seq", "[[",
+            "procctl", "procwait",
+            "procstat",
+            "waitfor_stream",
+            "waitfor_fps",
+            "on_update", "on_fpschange",
+            "include_once",
+            "savescript", "savehistory",
+            NULL
+        };
+        static const unsigned int nbuiltins =
+            sizeof(builtins) / sizeof(builtins[0])
+            - 1; /* exclude NULL */
+
+        /* Phase 1: registered commands */
         while(list_index < data.NBcmd)
         {
             name = data.cmd[list_index].key;
@@ -102,6 +140,31 @@ retry_fuzzy:
             else
             {
                 /* Fuzzy: substring match */
+                if(strstr(name, text) != NULL)
+                {
+                    return (dupstr(name));
+                }
+            }
+        }
+
+        /* Phase 2: built-in keywords */
+        unsigned int bi =
+            list_index - data.NBcmd;
+        while(bi < nbuiltins)
+        {
+            name = (char *) builtins[bi];
+            list_index++;
+            bi++;
+            if(generator_fuzzy_pass == 0)
+            {
+                if(strncmp(name, text, len)
+                   == 0)
+                {
+                    return (dupstr(name));
+                }
+            }
+            else
+            {
                 if(strstr(name, text) != NULL)
                 {
                     return (dupstr(name));
@@ -664,9 +727,13 @@ CLI_completion(
     {
         char  str[200];
         char *firstword;
-        firstword = strcpy(str,
-                           rl_line_buffer);
-        strtok(str, " ");
+        strncpy(str, rl_line_buffer,
+                sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
+        firstword = strtok(str, " ");
+        if (firstword == NULL) {
+            return NULL;
+        }
         int      cmdimatch = -1;
         uint32_t cmdi      = 0;
         while((cmdimatch == -1)

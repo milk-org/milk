@@ -787,6 +787,38 @@ fi
 mem.rm _clitest_shm_s
 
 # ============================================
+# SECTION 18c: Assigncheck
+# ============================================
+
+#DESC: Assigncheck initial creation
+#EXPECT:OK
+assigncheck _ac_test 10 0
+
+#DESC: Assigncheck test pass (exact match)
+#EXPECT:OK
+assigncheck _ac_test 10 0.1
+
+#DESC: Assigncheck test pass (within tolerance)
+#EXPECT:OK
+assigncheck _ac_test 10.05 0.1
+
+#DESC: Assigncheck test fail (outside tolerance, no exit)
+#EXPECT:OK
+assigncheck _ac_test 20 0.1
+
+#DESC: Assigncheck usage error (missing args)
+#EXPECT:OK
+assigncheck _ac_test 20
+
+#DESC: Assigncheck evaluate error
+#EXPECT:OK
+assigncheck _ac_test 20 /0
+
+#DESC: Clean up assigncheck variables
+#EXPECT:OK
+unset _ac_test
+
+# ============================================
 # SECTION 19: Cleanup
 # ============================================
 
