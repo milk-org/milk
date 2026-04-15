@@ -80,10 +80,22 @@ PROCESSINFO *processinfo_setup(
     DEBUG_TRACEPOINT(" ");
 
     processinfo->loopstat = 0; // loop initialization
-    strcpy(processinfo->source_FUNCTION, functionname);
-    strcpy(processinfo->source_FILE, filename);
+    strncpy(processinfo->source_FUNCTION,
+            functionname,
+            STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1);
+    processinfo->source_FUNCTION[
+        STRINGMAXLEN_PROCESSINFO_SRCFUNC - 1] = '\0';
+    strncpy(processinfo->source_FILE,
+            filename,
+            STRINGMAXLEN_PROCESSINFO_SRCFILE - 1);
+    processinfo->source_FILE[
+        STRINGMAXLEN_PROCESSINFO_SRCFILE - 1] = '\0';
     processinfo->source_LINE = linenumber;
-    strcpy(processinfo->description, descriptionstring);
+    strncpy(processinfo->description,
+            descriptionstring,
+            STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1);
+    processinfo->description[
+        STRINGMAXLEN_PROCESSINFO_DESCRIPTION - 1] = '\0';
     processinfo_WriteMessage(processinfo, msgstring);
     processinfoActive = 1;
 
