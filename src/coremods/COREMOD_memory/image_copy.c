@@ -303,10 +303,11 @@ imageID copy_image_ID_IMGID(
            imgin->im->array.raw,
            ImageStreamIO_typesize(datatype) * nelement);
 
-    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
-
-    imgout->md[0].write = 0;
     imgout->md[0].cnt0++;
+    imgout->md[0].write = 0;
+
+    COREMOD_MEMORY_image_set_sempost_byID(
+        imgout->ID, -1);
 
     return imgout->ID;
 }
@@ -450,12 +451,16 @@ errno_t COREMOD_MEMORY_cp2shm_IMGID(
 
     imgout->md[0].write = 1;
 
-    memcpy(imgout->im->array.raw, imgin->im->array.raw,
-           ImageStreamIO_typesize(datatype) * imgin->md[0].nelement);
+    memcpy(imgout->im->array.raw,
+           imgin->im->array.raw,
+           ImageStreamIO_typesize(datatype)
+               * imgin->md[0].nelement);
 
-    COREMOD_MEMORY_image_set_sempost_byID(imgout->ID, -1);
     imgout->md[0].cnt0++;
     imgout->md[0].write = 0;
+
+    COREMOD_MEMORY_image_set_sempost_byID(
+        imgout->ID, -1);
 
     return RETURN_SUCCESS;
 }
