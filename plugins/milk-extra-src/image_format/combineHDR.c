@@ -93,7 +93,8 @@ errno_t combine_HDR_image(const char *__restrict flistname,
             imageID ID;
             printf("Input file [%11.6f] : %s\n", etime, FITSfname);
             etimearray[HDRindex] = etime;
-            sprintf(imHDRin, "imHRDin_%03d", HDRindex);
+            snprintf(imHDRin, sizeof(imHDRin),
+                     "imHRDin_%03d", HDRindex);
             load_fits(FITSfname, imHDRin, 2, &ID);
             IDarray[HDRindex] = ID;
             HDRindex++;

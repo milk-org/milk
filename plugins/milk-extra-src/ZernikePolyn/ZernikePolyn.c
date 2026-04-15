@@ -581,7 +581,8 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 dcimg[ID].array.F[jj * SIZE + ii] = 0.0f;
             }
         }
-    sprintf(fname, "%s%ld", ID_name, j);
+    snprintf(fname, sizeof(fname),
+             "%s%ld", ID_name, j);
     save_fl_fits("ztmp", fname);
 
     for(j = 1; j < zer_nb; j++)
@@ -604,7 +605,8 @@ errno_t mk_zer_series(const char *ID_name, long SIZE, long zer_nb, float rpix)
                 }
             }
 
-        sprintf(fname, "%s%04ld", ID_name, j);
+        snprintf(fname, sizeof(fname),
+                 "%s%04ld", ID_name, j);
         save_fl_fits("ztmp", fname);
     }
 

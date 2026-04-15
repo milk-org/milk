@@ -218,13 +218,15 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         printf("% ld", (long) dcimg[ID].md[0].size[0]);
 
         unsigned long j = 0;
-        sprintf(vname, "imsize%ld", j);
+        snprintf(vname, sizeof(vname),
+                 "imsize%ld", j);
 
         create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
         for(j = 1; j < dcimg[ID].md[0].naxis; j++)
         {
             printf(" %ld", (long) dcimg[ID].md[0].size[j]);
-            sprintf(vname, "imsize%ld", j);
+            snprintf(vname, sizeof(vname),
+                     "imsize%ld", j);
             create_variable_ID(vname, 1.0 * dcimg[ID].md[0].size[j]);
         }
         printf(" ]\n");
@@ -237,55 +239,68 @@ errno_t info_image_stats(const char *ID_name, const char *options)
         switch(datatype)
         {
             case _DATATYPE_FLOAT:
-                sprintf(type, "  FLOAT");
+                snprintf(type, sizeof(type),
+                         "  FLOAT");
                 break;
 
             case _DATATYPE_INT8:
-                sprintf(type, "   INT8");
+                snprintf(type, sizeof(type),
+                         "   INT8");
                 break;
 
             case _DATATYPE_UINT8:
-                sprintf(type, "  UINT8");
+                snprintf(type, sizeof(type),
+                         "  UINT8");
                 break;
 
             case _DATATYPE_INT16:
-                sprintf(type, "  INT16");
+                snprintf(type, sizeof(type),
+                         "  INT16");
                 break;
 
             case _DATATYPE_UINT16:
-                sprintf(type, " UINT16");
+                snprintf(type, sizeof(type),
+                         " UINT16");
                 break;
 
             case _DATATYPE_INT32:
-                sprintf(type, "  INT32");
+                snprintf(type, sizeof(type),
+                         "  INT32");
                 break;
 
             case _DATATYPE_UINT32:
-                sprintf(type, " UINT32");
+                snprintf(type, sizeof(type),
+                         " UINT32");
                 break;
 
             case _DATATYPE_INT64:
-                sprintf(type, "  INT64");
+                snprintf(type, sizeof(type),
+                         "  INT64");
                 break;
 
             case _DATATYPE_UINT64:
-                sprintf(type, " UINT64");
+                snprintf(type, sizeof(type),
+                         " UINT64");
                 break;
 
             case _DATATYPE_DOUBLE:
-                sprintf(type, " DOUBLE");
+                snprintf(type, sizeof(type),
+                         " DOUBLE");
                 break;
 
             case _DATATYPE_COMPLEX_FLOAT:
-                sprintf(type, "CFLOAT");
+                snprintf(type, sizeof(type),
+                         "CFLOAT");
                 break;
 
             case _DATATYPE_COMPLEX_DOUBLE:
-                sprintf(type, "CDOUBLE");
+                snprintf(type, sizeof(type),
+                         "CDOUBLE");
                 break;
 
             default:
-                sprintf(type, "??????");
+                snprintf(type, sizeof(type),
+                         "??????");
                 break;
         }
 

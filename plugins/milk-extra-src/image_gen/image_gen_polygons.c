@@ -299,22 +299,28 @@ imageID IMAGE_gen_segments2WFmodes(const char *prefix,
         {
 
             case 1:
-                sprintf(imname, "%s%01ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%01ld", prefix, seg);
                 break;
             case 2:
-                sprintf(imname, "%s%02ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%02ld", prefix, seg);
                 break;
             case 3:
-                sprintf(imname, "%s%03ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%03ld", prefix, seg);
                 break;
             case 4:
-                sprintf(imname, "%s%04ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%04ld", prefix, seg);
                 break;
             case 5:
-                sprintf(imname, "%s%05ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%05ld", prefix, seg);
                 break;
             case 6:
-                sprintf(imname, "%s%06ld", prefix, seg);
+                snprintf(imname, sizeof(imname),
+                         "%s%06ld", prefix, seg);
                 break;
 
             default:
