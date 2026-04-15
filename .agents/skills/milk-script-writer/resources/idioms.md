@@ -8,7 +8,7 @@ Use these as building blocks when generating scripts.
 ## 1. Script Boilerplate
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 #
 # myscript.milk — Brief description
 #
@@ -211,7 +211,7 @@ done
 ## 11. Configuration via getopts
 
 ```bash
-#!/usr/bin/env milk-cli -s
+#!/usr/bin/env milk-script
 # Parse -s <stream> -g <gain> -n <niter>
 
 _stream=default

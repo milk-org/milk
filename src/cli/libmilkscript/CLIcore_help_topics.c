@@ -508,10 +508,13 @@ void help_topic_scripting(void)
     printf("  Startup: "
            C_CMD "milk-cli -s <file>" C_RST
            "  run on launch\n");
+    printf("  Startup: "
+           C_CMD "milk-script <file>" C_RST
+           "  standalone runner\n");
     printf("  Auto-load: "
            C_CMD "~/.milkrc" C_RST " sourced at startup\n");
     printf("  Shebang:   "
-           C_NOTE "#!/usr/bin/env milk-cli -s" C_RST "\n");
+           C_NOTE "#!/usr/bin/env milk-script" C_RST "\n");
     printf("\n");
     printf(C_HDR "Built-in Commands:\n" C_RST);
     printf(C_CMD "  echo <str>         " C_RST "Print a line\n");

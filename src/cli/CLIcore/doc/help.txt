@@ -264,9 +264,10 @@ SCRIPT FILES
 
 Startup script:
 	milk-cli -s myscript.milk
+	milk-script myscript.milk
 
 Shebang for executable scripts:
-	#!/usr/bin/env milk-cli -s
+	#!/usr/bin/env milk-script
 
 -----------------------------------------------------------------------------------
 ARITHMETIC OPERATIONS
