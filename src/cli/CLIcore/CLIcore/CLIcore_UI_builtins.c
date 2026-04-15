@@ -361,30 +361,30 @@ errno_t cli_syntax_highlight_toggle(void)
     {
         const char *arg =
             data.cmdargtoken[1].val.string;
-        if(strcmp(arg, "on") == 0
-                || strcmp(arg, "1") == 0)
+        if(strcmp(arg, "on") == 0)
         {
-            data.syntax_highlight = 1;
-            printf("Syntax highlighting ON\n");
+            data.syntax_highlight = 2; // Default to full TS
+            printf("Syntax highlighting ON (level 2)\n");
         }
-        else if(strcmp(arg, "off") == 0
-                || strcmp(arg, "0") == 0)
+        else if(strcmp(arg, "off") == 0)
         {
             data.syntax_highlight = 0;
             printf("Syntax highlighting OFF\n");
         }
+        else if(arg[0] >= '0' && arg[0] <= '2' && arg[1] == '\0')
+        {
+            data.syntax_highlight = arg[0] - '0';
+            printf("Syntax highlighting set to level %d\n", data.syntax_highlight);
+        }
         else
         {
-            printf("Usage: synhl [on|off]\n");
+            printf("Usage: synhl [on|off|0|1|2]\n");
         }
     }
     else
     {
-        data.syntax_highlight =
-            !data.syntax_highlight;
-        printf("Syntax highlighting %s\n",
-               data.syntax_highlight
-               ? "ON" : "OFF");
+        data.syntax_highlight = (data.syntax_highlight + 1) % 3;
+        printf("Syntax highlighting level %d\n", data.syntax_highlight);
     }
     return RETURN_SUCCESS;
 }

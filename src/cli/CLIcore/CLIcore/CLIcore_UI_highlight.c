@@ -31,6 +31,7 @@
 
 #include "CLIcore.h"
 #include "CLIcore_UI_execute.h"
+#include "treesitter/cli_treesitter.h"
 
 
 /**
@@ -129,6 +130,29 @@ void cli_highlight_redisplay(void)
         rl_redisplay();
         return;
     }
+
+#ifdef USE_TREESITTER
+    if(data.syntax_highlight >= 2)
+    {
+        // Tree-sitter performs its own rendering
+        // including cursor save/restore
+        rl_redisplay();
+        fprintf(rl_outstream, "\033[s"); // Save cursor
+        
+        // Move to start of line in case readline cursor is in the middle
+        int back = rl_point;
+        if(back > 0)
+        {
+            fprintf(rl_outstream, "\033[%dD", back);
+        }
+        
+        cli_ts_highlight_line(rl_line_buffer, strlen(rl_line_buffer), rl_outstream);
+        
+        fprintf(rl_outstream, "\033[u"); // Restore cursor
+        fflush(rl_outstream);
+        return;
+    }
+#endif
 
     /*
      * Let readline draw normally first so its
