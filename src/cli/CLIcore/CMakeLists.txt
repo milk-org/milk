@@ -25,6 +25,29 @@ pkg_check_modules(CFITSIO cfitsio)
 
 find_package(Threads REQUIRED)
 
+# Tree-sitter: optional full-line syntax highlighting
+if(USE_TREESITTER)
+  # Some systems only have the versioned .so.0 symlink
+  # (no -dev package). Temporarily extend suffixes.
+  set(_saved_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+  list(APPEND CMAKE_FIND_LIBRARY_SUFFIXES
+    ".so.0" ".so.0.22" ".so.0.24")
+  find_library(TREESITTER_LIB NAMES tree-sitter)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ${_saved_suffixes})
+  if(TREESITTER_LIB)
+    message(STATUS
+      "Found tree-sitter: ${TREESITTER_LIB}")
+    set(TREESITTER_FOUND TRUE)
+  else()
+    message(STATUS
+      "tree-sitter library not found; "
+      "falling back to legacy highlighting")
+    set(TREESITTER_FOUND FALSE)
+  endif()
+else()
+  set(TREESITTER_FOUND FALSE)
+endif()
+
 set(CORE_FILES
     CLIcore.c
     CLIcore_cmd_registry.c
@@ -39,7 +62,14 @@ set(CORE_FILES
     CLIcore/CLIcore_UI_history.c
     CLIcore/CLIcore_UI_history_display.c
     CLIcore/CLIcore_UI_history_cmds.c
-    CLIcore/CLIcore_UI_prompt.c)
+    CLIcore/CLIcore_UI_prompt.c
+    treesitter/cli_treesitter.c)
+
+# Add vendored parser when tree-sitter is available
+if(TREESITTER_FOUND)
+  list(APPEND CORE_FILES
+    treesitter/milkcli_parser.c)
+endif()
     
     link_directories(${NCURSES_LIBRARY_DIRS})
     
@@ -91,6 +121,15 @@ endif()
 
 if(USE_NCURSES)
     target_compile_definitions(CLIcore PUBLIC USE_NCURSES)
+endif()
+
+if(TREESITTER_FOUND)
+    target_compile_definitions(CLIcore
+        PUBLIC USE_TREESITTER)
+    target_include_directories(CLIcore
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/treesitter)
+    target_link_libraries(CLIcore
+        PUBLIC ${TREESITTER_LIB})
 endif()
 
 target_link_libraries(CLIcore
