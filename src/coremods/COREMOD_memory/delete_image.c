@@ -215,7 +215,6 @@ errno_t delete_image(
     }
     else
     {
-        dcimg[ID].used = 0;
         img->ID = -1;
 
         if(dcimg[ID].md[0].shared == 1)
@@ -278,7 +277,7 @@ errno_t delete_image(
                 free(dcimg[ID].array.UI8);
                 dcimg[ID].array.UI8 = NULL;
             }
-            if(dcimg[ID].md[0].datatype
+            else if(dcimg[ID].md[0].datatype
                 == _DATATYPE_INT32)
             {
                 if(dcimg[ID].array.SI32 == NULL)
@@ -289,7 +288,7 @@ errno_t delete_image(
                 free(dcimg[ID].array.SI32);
                 dcimg[ID].array.SI32 = NULL;
             }
-            if(dcimg[ID].md[0].datatype
+            else if(dcimg[ID].md[0].datatype
                 == _DATATYPE_FLOAT)
             {
                 if(dcimg[ID].array.F == NULL)
@@ -300,7 +299,7 @@ errno_t delete_image(
                 free(dcimg[ID].array.F);
                 dcimg[ID].array.F = NULL;
             }
-            if(dcimg[ID].md[0].datatype
+            else if(dcimg[ID].md[0].datatype
                 == _DATATYPE_DOUBLE)
             {
                 if(dcimg[ID].array.D == NULL)
@@ -311,7 +310,7 @@ errno_t delete_image(
                 free(dcimg[ID].array.D);
                 dcimg[ID].array.D = NULL;
             }
-            if(dcimg[ID].md[0].datatype
+            else if(dcimg[ID].md[0].datatype
                 == _DATATYPE_COMPLEX_FLOAT)
             {
                 if(dcimg[ID].array.CF == NULL)
@@ -322,7 +321,7 @@ errno_t delete_image(
                 free(dcimg[ID].array.CF);
                 dcimg[ID].array.CF = NULL;
             }
-            if(dcimg[ID].md[0].datatype
+            else if(dcimg[ID].md[0].datatype
                 == _DATATYPE_COMPLEX_DOUBLE)
             {
                 if(dcimg[ID].array.CD == NULL)
@@ -348,6 +347,9 @@ errno_t delete_image(
                 dcimg[ID].kw = NULL;
             }
         }
+
+        // Mark slot free LAST, after all cleanup
+        dcimg[ID].used = 0;
     }
 
 
