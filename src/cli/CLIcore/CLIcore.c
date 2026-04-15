@@ -88,6 +88,7 @@
 #include "CLIcore_setSHMdir.h"
 #include "CLIcore_signals.h"
 #include "../libmilkscript/milkscript.h"
+#include "treesitter/cli_treesitter.h"
 
 /*-----------------------------------------
 *       Globals exported to all modules
@@ -732,8 +733,12 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
     // Load persistent command aliases
     cli_alias_load();
 
-    // Enable syntax highlighting by default
-    data.syntax_highlight = 1;
+    // Initialize tree-sitter parser/query
+    cli_ts_init();
+
+    // Enable syntax highlighting by default based on terminal capabilities
+    // (level 2 = 256-color tree-sitter, level 1 = 16-color legacy)
+    data.syntax_highlight = (cli_ts_detect_color_level() >= 2) ? 2 : 1;
     
     // Disable command timing by default
     data.print_cmd_timing = 0;
@@ -1094,6 +1099,8 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
 #endif
 
     cli_trap_run_exit();
+
+    cli_ts_cleanup();
 
     DEBUG_TRACE_FEXIT();
     return RETURN_SUCCESS;
