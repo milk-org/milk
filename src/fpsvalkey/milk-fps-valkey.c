@@ -503,11 +503,20 @@ int main(int argc, char *argv[])
             if (fpsarray[i].md->NBparamMAX
                 != track_list[tidx].NBparam)
             {
-                track_list[tidx].params =
+                PARAM_TRACK *tmp =
                     (PARAM_TRACK *) realloc(
                         track_list[tidx].params,
                         fpsarray[i].md->NBparamMAX
                         * sizeof(PARAM_TRACK));
+                if (tmp == NULL)
+                {
+                    fprintf(stderr,
+                        "realloc failed for %s"
+                        " params\n",
+                        track_list[tidx].name);
+                    continue;
+                }
+                track_list[tidx].params = tmp;
 
                 for (int p =
                          track_list[tidx].NBparam;
