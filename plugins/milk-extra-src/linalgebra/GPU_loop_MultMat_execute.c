@@ -84,7 +84,8 @@ void __attribute__((hot)) *GPUcomputeMVM_function(void *ptr)
     int  logfunc_level     = 0;
     int  logfunc_level_max = 1;
     char commentstring[200];
-    sprintf(commentstring, "MVM compute on GPU");
+    snprintf(commentstring, sizeof(commentstring),
+             "MVM compute on GPU");
     CORE_logFunctionCall(logfunc_level,
                          logfunc_level_max,
                          0,

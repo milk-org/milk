@@ -92,16 +92,22 @@ static MILK_HOT errno_t compute_function()
 
     TUIscreenarray[0].index = 1;
     TUIscreenarray[0].keych = 'h';
-    strcpy(TUIscreenarray[0].name, "[h] Help");
+    snprintf(TUIscreenarray[0].name,
+             sizeof(TUIscreenarray[0].name),
+             "%s", "[h] Help");
 
 #ifdef USE_NCURSES
     TUIscreenarray[1].index = 2;
     TUIscreenarray[1].keych = KEY_F(2);
-    strcpy(TUIscreenarray[1].name, "[F2] summary");
+    snprintf(TUIscreenarray[1].name,
+             sizeof(TUIscreenarray[1].name),
+             "%s", "[F2] summary");
 
     TUIscreenarray[2].index = 3;
     TUIscreenarray[2].keych = KEY_F(3);
-    strcpy(TUIscreenarray[2].name, "[F3] timing");
+    snprintf(TUIscreenarray[2].name,
+             sizeof(TUIscreenarray[2].name),
+             "%s", "[F3] timing");
 #endif
 
 
@@ -281,7 +287,7 @@ errno_t printstatus(imageID ID)
 
         TUI_printfw("%s  ", image->name);
         datatype = image->md->datatype;
-        sprintf(str,
+        snprintf(str, sizeof(str),
                 "%s [ %6ld",
                 ImageStreamIO_typename(datatype),
                 (long) image->md->size[0]);
@@ -294,11 +300,13 @@ errno_t printstatus(imageID ID)
                      str,
                      (long) image->md->size[j]);
 
-            strcpy(str, str1);
+            snprintf(str, sizeof(str),
+                     "%s", str1);
         }
 
         snprintf(str1, sizeof(str1), "%.4000s]", str);
-        strcpy(str, str1);
+        snprintf(str, sizeof(str),
+                 "%s", str1);
 
         TUI_printfw("%-28s\n", str);
     }
@@ -694,7 +702,7 @@ errno_t printstatus(imageID ID)
                 {
                     customcolor = 2;
                 }
-                sprintf(line1,
+                snprintf(line1, sizeof(line1),
                         "[%12.4e - %12.4e] %7ld",
                         (minPV + 1.0 * (maxPV - minPV) * h / NBhistopt),
                         (minPV + 1.0 * (maxPV - minPV) * (h + 1) / NBhistopt),

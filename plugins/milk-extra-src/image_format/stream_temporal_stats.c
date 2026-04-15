@@ -276,11 +276,15 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
-    strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_name);
+    snprintf(CLIcmddata.cmdsettings->triggerstreamname,
+             sizeof(CLIcmddata.cmdsettings->triggerstreamname),
+             "%s", in_name);
     // for FPS mode:
     if(dcfpsptr != NULL)
     {
-        strcpy(dcfpsptr->cmdset.triggerstreamname, in_name);
+        snprintf(dcfpsptr->cmdset.triggerstreamname,
+                 sizeof(dcfpsptr->cmdset.triggerstreamname),
+                 "%s", in_name);
     }
 
     // HANDLE DATATYPES
@@ -289,12 +293,12 @@ static MILK_HOT errno_t compute_function()
     uint8_t SIZEOF_DATATYPE_OUTPUT = ImageStreamIO_typesize(_DATATYPE_OUTPUT);
 
     char out_ave_name[200];
-    strcpy(out_ave_name, in_name);
-    strcat(out_ave_name, "_ave");
+    snprintf(out_ave_name, sizeof(out_ave_name),
+             "%s_ave", in_name);
 
     char out_std_name[200];
-    strcpy(out_std_name, in_name);
-    strcat(out_std_name, "_std");
+    snprintf(out_std_name, sizeof(out_std_name),
+             "%s_std", in_name);
 
     // Resolve or create outputs, per need
     IMGID out_ave_img = imgid_make_from_name(out_ave_name);
@@ -325,15 +329,23 @@ static MILK_HOT errno_t compute_function()
     for(int kw = 0; kw < in_img.md->NBkw; ++kw)
     {
         // AVE
-        strcpy(out_ave_img.im->kw[kw].name, in_img.im->kw[kw].name);
+        snprintf(out_ave_img.im->kw[kw].name,
+                 sizeof(out_ave_img.im->kw[kw].name),
+                 "%s", in_img.im->kw[kw].name);
         out_ave_img.im->kw[kw].type  = in_img.im->kw[kw].type;
         out_ave_img.im->kw[kw].value = in_img.im->kw[kw].value;
-        strcpy(out_ave_img.im->kw[kw].comment, in_img.im->kw[kw].comment);
+        snprintf(out_ave_img.im->kw[kw].comment,
+                 sizeof(out_ave_img.im->kw[kw].comment),
+                 "%s", in_img.im->kw[kw].comment);
         // STD
-        strcpy(out_std_img.im->kw[kw].name, in_img.im->kw[kw].name);
+        snprintf(out_std_img.im->kw[kw].name,
+                 sizeof(out_std_img.im->kw[kw].name),
+                 "%s", in_img.im->kw[kw].name);
         out_std_img.im->kw[kw].type  = in_img.im->kw[kw].type;
         out_std_img.im->kw[kw].value = in_img.im->kw[kw].value;
-        strcpy(out_std_img.im->kw[kw].comment, in_img.im->kw[kw].comment);
+        snprintf(out_std_img.im->kw[kw].comment,
+                 sizeof(out_std_img.im->kw[kw].comment),
+                 "%s", in_img.im->kw[kw].comment);
     }
 
     /*

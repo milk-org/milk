@@ -856,7 +856,8 @@ long LINARFILTERPRED_LoadASCIIfiles(
     nbvar   = 0;
     while(fOK == 1)
     {
-        sprintf(fname, "seq%03ld.dat", NBfiles);
+        snprintf(fname, sizeof(fname),
+                 "seq%03ld.dat", NBfiles);
         if(stat(fname, &fstat) == 0)
         {
             printf("Found file %s\n", fname);
@@ -886,7 +887,8 @@ long LINARFILTERPRED_LoadASCIIfiles(
 
     for(fcnt = 0; fcnt < NBfiles; fcnt++)
     {
-        sprintf(fname, "seq%03ld.dat", fcnt);
+        snprintf(fname, sizeof(fname),
+                 "seq%03ld.dat", fcnt);
         printf("   %03ld  OPENING FILE %s\n", fcnt, fname);
         fflush(stdout);
         fparray[fcnt] = fopen(fname, "r");
@@ -948,7 +950,8 @@ long LINARFILTERPRED_LoadASCIIfiles(
 
     for(fr = 0; fr < NBfr; fr++)
     {
-        sprintf(imoutname, "%s_%03ld", IDoutname, fr);
+        snprintf(imoutname, sizeof(imoutname),
+                 "%s_%03ld", IDoutname, fr);
         create_3Dimage_ID(imoutname, nbvar, 1, NBpt, &(IDout[fr]));
     }
 
@@ -1377,7 +1380,8 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     /// This mode is particularly useful in LOOP mode if the user needs
     /// to change the parameters between LOOP iterations.\n
 
-    sprintf(imname, "%s_PFparam", IDoutPF_name);
+    snprintf(imname, sizeof(imname),
+             "%s_PFparam", IDoutPF_name);
     imsize = (uint32_t *) malloc(sizeof(uint32_t) * 2);
     if(imsize == NULL)
     {
@@ -1923,7 +1927,9 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
 
                 imsizearray[0] = NBpixin * PForder;
                 imsizearray[1] = NBpixout;
-                sprintf(IDoutPF_name_raw, "%s_raw", IDoutPF_name);
+                snprintf(IDoutPF_name_raw,
+                         sizeof(IDoutPF_name_raw),
+                         "%s_raw", IDoutPF_name);
 
                 {
                     IMGID imgpf =
@@ -2565,7 +2571,8 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
     IDPFM     = image_ID(IDPFM_name, dcimg, dcnimg);
     NBmodeOUT = dcimg[IDPFM].md[0].size[1];
 
-    sprintf(imname, "aol%ld_modevalPF", loop);
+    snprintf(imname, sizeof(imname),
+             "aol%ld_modevalPF", loop);
     IDmasterout = image_ID(imname, dcimg, dcnimg);
 
     IDinmask = image_ID("inmask", dcimg, dcnimg);
@@ -2718,10 +2725,10 @@ imageID LINARFILTERPRED_PF_RealTimeApply(const char *IDmodevalIN_name,
 
         for(gpuindex = 0; gpuindex < nbGPU; gpuindex++)
         {
-            sprintf(GPUsetfname,
-                    "./conf/param_PFb%ldGPU%ddevice.txt",
-                    PFindex,
-                    gpuindex);
+            snprintf(GPUsetfname, sizeof(GPUsetfname),
+                     "./conf/param_PFb%ldGPU%ddevice.txt",
+                     PFindex,
+                     gpuindex);
             fp = fopen(GPUsetfname, "r");
             if(fp == NULL)
             {
@@ -3159,7 +3166,7 @@ float LINARFILTERPRED_ScanGain(char *IDin_name, float multfact, float framelag)
         abort();
     }
 
-    sprintf(fname, "gainscan.txt");
+    snprintf(fname, sizeof(fname), "gainscan.txt");
 
     gain          = 0.2;
     ii            = 0;
