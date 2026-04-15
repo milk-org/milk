@@ -14,6 +14,7 @@ GAIN=0.3
 
 # ---- FPS parameter access ----
 # Read FPS parameter value with @ syntax
+
 CURGAIN=@fps.${LOOPNAME}.gain
 LOOPSTAT=@fps.${LOOPNAME}.option.loopON
 
@@ -98,6 +99,7 @@ procctl ${LOOPNAME} run
 
 # ---- on_update trigger ----
 on_update wfs echo "WFS frame received"
+
 
 # ---- Source another script ----
 source ./common_setup.milk

@@ -57,6 +57,8 @@ option(USE_CLI      "Build interactive CLI (milk-cli)" ON)
 option(USE_SEQ      "Build sequencer module (requires CLI)" ON)
 option(USE_NCURSES  "Enable ncurses and TUI support"   ON)
 option(USE_READLINE "Enable readline support"          ON)
+option(USE_TREESITTER
+    "Enable tree-sitter syntax highlighting (CLI)" ON)
 option(USE_GSL      "Enable GSL for plugins"           ON)
 option(USE_STATIC_LTO
     "Static-link standalone exes for full LTO" OFF)

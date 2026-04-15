@@ -1346,7 +1346,7 @@ imageID LINARFILTERPRED_Build_LinPredictor(const char *IDin_name,
     long      IDincp;
     long      inNBelem;
 
-    list_variable_ID();
+    list_variable_ID(NULL);
 
     int  PSINV_MODE = 0;
     long IDv;
