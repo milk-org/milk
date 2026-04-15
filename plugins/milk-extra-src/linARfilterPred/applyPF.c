@@ -375,7 +375,8 @@ static MILK_HOT errno_t compute_function()
     for(int gpui = 0; gpui < NBGPUmax; gpui++)
     {
         char gpuistr[5];
-        sprintf(gpuistr, ":%d:", gpui);
+        snprintf(gpuistr, sizeof(gpuistr),
+                 ":%d:", gpui);
         if(strstr(GPUsetstr, gpuistr) != NULL)
         {
             GPUset[NBGPU] = gpui;

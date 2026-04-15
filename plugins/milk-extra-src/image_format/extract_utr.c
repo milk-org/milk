@@ -317,11 +317,15 @@ static MILK_HOT errno_t compute_function()
     resolveIMGID(&in_img, ERRMODE_ABORT, dcimg, dcnimg);
 
     // Set in_img to be the trigger
-    strcpy(CLIcmddata.cmdsettings->triggerstreamname, in_imname);
+    snprintf(CLIcmddata.cmdsettings->triggerstreamname,
+             sizeof(CLIcmddata.cmdsettings->triggerstreamname),
+             "%s", in_imname);
     // for FPS mode:
     if(dcfpsptr != NULL)
     {
-        strcpy(dcfpsptr->cmdset.triggerstreamname, in_imname);
+        snprintf(dcfpsptr->cmdset.triggerstreamname,
+                 sizeof(dcfpsptr->cmdset.triggerstreamname),
+                 "%s", in_imname);
     }
 
     // Resolve or create outputs, per need
@@ -341,10 +345,14 @@ static MILK_HOT errno_t compute_function()
 
     for(int kw = 0; kw < in_img.md->NBkw; ++kw)
     {
-        strcpy(out_img.im->kw[kw].name, in_img.im->kw[kw].name);
+        snprintf(out_img.im->kw[kw].name,
+                 sizeof(out_img.im->kw[kw].name),
+                 "%s", in_img.im->kw[kw].name);
         out_img.im->kw[kw].type  = in_img.im->kw[kw].type;
         out_img.im->kw[kw].value = in_img.im->kw[kw].value;
-        strcpy(out_img.im->kw[kw].comment, in_img.im->kw[kw].comment);
+        snprintf(out_img.im->kw[kw].comment,
+                 sizeof(out_img.im->kw[kw].comment),
+                 "%s", in_img.im->kw[kw].comment);
 
         if(strcmp(in_img.im->kw[kw].name, "DET-NSMP") == 0)
         {
