@@ -574,8 +574,16 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             printf("Command %ld: updating triggerstreamname to value %s\n",
                    data.cmdindex,
                    data.cmdargtoken[2].val.string);
-            strcpy(data.cmd[data.cmdindex].cmdsettings.triggerstreamname,
-                   data.cmdargtoken[2].val.string);
+            strncpy(
+                data.cmd[data.cmdindex]
+                    .cmdsettings.triggerstreamname,
+                data.cmdargtoken[2].val.string,
+                STRINGMAXLEN_IMAGE_NAME - 1);
+            data.cmd[data.cmdindex]
+                .cmdsettings
+                .triggerstreamname[
+                    STRINGMAXLEN_IMAGE_NAME - 1]
+                = '\0';
             dcfpscode = FPSCMDCODE_IGNORE;
             return RETURN_SUCCESS;
         }
@@ -692,7 +700,12 @@ errno_t function_parameter_getFPSargs_from_CLIfunc(char *fpsname_default)
             if(data.processnameflag == 1)
             {
                 // Automatically set fps name to be process name up to first instance of character '.'
-                strcpy(FPS_name, data.processname0);
+                strncpy(FPS_name,
+                        data.processname0,
+                        STRINGMAXLEN_FPS_NAME - 1);
+                FPS_name[
+                    STRINGMAXLEN_FPS_NAME - 1]
+                    = '\0';
             }
             else // otherwise, construct name as follows
             {

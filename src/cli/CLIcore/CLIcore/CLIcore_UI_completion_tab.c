@@ -727,9 +727,13 @@ CLI_completion(
     {
         char  str[200];
         char *firstword;
-        firstword = strcpy(str,
-                           rl_line_buffer);
-        strtok(str, " ");
+        strncpy(str, rl_line_buffer,
+                sizeof(str) - 1);
+        str[sizeof(str) - 1] = '\0';
+        firstword = strtok(str, " ");
+        if (firstword == NULL) {
+            return NULL;
+        }
         int      cmdimatch = -1;
         uint32_t cmdi      = 0;
         while((cmdimatch == -1)
