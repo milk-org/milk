@@ -109,35 +109,32 @@ imageID next_avail_image_ID(
     imageID i;
     imageID ID = -1;
 
-    if ( (preferredID > -1)
-            && (preferredID<dcnimg)
-            && (dcimg[preferredID].used == 0) )
-    {
-        ID = preferredID;
-        dcimg[ID].used = 1;
-    }
-    else
-    {
-
-
 #ifdef _OPENMP
-        #pragma omp critical
-        {
+    #pragma omp critical
+    {
 #endif
+        if((preferredID > -1)
+            && (preferredID < dcnimg)
+            && (dcimg[preferredID].used == 0))
+        {
+            ID = preferredID;
+            dcimg[ID].used = 1;
+        }
+        else
+        {
             for(i = 0; i < dcnimg; i++)
             {
                 if(dcimg[i].used == 0)
                 {
-                    ID                  = i;
+                    ID = i;
                     dcimg[ID].used = 1;
                     break;
                 }
             }
-#ifdef _OPENMP
         }
-#endif
-
+#ifdef _OPENMP
     }
+#endif
     if(ID == -1)
     {
         printf("ERROR: ran out of image IDs - cannot allocate new ID\n");
