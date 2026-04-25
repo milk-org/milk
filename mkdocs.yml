@@ -110,6 +110,7 @@ nav:
     - Performance Tuning: performance.md
     - PGO & LTO: pgo.md
     - Debugging: debugging.md
+  - API Reference: api/html/index.html
 
 markdown_extensions:
   - abbr
