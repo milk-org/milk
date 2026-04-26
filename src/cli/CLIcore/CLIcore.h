@@ -461,6 +461,7 @@ typedef struct
     int  CLIexecuteCMDready;
     int  CLImatchMode;
     int parseerror;
+    int echo_input;
     int autocomplete;
     int autocomplete_history;
     int autocomplete_arghint;

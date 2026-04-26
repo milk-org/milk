@@ -355,10 +355,13 @@ errno_t CLI_execute_line()
                   firstword) == 1
            && !is_internal_cmd(firstword, 1))
         {
-            printf(COLORDIMYELLOW
-                   "[shell bypass] %s"
-                   COLORRST "\n",
-                   data.CLIcmdline);
+            if(dcquiet == 0)
+            {
+                printf(COLORDIMYELLOW
+                       "[shell bypass] %s"
+                       COLORRST "\n",
+                       data.CLIcmdline);
+            }
             cli_history_log_shell(
                 data.CLIcmdline);
             cli_export_vars_to_env();

@@ -837,12 +837,18 @@ void print_milk_cli_help_porcelain(void)
 }
 
 /**
- * @brief Print the main help index page.
+ * @brief Print the main milk-cli help page.
  *
- * Selects the output format (human, JSON, or
- * porcelain) based on help_format_mode, then
- * prints the topics list and quick-reference
- * commands.
+ * Two-section layout:
+ *   1. Program-level description: NAME, SYNOPSIS,
+ *      DESCRIPTION, and all command-line OPTIONS for
+ *      the milk-cli binary itself.
+ *   2. Internal-commands section: topics and quick
+ *      reference for commands available *inside* the
+ *      running milk-cli shell or a milk-script.
+ *
+ * Output format is selected via help_format_mode
+ * (0 = human, 1 = JSON, 2 = porcelain).
  */
 void print_milk_cli_help(void)
 {
@@ -854,19 +860,105 @@ void print_milk_cli_help(void)
         return;
     }
 
+    /* ── Section 1: program-level description of milk-cli ───── */
     printf("\n");
     printf(C_TITLE
            "========================================\n" C_RST);
     printf(C_TITLE
-           "           milk-cli \xe2\x80\x94 HELP INDEX\n" C_RST);
+           "         milk-cli \xe2\x80\x94 PROGRAM HELP\n" C_RST);
     printf(C_TITLE
            "========================================\n" C_RST);
+    printf("\n");
+    printf(C_BOLD "NAME\n" C_RST);
+    printf("  milk-cli \xe2\x80\x94 interactive shell and scripting engine\n");
+    printf("           for the milk real-time imaging framework\n");
+    printf("\n");
+    printf(C_BOLD "SYNOPSIS\n" C_RST);
+    printf("  " C_CMD "milk-cli" C_RST
+           "                      Start interactive shell\n");
+    printf("  " C_CMD "milk-cli -c <cmd>" C_RST
+           "          Execute one command and exit\n");
+    printf("  " C_CMD "milk-cli -s <file>" C_RST
+           "         Run startup script, then enter shell\n");
+    printf("  " C_CMD "echo cmds | milk-cli" C_RST
+           "       Read commands from stdin\n");
+    printf("  " C_CMD "milk-script <file>" C_RST
+           "         Run a script non-interactively\n");
+    printf("\n");
+    printf(C_BOLD "DESCRIPTION\n" C_RST);
+    printf("  milk-cli is the interactive command-line interface to\n");
+    printf("  the milk framework. It provides:\n");
+    printf("    \xe2\x80\xa2 A REPL with tab-completion, history and fuzzy search\n");
+    printf("    \xe2\x80\xa2 A scripting engine shared with milk-script\n");
+    printf("    \xe2\x80\xa2 Access to all loaded milk/cacao module commands\n");
+    printf("    \xe2\x80\xa2 Real-time stream, FPS, and process management\n");
+    printf("\n");
+    printf(C_BOLD "OPTIONS\n" C_RST);
+    printf(C_CMD "  -h, --help           " C_RST
+           "Print this help and exit\n");
+    printf(C_CMD "  -v, --version        " C_RST
+           "Print version and exit\n");
+    printf(C_CMD "  -i, --info           " C_RST
+           "Print version, paths, and build info\n");
+    printf(C_CMD "  -c <cmd>             " C_RST
+           "Execute single command and exit\n");
+    printf(C_CMD "  -s <file>            " C_RST
+           "Execute startup script on launch\n");
+    printf(C_CMD "  -n <name>            " C_RST
+           "Set process name\n");
+    printf(C_CMD "  -p <priority>        " C_RST
+           "Set real-time priority (0" "\xe2\x80\x93" "99)\n");
+    printf(C_CMD "  -e, --errorexit      " C_RST
+           "Exit on first error\n");
+    printf(C_CMD "  -E, --echo-input     " C_RST
+           "Echo each input line (colored)\n");
+    printf(C_CMD "  -d <level>           " C_RST
+           "Set debug level at startup\n");
+    printf(C_CMD "  -o, --overwrite      " C_RST
+           "Overwrite existing FITS files "
+           C_NOTE "(caution)\n" C_RST);
+    printf(C_CMD "  -f, --fifoflag       " C_RST
+           "Enable default FIFO input\n");
+    printf(C_CMD "  -F <fifoname>        " C_RST
+           "Specify custom FIFO name\n");
+    printf(C_CMD "  -m <monitor>         " C_RST
+           "Set memory monitor stream\n");
+    printf(C_CMD "  -Z, --idle           " C_RST
+           "Only run when display is idle\n");
+    printf(C_CMD "  -A, --autocomplete   " C_RST
+           "Enable inline autocomplete "
+           C_NOTE "(on by default)\n" C_RST);
+    printf(C_CMD "  --no-autocomplete    " C_RST
+           "Disable inline autocomplete\n");
+    printf(C_CMD "  --no-history-suggest " C_RST
+           "Disable history suggestions\n");
+    printf(C_CMD "  --no-arg-hints       " C_RST
+           "Disable argument hint line\n");
+    printf(C_CMD "  --no-fuzzy           " C_RST
+           "Disable fuzzy/substring matching\n");
+    printf(C_CMD "  --verbose            " C_RST
+           "Be verbose\n");
+    printf("\n");
+
+    /* ── Section 2: help available inside the running shell ─── */
+    printf(C_TITLE
+           "========================================\n" C_RST);
+    printf(C_TITLE
+           "  COMMANDS AVAILABLE INSIDE milk-cli\n" C_RST);
+    printf(C_TITLE
+           "========================================\n" C_RST);
+    printf("\n");
+    printf("The following topics describe commands and syntax\n");
+    printf("available " C_BOLD "within" C_RST
+           " the milk-cli shell or a milk-script:\n");
     printf("\n");
     print_help_topic_list();
-    printf(C_NOTE "From the shell:\n" C_RST);
+    printf(C_NOTE "From the OS shell:\n" C_RST);
     printf("  $ " C_CMD "milk-cli-help <topic>\n" C_RST);
+    printf(C_NOTE "From within milk-cli:\n" C_RST);
+    printf("  > " C_CMD "help <topic>\n" C_RST);
     printf("\n");
-    printf(C_HDR "Quick reference:\n" C_RST);
+    printf(C_HDR "Quick reference (inside milk-cli):\n" C_RST);
     printf("  " C_CMD "cmd? [name]   " C_RST
            "Help for a specific command\n");
     printf("  " C_CMD "m? [module]   " C_RST
@@ -875,7 +967,7 @@ void print_milk_cli_help(void)
            "Search command descriptions\n");
     printf("  " C_CMD "fhelp         " C_RST
            "Interactive fuzzy command search\n");
-    printf("  " C_CMD "quit / exit   " C_RST
-           "Exit the milk shell\n");
+    printf("  " C_CMD "exitCLI       " C_RST
+           "Exit the milk shell / script\n");
     printf("\n");
 }
