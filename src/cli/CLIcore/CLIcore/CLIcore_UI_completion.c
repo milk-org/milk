@@ -236,6 +236,9 @@ void rl_cb_linehandler(char *linein)
         }
     }
 
+    if (data.echo_input) {
+        printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
+    }
     CLI_execute_line();
 
     free(linein);

@@ -904,6 +904,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if(single_command_flag)
             {
                 strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
+                if (data.echo_input) {
+                    printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
+                }
                 CLI_execute_line();
                 data.CLIloopON = 0;
                 break;
@@ -1089,6 +1092,9 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(
                             data.CLIcmdline);
+                        if (data.echo_input) {
+                            printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
+                        }
                         CLI_execute_line();
                     } else {
                         data.CLIloopON = 0;
@@ -1181,6 +1187,7 @@ static int command_line_process_options(int argc, char **argv)
         {"info", no_argument, 0, 'i'},
         {"overwrite", no_argument, 0, 'o'},
         {"errorexit", no_argument, 0, 'e'},
+        {"echo-input", no_argument, 0, 'E'},
         {"idle", no_argument, 0, 'Z'},
         {"autocomplete", no_argument, 0, 'A'},
         {"no-autocomplete", no_argument, 0, 0x100},
@@ -1200,6 +1207,7 @@ static int command_line_process_options(int argc, char **argv)
 
     data.fifoON          = 0; // default
     data.processnameflag = 0; // default
+    data.echo_input      = 0; // default
 
     while(1)
     {
@@ -1207,7 +1215,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvic:d:oeZm:n:p:fF:s:A",
+                        "hvic:d:oeZm:n:p:fF:s:AE",
                         long_options,
                         &option_index);
 
@@ -1259,6 +1267,14 @@ static int command_line_process_options(int argc, char **argv)
                 printf("Exit on error ON\n");
             }
             dcerrorexit = 1;
+            break;
+
+        case 'E':
+            if(dcquiet == 0)
+            {
+                printf("Input echo ON\n");
+            }
+            data.echo_input = 1;
             break;
 
         case 'Z':
