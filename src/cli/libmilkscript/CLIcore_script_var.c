@@ -271,18 +271,21 @@ int cli_try_var_assign(const char *line)
                 {
                     if (cli_vars[i].type == 1)
                     {
-                        printf("    long: %ld\n",
+                        printf("    %s long: %ld\n",
+                               cli_vars[i].name,
                                cli_vars[i].num.l);
                     }
                     else if (cli_vars[i].type == 0)
                     {
-                        printf("    double: %.*g\n",
+                        printf("    %s double: %.*g\n",
+                               cli_vars[i].name,
                                cli_float_digits,
                                cli_vars[i].num.f);
                     }
                     else
                     {
-                        printf("    string: %s\n",
+                        printf("    %s string: %s\n",
+                               cli_vars[i].name,
                                cli_vars[i].val);
                     }
                     break;

@@ -7,8 +7,11 @@
 
 #include <dirent.h>
 #include <dlfcn.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "CLIcore.h"
+#include "milkdata.h"
 
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
@@ -78,7 +81,10 @@ errno_t load_sharedobj(
     else
     {
         dlerror();
-        printf(KGRN "   LOADED : %s\n" KRES, libnameloaded);
+        if(!getenv("MILK_QUIET") && dcquiet == 0)
+        {
+            printf(KGRN "   LOADED : %s\n" KRES, libnameloaded);
+        }
         // increment number of libs dynamically loaded
         DLib_index++;
     }
@@ -379,6 +385,69 @@ errno_t RegisterModule(
 )
 {
     DEBUG_TRACE_FSTART();
+
+    /* On the very first call, scan /proc/self/cmdline for -q /
+     * --quiet.  This fires before main() when called from a
+     * __attribute__((constructor)) in a linked .so, so it is
+     * the only reliable place to intercept a command-line flag
+     * at constructor time. */
+    static int quiet_scanned = 0;
+    if (!quiet_scanned)
+    {
+        quiet_scanned = 1;
+        if (!getenv("MILK_QUIET"))
+        {
+            FILE *fp = fopen("/proc/self/cmdline", "r");
+            if (fp)
+            {
+                char buf[4096];
+                size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
+                fclose(fp);
+                buf[n] = '\0';
+
+                /* Skip argv[0] */
+                size_t i = 0;
+                while (i < n && buf[i] != '\0')
+                    i++;
+                i++;
+
+                while (i < n)
+                {
+                    const char *tok = buf + i;
+                    /* Stop at bare '-' (stdin) or non-option */
+                    if (tok[0] != '-' || tok[1] == '\0')
+                        break;
+
+                    if (strcmp(tok, "--quiet") == 0)
+                    {
+                        setenv("MILK_QUIET", "1", 0);
+                        milk_data.quiet = 1;
+                        break;
+                    }
+
+                    /* Short option bundle: -q or -qE or -xqE etc.
+                     * Stop interpreting as options when we hit '--' */
+                    if (tok[1] != '-')
+                    {
+                        for (int k = 1; tok[k] != '\0'; k++)
+                        {
+                            if (tok[k] == 'q')
+                            {
+                                setenv("MILK_QUIET", "1", 0);
+                                milk_data.quiet = 1;
+                                goto quiet_found; /* break both loops */
+                            }
+                        }
+                    }
+
+                    while (i < n && buf[i] != '\0')
+                        i++;
+                    i++;
+                }
+                quiet_found:;
+            }
+        }
+    } // if (!quiet_scanned)
 
     int OKmsg = 0;
 

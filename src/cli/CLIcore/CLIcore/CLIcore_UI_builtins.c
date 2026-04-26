@@ -468,6 +468,9 @@ errno_t cli_source(void)
         data.CLIcmdline[
             STRINGMAXLEN_CLICMDLINE - 1]
             = '\0';
+        if (data.echo_input) {
+            printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
+        }
         errno_t ret = CLI_execute_line();
         if(ret != RETURN_SUCCESS)
         {
