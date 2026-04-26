@@ -88,7 +88,7 @@ cli_token *advance_eval(void)
  */
 void parse_errmsg(const char *msg)
 {
-    if (parse_mode == 1 || data.core.Debug > 0)
+    if ((parse_mode == 1 || data.core.Debug > 0) && dcquiet == 0)
     {
         fprintf(stderr, "   [CALC_PARSER_ERROR] %s\n", msg);
     }
@@ -351,16 +351,46 @@ int cli_calc_eval_line(const char *input)
         return 0; /* not a pure math expression */
     }
 
+    /* Check if this was a top-level assignment for output formatting */
+    int is_assignment = 0;
+    const char *assign_var_name = NULL;
+    if (eval_ntok >= 3)
+    {
+        if ((eval_tokens[0].type == TOK_VAR || eval_tokens[0].type == TOK_NVAR || eval_tokens[0].type == TOK_IMAGE) &&
+            (eval_tokens[1].type == TOK_EQUAL || eval_tokens[1].type == TOK_OP_PLUS_EQ || eval_tokens[1].type == TOK_OP_MINUS_EQ || eval_tokens[1].type == TOK_OP_STAR_EQ || eval_tokens[1].type == TOK_OP_SLASH_EQ))
+        {
+            is_assignment = 1;
+            assign_var_name = eval_tokens[0].sval;
+        }
+    }
+
     /* Success! Print output and return 1 */
     if (result.type == VAL_LONG)
     {
-        printf("    long: %ld\n", result.lval);
+        if (is_assignment)
+        {
+            printf("    %s long: %ld\n", assign_var_name, result.lval);
+        }
+        else
+        {
+            printf("    long: %ld\n", result.lval);
+        }
     }
     else if (result.type == VAL_DOUBLE)
     {
-        printf("    double: %.*g\n",
-               cli_float_digits,
-               result.dval);
+        if (is_assignment)
+        {
+            printf("    %s double: %.*g\n",
+                   assign_var_name,
+                   cli_float_digits,
+                   result.dval);
+        }
+        else
+        {
+            printf("    double: %.*g\n",
+                   cli_float_digits,
+                   result.dval);
+        }
     }
     else if (result.type == VAL_STRING)
     {
@@ -368,7 +398,14 @@ int cli_calc_eval_line(const char *input)
         /* To prevent capturing generic shell commands that happen to be single string tokens */
         if (eval_ntok > 2)
         {   /* it took operators to combine them into string? Rare... */
-            printf("    string: %s\n", result.sval);
+            if (is_assignment)
+            {
+                printf("    %s string: %s\n", assign_var_name, result.sval);
+            }
+            else
+            {
+                printf("    string: %s\n", result.sval);
+            }
         }
         else
         {

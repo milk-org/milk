@@ -102,13 +102,30 @@ errno_t milkscript_run(FILE *fp)
 
     while(data.CLIloopON && fgets(line, sizeof(line), fp))
     {
-        // Strip trailing newline efficiently
+        /* Strip trailing newline */
         size_t len = strlen(line);
-        if(len > 0 && line[len-1] == '\n') {
-            line[len-1] = '\0';
+        if(len > 0 && line[len - 1] == '\n')
+        {
+            line[--len] = '\0';
         }
 
-        // Execute via engine
+        /* -E: echo each input line verbatim before executing.
+         * Skip the shebang line (first line starting with #!). */
+        if(data.echo_input && len > 0)
+        {
+            static int first_line = 1;
+            int is_shebang = (first_line
+                              && line[0] == '#'
+                              && line[1] == '!');
+            first_line = 0;
+
+            if(!is_shebang)
+            {
+                printf("\033[2;36m%s\033[0m\n", line);
+            }
+        }
+
+        /* Execute via engine */
         milkscript_execute(line);
     }
 

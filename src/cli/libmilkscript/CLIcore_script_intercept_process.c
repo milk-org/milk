@@ -70,10 +70,21 @@ int cli_intercept_cmd_exit(const char *p)
                                  NULL, 0);
             }
         }
-        
+
         cli_trap_run_exit();
         exit(exitcode);
     }
+
+    /* exitCLI — milk-specific graceful stop.
+     * Sets CLIloopON = 0 so milkscript_run()
+     * exits its read loop cleanly (no exit()
+     * so trap/atexit handlers still fire). */
+    if(strcmp(p, "exitCLI") == 0)
+    {
+        data.CLIloopON = 0;
+        return 1;
+    }
+
     return 0;
 }
 

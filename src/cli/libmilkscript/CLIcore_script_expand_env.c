@@ -490,23 +490,39 @@ void cli_expand_env(
             continue;
         }
 
-        /* Collect variable name */
+        /* Collect variable name.
+         * Accepted: alnum, '_', '?', '.'
+         * Special: '#' is accepted ONLY as a standalone
+         * one-character name (for $#, the argument count).
+         * It must be the first char of the name and we
+         * break immediately after so it is never treated
+         * as part of a longer identifier. */
         char varname[256];
         int  vlen = 0;
-        while(line[i] != '\0' && vlen < 255)
+
+        /* $# special case: treat '#' as a solo variable name */
+        if(!is_length && !has_brace && line[i] == '#')
         {
-            char c = line[i];
-            if(!((c >= 'A' && c <= 'Z')
-                 || (c >= 'a' && c <= 'z')
-                 || (c >= '0' && c <= '9')
-                 || c == '_' || c == '?' || c == '.'))
+            varname[vlen++] = '#';
+            i++;
+        }
+        else
+        {
+            while(line[i] != '\0' && vlen < 255)
             {
-                break;
-            }
-            varname[vlen++] = line[i++];
-            if(c == '?')
-            {
-                break;
+                char c = line[i];
+                if(!((c >= 'A' && c <= 'Z')
+                     || (c >= 'a' && c <= 'z')
+                     || (c >= '0' && c <= '9')
+                     || c == '_' || c == '?' || c == '.'))
+                {
+                    break;
+                }
+                varname[vlen++] = line[i++];
+                if(c == '?')
+                {
+                    break;
+                }
             }
         }
         varname[vlen] = '\0';

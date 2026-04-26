@@ -27,6 +27,15 @@
 
 int main(int argc, char *argv[])
 {
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            print_milk_cli_help();
+            return 0;
+        }
+    }
+
     char AppName[STRINGMAXLEN_APPNAME];
 
     char *CLI_APPNAME = getenv("MILKCLI_APPNAME");
