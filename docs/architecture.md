@@ -98,15 +98,14 @@ Lower layers have no knowledge of higher ones.
 │  COREMOD_tools · COREMOD_iofits          │
 ├──────────────────────────────────────────┤
 │            Framework                     │
-│  CLIcore · milkTUI · milkfpsCLI          │
+│  CLIcore · milkfpsCLI                    │
 │  milkfpsTUI · milkfpsStandalone          │
 ├──────────────────────────────────────────┤
 │            Engine  (POSIX only)          │
 │  ImageStreamIO · milkfps                 │
 │  milkprocessinfo · milkdata              │
 └──────────────────────────────────────────┘
-         ▼  External: cfitsio, ncurses,
-            FFTW, OpenBLAS, CUDA (optional)
+         ▼  External: cfitsio, FFTW, OpenBLAS, CUDA (optional)
 ```
 
 Each layer corresponds to a **build tier** that can be
@@ -137,7 +136,6 @@ milk/
 │   │
 │   ├── cli/                           ← User-facing tools
 │   │   ├── CLIcore/                   Interactive shell framework
-│   │   ├── libmilkTUI/               TUI widget library (ncurses)
 │   │   └── streamCTRL/               Stream monitor tool
 │   │
 │   ├── coremods/                      ← Core computation modules

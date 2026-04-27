@@ -10,12 +10,12 @@ set(SOURCEFILES
 	cubeMatchMatrix.c
 	cubestats.c
 	image_stats.c
-	imagemon.c
 	improfile.c
 	kbdhit.c
 	percentile.c
 	print_header.c
 	stream_monproc.c
+	stream_monproc_shm.c
 	streamtiming_stats.c
 	timediff.c
 )
@@ -25,7 +25,6 @@ set(INCLUDEFILES
 	cubeMatchMatrix.h
 	cubestats.h
 	image_stats.h
-	imagemon.h
 	improfile.h
 	kbdhit.h
 	percentile.h
@@ -35,13 +34,10 @@ set(INCLUDEFILES
 	timediff.h
 )
 
-set(SCRIPTS
-	scripts/milk-shmimmon
-)
+# milk-shmimmon is now a compiled C binary — no scripts to install here
 
 set(LINKLIBS
 	CLIcore
-    milkTUI
 )
 
 
@@ -77,9 +73,7 @@ install(FILES ${INCLUDEFILES} DESTINATION include/${SRCNAME})
 install(PROGRAMS ${SCRIPTS} DESTINATION bin)
 
 # Compute-only variant: no CLI code, no CLIcore dependency
-# imagemon.c excluded — depends on TUItools.h (ncurses)
 set(COMPUTE_SOURCEFILES ${SOURCEFILES})
-list(REMOVE_ITEM COMPUTE_SOURCEFILES imagemon.c)
 set(LIBNAME_COMPUTE "${LIBNAME}_compute")
 add_library(${LIBNAME_COMPUTE} SHARED ${COMPUTE_SOURCEFILES})
 target_compile_definitions(${LIBNAME_COMPUTE}
@@ -105,27 +99,34 @@ target_include_directories(${LIBNAME_COMPUTE} PUBLIC
     $<INSTALL_INTERFACE:include>
     $<INSTALL_INTERFACE:include/${SRCNAME}>)
 target_link_libraries(${LIBNAME_COMPUTE} PUBLIC
-    m milkfps)
+    m milkfps milkCOREMODmemory_compute milkCOREMODiofits_compute)
 install(TARGETS ${LIBNAME_COMPUTE} EXPORT milkTargets
     DESTINATION lib)
 
-# Standalone runner for stream_monproc (needs CLI)
+# Standalone display for stream_monproc (no ncurses, no CLIcore, no milkinfo)
 if(USE_CLI)
-add_executable(stream-monproc-runner stream-monproc-runner.c)
-target_link_libraries(stream-monproc-runner ${LIBNAME} CLIcore ImageStreamIO)
-install(TARGETS stream-monproc-runner DESTINATION bin)
-endif()
-
-# Standalone display for stream_monproc (needs CLI+ncurses)
-if(USE_CLI)
-add_executable(stream-monproc-disp stream-monproc-disp.c)
-target_link_libraries(stream-monproc-disp ${LIBNAME} CLIcore ImageStreamIO ncurses)
+add_executable(stream-monproc-disp stream-monproc-disp.c stream_monproc_shm.c)
+target_link_libraries(stream-monproc-disp milkdata milkfps ImageStreamIO m)
+target_compile_definitions(stream-monproc-disp PRIVATE MILK_NO_CLI)
+target_include_directories(stream-monproc-disp PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src/cli/CLIcore)
 install(TARGETS stream-monproc-disp DESTINATION bin)
 endif()
 
-# imagemon is a TUI app — legitimately needs milkTUI + ncurses
-add_milk_standalone(info-imagemon imagemon.c)
-target_link_libraries(milk-fpsexec-info-imagemon
-    PUBLIC ${LIBNAME} milkTUI ncurses)
+# milk-fpsexec-info-imagemon retired — use milk-shmimmon instead
 
 add_milk_standalone(info-strmonproc stream_monproc.c)
+target_sources(milk-fpsexec-info-strmonproc PRIVATE stream_monproc_shm.c)
+
+# milk-shmimmon: lightweight stream monitor
+# Links only ImageStreamIO + libc/libm — no CLIcore, no FPS, no ncurses
+if(USE_CLI)
+add_executable(milk-shmimmon milk-shmimmon.c)
+target_include_directories(milk-shmimmon PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/engine
+    ${PROJECT_SOURCE_DIR}/src)
+target_link_libraries(milk-shmimmon
+    PRIVATE ImageStreamIO m)
+install(TARGETS milk-shmimmon DESTINATION bin)
+endif()

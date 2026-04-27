@@ -15,9 +15,6 @@
 #include "fps_internal.h"
 #include "fps_globals.h"
 
-#ifdef USE_NCURSES
-#include "TUItools.h"
-#endif
 
 #include "fps_connect.h"
 #include "fps_disconnect.h"
@@ -214,9 +211,6 @@ errno_t functionparameter_scan_fps(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-#ifdef USE_NCURSES
-                    TUI_exit();
-#endif
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
                     fflush(stdout);

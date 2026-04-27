@@ -79,13 +79,6 @@ endif()
     
                     SHARED
     
-        ../streamCTRL/streamCTRL_TUI.c
-        ../streamCTRL/streamCTRL_find_streams.c
-        ../streamCTRL/streamCTRL_print_inode.c
-        ../streamCTRL/streamCTRL_print_procpid.c
-        ../streamCTRL/streamCTRL_print_trace.c
-        ../streamCTRL/streamCTRL_scan.c
-        ../streamCTRL/streamCTRL_utilfuncs.c
         ${CORE_FILES})
 
 # Add milk-help executable
@@ -142,9 +135,6 @@ target_link_libraries(CLIcore
 
                               ${CMAKE_THREAD_LIBS_INIT}
                               $<$<BOOL:${USE_NCURSES}>:${NCURSES_LIBRARIES}>
-                              $<$<BOOL:${USE_NCURSES}>:milkTUI>
-                              $<$<BOOL:${USE_NCURSES}>:milkprocessinfoTUI>
-                              $<$<BOOL:${USE_NCURSES}>:milkfpsTUI>
                               milkcommon milkCOREMODarith $<$<BOOL:${USE_CFITSIO}>:milkCOREMODiofits> milkCOREMODmemory milkCOREMODtools milkprocessinfo milkfps milkfpsseq milkdata)
 
 
@@ -174,7 +164,6 @@ install(TARGETS CLIcore EXPORT milkTargets DESTINATION lib)
 
 
 install(FILES CLIcore.h
-              ../libmilkTUI/TUItools.h
               ../libmilkscript/cli_calc_parser.h
               ../libmilkscript/cli_calc_tokenizer.h
               cmdsettings.h
@@ -197,16 +186,25 @@ install(FILES ../libmilkscript/CLIcore_UI_execute.h
 
 
 
-add_executable(milk-streamCTRL ../streamCTRL/milk-streamCTRL.c)
-target_link_libraries(milk-streamCTRL PUBLIC CLIcore ImageStreamIO)
+add_executable(milk-streamCTRL 
+    ../streamCTRL/milk-streamCTRL.c
+    ../streamCTRL/streamCTRL_TUI.c
+    ../streamCTRL/streamCTRL_find_streams.c
+    ../streamCTRL/streamCTRL_print_inode.c
+    ../streamCTRL/streamCTRL_print_procpid.c
+    ../streamCTRL/streamCTRL_print_trace.c
+    ../streamCTRL/streamCTRL_scan.c
+    ../streamCTRL/streamCTRL_utilfuncs.c
+    ../streamCTRL/streamCTRL_TUIcompat.c
+)
+
+target_link_libraries(milk-streamCTRL PUBLIC ImageStreamIO milkprocessinfo m rt pthread)
 install(TARGETS milk-streamCTRL DESTINATION bin)
 
-add_milk_standalone(mmon ../streamCTRL/mmon_ui.c)
-target_link_libraries(milk-fpsexec-mmon PUBLIC milkTUI ${NCURSES_LIBRARIES})
-target_compile_definitions(milk-fpsexec-mmon PRIVATE USE_NCURSES)
+# milk-fpsexec-mmon retired — use milk-streamCTRL instead
 
 add_executable(milk-termview termview/milk-termview.c termview/termview.c)
-target_link_libraries(milk-termview PUBLIC CLIcore ImageStreamIO)
+target_link_libraries(milk-termview PUBLIC ImageStreamIO m)
 
 install(TARGETS milk-termview DESTINATION bin)
 

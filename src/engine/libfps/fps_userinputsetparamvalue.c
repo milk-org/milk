@@ -14,12 +14,8 @@
 #include "fps_PrintParameterInfo.h"
 #include "fps_WriteParameterToDisk.h"
 
-#ifdef USE_NCURSES
-#include "TUItools.h"
-#else
 #define AECBOLDHIRED ""
 #define AECNORMAL    ""
-#endif
 
 
 /** @brief Enter new value for parameter
@@ -53,11 +49,7 @@ int functionparameter_UserInputSetParamValue(
 
             int stringindex = 0;
 
-#ifdef USE_NCURSES
-            c = get_singlechar_block();
-#else
             c = getchar();
-#endif
 
             // 10 : line feed
             // 27 : escape
@@ -90,11 +82,7 @@ int functionparameter_UserInputSetParamValue(
                     stringindex = 0;
                 }
 
-    #ifdef USE_NCURSES
-            c = get_singlechar_block();
-#else
             c = getchar();
-#endif
             }
             buff[stringindex] = '\0';
             inputOK           = 1;

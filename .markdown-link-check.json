@@ -4,7 +4,7 @@
       "pattern": "^https?://"
     },
     {
-      "pattern": "^.*?api/html/index\\.html$"
+      "pattern": "\\.html$"
     }
   ],
   "timeout": "5s",

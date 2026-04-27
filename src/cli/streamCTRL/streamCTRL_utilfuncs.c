@@ -1,8 +1,14 @@
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
+#include "streamCTRL_defs.h"
 
-#include "CLIcore.h"
 #include "streamCTRL_TUI.h"
+
+
+
+
 
 
 /**
@@ -85,7 +91,7 @@ errno_t get_process_name_by_pid(
     char *pname
 )
 {
-    char *fname = (char *) calloc(STRINGMAXLEN_FULLFILENAME, sizeof(char));
+    char fname[STRINGMAXLEN_FULLFILENAME];
 
     WRITE_FULLFILENAME(fname, "/proc/%d/cmdline", pid);
     FILE *fp = fopen(fname, "r");
@@ -103,7 +109,7 @@ errno_t get_process_name_by_pid(
         fclose(fp);
     }
 
-    free(fname);
+
 
     return RETURN_SUCCESS;
 }

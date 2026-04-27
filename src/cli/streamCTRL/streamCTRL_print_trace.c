@@ -10,10 +10,15 @@
 typedef int errno_t;
 #endif
 
-#include "CLIcore.h"
-#include "TUItools.h"
+#include "streamCTRL_defs.h"
+#include "streamCTRL_TUIcompat.h"
+
 #include "streamCTRL_TUI.h"
 #include "streamCTRL_print_procpid.h"
+
+
+
+
 
 
 errno_t streamCTRL_print_SPTRACE_details(
@@ -39,7 +44,7 @@ errno_t streamCTRL_print_SPTRACE_details(
     DEBUG_TRACEPOINT(" ");
 
     TUI_newline();
-    TUI_printfw("   %*s %*s %*s",
+    TUI_printfw("   %*s %*s %*s %*s %*s",
                 Disp_inode_NBchar,
                 "inode",
                 Disp_sname_NBchar,
@@ -98,7 +103,7 @@ errno_t streamCTRL_print_SPTRACE_details(
                         streamCTRLimages[IDfound].name);
         }
 
-        TUI_printfw(" %*llu", Disp_cnt0_NBchar, cnt0);
+        TUI_printfw(" %*llu", Disp_cnt0_NBchar, (unsigned long long) cnt0);
         TUI_printfw(" ");
 
         Disp_PID_NBchar = streamCTRL_print_procpid(8,

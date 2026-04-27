@@ -1,15 +1,9 @@
 /**
  * @file    stream-monproc-disp.c
- * @brief   Display stream monitor info (ncurses)
+ * @brief   Display stream monitor info (ANSI)
  */
 
-#define NCURSES_WIDECHAR 1
-
 #include <math.h>
-#ifdef USE_NCURSES
-#include <ncurses.h>
-#include <curses.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -20,32 +14,70 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "stream_monproc.h"
-#include "TUItools.h"
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <signal.h>
 
-// External initialization functions from CLIcore
-extern errno_t CLI_startup();
-extern errno_t setSHMdir();
-extern errno_t CLI_data_init();
+#include "ImageStreamIO/ImageStreamIO.h"
+#include "libmilkdata/milkdata.h"
+#include "fps_shmdirname.h"
+#include "stream_monproc.h"
 
 static uint16_t wrow, wcol;
 
-static void cleanup_ncurses() {
-#ifdef USE_NCURSES
-    endwin();
-#endif
+// Terminal state
+static struct termios orig_termios;
+static int terminal_initialized = 0;
+
+static void cleanup_terminal() {
+    if (terminal_initialized) {
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
+        printf("\033[?1049l\033[?25h\033[0m\n"); // Exit alt screen, show cursor, reset attrs
+        fflush(stdout);
+        terminal_initialized = 0;
+    }
 }
 
-static void print_bar(int len, int color_pair) {
-#ifdef USE_NCURSES
-    attron(COLOR_PAIR(color_pair));
+static void crash_handler(int sig) {
+    cleanup_terminal();
+    struct sigaction sa_dfl;
+    sa_dfl.sa_handler = SIG_DFL;
+    sigemptyset(&sa_dfl.sa_mask);
+    sa_dfl.sa_flags = 0;
+    sigaction(sig, &sa_dfl, NULL);
+    raise(sig);
+}
+
+static void init_terminal() {
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    struct termios raw = orig_termios;
+    raw.c_lflag &= ~(ECHO | ICANON);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 0;
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    terminal_initialized = 1;
+    
+    printf("\033[?1049h\033[?25l"); // Alt screen, hide cursor
+    fflush(stdout);
+    atexit(cleanup_terminal);
+    
+    struct sigaction sa_crash;
+    sa_crash.sa_handler = crash_handler;
+    sigemptyset(&sa_crash.sa_mask);
+    sa_crash.sa_flags = 0;
+    sigaction(SIGSEGV, &sa_crash, NULL);
+    sigaction(SIGBUS, &sa_crash, NULL);
+    sigaction(SIGABRT, &sa_crash, NULL);
+    sigaction(SIGTERM, &sa_crash, NULL);
+    sigaction(SIGINT, &sa_crash, NULL);
+}
+
+static void print_bar(int len, int color_code) {
+    printf("\033[%dm", color_code);
     for (int i = 0; i < len; i++) {
-        addch(' ');
+        putchar(' ');
     }
-    attroff(COLOR_PAIR(color_pair));
-#endif
+    printf("\033[0m");
 }
 
 int main(int argc, char *argv[]) {
@@ -56,11 +88,10 @@ int main(int argc, char *argv[]) {
 
     char *streamname = argv[1];
 
-    // Basic CLI init for SHM paths
-    strncpy(data.processname, argv[0], STRINGMAXLEN_PROCESSNAME - 1);
-    CLI_startup();
-    setSHMdir();
-    CLI_data_init();
+    // Get SHM dir and populate milk_data.shmdir (dcshmdir) for stream_monproc
+    char shmdir[256];
+    function_parameter_struct_shmdirname(shmdir);
+    strncpy(milk_data.shmdir, shmdir, sizeof(milk_data.shmdir) - 1);
 
     // Connect to monitor SHM
     STREAM_MON_STRUCT *smon = stream_monitor_connect(streamname, 0);
@@ -69,57 +100,38 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // Init ncurses
-#ifdef USE_NCURSES
-    initscr();
-    cbreak();
-    noecho();
-    nodelay(stdscr, TRUE);
-    keypad(stdscr, TRUE);
-    curs_set(0);
-    start_color();
-    use_default_colors();
-    atexit(cleanup_ncurses);
+    // Init ANSI terminal
+    init_terminal();
 
-    // Color pairs
-    init_pair(1, COLOR_WHITE, COLOR_BLUE);  // Header
-    init_pair(2, COLOR_BLACK, COLOR_GREEN); // Active
-    init_pair(3, COLOR_WHITE, COLOR_RED);   // Inactive
-    init_pair(4, COLOR_CYAN, COLOR_BLACK);  // Info
-    init_pair(5, COLOR_YELLOW, COLOR_BLACK);// Warning
-    init_pair(6, COLOR_WHITE, COLOR_CYAN);  // Histogram bar
-#endif
-
-    int ch;
     int loop = 1;
 
     // Local buffer for thresholds reconstruction
     float local_thresholds[STREAM_MON_MAX_HIST_BINS + 1];
 
     while (loop) {
-#ifdef USE_NCURSES
-        getmaxyx(stdscr, wrow, wcol);
-        erase();
-#endif
+        struct winsize ws;
+        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != -1) {
+            wrow = ws.ws_row;
+            wcol = ws.ws_col;
+        } else {
+            wrow = 24; wcol = 80;
+        }
+        printf("\033[2J");
 
         // --------------------------------------------------------------------
         // Header
         // --------------------------------------------------------------------
-#ifdef USE_NCURSES
-        attron(COLOR_PAIR(1));
-        mvprintw(0, 0, " Stream Monitor Display: %s (PID %d) - Press 'q' to exit ", streamname, getpid());
-        mvprintw(0, wcol - 20, " Count: %lu ", smon->cnt);
-        attroff(COLOR_PAIR(1));
-#endif
+        printf("\033[37;44m");
+        printf("\033[%d;%dH Stream Monitor Display: %s (PID %d) - Press 'q' to exit ", 1, 1, streamname, getpid());
+        printf("\033[%d;%dH Count: %lu ", 1, wcol - 20 + 1, smon->cnt);
+        printf("\033[0m");
 
         int row = 2;
 
         // --------------------------------------------------------------------
         // Flux History (Recent)
         // --------------------------------------------------------------------
-#ifdef USE_NCURSES
-        mvprintw(row++, 0, "Recent Flux (last %d frames):", smon->size > 50 ? 50 : smon->size);
-#endif
+        printf("\033[%d;%dHRecent Flux (last %d frames):", (row++)+1, 0+1, smon->size > 50 ? 50 : smon->size);
 
         // Find min/max for scaling
         double min_flux = 1e30, max_flux = -1e30;
@@ -146,16 +158,12 @@ int main(int argc, char *argv[]) {
             if (height < 0) height = 0;
             if (height > bar_h) height = bar_h;
 
-#ifdef USE_NCURSES
             for (int h = 0; h < height; h++) {
-                mvaddch(row + bar_h - h, i, '|');
+                printf("\033[%d;%dH|", (row + bar_h - h)+1, (i)+1);
             }
-#endif
         }
-#ifdef USE_NCURSES
-        mvprintw(row, hist_len + 2, "Max: %.2e", max_flux);
-        mvprintw(row + bar_h, hist_len + 2, "Min: %.2e", min_flux);
-#endif
+        printf("\033[%d;%dHMax: %.2e", (row)+1, (hist_len + 2)+1, max_flux);
+        printf("\033[%d;%dHMin: %.2e", (row + bar_h)+1, (hist_len + 2)+1, min_flux);
 
         row += bar_h + 2;
 
@@ -185,9 +193,7 @@ int main(int argc, char *argv[]) {
             bin_factor = (nbins + available_rows - 1) / available_rows; // ceil
         }
 
-#ifdef USE_NCURSES
-        mvprintw(row++, 0, "Histogram (Horizontal, binning x%d): Range [%.2e, %.2e]", bin_factor, h_min, h_max);
-#endif
+        printf("\033[%d;%dHHistogram (Horizontal, binning x%d): Range [%.2e, %.2e]", (row++)+1, 0+1, bin_factor, h_min, h_max);
 
         // Compute max count for scaling (considering binning)
         uint32_t max_count = 0;
@@ -217,16 +223,12 @@ int main(int argc, char *argv[]) {
             snprintf(label, sizeof(label), "%.2e - %.2e", lower, upper);
 
             if (row < wrow - 1) { // Safety check
-#ifdef USE_NCURSES
-                mvprintw(row, 0, "%-25s %6u ", label, sum);
-
+                printf("\033[%d;%dH%-25s %6u ", (row)+1, 1, label, sum);
                 int bar_width = (int)((double)sum / max_count * (wcol - 35));
                 if (bar_width > wcol - 35) bar_width = wcol - 35;
+                printf("\033[%d;%dH", (row)+1, 33+1);
+                print_bar(bar_width, 46); // Cyan background
 
-                // Draw bar
-                move(row, 33);
-                print_bar(bar_width, 6);
-#endif
                 row++;
             }
         }
@@ -236,42 +238,32 @@ int main(int argc, char *argv[]) {
         // --------------------------------------------------------------------
         int status_col = 60;
         int status_row = 3;
-#ifdef USE_NCURSES
-        mvprintw(status_row++, status_col, "Active Output Streams:");
-#endif
+        printf("\033[%d;%dHActive Output Streams:", (status_row++)+1, (status_col)+1);
 
         for (int p = 0; p < 10; p++) { // Check powers of 2 up to 512
             int bin = 1 << p;
             char fname[4096];
             struct stat st;
 
-            snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", dcshmdir, streamname, bin);
+            snprintf(fname, sizeof(fname), "%s/%s.tbin%d.im.shm", milk_data.shmdir, streamname, bin);
             int exists = (stat(fname, &st) == 0);
 
-#ifdef USE_NCURSES
-            move(status_row + p, status_col);
+            printf("\033[%d;%dH", (status_row + p)+1, (status_col)+1);
             if (exists) {
-                attron(COLOR_PAIR(2));
-                printw(" [ON]  .tbin%d ", bin);
-                attroff(COLOR_PAIR(2));
+                printf("\033[30;42m [ON]  .tbin%d \033[0m", bin);
             } else {
-                attron(COLOR_PAIR(3));
-                printw(" [OFF] .tbin%d ", bin);
-                attroff(COLOR_PAIR(3));
+                printf("\033[37;41m [OFF] .tbin%d \033[0m", bin);
             }
-#endif
         }
 
-#ifdef USE_NCURSES
-        refresh();
-
-        ch = getch();
-        if (ch == 'q' || ch == 'Q') {
-            loop = 0;
+        fflush(stdout);
+        
+        char c;
+        if (read(STDIN_FILENO, &c, 1) == 1) {
+            if (c == 'q' || c == 'Q' || c == 3) {
+                loop = 0;
+            }
         }
-#else
-        loop = 0; // Exit loop if no TUI
-#endif
 
         usleep(100000); // 100ms update
     }
