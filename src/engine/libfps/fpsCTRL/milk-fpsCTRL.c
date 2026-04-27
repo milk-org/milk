@@ -11,11 +11,13 @@
 #include <libgen.h>
 
 #include "ImageStreamIO/ImageStreamIO.h"
+#include "fps.h"
+#include "fpsCTRL_TUI.h"
 #include "fpsCTRL_globals.h"
 #include "fps_shmdirname.h"
+#include "fpsCTRL_ansi.h"
 
 #include <signal.h>
-#include <ncurses.h>
 
 void fpsCTRL_crash_handler(int sig)
 {
@@ -31,6 +33,10 @@ void fpsCTRL_crash_handler(int sig)
         "\033[?1049l\033[?25h\033[0m\n";
     (void) write(STDERR_FILENO,
                  reset_seq, sizeof(reset_seq) - 1);
+                 
+    if (ansi__raw_active) {
+        tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
+    }
 
     // Reset signal handler to default and re-raise
     struct sigaction sa_dfl;
@@ -100,6 +106,8 @@ int main(int argc, char *argv[]) {
         sigaction(SIGSEGV, &sa_crash, NULL);
         sigaction(SIGBUS, &sa_crash, NULL);
         sigaction(SIGABRT, &sa_crash, NULL);
+        sigaction(SIGTERM, &sa_crash, NULL);
+        sigaction(SIGINT, &sa_crash, NULL);
     }
 
     // Allocate global fpsarray

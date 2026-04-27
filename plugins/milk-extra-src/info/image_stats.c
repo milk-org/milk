@@ -152,6 +152,7 @@ static errno_t CLIfunction_2(void)
 errno_t
 CLIADDCMD_info__image_stats()
 {
+#ifndef MILK_NO_CLI
     safe_fps_fill_farg_examples(
         farg_1, my_bindings_1,
         nb_bindings_1);
@@ -171,6 +172,7 @@ CLIADDCMD_info__image_stats()
         CLIcmddata_2.cmdsettings =
             &data.cmd[cmdi].cmdsettings;
     }
+#endif
 
     return RETURN_SUCCESS;
 }

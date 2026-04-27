@@ -3,7 +3,6 @@
  * @brief   TUI key input processing
  */
 
-#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,7 +10,7 @@
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "fpsCTRL_globals.h"
 #include "engine/libfpsseq/fpsseq.h"
 
@@ -77,6 +76,7 @@ int fpsCTRL_TUI_process_user_key(
         switch(ch)
         {
 
+        case 3:       // Ctrl+C
         case 'x':     // Exit control screen
             loopOK = 0;
             break;
@@ -121,8 +121,8 @@ int fpsCTRL_TUI_process_user_key(
 
         // ============ SCREENS
 
-        case KEY_RESIZE:
-            clear();
+        case ANSI_KEY_RESIZE:
+            TUI_clearscreen(NULL, NULL);
             break;
 
         case 'h': // help
@@ -133,12 +133,24 @@ int fpsCTRL_TUI_process_user_key(
             fpsCTRLvar->fpsCTRL_DisplayMode = 2;
             break;
 
-        case KEY_F(2): // control
+        case ANSI_KEY_F2: // control
             fpsCTRLvar->fpsCTRL_DisplayMode = 3;
             break;
 
-        case KEY_F(3): // scheduler
+        case ANSI_KEY_F3: // scheduler
             fpsCTRLvar->fpsCTRL_DisplayMode = 4;
+            break;
+
+        case ANSI_KEY_CTRL_RIGHT:
+            fpsCTRLvar->fpsCTRL_DisplayMode++;
+            if(fpsCTRLvar->fpsCTRL_DisplayMode > 4) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
+            TUI_clearscreen(NULL, NULL);
+            break;
+
+        case ANSI_KEY_CTRL_LEFT:
+            fpsCTRLvar->fpsCTRL_DisplayMode--;
+            if(fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 4;
+            TUI_clearscreen(NULL, NULL);
             break;
 
         case 's' : // (re)scan
@@ -151,7 +163,7 @@ int fpsCTRL_TUI_process_user_key(
                 &fpsCTRLvar->NBfps,
                 &fpsCTRLvar->NBindex,
                 0);
-            clear();
+            TUI_clearscreen(NULL, NULL);
             break;
 
         case ctrl('e') : // stop conf/run, then erase FPS
@@ -169,7 +181,7 @@ int fpsCTRL_TUI_process_user_key(
                 &(fpsCTRLvar->NBfps),
                 &fpsCTRLvar->NBindex,
                 0);
-            clear();
+            TUI_clearscreen(NULL, NULL);
             fpsCTRLvar->run_display = 0; // skip next display
             fpsCTRLvar->fpsindexSelected = 0; // safeguard
             break;
@@ -200,12 +212,12 @@ int fpsCTRL_TUI_process_user_key(
                 &fpsCTRLvar->NBkwn,
                 &fpsCTRLvar->NBfps,
                 &fpsCTRLvar->NBindex, 0);
-            clear();
+            TUI_clearscreen(NULL, NULL);
             // safeguard in case current selection disappears
             fpsCTRLvar->fpsindexSelected = 0; 
             break;
 
-        case KEY_UP:
+        case ANSI_KEY_UP:
             fpsCTRLvar->direction = -1;
             {
                 int l = fpsCTRLvar->currentlevel;
@@ -221,7 +233,7 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
 
-        case KEY_DOWN:
+        case ANSI_KEY_DOWN:
             fpsCTRLvar->direction = 1;
             {
                 int l = fpsCTRLvar->currentlevel;
@@ -242,7 +254,7 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->scheduler_wrowstart++;
             break;
 
-        case KEY_PPAGE:
+        case ANSI_KEY_PGUP:
             fpsCTRLvar->direction = -1;
             {
                 int l = fpsCTRLvar->currentlevel;
@@ -257,7 +269,7 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->scheduler_wrowstart -= 10;
             break;
 
-        case KEY_NPAGE:
+        case ANSI_KEY_PGDN:
             fpsCTRLvar->direction = 1;
             {
                 int l = fpsCTRLvar->currentlevel;
@@ -280,7 +292,7 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
 
-        case KEY_LEFT:
+        case ANSI_KEY_LEFT:
             if(fpsCTRLvar->directorynodeSelected != 0)   // ROOT has no parent
             {
                 fpsCTRLvar->directorynodeSelected =
@@ -295,7 +307,7 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
 
-        case KEY_RIGHT :
+        case ANSI_KEY_RIGHT :
             if (fpsCTRLvar->currentlevel == -1)
             {
                 fpsCTRLvar->currentlevel = 0;
@@ -322,9 +334,9 @@ int fpsCTRL_TUI_process_user_key(
                         fpsCTRLvar->pindexSelected);
                 {
                     short unsigned int wrow = 0, wcol = 0;
-                    TUI_initncurses(&wrow, &wcol);
+                    TUI_init_terminal(&wrow, &wcol);
                 }
-                TUI_stdio_clear();
+                TUI_clearscreen(NULL, NULL);
             }
             break;
 
@@ -475,7 +487,7 @@ int fpsCTRL_TUI_process_user_key(
             while(getchar() != '\n') {}
             {
                 short unsigned int wrow = 0, wcol = 0;
-                TUI_initncurses(&wrow, &wcol);
+                TUI_init_terminal(&wrow, &wcol);
             }
             break;
         

@@ -5,9 +5,15 @@
 #include <stdint.h>
 
 
-#include "CLIcore.h"
+#include "streamCTRL_defs.h"
+#include "streamCTRL_TUIcompat.h"
+
 #include "streamCTRL_TUI.h"
-#include "TUItools.h"
+
+
+
+
+
 
 
 /** @brief print PID with highlighting

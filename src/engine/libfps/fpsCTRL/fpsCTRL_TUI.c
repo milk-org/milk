@@ -12,7 +12,6 @@
 
 #include <unistd.h>
 #include <stdio.h>
-#include <ncurses.h>
 
 #include "fps.h"
 #include "fps_internal.h"
@@ -30,11 +29,10 @@
 #include "processinfo_signals.h"
 #ifdef MILK_MODULE
 #ifdef MILK_MODULE
-#include "CLIcore.h"
 #endif
 #endif
 
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "fpsCTRL_globals.h"
 
 #include "fpsCTRL_FPSdisplay.h"
@@ -369,7 +367,7 @@ errno_t functionparameter_CTRLscreen(
 
     fpsCTRLvar.fpsCTRL_DisplayMode = DISPLAYMODE_FPSCTRL;
 
-    INSERT_TUI_SETUP
+    
 
     fpsCTRLvar.NBindex = 0;
 
@@ -450,6 +448,10 @@ errno_t functionparameter_CTRLscreen(
 
     int refresh_screen = 1; // 1 if screen should be refreshed
 
+    if(run_display == 1)
+    {
+        TUI_init_terminal(&wcol, &wrow);
+    }
 
     while(loopOK == 1)
     {
@@ -587,7 +589,6 @@ errno_t functionparameter_CTRLscreen(
         {
 
             TUI_stdio_clear();
-            TUI_ncurses_erase();
 
             fpsCTRLscreen_print_DisplayMode_status(
                 fpsCTRLvar.fpsCTRL_DisplayMode,
@@ -662,10 +663,10 @@ errno_t functionparameter_CTRLscreen(
 
             DEBUG_TRACEPOINT(" ");
 
-            TUI_ncurses_refresh();
 
             DEBUG_TRACEPOINT(" ");
 
+            sc_frame_flush();
         } // end run_display
 
         DEBUG_TRACEPOINT("exit from if( fpsCTRLvar.run_display == 1)");
@@ -688,7 +689,7 @@ errno_t functionparameter_CTRLscreen(
     if(run_display == 1)
     {
         // TUI_exit();
-        endwin();
+        TUI_exit();
     }
 
 
