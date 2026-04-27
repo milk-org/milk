@@ -19,25 +19,37 @@ void print_help(const char *progname) {
     printf("Print content of a Function Parameter Structure (FPS).\n");
     printf("\n");
     printf("Options:\n");
-    printf("  -v, --verbose   Verbose mode\n");
-    printf("  -i, --info      Show detailed stream information on separate line\n");
-    printf("  -h, --help      Show this help message\n");
+    printf("  -v, --verbose        Verbose mode\n");
+    printf("  -i, --info           Show detailed stream information on separate line\n");
+    printf("  -h, --help           Show this help message\n");
+    printf("  -h1, --help-oneline  Print one-line description and exit\n");
 }
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("print content of a Function Parameter Structure (FPS)\\n");
+        return 0;
+    }
+
     int verbose = 0;
     int show_info = 0;
     int opt;
 
     static struct option long_options[] = {
-        {"verbose", no_argument,       0, 'v'},
-        {"info",    no_argument,       0, 'i'},
-        {"help",    no_argument,       0, 'h'},
+        {"verbose",      no_argument, 0, 'v'},
+        {"info",         no_argument, 0, 'i'},
+        {"help",         no_argument, 0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "vih", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "vih1", long_options, NULL)) != -1) {
         switch (opt) {
             case 'v':
                 verbose = 1;
@@ -47,6 +59,9 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("print content of a Function Parameter Structure (FPS)\n");
                 return 0;
             default:
                 print_help(argv[0]);

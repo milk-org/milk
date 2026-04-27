@@ -1,5 +1,13 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "show status of shared memory log stream"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-logshimstat <stream>  -- show log loop status"
+        exit 0 ;;
+esac
+
 EXPECTED_ARGS=1
 
 if [ $# -ne $EXPECTED_ARGS ]

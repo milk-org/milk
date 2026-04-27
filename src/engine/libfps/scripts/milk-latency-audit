@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "audit resource usage and latency causes for a running compute unit"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-latency-audit [OPTIONS] <PID|FPS_NAME>"
+        exit 0 ;;
+esac
 # Latency Audit Tool for milk/cacao compute units
 
 show_help() {

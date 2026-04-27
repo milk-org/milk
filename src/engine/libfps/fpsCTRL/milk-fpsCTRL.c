@@ -89,6 +89,17 @@ void print_usage(const char *progname) {
 }
 
 int main(int argc, char *argv[]) {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("interactive TUI for managing Function Parameter Structures (FPS)\n");
+        return 0;
+    }
+
+
     int opt;
     int matchmode = 0;
     char fpsnamemask[256] = "_ALL";

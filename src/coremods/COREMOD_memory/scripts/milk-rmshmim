@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "remove shared memory stream and associated files"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-rmshmim <stream(s)>  -- remove shmim and associated files"
+        exit 0 ;;
+esac
+
 # number of arguments to script
 NBARGS=1
 

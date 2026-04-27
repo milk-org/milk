@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# Early-exit help flags (getopts cannot handle long options)
+case "${1-}" in
+    -h1|--help-oneline) echo "print or extract FITS file header"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-fitsheader [-w] <file1> [file2 ...]"
+        echo "Print FITS header to stdout. With -w, also write <file>.header."
+        exit 0 ;;
+esac
+
 writeoutput=false
 
 while getopts "w" opt; do
