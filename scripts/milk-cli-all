@@ -7,6 +7,9 @@ modulelist="milklinalgebra,milkfft,milkimagebasic,milkimagefilter,milkimageforma
 # Handle script-level help only; pass everything else
 # through to milk-cli.
 case "${1-}" in
+    -h1|--help-oneline)
+        echo "${MSdescr}"
+        exit 0 ;;
     -h|--help)
         echo "milk-cli-all : ${MSdescr}"
         echo ""

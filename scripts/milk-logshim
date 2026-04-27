@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
-
-
-
-
+# Early-exit help flags — must come before pname="logshim-$1"
+case "${1-}" in
+    -h1|--help-oneline) echo "log shared memory image stream to disk"; exit 0 ;;
+esac
 
 NBARGS=3
-
 
 pname="logshim-$1"
 
