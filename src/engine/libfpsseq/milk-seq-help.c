@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #define COLOR_RESET   "\033[0m"
@@ -12,8 +13,16 @@
 #define COLOR_GREEN   "\033[32m"
 #define COLOR_YELLOW  "\033[33m"
 
-int main()
+int main(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("FPS sequencer scripting guide\n");
+            return 0;
+        }
+    }
     printf("\n");
     printf(COLOR_BOLD COLOR_CYAN "                     MILK SEQUENCER (milk-seq)\n" COLOR_RESET);
     printf(COLOR_BOLD "                     =========================\n\n" COLOR_RESET);

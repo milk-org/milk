@@ -170,6 +170,16 @@ void rebuild_process_list(const char *procdname, PROCSCAN_SHM *scan_shm) {
 }
 
 int main(int argc, char *argv[]) {
+    /* One-line help — before daemon check and SHM init */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("background process info scanner daemon\n");
+            return 0;
+        }
+    }
+
     double rate = 10.0;
     int verbose = 0;
     int rebuild = 0;
