@@ -170,7 +170,6 @@ if(USE_STATIC_LTO)
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/engine/libmilkdata>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src/cli/libmilkTUI>
       $<INSTALL_INTERFACE:include>)
 endif()
 
