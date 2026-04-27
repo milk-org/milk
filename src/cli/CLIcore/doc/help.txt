@@ -271,3 +271,28 @@ ARITHMETIC OPERATIONS
 	# will perform an arithmetic operation on image im and store the result in image im1
 
 -----------------------------------------------------------------------------------
+UNIFIED EVENT WAIT & TRAPS
+
+> wait_any [streams...] [P:fps_name] [F:fps_name] [T:timeout_ms]
+	# block until ANY specified event occurs.
+	# returns the name of the object that triggered, or "" on timeout.
+> trap "echo triggered" S:mystream P:myfps
+	# execute command asynchronously when event occurs
+
+-----------------------------------------------------------------------------------
+STREAM METADATA & INTROSPECTION
+
+> echo @s.mystream.naxis
+	# read stream dimension count via @s.<name>.<prop> namespace
+> milkquery myobj
+	# query comprehensive state of any milk object (stream, fps, proc)
+> fpslist --json
+	# output list of FPS units in machine-readable JSON format
+> fpsdump myfps --json
+	# dump full state of an FPS unit as a JSON object
+> streamlist --json
+	# output list of active streams in JSON format
+> proclist --json
+	# output list of tracked processes in JSON format
+
+-----------------------------------------------------------------------------------
