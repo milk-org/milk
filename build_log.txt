@@ -1,0 +1,1551 @@
+[  0%] Building C object src/engine/libfps/CMakeFiles/milk-fps-help.dir/milk-fps-help.c.o
+[  0%] Building C object src/engine/libfpsseq/CMakeFiles/milk-seq-help.dir/milk-seq-help.c.o
+[  1%] Building C object src/engine/libfps/CMakeFiles/milk-fpsexec-help.dir/milk-fpsexec-help.c.o
+[  1%] Building C object src/engine/ImageStreamIO/CMakeFiles/ImageStreamIO.dir/ImageStreamIO.c.o
+[  1%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procinfo-help.dir/milk-procinfo-help.c.o
+[  1%] Linking C executable milk-fpsexec-help
+[  1%] Linking C executable milk-procinfo-help
+[  1%] Linking C executable milk-fps-help
+[  1%] Linking C executable milk-seq-help
+[  1%] Built target milk-fpsexec-help
+[  1%] Built target milk-seq-help
+[  1%] Linking C shared library libImageStreamIO.so
+[  1%] Built target milk-fps-help
+[  1%] Built target milk-procinfo-help
+[  1%] Built target ImageStreamIO
+[  1%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-stream-list.dir/milk-stream-list.c.o
+[  2%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-stream-create.dir/milk-stream-create.c.o
+[  2%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-streamCTRL-cli.dir/milk-streamCTRL-cli.c.o
+[  2%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_compute_status.c.o
+[  2%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-stream-rm.dir/milk-stream-rm.c.o
+[  2%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_exec_start.c.o
+[  2%] Building C object src/perfbench/CMakeFiles/milk-perfbench-mkstream.dir/perfbench-mkstream.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_loopstep.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_shm_close.c.o
+[  3%] Building C object plugins/milk-extra-src/info/CMakeFiles/milk-shmimmon.dir/milk-shmimmon.c.o
+[  3%] Building C object src/engine/libmilkdata/CMakeFiles/milkdata.dir/milkdata.c.o
+[  3%] Building C object src/cli/CLIcore/CMakeFiles/milk-termview.dir/termview/milk-termview.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_globals.c.o
+[  3%] Building C object src/isio-tools/isio-stream-info-1line/CMakeFiles/isio-stream-info.dir/isio-stream-info.c.o
+[  3%] Building C object src/cli/CLIcore/CMakeFiles/milk-termview.dir/termview/termview.c.o
+[  3%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-fpsexec-cnt2push.dir/cnt2push_main.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_procdirname.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_exec_end.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_shm_link.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_shm_create.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_setup.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_SIGexit.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_signals.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_shm_list_create.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_update_output_stream.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processinfo_WriteMessage.c.o
+[  3%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/processtools_trigger.c.o
+[  3%] Linking C executable milk-perfbench-mkstream
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/quicksort.c.o
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/quicksort_multiarray.c.o
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milkprocessinfo.dir/timeutils.c.o
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c: In function ‘termview_screen’:
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c:401:13: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  401 |             write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c:1200:13: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1200 |             write(STDOUT_FILENO, frame_buffer, fb_pos);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c: In function ‘tv_enter_alt_screen’:
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c:215:5: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  215 |     write(STDOUT_FILENO, "\033[?1049h\033[?25l\033[?1002h\033[?1006h", 30); // alt screen + hide cursor + mouse track
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c: In function ‘tv_exit_alt_screen’:
+/home/oguyon/src/milk/src/cli/CLIcore/termview/termview.c:220:11: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  220 |     (void)write(STDOUT_FILENO, "\033[?1006l\033[?1002l\033[?1049l\033[?25h", 30); // exit alt screen + show cursor + no mouse track
+      |           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  4%] Linking C executable milk-stream-list
+[  4%] Linking C executable milk-streamCTRL-cli
+[  4%] Linking C executable milk-fpsexec-cnt2push
+[  4%] Linking C executable isio-stream-info
+[  4%] Linking C executable milk-stream-create
+[  4%] Linking C executable milk-stream-rm
+[  4%] Linking C shared library libmilkdata.so
+[  4%] Linking C shared library libmilkprocessinfo.so
+[  4%] Linking C executable milk-shmimmon
+[  4%] Built target milk-perfbench-mkstream
+[  4%] Linking C executable milk-termview
+[  4%] Built target isio-stream-info
+[  4%] Built target milk-stream-list
+[  4%] Built target milk-fpsexec-cnt2push
+[  4%] Built target milk-stream-create
+[  4%] Built target milk-stream-rm
+[  4%] Built target milkdata
+[  4%] Built target milk-streamCTRL-cli
+[  4%] Built target milk-shmimmon
+[  4%] Built target milkprocessinfo
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL-scan.dir/procCTRL/milk-procCTRL-scan.c.o
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/milk-procCTRL.c.o
+[  4%] Building C object src/perfbench/CMakeFiles/milk-perfbench-readprocinfo.dir/milk-perfbench-readprocinfo.c.o
+[  4%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/milk-streamCTRL.c.o
+[  4%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL-scan.dir/procCTRL/procCTRL_PIDcollectSystemInfo.c.o
+[  5%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_PIDcollectSystemInfo.c.o
+[  5%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_GetNumberCPUs.c.o
+[  5%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_find_streams.c.o
+[  5%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_TUI.c.o
+[  6%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_print_inode.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procinfo-list.dir/procCTRL/milk-procinfo-list.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_TUI.c.o
+[  6%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_print_procpid.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_TUIcompat.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_TUI_sort.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_processinfo_scan.c.o
+[  6%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procCTRL.dir/procCTRL/procCTRL_GetCPUloads.c.o
+[  7%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_print_trace.c.o
+[  7%] Building C object src/engine/libprocessinfo/CMakeFiles/milk-procinfo-rm.dir/milk-procinfo-rm.c.o
+[  7%] Building C object src/perfbench/CMakeFiles/milk-perfbench.dir/milk-perfbench.c.o
+[  7%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_utilfuncs.c.o
+[  7%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_scan.c.o
+[  7%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_add_entry.c.o
+In file included from /home/oguyon/src/milk/src/cli/streamCTRL/milk-streamCTRL.c:17:
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_ansi.h:104:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  104 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_ansi.h: In function ‘ansi_raw_mode_exit’:
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_ansi.h:118:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  118 |     (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_ansi.h:120:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  120 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  7%] Building C object src/cli/CLIcore/CMakeFiles/milk-streamCTRL.dir/__/streamCTRL/streamCTRL_TUIcompat.c.o
+[  7%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_SetParamCLIindex.c.o
+[  7%] Linking C executable milk-procinfo-list
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c: In function ‘processinfo_CTRLscreen’:
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:721:76: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  721 |                                 screenprint_setcolor(6); TUI_printfw("% -10s ", "ACTIVE"); screenprint_unsetcolor(6);
+      |                                                                            ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:723:76: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  723 |                                 screenprint_setcolor(7); TUI_printfw("% -10s ", "STOPPED"); screenprint_unsetcolor(7);
+      |                                                                            ^
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_print_info.c.o
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:725:76: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  725 |                                 screenprint_setcolor(8); TUI_printfw("% -10s ", "CRASHED"); screenprint_unsetcolor(8);
+      |                                                                            ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:727:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  727 |                                 TUI_printfw("% -10s ", "OFF");
+      |                                                   ^
+In file included from /home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_TUI.c:29:
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_TUIcompat.h: In function ‘sc_frame_flush’:
+/home/oguyon/src/milk/src/cli/streamCTRL/streamCTRL_TUIcompat.h:67:16: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   67 |         (void) write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_processinfo_entries.c.o
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_connectExternalFPS.c.o
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_checkparameter.c.o
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_connect.c.o
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:768:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  768 |                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+      |                                                   ^
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_disconnect.c.o
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:802:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  802 |                                 TUI_printfw("% -30s ", desc);
+      |                                                   ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:810:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  810 |                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+      |                                                   ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:842:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  842 |                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+      |                                                   ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:880:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  880 |                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+      |                                                   ^
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:915:51: warning: ' ' flag used with ‘%s’ gnu_printf format [-Wformat=]
+  915 |                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+      |                                                   ^
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_FPCONFsetup.c.o
+[  8%] Linking C executable milk-perfbench-readprocinfo
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_execFPScmd.c.o
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_FPCONFexit.c.o
+[  8%] Linking C executable milk-procinfo-rm
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:183:13: warning: ignoring return value of ‘system’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |             system("tmux new-session -d -s milk-procCTRL-scan 'milk-procCTRL-scan'");
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In file included from /home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUIcompat.h:22,
+                 from /home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUI.c:41:
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_ansi.h:104:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  104 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_FPCONFloopstep.c.o
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUIcompat.h: In function ‘sc_frame_flush’:
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_TUIcompat.h:67:16: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   67 |         (void) write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_ansi.h: In function ‘ansi_raw_mode_exit’:
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_ansi.h:118:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  118 |     (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libprocessinfo/procCTRL/procCTRL_ansi.h:120:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  120 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_RUNexit.c.o
+[  8%] Linking C executable milk-procCTRL-scan
+[  8%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_RUNstart.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_isvalid.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_RUNstop.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_CONFstop.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_CONFstart.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_GetFileName.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_FPSremove.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_GetParamIndex.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_getFPSargs.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_GetTypeString.c.o
+[  9%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_paramvalue.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_PrintParameterInfo.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_printlist.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_printparameter_valuestring.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_shmdirname.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_WriteParameterToDisk.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_save2disk.c.o
+[ 10%] Linking C executable milk-streamCTRL
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_loadstream.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_outlog.c.o
+[ 10%] Linking C executable milk-procCTRL
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_globals.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_ID.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_struct_create.c.o
+[ 10%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_load.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_scan.c.o
+[ 11%] Linking C executable milk-perfbench
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_processinfo.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_tmux.c.o
+[ 11%] Built target milk-procinfo-list
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_processcmdline_file.c.o
+[ 11%] Built target milk-procinfo-rm
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_processcmdline_interactive.c.o
+[ 11%] Built target milk-perfbench-readprocinfo
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_userinputsetparamvalue.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_process_fpsCMDarray.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_read_fpsCMD_fifo.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_streamname_parse.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_local_store.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_loadmemstream_lite.c.o
+[ 11%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_cli_function_registry.c.o
+[ 12%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/fps_cli_init.c.o
+[ 12%] Building C object src/engine/libfps/CMakeFiles/milkfps.dir/imgid_slice.c.o
+[ 12%] Linking C shared library libmilkfps.so
+[ 12%] Built target milk-procCTRL-scan
+[ 12%] Built target milk-perfbench
+[ 12%] Built target milk-procCTRL
+[ 12%] Built target milk-termview
+[ 12%] Built target milk-streamCTRL
+[ 12%] Built target milkfps
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/COREMOD_iofits.c.o
+[ 12%] Building C object plugins/milk-extra-src/info/CMakeFiles/stream-monproc-disp.dir/stream_monproc_shm.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/check_fitsio_status.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/COREMOD_iofits.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/breakcube.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/data_type_code.c.o
+[ 12%] Building C object plugins/milk-extra-src/info/CMakeFiles/stream-monproc-disp.dir/stream-monproc-disp.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/file_exists.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/file_exists.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/breakcube.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/check_fitsio_status.c.o
+[ 12%] Building C object src/engine/libfps/CMakeFiles/milkfpsStandalone.dir/fps_cli_sync.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/images2cube.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/data_type_code.c.o
+[ 12%] Building C object src/engine/libfpsseq/CMakeFiles/milkfpsseq.dir/fpsseq_shm.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/is_fits_file.c.o
+[ 12%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/COREMOD_tools.c.o
+[ 12%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/COREMOD_tools.c.o
+[ 12%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/linalgebra.c.o
+[ 12%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/linopt_imtools.c.o
+[ 12%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/images2cube.c.o
+[ 13%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/clustering.c.o
+[ 13%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/COREMOD_memory.c.o
+[ 13%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/compute_SVDdecomp.c.o
+[ 13%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/is_fits_file.c.o
+[ 13%] Building C object src/engine/libfps/CMakeFiles/milkfpsStandalone.dir/fps_cli_init.c.o
+[ 13%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/fileutils.c.o
+[ 13%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/COREMOD_memory.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/imdisplay3d.c.o
+[ 14%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/loadfits.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/linregress.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/fileutils.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/logfunc.c.o
+[ 14%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/clearall.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/imdisplay3d.c.o
+[ 14%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/loadfits.c.o
+[ 14%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/basis_rotate_match.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/mvprocCPUset.c.o
+[ 14%] Linking C executable stream-monproc-disp
+[ 14%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/cubecluster.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/linregress.c.o
+[ 14%] Building C object src/engine/libfpsseq/CMakeFiles/milkfpsseq.dir/fpsseq_scheduler.c.o
+[ 14%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/compute_image_memory.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/statusstat.c.o
+[ 14%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/clearall.c.o
+[ 14%] Building C object src/engine/libfps/CMakeFiles/milkfpsStandalone.dir/fps_lifecycle.c.o
+[ 14%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/logfunc.c.o
+[ 14%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/CFmeminit.c.o
+[ 14%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/CFtree_rebuild.c.o
+[ 15%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/loadmemstream.c.o
+[ 15%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/read_keyword.c.o
+[ 15%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/compute_SVDpseudoInverse.c.o
+[ 15%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/compute_nb_image.c.o
+[ 16%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/mvprocCPUset.c.o
+[ 16%] Building C object src/engine/libfpsseq/CMakeFiles/milkfpsseq.dir/fpsseq_fifo.c.o
+[ 16%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/addCF_to_CF.c.o
+[ 16%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits_compute.dir/savefits.c.o
+[ 16%] Building C object src/engine/libfpsseq/CMakeFiles/milkfpsseq.dir/fpsseq_cmdexec.c.o
+[ 16%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools.dir/stringutils.c.o
+[ 17%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/cublas_Coeff2Map_Loop.c.o
+[ 17%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/compute_image_memory.c.o
+[ 17%] Building C object src/engine/libfpsseq/CMakeFiles/milkfpsseq.dir/fpsseq_script.c.o
+[ 17%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/compute_nb_variable.c.o
+[ 17%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/linalgebrainit.c.o
+[ 17%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/loadmemstream.c.o
+[ 17%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/cublas_linalgebratest.c.o
+[ 18%] Linking C shared library libmilkfpsStandalone.so
+[ 18%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GPU_loop_MultMat_free.c.o
+[ 18%] Linking C shared library libmilkCOREMODtools.so
+[ 18%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/image_fitModes.c.o
+[ 18%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/image_construct.c.o
+[ 18%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/compute_imdistance_double.c.o
+[ 18%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/condense.c.o
+[ 18%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/savefits.c.o
+[ 19%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milkCOREMODiofits.dir/read_keyword.c.o
+[ 19%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/statusstat.c.o
+[ 19%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/compute_nb_image.c.o
+[ 19%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/image_to_vec.c.o
+[ 20%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/create_image.c.o
+[ 20%] Building C object src/coremods/COREMOD_tools/CMakeFiles/milkCOREMODtools_compute.dir/stringutils.c.o
+[ 20%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/imcube_crossproduct.c.o
+[ 20%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/create_new_leaf.c.o
+[ 20%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GPU_loop_MultMat_execute.c.o
+[ 20%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/ctree_memallocate.c.o
+[ 20%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/ctree_init.c.o
+[ 20%] Linking C shared library libmilkCOREMODiofits_compute.so
+[ 21%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/lin1Dfit.c.o
+[ 21%] Linking C shared library libmilkfpsseq.so
+[ 21%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GPU_loop_MultMat_setup.c.o
+[ 21%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/ctree_memfree.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/compute_nb_variable.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/create_variable.c.o
+[ 21%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/linRM_from_inout.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/create_image.c.o
+[ 21%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GPUloadCmat.c.o
+[ 21%] Linking C shared library libmilkCOREMODtools_compute.so
+[ 21%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GPU_SVD_computeControlMatrix.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/delete_image.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/create_variable.c.o
+[ 21%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/delete_sharedmem_image.c.o
+[ 21%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/GramSchmidt.c.o
+[ 22%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/delete_image.c.o
+[ 22%] Linking C shared library libmilkCOREMODiofits.so
+[ 22%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/delete_variable.c.o
+[ 23%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/droptree.c.o
+[ 23%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/delete_sharedmem_image.c.o
+[ 23%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/get_availableCFindex.c.o
+[ 23%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/makeCosRadModes.c.o
+[ 23%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/fps_ID.c.o
+[ 23%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/leaf_addentry.c.o
+[ 23%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/magma_compute_SVDpseudoInverse_SVD.c.o
+[ 23%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/leafnode_attachleaf.c.o
+[ 23%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/makeCPAmodes.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/magma_MatMatMult_testPseudoInverse.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/magma_compute_SVDpseudoInverse.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/mindiffscan.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/delete_variable.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/fps_list.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/modalremap.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/fps_ID.c.o
+[ 24%] Built target stream-monproc-disp
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/MVM_CPU.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/im3D_to_stream2D.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/fps_list.c.o
+[ 24%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/vec_to_2Dimage.c.o
+[ 24%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools_compute.dir/mask_to_pixtable.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/node_attachnode.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_checksize.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/printCFtree.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/im3D_to_stream2D.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_checksize.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/PCAmatch.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/split_CF_node.c.o
+[ 24%] Built target milkfpsStandalone
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/cublas_PCA.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/printGPUMATMULTCONF.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_complex.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_copy.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_copy.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/MVMextractModes.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_complex.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/Qexpand.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/update_level.c.o
+[ 24%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/SGEMM.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_copy_shm.c.o
+[ 24%] Building C object src/engine/libfps/CMakeFiles/milk-fps-list.dir/milk-fps-list.c.o
+[ 24%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_ID.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/write_clustCFave.c.o
+[ 24%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/write_clustCFdat.c.o
+[ 25%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_copy_shm.c.o
+[ 26%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering_compute.dir/write_clustleafsummary.c.o
+[ 26%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_ID.c.o
+[ 26%] Linking C shared library libmilklinoptimtools_compute.so
+[ 26%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_keyword.c.o
+[ 26%] Building C object src/engine/libfps/CMakeFiles/milk-fps-search.dir/milk-fps-search.c.o
+[ 26%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_keyword.c.o
+[ 27%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_keyword_addD.c.o
+[ 27%] Building C object src/engine/libfps/CMakeFiles/milk-fps-info.dir/milk-fps-info.c.o
+[ 27%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_keyword_addL.c.o
+[ 27%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/SingularValueDecomp.c.o
+[ 27%] Linking C executable milk-fps-list
+[ 27%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_keyword_addD.c.o
+[ 28%] Building C object src/engine/libfps/CMakeFiles/milk-fps-rm.dir/milk-fps-rm.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-confstart.dir/milk-fps-cmd.c.o
+[ 29%] Linking C executable milk-fps-search
+[ 29%] Linking C executable milk-fps-info
+[ 29%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/SingularValueDecomp_mkM.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_keyword_addS.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_keyword_addL.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_keyword_addS.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_keyword_list.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_make2D.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-confstop.dir/milk-fps-cmd.c.o
+[ 29%] Linking C shared library libmilkclustering_compute.so
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_make3D.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-runstart.dir/milk-fps-cmd.c.o
+[ 29%] Linking C executable milk-fps-confstart
+[ 29%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra_compute.dir/SingularValueDecomp_mkU.c.o
+[ 29%] Linking C executable milk-fps-rm
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_keyword_list.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-runstop.dir/milk-fps-cmd.c.o
+[ 29%] Linking C executable milk-fps-confstop
+[ 29%] Linking C executable milk-fps-runstart
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_make2D.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_mk_complex_from_amph.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_make3D.c.o
+[ 29%] Built target milk-fps-info
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_mk_complex_from_reim.c.o
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_mk_complex_from_amph.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-confstep.dir/milk-fps-cmd.c.o
+[ 29%] Built target milkCOREMODtools
+[ 29%] Built target milkCOREMODtools_compute
+[ 29%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_mk_complex_from_reim.c.o
+[ 29%] Building C object src/engine/libfps/CMakeFiles/milk-fps-track.dir/milk-fps-track.c.o
+[ 30%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_mk_amph_from_complex.c.o
+[ 30%] Building C object src/engine/libfps/CMakeFiles/milk-fps-set.dir/milk-fps-set.c.o
+[ 30%] Built target milk-fps-list
+[ 30%] Linking C executable milk-fps-runstop
+[ 30%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_mk_amph_from_complex.c.o
+[ 30%] Linking C executable milk-fps-confstep
+[ 31%] Linking C shared library libmilklinalgebra_compute.so
+[ 31%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_mk_reim_from_complex.c.o
+[ 31%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_mk_reim_from_complex.c.o
+[ 31%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/image_set_counters.c.o
+[ 31%] Built target milk-fps-search
+[ 31%] Built target milk-fps-confstart
+[ 32%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/list_image.c.o
+[ 32%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/image_set_counters.c.o
+[ 32%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/list_image.c.o
+[ 32%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/list_variable.c.o
+[ 33%] Linking C executable milk-fps-track
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/list_variable.c.o
+[ 33%] Linking C executable milk-fps-set
+[ 33%] Built target milk-fps-confstop
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/logshmim.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/logshmim.c.o
+[ 33%] Built target milkfpsseq
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/logshmim_save.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/read_shmim.c.o
+[ 33%] Built target milk-fps-runstart
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/read_shmim_size.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/logshmim_save.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/read_shmim.c.o
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/milk-fpsCTRL.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/read_shmimall.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/saveall.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/read_shmim_size.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/read_shmimall.c.o
+/home/oguyon/src/milk/src/coremods/COREMOD_memory/logshmim.c: In function ‘compute_function’:
+/home/oguyon/src/milk/src/coremods/COREMOD_memory/logshmim.c:796:29: warning: zero-length gnu_printf format string [-Wformat-zero-length]
+  796 |                             "");
+      |                             ^~
+[ 33%] Built target milk-fps-rm
+[ 33%] Built target milk-fps-runstop
+[ 33%] Building C object src/engine/libfpsseq/CMakeFiles/milk-seq.dir/milk-seq.c.o
+/home/oguyon/src/milk/src/coremods/COREMOD_memory/logshmim.c: In function ‘compute_function’:
+/home/oguyon/src/milk/src/coremods/COREMOD_memory/logshmim.c:796:29: warning: zero-length gnu_printf format string [-Wformat-zero-length]
+  796 |                             "");
+      |                             ^~
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/fpsCTRL_FPSdisplay.c.o
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/fpsCTRL_TUI.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/saveall.c.o
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/fpsCTRL_TUIcompat.c.o
+[ 33%] Built target milk-fps-confstep
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/milk-fpsCTRL.c: In function ‘fpsCTRL_crash_handler’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/milk-fpsCTRL.c:34:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   34 |     (void) write(STDERR_FILENO,
+      |            ^~~~~~~~~~~~~~~~~~~~
+   35 |                  reset_seq, sizeof(reset_seq) - 1);
+      |                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/shmim_purge.c.o
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/fpsCTRL_TUI_process_user_key.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/shmim_setowner.c.o
+[ 33%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/level0node_summary.c.o
+[ 33%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_ave.c.o
+[ 34%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_copy.c.o
+[ 34%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/print_nodeinfo.c.o
+In file included from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUIcompat.h:22,
+                 from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_FPSdisplay.c:15:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:105:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  105 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 34%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/shmim_purge.c.o
+[ 34%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/scheduler_display.c.o
+In file included from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUIcompat.h:22,
+                 from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUI.c:35:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:105:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  105 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 34%] Linking C executable milk-seq
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUIcompat.h: In function ‘sc_frame_flush’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUIcompat.h:76:16: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   76 |         (void) write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_exit’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:119:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  119 |     (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 34%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_merge.c.o
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:121:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  121 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/shmim_setowner.c.o
+[ 35%] Building C object src/engine/libfps/CMakeFiles/milk-fpsCTRL.dir/fpsCTRL/fpsCTRL_globals.c.o
+In file included from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUIcompat.h:22,
+                 from /home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_TUI_process_user_key.c:13:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_exit’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:119:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  119 |     (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:121:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  121 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:105:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  105 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_copy.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_ave.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_merge.c.o
+[ 35%] Built target milk-fps-set
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_delay.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_delay.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_diff.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_halfimdiff.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_halfimdiff.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_diff.c.o
+[ 35%] Built target milk-fps-track
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_monitorlimits.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_paste.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_monitorlimits.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_paste.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_pixmapdecode.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_poke.c.o
+[ 35%] Linking C executable milk-fpsCTRL
+[ 35%] Built target milkCOREMODiofits_compute
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_sem.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_TCP.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_TCP_receive.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_pixmapdecode.c.o
+[ 35%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_poke.c.o
+[ 36%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_UDP.c.o
+[ 36%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_UDP_receive.c.o
+[ 37%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/COREMOD_arith.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_sem.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_updateloop.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_TCP.c.o
+[ 37%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_crop.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/stream_slice.c.o
+[ 37%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_crop2D.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_TCP_receive.c.o
+[ 37%] Built target milk-seq
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory.dir/variable_ID.c.o
+[ 37%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_cropmask.c.o
+[ 37%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_UDP.c.o
+[ 37%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_multicrop2D.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_merge3D.c.o
+[ 38%] Built target milkCOREMODiofits
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_norm.c.o
+[ 38%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_UDP_receive.c.o
+[ 38%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_updateloop.c.o
+[ 38%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/stream_slice.c.o
+[ 38%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milkCOREMODmemory_compute.dir/variable_ID.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_pixremap.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_set_1Dpixrange.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_pixunmap.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_set_2Dpix.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/COREMOD_arith.c.o
+[ 38%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_set_col.c.o
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_set_3Daxes.c.o
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_crop.c.o
+[ 39%] Linking C shared library libmilkCOREMODmemory.so
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_set_row.c.o
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_crop2D.c.o
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_slicenormalize.c.o
+[ 39%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_setzero.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_stats.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_total.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_multicrop2D.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_cropmask.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_unfold.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_merge3D.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_pixremap.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_vecmult.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_norm.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_dxdy.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_set_1Dpixrange.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_set_2Dpix.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_pixunmap.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/imfunctions.c.o
+[ 40%] Linking C shared library libmilkCOREMODmemory_compute.so
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/mathfuncs.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_arith__im__im.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_arith__Cim_Cim__Cim.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_arith__im_im__im.c.o
+[ 40%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_set_3Daxes.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_set_col.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_set_row.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_setzero.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_arith__im_f__im.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_slicenormalize.c.o
+[ 41%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/image_arith__im_f_f__im.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith_compute.dir/execute_arith.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_stats.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_total.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_unfold.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_vecmult.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_dxdy.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/imfunctions.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/mathfuncs.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_arith__im__im.c.o
+[ 42%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_arith__Cim_Cim__Cim.c.o
+[ 43%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_arith__im_im__im.c.o
+[ 43%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_arith__im_f__im.c.o
+[ 43%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/execute_arith.c.o
+[ 43%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milkCOREMODarith.dir/image_arith__im_f_f__im.c.o
+[ 43%] Linking C shared library libmilkCOREMODarith_compute.so
+[ 43%] Built target milkclustering_compute
+[ 43%] Linking C shared library libmilkCOREMODarith.so
+[ 43%] Built target milk-fpsCTRL
+[ 43%] Built target milklinoptimtools_compute
+[ 43%] Built target milklinalgebra_compute
+[ 43%] Built target milkCOREMODmemory
+[ 43%] Built target milkCOREMODmemory_compute
+[ 43%] Building C object plugins/milk-extra-src/statistic/CMakeFiles/milkstatistic_compute.dir/statistic.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/image_stats.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/cubestats.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/cubecollapse.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/extrapolate_nearestpixel.c.o
+[ 44%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/DFT.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/kbdhit.c.o
+[ 44%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/fft.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/cubepercentile.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/percentile.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/improfile.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/im3Dto2D.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/print_header.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/info.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/image_filter.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/image_add.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imcontract.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/cubeMatchMatrix.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/image_basic.c.o
+[ 44%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/stream_monproc.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/fit2DcosKernel.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/fconvolve.c.o
+[ 44%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/fit1D.c.o
+[ 45%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imexpand.c.o
+[ 45%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/dofft.c.o
+[ 45%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/fit2Dcossin.c.o
+[ 45%] Linking C shared library libmilkstatistic_compute.so
+[ 45%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/fftcorrelation.c.o
+[ 45%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/stream_monproc_shm.c.o
+[ 45%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/gaussfilter.c.o
+[ 45%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/ffttranslate.c.o
+[ 46%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/im2Dfilter_1pixbblurr.c.o
+[ 46%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imgetcircsym.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/fftzoom.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/medianfilter.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/fft_autocorrelation.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/fft_structure_function.c.o
+[ 47%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/streamtiming_stats.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter_compute.dir/percentile_interpolation.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/init_fftwplan.c.o
+[ 47%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo_compute.dir/timediff.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/permut.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imgetcircasym.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imrotate.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/pup2foc.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imresize.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imstretch.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/wisdom.c.o
+[ 47%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft_compute.dir/testfftspeed.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/imswapaxis2D.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/indexmap.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/loadfitsimgcube.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/measure_transl.c.o
+[ 47%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/naninf2zero.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/streamrecord.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/streamfeed.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic_compute.dir/tableto2Dim.c.o
+[ 48%] Linking C shared library libmilkinfo_compute.so
+[ 48%] Linking C shared library libmilkimagefilter_compute.so
+[ 48%] Linking C shared library libmilkfft_compute.so
+[ 48%] Built target milkstatistic_compute
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/mkdisk.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/mkpolygon.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/voronoi.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/image_gen.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/image_gen_polygons.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/image_gen_basic_shapes.c.o
+[ 48%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/mkspdisk.c.o
+[ 49%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/mkrandomim.c.o
+[ 49%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen_compute.dir/image_gen_profiles.c.o
+[ 49%] Linking C shared library libmilkimagebasic_compute.so
+[ 49%] Linking C shared library libmilkimagegen_compute.so
+[ 49%] Built target milkinfo_compute
+[ 49%] Built target milkimagefilter_compute
+[ 49%] Built target milkCOREMODarith
+[ 49%] Built target milkfft_compute
+[ 49%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_UI_execute_debug.c.o
+[ 49%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_UI_execute_preproc.c.o
+[ 49%] Built target milkCOREMODarith_compute
+[ 49%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_checkargs_fps.c.o
+[ 49%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_datainit.c.o
+[ 49%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_UI_execute.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_checkargs.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_UI_execute_redir.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_help_command.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_UI_alias.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_help_topics.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_help.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_modules.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_setSHMdir.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_memory.c.o
+[ 50%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_env_trap.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_process.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_environment.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_execution.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_exec_waitany.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_flow.c.o
+[ 51%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_intercept_utils.c.o
+[ 51%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-multicrop2D.dir/image_multicrop2D.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-crop2D.dir/image_crop2D.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-crop2D.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-immerge.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-multicrop2D.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_builtin.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setrow.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setcol.dir/image_set_col.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-immerge.dir/image_merge3D.c.o
+[ 52%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_traps.c.o
+[ 52%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_cmd_io.c.o
+[ 52%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_cmd_builtins.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setrow.dir/image_set_row.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setcol.dir/__/__/engine/libfps/fps_standalone_data.c.o
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c: In function ‘cli_assert_cmp’:
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:763:17: warning: format ‘%s’ expects argument of type ‘char *’, but argument 5 has type ‘int’ [-Wformat=]
+  763 |                 "\033[1;32m"
+      |                 ^~~~~~~~~~~~
+......
+  770 |                 cli_float_digits,
+      |                 ~~~~~~~~~~~~~~~~
+      |                 |
+      |                 int
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:765:27: note: format string is defined here
+  765 |                 "%.*g %s %s(=%.*g) "
+      |                          ~^
+      |                           |
+      |                           char *
+      |                          %d
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:763:17: warning: field precision specifier ‘.*’ expects argument of type ‘int’, but argument 6 has type ‘char *’ [-Wformat=]
+  763 |                 "\033[1;32m"
+      |                 ^~~~~~~~~~~~
+......
+  771 |                 part2, v2,
+      |                 ~~~~~
+      |                 |
+      |                 char *
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:765:32: note: format string is defined here
+  765 |                 "%.*g %s %s(=%.*g) "
+      |                              ~~^~
+      |                                |
+      |                                int
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:778:17: warning: format ‘%s’ expects argument of type ‘char *’, but argument 5 has type ‘int’ [-Wformat=]
+  778 |                 "\033[1;31m"
+      |                 ^~~~~~~~~~~~
+......
+  785 |                 cli_float_digits,
+      |                 ~~~~~~~~~~~~~~~~
+      |                 |
+      |                 int
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:780:27: note: format string is defined here
+  780 |                 "%.*g %s %s(=%.*g) "
+      |                          ~^
+      |                           |
+      |                           char *
+      |                          %d
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:778:17: warning: field precision specifier ‘.*’ expects argument of type ‘int’, but argument 6 has type ‘char *’ [-Wformat=]
+  778 |                 "\033[1;31m"
+      |                 ^~~~~~~~~~~~
+......
+  786 |                 part2, v2,
+      |                 ~~~~~
+      |                 |
+      |                 char *
+/home/oguyon/src/milk/src/cli/libmilkscript/CLIcore_script_intercept_process.c:780:32: note: format string is defined here
+  780 |                 "%.*g %s %s(=%.*g) "
+      |                              ~~^~
+      |                                |
+      |                                int
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setpix.dir/image_set_2Dpix.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-imsetzero.dir/image_setzero.c.o
+[ 52%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_cmd_inspect.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-imsetzero.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setpix1Drange.dir/image_set_1Dpixrange.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setpix1Drange.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 52%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-set3Daxes.dir/image_set_3Daxes.c.o
+[ 52%] Built target milkimagegen_compute
+[ 54%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_cmd_defer.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-setpix.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-set3Daxes.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-normslice.dir/image_norm.c.o
+[ 54%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_case.c.o
+[ 54%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_expand_arith.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-cropmask.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-cropmask.dir/image_cropmask.c.o
+[ 54%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-normslice.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 55%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-unfold.dir/image_unfold.c.o
+[ 55%] Built target milkimagebasic_compute
+[ 55%] Linking C executable milk-fpsexec-arith-setcol
+[ 55%] Linking C executable milk-fpsexec-arith-crop2D
+[ 55%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-unfold.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 55%] Linking C executable milk-fpsexec-arith-setrow
+[ 55%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_expand_test.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-imsetzero
+[ 55%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_expand_fps.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-setpix
+[ 56%] Linking C executable milk-fpsexec-arith-immerge
+[ 56%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_expand_env.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-pixremap.dir/image_pixremap.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-pixremap.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-slicenormalize.dir/image_slicenormalize.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-slicenormalize.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-setpix1Drange
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-pixunmap.dir/image_pixunmap.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-vecmult.dir/image_vecmult.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-vecmult.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-normslice
+[ 56%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_flow.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-imtrunc.dir/image_arith__im_f_f__im.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-set3Daxes
+[ 56%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_func.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-pixunmap.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 56%] Linking C executable milk-fpsexec-arith-unfold
+[ 56%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-fpsexec-mem-streamave.dir/stream_ave.c.o
+[ 56%] Building C object src/coremods/COREMOD_arith/CMakeFiles/milk-fpsexec-arith-imtrunc.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 56%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_script_var.c.o
+[ 56%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-saveFITS.dir/savefits.c.o
+[ 57%] Linking C executable milk-fpsexec-arith-pixremap
+[ 57%] Linking C executable milk-fpsexec-arith-cropmask
+[ 57%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_signals.c.o
+[ 57%] Linking C executable milk-fpsexec-arith-slicenormalize
+[ 57%] Linking C executable milk-fpsexec-arith-pixunmap
+[ 57%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/CLIcore_utils.c.o
+[ 57%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-loadfits.dir/loadfits.c.o
+[ 57%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-saveFITS.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 57%] Linking C executable milk-fpsexec-arith-imtrunc
+[ 57%] Linking C executable milk-fpsexec-arith-vecmult
+[ 57%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-loadfits.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 57%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-imgs2cube.dir/images2cube.c.o
+[ 58%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/cli_calc_tokenizer.c.o
+[ 58%] Building C object src/coremods/COREMOD_memory/CMakeFiles/milk-fpsexec-mem-streamave.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 58%] Linking C executable milk-fpsexec-arith-multicrop2D
+[ 58%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/cli_calc_parser.c.o
+[ 58%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/cli_calc_functions.c.o
+[ 58%] Linking C executable milk-fpsexec-iofits-saveFITS
+[ 58%] Built target milk-fpsexec-arith-imsetzero
+[ 58%] Linking C executable milk-fpsexec-mem-streamave
+[ 58%] Linking C executable milk-fpsexec-iofits-loadfits
+[ 58%] Building C object src/coremods/COREMOD_iofits/CMakeFiles/milk-fpsexec-iofits-imgs2cube.dir/__/__/engine/libfps/fps_standalone_data.c.o
+[ 58%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milk-fpsexec-fft-dofft.dir/dofft.c.o
+[ 58%] Built target milk-fpsexec-arith-setpix
+[ 58%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/cli_calc_binops.c.o
+[ 58%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milk-fpsexec-fft-dofft.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Linking C executable milk-fpsexec-iofits-imgs2cube
+[ 59%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/cli_calc_eval.c.o
+[ 59%] Built target milk-fpsexec-arith-immerge
+[ 59%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milk-fpsexec-fft-pup2foc.dir/pup2foc.c.o
+[ 59%] Built target milk-fpsexec-arith-crop2D
+[ 59%] Built target milk-fpsexec-arith-setcol
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-SVDdecomp.dir/compute_SVDdecomp.c.o
+[ 59%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/milkscript_stubs.c.o
+[ 59%] Building C object src/cli/libmilkscript/CMakeFiles/milkscript.dir/milkscript_api.c.o
+[ 59%] Built target milk-fpsexec-arith-set3Daxes
+[ 59%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milk-fpsexec-fft-pup2foc.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-SVDdecomp.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-SVDpInverse.dir/compute_SVDpseudoInverse.c.o
+[ 59%] Built target milk-fpsexec-arith-setrow
+[ 59%] Linking C executable milk-fpsexec-fft-dofft
+[ 59%] Built target milk-fpsexec-arith-setpix1Drange
+[ 59%] Built target milk-fpsexec-arith-unfold
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-SVDpInverse.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imgconstruct.dir/image_construct.c.o
+[ 59%] Built target milk-fpsexec-arith-normslice
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imgconstruct.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imgFitModes.dir/image_fitModes.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imgFitModes.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Built target milk-fpsexec-arith-imtrunc
+[ 59%] Linking C shared library libmilkscript.so
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-img2vec.dir/image_to_vec.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imcXprod.dir/imcube_crossproduct.c.o
+[ 59%] Linking C executable milk-fpsexec-fft-pup2foc
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-img2vec.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-lin1Dfit.dir/lin1Dfit.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-lin1Dfit.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-imcXprod.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-linRM.dir/linRM_from_inout.c.o
+[ 59%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-linRM.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 60%] Linking C executable milk-fpsexec-linopt-imgconstruct
+[ 60%] Linking C executable milk-fpsexec-linopt-imcXprod
+[ 60%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mkCPAmodes.dir/makeCPAmodes.c.o
+[ 61%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mkCPAmodes.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 61%] Linking C executable milk-fpsexec-linopt-lin1Dfit
+[ 61%] Linking C executable milk-fpsexec-linopt-SVDdecomp
+[ 61%] Linking C executable milk-fpsexec-linopt-imgFitModes
+[ 61%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mkCosRadModes.dir/makeCosRadModes.c.o
+[ 61%] Linking C executable milk-fpsexec-linopt-img2vec
+[ 61%] Built target milk-fpsexec-arith-vecmult
+[ 62%] Linking C executable milk-fpsexec-linopt-SVDpInverse
+[ 62%] Built target milk-fpsexec-arith-cropmask
+[ 62%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mask2pixtab.dir/mask_to_pixtable.c.o
+[ 62%] Linking C executable milk-fpsexec-linopt-linRM
+[ 62%] Built target milk-fpsexec-iofits-saveFITS
+[ 62%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mask2pixtab.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 62%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-vec2Dimg.dir/vec_to_2Dimage.c.o
+[ 62%] Built target milk-fpsexec-iofits-imgs2cube
+[ 62%] Built target milk-fpsexec-arith-pixremap
+[ 62%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-mkCosRadModes.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 62%] Linking C executable milk-fpsexec-linopt-mkCPAmodes
+[ 62%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milk-fpsexec-linopt-vec2Dimg.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 62%] Linking C executable milk-fpsexec-linopt-mask2pixtab
+[ 62%] Built target milk-fpsexec-arith-slicenormalize
+[ 62%] Built target milk-fpsexec-iofits-loadfits
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-gramschmidt.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-gramschmidt.dir/GramSchmidt.c.o
+[ 63%] Built target milk-fpsexec-fft-pup2foc
+[ 63%] Linking C executable milk-fpsexec-linopt-mkCosRadModes
+[ 63%] Linking C executable milk-fpsexec-linopt-vec2Dimg
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-MVMextract.dir/MVMextractModes.c.o
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-PCAmatch.dir/PCAmatch.c.o
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-MVMextract.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 63%] Linking C executable milk-fpsexec-linalg-gramschmidt
+[ 63%] Built target milk-fpsexec-linopt-imgconstruct
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-Qexpand.dir/Qexpand.c.o
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-Qexpand.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 63%] Built target milk-fpsexec-linopt-imcXprod
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-PCAmatch.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 63%] Built target milk-fpsexec-arith-pixunmap
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SGEMM.dir/SGEMM.c.o
+[ 63%] Linking C executable milk-fpsexec-linalg-MVMextract
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVD.dir/SingularValueDecomp.c.o
+[ 63%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVDmkM.dir/SingularValueDecomp_mkM.c.o
+[ 63%] Linking C executable milk-fpsexec-linalg-Qexpand
+[ 64%] Linking C executable milk-fpsexec-linalg-PCAmatch
+[ 64%] Built target milk-fpsexec-linopt-img2vec
+[ 64%] Built target milk-fpsexec-linopt-mask2pixtab
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVDmkM.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SGEMM.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Built target milk-fpsexec-linopt-imgFitModes
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVD.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Linking C executable milk-fpsexec-linalg-SVDmkM
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-basisrotmatch.dir/basis_rotate_match.c.o
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVDmkU.dir/SingularValueDecomp_mkU.c.o
+[ 65%] Built target milk-fpsexec-linopt-mkCosRadModes
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-SVDmkU.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Built target milk-fpsexec-linopt-linRM
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-cublasPCA.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-cublasPCA.dir/cublas_PCA.c.o
+[ 65%] Built target milk-fpsexec-linopt-SVDdecomp
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-basisrotmatch.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Linking C executable milk-fpsexec-linalg-SVD
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-modalremap.dir/modalremap.c.o
+[ 65%] Linking C executable milk-fpsexec-linalg-SVDmkU
+[ 65%] Built target milk-fpsexec-linopt-vec2Dimg
+[ 65%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-voronoi.dir/voronoi.c.o
+[ 65%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milk-fpsexec-linalg-modalremap.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Built target milk-fpsexec-linopt-lin1Dfit
+[ 65%] Linking C executable milk-fpsexec-linalg-basisrotmatch
+[ 65%] Linking C executable milk-fpsexec-linalg-cublasPCA
+[ 65%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkspdisk.dir/mkspdisk.c.o
+[ 65%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkdisk.dir/mkdisk.c.o
+[ 65%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkdisk.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Linking C executable milk-fpsexec-linalg-SGEMM
+[ 65%] Built target milk-fpsexec-linalg-gramschmidt
+[ 65%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkspdisk.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 65%] Built target milk-fpsexec-fft-dofft
+[ 66%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-voronoi.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 66%] Built target milk-fpsexec-linopt-SVDpInverse
+[ 66%] Built target milk-fpsexec-linopt-mkCPAmodes
+[ 66%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkpolygon.dir/mkpolygon.c.o
+[ 66%] Built target milk-fpsexec-linalg-MVMextract
+[ 66%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkpolygon.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 66%] Linking C executable milk-fpsexec-linalg-modalremap
+[ 66%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn_compute.dir/ZernikePolyn.c.o
+[ 67%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milk-fpsexec-clustering-mindiffscan.dir/mindiffscan.c.o
+[ 67%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn_compute.dir/ZernikePolyn_fit.c.o
+[ 67%] Linking C executable milk-fpsexec-imggen-voronoi
+[ 68%] Linking C executable milk-fpsexec-imggen-mkdisk
+[ 68%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milk-fpsexec-clustering-cubeclust.dir/cubecluster.c.o
+[ 68%] Linking C executable milk-fpsexec-imggen-mkspdisk
+[ 68%] Built target milk-fpsexec-linalg-Qexpand
+[ 68%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milk-fpsexec-clustering-cubeclust.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 68%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-cubecollapse.dir/cubecollapse.c.o
+[ 68%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milk-fpsexec-clustering-mindiffscan.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 69%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn_compute.dir/zernike_value.c.o
+[ 69%] Linking C executable milk-fpsexec-imggen-mkpolygon
+[ 69%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-cubecollapse.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 69%] Built target milk-fpsexec-linalg-SVDmkM
+[ 69%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn_compute.dir/mkzercube.c.o
+[ 69%] Linking C executable milk-fpsexec-clustering-mindiffscan
+[ 69%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-rotateim.dir/imrotate.c.o
+[ 69%] Linking C executable milk-fpsexec-clustering-cubeclust
+[ 69%] Built target milk-fpsexec-linalg-cublasPCA
+[ 69%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-rotateim.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 69%] Linking C executable milk-fpsexec-imgbasic-cubecollapse
+[ 69%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-resizeim.dir/imresize.c.o
+[ 69%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milk-fpsexec-imgbasic-resizeim.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 69%] Built target milk-fpsexec-linalg-SVDmkU
+[ 69%] Linking C shared library libmilkZernikePolyn_compute.so
+[ 69%] Built target milk-fpsexec-arith-multicrop2D
+[ 69%] Building C object plugins/milk-extra-src/info/CMakeFiles/milk-fpsexec-info-strmonproc.dir/stream_monproc.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milk-fpsexec-imgfilt-gaussfilt.dir/gaussfilter.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milk-fpsexec-imgfilt-gaussfilt.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Built target milk-fpsexec-linalg-PCAmatch
+[ 70%] Linking C executable milk-fpsexec-imgbasic-rotateim
+[ 70%] Building C object plugins/milk-extra-src/info/CMakeFiles/milk-fpsexec-info-strmonproc.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milk-fpsexec-imgfilt-im2Dfilt1pxbb.dir/im2Dfilter_1pixbblurr.c.o
+[ 70%] Built target milk-fpsexec-imggen-voronoi
+[ 70%] Linking C executable milk-fpsexec-imgbasic-resizeim
+[ 70%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milk-fpsexec-imgfilt-im2Dfilt1pxbb.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-extractutr.dir/extract_utr.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-extractRGGB.dir/extract_RGGBchan.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-strmtempstat.dir/stream_temporal_stats.c.o
+[ 70%] Built target milk-fpsexec-linalg-SGEMM
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-extractRGGB.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Built target milk-fpsexec-mem-streamave
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-strmtempstat.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Linking C executable milk-fpsexec-imgfilt-gaussfilt
+[ 70%] Built target milk-fpsexec-linalg-modalremap
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-extractutr.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 70%] Building C object plugins/milk-extra-src/info/CMakeFiles/milk-fpsexec-info-strmonproc.dir/stream_monproc_shm.c.o
+[ 70%] Linking C executable milk-fpsexec-imgfilt-im2Dfilt1pxbb
+[ 70%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-compRMsens.dir/compRMsensitivity.c.o
+[ 70%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-writeBMP.dir/writeBMP.c.o
+[ 70%] Built target milk-fpsexec-linalg-SVD
+[ 71%] Linking C executable milk-fpsexec-imgfmt-extractRGGB
+[ 71%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-compRMsens.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 71%] Linking C executable milk-fpsexec-info-strmonproc
+[ 71%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-wfsroptsel.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 71%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-wfsroptsel.dir/wfsrefoptimselect.c.o
+[ 71%] Linking C executable milk-fpsexec-imgfmt-extractutr
+[ 71%] Built target milk-fpsexec-imggen-mkpolygon
+[ 71%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-writeBMP.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 71%] Built target milk-fpsexec-imggen-mkspdisk
+[ 71%] Built target milk-fpsexec-imggen-mkdisk
+[ 71%] Linking C executable milk-fpsexec-imgfmt-strmtempstat
+[ 71%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-slogtsample.dir/streamlogtimesample.c.o
+[ 71%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-slogtsample.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 71%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacao-fpsexec-cacaoiot-acquireWFS.dir/acquireWFSim.c.o
+[ 71%] Built target milk-fpsexec-imgbasic-cubecollapse
+[ 72%] Building C object plugins/cacao-src/AOloopControl_acquireCalib/CMakeFiles/cacao-fpsexec-cacaoac-measlinresp.dir/measure_linear_resp.c.o
+[ 72%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacao-fpsexec-cacaoiot-acquireWFS.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Linking C executable milk-fpsexec-imgfmt-writeBMP
+[ 72%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacao-fpsexec-cacao-zonalfilter.dir/zonalfilter.c.o
+[ 72%] Linking C executable cacao-fpsexec-cacaopt-compRMsens
+[ 72%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacao-fpsexec-cacao-zonalfilter.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacao-fpsexec-mfilt.dir/modalfilter.c.o
+[ 72%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacao-fpsexec-mfilt.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Linking C executable cacao-fpsexec-cacaopt-wfsroptsel
+[ 72%] Built target milk-fpsexec-imgbasic-rotateim
+[ 72%] Building C object plugins/cacao-src/AOloopControl_acquireCalib/CMakeFiles/cacao-fpsexec-cacaoac-measlinresp.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Linking C executable cacao-fpsexec-cacaoiot-acquireWFS
+[ 72%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacao-fpsexec-dmcomb.dir/AOloopControl_DM_comb.c.o
+[ 72%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacao-fpsexec-dmturb.dir/DMturbulence.c.o
+[ 72%] Linking C executable cacao-fpsexec-cacaoac-measlinresp
+[ 72%] Built target milk-fpsexec-imgbasic-resizeim
+[ 72%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacao-fpsexec-dmturb.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-clitest.dir/examplefunc_fps_cli_poc.c.o
+[ 72%] Linking C executable cacao-fpsexec-cacao-zonalfilter
+[ 72%] Linking C executable cacao-fpsexec-cacaopt-slogtsample
+[ 72%] Built target milk-fpsexec-clustering-mindiffscan
+[ 72%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacao-fpsexec-dmcomb.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Built target milk-fpsexec-clustering-cubeclust
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-clitest.dir/__/engine/libfps/fps_standalone_data.c.o
+[ 72%] Built target milk-fpsexec-imgfmt-extractRGGB
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-imsum2.dir/examplefunc2_FPS.c.o
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-streamprocess.dir/examplefunc4_streamprocess.c.o
+[ 72%] Built target milk-fpsexec-imgfilt-gaussfilt
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-streamprocess.dir/__/engine/libfps/fps_standalone_data.c.o
+[ 72%] Built target milk-fpsexec-imgfmt-writeBMP
+[ 72%] Building C object src/milk_module_example/CMakeFiles/milk-fpsexec-imsum2.dir/__/engine/libfps/fps_standalone_data.c.o
+[ 72%] Linking C executable cacao-fpsexec-dmturb
+[ 72%] Built target milk-fpsexec-linalg-basisrotmatch
+[ 72%] Linking C executable milk-fpsexec-clitest
+[ 72%] Linking C executable cacao-fpsexec-mfilt
+[ 72%] Linking C executable milk-fpsexec-imsum2
+[ 72%] Built target milk-fpsexec-imgfilt-im2Dfilt1pxbb
+[ 72%] Built target cacao-fpsexec-cacaopt-compRMsens
+[ 72%] Linking C executable milk-fpsexec-streamprocess
+[ 72%] Linking C executable cacao-fpsexec-dmcomb
+[ 72%] Built target milkZernikePolyn_compute
+[ 72%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milk-fpsexec-zernike-mkzercube.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 72%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milk-fpsexec-zernike-mkzercube.dir/mkzercube.c.o
+[ 72%] Linking C executable milk-fpsexec-zernike-mkzercube
+[ 72%] Built target milk-fpsexec-imsum2
+[ 72%] Built target milk-fpsexec-streamprocess
+[ 72%] Built target cacao-fpsexec-cacaopt-wfsroptsel
+[ 72%] Built target cacao-fpsexec-cacao-zonalfilter
+[ 72%] Built target milk-fpsexec-clitest
+[ 72%] Built target milk-fpsexec-info-strmonproc
+[ 72%] Built target milk-fpsexec-imgfmt-extractutr
+[ 72%] Built target cacao-fpsexec-cacaoac-measlinresp
+[ 72%] Built target milk-fpsexec-zernike-mkzercube
+[ 72%] Built target cacao-fpsexec-dmturb
+[ 72%] Built target milk-fpsexec-imgfmt-strmtempstat
+[ 72%] Built target cacao-fpsexec-cacaopt-slogtsample
+[ 72%] Built target cacao-fpsexec-cacaoiot-acquireWFS
+[ 72%] Built target cacao-fpsexec-mfilt
+[ 72%] Built target cacao-fpsexec-dmcomb
+[ 72%] Built target milkscript
+[ 72%] Building C object src/cli/libmilkscript/CMakeFiles/milk-script.dir/milkscript_main.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_help_tui.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion_tab.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_hintarea.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_bookmark.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore_cmd_registry.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_cmds.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/treesitter/cli_treesitter.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/treesitter/milkcli_parser.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_builtins_fifo.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_prompt.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_highlight.c.o
+[ 72%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_completion.c.o
+[ 73%] Building C object src/cli/CLIcore/CMakeFiles/CLIcore.dir/CLIcore/CLIcore_UI_history_display.c.o
+[ 73%] Linking C executable milk-script
+[ 73%] Linking C shared library libCLIcore.so
+[ 73%] Built target milk-script
+[ 73%] Built target CLIcore
+[ 73%] Building C object src/cli/CLIcore/CMakeFiles/milk-cli-help.dir/milk-cli-help.c.o
+[ 73%] Building C object src/cli/CLIcore/CMakeFiles/milk-cli-help-synchro.dir/milk-cli-help-synchro.c.o
+[ 74%] Building C object plugins/milk-extra-src/kdtree/CMakeFiles/milkkdtree.dir/kdtree.c.o
+[ 76%] Building C object plugins/milk-extra-src/psf/CMakeFiles/milkpsf.dir/psf.c.o
+[ 76%] Building C object src/cli/CLIcore/CMakeFiles/milk-help.dir/milk-help.c.o
+[ 76%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milklinARfilterPred.dir/linARfilterPred.c.o
+[ 76%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milklinARfilterPred.dir/applyPF.c.o
+[ 76%] Building C object plugins/milk-extra-src/statistic/CMakeFiles/milkstatistic.dir/statistic.c.o
+[ 76%] Building C object src/sequencer/CMakeFiles/milksequencer.dir/sequencer.c.o
+[ 76%] Building C object src/sequencer/CMakeFiles/milksequencer.dir/seq_cli.c.o
+[ 76%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/fft.c.o
+[ 76%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milklinARfilterPred.dir/build_linPF.c.o
+[ 76%] Building C object plugins/milk-extra-src/img_reduce/CMakeFiles/milkimgreduce.dir/img_reduce.c.o
+[ 76%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/compute_SVDdecomp.c.o
+[ 76%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/DFT.c.o
+[ 76%] Building C object src/engine/libfps/CMakeFiles/milkfpsCLI.dir/fps_cli_sync.c.o
+[ 76%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/linalgebra.c.o
+[ 76%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/basis_rotate_match.c.o
+[ 76%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/image_filter.c.o
+[ 76%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/linopt_imtools.c.o
+[ 76%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/clustering.c.o
+[ 76%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/image_format.c.o
+[ 76%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/info.c.o
+[ 76%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/image_basic.c.o
+[ 76%] Linking C executable milk-help
+[ 76%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/cublas_Coeff2Map_Loop.c.o
+[ 76%] Linking C executable milk-cli-help-synchro
+[ 76%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/cubepercentile.c.o
+[ 76%] Linking C executable milk-cli-help
+[ 76%] Building C object src/engine/libfps/CMakeFiles/milkfpsCLI.dir/fps_cli_function.c.o
+[ 76%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/cubecollapse.c.o
+[ 76%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/cubeMatchMatrix.c.o
+[ 76%] Linking C shared library libmilkstatistic.so
+[ 76%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/combineHDR.c.o
+[ 76%] Building C object src/engine/libfps/CMakeFiles/milkfpsCLI.dir/fps_cli_query.c.o
+[ 76%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/dofft.c.o
+[ 76%] Linking C shared library libmilksequencer.so
+[ 76%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/fconvolve.c.o
+[ 76%] Linking C shared library libmilkkdtree.so
+[ 77%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/cubecluster.c.o
+[ 77%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/cubestats.c.o
+[ 77%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/linalgebrainit.c.o
+[ 77%] Building C object src/engine/libfps/CMakeFiles/milkfpsCLI.dir/fps_lifecycle.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/extrapolate_nearestpixel.c.o
+[ 77%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/fftcorrelation.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/fit1D.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/CR2toFITS.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/fit2DcosKernel.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/CR2tomov.c.o
+[ 77%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/cublas_linalgebratest.c.o
+[ 77%] Built target milk-help
+[ 77%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/compute_SVDpseudoInverse.c.o
+[ 77%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/CFmeminit.c.o
+[ 77%] Linking C shared library libmilkimgreduce.so
+[ 77%] Linking C shared library libmilkpsf.so
+[ 77%] Built target milk-cli-help-synchro
+[ 77%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/CFtree_rebuild.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/im3Dto2D.c.o
+[ 77%] Linking C shared library libmilkfpsCLI.so
+[ 77%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/ffttranslate.c.o
+[ 77%] Built target milk-cli-help
+[ 77%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/image_stats.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/fit2Dcossin.c.o
+[ 77%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/extract_RGGBchan.c.o
+[ 78%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GPU_loop_MultMat_free.c.o
+[ 78%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/addCF_to_CF.c.o
+[ 78%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GPU_loop_MultMat_execute.c.o
+[ 79%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/improfile.c.o
+[ 79%] Linking C shared library libmilklinARfilterPred.so
+[ 79%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/image_construct.c.o
+[ 79%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/FITS_to_ushortintbin_lock.c.o
+[ 79%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GPU_loop_MultMat_setup.c.o
+[ 79%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/gaussfilter.c.o
+[ 79%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/kbdhit.c.o
+[ 79%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GPU_SVD_computeControlMatrix.c.o
+[ 79%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/fftzoom.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/image_add.c.o
+[ 80%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/compute_imdistance_double.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imcontract.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imexpand.c.o
+[ 80%] Built target milkstatistic
+[ 80%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/fft_autocorrelation.c.o
+[ 80%] Built target milksequencer
+[ 80%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/image_fitModes.c.o
+[ 80%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GPUloadCmat.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/FITS_to_floatbin_lock.c.o
+[ 80%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/image_to_vec.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imgetcircsym.c.o
+[ 80%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/percentile.c.o
+[ 80%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/condense.c.o
+[ 80%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/GramSchmidt.c.o
+[ 80%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/fft_structure_function.c.o
+[ 80%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imgetcircasym.c.o
+[ 81%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/im2Dfilter_1pixbblurr.c.o
+[ 81%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/magma_compute_SVDpseudoInverse_SVD.c.o
+[ 81%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/print_header.c.o
+[ 81%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/create_new_leaf.c.o
+[ 81%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/FITStorgbFITSsimple.c.o
+[ 81%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/image_gen.c.o
+[ 81%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/medianfilter.c.o
+[ 81%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/stream_monproc.c.o
+[ 81%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/mkdisk.c.o
+[ 81%] Building C object CMakeFiles/milk-cli.dir/src/CLImain.c.o
+[ 82%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/init_fftwplan.c.o
+[ 82%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/imcube_crossproduct.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/imtoASCII.c.o
+[ 83%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/permut.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_filter/CMakeFiles/milkimagefilter.dir/percentile_interpolation.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imresize.c.o
+[ 83%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/stream_monproc_shm.c.o
+[ 83%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/streamtiming_stats.c.o
+[ 83%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/ctree_init.c.o
+[ 83%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/magma_compute_SVDpseudoInverse.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/mkpolygon.c.o
+[ 83%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/pup2foc.c.o
+/home/oguyon/src/milk/src/CLImain.c: In function ‘main’:
+/home/oguyon/src/milk/src/CLImain.c:186:13: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  186 |             write(STDOUT_FILENO, esc, n);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/CLImain.c:200:21: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  200 |                     write(STDOUT_FILENO, spaces,
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  201 |                           chunk);
+      |                           ~~~~~~
+/home/oguyon/src/milk/src/CLImain.c:209:13: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  209 |             write(STDOUT_FILENO, esc, n);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/CLImain.c:214:13: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  214 |             write(STDOUT_FILENO, esc, n);
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 83%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/magma_MatMatMult_testPseudoInverse.c.o
+[ 83%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/lin1Dfit.c.o
+[ 83%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/modalremap.c.o
+[ 83%] Linking C executable milk-cli
+[ 83%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/testfftspeed.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imrotate.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/loadCR2toFITSRGB.c.o
+[ 83%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/read_binary32f.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/mkspdisk.c.o
+[ 84%] Linking C shared library libmilkimagefilter.so
+[ 84%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/ctree_memallocate.c.o
+[ 84%] Building C object plugins/milk-extra-src/fft/CMakeFiles/milkfft.dir/wisdom.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/mkrandomim.c.o
+[ 84%] Building C object plugins/milk-extra-src/info/CMakeFiles/milkinfo.dir/timediff.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imstretch.c.o
+[ 84%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/MVM_CPU.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/voronoi.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/imswapaxis2D.c.o
+[ 84%] Built target milkkdtree
+[ 84%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/ctree_memfree.c.o
+[ 84%] Linking C shared library libmilkinfo.so
+[ 84%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/readPGM.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/writeBMP.c.o
+[ 84%] Built target milkfpsCLI
+[ 84%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/PCAmatch.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/indexmap.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/image_gen_basic_shapes.c.o
+[ 84%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/linRM_from_inout.c.o
+[ 84%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/droptree.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/image_gen_polygons.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milkimagegen.dir/image_gen_profiles.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/extract_utr.c.o
+[ 84%] Linking C shared library libmilkfft.so
+[ 84%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/milk_module_example.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milkimageformat.dir/stream_temporal_stats.c.o
+[ 84%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/loadfitsimgcube.c.o
+[ 84%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/makeCosRadModes.c.o
+[ 85%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/makeCPAmodes.c.o
+[ 85%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/examplefunc1.c.o
+[ 86%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/get_availableCFindex.c.o
+[ 87%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/measure_transl.c.o
+[ 87%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/naninf2zero.c.o
+[ 87%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/examplefunc2_FPS.c.o
+[ 87%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/leaf_addentry.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/cublas_PCA.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/leafnode_attachleaf.c.o
+[ 88%] Built target milk-cli
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/printGPUMATMULTCONF.c.o
+[ 88%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/examplefunc3_updatestreamloop.c.o
+[ 88%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/mask_to_pixtable.c.o
+[ 88%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/examplefunc4_streamprocess.c.o
+[ 88%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/streamfeed.c.o
+[ 88%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/streamrecord.c.o
+[ 88%] Building C object plugins/milk-extra-src/linopt_imtools/CMakeFiles/milklinoptimtools.dir/vec_to_2Dimage.c.o
+[ 88%] Linking C shared library libmilkimagegen.so
+[ 88%] Building C object plugins/milk-extra-src/image_basic/CMakeFiles/milkimagebasic.dir/tableto2Dim.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/MVMextractModes.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/Qexpand.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/mindiffscan.c.o
+[ 88%] Building C object src/milk_module_example/CMakeFiles/milk_module_example.dir/examplefunc_fps_cli_poc.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/node_attachnode.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/printCFtree.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/split_CF_node.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/SGEMM.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/update_level.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/write_clustCFave.c.o
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/write_clustleafsummary.c.o
+[ 88%] Linking C shared library libmilkimageformat.so
+[ 88%] Building C object plugins/milk-extra-src/clustering/CMakeFiles/milkclustering.dir/write_clustCFdat.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/SingularValueDecomp.c.o
+[ 88%] Linking C shared library libmilklinoptimtools.so
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/SingularValueDecomp_mkM.c.o
+[ 88%] Building C object plugins/milk-extra-src/linalgebra/CMakeFiles/milklinalgebra.dir/SingularValueDecomp_mkU.c.o
+[ 88%] Linking C shared library libmilk_module_example.so
+[ 88%] Linking C shared library libmilkimagebasic.so
+[ 88%] Linking C shared library libmilkclustering.so
+[ 88%] Linking C shared library libmilklinalgebra.so
+[ 88%] Built target milk_module_example
+[ 88%] Built target milkpsf
+[ 88%] Built target milkimgreduce
+[ 88%] Built target milkinfo
+[ 88%] Built target milkimagefilter
+[ 88%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-combineHDR.dir/combineHDR.c.o
+[ 88%] Building C object plugins/milk-extra-src/image_format/CMakeFiles/milk-fpsexec-imgfmt-combineHDR.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 88%] Linking C executable milk-fpsexec-imgfmt-combineHDR
+[ 88%] Built target milklinARfilterPred
+[ 88%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milk-fpsexec-linpred-applyPF.dir/applyPF.c.o
+[ 88%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milk-fpsexec-linpred-applyPF.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 88%] Built target milkclustering
+[ 88%] Built target milkimagegen
+[ 88%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn.dir/mkzercube.c.o
+[ 88%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn.dir/ZernikePolyn.c.o
+[ 88%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn.dir/ZernikePolyn_fit.c.o
+[ 88%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkrandom.dir/mkrandomim.c.o
+[ 88%] Building C object plugins/milk-extra-src/ZernikePolyn/CMakeFiles/milkZernikePolyn.dir/zernike_value.c.o
+[ 88%] Building C object plugins/milk-extra-src/image_gen/CMakeFiles/milk-fpsexec-imggen-mkrandom.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 88%] Built target milkfft
+[ 88%] Linking C executable milk-fpsexec-linpred-applyPF
+[ 88%] Linking C executable milk-fpsexec-imggen-mkrandom
+[ 88%] Linking C shared library libmilkZernikePolyn.so
+[ 88%] Built target milkimagebasic
+[ 88%] Built target milk-fpsexec-imgfmt-combineHDR
+[ 88%] Built target milk-fpsexec-imggen-mkrandom
+[ 88%] Built target milklinalgebra
+[ 89%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milk-fpsexec-linpred-buildlinPF.dir/build_linPF.c.o
+[ 89%] Building C object plugins/scexao-dataanalysis/vampirespdi/CMakeFiles/vampirespdi.dir/vampirespdi.c.o
+[ 89%] Building C object plugins/milk-extra-src/linARfilterPred/CMakeFiles/milk-fpsexec-linpred-buildlinPF.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 89%] Building C object plugins/scexao-dataanalysis/vampirespdi/CMakeFiles/vampirespdi.dir/polcycleproc.c.o
+[ 89%] Building C object plugins/scexao-dataanalysis/vampirespdi/CMakeFiles/vampirespdi.dir/scanFITSfiles.c.o
+[ 89%] Building C object plugins/scexao-dataanalysis/vampirespdi/CMakeFiles/vampirespdi.dir/read_asciiconf.c.o
+[ 89%] Built target milklinoptimtools
+[ 90%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/modalfilter.c.o
+[ 90%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/AOloopControl.c.o
+[ 90%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/modalfilter_test.c.o
+[ 90%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/modalCTRL_stats.c.o
+[ 91%] Linking C shared library libvampirespdi.so
+[ 91%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/modalstatsTUI.c.o
+[ 91%] Building C object plugins/cacao-src/AOloopControl/CMakeFiles/cacaoAOloopControl.dir/zonalfilter.c.o
+In file included from /home/oguyon/src/milk/plugins/cacao-src/AOloopControl/modalstatsTUI.c:18:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_enter’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:105:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  105 |     (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/plugins/cacao-src/AOloopControl/modalstatsTUI.c: In function ‘ansi_clearscreen’:
+/home/oguyon/src/milk/plugins/cacao-src/AOloopControl/modalstatsTUI.c:41:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   41 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_bold_on’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:218:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  218 |     (void) write(STDOUT_FILENO, "\033[1m", 4);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_fg’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:195:16: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  195 |         (void) write(STDOUT_FILENO, buf, (size_t) n);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_reset’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:242:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  242 |     (void) write(STDOUT_FILENO, "\033[0m", 4);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/plugins/cacao-src/AOloopControl/modalstatsTUI.c: In function ‘ansi_newline’:
+/home/oguyon/src/milk/plugins/cacao-src/AOloopControl/modalstatsTUI.c:35:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   35 |     (void) write(STDOUT_FILENO, "\r\n", 2);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_bold_off’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:224:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  224 |     (void) write(STDOUT_FILENO, "\033[22m", 5);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h: In function ‘ansi_raw_mode_exit’:
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:119:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  119 |     (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/oguyon/src/milk/src/engine/libfps/fpsCTRL/fpsCTRL_ansi.h:121:12: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  121 |     (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+      |            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[ 91%] Linking C executable milk-fpsexec-linpred-buildlinPF
+[ 91%] Built target milkimageformat
+[ 91%] Linking C shared library libcacaoAOloopControl.so
+[ 91%] Built target milk-fpsexec-linpred-applyPF
+[ 91%] Built target milkZernikePolyn
+[ 91%] Built target milk-fpsexec-linpred-buildlinPF
+[ 91%] Built target vampirespdi
+[ 91%] Built target cacaoAOloopControl
+[ 91%] Building C object plugins/cacao-src/AOloopControl_compTools/CMakeFiles/cacaoAOloopControlcompTools.dir/AOloopControl_compTools.c.o
+[ 91%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/ao188_preprocessor.c.o
+[ 91%] Building C object plugins/cacao-src/AOloopControl_PredictiveControl/CMakeFiles/cacaoAOloopControlPredictiveControl.dir/AOloopControl_PredictiveControl_builPFloop_WatchInput.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/findspots.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_PredictiveControl/CMakeFiles/cacaoAOloopControlPredictiveControl.dir/AOloopControl_PredictiveControl.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/AOloopControl_IOtools.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_PredictiveControl/CMakeFiles/cacaoAOloopControlPredictiveControl.dir/AOloopControl_PredictiveControl_testPredictiveFilter.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_acquireCalib/CMakeFiles/cacaoAOloopControlacquireCalib.dir/AOloopControl_acquireCalib.c.o
+[ 92%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/spotpos.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_PredictiveControl/CMakeFiles/cacaoAOloopControlPredictiveControl.dir/AOloopControl_PredictiveControl_setPFsimpleAve.c.o
+[ 93%] Building C object plugins/cacao-src/pyramidWFStools/CMakeFiles/cacaopyramidWFStools.dir/pyramidWFStools.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_acquireCalib/CMakeFiles/cacaoAOloopControlacquireCalib.dir/acquireWFSlincalib.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_PredictiveControl/CMakeFiles/cacaoAOloopControlPredictiveControl.dir/AOloopControl_PredictiveControl_mapPredictiveFilter.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacaoAOloopControlDM.dir/AOloopControl_DM_comb.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/compRMsensitivity.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_acquireCalib/CMakeFiles/cacaoAOloopControlacquireCalib.dir/measure_linear_resp.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/WFScamsim.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/AOloopControl_perfTest.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacaoAOloopControlDM.dir/AOloopControl_DM.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/acquireWFSim.c.o
+[ 93%] Building C object plugins/cacao-src/pyramidWFStools/CMakeFiles/cacaopyramidWFStools.dir/pyWFSgridmatch.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/acquireWFSspec.c.o
+[ 93%] Building C object plugins/cacao-src/AOloopControl_IOtools/CMakeFiles/cacaoAOloopControlIOtools.dir/WFSmap.c.o
+[ 93%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/computeCalib.c.o
+[ 94%] Linking C shared library libcacaoAOloopControlcompTools.so
+[ 94%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/mlat.c.o
+[ 94%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacaoAOloopControlDM.dir/DMturbulence.c.o
+[ 94%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/actmap_sample2D.c.o
+[ 94%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/mlat_decode.c.o
+[ 94%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/AOloopControl_computeCalib_dm.c.o
+[ 94%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/streamlogtimesample.c.o
+[ 94%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacaoAOloopControlDM.dir/mk3Ddmgrid.c.o
+[ 95%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/computeHadamard.c.o
+[ 96%] Building C object plugins/cacao-src/AOloopControl_DM/CMakeFiles/cacaoAOloopControlDM.dir/pokerndmodes.c.o
+[ 96%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/wfsrefoptimselect.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/AOloopControl_computeCalib_loDMmodes.c.o
+[ 96%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacaoAOloopControlperfTest.dir/zoptsearch.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/AOloopControl_computeCalib_processRM.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/compute_straight_CM.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/compute_control_modes.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/compute_masksWFSDM.c.o
+[ 96%] Linking C shared library libcacaopyramidWFStools.so
+[ 96%] Linking C shared library libcacaoAOloopControlPredictiveControl.so
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/generateRMWFS.c.o
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/maskextrapolate.c.o
+[ 96%] Linking C shared library libcacaoAOloopControlIOtools.so
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/modes_spatial_extrapolate.c.o
+[ 96%] Built target cacaoAOloopControlcompTools
+[ 96%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacaocomputeCalib.dir/RM2zonal.c.o
+[ 96%] Linking C shared library libcacaoAOloopControlacquireCalib.so
+[ 96%] Linking C shared library libcacaoAOloopControlDM.so
+[ 96%] Linking C shared library libcacaoAOloopControlperfTest.so
+[ 96%] Linking C shared library libcacaocomputeCalib.so
+[ 96%] Built target cacaopyramidWFStools
+[ 96%] Built target cacaoAOloopControlPredictiveControl
+[ 96%] Built target cacaoAOloopControlacquireCalib
+[ 96%] Built target cacaoAOloopControlDM
+[ 96%] Built target cacaoAOloopControlIOtools
+[ 96%] Built target cacaoAOloopControlperfTest
+[ 97%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-mlat.dir/mlat.c.o
+[ 97%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-mlatdecode.dir/mlat_decode.c.o
+[ 97%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-zoptsearch.dir/zoptsearch.c.o
+[ 97%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-mlatdecode.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 97%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-zoptsearch.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/AOloopControl_perfTest/CMakeFiles/cacao-fpsexec-cacaopt-mlat.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Linking C executable cacao-fpsexec-cacaopt-mlatdecode
+[ 98%] Linking C executable cacao-fpsexec-cacaopt-zoptsearch
+[ 98%] Linking C executable cacao-fpsexec-cacaopt-mlat
+[ 98%] Built target cacaocomputeCalib
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compctrlmodes.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compmaskwfsdm.dir/compute_masksWFSDM.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-genrmwfs.dir/generateRMWFS.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compstrcm.dir/compute_straight_CM.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-maskextrapolate.dir/maskextrapolate.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-rm2zonal.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-rm2zonal.dir/RM2zonal.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compmaskwfsdm.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compctrlmodes.dir/compute_control_modes.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-genrmwfs.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-comphadamard.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-actsamp2d.dir/actmap_sample2D.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-actsamp2d.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-comphadamard.dir/computeHadamard.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-maskextrapolate.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Building C object plugins/cacao-src/computeCalib/CMakeFiles/cacao-fpsexec-cacaocc-compstrcm.dir/__/__/__/src/engine/libfps/fps_standalone_data.c.o
+[ 98%] Linking C executable cacao-fpsexec-cacaocc-genrmwfs
+[ 98%] Built target cacao-fpsexec-cacaopt-mlatdecode
+[ 98%] Linking C executable cacao-fpsexec-cacaocc-actsamp2d
+[ 99%] Linking C executable cacao-fpsexec-cacaocc-comphadamard
+[100%] Linking C executable cacao-fpsexec-cacaocc-maskextrapolate
+[100%] Linking C executable cacao-fpsexec-cacaocc-compmaskwfsdm
+[100%] Linking C executable cacao-fpsexec-cacaocc-compctrlmodes
+[100%] Linking C executable cacao-fpsexec-cacaocc-compstrcm
+[100%] Linking C executable cacao-fpsexec-cacaocc-rm2zonal
+[100%] Built target cacao-fpsexec-cacaopt-zoptsearch
+[100%] Built target cacao-fpsexec-cacaocc-genrmwfs
+[100%] Built target cacao-fpsexec-cacaopt-mlat
+[100%] Built target cacao-fpsexec-cacaocc-comphadamard
+[100%] Built target cacao-fpsexec-cacaocc-maskextrapolate
+[100%] Built target cacao-fpsexec-cacaocc-actsamp2d
+[100%] Built target cacao-fpsexec-cacaocc-rm2zonal
+[100%] Built target cacao-fpsexec-cacaocc-compmaskwfsdm
+[100%] Built target cacao-fpsexec-cacaocc-compstrcm
+[100%] Built target cacao-fpsexec-cacaocc-compctrlmodes

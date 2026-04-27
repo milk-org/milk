@@ -59,7 +59,7 @@ MILKSCRIPTMODE=""
 if [ "$#" -ge 1 ]; then
 
 	# Print one line help and exit
-	if [ "$1" = "-hs" ]; then
+	if [ "$1" = "-h1" ] || [ "$1" = "--help-oneline" ]; then
 		printf "%s\n" "${MSdescr}"
 	exit 0
 	fi
@@ -128,7 +128,7 @@ function milkscriptcmdlog()
 
 
 MSopt+=( "h:help:printHELP::print help and exit" )
-MSopt+=( "hs:helpshort:printHELPshort::print 1-line help and exit" )
+MSopt+=( "h1:help-oneline:printHELPshort::print 1-line help and exit" )
 MSopt+=( "chkp:check-prerequ:checkallprerequisitesExit::check all prerequisites and exit" )
 
 MSarg=( )

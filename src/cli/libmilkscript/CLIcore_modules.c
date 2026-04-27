@@ -387,7 +387,8 @@ errno_t RegisterModule(
     DEBUG_TRACE_FSTART();
 
     /* On the very first call, scan /proc/self/cmdline for -q /
-     * --quiet.  This fires before main() when called from a
+     * --quiet / -h1 / --help-oneline.
+     * This fires before main() when called from a
      * __attribute__((constructor)) in a linked .so, so it is
      * the only reliable place to intercept a command-line flag
      * at constructor time. */
@@ -418,7 +419,9 @@ errno_t RegisterModule(
                     if (tok[0] != '-' || tok[1] == '\0')
                         break;
 
-                    if (strcmp(tok, "--quiet") == 0)
+                    if (strcmp(tok, "--quiet") == 0 ||
+                        strcmp(tok, "-h1") == 0 ||
+                        strcmp(tok, "--help-oneline") == 0)
                     {
                         setenv("MILK_QUIET", "1", 0);
                         milk_data.quiet = 1;
@@ -448,6 +451,7 @@ errno_t RegisterModule(
             }
         }
     } // if (!quiet_scanned)
+
 
     int OKmsg = 0;
 

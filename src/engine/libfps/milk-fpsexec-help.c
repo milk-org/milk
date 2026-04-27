@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #define C_TITLE "\033[1;36m"
 #define C_HDR   "\033[1;34m"
@@ -22,8 +23,16 @@
  * Complements milk-fps-help which covers FPS
  * concepts, inspection, and management tools.
  */
-int main(void)
+int main(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("guide to standalone FPS executables\n");
+            return 0;
+        }
+    }
     printf("\n");
     printf(C_TITLE
            "========================================"
