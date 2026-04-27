@@ -180,7 +180,7 @@ errno_t processinfo_CTRLscreen()
         char response = 'n';
         if (scanf(" %c", &response) == 1 && (response == 'y' || response == 'Y')) {
             printf("Launching milk-procCTRL-scan...\n");
-            system("tmux new-session -d -s milk-procCTRL-scan 'milk-procCTRL-scan'");
+            if(system("tmux new-session -d -s milk-procCTRL-scan 'milk-procCTRL-scan'") < 0) {}
             sleep(1);
             if (system("pgrep \"milk-procCTRL-s\" > /dev/null") != 0) {
                 fprintf(stderr, "ERROR: Failed to launch milk-procCTRL-scan daemon.\n");
@@ -718,13 +718,13 @@ errno_t processinfo_CTRLscreen()
                         if (procinfoproc->col_visible[m][2]) {
                             if (procinfoproc->selected_col == 2) screenprint_setcolor(10);
                             if (pinfolist->active[pindex] == 1) {
-                                screenprint_setcolor(6); TUI_printfw("% -10s ", "ACTIVE"); screenprint_unsetcolor(6);
+                                screenprint_setcolor(6); TUI_printfw("%-10s ", "ACTIVE"); screenprint_unsetcolor(6);
                             } else if (pinfolist->active[pindex] == 2) {
-                                screenprint_setcolor(7); TUI_printfw("% -10s ", "STOPPED"); screenprint_unsetcolor(7);
+                                screenprint_setcolor(7); TUI_printfw("%-10s ", "STOPPED"); screenprint_unsetcolor(7);
                             } else if (pinfolist->active[pindex] == 3) {
-                                screenprint_setcolor(8); TUI_printfw("% -10s ", "CRASHED"); screenprint_unsetcolor(8);
+                                screenprint_setcolor(8); TUI_printfw("%-10s ", "CRASHED"); screenprint_unsetcolor(8);
                             } else {
-                                TUI_printfw("% -10s ", "OFF");
+                                TUI_printfw("%-10s ", "OFF");
                             }
                             if (procinfoproc->selected_col == 2) screenprint_unsetcolor(10);
                         }
@@ -765,7 +765,7 @@ errno_t processinfo_CTRLscreen()
                             // 5: pname
                             if (procinfoproc->col_visible[m][5]) {
                                 if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
-                                TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+                                TUI_printfw("%-25s ", pinfolist->pnamearray[pindex]);
                                 if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                             }
 
@@ -799,7 +799,7 @@ errno_t processinfo_CTRLscreen()
                             // 8: msg
                             if (procinfoproc->col_visible[m][8]) {
                                 if (procinfoproc->selected_col == 8) screenprint_setcolor(10);
-                                TUI_printfw("% -30s ", desc); 
+                                TUI_printfw("%-30s ", desc); 
                                 if (procinfoproc->selected_col == 8) screenprint_unsetcolor(10);
                             }
                         }
@@ -807,7 +807,7 @@ errno_t processinfo_CTRLscreen()
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
                                 if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
-                                TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+                                TUI_printfw("%-25s ", pinfolist->pnamearray[pindex]);
                                 if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: prio
@@ -839,7 +839,7 @@ errno_t processinfo_CTRLscreen()
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
                                 if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
-                                TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+                                TUI_printfw("%-25s ", pinfolist->pnamearray[pindex]);
                                 if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: tmode
@@ -877,7 +877,7 @@ errno_t processinfo_CTRLscreen()
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
                                 if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
-                                TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+                                TUI_printfw("%-25s ", pinfolist->pnamearray[pindex]);
                                 if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             if (scan_shm->pinfodisp[pindex].MeasureTiming) {
@@ -912,7 +912,7 @@ errno_t processinfo_CTRLscreen()
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
                                 if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
-                                TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
+                                TUI_printfw("%-25s ", pinfolist->pnamearray[pindex]);
                                 if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: RT

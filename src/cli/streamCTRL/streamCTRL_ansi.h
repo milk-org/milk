@@ -101,7 +101,7 @@ static inline void ansi_raw_mode_enter(void)
     }
 
     /* hide cursor and disable line wrap */
-    (void) write(STDOUT_FILENO, "\033[?25l\033[?7l", 11);
+    if(write(STDOUT_FILENO, "\033[?25l\033[?7l", 11) < 0) {}
     ansi__raw_active = 1;
 }
 
@@ -115,9 +115,9 @@ static inline void ansi_raw_mode_exit(void)
         return;
     }
     /* show cursor and enable line wrap */
-    (void) write(STDOUT_FILENO, "\033[?25h\033[?7h", 11);
+    if(write(STDOUT_FILENO, "\033[?25h\033[?7h", 11) < 0) {}
     /* clear screen, home cursor */
-    (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+    if(write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0) {}
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     ansi__raw_active = 0;
 }
@@ -157,7 +157,7 @@ static inline void ansi_get_terminal_size(int *rows, int *cols)
 /** ansi_cls - clear entire screen and move cursor to top-left. */
 static inline void ansi_cls(void)
 {
-    (void) write(STDOUT_FILENO, "\033[2J\033[H", 7);
+    if(write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0) {}
 }
 
 /**
@@ -171,7 +171,37 @@ static inline void ansi_pos(int row, int col)
     int  n = snprintf(buf, sizeof(buf), "\033[%d;%dH", row, col);
     if(n > 0)
     {
-        (void) write(STDOUT_FILENO, buf, (size_t) n);
+        if(write(STDOUT_FILENO, buf, (size_t) n) < 0) {}
+    }
+}
+
+/* =========================================================
+ * Terminal capabilities
+ * ========================================================= */
+
+static int ansi__color_level = 0; // 0=uninit, 1=16-color, 2=256-color, 3=TrueColor
+
+static inline void ansi_detect_color_level(void)
+{
+    if (ansi__color_level > 0)
+    {
+        return;
+    }
+
+    const char *term = getenv("TERM");
+    const char *colorterm = getenv("COLORTERM");
+
+    if (colorterm && (strstr(colorterm, "truecolor") || strstr(colorterm, "24bit")))
+    {
+        ansi__color_level = 3;
+    }
+    else if (term && strstr(term, "256color"))
+    {
+        ansi__color_level = 2;
+    }
+    else
+    {
+        ansi__color_level = 1;
     }
 }
 
@@ -191,7 +221,7 @@ static inline void ansi_fg(int r, int g, int b)
     int  n = snprintf(buf, sizeof(buf), "\033[38;2;%d;%d;%dm", r, g, b);
     if(n > 0)
     {
-        (void) write(STDOUT_FILENO, buf, (size_t) n);
+        if(write(STDOUT_FILENO, buf, (size_t) n) < 0) {}
     }
 }
 
@@ -207,38 +237,66 @@ static inline void ansi_bg(int r, int g, int b)
     int  n = snprintf(buf, sizeof(buf), "\033[48;2;%d;%d;%dm", r, g, b);
     if(n > 0)
     {
-        (void) write(STDOUT_FILENO, buf, (size_t) n);
+        if(write(STDOUT_FILENO, buf, (size_t) n) < 0) {}
+    }
+}
+
+/**
+ * ansi_fg_256 - set 256-color foreground.
+ * @code: 8-bit color code (0-255)
+ */
+static inline void ansi_fg_256(int code)
+{
+    char buf[32];
+    int  n = snprintf(buf, sizeof(buf), "\033[38;5;%dm", code);
+    if(n > 0)
+    {
+        if(write(STDOUT_FILENO, buf, (size_t) n) < 0) {}
+    }
+}
+
+/**
+ * ansi_fg_16 - set 16-color standard foreground.
+ * @code: ANSI standard color code (e.g., 32 for green)
+ */
+static inline void ansi_fg_16(int code)
+{
+    char buf[32];
+    int  n = snprintf(buf, sizeof(buf), "\033[%dm", code);
+    if(n > 0)
+    {
+        if(write(STDOUT_FILENO, buf, (size_t) n) < 0) {}
     }
 }
 
 /** ansi_bold_on - enable bold/bright text attribute. */
 static inline void ansi_bold_on(void)
 {
-    (void) write(STDOUT_FILENO, "\033[1m", 4);
+    if(write(STDOUT_FILENO, "\033[1m", 4) < 0) {}
 }
 
 /** ansi_bold_off - disable bold/bright text attribute. */
 static inline void ansi_bold_off(void)
 {
-    (void) write(STDOUT_FILENO, "\033[22m", 5);
+    if(write(STDOUT_FILENO, "\033[22m", 5) < 0) {}
 }
 
 /** ansi_reverse_on - enable reverse-video attribute. */
 static inline void ansi_reverse_on(void)
 {
-    (void) write(STDOUT_FILENO, "\033[7m", 4);
+    if(write(STDOUT_FILENO, "\033[7m", 4) < 0) {}
 }
 
 /** ansi_reverse_off - disable reverse-video attribute. */
 static inline void ansi_reverse_off(void)
 {
-    (void) write(STDOUT_FILENO, "\033[27m", 5);
+    if(write(STDOUT_FILENO, "\033[27m", 5) < 0) {}
 }
 
 /** ansi_reset - reset all attributes (color + style) to default. */
 static inline void ansi_reset(void)
 {
-    (void) write(STDOUT_FILENO, "\033[0m", 4);
+    if(write(STDOUT_FILENO, "\033[0m", 4) < 0) {}
 }
 
 /* =========================================================
@@ -258,16 +316,52 @@ static inline void ansi_reset(void)
 
 static inline void ansi_setcolor(int idx)
 {
-    switch(idx)
+    ansi_detect_color_level();
+
+    if (ansi__color_level >= 3)
     {
-    case 2:  ansi_fg(80,  220, 80);  break; /* green        */
-    case 3:  ansi_fg(220, 200, 0);   break; /* yellow       */
-    case 4:  ansi_fg(240, 60,  60);  break; /* red          */
-    case 5:  ansi_fg(200, 80,  220); break; /* magenta      */
-    case 7:  ansi_fg(0,   200, 220); break; /* cyan         */
-    case 9:  ansi_fg(255, 140, 0);   break; /* orange       */
-    case 12: ansi_fg(100, 255, 100); break; /* bright-green */
-    default: ansi_reset(); break;
+        /* TrueColor (24-bit) */
+        switch(idx)
+        {
+        case 2:  ansi_fg(80,  220, 80);  break; /* green        */
+        case 3:  ansi_fg(220, 200, 0);   break; /* yellow       */
+        case 4:  ansi_fg(240, 60,  60);  break; /* red          */
+        case 5:  ansi_fg(200, 80,  220); break; /* magenta      */
+        case 7:  ansi_fg(0,   200, 220); break; /* cyan         */
+        case 9:  ansi_fg(255, 140, 0);   break; /* orange       */
+        case 12: ansi_fg(100, 255, 100); break; /* bright-green */
+        default: ansi_reset(); break;
+        }
+    }
+    else if (ansi__color_level == 2)
+    {
+        /* 256-color fallback */
+        switch(idx)
+        {
+        case 2:  ansi_fg_256(114); break; /* green        */
+        case 3:  ansi_fg_256(220); break; /* yellow       */
+        case 4:  ansi_fg_256(203); break; /* red          */
+        case 5:  ansi_fg_256(176); break; /* magenta      */
+        case 7:  ansi_fg_256(44);  break; /* cyan         */
+        case 9:  ansi_fg_256(208); break; /* orange       */
+        case 12: ansi_fg_256(119); break; /* bright-green */
+        default: ansi_reset();     break;
+        }
+    }
+    else
+    {
+        /* 16-color (standard ANSI) fallback */
+        switch(idx)
+        {
+        case 2:  ansi_fg_16(32); break; /* green        */
+        case 3:  ansi_fg_16(33); break; /* yellow       */
+        case 4:  ansi_fg_16(31); break; /* red          */
+        case 5:  ansi_fg_16(35); break; /* magenta      */
+        case 7:  ansi_fg_16(36); break; /* cyan         */
+        case 9:  ansi_fg_16(33); break; /* orange -> yellow */
+        case 12: ansi_fg_16(92); break; /* bright-green */
+        default: ansi_reset();   break;
+        }
     }
 }
 
