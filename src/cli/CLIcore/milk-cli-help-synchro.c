@@ -82,8 +82,8 @@ void print_milk_synchro_help(void)
     printf("\n");
     printf(C_CMD "  milk-procinfo-help  " C_RST "Detailed procinfo help\n");
     printf(C_CMD "  milk-fps-help       " C_RST "Detailed FPS help\n");
-    printf(C_CMD "  milk-stream-help    " C_RST "Detailed Stream help\n");
-    printf(C_CMD "  pi                  " C_RST "Interactive processinfo monitor\n");
+    printf(C_CMD "  milk-streamCTRL     " C_RST "Interactive stream monitor TUI\n");
+    printf(C_CMD "  milk-procCTRL       " C_RST "Interactive processinfo monitor TUI\n");
     printf(C_CMD "  fpslist             " C_RST "List running FPS processes\n");
     printf(C_CMD "  ps-milk             " C_RST "List milk-related OS processes\n");
     printf("\n");
