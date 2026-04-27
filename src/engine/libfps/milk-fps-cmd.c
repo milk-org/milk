@@ -44,6 +44,27 @@ int main(int argc, char *argv[])
 {
     const char *progname = basename(argv[0]);
 
+    /* One-line help — must come before any FPS connection */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            if (strcmp(progname, "milk-fps-confstart") == 0)
+                printf("start FPS configuration loop\n");
+            else if (strcmp(progname, "milk-fps-confstop") == 0)
+                printf("stop FPS configuration loop\n");
+            else if (strcmp(progname, "milk-fps-confstep") == 0)
+                printf("run one FPS configuration step\n");
+            else if (strcmp(progname, "milk-fps-runstart") == 0)
+                printf("start FPS run loop\n");
+            else if (strcmp(progname, "milk-fps-runstop") == 0)
+                printf("stop FPS run loop\n");
+            else
+                printf("send lifecycle command to FPS\n");
+            return 0;
+        }
+    }
+
     if (argc < 2) {
         fprintf(stderr, "Usage: %s [OPTIONS] <fpsname>\n", progname);
         return 1;
