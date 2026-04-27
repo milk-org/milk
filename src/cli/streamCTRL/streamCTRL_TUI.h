@@ -1,4 +1,3 @@
-
 /**
  * @file streamCTRL.h
  * @brief Data streams control panel
@@ -137,14 +136,12 @@ extern "C"
 {
 #endif
 
-
-#ifdef USE_NCURSES
-errno_t streamCTRL_CTRLscreen();
-#else
-static inline errno_t streamCTRL_CTRLscreen() { return 0; }
+#ifndef __STDC_LIB_EXT1__
+typedef int errno_t;
 #endif
 
-
+/** Main TUI entry point — runs until user presses 'x' or SIGINT */
+errno_t streamCTRL_CTRLscreen(void);
 
 #ifdef __cplusplus
 }

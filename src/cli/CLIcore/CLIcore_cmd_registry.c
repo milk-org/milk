@@ -51,11 +51,7 @@ extern errno_t load_module__cli(void);
 extern errno_t CLIcore__load_module_as__cli(void);
 extern errno_t function_parameter_structure_load__cli(void);
 extern errno_t cli_fifo(void);
-#ifdef USE_NCURSES
-extern errno_t functionparameter_CTRLscreen__cli(void);
-extern errno_t processinfo_CTRLscreen__cli(void);
-extern errno_t streamCTRL_CTRLscreen__cli(void);
-#endif
+
 
 
 
@@ -342,25 +338,7 @@ void runCLI_cmd_init()
                        "setprocinfoOFF",
                        "set_processinfoOFF()");
 
-#ifdef USE_NCURSES
-    RegisterCLIcommand("procCTRL",
-                       __FILE__,
-                       processinfo_CTRLscreen__cli,
-                       "processes control screen",
-                       "no argument",
-                       "procCTRL",
-                       "processinfo_CTRLscreen()");
 
-    // stream ctrl
-
-    RegisterCLIcommand("streamCTRL",
-                       __FILE__,
-                       streamCTRL_CTRLscreen__cli,
-                       "stream control screen",
-                       "no argument",
-                       "streamCTRL",
-                       "streamCTRL_CTRLscreen()");
-#endif
 
     // FPS
     RegisterCLIcommand("fpsload",
@@ -371,16 +349,7 @@ void runCLI_cmd_init()
                        "fpsload imanalyze",
                        "long function_parameter_structure_load(char *fpsname)");
 
-#ifdef USE_NCURSES
-    RegisterCLIcommand(
-        "fpsCTRL",
-        __FILE__,
-        functionparameter_CTRLscreen__cli,
-        "function parameters control screen",
-        "no arg",
-        "fpsCTRL fpsname",
-        "int_fast8_t functionparameter_CTRLscreen(char *fpsname)");
-#endif
+
 
     RegisterCLIcommand("usleep",
                        __FILE__,

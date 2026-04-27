@@ -158,28 +158,8 @@ target_link_libraries(milkfpsCLI PUBLIC ${LIBNAME} CLIcore)
 install(TARGETS milkfpsCLI EXPORT milkTargets DESTINATION lib)
 
 
-if(USE_NCURSES AND USE_CLI)
-    set(SOURCEFILES_TUI
-        # fpsCTRL sources
-        fpsCTRL/fpsCTRL_FPSdisplay.c
-        fpsCTRL/fpsCTRL_TUI.c
-        fpsCTRL/fpsCTRL_TUI_process_user_key.c
-        fpsCTRL/level0node_summary.c
-        fpsCTRL/print_nodeinfo.c
-        fpsCTRL/scheduler_display.c
-        fpsCTRL/fpsCTRL_globals.c
-    )
-    
-    add_library(milkfpsTUI SHARED ${SOURCEFILES_TUI})
-    target_compile_definitions(milkfpsTUI PUBLIC USE_NCURSES)
-    target_include_directories(milkfpsTUI PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL>
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-    )
-    target_link_libraries(milkfpsTUI PUBLIC ${LIBNAME} milkTUI milkfpsseq ${NCURSES_LIBRARIES})
-    install(TARGETS milkfpsTUI EXPORT milkTargets DESTINATION lib)
-endif()
+# milkfpsTUI removed — milk-fpsCTRL links the same fpsCTRL sources directly
+# and uses the ANSI TUIcompat path; no external consumers of milkfpsTUI exist.
 
 
 install(TARGETS ${LIBNAME} EXPORT milkTargets DESTINATION lib)
@@ -198,29 +178,36 @@ install(FILES
     IMGID.h
     DESTINATION include/libfps)
 
-if(USE_NCURSES AND USE_CLI)
 # ==========================================
-# milk-fpsCTRL executable (requires TUI)
+# milk-fpsCTRL executable
 # ==========================================
 
-add_executable(milk-fpsCTRL fpsCTRL/milk-fpsCTRL.c)
+set(SOURCEFILES_FPSCTRL
+    fpsCTRL/milk-fpsCTRL.c
+    fpsCTRL/fpsCTRL_FPSdisplay.c
+    fpsCTRL/fpsCTRL_TUI.c
+    fpsCTRL/fpsCTRL_TUIcompat.c
+    fpsCTRL/fpsCTRL_TUI_process_user_key.c
+    fpsCTRL/level0node_summary.c
+    fpsCTRL/print_nodeinfo.c
+    fpsCTRL/scheduler_display.c
+    fpsCTRL/fpsCTRL_globals.c
+)
+
+add_executable(milk-fpsCTRL ${SOURCEFILES_FPSCTRL})
 target_include_directories(milk-fpsCTRL PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/fpsCTRL
 )
 target_link_libraries(milk-fpsCTRL PUBLIC 
-    milkfpsTUI
     milkfpsseq
     milkfps
     milkprocessinfo 
     ImageStreamIO
-    CLIcore
-    ${NCURSES_LIBRARIES}
     pthread
     m
 )
 
 install(TARGETS milk-fpsCTRL DESTINATION bin)
-endif()
 
 # ==========================================
 # Standalone FPS tools (no CLIcore needed)

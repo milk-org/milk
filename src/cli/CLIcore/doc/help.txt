@@ -22,11 +22,6 @@ COMMAND LINE OPTIONS
 	Requires script runidle
   --listimf
 	Keeps a list of images in file imlist.txt
-  -m, --mmon=TTYDEVICE
-	open memory monitor on tty device
-	example:
-	<executable> -m /dev/tty2
-	<executable> --mmon=/dev/tty2
   -n, --pname=PROCESSNAME
 	specify name to be given to process
 	example:

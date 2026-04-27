@@ -9,18 +9,9 @@
 #include <sys/stat.h>
 
 
-#ifdef USE_NCURSES
-#include <ncurses.h>
-#endif
-
-
-#include "CLIcore.h"
+#include "streamCTRL_defs.h"
 
 #include "streamCTRL_TUI.h"
-
-
-// default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
-#define SHAREDSHMDIR  dcshmdir
 
 
 /** @brief find shared memory streams on system
@@ -52,7 +43,7 @@ int find_streams(
             int matchOK = 1;
 
             // check that .im.shm terminates the string
-            if(pch - dir->d_name != strlen(dir->d_name) - 7)
+            if((long)(pch - dir->d_name) != (long)(strlen(dir->d_name) - 7))
             {
                 matchOK = 0;
             }
@@ -81,13 +72,11 @@ int find_streams(
                 retv = lstat(fullname, &buf);
                 if(retv == -1)
                 {
-#ifdef USE_NCURSES
-                    endwin();
-#endif
                     printf("File \"%s\"", dir->d_name);
                     perror("Error running lstat on file ");
                     exit(EXIT_FAILURE);
                 }
+
 
                 if(S_ISLNK(buf.st_mode))  // resolve link name
                 {
