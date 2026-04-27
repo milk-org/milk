@@ -64,7 +64,7 @@ static inline void sc_frame_flush(void)
 {
     if(sc_framebuf_pos > 0)
     {
-        (void) write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos);
+        if(write(STDOUT_FILENO, sc_framebuf, (size_t) sc_framebuf_pos) < 0) {}
         sc_framebuf_pos = 0;
     }
 }
