@@ -14,6 +14,10 @@ declare -a SEARCH_TERMS=()
 # Parse arguments
 while [ $# -gt 0 ]; do
     case "$1" in
+        -h1|--help-oneline)
+            echo "list installed milk-fpsexec-* standalone compute units"
+            exit 0
+            ;;
         -h|--help)
             cat <<'EOF'
 Usage: milk-fpsexec-list [OPTIONS] [SEARCH_TERM ...]
