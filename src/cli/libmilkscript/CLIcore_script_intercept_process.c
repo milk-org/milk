@@ -767,8 +767,8 @@ static int cli_assert_cmp(const char *ap)
                 "\033[0m\n",
                 cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                cli_float_digits,
-                part2, v2,
+                part2,
+                cli_float_digits, v2,
                 cli_cmp_sym(o2ch, o2eq),
                 cli_float_digits, v3);
         }
@@ -782,8 +782,8 @@ static int cli_assert_cmp(const char *ap)
                 "\033[0m\n",
                 cli_float_digits, v1,
                 cli_cmp_sym(o1ch, o1eq),
-                cli_float_digits,
-                part2, v2,
+                part2,
+                cli_float_digits, v2,
                 cli_cmp_sym(o2ch, o2eq),
                 cli_float_digits, v3);
             cli_last_retval = 1;

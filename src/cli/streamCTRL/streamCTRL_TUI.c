@@ -423,12 +423,12 @@ errno_t streamCTRL_CTRLscreen(void)
     //
 
 
-    // default: use ncurses
+    // default: use TUI
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
 
     if(getenv("MILK_TUIPRINT_STDIO"))
     {
-        // use stdio instead of ncurses
+        // use stdio instead of TUI
         TUI_set_screenprintmode(SCREENPRINT_STDIO);
     }
 
