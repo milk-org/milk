@@ -290,6 +290,16 @@ static int remove_fps(
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("remove Function Parameter Structure (FPS) from shared memory\\n");
+        return 0;
+    }
+
     int verbose = 0;
     int force = 0;
     int opt;
@@ -298,11 +308,12 @@ int main(int argc, char *argv[])
         {"force",   no_argument,       0, 'f'},
         {"verbose", no_argument,       0, 'v'},
         {"help",    no_argument,       0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
     while ((opt = getopt_long(argc, argv,
-                              "fvh",
+                              "fvh1",
                               long_options,
                               NULL)) != -1)
     {
@@ -315,6 +326,9 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("remove Function Parameter Structure (FPS) from shared memory\\n");
                 return 0;
             default:
                 print_help(argv[0]);

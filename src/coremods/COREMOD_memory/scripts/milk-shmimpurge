@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "purge orphan shared memory streams and files"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-shmimpurge [-f <filter>]  -- remove orphan shmim streams"
+        exit 0 ;;
+esac
+
 # number of arguments to script
 NBARGS=0
 

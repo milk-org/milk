@@ -4,9 +4,15 @@
 # can be a symlink to global if needed
 logSMstatdir="log-shmimloadstat"
 
+MSdescr="load FITS file to shared memory stream"
+
+# Early-exit for -h1 before any sourcing
+case "${1-}" in
+    -h1|--help-oneline) echo "${MSdescr}"; exit 0 ;;
+esac
+
 source milk-script-std-config
 
-MSdescr="Load FITS file to shared memory"
 
 MSextdescr="Load FITS file to shared memory
 
