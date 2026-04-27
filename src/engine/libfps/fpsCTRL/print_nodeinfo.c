@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "fps.h"
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "print_nodeinfo.h"
 
 void fpsCTRLscreen_print_nodeinfo(
@@ -91,7 +91,7 @@ void fpsCTRLscreen_print_nodeinfo(
     TUI_printfw("\n");
     
     TUI_printfw("======== NODE info ( # %5d)\n", nodeSelected);
-    TUI_printfw("% -30s ", keywnode[nodeSelected].keywordfull);
+    TUI_printfw("%-30s ", keywnode[nodeSelected].keywordfull);
     
     if(keywnode[nodeSelected].leaf > 0) {
         char typestring[100];

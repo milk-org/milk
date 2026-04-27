@@ -98,64 +98,7 @@ errno_t stream_monitor_help()
 // Shared Memory Helper Functions
 // ----------------------------------------------------------------------------
 
-STREAM_MON_STRUCT* stream_monitor_connect(const char *streamname, int create)
-{
-    char shmname[STRINGMAXLEN_FULLFILENAME];
-    int fd;
-    STREAM_MON_STRUCT *smon = NULL;
-
-    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", dcshmdir, streamname);
-
-    int flags = O_RDWR;
-    if (create) {
-        flags |= O_CREAT;
-    }
-
-    fd = open(shmname, flags, 0666);
-    if (fd == -1) {
-        if (create) {
-            perror("Error opening/creating monitor SHM file");
-        }
-        return NULL;
-    }
-
-    if (create) {
-        if (ftruncate(fd, sizeof(STREAM_MON_STRUCT)) == -1) {
-            perror("Error truncating monitor SHM file");
-            close(fd);
-            return NULL;
-        }
-    }
-
-    smon = (STREAM_MON_STRUCT*) mmap(NULL, sizeof(STREAM_MON_STRUCT), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    close(fd);
-
-    if (smon == MAP_FAILED) {
-        perror("Error mapping monitor SHM file");
-        return NULL;
-    }
-
-    if (create) {
-        smon->size = STREAM_MON_MAX_SAMPLES;
-        smon->cnt = 0;
-        smon->cindex = 0;
-        smon->hist_nbins = STREAM_MON_MAX_HIST_BINS;
-        memset(smon->flux, 0, sizeof(smon->flux));
-        memset(smon->time, 0, sizeof(smon->time));
-        memset(smon->hist_min_buf, 0, sizeof(smon->hist_min_buf));
-        memset(smon->hist_max_buf, 0, sizeof(smon->hist_max_buf));
-        memset(smon->hist_counts, 0, sizeof(smon->hist_counts));
-    }
-
-    return smon;
-}
-
-void stream_monitor_detach(STREAM_MON_STRUCT *smon)
-{
-    if (smon) {
-        munmap(smon, sizeof(STREAM_MON_STRUCT));
-    }
-}
+// stream_monitor_connect and stream_monitor_detach moved to stream_monproc_shm.c
 
 
 // ----------------------------------------------------------------------------
