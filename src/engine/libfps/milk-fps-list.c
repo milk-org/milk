@@ -40,6 +40,16 @@ void print_help(const char *progname) {
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("list Function Parameter Structures (FPS) in shared memory\\n");
+        return 0;
+    }
+
     int verbose = 0;
     int show_exec = 0;
     int opt;
@@ -48,10 +58,11 @@ int main(int argc, char *argv[])
         {"verbose", no_argument,       0, 'v'},
         {"exec",    no_argument,       0, 'e'},
         {"help",    no_argument,       0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "veh", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "veh1", long_options, NULL)) != -1) {
         switch (opt) {
             case 'v':
                 verbose = 1;
@@ -61,6 +72,9 @@ int main(int argc, char *argv[])
                 break;
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("list Function Parameter Structures (FPS) in shared memory\\n");
                 return 0;
             default:
                 print_help(argv[0]);

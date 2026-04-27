@@ -139,6 +139,14 @@ static long timespec_diff_ns(
  */
 int main(int argc, char *argv[])
 {
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("read processinfo shared memory and output timing metrics as JSON\n");
+        return 0;
+    }
+
     if (argc < 2)
     {
         fprintf(stderr,
