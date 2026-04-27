@@ -787,13 +787,7 @@ static MILK_HOT errno_t __attribute__((unused)) compute_function()
 
                     if(compressON == 0)
                     {
-                        snprintf(
-                            tmsg
-                            ->compress_string,
-                            sizeof(
-                                tmsg
-                                ->compress_string),
-                            "");
+                        tmsg->compress_string[0] = '\0';
                     }
                     else
                     {

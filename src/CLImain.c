@@ -183,7 +183,7 @@ int main(int argc, char *argv[])
             /* 1. Move cursor to bottom row col 1 */
             n = snprintf(esc, sizeof(esc),
                          "\033[%d;1H", r);
-            write(STDOUT_FILENO, esc, n);
+            if(write(STDOUT_FILENO, esc, n) < 0) {}
 
             /* 2. Overwrite entire row with spaces */
             {
@@ -197,8 +197,8 @@ int main(int argc, char *argv[])
                     {
                         chunk = (int) sizeof(spaces);
                     }
-                    write(STDOUT_FILENO, spaces,
-                          chunk);
+                    if(write(STDOUT_FILENO, spaces,
+                          chunk) < 0) {}
                     remain -= chunk;
                 }
             }
@@ -206,12 +206,12 @@ int main(int argc, char *argv[])
             /* 3. Reset scroll region to full */
             n = snprintf(esc, sizeof(esc),
                          "\033[1;%dr", r);
-            write(STDOUT_FILENO, esc, n);
+            if(write(STDOUT_FILENO, esc, n) < 0) {}
 
             /* 4. Position cursor for bash prompt */
             n = snprintf(esc, sizeof(esc),
                          "\033[%d;1H", r - 1);
-            write(STDOUT_FILENO, esc, n);
+            if(write(STDOUT_FILENO, esc, n) < 0) {}
         }
     }
 
