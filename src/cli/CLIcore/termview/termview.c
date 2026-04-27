@@ -212,12 +212,12 @@ static void tv_enter_raw(void)
 
 static void tv_enter_alt_screen(void)
 {
-    write(STDOUT_FILENO, "\033[?1049h\033[?25l\033[?1002h\033[?1006h", 30); // alt screen + hide cursor + mouse track
+    if(write(STDOUT_FILENO, "\033[?1049h\033[?25l\033[?1002h\033[?1006h", 30) < 0) {} // alt screen + hide cursor + mouse track
 }
 
 static void tv_exit_alt_screen(void)
 {
-    (void)write(STDOUT_FILENO, "\033[?1006l\033[?1002l\033[?1049l\033[?25h", 30); // exit alt screen + show cursor + no mouse track
+    if(write(STDOUT_FILENO, "\033[?1006l\033[?1002l\033[?1049l\033[?25h", 30) < 0) {} // exit alt screen + show cursor + no mouse track
 }
 
 static void tv_get_size(unsigned short *rows, unsigned short *cols)
@@ -398,7 +398,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
                 memset(prev_screen, 0, screen_size * sizeof(tv_cell_t));
             }
             // Issue a clear screen just in case terminal scrolling messed up the view
-            write(STDOUT_FILENO, "\033[2J\033[H", 7);
+            if(write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0) {}
         }
 
         long target_us = 1000000L / target_fps;
@@ -1197,7 +1197,7 @@ errno_t termview_screen(const char *imagename, termview_options_t options)
         tv_reset(frame_buffer, &fb_pos);
 
         if (fb_pos > 0) {
-            write(STDOUT_FILENO, frame_buffer, fb_pos);
+            if(write(STDOUT_FILENO, frame_buffer, fb_pos) < 0) {}
         }
     }
 
