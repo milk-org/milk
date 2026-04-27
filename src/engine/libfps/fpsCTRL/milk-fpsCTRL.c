@@ -31,8 +31,8 @@ void fpsCTRL_crash_handler(int sig)
      */
     static const char reset_seq[] =
         "\033[?1049l\033[?25h\033[0m\n";
-    (void) write(STDERR_FILENO,
-                 reset_seq, sizeof(reset_seq) - 1);
+    if(write(STDERR_FILENO,
+                 reset_seq, sizeof(reset_seq) - 1) < 0) {}
                  
     if (ansi__raw_active) {
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
@@ -67,8 +67,8 @@ void print_usage(const char *progname) {
         "Quiet mode (suppress "
         "TUI output)\n");
     printf("  -s, --stdio       "
-        "Use stdio instead of "
-        "ncurses\n");
+        "Use stdio line-by-line "
+        "display instead of TUI\n");
     printf("  -h, --help        "
         "Show this help message\n");
     printf("\n");
