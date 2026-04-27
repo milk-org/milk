@@ -16,17 +16,12 @@
 
 #include <sys/stat.h>
 
-#include <ncurses.h>
 
+#include "streamCTRL_defs.h"
 
-#include "CLIcore.h"
 #include "streamCTRL_TUI.h"
 #include "streamCTRL_find_streams.h"
 #include "streamCTRL_utilfuncs.h"
-
-
-// default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
-#define SHAREDSHMDIR  dcshmdir
 
 
 void *streamCTRL_scan(
