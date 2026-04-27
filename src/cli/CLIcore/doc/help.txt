@@ -38,6 +38,10 @@ COMMAND LINE OPTIONS
   -s, --startup=STARTUPFILE
 	execute specified script on startup
 	requires the -f or -F option, as the script is loaded into fifo
+  -m, --mmon=STREAM
+	Set memory monitor stream
+  -E, --echo-input
+	Echo each input line (colored)
   -A, --autocomplete
 	Enable autocomplete preview
   --no-autocomplete
@@ -110,11 +114,11 @@ IMPORTANT COMMANDS
 
 > ci
 	# compilation time and memory usage
-> listim
+> mem.listim
 	# list all images in memory
-> listim --json
+> mem.listim --json
 	# list all images in memory in JSON format
-> listim --porcelain
+> mem.listim --porcelain
 	# list all images in memory in TSV format
 > listimf <filename>
 	# list all images in memory and write output to file <filename>
@@ -123,8 +127,8 @@ IMPORTANT COMMANDS
 > showhist
 	# prints history of all commands
 > quit
-	# exit Cfits (exit also works)
-> creaim <im> <xs> <ys>
+	# exit (exit and exitCLI also work)
+> mem.mk2Dim <im> <xs> <ys>
 	# creates a 2D image named <im>, size = <xs> x <ys> pixels
 
 -----------------------------------------------------------------------------------
