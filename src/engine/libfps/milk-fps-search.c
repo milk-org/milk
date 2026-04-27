@@ -51,22 +51,36 @@ void print_help(const char *progname) {
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("search FPS parameters for matching values\\n");
+        return 0;
+    }
+
     int verbose = 0;
     int opt;
 
     static struct option long_options[] = {
         {"verbose", no_argument,       0, 'v'},
         {"help",    no_argument,       0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "vh", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "vh1", long_options, NULL)) != -1) {
         switch (opt) {
             case 'v':
                 verbose = 1;
                 break;
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("search FPS parameters for matching values\\n");
                 return 0;
             default:
                 print_help(argv[0]);

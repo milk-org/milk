@@ -1,5 +1,13 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "move PID to CPU set and assign real-time priority"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-makecsetandrt <PID> <cpuset> <prio>"
+        exit 0 ;;
+esac
+
 EXPECTED_ARGS=3
 
 if [ $# -ne $EXPECTED_ARGS ]

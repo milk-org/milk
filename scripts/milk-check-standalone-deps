@@ -12,6 +12,19 @@
 #
 # Exit code 0 = all OK, 1 = unexpected CLIcore dependency.
 
+# Early-exit help flags (before set -euo pipefail)
+case "${1-}" in
+    -h1|--help-oneline)
+        echo "verify standalone executables do not link CLIcore unexpectedly"
+        exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-check-standalone-deps [install-prefix]"
+        echo "CI guard: verify milk-fpsexec-* and cacao-fpsexec-* binaries do not"
+        echo "link libCLIcore unless on the known-exception list."
+        echo "Exit 0 = all OK, 1 = unexpected CLIcore dependency found."
+        exit 0 ;;
+esac
+
 set -euo pipefail
 
 # --- Locate install prefix ---

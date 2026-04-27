@@ -1,7 +1,16 @@
 #! /bin/bash
 
-EXPECTED_ARGS=1
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "kill shared memory log stream process"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-logshimkill <stream>"
+        echo "Kill the background process logging a shared memory stream."
+        exit 0 ;;
+esac
 
+
+EXPECTED_ARGS=1
 if [ $# -ne $EXPECTED_ARGS ]
 then
     echo

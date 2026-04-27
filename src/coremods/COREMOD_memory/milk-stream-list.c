@@ -40,6 +40,17 @@ void print_help(const char *progname) {
 }
 
 int main(int argc, char *argv[]) {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("list shared memory image streams\n");
+        return 0;
+    }
+
+
     int show_all = 0;
     int opt;
 
