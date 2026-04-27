@@ -36,14 +36,22 @@ static void handle_sigterm(int sig)
 
 int main(int argc, char *argv[])
 {
-    /* Parse optional -h / --help */
+    /* Parse optional -h1 / -h / --help */
     for(int i = 1; i < argc; i++)
     {
+        if((strcmp(argv[i], "-h1") == 0) ||
+                (strcmp(argv[i], "--help-oneline") == 0))
+        {
+            printf("interactive stream monitor TUI\n");
+            return 0;
+        }
+
         if((strcmp(argv[i], "-h") == 0) ||
                 (strcmp(argv[i], "--help") == 0))
         {
             printf("Usage: milk-streamCTRL [options]\n");
             printf("  -h, --help     Show this help\n");
+            printf("  -h1            One-line description and exit\n");
             printf("  -d DIR         Override SHM directory (default: /dev/shm)\n");
             printf("\nKeys:\n");
             printf("  x         Exit\n");

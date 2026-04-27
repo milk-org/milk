@@ -4,67 +4,72 @@
 # See template milk-scriptexample in module milk_module_example for template and instructions
 
 
-MSdescr="list milk- scripts"
+MSdescr="list milk- commands with one-line descriptions"
 
-MSextdescr="List milk-cli scripts
+MSextdescr="List all milk-* commands installed on this system.
 
-Scan system for milk- commands
+Each command is queried via -h1 / --help-oneline for a one-line description.
 "
 
 source milk-script-std-config
 
 PRINTPATH="0"
-MSopt+=( "p:path:set_printpath::Print command path" )
+MSopt+=( "p:path:set_printpath::Print command path instead of description" )
 function set_printpath()
 {
 	PRINTPATH="1"
 }
 
 PRINTDATE="0"
-MSopt+=( "d:date:set_printdate::Print command date" )
+MSopt+=( "d:date:set_printdate::Print command install date" )
 function set_printdate()
 {
 	PRINTDATE="1"
 }
 
+PORCELAIN="0"
+MSopt+=( "P:porcelain:set_porcelain::Machine-readable TSV output (name<TAB>description)" )
+function set_porcelain()
+{
+	PORCELAIN="1"
+}
+
 source milk-argparse
 
 
-CMDLIST=$(compgen -c "milk-" | sort -u )
+CMDLIST=$(compgen -c "milk-" | sort -u)
 
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-echo "LIST OF MILK COMMANDS :"
+if [ "${PORCELAIN}" = "0" ] && [ "${PRINTPATH}" = "0" ] && [ "${PRINTDATE}" = "0" ]; then
+	echo "LIST OF MILK COMMANDS :"
+fi
 
-excludestring=("milk-argparse" "milk-check" "milk-cr2tofits" "milk-isio-scan" "milk-fpslist-addentry" "milk-logshim" "milk-logshimkill" "milk-logshimoff" "milk-logshimon" "milk-makecsetandrt" "milk-rmshmim" "milk-shm2FITSloop" "milk-shm2FITS" "milk-shmimmon" "milk-shmimpurge")
+CMDLISTOUT=""
 
 for cmd in $CMDLIST; do
 
-EXCLUDE=0
-for exclcmd in ${excludestring[@]}; do
-  if [ "${exclcmd}" = "${cmd}" ]; then
-  #pathstring="$(which ${cmd})"
-  #printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "${pathstring}"
-  EXCLUDE=1
-  fi
-done
-
-
 	if [ "${PRINTPATH}" = "1" ]; then
-		pathstring="$(which ${cmd})"
-		printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "${pathstring}"
-	elif [ "${PRINTDATE}" = "1" ]; then
-		filename="$(which ${cmd})"
-		datestring="$(date -r $filename '+%Y-%m-%dT%H:%M:%SZ')"
-		CMDLISTOUT+="$(printf "%s  %s;" "${datestring}" "$cmd")"
-	else 
-		if [ "${EXCLUDE}" = "0" ]; then
-		helpline=$( $cmd -hs | head -n 1 )
+		pathstring="$(which ${cmd} 2>/dev/null || true)"
+		if [ "${PORCELAIN}" = "1" ]; then
+			printf "%s\t%s\n" "${cmd}" "${pathstring}"
 		else
-		helpline=""
+			printf "\t${GREEN}%-40s${NC}  %s\n" "${cmd}" "${pathstring}"
 		fi
-		printf "	${GREEN}%-32s${NC}  %s\n" "$cmd" "$helpline"
+	elif [ "${PRINTDATE}" = "1" ]; then
+		filename="$(which ${cmd} 2>/dev/null || true)"
+		if [ -n "${filename}" ]; then
+			datestring="$(date -r "${filename}" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || true)"
+			CMDLISTOUT+="$(printf "%s  %s;" "${datestring}" "${cmd}")"
+		fi
+	else
+		helpline=$(timeout 2 "${cmd}" -h1 2>/dev/null | head -n 1 | sed 's/^\.*//' || true)
+		if [ "${PORCELAIN}" = "1" ]; then
+			printf "%s\t%s\n" "${cmd}" "${helpline}"
+		else
+			printf "\t${GREEN}%-40s${NC}  %s\n" "${cmd}" "${helpline}"
+		fi
 	fi
 
 done
@@ -72,12 +77,16 @@ done
 
 if [ "${PRINTDATE}" = "1" ]; then
 	IFS=';' read -r -a array <<< "${CMDLISTOUT//[$'\t\r\n']}"; unset IFS
-	IFS=$'\n' sortedarray=($(sort <<<"${array[*]}")); unset IFS	
+	IFS=$'\n' sortedarray=($(sort <<< "${array[*]}")); unset IFS
 	for element in "${sortedarray[@]//[$'\t\r\n']}"
 	do
-		cmdstr=$(echo $element | awk '{ print $2}')
-		datestr=$(echo $element | awk '{ print $1}')
-		helpline=$( $cmdstr -hs | head -n 1 )
-		printf " %s ${GREEN}%-32s${NC}  %s\n" "$datestr" "$cmdstr" "$helpline"
+		cmdstr=$(echo "${element}" | awk '{ print $2}')
+		datestr=$(echo "${element}" | awk '{ print $1}')
+		helpline=$(timeout 2 "${cmdstr}" -h1 2>/dev/null | head -n 1 || true)
+		if [ "${PORCELAIN}" = "1" ]; then
+			printf "%s\t%s\t%s\n" "${datestr}" "${cmdstr}" "${helpline}"
+		else
+			printf " %s ${GREEN}%-40s${NC}  %s\n" "${datestr}" "${cmdstr}" "${helpline}"
+		fi
 	done
 fi

@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #define C_TITLE "\033[1;36m"   /* Cyan Bold   -> Main section headers / separators */
 #define C_HDR   "\033[1;34m"   /* Blue Bold   -> Subheaders inside sections */
@@ -12,8 +13,16 @@
 #define C_BOLD  "\033[1m"      /* White Bold  -> Emphasize specific words */
 #define C_RST   "\033[0m"      /* Reset */
 
-int main()
+int main(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("processinfo and real-time setup guide\n");
+            return 0;
+        }
+    }
     printf("\n");
     printf(C_TITLE "========================================================\n" C_RST);
     printf(C_TITLE "             Processinfo & Real-Time Setup              \n" C_RST);
