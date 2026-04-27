@@ -9,13 +9,10 @@
 
 #include "milkDebugTools.h"
 #include "fps.h"
-#ifdef USE_NCURSES
-#include "TUItools.h"
-#else
 #define AECBOLDHIGREEN ""
 #define AECNORMAL      ""
 #define TUI_printfw(...) printf(__VA_ARGS__)
-#endif
+
 
 #include "fps_PrintParameterInfo.h"
 

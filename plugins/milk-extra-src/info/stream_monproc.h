@@ -8,7 +8,13 @@
 
 #include <stdint.h>
 #include <time.h>
+#ifndef MILK_NO_CLI
 #include "CLIcore.h"
+#else
+#ifndef __STDC_WANT_LIB_EXT1__
+typedef int errno_t;
+#endif
+#endif
 
 // Maximum number of frames in the history circular buffer
 #define STREAM_MON_MAX_SAMPLES 1024

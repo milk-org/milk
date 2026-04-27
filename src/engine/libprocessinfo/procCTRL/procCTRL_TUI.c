@@ -26,7 +26,6 @@ typedef int errno_t;
 #include <unistd.h>
 
 #include <fcntl.h>
-#include <ncurses.h>
 #include <sys/mman.h>
 
 #include <dirent.h>
@@ -39,7 +38,7 @@ typedef int errno_t;
 #include "timeutils.h"
 #include "quicksort.h"
 
-#include "TUItools.h"
+#include "procCTRL_TUIcompat.h"
 #include "milkDebugTools.h"
 
 static char local_shmdir[STRINGMAXLEN_DIRNAME];
@@ -246,13 +245,14 @@ errno_t processinfo_CTRLscreen()
     if(getenv("MILK_TUIPRINT_STDIO")) TUI_set_screenprintmode(SCREENPRINT_STDIO);
     
     if (flog) { fprintf(flog, "Initializing terminal...\n"); fflush(flog); } // Corrected 'frow' to 'flog'
+    ansi_raw_mode_enter();
     TUI_init_terminal(&wrow, &wcol);
     if(wrow < 10) wrow = 10;
 
     if (flog) { fprintf(flog, "Allocating pinfodisp buffer (250MB)\n"); fflush(flog); }
     procinfoproc->pinfodisp = (PROCESSINFODISP *) calloc(PROCESSINFOLISTSIZE, sizeof(PROCESSINFODISP));
     if (procinfoproc->pinfodisp == NULL) {
-        TUI_exit();
+        ansi_raw_mode_exit();
         fprintf(stderr, "FATAL ERROR: Could not allocate 250MB process info buffer.\n");
         if (flog) fclose(flog);
         return RETURN_FAILURE;
@@ -295,7 +295,7 @@ errno_t processinfo_CTRLscreen()
     float actual_fps = 0.0;
 
     if (flog) { fprintf(flog, "Entering main loop.\n"); fflush(flog); }
-    clear();
+    sc_frame_clear();
 
     while(loopOK) {
         if(processinfo_signal_SEGV) { 
@@ -325,7 +325,7 @@ errno_t processinfo_CTRLscreen()
         t_disp_prev = t_disp_cur;
 
         usleep((long)(1000000.0 / frequ));
-        int ch = getch();
+        int ch = get_singlechar_nonblock();
         
         int NBactive = (scan_shm) ? scan_shm->NBactive : 0;
         int m = procinfoproc->DisplayMode;
@@ -380,30 +380,38 @@ errno_t processinfo_CTRLscreen()
                  if (m >= 0 && m < 10)
                      procinfoproc->col_visible[m][cidx] = !procinfoproc->col_visible[m][cidx];
             }
-            else if (ch == KEY_F(2)) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
-            else if (ch == KEY_F(3)) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
-            else if (ch == KEY_F(4)) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
-            else if (ch == KEY_F(5)) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
-            else if (ch == KEY_F(6)) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_PROCINFO;
+            else if (ch == ANSI_KEY_F2) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_CTRL;
+            else if (ch == ANSI_KEY_F3) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_RESOURCES;
+            else if (ch == ANSI_KEY_F4) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_TRIGGER;
+            else if (ch == ANSI_KEY_F5) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_TIMING;
+            else if (ch == ANSI_KEY_F6) procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_PROCINFO;
             else if (ch == 'h')      procinfoproc->DisplayMode = PROCCTRL_DISPLAYMODE_HELP;
-            else if (ch == 'x') { loopOK = 0; Xexit = 1; }
+            else if (ch == ANSI_KEY_CTRL_LEFT) {
+                procinfoproc->DisplayMode--;
+                if(procinfoproc->DisplayMode < 1) procinfoproc->DisplayMode = 6;
+            }
+            else if (ch == ANSI_KEY_CTRL_RIGHT) {
+                procinfoproc->DisplayMode++;
+                if(procinfoproc->DisplayMode > 6) procinfoproc->DisplayMode = 1;
+            }
+            else if (ch == 'x' || ch == 3) { loopOK = 0; Xexit = 1; }
             else if (ch == 'f') { freeze = !freeze; }
             else if (ch == '+' || ch == '=') { frequ *= 1.2; if (frequ > 1000.0) frequ = 1000.0; }
             else if (ch == '-') { frequ /= 1.2; if (frequ < 0.1) frequ = 0.1; }
             else if (ch == ' ' && pindexSelected >= 0) {
                  procinfoproc->selectedarray[pindexSelected] = !procinfoproc->selectedarray[pindexSelected];
             }
-            else if (ch == KEY_UP && NBactive > 0) {
+            else if (ch == ANSI_KEY_UP && NBactive > 0) {
                  pindexActiveSelected--; if (pindexActiveSelected < 0) pindexActiveSelected = 0;
             }
-            else if (ch == KEY_DOWN && NBactive > 0) {
+            else if (ch == ANSI_KEY_DOWN && NBactive > 0) {
                  pindexActiveSelected++; if (pindexActiveSelected >= NBactive) pindexActiveSelected = NBactive - 1;
             }
-            else if (ch == KEY_LEFT) {
+            else if (ch == ANSI_KEY_LEFT) {
                  procinfoproc->selected_col--;
                  if (procinfoproc->selected_col < 1) procinfoproc->selected_col = 9;
             }
-            else if (ch == KEY_RIGHT) {
+            else if (ch == ANSI_KEY_RIGHT) {
                  procinfoproc->selected_col++;
                  if (procinfoproc->selected_col > 9) procinfoproc->selected_col = 1;
             }
@@ -467,13 +475,12 @@ errno_t processinfo_CTRLscreen()
                     procinfoproc->pinfoarray[pindexSelected]->loopcnt = 0;
                 }
             }
-            else if (ch == KEY_RESIZE) {
-                clear();
-            }
+            // Removed KEY_RESIZE logic since we clear and resize every frame anyway
         }
 
         if (freeze == 0) {
-            erase();
+            sc_frame_clear();
+            TUI_clearscreen(&wrow, &wcol);
             snprintf(monstring, monstringlen, "Mode %d   PRESS x TO STOP MONITOR", procinfoproc->DisplayMode);
             TUI_print_header(monstring, '-');
             TUI_newline();
@@ -492,34 +499,34 @@ errno_t processinfo_CTRLscreen()
                 }
             }
             
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_HELP) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_HELP) screenprint_setcolor(2);
             TUI_printfw("[h] Help");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_HELP) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_HELP) screenprint_unsetcolor(2);
             TUI_printfw("   ");
 
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_CTRL) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_CTRL) screenprint_setcolor(2);
             TUI_printfw("[F2] CTRL");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_CTRL) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_CTRL) screenprint_unsetcolor(2);
             TUI_printfw("   ");
 
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES) screenprint_setcolor(2);
             TUI_printfw("[F3] Resources");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_RESOURCES) screenprint_unsetcolor(2);
             TUI_printfw("   ");
 
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER) screenprint_setcolor(2);
             TUI_printfw("[F4] Triggering");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TRIGGER) screenprint_unsetcolor(2);
             TUI_printfw("   ");
 
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TIMING) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TIMING) screenprint_setcolor(2);
             TUI_printfw("[F5] Timing");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TIMING) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_TIMING) screenprint_unsetcolor(2);
             TUI_printfw("   ");
 
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_PROCINFO) attron(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_PROCINFO) screenprint_setcolor(2);
             TUI_printfw("[F6] PROCINFO");
-            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_PROCINFO) attroff(COLOR_PAIR(2));
+            if (procinfoproc->DisplayMode == PROCCTRL_DISPLAYMODE_PROCINFO) screenprint_unsetcolor(2);
             TUI_newline();
 
             // Column visibility status line
@@ -577,15 +584,15 @@ errno_t processinfo_CTRLscreen()
                             snprintf(colinfo, 40, "%d:%s", i, colnames[i]);
                         }
 
-                        if (i == procinfoproc->selected_col) attron(COLOR_PAIR(10));
+                        if (i == procinfoproc->selected_col) screenprint_setcolor(10);
                         if (procinfoproc->col_visible[m][i]) {
-                            attron(A_BOLD); // Bold font, no background highlight
+                            screenprint_setbold(); // Bold font, no background highlight
                             TUI_printfw("%s ", colinfo);
-                            attroff(A_BOLD);
+                            screenprint_unsetbold();
                         } else {
                             TUI_printfw("%s ", colinfo); // Normal text
                         }
-                        if (i == procinfoproc->selected_col) attroff(COLOR_PAIR(10));
+                        if (i == procinfoproc->selected_col) screenprint_unsetcolor(10);
                     }
                     TUI_newline();
                 }
@@ -596,32 +603,32 @@ errno_t processinfo_CTRLscreen()
                 TUI_printfw("MILK Process Control (procCTRL) - HELP");
                 TUI_newline();
                 TUI_printfw("Navigation:  ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("F2-F6"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Modes (CTRL, Res, Trig, Tim, PInfo)   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("UP/DN"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Selection");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("F2-F6"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Modes (CTRL, Res, Trig, Tim, PInfo)   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("UP/DN"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Selection");
                 TUI_newline();
                 TUI_printfw("             ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("SPACE"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Select process (batch)                ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("1-9"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw("   : Toggle Cols");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("SPACE"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Select process (batch)                ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("1-9"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw("   : Toggle Cols");
                 TUI_newline();
                 TUI_printfw("             ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("LEFT/RGHT"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Highlight Column                      ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("^L/^R"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Cycle Tabs");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("LEFT/RGHT"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Highlight Column                      ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("^L/^R"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Cycle Tabs");
                 TUI_newline();
                 TUI_printfw("Control:     ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("p"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Pause/Resume   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("^S"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Step   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("e"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Exit   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("T/K/I"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : TERM/KILL/INT");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("p"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Pause/Resume   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("^S"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Step   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("e"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Exit   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("T/K/I"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : TERM/KILL/INT");
                 TUI_newline();
                 TUI_printfw("             ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("r/R"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Rem Log (Sel/All)   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("z/Z"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Zero Cnt (Sel/All)");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("r/R"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Rem Log (Sel/All)   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("z/Z"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Zero Cnt (Sel/All)");
                 TUI_newline();
                 TUI_printfw("Other:       ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("f"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Freeze   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("s/S"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Sort (Tab/All)   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("+/-"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Update freq   ");
-                attron(COLOR_PAIR(1) | A_BOLD); TUI_printfw("x"); attroff(COLOR_PAIR(1) | A_BOLD); TUI_printfw(" : Exit procCTRL");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("f"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Freeze   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("s/S"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Sort (Tab/All)   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("+/-"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Update freq   ");
+                screenprint_setcolor(1); screenprint_setbold(); TUI_printfw("x"); screenprint_unsetcolor(1); screenprint_unsetbold(); TUI_printfw(" : Exit procCTRL");
                 TUI_newline();
             }
             else {
@@ -669,21 +676,21 @@ errno_t processinfo_CTRLscreen()
 
                 for(int dispindex = doffsetindex; dispindex < lastindex; dispindex++) {
                     if (dispindex == doffsetindex && doffsetindex > 0) {
-                        attron(A_BOLD);
+                        screenprint_setbold();
                         screenprint_setcolor(3);
                         TUI_printfw("      ^^^^ %d more entries above ^^^^", (int)(doffsetindex + 1));
                         screenprint_unsetcolor(3);
-                        attroff(A_BOLD);
+                        screenprint_unsetbold();
                         TUI_newline();
                         continue;
                     }
 
                     if (dispindex == lastindex - 1 && lastindex < NBactive) {
-                        attron(A_BOLD);
+                        screenprint_setbold();
                         screenprint_setcolor(3);
                         TUI_printfw("      vvvv %d more entries below vvvv", (int)(NBactive - lastindex + 1));
                         screenprint_unsetcolor(3);
-                        attroff(A_BOLD);
+                        screenprint_unsetbold();
                         TUI_newline();
                         continue;
                     }
@@ -694,7 +701,7 @@ errno_t processinfo_CTRLscreen()
                 else pindex = scan_shm->sorted_pindex[dispindex];
                 
                 if (pindex >= 0 && pindex < PROCESSINFOLISTSIZE && (procinfoproc->pinfommapped[pindex] || pinfolist->active[pindex] != 0)) {
-                        if (pindex == pindexSelected) attron(A_REVERSE);
+                        if (pindex == pindexSelected) screenprint_setreverse();
                         
                         if (procinfoproc->selectedarray[pindex]) TUI_printfw("* "); else TUI_printfw("  ");
                         
@@ -702,14 +709,14 @@ errno_t processinfo_CTRLscreen()
 
                         // Column 1: idx
                         if (procinfoproc->col_visible[m][1]) {
-                            if (procinfoproc->selected_col == 1) attron(COLOR_PAIR(10));
+                            if (procinfoproc->selected_col == 1) screenprint_setcolor(10);
                             TUI_printfw("%4d ", pindex);
-                            if (procinfoproc->selected_col == 1) attroff(COLOR_PAIR(10));
+                            if (procinfoproc->selected_col == 1) screenprint_unsetcolor(10);
                         }
 
                         // Column 2: status
                         if (procinfoproc->col_visible[m][2]) {
-                            if (procinfoproc->selected_col == 2) attron(COLOR_PAIR(10));
+                            if (procinfoproc->selected_col == 2) screenprint_setcolor(10);
                             if (pinfolist->active[pindex] == 1) {
                                 screenprint_setcolor(6); TUI_printfw("% -10s ", "ACTIVE"); screenprint_unsetcolor(6);
                             } else if (pinfolist->active[pindex] == 2) {
@@ -719,20 +726,20 @@ errno_t processinfo_CTRLscreen()
                             } else {
                                 TUI_printfw("% -10s ", "OFF");
                             }
-                            if (procinfoproc->selected_col == 2) attroff(COLOR_PAIR(10));
+                            if (procinfoproc->selected_col == 2) screenprint_unsetcolor(10);
                         }
                         
                         // Column 3: pid
                         if (procinfoproc->col_visible[m][3]) {
-                            if (procinfoproc->selected_col == 3) attron(COLOR_PAIR(10));
+                            if (procinfoproc->selected_col == 3) screenprint_setcolor(10);
                             pid_t pid = pinfolist->PIDarray[pindex];
                             int pid_exists = (kill(pid, 0) == 0);
-                            if (!pid_exists) attron(COLOR_PAIR(4));
+                            if (!pid_exists) screenprint_setcolor(4);
                             char state = scan_shm->pinfodisp[pindex].state;
                             if (state == 0) state = ' ';
                             TUI_printfw("%7d %c ", pid, state);
-                            if (!pid_exists) attroff(COLOR_PAIR(4));
-                            if (procinfoproc->selected_col == 3) attroff(COLOR_PAIR(10));
+                            if (!pid_exists) screenprint_unsetcolor(4);
+                            if (procinfoproc->selected_col == 3) screenprint_unsetcolor(10);
                         }
 
                         if (scan_shm && pindex < PROCESSINFOLISTSIZE && pinfolist->active[pindex] == 1 && scan_shm->request_scan[pindex] == 0) {
@@ -742,7 +749,7 @@ errno_t processinfo_CTRLscreen()
                         if (m == PROCCTRL_DISPLAYMODE_CTRL) {
                             // 4: tstart
                             if (procinfoproc->col_visible[m][4]) {
-                                if (procinfoproc->selected_col == 4) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
                                 char tbuf[30];
                                 time_t sec = (time_t)pinfolist->createtime[pindex];
                                 long usec = (long)((pinfolist->createtime[pindex] - sec) * 1000000);
@@ -752,14 +759,14 @@ errno_t processinfo_CTRLscreen()
                                          sizeof(tbuf) - 19,
                                          ".%06ld", usec);
                                 TUI_printfw("%s ", tbuf);
-                                if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
 
                             // 5: pname
                             if (procinfoproc->col_visible[m][5]) {
-                                if (procinfoproc->selected_col == 5) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
-                                if (procinfoproc->selected_col == 5) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                             }
 
                             int   ctrlval = (procinfoproc->pinfoarray[pindex]) ? procinfoproc->pinfoarray[pindex]->CTRLval : 0;
@@ -768,110 +775,110 @@ errno_t processinfo_CTRLscreen()
 
                             // 6: state
                             if (procinfoproc->col_visible[m][6]) {
-                                if (procinfoproc->selected_col == 6) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_setcolor(10);
                                 if (ctrlval == 1) {
-                                     attron(COLOR_PAIR(3) | A_BLINK); TUI_printfw("C1"); attroff(COLOR_PAIR(3) | A_BLINK); TUI_printfw(" ");
+                                     screenprint_setcolor(3); screenprint_setblink(); TUI_printfw("C1"); screenprint_unsetcolor(3); screenprint_unsetblink(); TUI_printfw(" ");
                                 } else {
                                      TUI_printfw("C%d ", ctrlval); 
                                 }
-                                if (procinfoproc->selected_col == 6) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_unsetcolor(10);
                             }
 
                             // 7: lcnt
                             if (procinfoproc->col_visible[m][7]) {
-                                if (procinfoproc->selected_col == 7) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_setcolor(10);
                                 if (loopcnt != procinfoproc->loopcntarray[pindex]) {
                                      screenprint_setcolor(6); TUI_printfw("%10ld ", loopcnt); screenprint_unsetcolor(6);
                                 } else {
                                      TUI_printfw("%10ld ", loopcnt); 
                                 }
                                 procinfoproc->loopcntarray[pindex] = loopcnt;
-                                if (procinfoproc->selected_col == 7) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_unsetcolor(10);
                             }
 
                             // 8: msg
                             if (procinfoproc->col_visible[m][8]) {
-                                if (procinfoproc->selected_col == 8) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_setcolor(10);
                                 TUI_printfw("% -30s ", desc); 
-                                if (procinfoproc->selected_col == 8) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_unsetcolor(10);
                             }
                         }
                         else if (m == PROCCTRL_DISPLAYMODE_RESOURCES) {
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
-                                if (procinfoproc->selected_col == 4) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
-                                if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: prio
                             if (procinfoproc->col_visible[m][5]) {
-                                if (procinfoproc->selected_col == 5) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
                                 TUI_printfw("P%2d ", scan_shm->pinfodisp[pindex].rt_priority); 
-                                if (procinfoproc->selected_col == 5) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                             }
                             // 6: cpu
                             if (procinfoproc->col_visible[m][6]) {
-                                if (procinfoproc->selected_col == 6) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_setcolor(10);
                                 TUI_printfw("CPU:%5.1f%% ", scan_shm->pinfodisp[pindex].subprocCPUloadarray_timeaveraged[0]);
-                                if (procinfoproc->selected_col == 6) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_unsetcolor(10);
                             }
                             // 7: mem
                             if (procinfoproc->col_visible[m][7]) {
-                                if (procinfoproc->selected_col == 7) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_setcolor(10);
                                 TUI_printfw("MEM:%7ldkB ", scan_shm->pinfodisp[pindex].VmRSSarray[0]);
-                                if (procinfoproc->selected_col == 7) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_unsetcolor(10);
                             }
                             // 8: thr
                             if (procinfoproc->col_visible[m][8]) {
-                                if (procinfoproc->selected_col == 8) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_setcolor(10);
                                 TUI_printfw("Thr:%3d ", scan_shm->pinfodisp[pindex].threads);
-                                if (procinfoproc->selected_col == 8) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_unsetcolor(10);
                             }
                         }
                         else if (m == PROCCTRL_DISPLAYMODE_TRIGGER) {
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
-                                if (procinfoproc->selected_col == 4) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
-                                if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: tmode
                             if (procinfoproc->col_visible[m][5]) {
-                                if (procinfoproc->selected_col == 5) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
                                 TUI_printfw("TR:%d ", scan_shm->pinfodisp[pindex].triggermode);
-                                if (procinfoproc->selected_col == 5) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                             }
                             // 6: tstream
                             if (procinfoproc->col_visible[m][6]) {
-                                if (procinfoproc->selected_col == 6) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_setcolor(10);
                                 TUI_printfw("%-15s ", scan_shm->pinfodisp[pindex].triggerstreamname);
-                                if (procinfoproc->selected_col == 6) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_unsetcolor(10);
                             }
                             // 7: tsem
                             if (procinfoproc->col_visible[m][7]) {
-                                if (procinfoproc->selected_col == 7) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_setcolor(10);
                                 TUI_printfw("S:%d ", scan_shm->pinfodisp[pindex].triggersem);
-                                if (procinfoproc->selected_col == 7) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_unsetcolor(10);
                             }
                             // 8: tcnt
                             if (procinfoproc->col_visible[m][8]) {
-                                if (procinfoproc->selected_col == 8) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_setcolor(10);
                                 TUI_printfw("CNT:%ld ", (long)scan_shm->pinfodisp[pindex].triggerstreamcnt);
-                                if (procinfoproc->selected_col == 8) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_unsetcolor(10);
                             }
                             // 9: tmiss
                             if (procinfoproc->col_visible[m][9]) {
-                                if (procinfoproc->selected_col == 9) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 9) screenprint_setcolor(10);
                                 TUI_printfw("M:%d/%ld ", scan_shm->pinfodisp[pindex].triggermissedframe, (long)scan_shm->pinfodisp[pindex].triggermissedframe_cumul);
-                                if (procinfoproc->selected_col == 9) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 9) screenprint_unsetcolor(10);
                             }
                         }
                         else if (m == PROCCTRL_DISPLAYMODE_TIMING) {
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
-                                if (procinfoproc->selected_col == 4) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
-                                if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             if (scan_shm->pinfodisp[pindex].MeasureTiming) {
                                 double freq = 0.0;
@@ -881,21 +888,21 @@ errno_t processinfo_CTRLscreen()
                                 if (scan_shm->pinfodisp[pindex].dtmedian_iter_ns > 0) overhead = 100.0 * scan_shm->pinfodisp[pindex].dtmedian_exec_ns / scan_shm->pinfodisp[pindex].dtmedian_iter_ns;
                                 // 5: freq
                                 if (procinfoproc->col_visible[m][5]) {
-                                    if (procinfoproc->selected_col == 5) attron(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
                                     TUI_printfw("%8.2fHz ", freq);
-                                    if (procinfoproc->selected_col == 5) attroff(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                                 }
                                 // 6: exec
                                 if (procinfoproc->col_visible[m][6]) {
-                                    if (procinfoproc->selected_col == 6) attron(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 6) screenprint_setcolor(10);
                                     TUI_printfw("Exec:%7.3fms ", exec_ms);
-                                    if (procinfoproc->selected_col == 6) attroff(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 6) screenprint_unsetcolor(10);
                                 }
                                 // 7: over
                                 if (procinfoproc->col_visible[m][7]) {
-                                    if (procinfoproc->selected_col == 7) attron(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 7) screenprint_setcolor(10);
                                     TUI_printfw("(%5.1f%%) ", overhead);
-                                    if (procinfoproc->selected_col == 7) attroff(COLOR_PAIR(10));
+                                    if (procinfoproc->selected_col == 7) screenprint_unsetcolor(10);
                                 }
                             } else {
                                 TUI_printfw("--- Timing Disabled ---");
@@ -904,56 +911,57 @@ errno_t processinfo_CTRLscreen()
                         else if (m == PROCCTRL_DISPLAYMODE_PROCINFO) {
                             // 4: pname
                             if (procinfoproc->col_visible[m][4]) {
-                                if (procinfoproc->selected_col == 4) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_setcolor(10);
                                 TUI_printfw("% -25s ", pinfolist->pnamearray[pindex]);
-                                if (procinfoproc->selected_col == 4) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 4) screenprint_unsetcolor(10);
                             }
                             // 5: RT
                             if (procinfoproc->col_visible[m][5]) {
-                                if (procinfoproc->selected_col == 5) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_setcolor(10);
                                 TUI_printfw("RT:%2d ", scan_shm->pinfodisp[pindex].rt_priority);
-                                if (procinfoproc->selected_col == 5) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 5) screenprint_unsetcolor(10);
                             }
                             // 6: loopMax
                             if (procinfoproc->col_visible[m][6]) {
-                                if (procinfoproc->selected_col == 6) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_setcolor(10);
                                 TUI_printfw("Lmax:%7ld ", scan_shm->pinfodisp[pindex].loopcntMax);
-                                if (procinfoproc->selected_col == 6) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 6) screenprint_unsetcolor(10);
                             }
                             // 7: trig
                             if (procinfoproc->col_visible[m][7]) {
-                                if (procinfoproc->selected_col == 7) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_setcolor(10);
                                 TUI_printfw("Trig:%d ", scan_shm->pinfodisp[pindex].triggermode);
-                                if (procinfoproc->selected_col == 7) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 7) screenprint_unsetcolor(10);
                             }
                             // 8: timeout
                             if (procinfoproc->col_visible[m][8]) {
-                                if (procinfoproc->selected_col == 8) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_setcolor(10);
                                 double tout = scan_shm->pinfodisp[pindex].triggertimeout.tv_sec + 1e-9 * scan_shm->pinfodisp[pindex].triggertimeout.tv_nsec;
                                 TUI_printfw("TO:%5.2f ", tout);
-                                if (procinfoproc->selected_col == 8) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 8) screenprint_unsetcolor(10);
                             }
                             // 9: timing
                             if (procinfoproc->col_visible[m][9]) {
-                                if (procinfoproc->selected_col == 9) attron(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 9) screenprint_setcolor(10);
                                 TUI_printfw("Tim:%d ", scan_shm->pinfodisp[pindex].MeasureTiming);
-                                if (procinfoproc->selected_col == 9) attroff(COLOR_PAIR(10));
+                                if (procinfoproc->selected_col == 9) screenprint_unsetcolor(10);
                             }
                         }
                         else {
                             TUI_printfw("(Mode %d not impl)", m);
                         }
 
-                        if (pindex == pindexSelected) attroff(A_REVERSE);
+                        if (pindex == pindexSelected) screenprint_unsetreverse();
                         TUI_newline();
                     }
                 }
             }
-            refresh();
+            TUI_cleartobottom();
+            sc_frame_flush();
         }
     }
 
-    TUI_exit();
+    ansi_raw_mode_exit();
     if (scan_shm) munmap(scan_shm, sizeof(PROCSCAN_SHM));
     for(long i=0; i<PROCESSINFOLISTSIZE; i++) if(procinfoproc->pinfommapped[i]) {
         if (procinfoproc->pinfoarray[i] != NULL && procinfoproc->pinfoarray[i] != (PROCESSINFO*)MAP_FAILED)

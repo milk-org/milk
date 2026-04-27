@@ -67,7 +67,6 @@
 
 #include "CLIcore.h"
 #include "CLIcore_script.h"
-#include "streamCTRL/streamCTRL_TUI.h"
 
 //#include "initmodules.h"
 
@@ -247,28 +246,7 @@ errno_t milk_usleep__cli()
     }
 }
 
-#ifdef USE_NCURSES
-errno_t functionparameter_CTRLscreen__cli()
-{
-    DEBUG_TRACEPOINT("calling CLI_checkarg");
-    if((CLI_checkarg(1, CLIARG_INT64) == 0) &&
-            (CLI_checkarg(2, CLIARG_STR) == 0) &&
-            (CLI_checkarg(3, CLIARG_STR) == 0))
-    {
-        functionparameter_CTRLscreen((uint32_t) data.cmdargtoken[1].val.numl,
-                                     data.cmdargtoken[2].val.string,
-                                     data.cmdargtoken[3].val.string,
-                                     0.0);
-        return RETURN_SUCCESS;
-    }
-    else
-    {
-        printf("Wrong args (%d)\n", data.cmdargtoken[1].type);
-        return RETURN_FAILURE;
-    }
-    return RETURN_SUCCESS;
-}
-#endif
+
 
 errno_t function_parameter_structure_load__cli()
 {
@@ -284,17 +262,7 @@ errno_t function_parameter_structure_load__cli()
     }
 }
 
-#ifdef USE_NCURSES
-errno_t processinfo_CTRLscreen__cli()
-{
-    return (processinfo_CTRLscreen());
-}
 
-errno_t streamCTRL_CTRLscreen__cli()
-{
-    return (streamCTRL_CTRLscreen());
-}
-#endif
 
 void fnExit_fifoclose()
 {
@@ -904,9 +872,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
             if(single_command_flag)
             {
                 strncpy(data.CLIcmdline, single_command_string, STRINGMAXLEN_CLICMDLINE - 1);
-                if (data.echo_input) {
-                    printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
-                }
                 CLI_execute_line();
                 data.CLIloopON = 0;
                 break;
@@ -1092,9 +1057,6 @@ errno_t runCLI(int argc, char *argv[], char *promptstring)
                         data.CLIcmdline[strcspn(data.CLIcmdline, "\n")] = 0; // strip newline
                         cli_history_log_prompt(
                             data.CLIcmdline);
-                        if (data.echo_input) {
-                            printf("\033[32m[echo]\033[0m \u2190 \"%s\"\n", data.CLIcmdline);
-                        }
                         CLI_execute_line();
                     } else {
                         data.CLIloopON = 0;
@@ -1187,7 +1149,6 @@ static int command_line_process_options(int argc, char **argv)
         {"info", no_argument, 0, 'i'},
         {"overwrite", no_argument, 0, 'o'},
         {"errorexit", no_argument, 0, 'e'},
-        {"echo-input", no_argument, 0, 'E'},
         {"idle", no_argument, 0, 'Z'},
         {"autocomplete", no_argument, 0, 'A'},
         {"no-autocomplete", no_argument, 0, 0x100},
@@ -1197,7 +1158,6 @@ static int command_line_process_options(int argc, char **argv)
         {"fifoflag", no_argument, 0, 'f'},
         {"command", required_argument, 0, 'c'},
         {"debug", required_argument, 0, 'd'},
-        {"mmon", required_argument, 0, 'm'},
         {"pname", required_argument, 0, 'n'},
         {"priority", required_argument, 0, 'p'},
         {"fifoname", required_argument, 0, 'F'},
@@ -1207,7 +1167,6 @@ static int command_line_process_options(int argc, char **argv)
 
     data.fifoON          = 0; // default
     data.processnameflag = 0; // default
-    data.echo_input      = 0; // default
 
     while(1)
     {
@@ -1215,7 +1174,7 @@ static int command_line_process_options(int argc, char **argv)
 
         c = getopt_long(argc,
                         argv,
-                        "hvic:d:oeZm:n:p:fF:s:AE",
+                        "hvic:d:oen:p:fF:s:A",
                         long_options,
                         &option_index);
 
@@ -1269,14 +1228,6 @@ static int command_line_process_options(int argc, char **argv)
             dcerrorexit = 1;
             break;
 
-        case 'E':
-            if(dcquiet == 0)
-            {
-                printf("Input echo ON\n");
-            }
-            data.echo_input = 1;
-            break;
-
         case 'Z':
             printf(
                 "Idle mode: only runs process when X is idle (pid "
@@ -1319,11 +1270,6 @@ static int command_line_process_options(int argc, char **argv)
             printf("debug level : '%s'\n", optarg);
             dcdebug = atoi(optarg);
             printf("Debug = %d\n", dcdebug);
-            break;
-
-        case 'm':
-            printf("Starting memory monitor on '%s'\n", optarg);
-            //memory_monitor(optarg);
             break;
 
         case 'n':

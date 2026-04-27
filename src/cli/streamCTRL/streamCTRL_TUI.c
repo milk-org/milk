@@ -9,31 +9,31 @@
  */
 
 
+
+
 #ifndef __STDC_LIB_EXT1__
 typedef int errno_t;
 #endif
 
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifdef USE_NCURSES
-#include <ncurses.h>
-#endif
 #include <pthread.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
 
-
-#include "timeutils.h"
-
-#include "CLIcore.h"
-#include "COREMOD_memory/COREMOD_memory.h"
-#include "COREMOD_tools/COREMOD_tools.h"
-
+#include "streamCTRL_defs.h"
+#include "streamCTRL_ansi.h"
+#include "streamCTRL_TUIcompat.h"
 
 // default location of file mapped semaphores, can be over-ridden by env variable MILK_SHM_DIR
-#define SHAREDSHMDIR  dcshmdir
+#ifndef SHAREDSHMDIR
+#define SHAREDSHMDIR  "/dev/shm"
+#endif
 
 #include "streamCTRL_TUI.h"
-
-#include "TUItools.h"
 
 #include "streamCTRL_find_streams.h"
 #include "streamCTRL_print_inode.h"
@@ -43,7 +43,6 @@ typedef int errno_t;
 #include "streamCTRL_utilfuncs.h"
 
 
-#define ctrl(x) ((x) &0x1f)
 
 /* Tab definitions: (display_mode, key_label, tab_label)
  * Used by the tab-bar renderer via RENDER_ONE_TAB and to derive TAB_COUNT
@@ -93,9 +92,6 @@ struct streamCTRL_TUI_parameters
 
 static void streamCTRL_TUI_exit()
 {
-#ifdef USE_NCURSES
-    endwin();
-#endif
 }
 
 static errno_t streamCTRL_keyinput_process(
@@ -110,32 +106,24 @@ static errno_t streamCTRL_keyinput_process(
 
     switch(ch)
     {
-    case 545: // CTRL+LEFT
-    case 560:
-    case 443:
-    case 564:
-    case 554:
+    case ANSI_KEY_CTRL_LEFT: // CTRL+LEFT
         sTUIparam.DisplayMode--;
         if (sTUIparam.DisplayMode < DISPLAY_MODE_HELP)
             sTUIparam.DisplayMode = TAB_COUNT;
         break;
 
-    case 561: // CTRL+RIGHT
-    case 566:
-    case 444:
-    case 565:
-    case 569:
+    case ANSI_KEY_CTRL_RIGHT: // CTRL+RIGHT
         sTUIparam.DisplayMode++;
         if (sTUIparam.DisplayMode > TAB_COUNT)
             sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
         break;
 
+    case 3:   // Ctrl+C
     case 'x': // Exit control screen
         sTUIparam.loopOK = 0;
         break;
 
-#ifdef USE_NCURSES
-    case KEY_UP:
+    case ANSI_KEY_UP:
         sTUIparam.dindexSelected--;
         if(sTUIparam.dindexSelected < 0)
         {
@@ -143,7 +131,7 @@ static errno_t streamCTRL_keyinput_process(
         }
         break;
 
-    case KEY_DOWN:
+    case ANSI_KEY_DOWN:
         sTUIparam.dindexSelected++;
         if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
         {
@@ -151,7 +139,7 @@ static errno_t streamCTRL_keyinput_process(
         }
         break;
 
-    case KEY_PPAGE:
+    case ANSI_KEY_PGUP:
         sTUIparam.dindexSelected -= 10;
         if(sTUIparam.dindexSelected < 0)
         {
@@ -159,22 +147,21 @@ static errno_t streamCTRL_keyinput_process(
         }
         break;
 
-    case KEY_LEFT:
+    case ANSI_KEY_LEFT:
         sTUIparam.DisplayDetailLevel = 0;
         break;
 
-    case KEY_RIGHT:
+    case ANSI_KEY_RIGHT:
         sTUIparam.DisplayDetailLevel = 1;
         break;
 
-    case KEY_NPAGE:
+    case ANSI_KEY_PGDN:
         sTUIparam.dindexSelected += 10;
         if(sTUIparam.dindexSelected > sTUIparam.NBsindex - 1)
         {
             sTUIparam.dindexSelected = sTUIparam.NBsindex - 1;
         }
         break;
-#endif
 
     // ============ SCREENS
 
@@ -182,24 +169,23 @@ static errno_t streamCTRL_keyinput_process(
         sTUIparam.DisplayMode = DISPLAY_MODE_HELP;
         break;
 
-#ifdef USE_NCURSES
-    case KEY_F(2): // semvals
+    case ANSI_KEY_F2: // semvals
         sTUIparam.DisplayMode = DISPLAY_MODE_SUMMARY;
         break;
 
-    case KEY_F(3): // write PIDs
+    case ANSI_KEY_F3: // write PIDs
         sTUIparam.DisplayMode = DISPLAY_MODE_WRITE;
         break;
 
-    case KEY_F(4): // read PIDs
+    case ANSI_KEY_F4: // read PIDs
         sTUIparam.DisplayMode = DISPLAY_MODE_READ;
         break;
 
-    case KEY_F(5): // read PIDs
+    case ANSI_KEY_F5: // read PIDs
         sTUIparam.DisplayMode = DISPLAY_MODE_SPTRACE;
         break;
 
-    case KEY_F(6): // open files
+    case ANSI_KEY_F6: // open files
         if((sTUIparam.DisplayMode == DISPLAY_MODE_FUSER) ||
                 (streamCTRLdata->streaminfoproc->fuserUpdate0 == 1))
         {
@@ -210,7 +196,6 @@ static errno_t streamCTRL_keyinput_process(
         }
         sTUIparam.DisplayMode = DISPLAY_MODE_FUSER;
         break;
-#endif
 
     // ============ ACTIONS
 
@@ -303,7 +288,7 @@ static errno_t streamCTRL_keyinput_process(
         break;
 
     case 'F': // set stream name filter string
-        TUI_exit();
+        // TUI_exit();
         EXECUTE_SYSTEM_COMMAND("clear");
         printf("Enter string: ");
         fflush(stdout);
@@ -344,9 +329,10 @@ static errno_t streamCTRL_keyinput_process(
  *
  * @return errno_t
  */
-#ifdef USE_NCURSES
-errno_t streamCTRL_CTRLscreen()
+errno_t streamCTRL_CTRLscreen(void)
 {
+    // Ensure we track sigINT
+    extern volatile sig_atomic_t sc_sigINT;
     DEBUG_TRACE_FSTART();
 
     // initialize sCTRLTUIparams
@@ -435,7 +421,7 @@ errno_t streamCTRL_CTRLscreen()
 
     // catch signals (CTRL-C etc)
     //
-    set_signal_catch();
+
 
     // default: use ncurses
     TUI_set_screenprintmode(SCREENPRINT_NCURSES);
@@ -476,7 +462,7 @@ errno_t streamCTRL_CTRLscreen()
     int    NBupstreamproc = 0;
     upstreamproc          = (pid_t *) malloc(sizeof(pid_t) * NBupstreamprocMAX);
 
-    clear();
+    TUI_clearscreen(0, 0);
     DEBUG_TRACEPOINT(" ");
 
     // redirect stderr to /dev/null
@@ -490,7 +476,7 @@ errno_t streamCTRL_CTRLscreen()
     WRITE_FULLFILENAME(newstderrfname,
                        "%s/stderr.cli.%d.txt",
                        SHAREDSHMDIR,
-                       CLIPID);
+                       (int)getpid());
 
     umask(0);
     newstderr = open(newstderrfname, O_WRONLY | O_CREAT, FILEMODE);
@@ -515,7 +501,7 @@ errno_t streamCTRL_CTRLscreen()
 
     ino_t inodeselected      = 0;
 
-    while(sTUIparam.loopOK == 1)
+    while(sc_sigINT == 0 && sc_sigTERM == 0 && sTUIparam.loopOK == 1)
     {
         DEBUG_TRACEPOINT("loop start");
 
@@ -537,14 +523,12 @@ errno_t streamCTRL_CTRLscreen()
         usleep((long)(1000000.0 / sTUIparam.frequ));
         DEBUG_TRACEPOINT(" ");
 
-        int ch = get_singlechar_nonblock();
+        int ch = ansi_get_key();
 
         sTUIparam.NBsindex = streaminfoproc.NBstream;
         DEBUG_TRACEPOINT(" ");
 
         TUI_clearscreen(&wrow, &wcol);
-
-        TUI_ncurses_erase();
 
         DEBUG_TRACEPOINT("Process input character");
         streamCTRL_keyinput_process(ch, &streamCTRLdata);
@@ -562,9 +546,6 @@ errno_t streamCTRL_CTRLscreen()
         }
 
         DEBUG_TRACEPOINT("Erase screen");
-#ifdef USE_NCURSES
-        erase();
-#endif
 
         //attron(A_BOLD);
         screenprint_setbold();
@@ -710,11 +691,11 @@ errno_t streamCTRL_CTRLscreen()
                 }
 
                 TUI_printfw(
-                    "%4d streams    Currently displaying %4d-%4d   "
+                    "%4d streams    Currently displaying %4ld-%4ld   "
                     "Selected %d  ID = %d  inode = %d",
                     sTUIparam.NBsindex,
-                    doffsetindex,
-                    lastindex,
+                    (long)doffsetindex,
+                    (long)lastindex,
                     sTUIparam.dindexSelected,
                     ssIDselected,
                     (int) inodeselected);
@@ -729,7 +710,7 @@ errno_t streamCTRL_CTRLscreen()
 
             TUI_newline();
 
-            attron(A_BOLD);
+            // attron(A_BOLD);
 
             TUI_printfw("%*s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
                         9,
@@ -1220,7 +1201,7 @@ errno_t streamCTRL_CTRLscreen()
                             snprintf(string, stringlen, "%s",
                                      ImageStreamIO_typename_short(streaminfo[sindex].datatype));
                         }
-                        TUI_printfw(string);
+                        TUI_printfw("%s", string);
 
                         DEBUG_TRACEPOINT(" ");
                         if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
@@ -1299,7 +1280,7 @@ errno_t streamCTRL_CTRLscreen()
                                  DispSize_NBchar,
                                  DispSize_NBchar,
                                  str);
-                        TUI_printfw(string);
+                        TUI_printfw("%s", string);
 
                         if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                         {
@@ -1316,12 +1297,12 @@ errno_t streamCTRL_CTRLscreen()
                         }
                         if(streaminfo[sindex].deltacnt0 == 0)
                         {
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
                         }
                         else
                         {
                             screenprint_setcolor(2);
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
                             screenprint_unsetcolor(2);
                         }
 
@@ -1367,7 +1348,7 @@ errno_t streamCTRL_CTRLscreen()
                                      Dispfreq_NBchar,
                                      streaminfo[sindex].updatevalue);
                         }
-                        TUI_printfw(string);
+                        TUI_printfw("%s", string);
                     }
 
                     DEBUG_TRACEPOINT(" ");
@@ -1382,7 +1363,7 @@ errno_t streamCTRL_CTRLscreen()
                                      stringlen,
                                      " %3d sems ",
                                      streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
 
                             int s;
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
@@ -1397,7 +1378,7 @@ errno_t streamCTRL_CTRLscreen()
                                 } else {
                                     snprintf(string, stringlen, ":%02d", semval);
                                 }
-                                TUI_printfw(string);
+                                TUI_printfw("%s", string);
                             }
                         }
                     }
@@ -1412,7 +1393,7 @@ errno_t streamCTRL_CTRLscreen()
                                      stringlen,
                                      " %3d sems ",
                                      streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
 
                             {
                                 pid_t pid = streamCTRLimages[ID].semWritePID[0];
@@ -1428,7 +1409,8 @@ errno_t streamCTRL_CTRLscreen()
                             {
 #ifdef IMAGESTRUCT_WRITEHISTORY
                                 TUI_newline();
-                                TUI_printfw("WRITE timings :\n");
+                                TUI_printfw("WRITE timings :");
+                                TUI_newline();
                                 int windexref = streamCTRLimages[ID].md->wCBindex;
                                 double tdouble0 = 0.0;
 
@@ -1464,7 +1446,7 @@ errno_t streamCTRL_CTRLscreen()
 
                                     if(wioffset < 10)
                                     {
-                                        TUI_printfw("%4d  cnt0 %8d  PID %6d  ts %9ld.%09ld   %.9f s ago  delta = %9.3f us\n",
+                                        TUI_printfw("%4d  cnt0 %8d  PID %6d  ts %9ld.%09ld   %.9f s ago  delta = %9.3f us",
                                                     wioffset,
                                                     streamCTRLimages[ID].writehist[windex].cnt0,
                                                     streamCTRLimages[ID].writehist[windex].wpid,
@@ -1472,6 +1454,7 @@ errno_t streamCTRL_CTRLscreen()
                                                     streamCTRLimages[ID].writehist[windex].writetime.tv_nsec,
                                                     tdouble0 - tdouble,
                                                     1.0e6 * (deltat));
+                                        TUI_newline();
                                     }
                                     tdoubleprev = tdouble;
                                 }
@@ -1480,31 +1463,39 @@ errno_t streamCTRL_CTRLscreen()
 
                                 TUI_newline();
 
-                                TUI_printfw("delta time (nbsample = %d):\n", IMAGESTRUCT_FRAMEWRITEMDSIZE);
+                                TUI_printfw("delta time (nbsample = %d):", IMAGESTRUCT_FRAMEWRITEMDSIZE);
+                                TUI_newline();
 
                                 double tave = 1.0e6 * deltatsum / (IMAGESTRUCT_FRAMEWRITEMDSIZE - 2);
-                                TUI_printfw("AVERAGE =        %9.3f us\n", tave);
+                                TUI_printfw("AVERAGE =        %9.3f us", tave);
+                                TUI_newline();
 
                                 double trms = deltatsum2 - deltatsum * deltatsum / (IMAGESTRUCT_FRAMEWRITEMDSIZE
                                               - 2);
                                 trms = 1.0e6 * sqrt(trms / (IMAGESTRUCT_FRAMEWRITEMDSIZE - 2));
-                                TUI_printfw("RMS     =        %9.3f us  ( %8.3f %% )\n", trms,
+                                TUI_printfw("RMS     =        %9.3f us  ( %8.3f %% )", trms,
                                             100.0 * trms / tave);
+                                TUI_newline();
 
                                 double p0us = 1.0e6 * dtarray[0];
-                                TUI_printfw("  min          : %9.3f us    %9.3f us\n", p0us, p0us - tave);
+                                TUI_printfw("  min          : %9.3f us    %9.3f us", p0us, p0us - tave);
+                                TUI_newline();
 
                                 double p10us = 1.0e6 * dtarray[(int)(0.1 * (IMAGESTRUCT_FRAMEWRITEMDSIZE - 2))];
-                                TUI_printfw("  p10          : %9.3f us    %9.3f us\n", p10us, p10us - tave);
+                                TUI_printfw("  p10          : %9.3f us    %9.3f us", p10us, p10us - tave);
+                                TUI_newline();
 
                                 double p50us = 1.0e6 * dtarray[(IMAGESTRUCT_FRAMEWRITEMDSIZE - 2) / 2];
-                                TUI_printfw("  p50 (median) : %9.3f us    %9.3f us\n", p50us, p50us - tave);
+                                TUI_printfw("  p50 (median) : %9.3f us    %9.3f us", p50us, p50us - tave);
+                                TUI_newline();
 
                                 double p90us = 1.0e6 * dtarray[(int)(0.9 * (IMAGESTRUCT_FRAMEWRITEMDSIZE - 2))];
-                                TUI_printfw("  p90          : %9.3f us    %9.3f us\n", p90us, p90us - tave);
+                                TUI_printfw("  p90          : %9.3f us    %9.3f us", p90us, p90us - tave);
+                                TUI_newline();
 
                                 double p100us = 1.0e6 * dtarray[IMAGESTRUCT_FRAMEWRITEMDSIZE - 3];
-                                TUI_printfw("  max          : %9.3f us    %9.3f us\n", p100us, p100us - tave);
+                                TUI_printfw("  max          : %9.3f us    %9.3f us", p100us, p100us - tave);
+                                TUI_newline();
 
 
                                 free(dtarray);
@@ -1524,7 +1515,7 @@ errno_t streamCTRL_CTRLscreen()
                                      stringlen,
                                      " %3d sems ",
                                      streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
 
                             int s;
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
@@ -1558,7 +1549,7 @@ errno_t streamCTRL_CTRLscreen()
                                      stringlen,
                                      " %2d ",
                                      streamCTRLimages[ID].md->NBproctrace);
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
 
                             for(int spti = 0;
                                     spti < streamCTRLimages[ID].md->NBproctrace;
@@ -1610,7 +1601,7 @@ errno_t streamCTRL_CTRLscreen()
                                     snprintf(string, stringlen, "(%7lu ?? ", inode);
                                     break;
                                 }
-                                TUI_printfw(string);
+                                TUI_printfw("%s", string);
 
                                 DEBUG_TRACEPOINT(" ");
 
@@ -1645,42 +1636,61 @@ errno_t streamCTRL_CTRLscreen()
                             {
                                 TUI_newline();
                                 TUI_newline();
-                                TUI_printfw("name            %10s\n", streamCTRLimages[ID].name);
-                                TUI_printfw("createcnt       %10ld\n", streamCTRLimages[ID].createcnt);
-                                TUI_printfw("shmfd           %10d\n", streamCTRLimages[ID].shmfd);
-                                TUI_printfw("memsize         %10lu\n", streamCTRLimages[ID].memsize);
-                                TUI_printfw("md.version      %10s\n", streamCTRLimages[ID].md->version);
-                                TUI_printfw("md.name         %10s\n", streamCTRLimages[ID].md->name);
-                                TUI_printfw("md.naxis        %10d\n", (int) streamCTRLimages[ID].md->naxis);
+                                TUI_printfw("name            %10s", streamCTRLimages[ID].name);
+                                TUI_newline();
+                                TUI_printfw("createcnt       %10ld", streamCTRLimages[ID].createcnt);
+                                TUI_newline();
+                                TUI_printfw("shmfd           %10d", streamCTRLimages[ID].shmfd);
+                                TUI_newline();
+                                TUI_printfw("memsize         %10lu", streamCTRLimages[ID].memsize);
+                                TUI_newline();
+                                TUI_printfw("md.version      %10s", streamCTRLimages[ID].md->version);
+                                TUI_newline();
+                                TUI_printfw("md.name         %10s", streamCTRLimages[ID].md->name);
+                                TUI_newline();
+                                TUI_printfw("md.naxis        %10d", (int) streamCTRLimages[ID].md->naxis);
+                                TUI_newline();
                                 for(int axis = 0; axis < streamCTRLimages[ID].md->naxis; axis++)
                                 {
-                                    TUI_printfw("   md.size[%d]   %10d\n", axis,
+                                    TUI_printfw("   md.size[%d]   %10d", axis,
                                                 (int) streamCTRLimages[ID].md->size[axis]);
+                                    TUI_newline();
                                 }
-                                TUI_printfw("md.nelement         %10lu\n", streamCTRLimages[ID].md->nelement);
-                                TUI_printfw("md.datatype         %10d\n",
-                                            (int) streamCTRLimages[ID].md->datatype);
-                                TUI_printfw("md.creationtime     %10ld.%09d\n",
-                                            streamCTRLimages[ID].md->creationtime.tv_sec,
-                                            streamCTRLimages[ID].md->creationtime.tv_nsec);
-                                TUI_printfw("md.lastaccesstime   %10ld.%09d\n",
-                                            streamCTRLimages[ID].md->lastaccesstime.tv_sec,
-                                            streamCTRLimages[ID].md->lastaccesstime.tv_nsec);
-                                TUI_printfw("md.atime            %10ld.%09d\n",
-                                            streamCTRLimages[ID].md->atime.tv_sec, streamCTRLimages[ID].md->atime.tv_nsec);
-                                TUI_printfw("md.writetime        %10ld.%09d\n",
-                                            streamCTRLimages[ID].md->writetime.tv_sec,
-                                            streamCTRLimages[ID].md->writetime.tv_nsec);
-                                TUI_printfw("md.creatorPID       %10ld\n",
-                                            (long) streamCTRLimages[ID].md->creatorPID);
-                                TUI_printfw("md.ownerPID         %10ld\n",
-                                            (long) streamCTRLimages[ID].md->ownerPID);
-                                TUI_printfw("md.shared           %10d\n",
-                                            (int) streamCTRLimages[ID].md->shared);
-                                TUI_printfw("md.inode            %10lu\n",
-                                            (int) streamCTRLimages[ID].md->inode);
+                                TUI_printfw("md.nelement         %10lu", streamCTRLimages[ID].md->nelement);
                                 TUI_newline();
-                                TUI_printfw("md.sem              %10d\n", (int) streamCTRLimages[ID].md->sem);
+                                TUI_printfw("md.datatype         %10d",
+                                            (int) streamCTRLimages[ID].md->datatype);
+                                TUI_newline();
+                                TUI_printfw("md.creationtime     %10ld.%09ld",
+                                            streamCTRLimages[ID].md->creationtime.tv_sec,
+                                            (long)streamCTRLimages[ID].md->creationtime.tv_nsec);
+                                TUI_newline();
+                                TUI_printfw("md.lastaccesstime   %10ld.%09ld",
+                                            streamCTRLimages[ID].md->lastaccesstime.tv_sec,
+                                            (long)streamCTRLimages[ID].md->lastaccesstime.tv_nsec);
+                                TUI_newline();
+                                TUI_printfw("md.atime            %10ld.%09ld",
+                                            streamCTRLimages[ID].md->atime.tv_sec, (long)streamCTRLimages[ID].md->atime.tv_nsec);
+                                TUI_newline();
+                                TUI_printfw("md.writetime        %10ld.%09ld",
+                                            streamCTRLimages[ID].md->writetime.tv_sec,
+                                            (long)streamCTRLimages[ID].md->writetime.tv_nsec);
+                                TUI_newline();
+                                TUI_printfw("md.creatorPID       %10ld",
+                                            (long) streamCTRLimages[ID].md->creatorPID);
+                                TUI_newline();
+                                TUI_printfw("md.ownerPID         %10ld",
+                                            (long) streamCTRLimages[ID].md->ownerPID);
+                                TUI_newline();
+                                TUI_printfw("md.shared           %10d",
+                                            (int) streamCTRLimages[ID].md->shared);
+                                TUI_newline();
+                                TUI_printfw("md.inode            %10lu",
+                                            (unsigned long) streamCTRLimages[ID].md->inode);
+                                TUI_newline();
+                                TUI_newline();
+                                TUI_printfw("md.sem              %10d", (int) streamCTRLimages[ID].md->sem);
+                                TUI_newline();
                             }
                         }
                         DEBUG_TRACEPOINT(" ");
@@ -1728,7 +1738,7 @@ errno_t streamCTRL_CTRLscreen()
                                              PIDnameStringLen,
                                              PIDnameStringLen,
                                              PIDname_array[pid]);
-                                    TUI_printfw(string);
+                                    TUI_printfw("%s", string);
 
                                     streaminfo[sindex].streamOpenPID_cnt1++;
                                 }
@@ -1737,12 +1747,12 @@ errno_t streamCTRL_CTRLscreen()
 
                         case 2:
                             snprintf(string, stringlen, "FAILED");
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
                             break;
 
                         default:
                             snprintf(string, stringlen, "NOT SCANNED");
-                            TUI_printfw(string);
+                            TUI_printfw("%s", string);
                             break;
                         }
                     }
@@ -1765,12 +1775,12 @@ errno_t streamCTRL_CTRLscreen()
                 if(streaminfoproc.fuserUpdate == 1)
                 {
                     //      refresh();
-                    if(dcsigINT == 1)  // stop scan
+                    if(sc_sigINT == 1)  // stop scan
                     {
                         // complete loop without scan
                         streaminfoproc.fuserUpdate = 2;
 
-                        dcsigINT = 0; // reset
+                        sc_sigINT = 0; // reset
                     } // complete loop without scan
                 }
 
@@ -1780,24 +1790,13 @@ errno_t streamCTRL_CTRLscreen()
 
         DEBUG_TRACEPOINT(" ");
 
-#ifdef USE_NCURSES
-        refresh();
-#endif
+        TUI_cleartobottom();
+        sc_frame_flush();
 
         DEBUG_TRACEPOINT(" ");
 
         loopcnt++;
-        if(DCSIG_ANY_SET())
-        {
-            sTUIparam.loopOK = 0;
-        }
-
-        DEBUG_TRACEPOINT(" ");
     }
-
-#ifdef USE_NCURSES
-    endwin();
-#endif
 
     streaminfoproc.loop = 0;
     pthread_join(threadscan, NULL);
@@ -1834,4 +1833,4 @@ errno_t streamCTRL_CTRLscreen()
 
     return EXIT_SUCCESS;
 }
-#endif
+

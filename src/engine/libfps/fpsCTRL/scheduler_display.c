@@ -6,12 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ncurses.h>
 #include <time.h>
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "engine/libfpsseq/fpsseq.h"
 #include "scheduler_display.h"
 #include "quicksort.h"

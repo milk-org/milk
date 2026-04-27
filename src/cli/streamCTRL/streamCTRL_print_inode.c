@@ -10,8 +10,9 @@
 typedef int errno_t;
 #endif
 
-#include "CLIcore.h"
-#include "TUItools.h"
+#include "streamCTRL_defs.h"
+#include "streamCTRL_TUIcompat.h"
+
 #include "streamCTRL_TUI.h"
 
 

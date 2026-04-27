@@ -210,9 +210,6 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/engine/ImageStreamIO/CMakeLists.txt")
 endif()
 
 if(USE_CLI)
-    list(APPEND libsrcdir src/cli/libmilkTUI)
-    list(APPEND libname milkTUI)
-
     list(APPEND libsrcdir src/cli/libmilkscript)
     list(APPEND libname milkscript)
 
@@ -231,7 +228,6 @@ else()
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL
         ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkTUI
         ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps
         ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL
         ${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo
@@ -267,7 +263,6 @@ else()
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/CLIcore/CLIcore>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/streamCTRL>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo/procCTRL>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cli/libmilkTUI>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libfps/fpsCTRL>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/engine/libprocessinfo>
