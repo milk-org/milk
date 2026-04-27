@@ -6,11 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <ncurses.h>
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "fpsCTRL_globals.h"
 
 #include "level0node_summary.h"

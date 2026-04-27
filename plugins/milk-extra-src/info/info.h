@@ -6,14 +6,12 @@
 #if !defined(INFO_H)
 #define INFO_H
 
-#include "info/imagemon.h"
-
 void __attribute__((constructor)) libinit_info();
 
 #include "info/cubeMatchMatrix.h"
 #include "info/cubestats.h"
 #include "info/image_stats.h"
-#include "info/imagemon.h"
+
 #include "info/improfile.h"
 #include "info/kbdhit.h"
 #include "info/percentile.h"

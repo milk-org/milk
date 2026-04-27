@@ -16,7 +16,6 @@
 #include "cubeMatchMatrix.h"
 #include "cubestats.h"
 #include "image_stats.h"
-#include "imagemon.h"
 #include "improfile.h"
 #include "stream_monproc.h"
 
@@ -30,7 +29,6 @@ static errno_t init_module_CLI()
     CLIADDCMD_info__cubeMatchMatrix();
     CLIADDCMD_info__cubestats();
 
-    CLIADDCMD_info__imagemon();
     CLIADDCMD_info__stream_monproc();
 
     CLIADDCMD_info__image_stats();

@@ -6,14 +6,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <ncurses.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
 #include "fps.h"
 #include "fps_internal.h"
-#include "TUItools.h"
+#include "fpsCTRL_TUIcompat.h"
 #include "fps_streamname_parse.h"
 #include "fpsCTRL_globals.h"
 
@@ -103,10 +102,13 @@ errno_t fpsCTRL_FPSdisplay(
             fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
 
             screenprint_setbold();
-            TUI_printfw("Detailed Help for FPS '%s':\n", fpsarray[fpsCTRLvar->fpsindexSelected].md->name);
-            TUI_printfw("--------------------------\n");
+            TUI_printfw("Detailed Help for FPS '%s':", fpsarray[fpsCTRLvar->fpsindexSelected].md->name);
+            TUI_newline();
+            TUI_printfw("--------------------------");
+            TUI_newline();
             screenprint_unsetbold();
-            TUI_printfw("%s\n", fpsarray[fpsCTRLvar->fpsindexSelected].md->helptext);
+            TUI_printfw("%s", fpsarray[fpsCTRLvar->fpsindexSelected].md->helptext);
+            TUI_newline();
             return RETURN_SUCCESS;
         }
         
@@ -225,7 +227,7 @@ errno_t fpsCTRL_FPSdisplay(
         // Impose constraints based on terminal width
         int reserved_width = 25; 
         for (int l = 0; l < fpsCTRLvar->currentlevel; l++) reserved_width += max_kw_width[l] + 3;
-        int available_width = COLS - reserved_width;
+        int available_width = sc_term_cols - reserved_width;
         if (available_width < 40) available_width = 40;
         
         if (max_kw_width[cl] > available_width / 2) max_kw_width[cl] = available_width / 2;
@@ -399,11 +401,11 @@ errno_t fpsCTRL_FPSdisplay(
 
         int root_offset = fpsCTRLvar->display_offset[0];
         if (root_offset > 0) {
-            attron(A_BOLD);
+            screenprint_setbold();
             screenprint_setcolor(3);
             TUI_printfw("  ^^^^ (%d more entries above) ^^^^", root_offset);
             screenprint_unsetcolor(3);
-            attroff(A_BOLD);
+            screenprint_unsetbold();
             TUI_newline();
         }
 
@@ -811,11 +813,11 @@ errno_t fpsCTRL_FPSdisplay(
 
         int lastindex_root = fpsCTRLvar->display_offset[0] + dispindexMax;
         if (lastindex_root < GUIlineMax) {
-            attron(A_BOLD);
+            screenprint_setbold();
             screenprint_setcolor(3);
             TUI_printfw("  vvvv (%d more entries below) vvvv", GUIlineMax - lastindex_root);
             screenprint_unsetcolor(3);
-            attroff(A_BOLD);
+            screenprint_unsetbold();
             TUI_newline();
         }
 
@@ -829,23 +831,26 @@ errno_t fpsCTRL_FPSdisplay(
         if(fpsarray[fpsCTRLvar->fpsindexSelected].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)
         {
             screenprint_setcolor(2);
-            TUI_printfw("[%ld] PARAMETERS OK - RUN function good to go\n", fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt);
+            TUI_printfw("[%ld] PARAMETERS OK - RUN function good to go", fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt);
+            TUI_newline();
             screenprint_unsetcolor(2);
         }
         else
         {
             screenprint_setcolor(4);
-            TUI_printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :\n",
+            TUI_printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :",
                         fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt,
                         fpsarray[fpsCTRLvar->fpsindexSelected].md->conferrcnt);
+            TUI_newline();
             screenprint_unsetcolor(4);
             screenprint_setbold();
             for(int msgi = 0; msgi < fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt; msgi++)
             {
                 int pidx = fpsarray[fpsCTRLvar->fpsindexSelected].md->msgpindex[msgi];
-                TUI_printfw("% -40s %s\n",
+                TUI_printfw("%-40s %s",
                             fpsarray[fpsCTRLvar->fpsindexSelected].parray[pidx].keywordfull,
                             fpsarray[fpsCTRLvar->fpsindexSelected].md->message[msgi]);
+                TUI_newline();
             }
             screenprint_unsetbold();
         }
@@ -888,7 +893,8 @@ errno_t fpsCTRL_FPSlog(
         char datadir[FPS_DIR_STRLENMAX];
         strncpy(datadir, fpsarray[fpsidx].md->datadir, FPS_DIR_STRLENMAX - 1);
 
-        TUI_printfw("LOG FOR FPS: %s  (directory: %s)\n", fpsarray[fpsidx].md->name, datadir);
+        TUI_printfw("LOG FOR FPS: %s  (directory: %s)", fpsarray[fpsidx].md->name, datadir);
+        TUI_newline();
         TUI_newline();
 
         char cmd[1024];
@@ -909,12 +915,14 @@ errno_t fpsCTRL_FPSlog(
         }
         else
         {
-            TUI_printfw("No log entries found.\n");
+            TUI_printfw("No log entries found.");
+            TUI_newline();
         }
     }
     else
     {
-        TUI_printfw("NO FPS LOADED\n");
+        TUI_printfw("NO FPS LOADED");
+        TUI_newline();
     }
 
     return RETURN_SUCCESS;

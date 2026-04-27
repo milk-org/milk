@@ -1,39 +1,79 @@
 /**
- * @file milk-streamCTRL.c
- * @brief Milk streamctrl module
+ * @file milk-streamCTRL-standalone.c
+ * @brief Standalone entry point for milk-streamCTRL (no CLIcore, no ncurses)
+ *
+ * Links: ImageStreamIO + libprocessinfo + libm + libpthread + librt
  */
 
-#include "milk_config.h"
-#include "CLIcore.h"
-#include "CLIcore_datainit.h"
-#include "CLIcore_setSHMdir.h"
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include "streamCTRL_defs.h"
+#include "streamCTRL_ansi.h"
 #include "streamCTRL_TUI.h"
-#include "ImageStreamIO/ImageStreamIO.h"
+
+/* Global signal flags referenced by streamCTRL_TUI.c */
+volatile sig_atomic_t sc_sigINT  = 0;
+volatile sig_atomic_t sc_sigTERM = 0;
+
+static void handle_sigint(int sig)
+{
+    (void) sig;
+    sc_sigINT = 1;
+}
+
+static void handle_sigterm(int sig)
+{
+    (void) sig;
+    sc_sigTERM = 1;
+}
+
 
 int main(int argc, char *argv[])
 {
-    (void) argc;
-    (void) argv;
+    /* Parse optional -h / --help */
+    for(int i = 1; i < argc; i++)
+    {
+        if((strcmp(argv[i], "-h") == 0) ||
+                (strcmp(argv[i], "--help") == 0))
+        {
+            printf("Usage: milk-streamCTRL [options]\n");
+            printf("  -h, --help     Show this help\n");
+            printf("  -d DIR         Override SHM directory (default: /dev/shm)\n");
+            printf("\nKeys:\n");
+            printf("  x         Exit\n");
+            printf("  h         Help screen\n");
+            printf("  F2-F6     Switch tabs\n");
+            printf("  UP/DOWN   Navigate streams\n");
+            printf("  CTRL+e    Erase selected stream\n");
+            printf("  +/-       Increase/decrease display rate\n");
+            printf("  {/}       Decrease/increase scan rate\n");
+            return 0;
+        }
 
-    // Silence ImageStreamIO library (suppress stderr warnings/errors in TUI)
-    // ImageStreamIO_set_verbosity(0);
-
-    // Initialize data
-    if(getenv("MILK_QUIET")) {
-        dcquiet = 1;
-    } else {
-        dcquiet = 0;
+        if((strcmp(argv[i], "-d") == 0) && (i + 1 < argc))
+        {
+            setenv("MILK_SHM_DIR", argv[++i], 1);
+        }
     }
 
-    strncpy(data.processname, "streamCTRL", STRINGMAXLEN_PROCESSNAME - 1);
+    /* Install signal handlers */
+    signal(SIGINT,  handle_sigint);
+    signal(SIGTERM, handle_sigterm);
 
-    // Core initialization
-    CLI_startup();
-    setSHMdir();
-    CLI_data_init();
+    /* Enter raw terminal mode */
+    ansi_raw_mode_enter();
 
-    // Run the tool
+    /* Run the TUI */
     streamCTRL_CTRLscreen();
+
+    /* Restore terminal */
+    ansi_raw_mode_exit();
 
     return 0;
 }
