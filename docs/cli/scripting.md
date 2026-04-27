@@ -27,7 +27,7 @@ You can execute a milk script file in several ways:
 
 - **Shebang**: Use `#!/usr/bin/env milk-script` as the first line.
   The standalone `milk-script` binary runs the file
-  non-interactively with no readline/ncurses dependency.
+  non-interactively with no readline dependency.
 - **Command line**: Run `milk-cli -s script.milk` from a shell.
 - **Interactive**: Use the `source` (or `.`) command from within
   an active `milk-cli` session.
