@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# Early-exit help flags — only execute when run standalone, not when sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    case "${1-}" in
+        -h1|--help-oneline)
+            echo "standard configuration library sourced by milk shell scripts"
+            exit 0
+            ;;
+    esac
+fi
 
 # do not source if already sourced
 if [ -z ${MILK_SCRIPT_STD_CONFIG_SOURCED+x} ]; then

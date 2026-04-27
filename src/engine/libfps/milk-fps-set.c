@@ -120,6 +120,16 @@ void do_completion_scan(const char *word) {
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("set a parameter value in a Function Parameter Structure (FPS)\\n");
+        return 0;
+    }
+
     // Check for bash completion mode
     if (getenv("COMP_LINE") != NULL) {
         if (argc >= 3) {
@@ -132,13 +142,17 @@ int main(int argc, char *argv[])
     int option_index = 0;
     static struct option long_options[] = {
         {"help",    no_argument,       0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "h", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "h1", long_options, &option_index)) != -1) {
         switch (opt) {
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("set a parameter value in a Function Parameter Structure (FPS)\\n");
                 return 0;
             default:
                 print_help(argv[0]);

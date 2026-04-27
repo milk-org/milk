@@ -64,6 +64,16 @@ void sigint_handler(int sig) {
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("track and display FPS parameter values in real time\\n");
+        return 0;
+    }
+
     double interval = 0.1;
     int opt;
     char *regex_pattern = ".*";
@@ -71,16 +81,20 @@ int main(int argc, char *argv[])
     static struct option long_options[] = {
         {"interval", required_argument, 0, 'i'},
         {"help",     no_argument,       0, 'h'},
+        {"help-oneline", no_argument, 0, '1'},
         {0, 0, 0, 0}
     };
 
-    while ((opt = getopt_long(argc, argv, "i:h", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:h1", long_options, NULL)) != -1) {
         switch (opt) {
             case 'i':
                 interval = atof(optarg);
                 break;
             case 'h':
                 print_help(argv[0]);
+                return 0;
+            case '1':
+                printf("track and display FPS parameter values in real time\\n");
                 return 0;
             default:
                 print_help(argv[0]);

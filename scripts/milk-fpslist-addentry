@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "add an FPS entry to the fpslist tracking file"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-fpslist-addentry  -- sourced by cacao-fpslistadd to register an FPS"
+        exit 0 ;;
+esac
+
 
 # Check if FPS is present
 FPSEXISTS="OFF"

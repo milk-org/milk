@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "write FPS command scripts from fpslist.txt"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-fpsmkcmd  -- generate fpscmd/ scripts from fpslist.txt"
+        exit 0 ;;
+esac
 # Write FPS command scripts
 
 
