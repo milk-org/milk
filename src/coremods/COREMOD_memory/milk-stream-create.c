@@ -131,6 +131,16 @@ void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
+    /* One-line help — before getopt so it works without any positional args */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("create a shared-memory image stream\n");
+            return 0;
+        }
+    }
+
     uint8_t dtype = _DATATYPE_FLOAT;
     int nbkw = 10;
     int opt;

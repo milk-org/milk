@@ -17,8 +17,19 @@
 
 int main(int argc, char *argv[])
 {
+    /* One-line help — before CLI_startup() to avoid initialization */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h1") == 0 ||
+            strcmp(argv[i], "--help-oneline") == 0)
+        {
+            printf("milk-cli interactive shell help\n");
+            return 0;
+        }
+    }
+
     dcquiet = 1;
     CLI_startup();
+
 
     const char *topic = NULL;
 
