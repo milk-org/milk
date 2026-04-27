@@ -192,16 +192,49 @@ static inline void screenprint_setnormal(void)
  */
 static inline void screenprint_setcolor(int idx)
 {
-    switch(idx)
+    ansi_detect_color_level();
+
+    if (ansi__color_level >= 3)
     {
-    case 2:  SC_APPEND("\033[38;2;80;220;80m");    break; /* green        */
-    case 3:  SC_APPEND("\033[38;2;220;200;0m");    break; /* yellow       */
-    case 4:  SC_APPEND("\033[38;2;240;60;60m");    break; /* red          */
-    case 5:  SC_APPEND("\033[38;2;200;80;220m");   break; /* magenta      */
-    case 7:  SC_APPEND("\033[38;2;0;200;220m");    break; /* cyan         */
-    case 9:  SC_APPEND("\033[38;2;255;140;0m");    break; /* orange       */
-    case 12: SC_APPEND("\033[38;2;100;255;100m");  break; /* bright-green */
-    default: SC_APPEND("\033[0m"); break;
+        switch(idx)
+        {
+        case 2:  SC_APPEND("\033[38;2;80;220;80m");    break; /* green        */
+        case 3:  SC_APPEND("\033[38;2;220;200;0m");    break; /* yellow       */
+        case 4:  SC_APPEND("\033[38;2;240;60;60m");    break; /* red          */
+        case 5:  SC_APPEND("\033[38;2;200;80;220m");   break; /* magenta      */
+        case 7:  SC_APPEND("\033[38;2;0;200;220m");    break; /* cyan         */
+        case 9:  SC_APPEND("\033[38;2;255;140;0m");    break; /* orange       */
+        case 12: SC_APPEND("\033[38;2;100;255;100m");  break; /* bright-green */
+        default: SC_APPEND("\033[0m"); break;
+        }
+    }
+    else if (ansi__color_level == 2)
+    {
+        switch(idx)
+        {
+        case 2:  SC_APPEND("\033[38;5;114m"); break; /* green        */
+        case 3:  SC_APPEND("\033[38;5;220m"); break; /* yellow       */
+        case 4:  SC_APPEND("\033[38;5;203m"); break; /* red          */
+        case 5:  SC_APPEND("\033[38;5;176m"); break; /* magenta      */
+        case 7:  SC_APPEND("\033[38;5;44m");  break; /* cyan         */
+        case 9:  SC_APPEND("\033[38;5;208m"); break; /* orange       */
+        case 12: SC_APPEND("\033[38;5;119m"); break; /* bright-green */
+        default: SC_APPEND("\033[0m");     break;
+        }
+    }
+    else
+    {
+        switch(idx)
+        {
+        case 2:  SC_APPEND("\033[32m"); break; /* green        */
+        case 3:  SC_APPEND("\033[33m"); break; /* yellow       */
+        case 4:  SC_APPEND("\033[31m"); break; /* red          */
+        case 5:  SC_APPEND("\033[35m"); break; /* magenta      */
+        case 7:  SC_APPEND("\033[36m"); break; /* cyan         */
+        case 9:  SC_APPEND("\033[33m"); break; /* orange -> yellow */
+        case 12: SC_APPEND("\033[92m"); break; /* bright-green */
+        default: SC_APPEND("\033[0m");   break;
+        }
     }
 }
 
