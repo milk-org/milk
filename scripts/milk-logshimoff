@@ -1,5 +1,13 @@
 #! /bin/bash
 
+# Early-exit help flags
+case "${1-}" in
+    -h1|--help-oneline) echo "stop logging a shared memory stream"; exit 0 ;;
+    -h|--help)
+        echo "Usage: milk-logshimoff <stream>  -- stop the log loop"
+        exit 0 ;;
+esac
+
 EXPECTED_ARGS=1
 
 if [ $# -ne $EXPECTED_ARGS ]

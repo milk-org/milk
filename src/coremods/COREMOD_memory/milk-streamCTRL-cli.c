@@ -266,6 +266,17 @@ static void print_help(void)
 
 int main(int argc, char *argv[])
 {
+    /* Handle -h1/--help-oneline before getopt so "-h1" is not
+     * parsed as "-h" (flag) + "1" (unknown). */
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("command-line interface for monitoring shared memory streams\n");
+        return 0;
+    }
+
+
     double interval = 1.0;
     int    once     = 0;
 

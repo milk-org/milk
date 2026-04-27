@@ -6,14 +6,19 @@
 # ==============================================================================
 # 1. BASH HEADER: Configuration & Argument Parsing
 # ==============================================================================
-MSdescr="Advanced Native milk-cli Script Template"
+MSdescr="advanced native milk-cli script template with bash argument parsing"
+
+# Early-exit for -h1 before any sourcing
+case "${1-}" in
+    -h1|--help-oneline) echo "${MSdescr}"; exit 0 ;;
+esac
+
+# standard configuration
+source milk-script-std-config
 
 MSextdescr="Demonstrates leveraging milk-cli native processing with robust bash args.
 This script uses standard bash for argument parsing and prerequisite checks,
 and then drops into a native milk-cli heredoc block for zero-overhead execution."
-
-# standard configuration
-source milk-script-std-config
 
 # Prerequisites
 RequiredCommands=(tmux milk-cli)

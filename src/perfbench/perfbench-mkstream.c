@@ -10,12 +10,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ImageStruct.h"
 #include "ImageStreamIO.h"
 
 int main(int argc, char *argv[])
 {
+    if (argc >= 2 &&
+        (strcmp(argv[1], "-h1") == 0 ||
+         strcmp(argv[1], "--help-oneline") == 0))
+    {
+        printf("create a dummy shared-memory stream for FPS benchmarking\n");
+        return 0;
+    }
+
     if (argc < 4) {
         fprintf(stderr,
                 "Usage: %s <name>"
