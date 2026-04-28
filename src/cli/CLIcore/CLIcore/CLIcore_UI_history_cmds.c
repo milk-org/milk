@@ -42,119 +42,39 @@
 void cli_history_expand(void)
 {
 #ifdef USE_READLINE
-    char *line = data.CLIcmdline;
+    char *expanded_str = NULL;
+    int result = history_expand(data.CLIcmdline, &expanded_str);
 
-    /* Quick check: must start with '!' */
-    if(line[0] != '!')
+    if(result < 0 || result == 2)
     {
-        return;
-    }
-
-    /* !! — replay last command */
-    if(line[1] == '!')
-    {
-        HIST_ENTRY *prev = history_get(
-            history_length);
-        if(prev != NULL)
+        /* -1: Error (expanded_str contains error msg)
+         *  2: Display only, don't execute
+         */
+        if(expanded_str != NULL)
         {
-            char suffix[
-                STRINGMAXLEN_CLICMDLINE];
-            suffix[0] = '\0';
-            if(line[2] != '\0')
-            {
-                strncpy(suffix, line + 2,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                suffix[
-                    STRINGMAXLEN_CLICMDLINE - 1]
-                    = '\0';
-            }
-            char expanded[
-                STRINGMAXLEN_CLICMDLINE * 2];
-            snprintf(expanded,
-                     sizeof(expanded),
-                     "%s%s",
-                     prev->line, suffix);
-            strncpy(data.CLIcmdline,
-                    expanded,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
+            printf("%s\n", expanded_str);
+            free(expanded_str);
+        }
+        data.CLIcmdline[0] = '\0'; /* Prevent execution */
+    }
+    else if(result == 1)
+    {
+        /* 1: Expansion took place */
+        if(expanded_str != NULL)
+        {
+            strncpy(data.CLIcmdline, expanded_str, STRINGMAXLEN_CLICMDLINE - 1);
+            data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
             printf(">> %s\n", data.CLIcmdline);
+            free(expanded_str);
         }
-        return;
     }
-
-    /* !$ — last argument of previous command */
-    if(line[1] == '$')
+    else
     {
-        if(data.last_argument[0] != '\0')
+        /* 0: No expansion took place */
+        if(expanded_str != NULL)
         {
-            char rest[
-                STRINGMAXLEN_CLICMDLINE];
-            strncpy(rest, line + 2,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            rest[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
-            char expanded[
-                STRINGMAXLEN_CLICMDLINE * 2];
-            snprintf(expanded,
-                     sizeof(expanded),
-                     "%s%s",
-                     data.last_argument, rest);
-            strncpy(data.CLIcmdline,
-                    expanded,
-                    STRINGMAXLEN_CLICMDLINE - 1);
-            data.CLIcmdline[
-                STRINGMAXLEN_CLICMDLINE - 1]
-                = '\0';
-            printf(">> %s\n", data.CLIcmdline);
+            free(expanded_str);
         }
-        return;
-    }
-
-    /* !<prefix> — last command starting with it */
-    {
-        const char *prefix = line + 1;
-        size_t plen = strlen(prefix);
-        /* Trim trailing spaces from prefix */
-        while(plen > 0
-                && prefix[plen - 1] == ' ')
-        {
-            plen--;
-        }
-        if(plen == 0)
-        {
-            return;
-        }
-        HIST_ENTRY **hist = history_list();
-        if(hist == NULL)
-        {
-            return;
-        }
-        int hlen = history_length;
-        for(int i = hlen - 1; i >= 0; i--)
-        {
-            if(strncmp(hist[i]->line,
-                       prefix, plen) == 0)
-            {
-                strncpy(data.CLIcmdline,
-                        hist[i]->line,
-                        STRINGMAXLEN_CLICMDLINE
-                        - 1);
-                data.CLIcmdline[
-                    STRINGMAXLEN_CLICMDLINE - 1]
-                    = '\0';
-                printf(">> %s\n",
-                       data.CLIcmdline);
-                return;
-            }
-        }
-        printf("!%.*s: event not found\n",
-               (int) plen, prefix);
-        data.CLIcmdline[0] = '\0';
     }
 #endif
 }

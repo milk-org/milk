@@ -824,7 +824,7 @@ unset _ac_test
 
 #DESC: Remove temp redirect file
 #EXPECT:OK
-!rm -f /tmp/_clitest_redir.txt
+! rm -f /tmp/_clitest_redir.txt
 
 #DESC: Defer command evaluation
 #EXPECT:OK
@@ -884,7 +884,7 @@ echo $PATH
 #DESC: Outward env sync: local var exported to spawned shell
 #EXPECT:OK
 BDIR_SYNC_VAR="hello_frommilk"
-!test "$BDIR_SYNC_VAR" = "hello_frommilk"
+! test "$BDIR_SYNC_VAR" = "hello_frommilk"
 
 # ============================================
 # SECTION 21: Command Substitution in Variables
@@ -893,7 +893,7 @@ BDIR_SYNC_VAR="hello_frommilk"
 #DESC: Assign a subshell output to a variable
 #EXPECT:OK
 test_subshell_var=$(echo "success_from_subshell")
-!test "$test_subshell_var" = "success_from_subshell"
+! test "$test_subshell_var" = "success_from_subshell"
 
 # ============================================
 # SECTION 22: Advanced Variable Expansions
@@ -1195,7 +1195,7 @@ savehistory
 
 #DESC: Clean up savehistory temp
 #EXPECT:OK
-!rm -f /tmp/_clitest_hist.txt
+! rm -f /tmp/_clitest_hist.txt
 
 # ============================================
 # SECTION 39: History Commands
@@ -1251,11 +1251,11 @@ on_update
 
 #DESC: Shell bypass with valid command
 #EXPECT:OK
-!echo shell_bypass_test
+! echo shell_bypass_test
 
 #DESC: Shell bypass with nonexistent command
 #EXPECT:ERR
-!nonexistent_cmd_xyz_456
+! nonexistent_cmd_xyz_456
 
 # ============================================
 # SECTION 43: include_once Idempotency
@@ -1263,10 +1263,10 @@ on_update
 
 #DESC: include_once same file twice (no error)
 #EXPECT:OK
-!echo "echo sourced_once" > /tmp/_clitest_inc.milk
+! echo "echo sourced_once" > /tmp/_clitest_inc.milk
 include_once /tmp/_clitest_inc.milk
 include_once /tmp/_clitest_inc.milk
-!rm -f /tmp/_clitest_inc.milk
+! rm -f /tmp/_clitest_inc.milk
 
 # ============================================
 # SECTION 44: Edge Cases
