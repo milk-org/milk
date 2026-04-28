@@ -104,6 +104,8 @@ segment.
     and exit.
   - `-tmux`: Automatically create a `tmux` session and
     dispatch commands isolated from the main terminal.
+    Features verbose logging of the tmux dispatch commands,
+    including window indices.
   - `-n`, `--name <fpsname>`: Override the default FPS
     shared memory name.
   - `-k`, `-d`: Pass keywords and descriptions for
@@ -113,6 +115,10 @@ segment.
   - `confstart`, `confstep`, `confstop`: Manage the
     configuration loop.
   - `runstart`, `runstop`: Manage the execution loop.
+
+  *Note: When using `-tmux`, `confstop` and `runstop` are
+  dispatched to a dedicated `ctrl` window to ensure they
+  execute reliably even if the main process is busy.*
 
 </details>
 

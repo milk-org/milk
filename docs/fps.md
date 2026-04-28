@@ -116,7 +116,7 @@ The primary TUI control tool is `milk-fpsCTRL`. For example, `milk-fpsCTRL -m _A
     | `INT` | Integer value |
     | `FLOAT` | Floating-point measurement |
     | `STRING` | Text or path string |
-    | `TIMESPEC` | Timestamp structure |
+    | `TIMESPEC` | Timestamp structure (can be set from floating-point seconds via `milk-fps-set`) |
     | `STREAMNAME` | Name of a SHM stream |
     | `FILENAME` | File path on disk |
 

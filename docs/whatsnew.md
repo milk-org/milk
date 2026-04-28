@@ -18,6 +18,20 @@ for the full history.
 
 ## framework-dev
 
+### 2026-04
+
+- **2026-04** — Remove `ncurses` ecosystem dependency; implement TrueColor fallback in `_ansi.h` for terminal utilities `#cli` `#build`
+- **2026-04** — Standardize `-h1` / `--help-oneline` one-line interface for all commands `#cli`
+- **2026-04** — Replace legacy `milk-shmimmon` script with robust standalone C binary monitor `#streams` `#cli`
+- **2026-04** — FPS standalone executables now support `-n` / `--name` flag to override FPS name `#fps`
+- **2026-04** — Enhance FPS `-tmux` dispatch to support `ctrl` window for `confstop`/`runstop` and verbose logging `#fps`
+- **2026-04** — Support setting `TIMESPEC` FPS parameters from floating-point seconds in `milk-fps-set` `#cli` `#fps`
+- **2026-04** — Harden `milk-script` interpreter (suppress startup artifacts, positional arg expansion, `assigncheck -e` exit) `#cli`
+- **2026-04** — Interactive shell improvements: robust filename completion and reverse incremental search `#cli`
+- **2026-04** — Standalone binary stability: use `_compute` variants to prevent `CLIcore` initialization segfaults `#build`
+- **2026-04** — Atomic write flag migration replacing `SHMIM_WRITE_*` macros with `md->write` protocol `#api` `#streams`
+- **2026-04** — Refactor performance-neutral macros to static inline functions for type safety `#api` `#performance`
+
 ### 2026-03
 
 - **2026-03-29** — Complete CLI/Scripting layer decoupling;
