@@ -22,7 +22,9 @@ STREAM_MON_STRUCT* stream_monitor_connect(const char *streamname, int create)
     int fd;
     STREAM_MON_STRUCT *smon = NULL;
 
-    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", milk_data.shmdir, streamname);
+    // Fallback to /milk/shm if milk_data.shmdir is empty
+    const char *dir = (milk_data.shmdir[0] != '\0') ? milk_data.shmdir : "/milk/shm";
+    snprintf(shmname, sizeof(shmname), "%s/%s.mon.shm", dir, streamname);
 
     int flags = O_RDWR;
     if (create) {

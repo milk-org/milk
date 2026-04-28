@@ -300,8 +300,8 @@ static inline void TUI_clearscreen(
     sc_term_cols = c;
     if(wrow) *wrow = (short unsigned int) r;
     if(wcol) *wcol = (short unsigned int) c;
-    /* Move to top-left of screen without erasing — we overwrite line by line */
-    SC_APPEND("\033[H");
+    /* Reset attributes and move to top-left of screen */
+    SC_APPEND("\033[0m\033[H");
     sc_cursor_row = 1;
     sc_cursor_col = 0;
 }
