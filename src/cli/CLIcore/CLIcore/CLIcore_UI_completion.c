@@ -178,22 +178,7 @@ void rl_cb_linehandler(char *linein)
             STRINGMAXLEN_CLICMDLINE - 1);
     data.CLIcmdline[STRINGMAXLEN_CLICMDLINE - 1] = '\0';
 
-    /* Record raw prompt in readline history
-     * and structured log BEFORE any expansion
-     * or alias resolution.  This means up-arrow
-     * recalls exactly what the user typed. */
-    if(linein[0] != '\0')
-    {
-        add_history(linein);
-        cli_history_log_prompt(linein);
-        if(data.autocomplete_history)
-        {
-            append_history(
-                1, CLI_history_file());
-            history_truncate_file(
-                CLI_history_file(), 10000);
-        }
-    }
+    /* We will add to history AFTER backslash continuation and history expansion */
 
     /* Handle backslash line continuation:
      * temporarily switch to blocking readline
@@ -233,6 +218,33 @@ void rl_cb_linehandler(char *linein)
             }
             free(cont);
             len = strlen(data.CLIcmdline);
+        }
+    }
+
+    /* Expand history (!! and !$) now that the full line is assembled */
+    cli_history_expand();
+    
+    if(data.CLIcmdline[0] == '\0')
+    {
+        /* Expansion error. Exit loop and prevent execution. */
+        free(linein);
+        return;
+    }
+
+    /* Record expanded prompt in readline history
+     * and structured log BEFORE alias resolution.
+     * This ensures up-arrow recalls the expanded command,
+     * consistent with native bash behavior. */
+    if(data.CLIcmdline[0] != '\0')
+    {
+        add_history(data.CLIcmdline);
+        cli_history_log_prompt(data.CLIcmdline);
+        if(data.autocomplete_history)
+        {
+            append_history(
+                1, CLI_history_file());
+            history_truncate_file(
+                CLI_history_file(), 10000);
         }
     }
 
