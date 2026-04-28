@@ -737,9 +737,8 @@ library installation is needed on the target.
 | `CMAKE_EXE_LINKER_FLAGS` | `-static` | Tells the linker to produce a static binary |
 | `USE_STATIC_LTO` | `ON` | Builds `.a` archives; required by `-static` |
 | `USE_CFITSIO` | `OFF` | System cfitsio is glibc-linked; incompatible with musl static |
-| `USE_CLI` | `OFF` | CLI requires ncurses/readline dynamic libs |
-| `USE_NCURSES` | `OFF` | ncurses has no musl static variant by default |
-| `USE_READLINE` | `OFF` | Same as ncurses |
+| `USE_CLI` | `OFF` | CLI requires readline dynamic libs |
+| `USE_READLINE` | `OFF` | readline has no musl static variant by default |
 | `USE_OPENBLAS` | `OFF` | System OpenBLAS is glibc-linked |
 | `BUILD_SHARED_LIBS` | `OFF` | Prevents cmake from building `.so` targets that would fail the static link |
 | `-D_GNU_SOURCE` (C flag) | set | Exposes `cpu_set_t`, `pthread_setaffinity_np` and other POSIX extensions in musl |
@@ -777,7 +776,6 @@ impact.
 |---------|--------------------|----|
 | CFITSIO support | ✓ | ✗ (glibc-only) |
 | OpenBLAS/MKL | ✓ | ✗ |
-| ncurses TUI | ✓ | ✗ |
 | Dynamic library deps | 3 (libc family) | **0** |
 | Deploy without runtime | ✗ | **✓** |
 | Binary portability | Same glibc version | Any Linux x86-64 |
