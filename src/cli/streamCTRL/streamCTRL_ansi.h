@@ -116,8 +116,8 @@ static inline void ansi_raw_mode_exit(void)
     }
     /* show cursor and enable line wrap */
     if(write(STDOUT_FILENO, "\033[?25h\033[?7h", 11) < 0) {}
-    /* clear screen, home cursor */
-    if(write(STDOUT_FILENO, "\033[2J\033[H", 7) < 0) {}
+    /* clear screen, reset attributes, home cursor */
+    if(write(STDOUT_FILENO, "\033[0m\033[2J\033[H", 11) < 0) {}
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &ansi__orig_termios);
     ansi__raw_active = 0;
 }

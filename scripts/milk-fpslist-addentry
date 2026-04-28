@@ -2,7 +2,14 @@
 
 # Early-exit help flags
 case "${1-}" in
-    -h1|--help-oneline) echo "add an FPS entry to the fpslist tracking file"; exit 0 ;;
+    -h1|--help-oneline)
+        if [ -n "${fpsdescr-}" ]; then
+            echo "Register FPS process: ${fpsdescr}"
+        else
+            echo "add an FPS entry to the fpslist tracking file"
+        fi
+        exit 0
+        ;;
     -h|--help)
         echo "Usage: milk-fpslist-addentry  -- sourced by cacao-fpslistadd to register an FPS"
         exit 0 ;;

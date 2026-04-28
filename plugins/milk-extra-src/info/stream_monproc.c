@@ -38,20 +38,27 @@ static FPS_APP_INFO FPS_app_info = {
  * 2.  LOCAL PARAMETER VARIABLES
  * ============================================================= */
 
-static char * inimname = NULL;
-static uint64_t * tbinflag = NULL;
-static uint32_t * cbbuffersize = NULL;
-
+static char inimname[FUNCTION_PARAMETER_STRMAXLEN] = "";
+static uint64_t tbinflag = 1;
+static uint32_t cbbuffersize = 100;
 
 /* ================================================================
  * 3.  UNIFIED PARAMETER TABLE (X-Macro)
  * ============================================================= */
 
 #define FPS_PARAMS(X) \
-    X(".in_name", &inimname, \
+    X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
       FPFLAG_DEFAULT_INPUT, \
-      "input image")
+      "input image") \
+    X(".tbinflag", &tbinflag, \
+      FPTYPE_UINT64, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Time binning flag (bitmask)") \
+    X(".cbbufsize", &cbbuffersize, \
+      FPTYPE_UINT32, 0, \
+      FPFLAG_DEFAULT_INPUT, \
+      "Circular buffer size")
 
 
 /* ================================================================
@@ -549,7 +556,7 @@ errno_t stream_monitor_run(
 static MILK_HOT errno_t compute_function()
 {
     // Wrapper for CLI mode
-    return stream_monitor_run(inimname, *tbinflag, *cbbuffersize, 0, 0);
+    return stream_monitor_run(inimname, tbinflag, cbbuffersize, 0, 0);
 }
 
 

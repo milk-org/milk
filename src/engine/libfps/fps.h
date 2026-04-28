@@ -1153,6 +1153,15 @@ int main(int argc, char *argv[]) { \
     CONFCHECK_FN) \
 int main(int argc, char *argv[]) { \
     MILK_EMBED_BUILD_TAG(); \
+    for (int _i = 1; _i < argc; _i++) { \
+        if (strcmp(argv[_i], "-h1") == 0 || \
+            strcmp(argv[_i], \
+                   "--help-oneline") == 0) { \
+            printf("%s\n", \
+                   (APP_INFO).description); \
+            return 0; \
+        } \
+    } \
     milk_data_init(); \
     extern void milkfps_set_image_array( \
         IMAGE *imarray, long nb_max); \
