@@ -23,6 +23,7 @@ typedef int errno_t;
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "streamCTRL_defs.h"
 #include "streamCTRL_ansi.h"
@@ -41,6 +42,50 @@ typedef int errno_t;
 #include "streamCTRL_print_trace.h"
 #include "streamCTRL_scan.h"
 #include "streamCTRL_utilfuncs.h"
+
+static inline void streamCTRL_set_sem_color(int val) {
+    if (val == 0) {
+        screenprint_setcolor(2); // green
+    } else if (val >= 10) {
+        screenprint_setcolor(4); // red
+    } else {
+        ansi_detect_color_level();
+        if (ansi__color_level >= 3) {
+            int r = 150 + (val - 1) * (255 - 150) / 9;
+            int g = 100 - (val - 1) * 100 / 9;
+            int b = 0;
+            SC_APPEND("\033[38;2;%d;%d;%dm", r, g, b);
+        } else if (ansi__color_level == 2) {
+            if (val < 4) SC_APPEND("\033[38;5;130m");
+            else if (val < 7) SC_APPEND("\033[38;5;166m");
+            else SC_APPEND("\033[38;5;196m");
+        } else {
+            screenprint_setcolor(3);
+        }
+    }
+}
+
+static inline void streamCTRL_set_wave_bg(int i, double t_sec, double frequ) {
+    ansi_detect_color_level();
+    if (ansi__color_level < 2) return;
+    
+    double f = frequ;
+    if (f < 1.0) f = 1.0;
+    if (f > 10000.0) f = 10000.0;
+    double speed = log10(f) + 1.0;
+    
+    double phase = t_sec * speed * 0.5 - i * 0.8;
+    int intensity = (int)(60.0 * (1.0 + sin(phase)));
+    
+    if (ansi__color_level >= 3) {
+        SC_APPEND("\033[48;2;0;%d;%dm", intensity/2, intensity + 50);
+    } else if (ansi__color_level == 2) {
+        int color_base = 17;
+        if (intensity > 90) color_base = 21;
+        else if (intensity > 45) color_base = 19;
+        SC_APPEND("\033[48;5;%dm", color_base);
+    }
+}
 
 
 
@@ -370,7 +415,7 @@ errno_t streamCTRL_CTRLscreen(void)
     // display
     int DispName_NBchar = 36;
     int DispSize_NBchar = 20;
-    int Dispcnt0_NBchar = 10;
+    int Dispcnt0_NBchar = 16;
     int Dispfreq_NBchar = 8;
     int DispPID_NBchar  = 8;
 
@@ -712,7 +757,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
             // attron(A_BOLD);
 
-            TUI_printfw("%*s  %-*s  %-*s  %*s   %*s %*s %*s %8s",
+            TUI_printfw("%*s  %-*s  %-*s  %*s   %*s %*s %*s",
                         9,
                         "inode",
                         DispName_NBchar,
@@ -726,8 +771,7 @@ errno_t streamCTRL_CTRLscreen(void)
                         DispPID_NBchar,
                         "ownPID",
                         Dispfreq_NBchar,
-                        "   frequ ",
-                        "#sem");
+                        "   frequ ");
 
             switch(sTUIparam.DisplayMode)
             {
@@ -770,13 +814,28 @@ errno_t streamCTRL_CTRLscreen(void)
 
             // SORT
 
-            // default : no sorting
-            for(int dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
+            // build active streams array
+            sTUIparam.NBsindex = 0;
+            for(int sindex = 0; sindex < streaminfoproc.NBstream; sindex++)
             {
-                sTUIparam.ssindex[dindex] = dindex;
+                if(streaminfo[sindex].erased == 1) continue;
+                imageID ID = streaminfo[sindex].ID;
+                if(streamCTRLimages[ID].used == 0) continue;
+
+                sTUIparam.ssindex[sTUIparam.NBsindex] = sindex;
+                sTUIparam.NBsindex++;
             }
 
             DEBUG_TRACEPOINT(" ");
+
+            // compute dynamic lengths
+            int max_name_len = 10;
+            for(int dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
+            {
+                int len = strlen(streaminfo[sTUIparam.ssindex[dindex]].sname);
+                if (len > max_name_len) max_name_len = len;
+            }
+            DispName_NBchar = max_name_len + 2;
 
             if(sTUIparam.SORTING == 1)  // alphabetical sorting
             {
@@ -927,20 +986,7 @@ errno_t streamCTRL_CTRLscreen(void)
                 int sindex = sTUIparam.ssindex[dindex];
                 ID     = streaminfo[sindex].ID;
 
-                if(streaminfo[sindex].erased == 1)
-                {
-                    continue;
-                }
-
-
-                while((streamCTRLimages[streaminfo[sindex].ID].used == 0) &&
-                        (dindex < sTUIparam.NBsindex))
-                {
-                    // skip this entry, as it is no longer in use
-                    dindex++;
-                    sindex = sTUIparam.ssindex[dindex];
-                    ID     = streaminfo[sindex].ID;
-                }
+                // Stream is guaranteed active and not erased
 
 
                 int downstreammin = NO_DOWNSTREAM_INDEX;
@@ -1284,7 +1330,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
                         if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                         {
-                            snprintf(string, stringlen, "???");
+                            snprintf(string, stringlen, " %*s ", Dispcnt0_NBchar, "???");
                         }
                         else
                         {
@@ -1295,15 +1341,28 @@ errno_t streamCTRL_CTRLscreen(void)
                                      Dispcnt0_NBchar,
                                      streamCTRLimages[ID].md[0].cnt0);
                         }
+                        
                         if(streaminfo[sindex].deltacnt0 == 0)
                         {
                             TUI_printfw("%s", string);
                         }
                         else
                         {
+                            struct timespec ts;
+                            clock_gettime(CLOCK_MONOTONIC, &ts);
+                            double t_sec = ts.tv_sec + ts.tv_nsec * 1e-9;
+                            
+                            int len_cnt = strlen(string);
                             screenprint_setcolor(2);
-                            TUI_printfw("%s", string);
-                            screenprint_unsetcolor(2);
+                            for(int c_idx = 0; c_idx < len_cnt; c_idx++) {
+                                streamCTRL_set_wave_bg(c_idx, t_sec, streaminfo[sindex].updatevalue);
+                                TUI_printfw("%c", string[c_idx]);
+                            }
+                            SC_APPEND("\033[0m");
+                            
+                            if((dindex == sTUIparam.dindexSelected) && (sTUIparam.DisplayDetailLevel == 0)) {
+                                screenprint_setreverse();
+                            }
                         }
 
                         // creatorPID
@@ -1339,6 +1398,7 @@ errno_t streamCTRL_CTRLscreen(void)
                         if(streamCTRLimages[streaminfo[sindex].ID].md == NULL)
                         {
                             snprintf(string, stringlen, "???");
+                            TUI_printfw("%s", string);
                         }
                         else
                         {
@@ -1347,8 +1407,19 @@ errno_t streamCTRL_CTRLscreen(void)
                                      " %*.2f Hz",
                                      Dispfreq_NBchar,
                                      streaminfo[sindex].updatevalue);
+                            
+                            double f = streaminfo[sindex].updatevalue;
+                            int f_color = 0;
+                            if (f == 0.0) f_color = 0;
+                            else if (f < 1.0) f_color = 4;
+                            else if (f < 10.0) f_color = 3;
+                            else if (f < 100.0) f_color = 2;
+                            else f_color = 12;
+                            
+                            screenprint_setcolor(f_color);
+                            TUI_printfw("%s", string);
+                            screenprint_unsetcolor(f_color);
                         }
-                        TUI_printfw("%s", string);
                     }
 
                     DEBUG_TRACEPOINT(" ");
@@ -1358,7 +1429,6 @@ errno_t streamCTRL_CTRLscreen(void)
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_SUMMARY) &&
                                 (DisplayFlag == 1)) // sem vals
                         {
-
                             snprintf(string,
                                      stringlen,
                                      " %3d sems ",
@@ -1373,17 +1443,19 @@ errno_t streamCTRL_CTRLscreen(void)
                             for(s = 0; s < max_s; s++)
                             {
                                 int semval = ImageStreamIO_semvalue(streamCTRLimages + ID, s);
-                                if (s == 0) {
-                                    snprintf(string, stringlen, "%02d", semval);
-                                } else {
-                                    snprintf(string, stringlen, ":%02d", semval);
+                                if (s > 0) {
+                                    TUI_printfw(":");
                                 }
+                                streamCTRL_set_sem_color(semval);
+                                snprintf(string, stringlen, "%02d", semval);
                                 TUI_printfw("%s", string);
+                                screenprint_unsetcolor(0);
                             }
                         }
                     }
 
                     DEBUG_TRACEPOINT(" ");
+
                     if(streamCTRLimages[streaminfo[sindex].ID].md != NULL)
                     {
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_WRITE) &&
