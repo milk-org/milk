@@ -123,14 +123,8 @@ errno_t CLI_execute_line()
         }
     }
 
-    /* Expand history (!! and !$) first */
-    cli_history_expand();
-    if(data.CLIcmdline[0] == '\0')
-    {
-        free(thetime);
-        DEBUG_TRACE_FEXIT();
-        return RETURN_SUCCESS;
-    }
+    /* History expansion (!! and !$) has already been performed
+     * by rl_cb_linehandler() before calling CLI_execute_line. */
 
     /* Poll engine event traps */
     cli_engine_traps_poll();
