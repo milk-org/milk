@@ -52,13 +52,14 @@ static uint32_t cbbuffersize = 100;
       FPFLAG_DEFAULT_INPUT, \
       "input image") \
     X(".tbinflag", &tbinflag, \
-      FPTYPE_UINT64, 0, \
+      FPTYPE_UINT64, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "Time binning flag (bitmask)") \
     X(".cbbufsize", &cbbuffersize, \
-      FPTYPE_UINT32, 0, \
+      FPTYPE_UINT32, 1, \
       FPFLAG_DEFAULT_INPUT, \
       "Circular buffer size")
+
 
 
 /* ================================================================
