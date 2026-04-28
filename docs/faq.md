@@ -34,7 +34,7 @@ running `milk`.
     See [Build Tiers](install/build_tiers.md) and
     [Compile Instructions](install/compile.md) for details.
 
-??? faq "Build fails with missing readline/ncurses"
+??? faq "Build fails with missing readline"
 
     ```text
     fatal error: readline/readline.h: No such file or directory
@@ -44,7 +44,7 @@ running `milk`.
 
     === "Install headers"
         ```bash
-        sudo apt-get install libreadline-dev libncurses5-dev
+        sudo apt-get install libreadline-dev
         ```
 
     === "Build standalone-only (No CLI)"
