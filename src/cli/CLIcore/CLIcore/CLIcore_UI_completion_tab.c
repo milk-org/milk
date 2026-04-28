@@ -879,8 +879,22 @@ CLI_completion(
         }
     }
 
-    matches = rl_completion_matches(
-        (char *) text, &CLI_generator);
+    if(data.CLImatchMode == CLICOMPLETIONMODE_FILES)
+    {
+        /* Use standard readline filename completion */
+        matches = rl_completion_matches(
+            (char *) text, (rl_compentry_func_t *) rl_filename_completion_function);
+    }
+    else
+    {
+        /* Use custom generator for commands, images, fps parameters, etc. */
+        matches = rl_completion_matches(
+            (char *) text, &CLI_generator);
+    }
+
+    /* Prevent readline from falling back to default filename completion 
+     * when our custom generators return NULL. */
+    rl_attempted_completion_over = 1;
 
     /* Reset append char to default space */
     if(data.CLImatchMode

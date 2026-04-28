@@ -504,6 +504,20 @@ void CLI_redisplay(void)
         ghost_chars_on_line = 0;
     }
 
+#if RL_READLINE_VERSION >= 0x0600
+    /* If incremental search (Ctrl-R) is active, fall back 
+     * entirely to readline's built-in redisplay to avoid 
+     * corrupting the search prompt. */
+    if(RL_ISSTATE(RL_STATE_ISEARCH) || RL_ISSTATE(RL_STATE_NSEARCH))
+    {
+        rl_redisplay_function = NULL;
+        rl_redisplay();
+        fflush(stdout);
+        rl_redisplay_function = CLI_redisplay;
+        return;
+    }
+#endif
+
     /* Default or syntax-highlighted redisplay */
     rl_redisplay_function = NULL;
     if(data.syntax_highlight
