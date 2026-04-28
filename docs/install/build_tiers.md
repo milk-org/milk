@@ -13,7 +13,7 @@
 ┌─────────────────────────────────────────────────────┐
 │  Full Build (default)                               │
 │  CLI (milk-cli) + plugins + example module          │
-│  Optional: readline, ncurses, GSL, CUDA             │
+│  Optional: readline, GSL, CUDA                      │
 │                                                     │
 │  ┌───────────────────────────────────────────────┐  │
 │  │  Core + FITS                                  │  │
@@ -45,7 +45,6 @@
 | `USE_COREMODS` | ON | Build core modules (COREMOD_*) |
 | `USE_CFITSIO` | ON | Build FITS I/O (requires cfitsio) |
 | `USE_CLI` | ON | Build interactive CLI (`milk-cli`) |
-| `USE_NCURSES` | ON | Enable ncurses / TUI screens |
 | `USE_READLINE` | ON | Enable readline for CLI input |
 | `USE_GSL` | ON | Enable GSL for plugins |
 
