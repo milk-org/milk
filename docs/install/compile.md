@@ -67,7 +67,6 @@ $ sudo mount /milk/shm
     |------------|-------------|---------|---------|
     | **cfitsio** | `USE_CFITSIO` | ON | FITS file I/O (`COREMOD_iofits`) |
     | **readline** | `USE_READLINE` | ON | Interactive CLI line editing |
-    | **ncurses** | `USE_NCURSES` | ON | TUI screens (fpsCTRL, procCTRL, streamCTRL) |
     | **GSL** | `USE_GSL` | ON | Numerical routines in plugins |
     | **fftw3** | — | auto | FFT (used by some plugins) |
     | **openMP** | — | auto | Parallel processing |
@@ -82,14 +81,14 @@ $ sudo mount /milk/shm
     === "Ubuntu / Debian"
         ```bash
         sudo apt-get install \
-            libcfitsio-dev libreadline-dev libncurses5-dev \
+            libcfitsio-dev libreadline-dev \
             libfftw3-dev libgsl-dev
         ```
 
     === "CentOS / RHEL / Fedora"
         ```bash
         sudo yum install \
-            cfitsio-devel readline-devel ncurses-devel \
+            cfitsio-devel readline-devel \
             fftw3-devel gsl-devel
         ```
 

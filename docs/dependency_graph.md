@@ -26,7 +26,6 @@
 ```mermaid
 graph TD
     CFITSIO["cfitsio"]:::ext
-    NCURSES["ncurses"]:::ext
     READLINE["readline"]:::ext
 
     subgraph engine ["Engine Tier — POSIX only"]
@@ -36,10 +35,6 @@ graph TD
         MILKDATA["milkdata"]:::core
     end
 
-    MILKTUI["milkTUI"]:::core
-
-    PITUI["milkprocessinfoTUI"]:::fw
-    FPSTUI["milkfpsTUI"]:::fw
     FPSCLI["milkfpsCLI"]:::fw
     FPSSTANDALONE["milkfpsStandalone"]:::fw
 
@@ -66,9 +61,6 @@ graph TD
     FPS --> PROCINFO
     MILKDATA --> FPS
     MILKDATA --> PROCINFO
-    MILKTUI --> ISIO
-    MILKTUI --> NCURSES
-
     IOFITS --> FPS
     IOFITS --> CFITSIO
     ARITH --> FPS
@@ -78,10 +70,6 @@ graph TD
     MEMORY -.->|USE_CFITSIO| CFITSIO
     TOOLS --> FPS
 
-    PITUI --> PROCINFO
-    PITUI --> MILKTUI
-    FPSTUI --> FPS
-    FPSTUI --> MILKTUI
     FPSCLI --> FPS
     FPSCLI --> CLICORE
     FPSSTANDALONE --> FPS
@@ -94,16 +82,11 @@ graph TD
     CLICORE --> FPS
     CLICORE --> MILKDATA
     CLICORE --> PROCINFO
-    CLICORE --> MILKTUI
-    CLICORE --> FPSTUI
-    CLICORE --> PITUI
     CLICORE --> READLINE
-    CLICORE --> NCURSES
     CLICORE -.->|USE_CFITSIO| CFITSIO
 
-    FPSCTRL --> FPSTUI
     FPSCTRL --> CLICORE
-    PROCCTRL --> PITUI
+    PROCCTRL --> CLICORE
     STREAMCTRL --> CLICORE
     STREAMCTRL --> ISIO
     MILKEXE --> FPSSTANDALONE
@@ -354,12 +337,9 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 
 | Target | Links to | Optional |
 |--------|----------|----------|
-| milkTUI | ImageStreamIO, ncurses | |
-| milkprocessinfoTUI | milkprocessinfo, milkTUI, ncurses | |
-| milkfpsTUI | milkfps, milkTUI, ncurses | |
 | milkfpsStandalone | milkfps, milkdata | |
 | milkfpsCLI | milkfps, CLIcore | |
-| CLIcore | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkdata, milkprocessinfo, milkTUI, milkfpsTUI, milkprocessinfoTUI, readline, ncurses | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
+| CLIcore | COREMODarith, COREMODmemory, COREMODtools, milkfps, milkdata, milkprocessinfo, readline | COREMODiofits (USE_CFITSIO), cfitsio (USE_CFITSIO), OpenMP |
 
 </details>
 
@@ -440,15 +420,15 @@ COREMOD_iofits ── Core+FITS           ← USE_CFITSIO
 | Target | Links to |
 |--------|----------|
 | milk-cli | CLIcore + all module libs |
-| milk-fpsCTRL | milkfpsTUI, milkfps, milkprocessinfo, ImageStreamIO, CLIcore, ncurses |
-| milk-procCTRL | milkprocessinfoTUI |
+| milk-fpsCTRL | milkfps, milkprocessinfo, ImageStreamIO, CLIcore |
+| milk-procCTRL | milkprocessinfo, ImageStreamIO |
 | milk-streamCTRL | CLIcore, ImageStreamIO |
 | milk-fps-list/search/info/rm | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
 | milk-fps-set/track | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
 | milk-fps-conf*/run* | milkfps, milkfpsStandalone, milkdata, milkprocessinfo, ImageStreamIO |
 | milk-fps-valkey | milkfps, milkprocessinfo, ImageStreamIO, valkey |
 | stream-monproc-runner | milkinfo, CLIcore, ImageStreamIO |
-| stream-monproc-disp | milkinfo, CLIcore, ImageStreamIO, ncurses |
+| stream-monproc-disp | milkdata, milkfps, ImageStreamIO |
 
 </details>
 
