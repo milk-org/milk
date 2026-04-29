@@ -368,7 +368,11 @@ errno_t fpsCTRL_FPSdisplay(
         short unsigned int wrow=0, wcol=0;
         TUI_get_terminal_size(&wrow, &wcol);
 
-        int dispindexMax = wrow - 14; 
+        /* Reserve footer rows: scroll indicator + blank
+         * + status line + 1 margin = 4 rows. */
+        int footer_rows = 4;
+        int dispindexMax = (int) wrow - sc_cursor_row
+                           - footer_rows;
         if(dispindexMax < 5) dispindexMax = 5;
 
         int cl_scroll = fpsCTRLvar->currentlevel;
@@ -615,11 +619,17 @@ errno_t fpsCTRL_FPSdisplay(
 
                     TUI_printfw(" ");
                     if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
-                        screenprint_setreverse();
+                        if(GUIline != fpsCTRLvar->GUIlineSelected[cl])
+                        {
+                            screenprint_setbold();
+                        }
                     }
                     TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], fpsarray[fpsindex].parray[pindex].keyword[keywnode[knodeindex].keywordlevel - 1]);
                     if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
-                        screenprint_unsetreverse();
+                        if(GUIline != fpsCTRLvar->GUIlineSelected[cl])
+                        {
+                            screenprint_unsetbold();
+                        }
                     }
 
                     if (is_resolved_stream) {
@@ -780,13 +790,27 @@ errno_t fpsCTRL_FPSdisplay(
                             .val.i32[0])
                     {
                         onoff_on = 1;
-                        screenprint_setreverse();
+                        if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
+                        {
+                            screenprint_setreverse();
+                        }
+                        else
+                        {
+                            screenprint_setbold();
+                        }
                     }
 
                     print_sliding_string(valstring, max_val_width, GUIline);
 
                     if (onoff_on) {
-                        screenprint_unsetreverse();
+                        if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
+                        {
+                            screenprint_unsetreverse();
+                        }
+                        else
+                        {
+                            screenprint_unsetbold();
+                        }
                     }
                     if (path_val_color != 0) {
                         screenprint_unsetcolor(
