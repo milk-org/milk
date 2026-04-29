@@ -557,12 +557,24 @@ errno_t fpsCTRL_FPSdisplay(
                     pindex = keywnode[knodeindex].pindex;
 
                     int isVISIBLE = 1;
+                    int isTRIGGER = 0;
                     if(!(fpsarray[fpsindex].parray[pindex].fpflag &
                             FPFLAG_VISIBLE))   // if invisible
                     {
                         isVISIBLE = 0;
                         screenprint_setdim();
                         screenprint_setblink();
+                    }
+
+                    /* Trigger stream: subtle bg */
+                    if (isVISIBLE
+                        && (fpsarray[fpsindex]
+                            .parray[pindex].fpflag
+                            & FPFLAG_TRIGGER_STREAM))
+                    {
+                        isTRIGGER = 1;
+                        screenprint_setcolor(
+                            COLOR_TRIGGER_BG);
                     }
 
                     if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
@@ -590,6 +602,9 @@ errno_t fpsCTRL_FPSdisplay(
                             screenprint_setblink();
                             TUI_printfw("W "); // writable
                             screenprint_unsetcolor(10);
+                            if (isTRIGGER)
+                                screenprint_setcolor(
+                                    COLOR_TRIGGER_BG);
                             screenprint_unsetblink();
                         }
                         else
@@ -598,6 +613,9 @@ errno_t fpsCTRL_FPSdisplay(
                             screenprint_setblink();
                             TUI_printfw("NW"); // non writable
                             screenprint_unsetcolor(4);
+                            if (isTRIGGER)
+                                screenprint_setcolor(
+                                    COLOR_TRIGGER_BG);
                             screenprint_unsetblink();
                         }
                     }
@@ -634,17 +652,29 @@ errno_t fpsCTRL_FPSdisplay(
 
                     if (is_resolved_stream) {
                         screenprint_unsetcolor(2);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
                     }
 
                     if (isVISIBLE == 1 && fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
                         screenprint_unsetcolor(COLOR_OK);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
                     }
 
                     if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                     {
                         screenprint_unsetcolor(10);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
                         TUI_printfw("> ");
                         screenprint_unsetreverse();
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
                     }
                     else
                     {
@@ -815,9 +845,24 @@ errno_t fpsCTRL_FPSdisplay(
                     if (path_val_color != 0) {
                         screenprint_unsetcolor(
                             path_val_color);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
                     }
-                    if(paramsync == 0 && isVISIBLE == 1) screenprint_unsetcolor(3);
-                    if(fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR && isVISIBLE == 1) screenprint_unsetcolor(4);
+                    if(paramsync == 0 && isVISIBLE == 1)
+                    {
+                        screenprint_unsetcolor(3);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
+                    }
+                    if(fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_ERROR && isVISIBLE == 1)
+                    {
+                        screenprint_unsetcolor(4);
+                        if (isTRIGGER)
+                            screenprint_setcolor(
+                                COLOR_TRIGGER_BG);
+                    }
 
                     TUI_printfw("    %-s", fpsarray[fpsindex].parray[pindex].description);
 
@@ -828,6 +873,10 @@ errno_t fpsCTRL_FPSdisplay(
                     {
                         screenprint_unsetblink();
                         screenprint_unsetdim();
+                    }
+                    if (isTRIGGER)
+                    {
+                        screenprint_unsetbgcolor();
                     }
                 }
                 for(int l = 0; l < MAXNBLEVELS ; l++) child_index[l]++;
