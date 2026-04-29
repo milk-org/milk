@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <inttypes.h>
 
 
 #ifndef FPS_STANDALONE
@@ -182,6 +183,31 @@ int fps_generic_init(
 }
 
 
+/**
+ * @brief Check if bindings have a trigger stream.
+ *
+ * @param bindings  Parameter bindings array
+ * @param nb_b      Number of bindings
+ * @return          1 if trigger stream found
+ */
+int fps_check_has_trigger_binding(
+    FPS_CLI_BINDING *bindings,
+    int              nb_b
+)
+{
+    for (int i = 0; i < nb_b; i++) {
+        if ((bindings[i].fpflag
+             & FPFLAG_TRIGGER_STREAM)
+            && (bindings[i].type
+                == FPTYPE_STREAMNAME))
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 void fps_loop_override_trigger(
     FUNCTION_PARAMETER_STRUCT *fps,
     FPS_CLI_BINDING           *bindings,
@@ -228,16 +254,18 @@ void fps_loop_override_trigger(
         }
     }
 
-    /* Force trigger mode and loop count */
-    functionparameter_SetParamValue_INT64(
-        fps, ".procinfo.triggermode",
-        PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+    printf("\033[33m-loops\033[0m"
+           " Stream semaphore trigger\n");
 
+    /* Force loop count and enable */
     functionparameter_SetParamValue_INT64(
         fps, ".procinfo.loopcntMax", -1);
+    printf("  .procinfo.loopcntMax  = -1"
+           " (infinite)\n");
 
     functionparameter_SetParamValue_ONOFF(
         fps, ".procinfo.enabled", 1);
+    printf("  .procinfo.enabled     = ON\n");
 
     if (trigger_name != NULL
         && trigger_name[0] != '\0')
@@ -245,7 +273,78 @@ void fps_loop_override_trigger(
         functionparameter_SetParamValue_STRING(
             fps, ".procinfo.triggersname",
             trigger_name);
+        printf("  .procinfo.triggersname"
+               " = %s\n", trigger_name);
+
+        functionparameter_SetParamValue_INT64(
+            fps, ".procinfo.triggermode",
+            PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+        printf("  .procinfo.triggermode "
+               " = %d (SEMAPHORE)\n",
+               PROCESSINFO_TRIGGERMODE_SEMAPHORE);
     }
+    else
+    {
+        fprintf(stderr,
+                "\033[1;33mWARNING\033[0m"
+                " [-loops] No trigger stream"
+                " found — semaphore trigger"
+                " not configured.\n"
+                "  Loop will use delay mode."
+                " To fix, flag a stream"
+                " parameter with"
+                " FPFLAG_TRIGGER_STREAM.\n");
+
+        functionparameter_SetParamValue_INT64(
+            fps, ".procinfo.triggermode",
+            PROCESSINFO_TRIGGERMODE_DELAY);
+        printf("  .procinfo.triggermode "
+               " = %d (DELAY)\n",
+               PROCESSINFO_TRIGGERMODE_DELAY);
+    }
+}
+
+
+/**
+ * @brief Force delay-loop settings for -loopd mode.
+ *
+ * Sets triggermode=DELAY, loopcntMax=-1, enabled=ON,
+ * and triggerdelay to the specified seconds value.
+ *
+ * @param fps       Connected FPS
+ * @param delay_sec Delay between iterations (seconds)
+ */
+void fps_loop_override_delay(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    double                     delay_sec
+)
+{
+    printf("\033[33m-loopd\033[0m"
+           " Delay loop (%.6f sec)\n",
+           delay_sec);
+
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.loopcntMax", -1);
+    printf("  .procinfo.loopcntMax  = -1"
+           " (infinite)\n");
+
+    functionparameter_SetParamValue_ONOFF(
+        fps, ".procinfo.enabled", 1);
+    printf("  .procinfo.enabled     = ON\n");
+
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.triggermode",
+        PROCESSINFO_TRIGGERMODE_DELAY);
+    printf("  .procinfo.triggermode "
+           " = %d (DELAY)\n",
+           PROCESSINFO_TRIGGERMODE_DELAY);
+
+    functionparameter_SetParamValue_TIMESPEC(
+        fps, ".procinfo.triggerdelay",
+        (float) delay_sec);
+    printf("  .procinfo.triggerdelay"
+           " = %.6f sec\n",
+           delay_sec);
 }
 
 
