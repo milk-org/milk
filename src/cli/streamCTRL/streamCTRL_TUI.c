@@ -16,6 +16,7 @@ typedef int errno_t;
 #endif
 
 #include <sys/stat.h>
+#include <sys/select.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <string.h>
@@ -65,27 +66,92 @@ static inline void streamCTRL_set_sem_color(int val) {
     }
 }
 
-static inline void streamCTRL_set_wave_bg(int i, double t_sec, double frequ) {
-    ansi_detect_color_level();
-    if (ansi__color_level < 2) return;
-    
-    double f = frequ;
-    if (f < 1.0) f = 1.0;
-    if (f > 10000.0) f = 10000.0;
-    double speed = log10(f) + 1.0;
-    
-    double phase = t_sec * speed * 0.5 - i * 0.8;
-    int intensity = (int)(60.0 * (1.0 + sin(phase)));
-    
-    if (ansi__color_level >= 3) {
-        SC_APPEND("\033[48;2;0;%d;%dm", intensity/2, intensity + 50);
-    } else if (ansi__color_level == 2) {
-        int color_base = 17;
-        if (intensity > 90) color_base = 21;
-        else if (intensity > 45) color_base = 19;
-        SC_APPEND("\033[48;5;%dm", color_base);
+/**
+ * streamCTRL_render_active_bg - print cnt0 field with active bg
+ * @str:         the string to print
+ * @len:         number of characters in str
+ * @color_level: terminal color capability (2=256, 3=TrueColor)
+ *
+ * Sets a solid green-tinted background to highlight that the
+ * stream counter is actively updating.  One escape per row.
+ */
+static inline void streamCTRL_render_active_bg(
+    const char *str,
+    int         len,
+    int         color_level
+) {
+    if(color_level >= 3)
+    {
+        SC_APPEND("\033[48;2;0;50;30m");
+    }
+    else
+    {
+        SC_APPEND("\033[48;5;22m");
+    }
+
+    for(int i = 0; i < len; i++)
+    {
+        if(sc_cursor_col < sc_term_cols &&
+           sc_framebuf_pos < SC_FRAMEBUF_SIZE - 1)
+        {
+            sc_framebuf[sc_framebuf_pos++] = str[i];
+            sc_cursor_col++;
+        }
     }
 }
+
+/**
+ * streamCTRL_print_frequ_field - print frequency with colored bg
+ * @frequ:       current stream frequency in Hz
+ * @wave_age:    seconds since last cnt0 update
+ * @color_level: terminal color capability (0-3)
+ *
+ * Background brightness is proportional to log10(frequ).
+ * Visible only while the stream is active (wave_age <= 1s).
+ */
+static inline void streamCTRL_print_frequ_field(
+    double frequ,
+    double wave_age,
+    int    color_level
+) {
+    char fbuf[32];
+
+    if(frequ < 0.005) {
+        snprintf(fbuf, sizeof(fbuf), " %7s Hz", "---");
+    } else {
+        snprintf(fbuf, sizeof(fbuf), " %7.2f Hz", frequ);
+    }
+
+    /* No background when inactive or terminal too basic. */
+    if(color_level < 2 || wave_age > 1.0) {
+        TUI_printfw("%s", fbuf);
+        return;
+    }
+
+    double log_br = 0.0;
+    if(frequ >= 1.0) {
+        log_br = log10(frequ) / log10(9999.0);
+    }
+    if(log_br > 1.0) log_br = 1.0;
+
+    if(color_level >= 3) {
+        int r = (int)(  10.0 * log_br);
+        int g = (int)( 180.0 * log_br);
+        int b = (int)(  80.0 * log_br);
+        SC_APPEND("\033[48;2;%d;%d;%dm", r, g, b);
+    } else {
+        int idx = (int)(5.0 * log_br);
+        static const int ramp[6] = {
+            17, 23, 29, 35, 41, 47
+        };
+        SC_APPEND("\033[48;5;%dm",
+                  ramp[idx < 6 ? idx : 5]);
+    }
+
+    TUI_printfw("%s", fbuf);
+    SC_APPEND("\033[0m");
+}
+
 
 
 
@@ -321,6 +387,11 @@ static errno_t streamCTRL_keyinput_process(
         sTUIparam.SORT_TOGGLE = 1;
         break;
 
+    case '4': // sort by 1-sec averaged frequency
+        sTUIparam.SORTING     = 4;
+        sTUIparam.SORT_TOGGLE = 1;
+        break;
+
     case 'f': // stream name filter toggle
         if(streamCTRLdata->streaminfoproc->filter == 0)
         {
@@ -364,10 +435,21 @@ static errno_t streamCTRL_keyinput_process(
     case 's': // toggle all sems / 2 sems
         sTUIparam.DISPLAY_ALL_SEMS = !sTUIparam.DISPLAY_ALL_SEMS;
         break;
+
+    case 'r': // force full screen redraw
+        if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
+        break;
     }
     return EXIT_SUCCESS;
 }
 
+static STREAMINFO *g_streaminfo_qsort = NULL;
+static int cmp_stream_name(const void *a, const void *b)
+{
+    long indexA = *(const long*)a;
+    long indexB = *(const long*)b;
+    return strcmp(g_streaminfo_qsort[indexA].sname, g_streaminfo_qsort[indexB].sname);
+}
 
 /**
  * @brief Control screen for stream structures
@@ -390,7 +472,7 @@ errno_t streamCTRL_CTRLscreen(void)
     sTUIparam.DISPLAY_ALL_SEMS = 1; // Display all semaphores / just the first 2.
     sTUIparam.fuserScan = 0;
     sTUIparam.SORT_TOGGLE = 0;
-    sTUIparam.frequ = 32.0; // Hz
+    sTUIparam.frequ = 10.0; // Hz
 
 
     int stringmaxlen = 300;
@@ -440,11 +522,16 @@ errno_t streamCTRL_CTRLscreen(void)
     streaminfo = (STREAMINFO *) malloc(sizeof(STREAMINFO) * streamNBID_MAX);
     for(int sindex = 0; sindex < streamNBID_MAX; sindex++)
     {
+        streaminfo[sindex].ID                   = -1;
+        streaminfo[sindex].ISIOretval           = IMAGESTREAMIO_FILEOPEN;
         streaminfo[sindex].updatevalue          = 0.0;
         streaminfo[sindex].updatevalue_frozen   = 0.0;
         streaminfo[sindex].cnt0                 = 0;
         streaminfo[sindex].streamOpenPID_status = 0;
         streaminfo[sindex].erased               = 0;
+        streaminfo[sindex].frequ_disp           = 0.0;
+        streaminfo[sindex].t_avg_start          = 0.0;
+        streaminfo[sindex].cnt0_avg_start       = 0;
     }
     streaminfoproc.PIDtable = PIDname_array;
 
@@ -492,7 +579,7 @@ errno_t streamCTRL_CTRLscreen(void)
 
     streaminfoproc.filter       = 0;
     streaminfoproc.NBstream     = 0;
-    streaminfoproc.twaitus      = 50000; // 20 Hz
+    streaminfoproc.twaitus      = 100000; // 10 Hz
     streaminfoproc.fuserUpdate0 = 1;     //update on first instance
 
     // inodes that are upstream of current selection
@@ -550,7 +637,10 @@ errno_t streamCTRL_CTRLscreen(void)
     {
         DEBUG_TRACEPOINT("loop start");
 
-        int NBsinfodisp = wrow - 7;
+        /* Rough estimate used only for the "Currently displaying" status
+         * string in the header. The accurate value is computed below
+         * via sc_cursor_row after all headers have been drawn. */
+        int NBsinfodisp = wrow - 6;
         if(NBsinfodisp < 1)
         {
             NBsinfodisp = 1;
@@ -565,21 +655,31 @@ errno_t streamCTRL_CTRLscreen(void)
 
         //if(fuserUpdate != 1) // don't wait if ongoing fuser scan
 
-        usleep((long)(1000000.0 / sTUIparam.frequ));
+        {
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = (long)(1000000.0 / sTUIparam.frequ);
+
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(STDIN_FILENO, &fds);
+
+            select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+        }
         DEBUG_TRACEPOINT(" ");
 
-        int ch = ansi_get_key();
+        int ch;
+        while((ch = ansi_get_key()) != ANSI_KEY_NONE)
+        {
+            DEBUG_TRACEPOINT("Process input character");
+            streamCTRL_keyinput_process(ch, &streamCTRLdata);
+            DEBUG_TRACEPOINT("Input character processed");
+        }
 
         sTUIparam.NBsindex = streaminfoproc.NBstream;
         DEBUG_TRACEPOINT(" ");
 
         TUI_clearscreen(&wrow, &wcol);
-
-        DEBUG_TRACEPOINT("Process input character");
-        streamCTRL_keyinput_process(ch, &streamCTRLdata);
-
-
-        DEBUG_TRACEPOINT("Input character processed");
 
         if(sTUIparam.dindexSelected < 0)
         {
@@ -603,7 +703,9 @@ errno_t streamCTRL_CTRLscreen(void)
                  getpid());
         //streamCTRL__print_header(monstring, '-');
         DEBUG_TRACEPOINT("Print header");
+        screenprint_setcolor(12);
         TUI_print_header(monstring, '-');
+        screenprint_unsetcolor(12);
         //attroff(A_BOLD);
         screenprint_unsetbold();
 
@@ -649,6 +751,7 @@ errno_t streamCTRL_CTRLscreen(void)
             print_help_entry("2", "Sort by recently updated");
             print_help_entry("3", "Sort by process access");
             print_help_entry("s", "Show 3 semaphores / all semaphores");
+            print_help_entry("r", "Force full screen redraw");
             print_help_entry("F", "Set match string pattern");
             print_help_entry("f", "Toggle apply match string to stream");
         }
@@ -658,11 +761,13 @@ errno_t streamCTRL_CTRLscreen(void)
             /* Tab bar — rendered from TAB_LIST */
 #define RENDER_ONE_TAB(mode, key, label) \
     { \
+        screenprint_setcolor(7); \
         if (sTUIparam.DisplayMode == (mode)) \
             screenprint_setreverse(); \
         TUI_printfw("[%s] %s", (key), (label)); \
         if (sTUIparam.DisplayMode == (mode)) \
             screenprint_unsetreverse(); \
+        screenprint_unsetcolor(7); \
         TUI_printfw("   "); \
     }
 
@@ -808,9 +913,27 @@ errno_t streamCTRL_CTRLscreen(void)
             }
 
             screenprint_unsetbold();
-            //attroff(A_BOLD);
 
-            DEBUG_TRACEPOINT(" ");
+            /* Recompute exact list height now that all header rows have
+             * been drawn.  sc_cursor_row is the next row to be written;
+             * we want list rows from here to (wrow - 1), keeping the
+             * very last row (wrow) for the footer bar. */
+            NBsinfodisp = (int)wrow - sc_cursor_row - 1;
+            if(NBsinfodisp < 1)
+            {
+                NBsinfodisp = 1;
+            }
+
+            /* Recompute lastindex with accurate NBsinfodisp. */
+            lastindex = doffsetindex + NBsinfodisp;
+            if(lastindex > sTUIparam.NBsindex - 1)
+            {
+                lastindex = sTUIparam.NBsindex - 1;
+            }
+            if(lastindex < 0)
+            {
+                lastindex = 0;
+            }
 
             // SORT
 
@@ -820,7 +943,9 @@ errno_t streamCTRL_CTRLscreen(void)
             {
                 if(streaminfo[sindex].erased == 1) continue;
                 imageID ID = streaminfo[sindex].ID;
-                if(streamCTRLimages[ID].used == 0) continue;
+                /* ID == -1 means discovered but not yet mmap'd.
+                 * Include it so names appear immediately. */
+                if(ID >= 0 && streamCTRLimages[ID].used == 0) continue;
 
                 sTUIparam.ssindex[sTUIparam.NBsindex] = sindex;
                 sTUIparam.NBsindex++;
@@ -846,19 +971,8 @@ errno_t streamCTRL_CTRLscreen(void)
                     larray[sindex] = sindex;
                 }
 
-                for(int sindex0 = 0; sindex0 < sTUIparam.NBsindex - 1; sindex0++)
-                {
-                    for(int sindex1 = sindex0 + 1; sindex1 < sTUIparam.NBsindex; sindex1++)
-                    {
-                        if(strcmp(streaminfo[larray[sindex0]].sname,
-                                  streaminfo[larray[sindex1]].sname) > 0)
-                        {
-                            int tmpindex    = larray[sindex0];
-                            larray[sindex0] = larray[sindex1];
-                            larray[sindex1] = tmpindex;
-                        }
-                    }
-                }
+                g_streaminfo_qsort = streaminfo;
+                qsort(larray, sTUIparam.NBsindex, sizeof(long), cmp_stream_name);
 
                 for(long dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
                 {
@@ -919,6 +1033,37 @@ errno_t streamCTRL_CTRLscreen(void)
 
             DEBUG_TRACEPOINT(" ");
 
+            if(sTUIparam.SORTING == 4) // sort by 1-sec averaged frequency
+            {
+                long   *larray;
+                double *varray;
+                larray = (long *) malloc(sizeof(long) * sTUIparam.NBsindex);
+                varray = (double *) malloc(sizeof(double) * sTUIparam.NBsindex);
+
+                for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
+                {
+                    larray[sindex] = sindex;
+                    varray[sindex] = streaminfo[sindex].frequ_disp;
+                }
+
+                if(sTUIparam.NBsindex > 1)
+                {
+                    quick_sort2l(varray, larray, sTUIparam.NBsindex);
+                }
+
+                /* Highest frequency first (reverse order). */
+                for(long dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
+                {
+                    sTUIparam.ssindex[sTUIparam.NBsindex - dindex - 1] =
+                        larray[dindex];
+                }
+
+                free(larray);
+                free(varray);
+            }
+
+            DEBUG_TRACEPOINT(" ");
+
             // compute doffsetindex
             // Clamp scroll margins for small terminals
             {
@@ -967,6 +1112,18 @@ errno_t streamCTRL_CTRLscreen(void)
                     sTUIparam.dindexSelected - NBsinfodisp + 1;
             }
 
+            {
+                long max_doffsetindex = sTUIparam.NBsindex - NBsinfodisp;
+                if(max_doffsetindex < 0)
+                {
+                    max_doffsetindex = 0;
+                }
+                if(doffsetindex > max_doffsetindex)
+                {
+                    doffsetindex = max_doffsetindex;
+                }
+            }
+
             if(doffsetindex < 0)
             {
                 doffsetindex = 0;
@@ -980,14 +1137,22 @@ errno_t streamCTRL_CTRLscreen(void)
             int DisplayFlag = 0;
 
             int print_pid_mode = PRINT_PID_DEFAULT;
+
+            /* Hoist time and color-level detection out of the per-stream loop
+             * to avoid N system calls and repeated env-var checks per frame. */
+            struct timespec frame_ts;
+            clock_gettime(CLOCK_MONOTONIC, &frame_ts);
+            double frame_t_sec = frame_ts.tv_sec + frame_ts.tv_nsec * 1e-9;
+
+            ansi_detect_color_level();
+            int frame_color_level = ansi__color_level;
+
+
             for(int dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
             {
                 imageID ID;
                 int sindex = sTUIparam.ssindex[dindex];
                 ID     = streaminfo[sindex].ID;
-
-                // Stream is guaranteed active and not erased
-
 
                 int downstreammin = NO_DOWNSTREAM_INDEX;
                 // minumum downstream index
@@ -1021,6 +1186,36 @@ errno_t streamCTRL_CTRLscreen(void)
                 }
 
                 DEBUG_TRACEPOINT(" ");
+
+                /* Stream name discovered but SHM not yet opened. Show
+                 * just the name in dim style until connection is ready. */
+                if(ID < 0)
+                {
+                    if(DisplayFlag == 1)
+                    {
+                        if(dindex == sTUIparam.dindexSelected)
+                        {
+                            screenprint_setreverse();
+                        }
+
+                        screenprint_setcolor(4);
+                        TUI_printfw("          %-*.*s  ...",
+                                    DispName_NBchar,
+                                    DispName_NBchar,
+                                    streaminfo[sindex].sname);
+                        screenprint_unsetcolor(4);
+
+                        if(dindex == sTUIparam.dindexSelected)
+                        {
+                            screenprint_unsetreverse();
+                        }
+                        
+                        TUI_newline();
+                    }
+                    continue;
+                }
+
+                // Stream is guaranteed active and not erased
 
 
                 if(streaminfo[sindex].ISIOretval != IMAGESTREAMIO_SUCCESS)
@@ -1134,36 +1329,38 @@ errno_t streamCTRL_CTRLscreen(void)
                     }
                     else
                     {
-                        DEBUG_TRACEPOINT("%d, %s, ID = %ld, used = %d, name= %s, ISIOcode= %d (OK = %d)",
-                                         sindex,
-                                         streaminfo[sindex].sname,
-                                         streaminfo[sindex].ID,
-                                         streamCTRLimages[ID].used,
-                                         streamCTRLimages[ID].name,
-                                         streaminfo[sindex].ISIOretval,
-                                         IMAGESTREAMIO_SUCCESS);
-
-
-                        print_pid_mode = PRINT_PID_DEFAULT;
-                        if(streamCTRLimages[ID].used == 1)
+                        if(DisplayFlag == 1)
                         {
-                            for(int spti = 0;
-                                    spti < streamCTRLimages[ID].md->NBproctrace;
-                                    spti++)
+                            DEBUG_TRACEPOINT("%d, %s, ID = %ld, used = %d, name= %s, ISIOcode= %d (OK = %d)",
+                                             sindex,
+                                             streaminfo[sindex].sname,
+                                             streaminfo[sindex].ID,
+                                             streamCTRLimages[ID].used,
+                                             streamCTRLimages[ID].name,
+                                             streaminfo[sindex].ISIOretval,
+                                             IMAGESTREAMIO_SUCCESS);
+
+                            print_pid_mode = PRINT_PID_DEFAULT;
+                            if(streamCTRLimages[ID].used == 1)
                             {
-                                ino_t inode = streamCTRLimages[ID]
-                                              .streamproctrace[spti]
-                                              .trigger_inode;
-                                if(inode == inodeselected)
+                                for(int spti = 0;
+                                        spti < streamCTRLimages[ID].md->NBproctrace;
+                                        spti++)
                                 {
-                                    if(spti < downstreammin)
+                                    ino_t inode = streamCTRLimages[ID]
+                                                  .streamproctrace[spti]
+                                                  .trigger_inode;
+                                    if(inode == inodeselected)
                                     {
-                                        downstreammin = spti;
+                                        if(spti < downstreammin)
+                                        {
+                                            downstreammin = spti;
+                                        }
                                     }
                                 }
                             }
+                            DEBUG_TRACEPOINT(" ");
                         }
-                        DEBUG_TRACEPOINT(" ");
                     }
 
                     DEBUG_TRACEPOINT(" ");
@@ -1203,19 +1400,23 @@ errno_t streamCTRL_CTRLscreen(void)
                                      streaminfo[sindex].sname,
                                      streaminfo[sindex].linkname);
 
+                            screenprint_setbold();
                             screenprint_setcolor(5);
                             TUI_printfw("%-*.*s",
                                         DispName_NBchar,
                                         DispName_NBchar,
                                         namestring);
                             screenprint_unsetcolor(5);
+                            screenprint_unsetbold();
                         }
                         else
                         {
+                            screenprint_setbold();
                             TUI_printfw("%-*.*s",
                                         DispName_NBchar,
                                         DispName_NBchar,
                                         streaminfo[sindex].sname);
+                            screenprint_unsetbold();
                         }
 
                         /*if((int) strlen(streaminfo[sindex].sname) > DispName_NBchar)
@@ -1342,28 +1543,61 @@ errno_t streamCTRL_CTRLscreen(void)
                                      streamCTRLimages[ID].md[0].cnt0);
                         }
                         
-                        if(streaminfo[sindex].deltacnt0 == 0)
+                        double t_sec = frame_t_sec;
+
+                        /* Update holdoff timestamp whenever the stream is active. */
+                        if(streaminfo[sindex].deltacnt0 != 0)
                         {
-                            TUI_printfw("%s", string);
+                            streaminfo[sindex].last_wave_t = t_sec;
                         }
-                        else
+
+                        double wave_age = t_sec - streaminfo[sindex].last_wave_t;
+
+                        /* 1-second block average of cnt0 update frequency.
+                         * When the 1-s window expires, compute freq from the
+                         * accumulated Δcnt0 and reset the window. */
+                        if(streamCTRLimages[ID].md != NULL)
                         {
-                            struct timespec ts;
-                            clock_gettime(CLOCK_MONOTONIC, &ts);
-                            double t_sec = ts.tv_sec + ts.tv_nsec * 1e-9;
-                            
+                            uint64_t cnt0now = streamCTRLimages[ID].md[0].cnt0;
+                            double   dt_avg  = t_sec
+                                               - streaminfo[sindex].t_avg_start;
+
+                            if(dt_avg >= 1.0)
+                            {
+                                uint64_t dcnt = cnt0now
+                                                - streaminfo[sindex].cnt0_avg_start;
+                                streaminfo[sindex].frequ_disp     =
+                                    (double) dcnt / dt_avg;
+                                streaminfo[sindex].cnt0_avg_start = cnt0now;
+                                streaminfo[sindex].t_avg_start    = t_sec;
+                            }
+                        }
+
+                        /* Highlight cnt0 field when counter is
+                         * actively changing (within 1s holdoff). */
+                        if(wave_age <= 1.0 && frame_color_level >= 2)
+                        {
                             int len_cnt = strlen(string);
                             screenprint_setcolor(2);
-                            for(int c_idx = 0; c_idx < len_cnt; c_idx++) {
-                                streamCTRL_set_wave_bg(c_idx, t_sec, streaminfo[sindex].updatevalue);
-                                TUI_printfw("%c", string[c_idx]);
-                            }
+                            streamCTRL_render_active_bg(
+                                string, len_cnt,
+                                frame_color_level);
                             SC_APPEND("\033[0m");
-                            
-                            if((dindex == sTUIparam.dindexSelected) && (sTUIparam.DisplayDetailLevel == 0)) {
+
+                            if((dindex ==
+                                sTUIparam.dindexSelected) &&
+                               (sTUIparam.DisplayDetailLevel
+                                == 0))
+                            {
                                 screenprint_setreverse();
                             }
                         }
+                        else
+                        {
+                            TUI_printfw("%s", string);
+                        }
+
+
 
                         // creatorPID
                         // ownerPID
@@ -1402,23 +1636,10 @@ errno_t streamCTRL_CTRLscreen(void)
                         }
                         else
                         {
-                            snprintf(string,
-                                     stringlen,
-                                     " %*.2f Hz",
-                                     Dispfreq_NBchar,
-                                     streaminfo[sindex].updatevalue);
-                            
-                            double f = streaminfo[sindex].updatevalue;
-                            int f_color = 0;
-                            if (f == 0.0) f_color = 0;
-                            else if (f < 1.0) f_color = 4;
-                            else if (f < 10.0) f_color = 3;
-                            else if (f < 100.0) f_color = 2;
-                            else f_color = 12;
-                            
-                            screenprint_setcolor(f_color);
-                            TUI_printfw("%s", string);
-                            screenprint_unsetcolor(f_color);
+                            streamCTRL_print_frequ_field(
+                                streaminfo[sindex].frequ_disp,
+                                wave_age,
+                                frame_color_level);
                         }
                     }
 
@@ -1429,11 +1650,6 @@ errno_t streamCTRL_CTRLscreen(void)
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_SUMMARY) &&
                                 (DisplayFlag == 1)) // sem vals
                         {
-                            snprintf(string,
-                                     stringlen,
-                                     " %3d sems ",
-                                     streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw("%s", string);
 
                             int s;
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
@@ -1461,12 +1677,6 @@ errno_t streamCTRL_CTRLscreen(void)
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_WRITE) &&
                                 (DisplayFlag == 1)) // sem write PIDs
                         {
-                            snprintf(string,
-                                     stringlen,
-                                     " %3d sems ",
-                                     streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw("%s", string);
-
                             {
                                 pid_t pid = streamCTRLimages[ID].semWritePID[0];
                                 TUI_printfw(" ");
@@ -1583,12 +1793,6 @@ errno_t streamCTRL_CTRLscreen(void)
                         if((sTUIparam.DisplayMode == DISPLAY_MODE_READ) &&
                                 (DisplayFlag == 1)) // sem read PIDs
                         {
-                            snprintf(string,
-                                     stringlen,
-                                     " %3d sems ",
-                                     streamCTRLimages[ID].md[0].sem);
-                            TUI_printfw("%s", string);
-
                             int s;
                             int max_s = sTUIparam.DISPLAY_ALL_SEMS
                                         ? streamCTRLimages[ID].md[0].sem
@@ -1861,6 +2065,50 @@ errno_t streamCTRL_CTRLscreen(void)
         }
 
         DEBUG_TRACEPOINT(" ");
+
+        /* ---- Scroll indicator footer ---- */
+        if(sTUIparam.DisplayMode != DISPLAY_MODE_HELP)
+        {
+            int above = doffsetindex;
+            int below = sTUIparam.NBsindex - (doffsetindex + NBsinfodisp);
+            if(below < 0)
+            {
+                below = 0;
+            }
+
+            if(above > 0 || below > 0)
+            {
+                screenprint_setdim();
+                if(above > 0)
+                {
+                    screenprint_setcolor(3); /* yellow */
+                    TUI_printfw(" \033[1m\xe2\x86\x91\033[22m %d above ",
+                                above);
+                    screenprint_unsetcolor(3);
+                }
+                else
+                {
+                    TUI_printfw(" -- top -- ");
+                }
+
+                TUI_printfw("|");
+
+                if(below > 0)
+                {
+                    screenprint_setcolor(3); /* yellow */
+                    TUI_printfw(" \033[1m\xe2\x86\x93\033[22m %d below ",
+                                below);
+                    screenprint_unsetcolor(3);
+                }
+                else
+                {
+                    TUI_printfw(" -- end -- ");
+                }
+                screenprint_unsetdim();
+            } /* if above > 0 || below > 0 */
+            /* No trailing TUI_newline(): TUI_cleartobottom() clears
+             * the rest of the footer row without risking a scroll. */
+        } /* scroll indicator footer */
 
         TUI_cleartobottom();
         sc_frame_flush();

@@ -53,6 +53,7 @@ int main(int argc, char *argv[])
             printf("  -h, --help     Show this help\n");
             printf("  -h1            One-line description and exit\n");
             printf("  -d DIR         Override SHM directory (default: /dev/shm)\n");
+            printf("  -w, --wave     Enable wave background animation\n");
             printf("\nKeys:\n");
             printf("  x         Exit\n");
             printf("  h         Help screen\n");
@@ -62,6 +63,12 @@ int main(int argc, char *argv[])
             printf("  +/-       Increase/decrease display rate\n");
             printf("  {/}       Decrease/increase scan rate\n");
             return 0;
+        }
+
+        if((strcmp(argv[i], "-w") == 0) ||
+           (strcmp(argv[i], "--wave") == 0))
+        {
+            setenv("MILK_STREAMCTRL_WAVE", "1", 1);
         }
 
         if((strcmp(argv[i], "-d") == 0) && (i + 1 < argc))

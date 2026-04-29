@@ -83,6 +83,12 @@ void *streamCTRL_scan(
                                 streaminfoproc->filter,
                                 streaminfoproc->namefilter);
 
+        /* Publish immediately: TUI can render stream names right away.
+         * IDs from the previous scan are still valid for already-open
+         * streams; new entries have ID=-1 from init and show as
+         * "connecting" until the loop below sets them. */
+        streaminfoproc->NBstream = NBsindex;
+
         //EXECUTE_SYSTEM_COMMAND("echo \"NBsindex = %ld\" >> IDlog.txt", NBsindex);
 
         // write stream list to file if applicable
@@ -123,6 +129,7 @@ void *streamCTRL_scan(
         }
 
         // Load into memory
+        int connections_this_loop = 0;
         for(long sindex = 0; sindex < NBsindex; sindex++)
         {
             if(streaminfo[sindex].erased == 1)
@@ -153,34 +160,44 @@ void *streamCTRL_scan(
             // if not in local memory, try to connect to stream
             if(ID == -1)
             {
-                // if not in memory, try to load
-                //
-                ID = image_get_first_ID_available_from_images(images);
-                if(ID < 0)
+                // Throttled connection to prevent blocking the scan loop
+                // and allow the UI to remain responsive during massive startup.
+                if(connections_this_loop >= 20)
                 {
-                    return NULL;
+                    // keep ID = -1, do not connect this cycle
                 }
-                /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
-                                       sindex, ID);*/
+                else
+                {
+                    connections_this_loop++;
+                    // if not in memory, try to load
+                    //
+                    ID = image_get_first_ID_available_from_images(images);
+                    if(ID < 0)
+                    {
+                        return NULL;
+                    }
+                    /*EXECUTE_SYSTEM_COMMAND("echo \"  %ld get ID = %ld\" >> IDlog.txt",
+                                           sindex, ID);*/
 
 
-                streaminfo[sindex].ISIOretval =
-                    ImageStreamIO_read_sharedmem_image_toIMAGE(
+                    streaminfo[sindex].ISIOretval =
+                        ImageStreamIO_read_sharedmem_image_toIMAGE(
+                            streaminfo[sindex].sname,
+                            &images[ID]);
+
+                    // images[ID] used to keep track of each stream, even if not successfully loaded
+                    // force used to be 1 even if load fails, so we can keep track of attempted loads
+                    images[ID].used = 1;
+                    // keep track of name
+                    strncpy(images[ID].name,
                         streaminfo[sindex].sname,
-                        &images[ID]);
+                        STRINGMAXLEN_IMAGE_NAME - 1);
+                    images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
 
-                // images[ID] used to keep track of each stream, even if not successfully loaded
-                // force used to be 1 even if load fails, so we can keep track of attempted loads
-                images[ID].used = 1;
-                // keep track of name
-                strncpy(images[ID].name,
-                    streaminfo[sindex].sname,
-                    STRINGMAXLEN_IMAGE_NAME - 1);
-                images[ID].name[STRINGMAXLEN_IMAGE_NAME - 1] = '\0';
-
-                streaminfo[sindex].deltacnt0          = 1;
-                streaminfo[sindex].updatevalue        = 1.0;
-                streaminfo[sindex].updatevalue_frozen = 1.0;
+                    streaminfo[sindex].deltacnt0          = 1;
+                    streaminfo[sindex].updatevalue        = 1.0;
+                    streaminfo[sindex].updatevalue_frozen = 1.0;
+                }
             }
             else
             {

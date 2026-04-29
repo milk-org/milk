@@ -385,96 +385,177 @@ static inline void ansi_unsetcolor(int idx)
  */
 static inline int ansi_get_key(void)
 {
-    unsigned char buf[16];
-    ssize_t       n;
+    static unsigned char buf[256];
+    static int           buf_len = 0;
+    ssize_t              n;
 
-    n = read(STDIN_FILENO, buf, sizeof(buf));
-    if(n <= 0)
+    /* Read whatever is available into the remaining buffer space */
+    n = read(STDIN_FILENO, buf + buf_len, sizeof(buf) - buf_len);
+    if(n > 0)
+    {
+        buf_len += n;
+    }
+
+    if(buf_len == 0)
     {
         return ANSI_KEY_NONE;
     }
 
-    /* single ASCII byte */
-    if(n == 1)
+    /* single ASCII byte, not ESC */
+    if(buf[0] != 0x1b)
     {
-        return (int) buf[0];
+        int key = (int) buf[0];
+        memmove(buf, buf + 1, buf_len - 1);
+        buf_len--;
+        return key;
     }
 
     /* Escape sequence */
-    if(buf[0] == 0x1b && n >= 2)
+    if(buf_len >= 2)
     {
         /* CSI sequences: ESC [ ... */
-        if(buf[1] == '[' && n >= 3)
+        if(buf[1] == '[')
         {
-            switch(buf[2])
+            if(buf_len >= 3)
             {
-            case 'A': return ANSI_KEY_UP;
-            case 'B': return ANSI_KEY_DOWN;
-            case 'C': return ANSI_KEY_RIGHT;
-            case 'D': return ANSI_KEY_LEFT;
-            case 'H': return ANSI_KEY_HOME;
-            case 'F': return ANSI_KEY_END;
-            default:  break;
-            }
+                int consumed = 0;
+                int key      = 0;
 
-            /* Extended: ESC [ <digits> ~ */
-            if(n >= 4 && buf[n - 1] == '~')
-            {
-                int code = atoi((char *) buf + 2);
-                switch(code)
+                switch(buf[2])
                 {
-                case 1:  return ANSI_KEY_HOME;
-                case 3:  return ANSI_KEY_DEL;
-                case 4:  return ANSI_KEY_END;
-                case 5:  return ANSI_KEY_PGUP;
-                case 6:  return ANSI_KEY_PGDN;
-                case 11: return ANSI_KEY_F1;
-                case 12: return ANSI_KEY_F2;
-                case 13: return ANSI_KEY_F3;
-                case 14: return ANSI_KEY_F4;
-                case 15: return ANSI_KEY_F5;
-                case 17: return ANSI_KEY_F6;
-                case 18: return ANSI_KEY_F7;
-                case 19: return ANSI_KEY_F8;
-                case 20: return ANSI_KEY_F9;
-                case 21: return ANSI_KEY_F10;
-                case 23: return ANSI_KEY_F11;
-                case 24: return ANSI_KEY_F12;
-                default: break;
+                case 'A': key = ANSI_KEY_UP; consumed = 3; break;
+                case 'B': key = ANSI_KEY_DOWN; consumed = 3; break;
+                case 'C': key = ANSI_KEY_RIGHT; consumed = 3; break;
+                case 'D': key = ANSI_KEY_LEFT; consumed = 3; break;
+                case 'H': key = ANSI_KEY_HOME; consumed = 3; break;
+                case 'F': key = ANSI_KEY_END; consumed = 3; break;
+                default:  break;
+                }
+
+                if(key)
+                {
+                    memmove(buf, buf + consumed, buf_len - consumed);
+                    buf_len -= consumed;
+                    return key;
+                }
+
+                /* Extended: ESC [ <digits> ~ */
+                int tilde_idx = -1;
+                for(int i = 2; i < buf_len && i < 10; i++)
+                {
+                    if(buf[i] == '~')
+                    {
+                        tilde_idx = i;
+                        break;
+                    }
+                    if(buf[i] >= 0x40 && buf[i] <= 0x7E)
+                    {
+                        break; /* Other terminator */
+                    }
+                }
+
+                if(tilde_idx != -1)
+                {
+                    int code = atoi((char *) buf + 2);
+                    consumed = tilde_idx + 1;
+                    switch(code)
+                    {
+                    case 1:  key = ANSI_KEY_HOME; break;
+                    case 3:  key = ANSI_KEY_DEL; break;
+                    case 4:  key = ANSI_KEY_END; break;
+                    case 5:  key = ANSI_KEY_PGUP; break;
+                    case 6:  key = ANSI_KEY_PGDN; break;
+                    case 11: key = ANSI_KEY_F1; break;
+                    case 12: key = ANSI_KEY_F2; break;
+                    case 13: key = ANSI_KEY_F3; break;
+                    case 14: key = ANSI_KEY_F4; break;
+                    case 15: key = ANSI_KEY_F5; break;
+                    case 17: key = ANSI_KEY_F6; break;
+                    case 18: key = ANSI_KEY_F7; break;
+                    case 19: key = ANSI_KEY_F8; break;
+                    case 20: key = ANSI_KEY_F9; break;
+                    case 21: key = ANSI_KEY_F10; break;
+                    case 23: key = ANSI_KEY_F11; break;
+                    case 24: key = ANSI_KEY_F12; break;
+                    default: break;
+                    }
+                    if(key)
+                    {
+                        memmove(buf, buf + consumed, buf_len - consumed);
+                        buf_len -= consumed;
+                        return key;
+                    }
+                }
+
+                /* CTRL+Arrow: ESC [ 1 ; 5 C/D */
+                if(buf_len >= 6 && buf[2] == '1' && buf[3] == ';' && buf[4] == '5')
+                {
+                    if(buf[5] == 'D')
+                    {
+                        key = ANSI_KEY_CTRL_LEFT;
+                        consumed = 6;
+                    }
+                    else if(buf[5] == 'C')
+                    {
+                        key = ANSI_KEY_CTRL_RIGHT;
+                        consumed = 6;
+                    }
+
+                    if(key)
+                    {
+                        memmove(buf, buf + consumed, buf_len - consumed);
+                        buf_len -= consumed;
+                        return key;
+                    }
+                }
+
+                /* Unrecognized or partial CSI sequence */
+                /* If it has a terminator letter, consume it */
+                for(int i = 2; i < buf_len; i++)
+                {
+                    if(buf[i] >= 0x40 && buf[i] <= 0x7E)
+                    {
+                        memmove(buf, buf + i + 1, buf_len - (i + 1));
+                        buf_len -= (i + 1);
+                        return ANSI_KEY_NONE;
+                    }
                 }
             }
-
-            /* CTRL+Arrow: ESC [ 1 ; 5 C/D */
-            if(n >= 6 && buf[2] == '1'
-                      && buf[3] == ';'
-                      && buf[4] == '5')
-            {
-                if(buf[5] == 'D') return ANSI_KEY_CTRL_LEFT;
-                if(buf[5] == 'C') return ANSI_KEY_CTRL_RIGHT;
-            }
+            /* Need more bytes for CSI */
+            return ANSI_KEY_NONE;
         }
 
         /* SS3 sequences: ESC O ... (xterm F1-F4) */
-        if(buf[1] == 'O' && n >= 3)
+        if(buf[1] == 'O')
         {
-            switch(buf[2])
+            if(buf_len >= 3)
             {
-            case 'P': return ANSI_KEY_F1;
-            case 'Q': return ANSI_KEY_F2;
-            case 'R': return ANSI_KEY_F3;
-            case 'S': return ANSI_KEY_F4;
-            default:  break;
+                int key      = 0;
+                int consumed = 3;
+                switch(buf[2])
+                {
+                case 'P': key = ANSI_KEY_F1; break;
+                case 'Q': key = ANSI_KEY_F2; break;
+                case 'R': key = ANSI_KEY_F3; break;
+                case 'S': key = ANSI_KEY_F4; break;
+                default:  break;
+                }
+                memmove(buf, buf + consumed, buf_len - consumed);
+                buf_len -= consumed;
+                return key ? key : ANSI_KEY_NONE;
             }
+            return ANSI_KEY_NONE;
         }
 
-        /* bare ESC */
-        if(n == 2 && buf[1] == 0x1b)
-        {
-            return 0x1b;
-        }
+        /* bare ESC or alt+key */
+        /* For now, just return ESC and consume 1 byte */
+        memmove(buf, buf + 1, buf_len - 1);
+        buf_len--;
+        return 0x1b;
     }
 
-    return (int) buf[0];
+    /* Wait for more bytes for escape sequence */
+    return ANSI_KEY_NONE;
 }
 
 #endif /* _STREAMCTRL_ANSI_H */
