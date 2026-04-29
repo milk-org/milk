@@ -1014,24 +1014,40 @@ int main(int argc, char *argv[]) { \
         X_HELP_V2_FILL_TYPESTR_(type, type_str);\
         X_HELP_V2_FILL_VALSTR_(type, ptr, \
                                val_str); \
+        const char *_trig_tag = ""; \
+        const char *_trig_rst = ""; \
+        if ((flag) & FPFLAG_TRIGGER_STREAM) { \
+            if (show_help_color) { \
+                _trig_tag = \
+                    " \033[48;5;23m" \
+                    "\033[38;2;80;220;220m" \
+                    " [TRIGGER] " \
+                    "\033[0m"; \
+            } else { \
+                _trig_tag = " [TRIGGER]"; \
+            } \
+        } \
         if (show_help_color) { \
             const char *_clr = is_primary \
                 ? COLORPRIMARY : COLORARGnotCLI;\
             printf("  %s %s%-*s%s" \
-                   " %-*s %-*s %s\n", \
+                   " %-*s %-*s %s%s\n", \
                    cli_idx_str, \
                    _clr, col_kw_w, disp_kw, \
                    COLORRESET, \
                    col_tp_w, type_str, \
-                   col_df_w, val_str, desc); \
+                   col_df_w, val_str, \
+                   desc, _trig_tag); \
         } else { \
             printf("  %s %-*s %-*s" \
-                   " %-*s %s\n", \
+                   " %-*s %s%s\n", \
                    cli_idx_str, \
                    col_kw_w, disp_kw, \
                    col_tp_w, type_str, \
-                   col_df_w, val_str, desc); \
+                   col_df_w, val_str, \
+                   desc, _trig_tag); \
         } \
+        (void) _trig_rst; \
         if (is_primary) CLIargcnt++; \
     }
 
@@ -1198,6 +1214,7 @@ int main(int argc, char *argv[]) { \
         = ""; \
     int use_tmux = 0; \
     int use_procinfo = 0; \
+    int use_loop = 0; \
     int show_help = 0; \
     int show_h1 = 0; \
     int show_help_color = 1; \
@@ -1241,6 +1258,12 @@ int main(int argc, char *argv[]) { \
                    "-procinfo") == 0 || \
             strcmp(argv[i], \
                    "--procinfo") == 0) { \
+            use_procinfo = 1; \
+        } else if (strcmp(argv[i], \
+                   "-loop") == 0 || \
+            strcmp(argv[i], \
+                   "--loop") == 0) { \
+            use_loop = 1; \
             use_procinfo = 1; \
         } else if ((strcmp(argv[i], "-k") == 0 ||\
             strcmp(argv[i], \
@@ -1374,6 +1397,26 @@ int main(int argc, char *argv[]) { \
                    COLORRESET \
                    " Auto-init + set" \
                    " args + run.\n\n"); \
+            printf(COLORHEADER "Options:" \
+                   COLORRESET "\n"); \
+            printf("  " COLOROPTION "-tmux" \
+                   COLORRESET \
+                   "       Run inside " \
+                   "tmux session.\n"); \
+            printf("  " COLOROPTION "-procinfo" \
+                   COLORRESET \
+                   "   Enable " \
+                   "processinfo.\n"); \
+            printf("  " COLOROPTION "-loop" \
+                   COLORRESET \
+                   "       Enable procinfo +" \
+                   " semaphore trigger +" \
+                   " infinite loop.\n"); \
+            printf("  " COLOROPTION \
+                   "-n NAME" \
+                   COLORRESET \
+                   "   Set FPS instance" \
+                   " name.\n\n"); \
         } else { \
             printf("  fpsinit    Create the " \
                    "FPS.\n"); \
@@ -1395,6 +1438,17 @@ int main(int argc, char *argv[]) { \
                    " args (. to skip).\n"); \
             printf("  exec [args] Auto-init +" \
                    " set args + run.\n\n"); \
+            printf("Options:\n"); \
+            printf("  -tmux       Run inside" \
+                   " tmux session.\n"); \
+            printf("  -procinfo   Enable" \
+                   " processinfo.\n"); \
+            printf("  -loop       Enable" \
+                   " procinfo + semaphore" \
+                   " trigger +" \
+                   " infinite loop.\n"); \
+            printf("  -n NAME     Set FPS" \
+                   " instance name.\n\n"); \
         } \
         int col_kw_w = 7; \
         int col_tp_w = 4; \
@@ -1587,6 +1641,27 @@ int main(int argc, char *argv[]) { \
                     } \
                 } \
             } \
+            /* Set CLI args into FPS before \
+             * dispatching runstart to tmux */ \
+            { \
+                FUNCTION_PARAMETER_STRUCT fs_; \
+                if (function_parameter_struct_connect(\
+                        fps_name, &fs_, \
+                        FPSCONNECT_SIMPLE) != -1) \
+                { \
+                    fps_process_cli_and_sync( \
+                        &fs_, farg_, \
+                        my_bindings_, \
+                        nb_bindings_); \
+                    if (use_loop) { \
+                        fps_loop_override_trigger(\
+                            &fs_, my_bindings_, \
+                            nb_bindings_); \
+                    } \
+                    function_parameter_struct_disconnect(\
+                        &fs_); \
+                } \
+            } \
             char run_arg[512] = ""; \
             if (strcmp(fps_name, \
                       (APP_INFO).fps_name) != 0)\
@@ -1602,6 +1677,11 @@ int main(int argc, char *argv[]) { \
             } \
             if (use_procinfo) { \
                 strncat(run_arg, " -procinfo", \
+                        sizeof(run_arg) \
+                        - strlen(run_arg) - 1); \
+            } \
+            if (use_loop) { \
+                strncat(run_arg, " -loop", \
                         sizeof(run_arg) \
                         - strlen(run_arg) - 1); \
             } \
@@ -1692,6 +1772,19 @@ int main(int argc, char *argv[]) { \
                 } \
             } \
         } \
+        /* Apply -loop overrides before run */ \
+        if (use_loop) { \
+            FUNCTION_PARAMETER_STRUCT fps_lp_; \
+            if (function_parameter_struct_connect(\
+                    fps_name, &fps_lp_, \
+                    FPSCONNECT_SIMPLE) != -1) { \
+                fps_loop_override_trigger( \
+                    &fps_lp_, my_bindings_, \
+                    nb_bindings_); \
+                function_parameter_struct_disconnect(\
+                    &fps_lp_); \
+            } \
+        } \
         return fps_generic_run(fps_name, \
             (FPS_APP_INFO *)&(APP_INFO), \
             farg_, my_bindings_, nb_bindings_, \
@@ -1699,6 +1792,19 @@ int main(int argc, char *argv[]) { \
     } else if (strcmp(command, \
                       "runstart") == 0 || \
                strcmp(command, "run") == 0) { \
+        /* Apply -loop overrides before run */ \
+        if (use_loop) { \
+            FUNCTION_PARAMETER_STRUCT fps_lp_; \
+            if (function_parameter_struct_connect(\
+                    fps_name, &fps_lp_, \
+                    FPSCONNECT_SIMPLE) != -1) { \
+                fps_loop_override_trigger( \
+                    &fps_lp_, my_bindings_, \
+                    nb_bindings_); \
+                function_parameter_struct_disconnect(\
+                    &fps_lp_); \
+            } \
+        } \
         return fps_generic_run(fps_name, \
             (FPS_APP_INFO *)&(APP_INFO), \
             farg_, my_bindings_, nb_bindings_, \
