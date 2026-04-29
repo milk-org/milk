@@ -164,27 +164,30 @@ errno_t fps_process_cli_and_sync(
          */
         int cmd_pos = -1;
         for (int j = 1; j < standalone_argc; j++) {
-            if (strcmp(standalone_argv[j],
-                       "runstart") == 0 ||
-                strcmp(standalone_argv[j],
-                       "run") == 0 ||
-                strcmp(standalone_argv[j],
-                       "exec") == 0 ||
-                strcmp(standalone_argv[j],
-                       "set") == 0 ||
-                strcmp(standalone_argv[j],
-                       "confstart") == 0 ||
-                strcmp(standalone_argv[j],
-                       "confstep") == 0 ||
-                strcmp(standalone_argv[j],
-                       "fpsinit") == 0)
+            /* Extract command part after optional
+             * 'name:' prefix */
+            const char *arg = standalone_argv[j];
+            const char *cmd_part = arg;
+            {
+                const char *cp = strchr(arg, ':');
+                if (cp != NULL)
+                    cmd_part = cp + 1;
+            }
+            if (strcmp(cmd_part, "runstart") == 0 ||
+                strcmp(cmd_part, "run") == 0 ||
+                strcmp(cmd_part, "exec") == 0 ||
+                strcmp(cmd_part, "set") == 0 ||
+                strcmp(cmd_part, "confstart") == 0 ||
+                strcmp(cmd_part, "confstep") == 0 ||
+                strcmp(cmd_part, "fpsinit") == 0)
             {
                 cmd_pos = j;
                 break;
             }
         }
 
-        /* If no explicit command, try implicit run */
+        /* If no explicit command, try implicit run
+         * (first non-flag arg) */
         if (cmd_pos == -1) {
             for (int j = 1;
                  j < standalone_argc; j++)
@@ -198,30 +201,34 @@ errno_t fps_process_cli_and_sync(
 
         if (cmd_pos != -1) {
             int cli_idx = 0;
-            for (int i = 0; i < nb_b; i++) {
-                if (!bindings[i].is_primary) {
+            for (int a = cmd_pos + 1;
+                 a < standalone_argc; a++)
+            {
+                /* Skip -flag arguments */
+                if (standalone_argv[a][0] == '-')
                     continue;
-                }
-                int arg_idx =
-                    cmd_pos + 1 + cli_idx;
-                cli_idx++;
 
-                if (arg_idx >= standalone_argc) {
+                /* Map to next primary binding */
+                while (cli_idx < nb_b &&
+                       !bindings[cli_idx].is_primary)
+                    cli_idx++;
+                if (cli_idx >= nb_b)
                     break;
-                }
 
                 long pindex =
                     functionparameter_GetParamIndex(
                         fps,
-                        bindings[i].fpskeyword);
+                        bindings[cli_idx]
+                            .fpskeyword);
                 if (pindex != -1 &&
-                    strcmp(standalone_argv[arg_idx],
+                    strcmp(standalone_argv[a],
                            ".") != 0) {
                     set_fps_value_from_string(
                         fps, pindex,
-                        bindings[i].type,
-                        standalone_argv[arg_idx]);
+                        bindings[cli_idx].type,
+                        standalone_argv[a]);
                 }
+                cli_idx++;
             }
         }
     }

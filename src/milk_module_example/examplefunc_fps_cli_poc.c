@@ -278,8 +278,8 @@ static char
       FPFLAG_DEFAULT_INPUT, "Example ONOFF") \
     X(".p_streamname", param_streamname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT_STREAM, \
-      "Example STREAMNAME (required)") \
+      FPFLAG_DEFAULT_TRIGGER_STREAM, \
+      "Example STREAMNAME (trigger)") \
     X(".p_fitsfile",   param_fitsfilename, \
       FPTYPE_FITSFILENAME, 0, \
       FPFLAG_DEFAULT_INPUT, "Example FITSFILENAME") \

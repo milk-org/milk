@@ -31,6 +31,7 @@
 #define COLOR_ERROR 4
 #define COLOR_DIRECTORY 7
 #define COLOR_BLACK_ON_WHITE 1
+#define COLOR_TRIGGER_BG 13
 
 #define SCREENPRINT_STDIO   0
 #define SCREENPRINT_NCURSES 1
@@ -218,6 +219,7 @@ static inline void screenprint_setcolor(int idx)
         case 9:  SC_APPEND("\033[38;2;255;140;0m");    break; /* orange       */
         case 10: SC_APPEND("\033[30;46m");             break; /* black on cyan */
         case 12: SC_APPEND("\033[38;2;100;255;100m");  break; /* bright-green */
+        case 13: SC_APPEND("\033[48;2;20;50;50m");     break; /* trig-stream bg */
         default: SC_APPEND("\033[0m"); break;
         }
     }
@@ -236,6 +238,7 @@ static inline void screenprint_setcolor(int idx)
         case 9:  SC_APPEND("\033[38;5;208m"); break; /* orange       */
         case 10: SC_APPEND("\033[30;46m");    break; /* black on cyan */
         case 12: SC_APPEND("\033[38;5;119m"); break; /* bright-green */
+        case 13: SC_APPEND("\033[48;5;23m");  break; /* trig-stream bg */
         default: SC_APPEND("\033[0m");     break;
         }
     }
@@ -254,6 +257,7 @@ static inline void screenprint_setcolor(int idx)
         case 9:  SC_APPEND("\033[33m"); break; /* orange -> yellow */
         case 10: SC_APPEND("\033[30;46m"); break; /* black on cyan */
         case 12: SC_APPEND("\033[92m"); break; /* bright-green */
+        case 13: SC_APPEND("\033[100m"); break; /* trig-stream bg */
         default: SC_APPEND("\033[0m");   break;
         }
     }
@@ -263,6 +267,12 @@ static inline void screenprint_unsetcolor(int idx)
 {
     (void) idx;
     SC_APPEND("\033[0m");
+}
+
+/** Reset only the background color (preserve fg attrs). */
+static inline void screenprint_unsetbgcolor(void)
+{
+    SC_APPEND("\033[49m");
 }
 
 /* =========================================================
