@@ -439,6 +439,29 @@ errno_t fpsCTRL_FPSdisplay(
             for(level = 0; level < fpsCTRLvar->currentlevel; level ++)
             {
                 int c_idx = child_index[level];
+
+                /* Determine if this row is the selected
+                 * node in the chain for this level. */
+                int is_chain_node = 0;
+                if(c_idx >= 0
+                    && c_idx < keywnode[nodechain[level]].NBchild)
+                {
+                    int v1 = keywnode[nodechain[level]]
+                        .child[c_idx];
+                    int v2 = nodechain[level + 1];
+                    if(v1 == v2)
+                    {
+                        is_chain_node = 1;
+                    }
+                }
+
+                /* Fade non-selected entries so the
+                 * active chain stands out. */
+                if(!is_chain_node)
+                {
+                    screenprint_setdim();
+                }
+
                 if(level == 0)
                 {
                     if(c_idx >= 0 && c_idx < keywnode[nodechain[0]].NBchild)
@@ -459,9 +482,7 @@ errno_t fpsCTRL_FPSdisplay(
                     int knodeindex = keywnode[nodechain[level]].child[c_idx];
 
                     // toggle highlight if node is in the chain
-                    int v1 = keywnode[nodechain[level]].child[c_idx];
-                    int v2 = nodechain[level + 1];
-                    if(v1 == v2)
+                    if(is_chain_node)
                     {
                         snode = 1;
                         screenprint_setreverse();
@@ -495,6 +516,7 @@ errno_t fpsCTRL_FPSdisplay(
                 {
                     TUI_printfw("%*s ", max_kw_width[level], " ");
                     TUI_printfw("  ");
+                    screenprint_setnormal();
                 }
             }
 

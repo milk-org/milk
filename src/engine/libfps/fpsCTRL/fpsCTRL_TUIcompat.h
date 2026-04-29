@@ -263,10 +263,13 @@ static inline void screenprint_setcolor(int idx)
     }
 }
 
+/** Reset fg+bg colors to default, preserving other attrs
+ *  (bold, dim, reverse, blink).  Use screenprint_setnormal()
+ *  for a full attribute reset. */
 static inline void screenprint_unsetcolor(int idx)
 {
     (void) idx;
-    SC_APPEND("\033[0m");
+    SC_APPEND("\033[39;49m");
 }
 
 /** Reset only the background color (preserve fg attrs). */
