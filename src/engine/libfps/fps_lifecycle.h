@@ -41,7 +41,7 @@ int fps_generic_init(
 
 
 /**
- * @brief Force trigger settings for -loop mode.
+ * @brief Force trigger settings for -loops mode.
  *
  * Scans bindings for FPFLAG_TRIGGER_STREAM. Sets
  * triggermode=SEMAPHORE, loopcntMax=-1, enabled=ON.
@@ -55,6 +55,21 @@ void fps_loop_override_trigger(
     FUNCTION_PARAMETER_STRUCT *fps,
     FPS_CLI_BINDING           *bindings,
     int                        nb_b
+);
+
+
+/**
+ * @brief Force delay-loop settings for -loopd mode.
+ *
+ * Sets triggermode=DELAY, loopcntMax=-1, enabled=ON,
+ * and writes the delay value to .procinfo.triggerdelay.
+ *
+ * @param fps       Connected FPS
+ * @param delay_sec Delay between iterations (seconds)
+ */
+void fps_loop_override_delay(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    double                     delay_sec
 );
 
 
@@ -132,6 +147,22 @@ int fps_generic_runstop(const char *fps_name);
  * @return          0 on success
  */
 int fps_generic_confstop(const char *fps_name);
+
+
+/**
+ * @brief Check if bindings contain a trigger stream.
+ *
+ * Returns 1 if at least one binding has
+ * FPFLAG_TRIGGER_STREAM set, 0 otherwise.
+ *
+ * @param bindings  Parameter bindings array
+ * @param nb_b      Number of bindings
+ * @return          1 if trigger stream found
+ */
+int fps_check_has_trigger_binding(
+    FPS_CLI_BINDING *bindings,
+    int              nb_b
+);
 
 
 #endif /* FPS_LIFECYCLE_H */
