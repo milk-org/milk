@@ -340,18 +340,40 @@ int FPSCONFSTOP_##FUNC_SUFFIX(const char *fps_name) { \
 }
 
 /** @brief Macro to generate standalone RUNSTOP function
+ *
+ * Do NOT call functionparameter_RUNstop() here.
+ * That function dispatches a runstop command to
+ * the tmux :ctrl window via send-keys, but this
+ * function is invoked FROM the :ctrl window —
+ * calling RUNstop() creates an infinite loop.
  */
 #define FPS_MAKE_STANDALONE_RUNSTOP(FUNC_SUFFIX) \
-int FPSRUNSTOP_##FUNC_SUFFIX(const char *fps_name) { \
+int FPSRUNSTOP_##FUNC_SUFFIX( \
+    const char *fps_name) \
+{ \
     FUNCTION_PARAMETER_STRUCT fps; \
-    printf("Stopping run process for '%s'\n", fps_name); \
-    if (function_parameter_struct_connect(fps_name, &fps, FPSCONNECT_SIMPLE) == -1) { \
-        fprintf(stderr, "Error: FPS '%s' not found.\n", fps_name); \
+    printf("Stopping run process for '%s'\n", \
+           fps_name); \
+    if (function_parameter_struct_connect( \
+            fps_name, &fps, \
+            FPSCONNECT_SIMPLE) == -1) \
+    { \
+        fprintf(stderr, \
+                "Error: FPS '%s' not found.\n", \
+                fps_name); \
         return 1; \
     } \
-    functionparameter_RUNstop(&fps); \
+    EXECUTE_SYSTEM_COMMAND( \
+        "tmux send-keys -t %s:run C-c" \
+        " 2>/dev/null", \
+        fps.md->name); \
+    fps.md->status &= \
+        ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;\
+    fps.md->signal |= \
+        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE; \
     function_parameter_struct_disconnect(&fps); \
-    functionparameter_FPS_processinfo_signal(fps_name, 3); \
+    functionparameter_FPS_processinfo_signal( \
+        fps_name, 3); \
     return 0; \
 }
 
