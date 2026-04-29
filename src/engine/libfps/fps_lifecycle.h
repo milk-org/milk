@@ -41,6 +41,24 @@ int fps_generic_init(
 
 
 /**
+ * @brief Force trigger settings for -loop mode.
+ *
+ * Scans bindings for FPFLAG_TRIGGER_STREAM. Sets
+ * triggermode=SEMAPHORE, loopcntMax=-1, enabled=ON.
+ * If a trigger stream is found, sets triggersname.
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter bindings array
+ * @param nb_b      Number of bindings
+ */
+void fps_loop_override_trigger(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS_CLI_BINDING           *bindings,
+    int                        nb_b
+);
+
+
+/**
  * @brief Run FPS conf loop with custom check.
  *
  * Like fps_generic_conf, but calls confcheck_fn

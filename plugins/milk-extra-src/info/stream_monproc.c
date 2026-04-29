@@ -49,7 +49,7 @@ static uint32_t cbbuffersize = 100;
 #define FPS_PARAMS(X) \
     X(".in_name", inimname, \
       FPTYPE_STREAMNAME, 1, \
-      FPFLAG_DEFAULT_INPUT, \
+      FPFLAG_DEFAULT_TRIGGER_STREAM, \
       "input image") \
     X(".tbinflag", &tbinflag, \
       FPTYPE_UINT64, 1, \
