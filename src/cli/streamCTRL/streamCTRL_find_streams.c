@@ -80,58 +80,62 @@ int find_streams(
 
                 if(S_ISLNK(buf.st_mode))  // resolve link name
                 {
-                    char  fullname[STRINGMAXLEN_FULLFILENAME];
-                    char *linknamefull;
-                    char  linkname[STRINGMAXLEN_FULLFILENAME];
+                    char  fullname_lnk[STRINGMAXLEN_FULLFILENAME];
+                    char  linkbuf[STRINGMAXLEN_FULLFILENAME];
                     int   pathOK = 1;
 
                     streaminfo[sindex].SymLink = 1;
-                    snprintf(fullname, STRINGMAXLEN_FULLFILENAME,
-                                       "%.700s/%.255s",
-                                       SHAREDSHMDIR,
-                                       dir->d_name);
-                    linknamefull = realpath(fullname, NULL);
+                    snprintf(fullname_lnk, sizeof(fullname_lnk),
+                             "%.700s/%.255s",
+                             SHAREDSHMDIR,
+                             dir->d_name);
 
-                    if(linknamefull == NULL)
+                    /* stat() follows the symlink: one syscall to check
+                     * reachability, avoiding the expensive realpath(). */
+                    struct stat target_buf;
+                    if(stat(fullname_lnk, &target_buf) == -1)
                     {
-                        pathOK = 0;
-                    }
-                    else if(access(linknamefull,
-                                   R_OK)) // file cannot be read
-                    {
-                        pathOK = 0;
+                        pathOK = 0;  /* broken or inaccessible symlink */
                     }
 
-                    if(pathOK == 0)  // file cannot be read
+                    if(pathOK == 1)
+                    {
+                        /* readlink() gives the raw target — one syscall. */
+                        ssize_t llen = readlink(fullname_lnk,
+                                                linkbuf,
+                                                sizeof(linkbuf) - 1);
+                        if(llen <= 0)
+                        {
+                            pathOK = 0;
+                        }
+                        else
+                        {
+                            linkbuf[llen] = '\0';
+                            char *bn = basename(linkbuf);
+
+                            /* Strip trailing ".im.shm" from basename. */
+                            int          lOK = 1;
+                            unsigned int ii  = 0;
+                            while((lOK == 1) && (ii < strlen(bn)))
+                            {
+                                if(bn[ii] == '.')
+                                {
+                                    bn[ii] = '\0';
+                                    lOK    = 0;
+                                }
+                                ii++;
+                            }
+                            strncpy(streaminfo[sindex].linkname,
+                                    bn,
+                                    STRINGMAXLEN_STREAMINFO_NAME - 1);
+                            streaminfo[sindex].linkname[
+                                STRINGMAXLEN_STREAMINFO_NAME - 1] = '\0';
+                        }
+                    }
+
+                    if(pathOK == 0)
                     {
                         scanentryOK = 0;
-                    }
-                    else
-                    {
-                        snprintf(linkname,
-                                 sizeof(linkname),
-                                 "%s",
-                                 basename(linknamefull));
-
-                        int          lOK = 1;
-                        unsigned int ii  = 0;
-                        while((lOK == 1) && (ii < strlen(linkname)))
-                        {
-                            if(linkname[ii] == '.')
-                            {
-                                linkname[ii] = '\0';
-                                lOK          = 0;
-                            }
-                            ii++;
-                        }
-                        strncpy(streaminfo[sindex].linkname,
-                                linkname,
-                                STRINGMAXLEN_STREAMINFO_NAME - 1);
-                    }
-
-                    if(linknamefull != NULL)
-                    {
-                        free(linknamefull);
                     }
                 }
                 else

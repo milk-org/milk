@@ -268,7 +268,30 @@ int fps_generic_runstop(const char *fps_name)
                 fps_name);
         return 1;
     }
-    functionparameter_RUNstop(&fps);
+
+    /*
+     * Do NOT call functionparameter_RUNstop() here.
+     * That function dispatches a "runstop" command
+     * to the tmux :ctrl window via send-keys, but
+     * fps_generic_runstop() is itself invoked FROM
+     * the :ctrl window — calling RUNstop() creates
+     * an infinite tmux command loop.
+     *
+     * Instead, perform the stop actions directly:
+     * 1. Send C-c to the :run window (interrupt)
+     * 2. Clear the CMDRUN status flag
+     * 3. Signal the GUI to update
+     */
+    EXECUTE_SYSTEM_COMMAND(
+        "tmux send-keys -t %s:run C-c"
+        " 2>/dev/null",
+        fps.md->name);
+
+    fps.md->status &=
+        ~FUNCTION_PARAMETER_STRUCT_STATUS_CMDRUN;
+    fps.md->signal |=
+        FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
     function_parameter_struct_disconnect(&fps);
     functionparameter_FPS_processinfo_signal(
         fps_name, 3);

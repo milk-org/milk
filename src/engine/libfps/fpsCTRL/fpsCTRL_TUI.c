@@ -165,6 +165,15 @@ inline static void fpsCTRLscreen_print_help()
     print_help_entry("CTRL+L/R", "cycle between tabs");
 
     TUI_printfw("\n");
+    TUI_printfw("============ PARAMETER EDITING\n");
+    print_help_entry("ENTER",
+        "edit selected parameter value");
+    print_help_entry("SPACE",
+        "toggle ON/OFF parameter");
+    print_help_entry("arrows",
+        "navigate tree (L/R = depth, U/D = sibling)");
+
+    TUI_printfw("\n");
     TUI_printfw("============ OTHER\n");
     print_help_entry("s", "rescan");
     print_help_entry("T/t", "initialize/kill tmux session");
