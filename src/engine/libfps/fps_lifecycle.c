@@ -24,6 +24,8 @@
 
 #include "fps_lifecycle.h"
 #include "fps_local_store.h"
+#include "fps_GetParamIndex.h"
+#include "fps_paramvalue.h"
 #include "fps_processinfo_entries.h"
 
 #include "fps_globals.h"
@@ -32,6 +34,77 @@
 
 #include "fps_CONFstop.h"
 #include "fps_processinfo.h"
+
+
+/**
+ * @brief Auto-populate processinfo from trigger stream.
+ *
+ * Scans bindings for the first FPFLAG_TRIGGER_STREAM
+ * parameter. If found and processinfo entries exist,
+ * sets:
+ *   .procinfo.triggersname  -> stream default value
+ *   .procinfo.triggermode   -> SEMAPHORE (3)
+ *   .procinfo.loopcntMax    -> -1 (infinite)
+ *   .procinfo.enabled       -> ON
+ *
+ * @param fps       Connected FPS
+ * @param bindings  Parameter bindings array
+ * @param nb_b      Number of bindings
+ */
+static void fps_autopopulate_trigger_stream(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS_CLI_BINDING           *bindings,
+    int                        nb_b
+)
+{
+    /* Find the first TRIGGER_STREAM binding */
+    const char *trigger_name = NULL;
+    for (int i = 0; i < nb_b; i++) {
+        if ((bindings[i].fpflag
+             & FPFLAG_TRIGGER_STREAM)
+            && (bindings[i].type
+                == FPTYPE_STREAMNAME))
+        {
+            /*
+             * ptr holds the default stream name
+             * buffer (char[]) for string types.
+             */
+            trigger_name =
+                (const char *) bindings[i].ptr;
+            break;
+        }
+    }
+
+    if (trigger_name == NULL) {
+        return;
+    }
+
+    if (trigger_name[0] == '\0') {
+        return;
+    }
+
+    /* Only set if .procinfo.triggersname exists */
+    int pidx =
+        functionparameter_GetParamIndex(
+            fps, ".procinfo.triggersname");
+    if (pidx < 0) {
+        return;
+    }
+
+    functionparameter_SetParamValue_STRING(
+        fps, ".procinfo.triggersname",
+        trigger_name);
+
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.triggermode",
+        PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.loopcntMax", -1);
+
+    functionparameter_SetParamValue_ONOFF(
+        fps, ".procinfo.enabled", 1);
+}
 
 
 int fps_generic_init(
@@ -100,8 +173,79 @@ int fps_generic_init(
         bindings,
         nb_b);
 
+    /* Auto-populate processinfo from trigger stream */
+    fps_autopopulate_trigger_stream(
+        &fps, bindings, nb_b);
+
     function_parameter_struct_disconnect(&fps);
     return 0;
+}
+
+
+void fps_loop_override_trigger(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    FPS_CLI_BINDING           *bindings,
+    int                        nb_b
+)
+{
+    /* Find trigger stream from bindings */
+    const char *trigger_name = NULL;
+    for (int i = 0; i < nb_b; i++) {
+        if ((bindings[i].fpflag
+             & FPFLAG_TRIGGER_STREAM)
+            && (bindings[i].type
+                == FPTYPE_STREAMNAME))
+        {
+            trigger_name =
+                (const char *) bindings[i].ptr;
+            break;
+        }
+    }
+
+    /*
+     * If no trigger stream found in bindings,
+     * try to read the current value of the
+     * .procinfo.triggersname parameter.
+     */
+    char current_ts[FUNCTION_PARAMETER_STRMAXLEN]
+        = "";
+    if (trigger_name == NULL
+        || trigger_name[0] == '\0')
+    {
+        int pidx =
+            functionparameter_GetParamIndex(
+                fps, ".procinfo.triggersname");
+        if (pidx >= 0) {
+            strncpy(
+                current_ts,
+                functionparameter_GetParamPtr_STRING(
+                    fps,
+                    ".procinfo.triggersname"),
+                sizeof(current_ts) - 1);
+            if (current_ts[0] != '\0') {
+                trigger_name = current_ts;
+            }
+        }
+    }
+
+    /* Force trigger mode and loop count */
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.triggermode",
+        PROCESSINFO_TRIGGERMODE_SEMAPHORE);
+
+    functionparameter_SetParamValue_INT64(
+        fps, ".procinfo.loopcntMax", -1);
+
+    functionparameter_SetParamValue_ONOFF(
+        fps, ".procinfo.enabled", 1);
+
+    if (trigger_name != NULL
+        && trigger_name[0] != '\0')
+    {
+        functionparameter_SetParamValue_STRING(
+            fps, ".procinfo.triggersname",
+            trigger_name);
+    }
 }
 
 
