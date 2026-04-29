@@ -86,6 +86,13 @@ typedef struct
     long      deltacnt0;
     int       erased;
 
+    double last_wave_t; /* CLOCK_MONOTONIC seconds of last deltacnt0 != 0 */
+
+    /* 1-second block average of update frequency */
+    uint64_t cnt0_avg_start; /* cnt0 at start of current 1-s window */
+    double   t_avg_start;    /* CLOCK_MONOTONIC time of window start */
+    double   frequ_disp;     /* averaged Hz displayed in TUI */
+
 } STREAMINFO;
 
 

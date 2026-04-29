@@ -28,8 +28,246 @@
 #include "fps_tmux.h"
 #include "fps_userinputsetparamvalue.h"
 #include "fps_printparameter_valuestring.h"
+#include "fps_GetTypeString.h"
 
 #define ctrl(x) ((x) & 0x1f)
+
+/**
+ * fpsCTRL_inline_edit_param - edit a parameter inline
+ * within the TUI.
+ *
+ * Shows a prompt at the bottom of the screen with
+ * parameter name, type, and current value. Accepts
+ * text input character-by-character in raw mode.
+ * ESC aborts, ENTER confirms.
+ *
+ * @fps:      FPS array
+ * @fpsindex: index into fps array
+ * @pindex:   parameter index within the FPS
+ *
+ * Return: 0 on success or abort
+ */
+static int fpsCTRL_inline_edit_param(
+    FUNCTION_PARAMETER_STRUCT *fps,
+    int                        fpsindex,
+    int                        pindex
+)
+{
+    char curval[200];
+    functionparameter_GetParamValueString(
+        &fps[fpsindex].parray[pindex],
+        curval,
+        200);
+
+    char typestr[STRINGMAXLEN_FPSTYPE];
+    functionparameter_GetTypeString(
+        fps[fpsindex].parray[pindex].type,
+        typestr);
+
+    /* Strip FPS name prefix from keyword */
+    const char *display_kw =
+        fps[fpsindex].parray[pindex].keywordfull;
+    int prefix_len = strlen(fps[fpsindex].md->name);
+    if (strncmp(display_kw,
+                fps[fpsindex].md->name,
+                prefix_len) == 0
+        && display_kw[prefix_len] == '.')
+    {
+        display_kw += prefix_len + 1;
+    }
+
+    /* Flush current frame, then draw edit bar */
+    sc_frame_flush();
+
+    /* Show cursor */
+    if (write(STDOUT_FILENO,
+              "\033[?25h", 6) < 0) {}
+
+    /* Position at bottom of terminal */
+    {
+        char posbuf[32];
+        int n = snprintf(posbuf, sizeof(posbuf),
+            "\033[%d;1H", sc_term_rows);
+        if (n > 0)
+        {
+            if (write(STDOUT_FILENO,
+                      posbuf, (size_t) n) < 0) {}
+        }
+    }
+
+    /* Clear the bottom line */
+    if (write(STDOUT_FILENO,
+              "\033[2K", 4) < 0) {}
+
+    /* Print prompt with param context */
+    {
+        char prompt[512];
+        int n;
+        if (!(fps[fpsindex].parray[pindex].fpflag
+              & FPFLAG_WRITESTATUS))
+        {
+            n = snprintf(prompt, sizeof(prompt),
+                "\033[1;31m"
+                " [%s] %s = %s  (read-only)"
+                "\033[0m",
+                typestr, display_kw, curval);
+            if (n > 0)
+            {
+                if (write(STDOUT_FILENO,
+                          prompt, (size_t) n)
+                    < 0) {}
+            }
+            /* Wait for any key, then return */
+            usleep(800000);
+            /* Drain any buffered keys */
+            while (ansi_get_key() != ANSI_KEY_NONE) {}
+            /* Hide cursor */
+            if (write(STDOUT_FILENO,
+                      "\033[?25l", 6) < 0) {}
+            return 0;
+        }
+
+        n = snprintf(prompt, sizeof(prompt),
+            "\033[1;36m"
+            " [%s] %s"
+            "\033[0m"
+            " (was: "
+            "\033[33m%s\033[0m"
+            ") new value: ",
+            typestr, display_kw, curval);
+        if (n > 0)
+        {
+            if (write(STDOUT_FILENO,
+                      prompt, (size_t) n) < 0) {}
+        }
+    }
+
+    /* Read input character-by-character */
+    char buf[200];
+    int  bufpos = 0;
+    int  maxlen = (int) sizeof(buf) - 1;
+    int  aborted = 0;
+
+    for (;;)
+    {
+        usleep(10000);
+        int key = ansi_get_key();
+
+        if (key == ANSI_KEY_NONE)
+        {
+            continue;
+        }
+
+        /* ESC — abort */
+        if (key == 27)
+        {
+            aborted = 1;
+            break;
+        }
+
+        /* ENTER — confirm */
+        if (key == 10 || key == 13)
+        {
+            break;
+        }
+
+        /* Backspace (127 or ctrl-h) */
+        if (key == 127 || key == 8)
+        {
+            if (bufpos > 0)
+            {
+                bufpos--;
+                if (write(STDOUT_FILENO,
+                          "\b \b", 3) < 0) {}
+            }
+            continue;
+        }
+
+        /* Ctrl+U — clear input */
+        if (key == ctrl('u'))
+        {
+            while (bufpos > 0)
+            {
+                bufpos--;
+                if (write(STDOUT_FILENO,
+                          "\b \b", 3) < 0) {}
+            }
+            continue;
+        }
+
+        /* Ignore non-printable / special keys */
+        if (key < 32 || key > 126)
+        {
+            continue;
+        }
+
+        /* Printable char */
+        if (bufpos < maxlen)
+        {
+            buf[bufpos++] = (char) key;
+            char echo = (char) key;
+            if (write(STDOUT_FILENO,
+                      &echo, 1) < 0) {}
+        }
+    }
+    buf[bufpos] = '\0';
+
+    /* Hide cursor */
+    if (write(STDOUT_FILENO,
+              "\033[?25l", 6) < 0) {}
+
+    if (!aborted && bufpos > 0)
+    {
+        if (functionparameter_SetParamValue_fromString(
+                &fps[fpsindex], pindex, buf) != 0)
+        {
+            /* Show error briefly */
+            char errmsg[] =
+                "\033[1;31m  ERROR: invalid value"
+                "\033[0m";
+            if (write(STDOUT_FILENO,
+                      errmsg, sizeof(errmsg) - 1)
+                < 0) {}
+            usleep(500000);
+        }
+        else
+        {
+            /* processinfo change tracking */
+            if (strncmp(
+                    fps[fpsindex]
+                        .parray[pindex]
+                        .keywordfull,
+                    ".procinfo.", 10)
+                == 0)
+            {
+                fps[fpsindex]
+                    .md->processinfo_change_cnt++;
+            }
+
+            /* Notify GUI */
+            fps[fpsindex].md->signal |=
+                FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+
+            /* Save to disk if needed */
+            if (fps[fpsindex]
+                    .parray[pindex]
+                    .fpflag
+                & FPFLAG_SAVEONCHANGE)
+            {
+                functionparameter_WriteParameterToDisk(
+                    &fps[fpsindex],
+                    pindex,
+                    "setval",
+                    "UserInputSetParamValue");
+
+                functionparameter_SaveFPS2disk(
+                    &fps[fpsindex]);
+            }
+        }
+    }
+
+    return 0;
+}
 
 int fpsCTRL_TUI_process_user_key(
     int                        ch,
@@ -59,18 +297,13 @@ int fpsCTRL_TUI_process_user_key(
             }
         }
 
-        if(ch == 545 || ch == 560 || ch == 443 || ch == 564 || ch == 554) { // CTRL+LEFT
-             fpsCTRLvar->fpsCTRL_DisplayMode--;
-             if (fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 4;
-        }
-        else if (ch == 561 || ch == 566 || ch == 444 || ch == 565 || ch == 569) { // CTRL+RIGHT
-             fpsCTRLvar->fpsCTRL_DisplayMode++;
-             if (fpsCTRLvar->fpsCTRL_DisplayMode > 4) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
-        }
-        else if (ch == 'v' || ch == 'V')
+        /* CTRL+LEFT/RIGHT handled below in the switch */
+        if (ch == 'v' || ch == 'V')
         {
             fpsCTRLvar->fpsCTRL_DisplayVerbose =
                 !fpsCTRLvar->fpsCTRL_DisplayVerbose;
+            if(write(STDOUT_FILENO,
+                     "\033[2J", 4) < 0) {}
         }
 
         switch(ch)
@@ -127,30 +360,34 @@ int fpsCTRL_TUI_process_user_key(
 
         case 'h': // help
             fpsCTRLvar->fpsCTRL_DisplayMode = 1;
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case '?': // fps log
             fpsCTRLvar->fpsCTRL_DisplayMode = 2;
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case ANSI_KEY_F2: // control
             fpsCTRLvar->fpsCTRL_DisplayMode = 3;
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case ANSI_KEY_F3: // scheduler
             fpsCTRLvar->fpsCTRL_DisplayMode = 4;
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case ANSI_KEY_CTRL_RIGHT:
             fpsCTRLvar->fpsCTRL_DisplayMode++;
             if(fpsCTRLvar->fpsCTRL_DisplayMode > 4) fpsCTRLvar->fpsCTRL_DisplayMode = 1;
-            TUI_clearscreen(NULL, NULL);
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case ANSI_KEY_CTRL_LEFT:
             fpsCTRLvar->fpsCTRL_DisplayMode--;
             if(fpsCTRLvar->fpsCTRL_DisplayMode < 1) fpsCTRLvar->fpsCTRL_DisplayMode = 4;
-            TUI_clearscreen(NULL, NULL);
+            if(write(STDOUT_FILENO, "\033[2J", 4) < 0) {}
             break;
 
         case 's' : // (re)scan
@@ -325,18 +562,54 @@ int fpsCTRL_TUI_process_user_key(
             }
             break;
 
-        case 10 : // enter key
-            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)   // this is a leaf
+        case 13 : // enter key (CR in raw mode)
+        case 10 : // enter key (LF fallback)
+            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1)
             {
-                TUI_exit();
-                if(system("clear") != 0) { } // Corrected escaping for "clear"
-                functionparameter_UserInputSetParamValue(&fps[fpsCTRLvar->fpsindexSelected],
-                        fpsCTRLvar->pindexSelected);
+                int ei = fpsCTRLvar->fpsindexSelected;
+                int ep = fpsCTRLvar->pindexSelected;
+                int etype =
+                    fps[ei].parray[ep].type;
+
+                if (etype == FPTYPE_ONOFF)
                 {
-                    short unsigned int wrow = 0, wcol = 0;
-                    TUI_init_terminal(&wrow, &wcol);
+                    /* Toggle ON/OFF inline */
+                    if (fps[ei].parray[ep].fpflag
+                        & FPFLAG_WRITESTATUS)
+                    {
+                        if (fps[ei].parray[ep].fpflag
+                            & FPFLAG_ONOFF)
+                        {
+                            fps[ei].parray[ep].fpflag
+                                &= ~FPFLAG_ONOFF;
+                            fps[ei].parray[ep]
+                                .val.i32[0] = 0;
+                        }
+                        else
+                        {
+                            fps[ei].parray[ep].fpflag
+                                |= FPFLAG_ONOFF;
+                            fps[ei].parray[ep]
+                                .val.i32[0] = 1;
+                        }
+                        if (fps[ei].parray[ep].fpflag
+                            & FPFLAG_SAVEONCHANGE)
+                        {
+                            functionparameter_WriteParameterToDisk(
+                                &fps[ei], ep,
+                                "setval",
+                                "UserInputSetParamValue");
+                        }
+                        fps[ei].parray[ep].cnt0++;
+                        fps[ei].md->signal |=
+                            FUNCTION_PARAMETER_STRUCT_SIGNAL_UPDATE;
+                    }
                 }
-                TUI_clearscreen(NULL, NULL);
+                else
+                {
+                    fpsCTRL_inline_edit_param(
+                        fps, ei, ep);
+                }
             }
             break;
 
@@ -407,19 +680,10 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
         case ctrl('r') : // stop run process
-            {
-                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
-                functionparameter_FPS_tmux_ensure(selected_fps);
-                char progexec[1024];
-                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
-                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
-                else
-                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
-                
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:runstop\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
-            }
+            fpsindex =
+                keywnode[fpsCTRLvar->nodeSelected]
+                    .fpsindex;
+            functionparameter_RUNstop(&fps[fpsindex]);
             break;
 
         case 'r' : // legacy stop run process
@@ -450,19 +714,10 @@ int fpsCTRL_TUI_process_user_key(
             break;
 
         case ctrl('o'): // stop conf process
-            {
-                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
-                FUNCTION_PARAMETER_STRUCT *selected_fps = &fps[fpsindex];
-                functionparameter_FPS_tmux_ensure(selected_fps);
-                char progexec[1024];
-                if( (strlen(selected_fps->md->execfullpath) > 0) && (strcmp(selected_fps->md->execfullpath, "unknown") != 0) )
-                    strncpy(progexec, selected_fps->md->execfullpath, 1023);
-                else
-                    snprintf(progexec, 1024, "%s-exec", selected_fps->md->callprogname);
-                
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" cd %s\" C-m", selected_fps->md->name, selected_fps->md->workdir);
-                EXECUTE_SYSTEM_COMMAND("tmux send-keys -t %s:ctrl \" %s %s:confstop\" C-m", selected_fps->md->name, progexec, selected_fps->md->name);
-            }
+            fpsindex =
+                keywnode[fpsCTRLvar->nodeSelected]
+                    .fpsindex;
+            functionparameter_CONFstop(&fps[fpsindex]);
             break;
 
         case 'c': // kill conf process
