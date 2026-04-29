@@ -224,6 +224,7 @@ and enforced. Know what they require:
 | `fpsexec-conventions.md` | V2 template, 8-section layout, `-h1` support |
 | `git-workflow.md` | Small changes direct to `framework-dev`; ask user for branch/PR on larger changes |
 | `help-consistency.md` | Cross-check all sibling help sources |
+| `local-install-test.md` | Install to `_build/_install`; never `sudo` or system paths |
 | `maintain-programmers-guide.md` | Update programmer's guide on arch changes |
 | `module-deps-declaration.md` | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros |
 | `naming-conventions.md` | File, function, variable, macro naming; loop index types |

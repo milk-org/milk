@@ -53,6 +53,7 @@ requiring you to remember every checklist.
 | fpsexec conventions | [`fpsexec-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/fpsexec-conventions.md) | V2 template, 8-section layout, `-h1` requirement. |
 | Git workflow | [`git-workflow.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/git-workflow.md) | PRs from feature branches into `framework-dev`; commit conventions. |
 | Help consistency | [`help-consistency.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/help-consistency.md) | Cross-check all sibling help sources when editing help content. |
+| Local install/test | [`local-install-test.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/local-install-test.md) | Install to `_build/_install` via `--prefix`; never use `sudo` or system paths. |
 | Programmer's Guide | [`maintain-programmers-guide.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/maintain-programmers-guide.md) | Update `docs/programmers_guide.md` on architectural changes. |
 | Module dependencies | [`module-deps-declaration.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/module-deps-declaration.md) | MODULE_DEPS and INIT_MODULE_LIB_DEPS macros. |
 | Naming conventions | [`naming-conventions.md`](https://github.com/milk-org/milk/blob/framework-dev/.agents/rules/naming-conventions.md) | File, function, variable, macro naming; loop index types. |
