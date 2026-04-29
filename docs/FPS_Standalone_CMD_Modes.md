@@ -97,7 +97,7 @@ for built-in flags and process control commands. This
 establishes the lifecycle of the shared memory FPS
 segment.
 
-- **Options:**
+- **Options** (placed before the command):
   - `-h`, `--help`: View detailed parameter bindings
     and command help.
   - `-h1`, `--help-oneline`: Print one-line description
@@ -106,9 +106,14 @@ segment.
     dispatch commands isolated from the main terminal.
   - `-n`, `--name <fpsname>`: Override the default FPS
     shared memory name.
+  - `-procinfo`: Enable processinfo entries at fpsinit.
+  - `-loops`: Infinite loop with stream semaphore
+    trigger.
+  - `-loopd <sec>`: Infinite loop with delay trigger
+    (seconds).
   - `-k`, `-d`: Pass keywords and descriptions for
     `fpsinit`.
-- **Commands:**
+- **Commands** (placed last on the command line):
   - `fpsinit`: Create the FPS shared memory segment.
   - `confstart`, `confstep`, `confstop`: Manage the
     configuration loop.

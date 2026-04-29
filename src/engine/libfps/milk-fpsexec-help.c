@@ -60,9 +60,10 @@ int main(int argc, char *argv[])
     /* ---- Usage ---- */
     printf(C_HDR "General Usage\n" C_RST);
     printf(
-        "  $ " C_CMD "<executable> " C_FPS
-        "[fpsname:]" C_CMD "<command>"
-        " [options]\n" C_RST
+        "  $ " C_CMD "<executable> " C_RST
+        "[options] "
+        C_FPS "[fpsname:]" C_CMD "<command>"
+        "\n" C_RST
         "\n"
         "  If no " C_FPS "fpsname:" C_RST
         " prefix is given, a default name"
@@ -70,6 +71,28 @@ int main(int argc, char *argv[])
         "  Run " C_CMD "<executable> -h" C_RST
         " for command-specific help and"
         " parameters.\n\n");
+
+    /* ---- Options ---- */
+    printf(C_HDR "Common Options\n" C_RST);
+    printf(
+        "  " C_FPS "fpsname:" C_RST
+        "         Name prefix for the FPS\n"
+        "  " C_CMD "-n, --name" C_RST
+        "      Specify FPS name\n"
+        "  " C_CMD "-tmux" C_RST
+        "           Run inside a tmux"
+        " session\n"
+        "  " C_CMD "-procinfo" C_RST
+        "       Enable process monitoring"
+        " (for fpsinit)\n"
+        "  " C_CMD "-loops" C_RST
+        "         Infinite loop, stream"
+        " semaphore trigger\n"
+        "  " C_CMD "-loopd SEC" C_RST
+        "     Infinite loop, delay"
+        " trigger (seconds)\n"
+        "  " C_CMD "-h" C_RST
+        "              Show help message\n\n");
 
     /* ---- Commands ---- */
     printf(C_HDR "Commands\n" C_RST);
@@ -95,22 +118,6 @@ int main(int argc, char *argv[])
         "      Stop main processing loop\n"
         "  " C_CMD "exec" C_RST
         "         Auto-init + run\n\n");
-
-    /* ---- Options ---- */
-    printf(C_HDR "Common Options\n" C_RST);
-    printf(
-        "  " C_FPS "fpsname:" C_RST
-        "         Name prefix for the FPS\n"
-        "  " C_CMD "-n, --name" C_RST
-        "      Specify FPS name\n"
-        "  " C_CMD "-tmux" C_RST
-        "           Run inside a tmux"
-        " session\n"
-        "  " C_CMD "-procinfo" C_RST
-        "       Enable process monitoring"
-        " (for fpsinit)\n"
-        "  " C_CMD "-h" C_RST
-        "              Show help message\n\n");
 
     /* ---- Workflow ---- */
     printf(C_HDR "Typical Workflow\n" C_RST);
@@ -167,17 +174,20 @@ int main(int argc, char *argv[])
         " to auto-create a tmux session"
         " and dispatch commands:\n"
         "    $ " C_CMD
-        "milk-fpsexec-clitest " C_FPS
+        "milk-fpsexec-clitest "
+        C_CMD "-tmux " C_FPS
         "myfps00" C_CMD
-        ":fpsinit -tmux\n" C_RST
+        ":fpsinit\n" C_RST
         "    $ " C_CMD
-        "milk-fpsexec-clitest " C_FPS
+        "milk-fpsexec-clitest "
+        C_CMD "-tmux " C_FPS
         "myfps00" C_CMD
-        ":confstart -tmux\n" C_RST
+        ":confstart\n" C_RST
         "    $ " C_CMD
-        "milk-fpsexec-clitest " C_FPS
+        "milk-fpsexec-clitest "
+        C_CMD "-tmux " C_FPS
         "myfps00" C_CMD
-        ":runstart -tmux\n" C_RST
+        ":runstart\n" C_RST
         "\n");
 
     /* ---- Alternate tools ---- */
