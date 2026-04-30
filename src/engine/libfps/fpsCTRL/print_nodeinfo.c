@@ -18,89 +18,98 @@ void fpsCTRLscreen_print_nodeinfo(
     long pindexSelected
 )
 {
-    // fps is passed as array base
-    TUI_printfw("======== FPS info ( # %5d) [%ld / %ld params (active/size)]\n", 
-                fpsindexSelected, fps[fpsindexSelected].NBparamActive, fps[fpsindexSelected].md->NBparamMAX);
+    TUI_newline();
+    screenprint_setbold();
+    screenprint_setcolor(7); // Cyan
+    TUI_printfw("  [ FPS DETAILED INFO ]\n");
+    screenprint_unsetcolor(7);
+    screenprint_unsetbold();
 
-    TUI_printfw("    FPS call              : %s -> %s [",
-            fps[fpsindexSelected].md->callprogname,
-            fps[fpsindexSelected].md->callfuncname);
-
-    for(int i = 0; i < fps[fpsindexSelected].md->NBnameindex; i++)
-    {
-        TUI_printfw(" %s", fps[fpsindexSelected].md->nameindexW[i]);
-    }
-    TUI_printfw(" ]\n");
-
-    TUI_printfw(" FPS descr  : %s\n", fps[fpsindexSelected].md->description);
-    TUI_printfw(" Exec path  : %s\n", fps[fpsindexSelected].md->execfullpath);
-    TUI_printfw(" FPS source : %s:%d\n",
-                fps[fpsindexSelected].md->sourcefname,
-                fps[fpsindexSelected].md->sourceline);
-
-    TUI_printfw("   %d libs : ", fps[fpsindexSelected].md->NBmodule);
-    for(int m = 0; m < fps[fpsindexSelected].md->NBmodule; m++)
-    {
-        TUI_printfw(" [%s]", fps[fpsindexSelected].md->modulename[m]);
+    TUI_printfw("    %-16s: %d\n", "Index", fpsindexSelected);
+    TUI_printfw("    %-16s: %ld / %ld (active/max)\n", "Params", fps[fpsindexSelected].NBparamActive, fps[fpsindexSelected].md->NBparamMAX);
+    TUI_printfw("    %-16s: %s -> %s", "Call", fps[fpsindexSelected].md->callprogname, fps[fpsindexSelected].md->callfuncname);
+    
+    if (fps[fpsindexSelected].md->NBnameindex > 0) {
+        TUI_printfw(" [");
+        for(int i = 0; i < fps[fpsindexSelected].md->NBnameindex; i++) {
+            TUI_printfw(" %s", fps[fpsindexSelected].md->nameindexW[i]);
+        }
+        TUI_printfw(" ]");
     }
     TUI_printfw("\n");
 
-    TUI_printfw("    FPS work     directory    : %s\n",
-            fps[fpsindexSelected].md->workdir);
+    TUI_printfw("    %-16s: %s\n", "Description", fps[fpsindexSelected].md->description);
+    TUI_printfw("    %-16s: %s\n", "Exec Path", fps[fpsindexSelected].md->execfullpath);
+    TUI_printfw("    %-16s: %s:%d\n", "Source", fps[fpsindexSelected].md->sourcefname, fps[fpsindexSelected].md->sourceline);
+    
+    if (fps[fpsindexSelected].md->NBmodule > 0) {
+        TUI_printfw("    %-16s:", "Libraries");
+        for(int m = 0; m < fps[fpsindexSelected].md->NBmodule; m++) {
+            TUI_printfw(" [%s]", fps[fpsindexSelected].md->modulename[m]);
+        }
+        TUI_printfw("\n");
+    }
 
-    TUI_printfw("    ( FPS output data directory : %s )  ( FPS input conf directory : %s) \n",
-            fps[fpsindexSelected].md->datadir,
-            fps[fpsindexSelected].md->confdir);
+    TUI_printfw("    %-16s: %s\n", "Work Dir", fps[fpsindexSelected].md->workdir);
+    TUI_printfw("    %-16s: %s\n", "Data Dir", fps[fpsindexSelected].md->datadir);
+    TUI_printfw("    %-16s: %s\n", "Conf Dir", fps[fpsindexSelected].md->confdir);
 
-    TUI_printfw("    FPS tmux sessions     :  ");
-
+    TUI_printfw("    %-16s: ", "Sessions");
+    
     char cmd[512];
     
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:ctrl 2> /dev/null", fps[fpsindexSelected].md->name);
     if(system(cmd) == 0) {
         screenprint_setcolor(COLOR_OK);
-        TUI_printfw("%s:ctrl ", fps[fpsindexSelected].md->name);
+        TUI_printfw("[ctrl] ");
         screenprint_unsetcolor(COLOR_OK);
     } else {
-        screenprint_setcolor(COLOR_ERROR);
-        TUI_printfw("%s:ctrl ", fps[fpsindexSelected].md->name);
-        screenprint_unsetcolor(COLOR_ERROR);
+        screenprint_setcolor(4);
+        TUI_printfw(" ctrl  ");
+        screenprint_unsetcolor(4);
     }
 
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:conf 2> /dev/null", fps[fpsindexSelected].md->name);
     if(system(cmd) == 0) {
         screenprint_setcolor(COLOR_OK);
-        TUI_printfw("%s:conf ", fps[fpsindexSelected].md->name);
+        TUI_printfw("[conf] ");
         screenprint_unsetcolor(COLOR_OK);
     } else {
-        screenprint_setcolor(COLOR_ERROR);
-        TUI_printfw("%s:conf ", fps[fpsindexSelected].md->name);
-        screenprint_unsetcolor(COLOR_ERROR);
+        screenprint_setcolor(4);
+        TUI_printfw(" conf  ");
+        screenprint_unsetcolor(4);
     }
 
     snprintf(cmd, sizeof(cmd), "tmux has-session -t %s:run 2> /dev/null", fps[fpsindexSelected].md->name);
     if(system(cmd) == 0) {
         screenprint_setcolor(COLOR_OK);
-        TUI_printfw("%s:run ", fps[fpsindexSelected].md->name);
+        TUI_printfw("[run] ");
         screenprint_unsetcolor(COLOR_OK);
     } else {
-        screenprint_setcolor(COLOR_ERROR);
-        TUI_printfw("%s:run ", fps[fpsindexSelected].md->name);
-        screenprint_unsetcolor(COLOR_ERROR);
+        screenprint_setcolor(4);
+        TUI_printfw(" run  ");
+        screenprint_unsetcolor(4);
     }
-    TUI_printfw("\n");
-    
-    TUI_printfw("======== NODE info ( # %5d)\n", nodeSelected);
-    TUI_printfw("%-30s ", keywnode[nodeSelected].keywordfull);
+    TUI_newline();
+
+    TUI_newline();
+    screenprint_setbold();
+    screenprint_setcolor(7); // Cyan
+    TUI_printfw("  [ NODE DETAILED INFO ]\n");
+    screenprint_unsetcolor(7);
+    screenprint_unsetbold();
+
+    TUI_printfw("    %-16s: %d\n", "Index", nodeSelected);
+    TUI_printfw("    %-16s: %s\n", "Keyword", keywnode[nodeSelected].keywordfull);
     
     if(keywnode[nodeSelected].leaf > 0) {
         char typestring[100];
         functionparameter_GetTypeString(
             fps[fpsindexSelected].parray[pindexSelected].type,
             typestring);
-        TUI_printfw("type %s\n", typestring);
+        TUI_printfw("    %-16s: %s\n", "Type", typestring);
     } else {
-        TUI_printfw("-DIRECTORY-\n");
+        TUI_printfw("    %-16s: DIRECTORY\n", "Type");
     }
-    TUI_printfw("\n");
+    TUI_newline();
 }

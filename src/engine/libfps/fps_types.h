@@ -504,9 +504,13 @@ typedef struct
     int      fpsCTRLfifofd;
     int      direction;
     int      scheduler_wrowstart;
+    int      help_wrowstart;
     int      display_offset[100];
     char     milkseq_name[64];
     void    *milkseq_state; // cast to MILKSEQ_STATE* where needed
+    char     search_string[100];
+    int      search_mode;
+    int      sort_mode;
 } FPSCTRL_PROCESS_VARS;
 
 #define NB_KEYWNODE_MAX 6000
