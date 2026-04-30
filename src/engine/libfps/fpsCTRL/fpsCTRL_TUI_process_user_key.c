@@ -297,6 +297,35 @@ int fpsCTRL_TUI_process_user_key(
             }
         }
 
+        if (fpsCTRLvar->search_mode > 0) {
+            if (ch == 27) { // ESC
+                fpsCTRLvar->search_mode = 0;
+                fpsCTRLvar->search_string[0] = '\0';
+                return loopOK;
+            } else if (ch == 10 || ch == 13) { // ENTER
+                fpsCTRLvar->search_mode = 2; // Lock in search
+                return loopOK;
+            } else if (ch == 127 || ch == 8) { // Backspace
+                int len = strlen(fpsCTRLvar->search_string);
+                if (len > 0) {
+                    fpsCTRLvar->search_string[len-1] = '\0';
+                }
+                return loopOK;
+            } else if (ch >= 32 && ch <= 126) {
+                int len = strlen(fpsCTRLvar->search_string);
+                if (len < sizeof(fpsCTRLvar->search_string) - 1) {
+                    fpsCTRLvar->search_string[len] = (char)ch;
+                    fpsCTRLvar->search_string[len+1] = '\0';
+                }
+                return loopOK;
+            }
+            // If not printable and not enter/esc/backspace, allow fall-through 
+            // for navigation keys (UP/DOWN/LEFT/RIGHT/PGUP/PGDN)
+            if (ch != ANSI_KEY_UP && ch != ANSI_KEY_DOWN && ch != ANSI_KEY_PGUP && ch != ANSI_KEY_PGDN && ch != ANSI_KEY_LEFT && ch != ANSI_KEY_RIGHT) {
+                return loopOK; // Swallow other commands
+            }
+        }
+
         /* CTRL+LEFT/RIGHT handled below in the switch */
         if (ch == 'v' || ch == 'V')
         {
@@ -312,6 +341,38 @@ int fpsCTRL_TUI_process_user_key(
         case 3:       // Ctrl+C
         case 'x':     // Exit control screen
             loopOK = 0;
+            break;
+
+        case 27:      // ESC
+            fpsCTRLvar->search_mode = 0;
+            fpsCTRLvar->search_string[0] = '\0';
+            break;
+
+        case '/':     // Enter search mode
+            fpsCTRLvar->search_mode = 1;
+            fpsCTRLvar->search_string[0] = '\0';
+            break;
+
+        case 'S':     // Toggle sort mode
+            fpsCTRLvar->sort_mode = (fpsCTRLvar->sort_mode + 1) % 2;
+            break;
+
+        case 'y':     // Yank to tmux buffer
+            {
+                fpsindex = keywnode[fpsCTRLvar->nodeSelected].fpsindex;
+                pindex = keywnode[fpsCTRLvar->nodeSelected].pindex;
+                char yankstr[512] = {0};
+                if(keywnode[fpsCTRLvar->nodeSelected].leaf == 1) {
+                    char valstr[200] = {0};
+                    functionparameter_GetParamValueString(&fps[fpsindex].parray[pindex], valstr, 200);
+                    snprintf(yankstr, sizeof(yankstr), "%s = %s", fps[fpsindex].parray[pindex].keywordfull, valstr);
+                } else {
+                    snprintf(yankstr, sizeof(yankstr), "%s", keywnode[fpsCTRLvar->nodeSelected].keywordfull);
+                }
+                char cmd[1024];
+                snprintf(cmd, sizeof(cmd), "tmux set-buffer \"%s\" 2>/dev/null", yankstr);
+                if (system(cmd) != 0) {}
+            }
             break;
 
         case '\t':
@@ -467,6 +528,8 @@ int fpsCTRL_TUI_process_user_key(
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart--;
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
+                fpsCTRLvar->help_wrowstart--;
             break;
 
 
@@ -489,6 +552,8 @@ int fpsCTRL_TUI_process_user_key(
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart++;
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
+                fpsCTRLvar->help_wrowstart++;
             break;
 
         case ANSI_KEY_PGUP:
@@ -504,6 +569,8 @@ int fpsCTRL_TUI_process_user_key(
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart -= 10;
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
+                fpsCTRLvar->help_wrowstart -= 10;
             break;
 
         case ANSI_KEY_PGDN:
@@ -526,6 +593,8 @@ int fpsCTRL_TUI_process_user_key(
             }
             if (fpsCTRLvar->fpsCTRL_DisplayMode == 4)
                 fpsCTRLvar->scheduler_wrowstart += 10;
+            if (fpsCTRLvar->fpsCTRL_DisplayMode == 1)
+                fpsCTRLvar->help_wrowstart += 10;
             break;
 
 
@@ -537,19 +606,11 @@ int fpsCTRL_TUI_process_user_key(
                 fpsCTRLvar->nodeSelected = fpsCTRLvar->directorynodeSelected;
                 fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
             }
-            else if (fpsCTRLvar->currentlevel == 0)
-            {
-                fpsCTRLvar->currentlevel = -1;
-            }
             break;
 
 
         case ANSI_KEY_RIGHT :
-            if (fpsCTRLvar->currentlevel == -1)
-            {
-                fpsCTRLvar->currentlevel = 0;
-            }
-            else if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
+            if(keywnode[fpsCTRLvar->nodeSelected].leaf == 0)   // this is a directory
             {
                 if(keywnode[keywnode[fpsCTRLvar->directorynodeSelected].child[fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]]].leaf
                         == 0)
