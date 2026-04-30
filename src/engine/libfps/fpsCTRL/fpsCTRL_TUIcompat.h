@@ -263,6 +263,63 @@ static inline void screenprint_setcolor(int idx)
     }
 }
 
+/* =========================================================
+ * SLEEK UI COLORS
+ * ========================================================= */
+
+static inline void screenprint_setbgcolor_highlight(void)
+{
+    ansi_detect_color_level();
+    if (ansi__color_level >= 3) {
+        SC_APPEND("\033[48;2;70;130;180m"); // Visible Slate Blue
+    } else if (ansi__color_level == 2) {
+        SC_APPEND("\033[48;5;67m"); // Slate blue fallback
+    } else {
+        SC_APPEND("\033[44m"); // Blue fallback
+    }
+}
+
+static inline void screenprint_set_status_bar(void)
+{
+    ansi_detect_color_level();
+    if (ansi__color_level >= 3) {
+        SC_APPEND("\033[38;2;255;255;255;48;2;60;60;80m"); // White on grayish blue
+    } else if (ansi__color_level == 2) {
+        SC_APPEND("\033[38;5;255;48;5;60m");
+    } else {
+        SC_APPEND("\033[37;44m");
+    }
+}
+
+static inline void screenprint_color_string(void) {
+    ansi_detect_color_level();
+    if(ansi__color_level>=3) SC_APPEND("\033[38;2;0;255;255m"); // Vibrant Cyan
+    else if(ansi__color_level==2) SC_APPEND("\033[38;5;51m");
+    else SC_APPEND("\033[36m");
+}
+
+static inline void screenprint_color_number(void) {
+    ansi_detect_color_level();
+    if(ansi__color_level>=3) SC_APPEND("\033[38;2;255;220;50m"); // Warm Yellow
+    else if(ansi__color_level==2) SC_APPEND("\033[38;5;220m");
+    else SC_APPEND("\033[33m");
+}
+
+static inline void screenprint_color_flag(void) {
+    ansi_detect_color_level();
+    if(ansi__color_level>=3) SC_APPEND("\033[38;2;50;255;100m"); // Emerald Green
+    else if(ansi__color_level==2) SC_APPEND("\033[38;5;46m");
+    else SC_APPEND("\033[32m");
+}
+
+static inline void screenprint_color_dim(void) {
+    ansi_detect_color_level();
+    if(ansi__color_level>=3) SC_APPEND("\033[38;2;120;120;120m"); // Dark Gray
+    else if(ansi__color_level==2) SC_APPEND("\033[38;5;243m");
+    else SC_APPEND("\033[90m");
+}
+
+
 /** Reset fg+bg colors to default, preserving other attrs
  *  (bold, dim, reverse, blink).  Use screenprint_setnormal()
  *  for a full attribute reset. */
