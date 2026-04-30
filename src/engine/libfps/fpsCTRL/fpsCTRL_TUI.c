@@ -50,97 +50,61 @@ static short unsigned int wrow, wcol;
 
 
 inline static void
-fpsCTRLscreen_print_DisplayMode_status(
-    int fpsCTRL_DisplayMode,
-    int NBfps,
-    int displayVerbose
+fpsCTRLscreen_print_footer_status(
+    FPSCTRL_PROCESS_VARS *fpsCTRLvar,
+    int NBfps
 )
 {
     DEBUG_TRACE_FSTART();
 
-    int  stringmaxlen = 500;
-    char monstring[stringmaxlen];
-    memset(monstring, 0, stringmaxlen * sizeof(
-               char)); // Must use memset for a C VLA
+    int status_row = sc_term_rows;
+    if (fpsCTRLvar->search_mode > 0) {
+        SC_APPEND("\033[%d;1H", status_row - 1);
+        SC_APPEND("\033[2K"); // Clear line
+        screenprint_setbold();
+        if (fpsCTRLvar->search_mode == 1) {
+            ansi_detect_color_level();
+            if(ansi__color_level>=3) SC_APPEND("\033[38;2;255;165;0m"); // Orange
+            else if(ansi__color_level==2) SC_APPEND("\033[38;5;214m");
+            else SC_APPEND("\033[33m");
+            SC_APPEND(" \xE2\x9C\x94 Search: "); // Fallback magnifying glass equivalent or checkmark. Using '?' for safety in some terms, or just "Search:" 
+            // Wait, we can use 🔍 if terminal supports it. The user specified "sleek", let's just use "Search:" to be safe with fonts or standard Unicode.
+            SC_APPEND("Search: ");
+        } else {
+            screenprint_color_flag();
+            SC_APPEND(" Filter: ");
+        }
+        screenprint_unsetbold();
+        screenprint_setnormal();
+        SC_APPEND("%s", fpsCTRLvar->search_string);
+        if (fpsCTRLvar->search_mode == 1) {
+            SC_APPEND("\033[5m_\033[25m"); // Blinking cursor
+        }
+    }
 
-    screenprint_setbold();
+    SC_APPEND("\033[%d;1H", status_row);
+    screenprint_set_status_bar();
+    SC_APPEND("\033[2K"); // clear line with background color
 
-    if(snprintf(monstring,
-                stringmaxlen,
-                "[%d x %d] [PID %d] FUNCTION PARAMETER MONITOR: PRESS (x) TO "
-                "STOP, (h) FOR HELP [%d FPS]",
-                wrow,
-                wcol,
-                (int) getpid(),
-                NBfps) < 0)
-    {
-        PRINT_ERROR("snprintf error");
+    SC_APPEND(" [MODE: ");
+    if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_HELP) SC_APPEND("HELP] ");
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG) SC_APPEND("LOG] ");
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL) SC_APPEND("CTRL] ");
+    else if(fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER) SC_APPEND("SEQ] ");
+    
+    if (fpsCTRLvar->fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL) {
+        SC_APPEND("[SORT: %s] ", fpsCTRLvar->sort_mode ? "A-Z" : "Default");
     }
-    TUI_printfw("%s", monstring); // Simplified header
-    screenprint_unsetbold();
-    TUI_newline();
 
-
-    if(fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
-    {
-        screenprint_setreverse();
-        TUI_printfw("[h] Help");
-        screenprint_unsetreverse();
+    SC_APPEND("[PID %d] [%d FPS] ", (int)getpid(), NBfps);
+    SC_APPEND("| (x) Exit  (h) Help  (?) Log  (F2) CTRL  (F3) SEQ  (/) Search ");
+    
+    if (fpsCTRLvar->fpsCTRL_DisplayVerbose) {
+        SC_APPEND(" [VERBOSE] ");
     }
-    else
-    {
-        TUI_printfw("[h] Help");
-    }
-    TUI_printfw("   ");
-
-    if(fpsCTRL_DisplayMode == DISPLAYMODE_FPSLOG)
-    {
-        screenprint_setreverse();
-        TUI_printfw("[?] FPS log");
-        screenprint_unsetreverse();
-    }
-    else
-    {
-        TUI_printfw("[?] FPS log");
-    }
-    TUI_printfw("   ");
-
-
-    if(fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
-    {
-        screenprint_setreverse();
-        TUI_printfw("[F2] FPS CTRL");
-        screenprint_unsetreverse();
-    }
-    else
-    {
-        TUI_printfw("[F2] FPS CTRL");
-    }
-    TUI_printfw("   ");
-
-    if(fpsCTRL_DisplayMode == DISPLAYMODE_SEQUENCER)
-    {
-        screenprint_setreverse();
-        TUI_printfw("[F3] Sequencer");
-        screenprint_unsetreverse();
-    }
-    else
-    {
-        TUI_printfw("[F3] Sequencer");
-    }
-    TUI_printfw("   ");
-
-    if(displayVerbose)
-    {
-        screenprint_setreverse();
-        TUI_printfw("[v/V] Verbose");
-        screenprint_unsetreverse();
-    }
-    else
-    {
-        TUI_printfw("[v/V] Verbose");
-    }
-    TUI_newline();
+    
+    // Pad rest of line with background (handled by 2K mostly, but just in case)
+    screenprint_setnormal();
     DEBUG_TRACE_FEXIT();
 }
 
@@ -148,47 +112,72 @@ fpsCTRLscreen_print_DisplayMode_status(
  * @brief Print help
  * 
  */
-inline static void fpsCTRLscreen_print_help()
+inline static void fpsCTRLscreen_print_help(FPSCTRL_PROCESS_VARS *fpsCTRLvar)
 {
     DEBUG_TRACE_FSTART();
-    // int attrval = A_BOLD;
 
-    TUI_printfw("\n");
-    print_help_entry("x", "Exit");
+    char lines[100][256];
+    int line_cnt = 0;
+    
+    #define ADD_LINE(...) do { \
+        if (line_cnt < 100) snprintf(lines[line_cnt++], 256, __VA_ARGS__); \
+    } while(0)
+    
+    ADD_LINE("");
+    ADD_LINE("  \033[1;38;5;111m============ SCREENS\033[0m");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "v / V", "Verbose mode ON / OFF");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "F2", "Parameter control (Main Screen)");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "F3", "Scheduler / Sequencer");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "?", "FPS log");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+L/R", "Cycle between tabs");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "h", "Show this help screen");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "x", "Exit TUI");
 
-    TUI_printfw("\n");
-    TUI_printfw("============ SCREENS\n");
-    print_help_entry("v/V", "verbose mode on/off");
-    print_help_entry("F2", "parameter control");
-    print_help_entry("F3", "scheduler / sequencer");
-    print_help_entry("?", "FPS log");
-    print_help_entry("CTRL+L/R", "cycle between tabs");
+    ADD_LINE("");
+    ADD_LINE("  \033[1;38;5;111m============ PARAMETER EDITING\033[0m");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "ENTER", "Edit selected parameter value");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "SPACE", "Toggle ON/OFF parameter state");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "UP / DOWN", "Navigate up and down between parameters");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "LEFT / RIGHT", "Collapse/expand tree depth");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "/", "Fuzzy search parameter tree");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "S", "Toggle alphabetical sorting");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "y", "Yank parameter value to tmux buffer");
 
-    TUI_printfw("\n");
-    TUI_printfw("============ PARAMETER EDITING\n");
-    print_help_entry("ENTER",
-        "edit selected parameter value");
-    print_help_entry("SPACE",
-        "toggle ON/OFF parameter");
-    print_help_entry("arrows",
-        "navigate tree (L/R = depth, U/D = sibling)");
+    ADD_LINE("");
+    ADD_LINE("  \033[1;38;5;111m============ PROCESS CONTROL\033[0m");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "O / CTRL+o", "Start/stop conf process");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "R / CTRL+r", "Start/stop run process");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "T / t", "Initialize/kill tmux session");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "CTRL+e", "Stop conf/run, erase FPS");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "E", "Stop conf/run, erase FPS, kill tmux");
+    
+    ADD_LINE("");
+    ADD_LINE("  \033[1;38;5;111m============ OTHER UTILITIES\033[0m");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "s", "Rescan shared memory directory");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "l", "List all entries");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "f", "Export fps content to datadir file");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "G / g", "FPS log ON / OFF");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", ">", "Export fpsdatadir values to fpsconfdir");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "<", "Import/load values from fpsconfdir to fps");
+    ADD_LINE("    \033[1;36m%-20s\033[0m  %s", "P", "Process input file \"confscript\"");
 
-    TUI_printfw("\n");
-    TUI_printfw("============ OTHER\n");
-    print_help_entry("s", "rescan");
-    print_help_entry("T/t", "initialize/kill tmux session");
-    print_help_entry("CTRL+e", "stop conf/run, erase FPS");
-    print_help_entry("E", "stop conf/run, erase FPS, kill tmux");
-    print_help_entry("O / CTRL+o", "start/stop conf process");
-    print_help_entry("R / CTRL+r", "start/stop run process");
-    print_help_entry("l", "list all entries");
-    print_help_entry("f", "export fps content to datadir file");
-    print_help_entry("g", "FPS log OFF");
-    print_help_entry("G", "FPS log ON");
-    print_help_entry(">", "export fpsdatadir values to fpsconfdir");
-    print_help_entry("<", "import/load values from fpsconfdir to fps");
-    print_help_entry("P", "(P)rocess input file \"confscript\"");
-    TUI_printfw("        format: setval <paramfulname> <value>\n");
+    // Enforce scroll bounds
+    int display_lines = sc_term_rows - 4; // leave margin for header/footer
+    if (display_lines < 5) display_lines = 5;
+
+    int max_scroll = line_cnt - display_lines;
+    if (max_scroll < 0) max_scroll = 0;
+    if (fpsCTRLvar->help_wrowstart > max_scroll) fpsCTRLvar->help_wrowstart = max_scroll;
+    if (fpsCTRLvar->help_wrowstart < 0) fpsCTRLvar->help_wrowstart = 0;
+    
+    for (int i = 0; i < display_lines; i++) {
+        int idx = fpsCTRLvar->help_wrowstart + i;
+        if (idx < line_cnt) {
+            TUI_printfw("%s\n", lines[idx]);
+        }
+    }
+
+    #undef ADD_LINE
 
     DEBUG_TRACE_FEXIT();
 }
@@ -599,11 +588,6 @@ errno_t functionparameter_CTRLscreen(
 
             TUI_stdio_clear();
 
-            fpsCTRLscreen_print_DisplayMode_status(
-                fpsCTRLvar.fpsCTRL_DisplayMode,
-                fpsCTRLvar.NBfps,
-                fpsCTRLvar.fpsCTRL_DisplayVerbose);
-
             DEBUG_TRACEPOINT(" ");
 
             if(fpsCTRLvar.fpsCTRL_DisplayVerbose == 1)
@@ -647,7 +631,7 @@ errno_t functionparameter_CTRLscreen(
 
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_HELP)
             {
-                fpsCTRLscreen_print_help();
+                fpsCTRLscreen_print_help(&fpsCTRLvar);
             }
 
             if(fpsCTRLvar.fpsCTRL_DisplayMode == DISPLAYMODE_FPSCTRL)
@@ -674,6 +658,8 @@ errno_t functionparameter_CTRLscreen(
 
 
             DEBUG_TRACEPOINT(" ");
+
+            fpsCTRLscreen_print_footer_status(&fpsCTRLvar, fpsCTRLvar.NBfps);
 
             sc_frame_flush();
         } // end run_display

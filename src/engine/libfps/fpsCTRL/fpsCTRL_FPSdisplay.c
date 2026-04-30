@@ -26,44 +26,6 @@
 #define LEVEL0_SUMMARY_WIDTH 20
 #define TREE_LEVEL_WIDTH 12
 
-static void print_sliding_string(const char *str, int width, int row_index)
-{
-    int len = strlen(str);
-    if (len <= width)
-    {
-        TUI_printfw("%*s", width, str);
-        return;
-    }
-
-    // Dynamic sliding logic based on monotonic clock
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    
-    // Total cycle time in seconds for one back-and-forth slide
-    double cycle_time = 4.0; 
-    double time_in_cycle = fmod(
-        (double)now.tv_sec + (double)now.tv_nsec * 1e-9 + (double)row_index * 0.5,
-        cycle_time);
-    
-    int max_offset = len - width;
-    int offset;
-    
-    // Divide cycle into 4 parts: stay at start, slide to end, stay at end, slide to start
-    double phase = time_in_cycle / cycle_time;
-    if (phase < 0.2) offset = 0;
-    else if (phase < 0.5) offset = (int)((phase - 0.2) / 0.3 * max_offset);
-    else if (phase < 0.7) offset = max_offset;
-    else offset = (int)(max_offset - (phase - 0.7) / 0.3 * max_offset);
-
-    if (offset < 0) offset = 0;
-    if (offset > max_offset) offset = max_offset;
-
-    char buf[width + 1];
-    strncpy(buf, str + offset, width);
-    buf[width] = '\0';
-    TUI_printfw("%s", buf);
-}
-
 errno_t fpsCTRL_FPSdisplay(
     KEYWORD_TREE_NODE    *keywnode,
     FPSCTRL_PROCESS_VARS *fpsCTRLvar
@@ -94,24 +56,6 @@ errno_t fpsCTRL_FPSdisplay(
             return RETURN_SUCCESS;
         }
 
-        if (fpsCTRLvar->currentlevel == -1)
-        {
-            // Resolve node selected at level 0
-            int knodeindex = keywnode[0].child[fpsCTRLvar->GUIlineSelected[0]];
-            fpsCTRLvar->nodeSelected = knodeindex;
-            fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
-
-            screenprint_setbold();
-            TUI_printfw("Detailed Help for FPS '%s':", fpsarray[fpsCTRLvar->fpsindexSelected].md->name);
-            TUI_newline();
-            TUI_printfw("--------------------------");
-            TUI_newline();
-            screenprint_unsetbold();
-            TUI_printfw("%s", fpsarray[fpsCTRLvar->fpsindexSelected].md->helptext);
-            TUI_newline();
-            return RETURN_SUCCESS;
-        }
-        
         DEBUG_TRACEPOINT("fpsindexSelected: %d, pindexSelected: %d", fpsCTRLvar->fpsindexSelected, fpsCTRLvar->pindexSelected);
 
         if (fpsCTRLvar->fpsCTRL_DisplayVerbose) {
@@ -135,7 +79,38 @@ errno_t fpsCTRL_FPSdisplay(
         nodechain[0] = 0; // root
 
         fpsCTRLvar->currentlevel = keywnode[fpsCTRLvar->directorynodeSelected].keywordlevel;
-        int GUIlineMax = keywnode[fpsCTRLvar->directorynodeSelected].NBchild;
+        
+        // Filter and Sort current directory children
+        int filtered_children[NB_KEYWNODE_MAX];
+        int num_filtered = 0;
+        
+        for(int i = 0; i < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; i++) {
+            int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[i];
+            
+            if (fpsCTRLvar->search_string[0] != '\0') {
+                if (strcasestr(keywnode[knodeindex].keywordfull, fpsCTRLvar->search_string) != NULL) {
+                    filtered_children[num_filtered++] = knodeindex;
+                }
+            } else {
+                filtered_children[num_filtered++] = knodeindex;
+            }
+        }
+        
+        // Simple string sort if sort_mode == 1
+        if (fpsCTRLvar->sort_mode == 1) {
+            for (int i = 0; i < num_filtered - 1; i++) {
+                for (int j = i + 1; j < num_filtered; j++) {
+                    if (strcasecmp(keywnode[filtered_children[i]].keyword[fpsCTRLvar->currentlevel], 
+                                   keywnode[filtered_children[j]].keyword[fpsCTRLvar->currentlevel]) > 0) {
+                        int tmp = filtered_children[i];
+                        filtered_children[i] = filtered_children[j];
+                        filtered_children[j] = tmp;
+                    }
+                }
+            }
+        }
+
+        int GUIlineMax = num_filtered;
         for(level = 0; level < fpsCTRLvar->currentlevel; level ++)
         {
             if(keywnode[nodechain[level]].NBchild > GUIlineMax)
@@ -154,7 +129,7 @@ errno_t fpsCTRL_FPSdisplay(
         }
 
         while(fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel] >
-                keywnode[fpsCTRLvar->directorynodeSelected].NBchild - 1)
+                num_filtered - 1)
         {
             fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel]--;
         }
@@ -191,9 +166,9 @@ errno_t fpsCTRL_FPSdisplay(
         // Width for the current level's keyword column
         int max_val_width = 5;
         int cl = fpsCTRLvar->currentlevel;
-        for(int i = 0; i < keywnode[fpsCTRLvar->directorynodeSelected].NBchild; i++)
+        for(int i = 0; i < num_filtered; i++)
         {
-            int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[i];
+            int knodeindex = filtered_children[i];
             int kw_len;
             if (keywnode[knodeindex].leaf)
             {
@@ -232,8 +207,6 @@ errno_t fpsCTRL_FPSdisplay(
         
         if (max_kw_width[cl] > available_width / 2) max_kw_width[cl] = available_width / 2;
         
-        // max_val_width is handled by sliding print, but we need enough space for description
-
         TUI_newline();
 
         // 1-line summary for selected parameter
@@ -368,11 +341,22 @@ errno_t fpsCTRL_FPSdisplay(
         short unsigned int wrow=0, wcol=0;
         TUI_get_terminal_size(&wrow, &wcol);
 
-        /* Reserve footer rows: scroll indicator + blank
-         * + status line + 1 margin = 4 rows. */
-        int footer_rows = 4;
-        int dispindexMax = (int) wrow - sc_cursor_row
-                           - footer_rows;
+        int status_lines = 1;
+        if (!(fpsarray[fpsCTRLvar->fpsindexSelected].md->status & FUNCTION_PARAMETER_STRUCT_STATUS_CHECKOK)) {
+            status_lines = 1 + fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt;
+        }
+
+        /* Dynamically calculate required footer lines to prevent terminal scrolling.
+         * If the printed lines exceed terminal height, the screen scrolls and tears the TUI. */
+        int footer_rows = (summary_printed ? 0 : 1) // Blank line if summary not printed
+                          + 2 // Breadcrumbs
+                          + 1 // Root offset scroll indicator
+                          + 1 // Bottom scroll indicator
+                          + 1 // Blank line before status
+                          + status_lines // OK message or Error list
+                          + 1; // Extra margin safety
+
+        int dispindexMax = (int) wrow - sc_cursor_row - footer_rows;
         if(dispindexMax < 5) dispindexMax = 5;
 
         int cl_scroll = fpsCTRLvar->currentlevel;
@@ -402,6 +386,31 @@ errno_t fpsCTRL_FPSdisplay(
         {
             TUI_newline();
         }
+
+        // ONE-LINE FPS DESCRIPTION
+        if (fpsarray[fpsCTRLvar->fpsindexSelected].md != NULL) {
+            screenprint_setbold();
+            TUI_printfw("  [%s] %s", fpsarray[fpsCTRLvar->fpsindexSelected].md->name, fpsarray[fpsCTRLvar->fpsindexSelected].md->description);
+            screenprint_unsetbold();
+            TUI_newline();
+        }
+
+        // BREADCRUMBS
+        screenprint_setbold();
+        screenprint_setcolor(6); // Cyan
+        TUI_printfw("  PATH: / ");
+        for (int l = 0; l < fpsCTRLvar->currentlevel; l++) {
+            int parent_node = nodechain[l];
+            int sel_idx = fpsCTRLvar->GUIlineSelected[l];
+            if (sel_idx >= 0 && sel_idx < keywnode[parent_node].NBchild) {
+                int kn = keywnode[parent_node].child[sel_idx];
+                TUI_printfw("%s / ", keywnode[kn].keyword[l]);
+            }
+        }
+        screenprint_unsetcolor(6);
+        screenprint_unsetbold();
+        TUI_newline();
+        TUI_newline();
 
         int root_offset = fpsCTRLvar->display_offset[0];
         if (root_offset > 0) {
@@ -494,6 +503,8 @@ errno_t fpsCTRL_FPSdisplay(
                         screenprint_setcolor(5);
                     }
 
+                    TUI_printfw("  ");
+
                     TUI_printfw("%-*.*s ", max_kw_width[level], max_kw_width[level], keywnode[knodeindex].keyword[level]);
 
                     if(keywnode[knodeindex].leaf == 0)   // directory
@@ -503,7 +514,7 @@ errno_t fpsCTRL_FPSdisplay(
 
                     if(snode == 1)
                     {
-                        TUI_printfw("> ");
+                        TUI_printfw("  ");
                         screenprint_unsetreverse();
                     }
                     else
@@ -514,7 +525,7 @@ errno_t fpsCTRL_FPSdisplay(
                 }
                 else     // blank space
                 {
-                    TUI_printfw("%*s ", max_kw_width[level], " ");
+                    TUI_printfw("  %*s ", max_kw_width[level], " ");
                     TUI_printfw("  ");
                     screenprint_setnormal();
                 }
@@ -522,15 +533,19 @@ errno_t fpsCTRL_FPSdisplay(
 
             if(fpsCTRLvar->currentlevel == 0)
             {
-                int knodeindex = keywnode[fpsCTRLvar->directorynodeSelected].child[GUIline];
-                int fpsindex = keywnode[knodeindex].fpsindex;
-                fpsCTRLscreen_level0node_summary(fpsarray, fpsindex);
+                if (GUIline < num_filtered) {
+                    int knodeindex = filtered_children[GUIline];
+                    int fpsindex = keywnode[knodeindex].fpsindex;
+                    fpsCTRLscreen_level0node_summary(fpsarray, fpsindex);
+                }
             }
 
-            int knodeindex =
-                keywnode[fpsCTRLvar->directorynodeSelected].child[child_index[level]];
+            int knodeindex = -1;
+            if (child_index[level] < num_filtered) {
+                knodeindex = filtered_children[child_index[level]];
+            }
             
-            if(knodeindex < fpsCTRLvar->NBkwn)
+            if(knodeindex >= 0 && knodeindex < fpsCTRLvar->NBkwn)
             {
                 int fpsindex = keywnode[knodeindex].fpsindex;
                 int pindex = keywnode[knodeindex].pindex;
@@ -547,31 +562,33 @@ errno_t fpsCTRL_FPSdisplay(
                 {
                     if(GUIline == fpsCTRLvar->GUIlineSelected[fpsCTRLvar->currentlevel])
                     {
-                        screenprint_setreverse();
+                        screenprint_setbgcolor_highlight();
                         fpsCTRLvar->nodeSelected = knodeindex;
                         fpsCTRLvar->fpsindexSelected = keywnode[knodeindex].fpsindex;
                     }
 
 
-                    if(child_index[level] < keywnode[fpsCTRLvar->directorynodeSelected].NBchild)
+                    if(child_index[level] < num_filtered)
                     {
                         screenprint_setcolor(5);
                         int l = keywnode[knodeindex].keywordlevel;
                         
+                        TUI_printfw("- ");
+
                         TUI_printfw("%-*.*s", max_kw_width[cl], max_kw_width[cl], keywnode[knodeindex].keyword[l - 1]);
                         screenprint_unsetcolor(5);
 
                         if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
                         {
                             TUI_printfw("> ");
-                            screenprint_unsetreverse();
+                            screenprint_unsetbgcolor();
                         }
                         else
                         {
                             TUI_printfw("  ");
                         }
                     }
-                    else TUI_printfw("%*s  ", max_kw_width[cl], " ");
+                    else TUI_printfw("  %*s  ", max_kw_width[cl], " ");
                 }
                 else   // If this is a parameter
                 {
@@ -647,7 +664,7 @@ errno_t fpsCTRL_FPSdisplay(
                     }
 
                     if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
-                        screenprint_setreverse();
+                        screenprint_setbgcolor_highlight();
 
                     int is_resolved_stream = 0;
                     if (isVISIBLE == 1 && fpsarray[fpsindex].parray[pindex].type == FPTYPE_STREAMNAME) {
@@ -657,7 +674,8 @@ errno_t fpsCTRL_FPSdisplay(
                         }
                     }
 
-                    TUI_printfw(" ");
+                    TUI_printfw("- ");
+
                     if (fpsarray[fpsindex].parray[pindex].fpflag & FPFLAG_PRIMARY_CLI_INPUT) {
                         if(GUIline != fpsCTRLvar->GUIlineSelected[cl])
                         {
@@ -693,7 +711,7 @@ errno_t fpsCTRL_FPSdisplay(
                             screenprint_setcolor(
                                 COLOR_TRIGGER_BG);
                         TUI_printfw("> ");
-                        screenprint_unsetreverse();
+                        screenprint_unsetbgcolor();
                         if (isTRIGGER)
                             screenprint_setcolor(
                                 COLOR_TRIGGER_BG);
@@ -842,27 +860,41 @@ errno_t fpsCTRL_FPSdisplay(
                             .val.i32[0])
                     {
                         onoff_on = 1;
-                        if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
-                        {
-                            screenprint_setreverse();
-                        }
-                        else
-                        {
-                            screenprint_setbold();
+                        screenprint_setbgcolor_highlight();
+                        screenprint_setbold();
+                    }
+
+                    // Apply syntax colors to the value string
+                    if (isVISIBLE == 1 && valstring[0] != '\0') {
+                        int ptype = fpsarray[fpsindex].parray[pindex].type;
+                        if (ptype == FPTYPE_ONOFF) {
+                            ansi_detect_color_level();
+                            if(ansi__color_level>=3) SC_APPEND("\033[38;2;255;255;255m"); // White
+                            else if(ansi__color_level==2) SC_APPEND("\033[38;5;255m");
+                            else SC_APPEND("\033[37m");
+                        } else if (ptype == FPTYPE_INT32 || ptype == FPTYPE_INT64 || 
+                                   ptype == FPTYPE_FLOAT32 || ptype == FPTYPE_FLOAT64) {
+                            screenprint_color_number();
+
+                        } else if (ptype == FPTYPE_PID || ptype == FPTYPE_STREAMNAME || 
+                                   ptype == FPTYPE_DIRNAME || ptype == FPTYPE_FILENAME || 
+                                   ptype == FPTYPE_FITSFILENAME || ptype == FPTYPE_EXECFILENAME || 
+                                   ptype == FPTYPE_STRING) {
+                            if (path_val_color == 0) {
+                                screenprint_color_string();
+                            }
                         }
                     }
 
-                    print_sliding_string(valstring, max_val_width, GUIline);
+                    TUI_printfw("%-*.*s", max_val_width, max_val_width, valstring);
+
+                    if (isVISIBLE == 1 && valstring[0] != '\0') {
+                        screenprint_unsetcolor(0); // Resets FG to default
+                    }
 
                     if (onoff_on) {
-                        if(GUIline == fpsCTRLvar->GUIlineSelected[cl])
-                        {
-                            screenprint_unsetreverse();
-                        }
-                        else
-                        {
-                            screenprint_unsetbold();
-                        }
+                        screenprint_unsetbgcolor();
+                        screenprint_unsetbold();
                     }
                     if (path_val_color != 0) {
                         screenprint_unsetcolor(
@@ -932,12 +964,16 @@ errno_t fpsCTRL_FPSdisplay(
         }
         else
         {
-            screenprint_setcolor(4);
+            if (fpsarray[fpsCTRLvar->fpsindexSelected].md->conferrcnt > 0) {
+                screenprint_setcolor(4);
+            }
             TUI_printfw("[%ld] %d PARAMETER SETTINGS ERROR(s) :",
                         fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt,
                         fpsarray[fpsCTRLvar->fpsindexSelected].md->conferrcnt);
             TUI_newline();
-            screenprint_unsetcolor(4);
+            if (fpsarray[fpsCTRLvar->fpsindexSelected].md->conferrcnt > 0) {
+                screenprint_unsetcolor(4);
+            }
             screenprint_setbold();
             for(int msgi = 0; msgi < fpsarray[fpsCTRLvar->fpsindexSelected].md->msgcnt; msgi++)
             {
@@ -969,6 +1005,9 @@ errno_t fpsCTRL_FPSdisplay(
             " [x] to exit");
         TUI_newline();
     }
+
+    // Clear leftover text from the cursor to the end of the screen
+    TUI_printfw("\x1b[0J");
 
     return RETURN_SUCCESS;
 }
