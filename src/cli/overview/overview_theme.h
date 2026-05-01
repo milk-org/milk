@@ -1,0 +1,300 @@
+/**
+ * @file overview_theme.h
+ * @brief btop-inspired dark theme for milkCTRL
+ *
+ * Defines semantic color tokens used throughout the TUI.
+ * Uses TrueColor (24-bit) RGB values and provides helpers
+ * for gradient interpolation and sparkline rendering.
+ *
+ * Supports 3-tier color fallback:
+ *   level 3 = TrueColor  (ov_buf_fg/ov_buf_bg)
+ *   level 2 = 256-color  (ov_buf_fg_256/ov_buf_bg_256)
+ *   level 1 = 16-color   (ANSI 30-37/90-97)
+ */
+
+#ifndef OVERVIEW_THEME_H
+#define OVERVIEW_THEME_H
+
+#include "overview_ansi.h"
+
+/* =========================================================
+ * RGB color struct
+ * ========================================================= */
+
+typedef struct
+{
+    int r;
+    int g;
+    int b;
+} ov_rgb_t;
+
+/* =========================================================
+ * Semantic color palette
+ * ========================================================= */
+
+/* Panel backgrounds */
+#define OV_BG_TERMINAL    (ov_rgb_t){  20,  22,  28 }
+#define OV_BG_PANEL       (ov_rgb_t){  30,  32,  40 }
+#define OV_BG_HEADER      (ov_rgb_t){  40,  44,  58 }
+#define OV_BG_SELECTED    (ov_rgb_t){  50,  60,  90 }
+#define OV_BG_RELATED     (ov_rgb_t){  38,  50,  42 }  /* soft green tint for related items */
+#define OV_BG_HOVER       (ov_rgb_t){  38,  42,  55 }
+
+/* Foreground — text */
+#define OV_FG_TITLE       (ov_rgb_t){ 130, 170, 255 }
+#define OV_FG_DIM         (ov_rgb_t){ 100, 105, 120 }
+#define OV_FG_TEXT        (ov_rgb_t){ 200, 205, 215 }
+#define OV_FG_BRIGHT      (ov_rgb_t){ 240, 245, 255 }
+#define OV_FG_MUTED       (ov_rgb_t){  70,  75,  85 }
+
+/* Foreground — node types */
+#define OV_FG_STREAM      (ov_rgb_t){  80, 200, 220 }
+#define OV_FG_FPS         (ov_rgb_t){ 130, 170, 255 }
+#define OV_FG_PROC        (ov_rgb_t){ 180, 140, 255 }
+
+/* Foreground — status */
+#define OV_FG_ACTIVE      (ov_rgb_t){  80, 220,  80 }
+#define OV_FG_IDLE        (ov_rgb_t){ 130, 140, 160 }
+#define OV_FG_WARN        (ov_rgb_t){ 255, 180,   0 }
+#define OV_FG_ERROR       (ov_rgb_t){ 240,  60,  60 }
+
+/* Foreground — graph */
+#define OV_FG_CONN        (ov_rgb_t){ 100, 130, 180 }
+#define OV_FG_EDGE_ACTIVE (ov_rgb_t){ 140, 200, 255 }
+
+/* Gradient endpoints for bars/sparklines */
+#define OV_GRAD_LO        (ov_rgb_t){  60,  90, 140 }
+#define OV_GRAD_HI        (ov_rgb_t){ 100, 200, 255 }
+
+#define OV_GRAD_CPU_LO    (ov_rgb_t){  60, 180,  60 }
+#define OV_GRAD_CPU_HI    (ov_rgb_t){ 240,  60,  60 }
+
+/* =========================================================
+ * Borders & box-drawing
+ * ========================================================= */
+
+#define OV_BOX_TL   "╭"
+#define OV_BOX_TR   "╮"
+#define OV_BOX_BL   "╰"
+#define OV_BOX_BR   "╯"
+#define OV_BOX_H    "─"
+#define OV_BOX_V    "│"
+#define OV_BOX_LT   "├"
+#define OV_BOX_RT   "┤"
+#define OV_BOX_TB   "┬"
+#define OV_BOX_BT   "┴"
+#define OV_BOX_X    "┼"
+
+/* Arrow characters */
+#define OV_ARROW_R  "→"
+#define OV_ARROW_L  "←"
+#define OV_ARROW_D  "↓"
+#define OV_ARROW_U  "↑"
+#define OV_TRI_R    "▶"
+#define OV_TRI_L    "◀"
+#define OV_TRI_D    "▼"
+#define OV_TRI_U    "▲"
+#define OV_BULLET   "●"
+#define OV_DIAMOND  "◆"
+
+/* Sparkline block characters (1/8 to full) */
+static const char *OV_SPARK_CHARS[] =
+{
+    " ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"
+};
+#define OV_SPARK_LEVELS 9
+
+/* =========================================================
+ * Helper: emit themed fg/bg
+ * ========================================================= */
+
+static inline void ov_theme_fg(ov_rgb_t c)
+{
+    ov_buf_fg(c.r, c.g, c.b);
+}
+
+static inline void ov_theme_bg(ov_rgb_t c)
+{
+    ov_buf_bg(c.r, c.g, c.b);
+}
+
+/* =========================================================
+ * Helper: gradient interpolation
+ * ========================================================= */
+
+/**
+ * ov_rgb_lerp - linear interpolation between two colors.
+ * @a:   start color
+ * @b:   end color
+ * @t:   factor 0.0 (=a) to 1.0 (=b)
+ */
+static inline ov_rgb_t ov_rgb_lerp(
+    ov_rgb_t a,
+    ov_rgb_t b,
+    float    t)
+{
+    if (t < 0.0f)
+    {
+        t = 0.0f;
+    }
+    if (t > 1.0f)
+    {
+        t = 1.0f;
+    }
+    return (ov_rgb_t) {
+        a.r + (int)((float)(b.r - a.r) * t),
+        a.g + (int)((float)(b.g - a.g) * t),
+        a.b + (int)((float)(b.b - a.b) * t),
+    };
+}
+
+/**
+ * ov_buf_gradient_bar - render a horizontal gradient bar.
+ * @row:   screen row
+ * @col:   start column
+ * @len:   total bar width (characters)
+ * @fill:  fraction filled 0.0 to 1.0
+ * @lo:    color at 0%
+ * @hi:    color at 100%
+ */
+static inline void ov_buf_gradient_bar(
+    int      row,
+    int      col,
+    int      len,
+    float    fill,
+    ov_rgb_t lo,
+    ov_rgb_t hi)
+{
+    if (fill < 0.0f)
+    {
+        fill = 0.0f;
+    }
+    if (fill > 1.0f)
+    {
+        fill = 1.0f;
+    }
+    int filled = (int)(fill * (float) len + 0.5f);
+
+    ov_buf_pos(row, col);
+    for (int i = 0; i < len; i++)
+    {
+        if (i < filled)
+        {
+            float t = (len > 1)
+                      ? (float) i / (float)(len - 1)
+                      : 0.0f;
+            ov_rgb_t c = ov_rgb_lerp(lo, hi, t);
+            ov_theme_bg(c);
+            ov_buf_append(" ", 1);
+        }
+        else
+        {
+            ov_theme_bg(OV_BG_PANEL);
+            ov_theme_fg(OV_FG_MUTED);
+            ov_buf_printf("%s", OV_BOX_H);
+        }
+    }
+    ov_buf_reset_attr();
+}
+
+/**
+ * ov_buf_sparkline - draw a sparkline from a value array.
+ * @row:     screen row
+ * @col:     start column
+ * @vals:    array of values [0.0, 1.0]
+ * @len:     number of values to render
+ * @color:   foreground color
+ */
+static inline void ov_buf_sparkline(
+    int            row,
+    int            col,
+    const float   *vals,
+    int            len,
+    ov_rgb_t       color)
+{
+    ov_buf_pos(row, col);
+    ov_theme_bg(OV_BG_PANEL);
+    ov_theme_fg(color);
+
+    for (int i = 0; i < len; i++)
+    {
+        float v = vals[i];
+        if (v < 0.0f)
+        {
+            v = 0.0f;
+        }
+        if (v > 1.0f)
+        {
+            v = 1.0f;
+        }
+        int idx = (int)(v *
+                        (float)(OV_SPARK_LEVELS - 1)
+                        + 0.5f);
+        ov_buf_printf("%s", OV_SPARK_CHARS[idx]);
+    }
+    ov_buf_reset_attr();
+}
+
+/* =========================================================
+ * Helper: draw a rounded panel border
+ * ========================================================= */
+
+/**
+ * ov_draw_panel_border - draw a panel frame with title.
+ * @row:    top-left row
+ * @col:    top-left column
+ * @height: total panel height
+ * @width:  total panel width
+ * @title:  title string (NULL = no title)
+ * @tcolor: title text color
+ */
+static inline void ov_draw_panel_border(
+    int         row,
+    int         col,
+    int         height,
+    int         width,
+    const char *title,
+    ov_rgb_t    tcolor,
+    int         is_focused)
+{
+    ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+    ov_theme_bg(OV_BG_TERMINAL);
+
+    /* top edge */
+    ov_buf_pos(row, col);
+    ov_buf_printf("%s", OV_BOX_TL);
+    ov_buf_hline_utf8(OV_BOX_H, width - 2);
+    ov_buf_printf("%s", OV_BOX_TR);
+
+    /* title overlay */
+    if (title && title[0])
+    {
+        ov_buf_pos(row, col + 2);
+        ov_theme_fg(is_focused ? tcolor : OV_FG_MUTED);
+        ov_buf_bold();
+        ov_buf_printf(" %s ", title);
+        ov_buf_reset_attr();
+    }
+
+    /* sides */
+    for (int r = row + 1; r < row + height - 1; r++)
+    {
+        ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+        ov_theme_bg(OV_BG_TERMINAL);
+        ov_buf_pos(r, col);
+        ov_buf_printf("%s", OV_BOX_V);
+        ov_buf_pos(r, col + width - 1);
+        ov_buf_printf("%s", OV_BOX_V);
+    }
+
+    /* bottom edge */
+    ov_buf_pos(row + height - 1, col);
+    ov_theme_fg(is_focused ? OV_FG_TEXT : OV_FG_DIM);
+    ov_buf_printf("%s", OV_BOX_BL);
+    ov_buf_hline_utf8(OV_BOX_H, width - 2);
+    ov_buf_printf("%s", OV_BOX_BR);
+
+    ov_buf_reset_attr();
+}
+
+#endif /* OVERVIEW_THEME_H */
