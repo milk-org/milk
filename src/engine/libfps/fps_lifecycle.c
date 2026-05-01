@@ -214,31 +214,78 @@ void fps_loop_override_trigger(
     int                        nb_b
 )
 {
-    /* Find trigger stream from bindings */
+    /*
+     * Find trigger stream from bindings.
+     * First try the local C variable (ptr).
+     * If empty (CLI sync hasn't run yet),
+     * read from FPS shared memory instead.
+     */
     const char *trigger_name = NULL;
+    char trigger_kw[FUNCTION_PARAMETER_STRMAXLEN]
+        = "";
+    char current_ts[FUNCTION_PARAMETER_STRMAXLEN]
+        = "";
+
     for (int i = 0; i < nb_b; i++) {
         if ((bindings[i].fpflag
              & FPFLAG_TRIGGER_STREAM)
             && (bindings[i].type
                 == FPTYPE_STREAMNAME))
         {
-            trigger_name =
+            /* Try local variable first */
+            const char *local =
                 (const char *) bindings[i].ptr;
+            if (local != NULL
+                && local[0] != '\0')
+            {
+                trigger_name = local;
+            }
+            else
+            {
+                /*
+                 * Local var empty — CLI sync
+                 * hasn't populated it yet.
+                 * Read from FPS shared memory.
+                 */
+                strncpy(
+                    trigger_kw,
+                    bindings[i].fpskeyword,
+                    sizeof(trigger_kw) - 1);
+            }
             break;
         }
     }
 
     /*
-     * If no trigger stream found in bindings,
-     * try to read the current value of the
-     * .procinfo.triggersname parameter.
+     * Read trigger name from FPS if local var
+     * was empty but we found the binding keyword.
      */
-    char current_ts[FUNCTION_PARAMETER_STRMAXLEN]
-        = "";
+    if (trigger_name == NULL
+        && trigger_kw[0] != '\0')
+    {
+        long pidx =
+            functionparameter_GetParamIndex(
+                fps, trigger_kw);
+        if (pidx >= 0) {
+            strncpy(
+                current_ts,
+                functionparameter_GetParamPtr_STRING(
+                    fps, trigger_kw),
+                sizeof(current_ts) - 1);
+            if (current_ts[0] != '\0') {
+                trigger_name = current_ts;
+            }
+        }
+    }
+
+    /*
+     * If still no trigger stream, try
+     * .procinfo.triggersname as last resort.
+     */
     if (trigger_name == NULL
         || trigger_name[0] == '\0')
     {
-        int pidx =
+        long pidx =
             functionparameter_GetParamIndex(
                 fps, ".procinfo.triggersname");
         if (pidx >= 0) {
