@@ -1761,13 +1761,17 @@ int main(int argc, char *argv[]) { \
                         " FPFLAG_TRIGGER" \
                         "_STREAM.\n"); \
                 } \
-                /* Apply -loops/-loopd overrides */ \
+                /* Sync CLI args + apply overrides */\
                 if (use_loop) { \
                     FUNCTION_PARAMETER_STRUCT fp_; \
                     if (function_parameter_struct_connect(\
                             fps_name, &fp_, \
                             FPSCONNECT_SIMPLE) != -1)\
                     { \
+                        fps_process_cli_and_sync( \
+                            &fp_, farg_, \
+                            my_bindings_, \
+                            nb_bindings_); \
                         if (use_loop == 1) { \
                             fps_loop_override_trigger(\
                                 &fp_, my_bindings_,\
@@ -1807,12 +1811,16 @@ int main(int argc, char *argv[]) { \
                 " FPFLAG_TRIGGER" \
                 "_STREAM.\n"); \
         } \
-        /* Apply -loops/-loopd overrides */ \
+        /* Sync CLI args into FPS before \
+         * applying loop overrides. */ \
         if (use_loop && rc_ == 0) { \
             FUNCTION_PARAMETER_STRUCT fp_; \
             if (function_parameter_struct_connect(\
                     fps_name, &fp_, \
                     FPSCONNECT_SIMPLE) != -1) {\
+                fps_process_cli_and_sync( \
+                    &fp_, farg_, \
+                    my_bindings_, nb_bindings_);\
                 if (use_loop == 1) { \
                     fps_loop_override_trigger(\
                         &fp_, my_bindings_, \
@@ -1890,6 +1898,21 @@ int main(int argc, char *argv[]) { \
                 } \
             } \
         } \
+        /* Sync CLI args into FPS before \
+         * applying loop overrides, so that \
+         * trigger stream names are available. */ \
+        { \
+            FUNCTION_PARAMETER_STRUCT fps_sync_; \
+            if (function_parameter_struct_connect(\
+                    fps_name, &fps_sync_, \
+                    FPSCONNECT_SIMPLE) != -1) { \
+                fps_process_cli_and_sync( \
+                    &fps_sync_, farg_, \
+                    my_bindings_, nb_bindings_);\
+                function_parameter_struct_disconnect(\
+                    &fps_sync_); \
+            } \
+        } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
             FUNCTION_PARAMETER_STRUCT fps_lp_; \
@@ -1920,6 +1943,20 @@ int main(int argc, char *argv[]) { \
     } else if (strcmp(command, \
                       "runstart") == 0 || \
                strcmp(command, "run") == 0) { \
+        /* Sync CLI args into FPS before \
+         * applying loop overrides. */ \
+        { \
+            FUNCTION_PARAMETER_STRUCT fps_sync_; \
+            if (function_parameter_struct_connect(\
+                    fps_name, &fps_sync_, \
+                    FPSCONNECT_SIMPLE) != -1) { \
+                fps_process_cli_and_sync( \
+                    &fps_sync_, farg_, \
+                    my_bindings_, nb_bindings_);\
+                function_parameter_struct_disconnect(\
+                    &fps_sync_); \
+            } \
+        } \
         /* Apply -loops/-loopd overrides */ \
         if (use_loop == 1) { \
             FUNCTION_PARAMETER_STRUCT fps_lp_; \
