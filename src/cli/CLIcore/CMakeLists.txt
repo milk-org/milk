@@ -208,6 +208,26 @@ target_link_libraries(milk-termview PUBLIC ImageStreamIO m)
 
 install(TARGETS milk-termview DESTINATION bin)
 
+# milkCTRL: unified system dashboard TUI
+add_executable(milkCTRL
+    ../overview/milkCTRL.c
+    ../overview/overview_data.c
+    ../overview/overview_scan.c
+    ../overview/overview_layout.c
+    ../overview/overview_render.c
+    ../overview/overview_input.c
+    ../overview/overview_ctrl.c
+)
+target_include_directories(milkCTRL PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/engine/ImageStreamIO
+    ${CMAKE_SOURCE_DIR}/src/engine/libprocessinfo
+    ${CMAKE_SOURCE_DIR}/src/engine/libfps
+    ${CMAKE_SOURCE_DIR}/src/cli/overview
+)
+target_link_libraries(milkCTRL PUBLIC
+    ImageStreamIO milkprocessinfo milkfps m rt pthread)
+install(TARGETS milkCTRL DESTINATION bin)
+
 # TESTING
 
 include(CTest)
