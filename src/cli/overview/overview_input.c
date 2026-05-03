@@ -389,6 +389,10 @@ int ov_handle_key(
         if (vi < OV_VIEW_COUNT)
         {
             lay->view = (ov_view_t) vi;
+            if (vi == OV_VIEW_STREAMS) lay->focus = OV_FOCUS_STREAMS;
+            else if (vi == OV_VIEW_PROCS) lay->focus = OV_FOCUS_PROCS;
+            else if (vi == OV_VIEW_FPS) lay->focus = OV_FOCUS_FPS;
+            else if (vi == OV_VIEW_GRAPH) lay->focus = OV_FOCUS_GRAPH;
         }
         return 0;
     }
@@ -399,6 +403,10 @@ int ov_handle_key(
         int v = (int) lay->view;
         v = (v - 1 + OV_VIEW_COUNT) % OV_VIEW_COUNT;
         lay->view = (ov_view_t) v;
+        if (v == OV_VIEW_STREAMS) lay->focus = OV_FOCUS_STREAMS;
+        else if (v == OV_VIEW_PROCS) lay->focus = OV_FOCUS_PROCS;
+        else if (v == OV_VIEW_FPS) lay->focus = OV_FOCUS_FPS;
+        else if (v == OV_VIEW_GRAPH) lay->focus = OV_FOCUS_GRAPH;
         return 0;
     }
     if (key == OV_KEY_CTRL_RIGHT)
@@ -406,6 +414,10 @@ int ov_handle_key(
         int v = (int) lay->view;
         v = (v + 1) % OV_VIEW_COUNT;
         lay->view = (ov_view_t) v;
+        if (v == OV_VIEW_STREAMS) lay->focus = OV_FOCUS_STREAMS;
+        else if (v == OV_VIEW_PROCS) lay->focus = OV_FOCUS_PROCS;
+        else if (v == OV_VIEW_FPS) lay->focus = OV_FOCUS_FPS;
+        else if (v == OV_VIEW_GRAPH) lay->focus = OV_FOCUS_GRAPH;
         return 0;
     }
 
@@ -446,6 +458,24 @@ int ov_handle_key(
         return 0;
     }
 
+    /* Freeze selection — SPACE toggle */
+    if (key == ' ')
+    {
+        if (lay->freeze)
+        {
+            lay->freeze = 0;
+        }
+        else
+        {
+            lay->freeze = 1;
+            lay->freeze_focus = lay->focus;
+            lay->freeze_sel_stream = lay->sel_stream;
+            lay->freeze_sel_proc   = lay->sel_proc;
+            lay->freeze_sel_fps    = lay->sel_fps;
+        }
+        return 0;
+    }
+
     /* Graph jump on Enter */
     if ((key == '\n' || key == '\r') && lay->focus == OV_FOCUS_GRAPH)
     {
@@ -466,12 +496,14 @@ int ov_handle_key(
     {
         if (key == OV_KEY_LEFT)
         {
-            if (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_FPS)
+            if (lay->focus == OV_FOCUS_PROCS)
                 lay->focus = OV_FOCUS_STREAMS;
+            else if (lay->focus == OV_FOCUS_FPS)
+                lay->focus = OV_FOCUS_PROCS;
             else if (lay->focus == OV_FOCUS_GRAPH)
             {
                 if (lay->view == OV_VIEW_DASHBOARD && !lay->detail_mode)
-                    lay->focus = OV_FOCUS_PROCS;
+                    lay->focus = OV_FOCUS_FPS;
                 else
                     lay->focus = OV_FOCUS_STREAMS;
             }
@@ -480,7 +512,9 @@ int ov_handle_key(
         {
             if (lay->focus == OV_FOCUS_STREAMS)
                 lay->focus = OV_FOCUS_PROCS;
-            else if (lay->focus == OV_FOCUS_PROCS || lay->focus == OV_FOCUS_FPS)
+            else if (lay->focus == OV_FOCUS_PROCS)
+                lay->focus = OV_FOCUS_FPS;
+            else if (lay->focus == OV_FOCUS_FPS)
                 lay->focus = OV_FOCUS_GRAPH;
         }
         return 0;
@@ -492,10 +526,10 @@ int ov_handle_key(
         switch (lay->focus)
         {
         case OV_FOCUS_STREAMS:
-            lay->sort_key_stream = 1; /* Hz */
+            lay->sort_key_stream = 3; /* Hz */
             break;
         case OV_FOCUS_PROCS:
-            lay->sort_key_proc = 2;   /* Hz */
+            lay->sort_key_proc = 3;   /* Hz */
             break;
         case OV_FOCUS_FPS:
             lay->sort_key_fps = 1;    /* alive */
@@ -524,6 +558,58 @@ int ov_handle_key(
             break;
         case OV_FOCUS_FPS:
             lay->sort_key_fps = 0;
+            break;
+        default:
+            break;
+        }
+        lay->sort_pending = 1;
+        return 0;
+    }
+
+    /* Cycle sort column forward — ']' */
+    if (key == ']')
+    {
+        switch (lay->focus)
+        {
+        case OV_FOCUS_STREAMS:
+            /* 0:NAME 1:TYP 2:SIZE 3:Hz
+             * 4:INODE 5:COUNT */
+            lay->sort_key_stream =
+                (lay->sort_key_stream + 1) % 6;
+            break;
+        case OV_FOCUS_PROCS:
+            /* 0:NAME 1:PID 2:STAT 3:Hz */
+            lay->sort_key_proc =
+                (lay->sort_key_proc + 1) % 4;
+            break;
+        case OV_FOCUS_FPS:
+            /* 0:NAME 1:C(alive) */
+            lay->sort_key_fps =
+                (lay->sort_key_fps + 1) % 2;
+            break;
+        default:
+            break;
+        }
+        lay->sort_pending = 1;
+        return 0;
+    }
+
+    /* Toggle sort direction — '[' */
+    if (key == '[')
+    {
+        switch (lay->focus)
+        {
+        case OV_FOCUS_STREAMS:
+            lay->sort_dir_stream =
+                !lay->sort_dir_stream;
+            break;
+        case OV_FOCUS_PROCS:
+            lay->sort_dir_proc =
+                !lay->sort_dir_proc;
+            break;
+        case OV_FOCUS_FPS:
+            lay->sort_dir_fps =
+                !lay->sort_dir_fps;
             break;
         default:
             break;
@@ -598,18 +684,36 @@ int ov_handle_key(
             sel    = &lay->sel_stream;
             scroll = &lay->scroll_stream;
             count  = m->nb_streams;
+            if (lay->filter_stream[0] != '\0') {
+                const char *names[OV_MAX_STREAMS];
+                for (int i = 0; i < count; i++) names[i] = m->streams[i].name;
+                int fidx[OV_MAX_STREAMS];
+                count = ov_filter_build(lay->filter_stream, names, count, fidx, OV_MAX_STREAMS);
+            }
             page_h = lay->r_streams.height - 3;
             break;
         case OV_FOCUS_PROCS:
             sel    = &lay->sel_proc;
             scroll = &lay->scroll_proc;
             count  = m->nb_procs;
+            if (lay->filter_proc[0] != '\0') {
+                const char *names[OV_MAX_PROCS];
+                for (int i = 0; i < count; i++) names[i] = m->procs[i].name;
+                int fidx[OV_MAX_PROCS];
+                count = ov_filter_build(lay->filter_proc, names, count, fidx, OV_MAX_PROCS);
+            }
             page_h = lay->r_procs.height - 3;
             break;
         case OV_FOCUS_FPS:
             sel    = &lay->sel_fps;
             scroll = &lay->scroll_fps;
             count  = m->nb_fps;
+            if (lay->filter_fps[0] != '\0') {
+                const char *names[OV_MAX_FPS];
+                for (int i = 0; i < count; i++) names[i] = m->fps[i].name;
+                int fidx[OV_MAX_FPS];
+                count = ov_filter_build(lay->filter_fps, names, count, fidx, OV_MAX_FPS);
+            }
             page_h = lay->r_fps.height - 3;
             break;
         default:
