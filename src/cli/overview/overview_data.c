@@ -97,6 +97,27 @@ static int pid_check_zombie(pid_t pid)
     return (state == 'Z');
 }
 
+/**
+ * pid_get_rss_kb - Read RSS memory usage in KB.
+ */
+static long pid_get_rss_kb(pid_t pid)
+{
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/%d/statm", (int) pid);
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        return 0;
+    }
+    long size, rss = 0;
+    if (fscanf(fp, "%ld %ld", &size, &rss) != 2)
+    {
+        rss = 0;
+    }
+    fclose(fp);
+    return (rss * sysconf(_SC_PAGESIZE)) / 1024;
+}
+
 ov_pid_status_t pid_get_status(pid_t pid)
 {
     if (pid <= 0)
@@ -137,6 +158,44 @@ ov_pid_status_t pid_get_status(pid_t pid)
 static int pid_is_alive(pid_t pid)
 {
     return (pid_get_status(pid) != OV_PID_DEAD);
+}
+
+/**
+ * pid_get_cpu_ticks - read cumulative CPU ticks.
+ * @pid:    process ID
+ * @utime:  [out] user-mode ticks
+ * @stime:  [out] kernel-mode ticks
+ *
+ * Reads fields 14 (utime) and 15 (stime) from
+ * /proc/[pid]/stat.
+ *
+ * Return: 0 on success, -1 on failure.
+ */
+static int pid_get_cpu_ticks(
+    pid_t          pid,
+    unsigned long *utime,
+    unsigned long *stime)
+{
+    char path[64];
+    snprintf(path, sizeof(path),
+             "/proc/%d/stat", (int) pid);
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        return -1;
+    }
+
+    /* Skip to field 14 (utime) and 15 (stime).
+     * Fields: pid (comm) state ppid pgrp session
+     * tty_nr tpgid flags minflt cminflt majflt
+     * cmajflt utime stime */
+    int rc = fscanf(fp,
+        "%*d %*s %*c %*d %*d %*d %*d %*d "
+        "%*u %*lu %*lu %*lu %*lu %lu %lu",
+        utime, stime);
+    fclose(fp);
+
+    return (rc == 2) ? 0 : -1;
 }
 
 
@@ -207,6 +266,7 @@ typedef struct
     int      in_use;    /**< set each tick; cleared for eviction */
     uint64_t prev_cnt0; /**< cnt0 from previous scan tick */
     int      has_prev;  /**< 1 once prev_cnt0 is valid */
+    float    spark_max; /**< dynamic max Hz for normalization */
     float    spark_rate[OV_SPARKLINE_LEN];
     int      spark_idx; /**< ring index into spark_rate */
 } ov_stream_cache_t;
@@ -292,10 +352,16 @@ static void fcache_evict(int ci)
 
 typedef struct
 {
-    pid_t        pid;
-    PROCESSINFO *pinfo;   /**< mmap'd pointer */
-    int          fd;
-    int          in_use;
+    pid_t         pid;
+    PROCESSINFO  *pinfo;   /**< mmap'd pointer */
+    int           fd;
+    int           in_use;
+
+    /* CPU usage tracking */
+    unsigned long prev_utime;
+    unsigned long prev_stime;
+    int           has_prev_cpu;
+    float         cpu_pct;
 } ov_proc_cache_t;
 
 static ov_proc_cache_t s_pcache[OV_MAX_PROCS];
@@ -359,9 +425,19 @@ static void scache_rate_update(
         s->update_hz =
             (double) dc / s_scan_dt_sec;
 
-        /* Update sparkline in cache */
-        float sv   = (float) s->update_hz;
-        float norm = sv / 10000.0f;
+        /* Update sparkline in cache (auto-scale) */
+        float sv = (float) s->update_hz;
+        if (sv > ce->spark_max)
+        {
+            ce->spark_max = sv;
+        }
+        /* Decay max slowly so sparkline adapts */
+        ce->spark_max *= 0.999f;
+        if (ce->spark_max < 1.0f)
+        {
+            ce->spark_max = 1.0f;
+        }
+        float norm = sv / ce->spark_max;
         if (norm > 1.0f)
         {
             norm = 1.0f;
@@ -414,6 +490,15 @@ static void fill_stream_from_img(
     s->size[1]    = imgp->md->size[1];
     s->size[2]    = imgp->md->size[2];
     s->nelement   = imgp->md->nelement;
+
+    if (s->naxis == 1) {
+        snprintf(s->size_str, sizeof(s->size_str), "%u", (unsigned)s->size[0]);
+    } else if (s->naxis == 2) {
+        snprintf(s->size_str, sizeof(s->size_str), "%ux%u", (unsigned)s->size[0], (unsigned)s->size[1]);
+    } else {
+        snprintf(s->size_str, sizeof(s->size_str), "%ux%ux%u", (unsigned)s->size[0], (unsigned)s->size[1], (unsigned)s->size[2]);
+    }
+
     s->creatorPID = imgp->md->creatorPID;
     s->ownerPID   = imgp->md->ownerPID;
     s->cnt0       = imgp->md->cnt0;
@@ -789,7 +874,8 @@ static void fill_fps_from_struct(
     f->md_status  = fpsp->md->status;
     f->confpid    = fpsp->md->confpid;
     f->runpid     = fpsp->md->runpid;
-    f->conf_alive = pid_is_alive(f->confpid);
+    f->mem_rss_kb = (f->runpid > 0) ? pid_get_rss_kb(f->runpid) : 0;
+    f->conf_alive = (pid_get_status(f->confpid) == OV_PID_ALIVE);
     f->run_alive  = pid_is_alive(f->runpid);
 
     /* Build param index cache on first use */
@@ -1112,6 +1198,7 @@ void ov_scan_procs(OV_MODEL *model)
         p->loopstat = pinfo->loopstat;
         p->CTRLval  = pinfo->CTRLval;
         p->loopcnt  = pinfo->loopcnt;
+        p->mem_rss_kb = pid_get_rss_kb(pinfo->PID);
 
         /* Timing stats */
         p->dtmedian_iter_ns =
@@ -1138,6 +1225,34 @@ void ov_scan_procs(OV_MODEL *model)
         p->MeasureTiming = pinfo->MeasureTiming;
 
         p->rt_priority = pinfo->RT_priority;
+
+        /* CPU% tracking via cache delta */
+        {
+            ov_proc_cache_t *ce = &s_pcache[ci];
+            unsigned long ut = 0, st = 0;
+            if (pid_get_cpu_ticks(pid, &ut, &st)
+                == 0)
+            {
+                if (ce->has_prev_cpu
+                    && s_scan_dt_sec > 0.01)
+                {
+                    long clk = sysconf(
+                        _SC_CLK_TCK);
+                    unsigned long dticks =
+                        (ut - ce->prev_utime)
+                        + (st - ce->prev_stime);
+                    ce->cpu_pct = (float)(
+                        (double) dticks
+                        / ((double) clk
+                            * s_scan_dt_sec)
+                        * 100.0);
+                }
+                ce->prev_utime   = ut;
+                ce->prev_stime   = st;
+                ce->has_prev_cpu = 1;
+            }
+            p->cpu_used = ce->cpu_pct;
+        }
 
         p->node_idx = -1;
         idx++;
@@ -1685,6 +1800,43 @@ static int sort_stream_by_hz(
     return 0;
 }
 
+/**
+ * dtype_bytes - bytes per element for a datatype.
+ */
+static int dtype_bytes(uint8_t dt)
+{
+    switch (dt)
+    {
+    case _DATATYPE_UINT8:
+    case _DATATYPE_INT8:    return 1;
+    case _DATATYPE_UINT16:
+    case _DATATYPE_INT16:   return 2;
+    case _DATATYPE_UINT32:
+    case _DATATYPE_INT32:
+    case _DATATYPE_FLOAT:   return 4;
+    case _DATATYPE_UINT64:
+    case _DATATYPE_INT64:
+    case _DATATYPE_DOUBLE:  return 8;
+    default:                return 1;
+    }
+}
+
+static int sort_stream_by_throughput(
+    const void *a, const void *b)
+{
+    const OV_STREAM *sa = (const OV_STREAM *) a;
+    const OV_STREAM *sb = (const OV_STREAM *) b;
+    double ta = sa->update_hz
+        * (double) sa->nelement
+        * dtype_bytes(sa->datatype);
+    double tb = sb->update_hz
+        * (double) sb->nelement
+        * dtype_bytes(sb->datatype);
+    if (ta < tb) { return -ov_sort_dir_mul; }
+    if (ta > tb) { return ov_sort_dir_mul; }
+    return 0;
+}
+
 static int sort_stream_by_inode(
     const void *a, const void *b)
 {
@@ -1706,7 +1858,7 @@ static int sort_stream_by_count(
 }
 
 /** Number of sortable stream columns. */
-#define OV_STREAM_SORT_NCOL 6
+#define OV_STREAM_SORT_NCOL 7
 
 void ov_sort_streams(
     OV_MODEL *model, int key, int dir)
@@ -1719,12 +1871,13 @@ void ov_sort_streams(
     int (*cmp)(const void *, const void *);
     switch (key)
     {
-    case 1:  cmp = sort_stream_by_type;  break;
-    case 2:  cmp = sort_stream_by_size;  break;
-    case 3:  cmp = sort_stream_by_hz;    break;
-    case 4:  cmp = sort_stream_by_inode; break;
-    case 5:  cmp = sort_stream_by_count; break;
-    default: cmp = sort_stream_by_name;  break;
+    case 1:  cmp = sort_stream_by_type;       break;
+    case 2:  cmp = sort_stream_by_size;       break;
+    case 3:  cmp = sort_stream_by_hz;         break;
+    case 4:  cmp = sort_stream_by_throughput; break;
+    case 5:  cmp = sort_stream_by_inode;      break;
+    case 6:  cmp = sort_stream_by_count;      break;
+    default: cmp = sort_stream_by_name;       break;
     }
     qsort(model->streams,
           (size_t) model->nb_streams,
@@ -1772,8 +1925,18 @@ static int sort_proc_by_hz(
     return 0;
 }
 
+static int sort_proc_by_mem(
+    const void *a, const void *b)
+{
+    long ma = ((const OV_PROC *) a)->mem_rss_kb;
+    long mb = ((const OV_PROC *) b)->mem_rss_kb;
+    if (ma < mb) { return -ov_sort_dir_mul; }
+    if (ma > mb) { return ov_sort_dir_mul; }
+    return 0;
+}
+
 /** Number of sortable proc columns. */
-#define OV_PROC_SORT_NCOL 4
+#define OV_PROC_SORT_NCOL 5
 
 void ov_sort_procs(
     OV_MODEL *model, int key, int dir)
@@ -1789,6 +1952,7 @@ void ov_sort_procs(
     case 1:  cmp = sort_proc_by_pid;  break;
     case 2:  cmp = sort_proc_by_stat; break;
     case 3:  cmp = sort_proc_by_hz;   break;
+    case 4:  cmp = sort_proc_by_mem;  break;
     default: cmp = sort_proc_by_name; break;
     }
     qsort(model->procs,
@@ -1807,7 +1971,7 @@ static int sort_fps_by_name(
         ((const OV_FPS *) b)->name);
 }
 
-static int sort_fps_by_alive(
+static int sort_fps_by_status(
     const void *a, const void *b)
 {
     const OV_FPS *fa = (const OV_FPS *) a;
@@ -1819,8 +1983,18 @@ static int sort_fps_by_alive(
     return 0;
 }
 
+static int sort_fps_by_mem(
+    const void *a, const void *b)
+{
+    long ma = ((const OV_FPS *) a)->mem_rss_kb;
+    long mb = ((const OV_FPS *) b)->mem_rss_kb;
+    if (ma < mb) { return -ov_sort_dir_mul; }
+    if (ma > mb) { return ov_sort_dir_mul; }
+    return 0;
+}
+
 /** Number of sortable FPS columns. */
-#define OV_FPS_SORT_NCOL 2
+#define OV_FPS_SORT_NCOL 3
 
 void ov_sort_fps(
     OV_MODEL *model, int key, int dir)
@@ -1833,10 +2007,129 @@ void ov_sort_fps(
     int (*cmp)(const void *, const void *);
     switch (key)
     {
-    case 1:  cmp = sort_fps_by_alive; break;
-    default: cmp = sort_fps_by_name;  break;
+    case 1:  cmp = sort_fps_by_status; break;
+    case 2:  cmp = sort_fps_by_mem;    break;
+    default: cmp = sort_fps_by_name;   break;
     }
     qsort(model->fps,
           (size_t) model->nb_fps,
           sizeof(OV_FPS), cmp);
+}
+
+/* =========================================================
+ * Snapshot export
+ * ========================================================= */
+
+void ov_model_export_snapshot(const OV_MODEL *m)
+{
+    if (m == NULL)
+    {
+        return;
+    }
+
+    time_t now = time(NULL);
+    struct tm *tm_ptr = localtime(&now);
+    char fname[128];
+    strftime(fname, sizeof(fname),
+        "/tmp/milkCTRL_snapshot_%Y%m%d_%H%M%S.txt",
+        tm_ptr);
+
+    FILE *fp = fopen(fname, "w");
+    if (fp == NULL)
+    {
+        return;
+    }
+
+    char tstr[64];
+    strftime(tstr, sizeof(tstr),
+        "%Y-%m-%d %H:%M:%S", tm_ptr);
+    fprintf(fp,
+        "# milkCTRL snapshot — %s\n"
+        "# streams: %d  procs: %d  fps: %d"
+        "  edges: %d\n\n",
+        tstr, m->nb_streams, m->nb_procs,
+        m->nb_fps, m->nb_edges);
+
+    /* Streams */
+    fprintf(fp, "=== STREAMS (%d) ===\n", m->nb_streams);
+    fprintf(fp,
+        "%-20s %4s %12s %8s %10s %7s %10s\n",
+        "NAME", "TYP", "SIZE",
+        "Hz", "INODE", "OWNER", "COUNT");
+    for (int i = 0; i < m->nb_streams; i++)
+    {
+        const OV_STREAM *s = &m->streams[i];
+        fprintf(fp,
+            "%-20s %4d %12s %8.1f %10lu %7d %10lu\n",
+            s->name, s->datatype, s->size_str,
+            s->update_hz, (unsigned long) s->inode,
+            (int) s->ownerPID,
+            (unsigned long) s->cnt0);
+    }
+
+    /* Processes */
+    fprintf(fp,
+        "\n=== PROCESSES (%d) ===\n", m->nb_procs);
+    fprintf(fp,
+        "%-20s %7s %6s %8s %10s %s\n",
+        "NAME", "PID", "STAT",
+        "Hz", "MEM(KB)", "TRIGGER");
+    for (int i = 0; i < m->nb_procs; i++)
+    {
+        const OV_PROC *p = &m->procs[i];
+        const char *sl;
+        switch (p->loopstat)
+        {
+        case 0:  sl = "IDLE"; break;
+        case 1:  sl = "RUN";  break;
+        case 2:  sl = "PAUS"; break;
+        case 3:  sl = "TERM"; break;
+        case 4:  sl = "ERR";  break;
+        default: sl = "??";   break;
+        }
+        fprintf(fp,
+            "%-20s %7d %6s %8.1f %10ld %s\n",
+            p->name, (int) p->PID, sl,
+            p->loop_hz, p->mem_rss_kb,
+            p->trigstreamname[0]
+                ? p->trigstreamname : "-");
+    }
+
+    /* FPS */
+    fprintf(fp, "\n=== FPS (%d) ===\n", m->nb_fps);
+    fprintf(fp,
+        "%-24s %4s %4s %10s %s\n",
+        "NAME", "CONF", "RUN", "MEM(KB)",
+        "DESCRIPTION");
+    for (int i = 0; i < m->nb_fps; i++)
+    {
+        const OV_FPS *f = &m->fps[i];
+        fprintf(fp,
+            "%-24s %4s %4s %10ld %s\n",
+            f->name,
+            f->conf_alive ? "Y" : "-",
+            f->run_alive  ? "Y" : "-",
+            f->mem_rss_kb,
+            f->description);
+    }
+
+    /* Edges */
+    fprintf(fp,
+        "\n=== EDGES (%d) ===\n", m->nb_edges);
+    for (int i = 0; i < m->nb_edges; i++)
+    {
+        const OV_EDGE *e = &m->edges[i];
+        if (e->src_node >= 0
+            && e->src_node < m->nb_nodes
+            && e->tgt_node >= 0
+            && e->tgt_node < m->nb_nodes)
+        {
+            fprintf(fp, "  %s -> %s  [%s]\n",
+                m->nodes[e->src_node].name,
+                m->nodes[e->tgt_node].name,
+                e->label);
+        }
+    }
+
+    fclose(fp);
 }

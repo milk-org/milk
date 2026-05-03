@@ -468,6 +468,27 @@ static const char *render_dtype(uint8_t dt)
     }
 }
 
+/**
+ * dtype_bytesize - bytes per element for a datatype.
+ */
+static int dtype_bytesize(uint8_t dt)
+{
+    switch (dt)
+    {
+    case _DATATYPE_UINT8:
+    case _DATATYPE_INT8:    return 1;
+    case _DATATYPE_UINT16:
+    case _DATATYPE_INT16:   return 2;
+    case _DATATYPE_UINT32:
+    case _DATATYPE_INT32:
+    case _DATATYPE_FLOAT:   return 4;
+    case _DATATYPE_UINT64:
+    case _DATATYPE_INT64:
+    case _DATATYPE_DOUBLE:  return 8;
+    default:                return 1;
+    }
+}
+
 static const char *view_label(ov_view_t v)
 {
     switch (v)
@@ -880,13 +901,14 @@ static inline ov_rgb_t ov_get_sem_color(int val) {
  * When col_key == cur_key the label gets a
  * trailing arrow (▲ asc, ▼ desc).
  */
-static inline void sort_col_label(
+static inline int sort_col_label(
     char *buf,
     int   bufsz,
     const char *label,
     int   col_key,
     int   cur_key,
-    int   desc)
+    int   desc,
+    int   visual_width)
 {
     if (col_key == cur_key)
     {
@@ -894,10 +916,12 @@ static inline void sort_col_label(
                  label,
                  desc ? "\xe2\x96\xbc"   /* ▼ */
                       : "\xe2\x96\xb2"); /* ▲ */
+        return visual_width + 2;
     }
     else
     {
         snprintf(buf, bufsz, "%s", label);
+        return visual_width;
     }
 }
 
@@ -953,32 +977,36 @@ void ov_render_streams_panel(
     ov_buf_printf(" ");
     ov_theme_fg(OV_FG_DIM);
     
-    char htext[256];
+    char htext[300];
     int hlen;
     {
         int sk = lay->sort_key_stream;
         int sd = lay->sort_dir_stream;
         char c_name[20], c_typ[10], c_size[16];
-        char c_hz[10], c_ino[16], c_cnt[16];
-        sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd);
-        sort_col_label(c_typ, sizeof(c_typ),
-                       "TYP", 1, sk, sd);
-        sort_col_label(c_size, sizeof(c_size),
-                       "SIZE", 2, sk, sd);
-        sort_col_label(c_hz, sizeof(c_hz),
-                       "Hz", 3, sk, sd);
-        sort_col_label(c_ino, sizeof(c_ino),
-                       "INODE", 4, sk, sd);
-        sort_col_label(c_cnt, sizeof(c_cnt),
-                       "COUNT", 5, sk, sd);
+        char c_hz[10], c_mbps[12], c_ino[16], c_cnt[16];
+        int w_name = sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd, 14);
+        int w_typ = sort_col_label(c_typ, sizeof(c_typ),
+                       "TYP", 1, sk, sd, 4);
+        int w_size = sort_col_label(c_size, sizeof(c_size),
+                       "SIZE", 2, sk, sd, 11);
+        int w_hz = sort_col_label(c_hz, sizeof(c_hz),
+                       "Hz", 3, sk, sd, 6);
+        int w_mbps = sort_col_label(c_mbps, sizeof(c_mbps),
+                       "MB/s", 4, sk, sd, 7);
+        int w_ino = sort_col_label(c_ino, sizeof(c_ino),
+                       "INODE", 5, sk, sd, 10);
+        int w_cnt = sort_col_label(c_cnt, sizeof(c_cnt),
+                       "COUNT", 6, sk, sd, 10);
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-14s %3s %11s %6s"
-            " %10s %7s %10s %10s"
+            "%-*s %*s %*s %*s"
+            " %*s %*s %7s %*s %10s"
             " %7s %s",
-            c_name, c_typ, c_size, c_hz,
-            c_ino, "OWNER", c_cnt, "SEMS",
+            w_name, c_name, w_typ, c_typ,
+            w_size, c_size, w_hz, c_hz,
+            w_mbps, c_mbps, w_ino, c_ino,
+            "OWNER", w_cnt, c_cnt, "SEMS",
             "WPID", "RPID");
     }
     
@@ -1083,20 +1111,29 @@ void ov_render_streams_panel(
             ov_rgb_t base_color = s->active ? OV_FG_STREAM : OV_FG_DIM;
             
             STRM_FIELD(base_color, "%-14.14s ", s->name);
-            STRM_FIELD(OV_FG_MUTED, "%3s ", render_dtype(s->datatype));
+            STRM_FIELD(OV_FG_MUTED, "%4s ", render_dtype(s->datatype));
             
-            char sizebuf[32];
-            if (s->naxis == 1) {
-                snprintf(sizebuf, sizeof(sizebuf), "%u", (unsigned) s->size[0]);
-            } else if (s->naxis == 2) {
-                snprintf(sizebuf, sizeof(sizebuf), "%ux%u", (unsigned) s->size[0], (unsigned) s->size[1]);
-            } else {
-                snprintf(sizebuf, sizeof(sizebuf), "%ux%ux%u", (unsigned) s->size[0], (unsigned) s->size[1], (unsigned) s->size[2]);
-            }
-            STRM_FIELD(OV_FG_TEXT, "%11s ", sizebuf);
+            STRM_FIELD(OV_FG_TEXT, "%11s ", s->size_str);
             
             if (s->update_hz > 0.1) {
                 STRM_FIELD(OV_FG_ACTIVE, "%6.1f ", s->update_hz);
+            } else {
+                STRM_FIELD(OV_FG_DIM, "     - ");
+            }
+
+            /* MB/s throughput */
+            if (s->update_hz > 0.1) {
+                double mbps = s->update_hz
+                    * (double) s->nelement
+                    * dtype_bytesize(s->datatype)
+                    / (1024.0 * 1024.0);
+                if (mbps >= 1000.0) {
+                    STRM_FIELD(OV_FG_ACTIVE,
+                        "%6.1fG ", mbps / 1024.0);
+                } else {
+                    STRM_FIELD(OV_FG_ACTIVE,
+                        "%6.1fM ", mbps);
+                }
             } else {
                 STRM_FIELD(OV_FG_DIM, "     - ");
             }
@@ -1167,6 +1204,49 @@ void ov_render_streams_panel(
     render_scroll_indicators(
         r, lay->scroll_stream, max_rows,
         filt_n, OV_FG_STREAM);
+
+    /* Total MB/s footer on bottom border */
+    {
+        double total_bps = 0.0;
+        for (int i = 0; i < filt_n; i++)
+        {
+            int si = filt_idx[i];
+            const OV_STREAM *s = &m->streams[si];
+            if (s->update_hz > 0.1)
+            {
+                total_bps += s->update_hz
+                    * (double) s->nelement
+                    * dtype_bytesize(s->datatype);
+            }
+        }
+        double total_mb = total_bps
+            / (1024.0 * 1024.0);
+        char tbuf[40];
+        if (total_mb >= 1000.0)
+        {
+            snprintf(tbuf, sizeof(tbuf),
+                " %.1f GB/s ",
+                total_mb / 1024.0);
+        }
+        else
+        {
+            snprintf(tbuf, sizeof(tbuf),
+                " %.1f MB/s ",
+                total_mb);
+        }
+        int tlen = (int) strlen(tbuf);
+        int brow = r.row + r.height - 1;
+        int bcol = r.col + r.width
+            - tlen - 2;
+        if (bcol > r.col + 1)
+        {
+            ov_buf_pos(brow, bcol);
+            ov_theme_fg(OV_FG_ACTIVE);
+            ov_theme_bg(OV_BG_PANEL);
+            ov_buf_printf("%s", tbuf);
+        }
+    }
+
     ov_buf_reset_attr();
 
     if (has_re)
@@ -1190,6 +1270,19 @@ static const char *render_trigmode_label(int mode)
     case 5:  return "SMP";
     case 6:  return "CN2";
     default: return " - ";
+    }
+}
+
+static void format_mem_kb(char *buf, size_t sz, long kb)
+{
+    if (kb <= 0) {
+        snprintf(buf, sz, "   -");
+    } else if (kb >= 1024 * 1024) {
+        snprintf(buf, sz, "%4.1fG", (double)kb / (1024.0 * 1024.0));
+    } else if (kb >= 1024) {
+        snprintf(buf, sz, "%4ldM", kb / 1024);
+    } else {
+        snprintf(buf, sz, "%4ldK", kb);
     }
 }
 
@@ -1251,24 +1344,28 @@ void ov_render_procs_panel(
         int sk = lay->sort_key_proc;
         int sd = lay->sort_dir_proc;
         char c_name[20], c_pid[12];
-        char c_stat[10], c_hz[10];
-        sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd);
-        sort_col_label(c_pid, sizeof(c_pid),
-                       "PID", 1, sk, sd);
-        sort_col_label(c_stat, sizeof(c_stat),
-                       "STAT", 2, sk, sd);
-        sort_col_label(c_hz, sizeof(c_hz),
-                       "Hz", 3, sk, sd);
+        char c_stat[10], c_hz[10], c_mem[10];
+        int w_name = sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd, 14);
+        int w_pid = sort_col_label(c_pid, sizeof(c_pid),
+                       "PID", 1, sk, sd, 7);
+        int w_stat = sort_col_label(c_stat, sizeof(c_stat),
+                       "STAT", 2, sk, sd, 5);
+        int w_hz = sort_col_label(c_hz, sizeof(c_hz),
+                       "Hz", 3, sk, sd, 6);
+        int w_mem = sort_col_label(c_mem, sizeof(c_mem),
+                       "MEM", 4, sk, sd, 5);
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-14s %7s %4s %6s"
-            " %3s %-10s"
-            " %7s %2s %6s %10s %10s %4s",
-            c_name, c_pid, c_stat, c_hz,
+            "%-*s %*s %*s %*s"
+            " %3s %-10s %7s %5s"
+            "  CPU%%  %10s %*s %10s %4s",
+            w_name, c_name, w_pid, c_pid,
+            w_stat, c_stat, w_hz, c_hz,
             "TRG", "trig-strm",
-            "exec", "", "CPU%",
-            "LOOPCNT", "MISSED", "PRIO");
+            "exec", "DUTY",
+            "LOOPCNT", w_mem, c_mem,
+            "MISSED", "PRIO");
     }
     /* Apply hscroll: skip first hs chars */
     {
@@ -1602,7 +1699,7 @@ void ov_render_procs_panel(
             {
                 char fb[80];
                 int fl = snprintf(fb, sizeof(fb),
-                    "%4s ", sl);
+                    "%5s ", sl);
                 int skip = 0;
                 if (hs_rem > 0)
                 {
@@ -1769,6 +1866,56 @@ void ov_render_procs_panel(
                     printed += vv;
                 }
             }
+            /* DUTY% (exec / iter) */
+            {
+                char fb[80];
+                int fl;
+                ov_rgb_t dc = OV_FG_DIM;
+                if (p->MeasureTiming
+                    && p->dtmedian_exec_ns > 0
+                    && p->dtmedian_iter_ns > 0)
+                {
+                    double duty = 100.0
+                        * (double) p->dtmedian_exec_ns
+                        / (double) p->dtmedian_iter_ns;
+                    fl = snprintf(fb, sizeof(fb),
+                        " %4.0f%%", duty);
+                    if (duty > 90.0)
+                    {
+                        dc = OV_FG_ERROR;
+                    }
+                    else if (duty > 50.0)
+                    {
+                        dc = OV_FG_WARN;
+                    }
+                    else
+                    {
+                        dc = OV_FG_ACTIVE;
+                    }
+                }
+                else
+                {
+                    fl = snprintf(fb, sizeof(fb),
+                        "    -");
+                }
+                int skip = 0;
+                if (hs_rem > 0)
+                {
+                    skip = (hs_rem < fl)
+                         ? hs_rem : fl;
+                    hs_rem -= skip;
+                }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx) { vv = mx; }
+                if (vv > 0)
+                {
+                    ov_theme_fg(dc);
+                    ov_buf_printf(
+                        "%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
             /* CPU% */
             {
                 char fb[80];
@@ -1805,6 +1952,24 @@ void ov_render_procs_panel(
                 if (vv > 0)
                 {
                     ov_theme_fg(OV_FG_DIM);
+                    ov_buf_printf("%.*s", vv, fb + skip);
+                    printed += vv;
+                }
+            }
+            /* MEM */
+            {
+                char memstr[16];
+                format_mem_kb(memstr, sizeof(memstr), p->mem_rss_kb);
+                char fb[32];
+                int fl = snprintf(fb, sizeof(fb), "%5s ", memstr);
+                int skip = 0;
+                if (hs_rem > 0) { skip = (hs_rem < fl) ? hs_rem : fl; hs_rem -= skip; }
+                int vv = fl - skip;
+                int mx = avail - printed;
+                if (vv > mx) { vv = mx; }
+                if (vv > 0)
+                {
+                    ov_theme_fg(OV_FG_TEXT);
                     ov_buf_printf("%.*s", vv, fb + skip);
                     printed += vv;
                 }
@@ -1934,19 +2099,21 @@ void ov_render_fps_panel(
     {
         int sk = lay->sort_key_fps;
         int sd = lay->sort_dir_fps;
-        char c_name[24], c_c[8];
-        sort_col_label(c_name, sizeof(c_name),
-                       "NAME", 0, sk, sd);
-        sort_col_label(c_c, sizeof(c_c),
-                       "C", 1, sk, sd);
+        char c_name[24], c_c[8], c_mem[10];
+        int w_name = sort_col_label(c_name, sizeof(c_name),
+                       "NAME", 0, sk, sd, 18);
+        int w_c = sort_col_label(c_c, sizeof(c_c),
+                       "C", 1, sk, sd, 2);
+        int w_mem = sort_col_label(c_mem, sizeof(c_mem),
+                       "MEM", 2, sk, sd, 5);
         int desc_w =
             (lay->view == OV_VIEW_FPS)
             ? 30 : 20;
         hlen = snprintf(
             htext, sizeof(htext),
-            "%-18s %1s %1s %3s"
+            "%-*s %*s %1s %3s %*s"
             " %-*s %8s %7s %7s",
-            c_name, c_c, "R", "STR",
+            w_name, c_name, w_c, c_c, "R", "STR", w_mem, c_mem,
             desc_w, "DESCRIPTION",
             "STATUS", "CPID", "RPID");
     }
@@ -2044,10 +2211,15 @@ void ov_render_fps_panel(
                         ? rel->sel_pid : 0;
 
             FPS_FIELD(OV_FG_FPS, "%-18.18s ", f->name);
-            FPS_PID_FIELD(f->confpid, "%s ", f->conf_alive ? "C" : "-");
+            FPS_PID_FIELD(f->confpid, "%2s ", f->conf_alive ? "C" : "-");
             FPS_PID_FIELD(f->runpid, "%s ", f->run_alive ? "R" : "-");
             FPS_FIELD(OV_FG_TEXT, "%3d ", f->nb_stream_params);
             
+            /* MEM */
+            char memstr[16];
+            format_mem_kb(memstr, sizeof(memstr), f->mem_rss_kb);
+            FPS_FIELD(OV_FG_TEXT, "%5s ", memstr);
+
             /* Detailed columns */
             if (lay->view == OV_VIEW_FPS)
             {
@@ -2640,8 +2812,8 @@ void ov_render_graph_panel(
     ov_theme_bg(OV_BG_HEADER);
     ov_theme_fg(OV_FG_DIM);
     char htext[256];
-    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-6s %-16s %-4s %-4s", 
-                        "SRC", "CONN", "TGT", "LABEL", "EDGE TYPE", "STYP", "TTYP");
+    int hlen = snprintf(htext, sizeof(htext), " %-12s %-4s %-12s %-6s %-16s %-4s %-5s %-4s", 
+                        "PROCESS", "PID", "STREAM", "STATUS", "LOOPCNT", "MISS", "MEM", "PR");
     ov_buf_printf("%s", htext);
     render_pad_spaces(hlen, r.width);
     row++;
@@ -2794,17 +2966,22 @@ void ov_render_status(
     case OV_FOCUS_STREAMS:
         switch (lay->sort_key_stream)
         {
-        case 1:  sort_label = " [sort:Hz]"; break;
-        case 2:  sort_label = " [sort:typ]"; break;
-        default: sort_label = " [sort:name]"; break;
+        case 1:  sort_label = " [sort:typ]";   break;
+        case 2:  sort_label = " [sort:size]";  break;
+        case 3:  sort_label = " [sort:Hz]";    break;
+        case 4:  sort_label = " [sort:MB/s]";  break;
+        case 5:  sort_label = " [sort:inode]"; break;
+        case 6:  sort_label = " [sort:count]"; break;
+        default: sort_label = " [sort:name]";  break;
         }
         break;
     case OV_FOCUS_PROCS:
         switch (lay->sort_key_proc)
         {
-        case 1:  sort_label = " [sort:PID]"; break;
-        case 2:  sort_label = " [sort:Hz]"; break;
-        case 3:  sort_label = " [sort:stat]"; break;
+        case 1:  sort_label = " [sort:PID]";  break;
+        case 2:  sort_label = " [sort:stat]"; break;
+        case 3:  sort_label = " [sort:Hz]";   break;
+        case 4:  sort_label = " [sort:MEM]";  break;
         default: sort_label = " [sort:name]"; break;
         }
         break;
@@ -2812,7 +2989,8 @@ void ov_render_status(
         switch (lay->sort_key_fps)
         {
         case 1:  sort_label = " [sort:alive]"; break;
-        default: sort_label = " [sort:name]"; break;
+        case 2:  sort_label = " [sort:MEM]";   break;
+        default: sort_label = " [sort:name]";  break;
         }
         break;
     default:
@@ -2921,32 +3099,44 @@ void ov_render_help(const OV_LAYOUT *lay)
     } lines[] =
     {
         { "Navigation",                              0 },
-        { "  F2-F6 / ^Left/^Right  Switch views",   0 },
+        { "  F2-F6 / ^Left/^Right  Switch views",    0 },
         { "  TAB      Cycle panel focus",            0 },
         { "  UP/DOWN  Navigate list",                0 },
-        { "  Left/Right  Horizontal scroll",         0 },
+        { "  Left/Right  Panel focus / scroll",      0 },
         { "  PgUp/Dn  Scroll page",                  0 },
+        { "  Home/End  Jump to top/bottom",          0 },
+        { "Sorting",                                 0 },
+        { "  </>      Change sort column",           0 },
+        { "  [        Toggle sort direction",        0 },
+        { "  S        Sort by activity (Hz)",        0 },
+        { "  s        Sort by name",                 0 },
+        { "Display",                                 0 },
         { "  +/-      Adjust scan rate",             0 },
-        { "  h        Toggle this help",             0 },
         { "  D        Toggle detail pane",           0 },
-        { "  p        Freeze/Pause display",         0 },
-        { "  S        Sort by Hz/activity",            0 },
-        { "  s        Sort alphabetical",              0 },
-        { "  ]        Cycle sort column",              0 },
-        { "  [        Toggle sort direction",          0 },
-        { "  /        Filter (regex), ESC=clear",      0 },
-        { "  q / x   Exit",                          0 },
-        { "",                                        0 },
+        { "  p        Pause/resume display",         0 },
+        { "  SPACE    Freeze selection highlight",   0 },
+        { "  /        Filter (regex search)",        0 },
+        { "  W        Export snapshot to file",      0 },
+        { "  h        Toggle this help",             0 },
+        { "  q        Quit",                         0 },
         { "Control mode  (c to toggle)",             0 },
-        { "  FPS panel:",                            0 },
-        { "    r  toggle run process",               0 },
-        { "    s  toggle conf process",              0 },
-        { "  STREAMS panel:",                        0 },
-        { "    d  delete stream",                    0 },
-        { "  PROCS panel:",                          0 },
-        { "    k  send SIGTERM",                     0 },
-        { "",                                        0 },
-        { "Colors:  ",                               1 },
+        { "  FPS:  r=run  s=conf",                   0 },
+        { "  STRM: d=delete stream",                 0 },
+        { "Process signals  (PROCS & FPS panels)",   0 },
+        { "  k  graceful kill (SIGTERM)",            0 },
+        { "  K  immediate kill (SIGKILL)",           0 },
+        { "  x  pause/resume (SIGSTOP/SIGCONT)",     0 },
+        { "FPS panel",                                0 },
+        { "  ENTER  Open milk-fpsCTRL for selection", 0 },
+        { "Columns",                                   0 },
+        { "  STRM: MB/s throughput, total in footer",  0 },
+        { "  PROC: DUTY% (exec/iter), CPU%, MEM",      0 },
+        { "  FPS:  MEM (RSS)",                         0 },
+        { "Mouse",                                     0 },
+        { "  Click=select  DblClick=detail",           0 },
+        { "  Scroll wheel=navigate list",              0 },
+        { "",                                          0 },
+        { "Colors:  ",                                 1 },
     };
     static const int NL = (int)(sizeof(lines) / sizeof(lines[0]));
 
@@ -3001,9 +3191,14 @@ void ov_render_help(const OV_LAYOUT *lay)
         ov_buf_pos(row, pc + 3);
         ov_theme_bg(OV_BG_PANEL);
 
-        if (i == 0 || strcmp(lines[i].text, "Control mode  (c to toggle)") == 0)
+        /* Section headers: non-empty lines that
+         * don't start with a space */
+        const char *t = lines[i].text;
+        int is_section = (t[0] != '\0'
+                          && t[0] != ' '
+                          && !lines[i].color_row);
+        if (is_section)
         {
-            /* Section headers in bright */
             ov_theme_fg(OV_FG_TITLE);
             ov_buf_bold();
         }
@@ -3130,8 +3325,7 @@ void ov_render_frame(
     ov_compute_related(lay, m, &rel);
 
     /* Start frame: begin synchronized update, then cursor home */
-    ov_buf_append("\033[?2026h", 8);
-    ov_buf_append("\033[H", 3);
+
 
     ov_render_header(lay, m);
 
@@ -3179,6 +3373,6 @@ void ov_render_frame(
     ov_render_status(lay, m);
 
     /* End frame */
-    ov_buf_append("\033[?2026l", 8);
-    ov_buf_flush();
+
+    ov_buf_flush_delta(lay->term_rows, lay->term_cols);
 }
