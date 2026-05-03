@@ -197,6 +197,8 @@ struct streamCTRL_TUI_parameters
     int fuserScan;
     int SORT_TOGGLE;
     float frequ; // Hz
+    int sort_col; // 0=none, 1..7=column id
+    int sort_dir; // 0=ascending, 1=descending
     long ssindex[streamNBID_MAX]; // sorted index array
 } sTUIparam;
 
@@ -373,23 +375,44 @@ static errno_t streamCTRL_keyinput_process(
         }
         break;
 
-    case '1': // sorting by stream name
+    case '1': // shortcut: sort by stream name
+        sTUIparam.sort_col = STREAM_SORT_NAME;
+        sTUIparam.sort_dir = 0;
         sTUIparam.SORTING = 1;
         break;
 
-    case '2': // sorting by update freq (default)
+    case '2': // shortcut: sort by update recency
+        sTUIparam.sort_col = STREAM_SORT_NONE;
+        sTUIparam.sort_dir = 0;
         sTUIparam.SORTING     = 2;
         sTUIparam.SORT_TOGGLE = 1;
         break;
 
-    case '3': // sort by number of processes accessing
+    case '3': // shortcut: sort by process access
+        sTUIparam.sort_col = STREAM_SORT_NONE;
+        sTUIparam.sort_dir = 0;
         sTUIparam.SORTING     = 3;
         sTUIparam.SORT_TOGGLE = 1;
         break;
 
-    case '4': // sort by 1-sec averaged frequency
-        sTUIparam.SORTING     = 4;
-        sTUIparam.SORT_TOGGLE = 1;
+    case '4': // shortcut: sort by frequency
+        sTUIparam.sort_col = STREAM_SORT_FREQ;
+        sTUIparam.sort_dir = 1; // descending
+        sTUIparam.SORTING = 0;
+        break;
+
+    case ']': // next sort column
+        sTUIparam.sort_col++;
+        if (sTUIparam.sort_col > STREAM_NB_SORT_COLS)
+            sTUIparam.sort_col = STREAM_SORT_NONE;
+        sTUIparam.sort_dir = 0;
+        // Disable legacy sort modes
+        sTUIparam.SORTING = 0;
+        break;
+
+    case '[': // toggle sort direction
+        if (sTUIparam.sort_col > STREAM_SORT_NONE)
+            sTUIparam.sort_dir = !sTUIparam.sort_dir;
         break;
 
     case 'f': // stream name filter toggle
@@ -444,11 +467,99 @@ static errno_t streamCTRL_keyinput_process(
 }
 
 static STREAMINFO *g_streaminfo_qsort = NULL;
-static int cmp_stream_name(const void *a, const void *b)
+static IMAGE *g_sort_images = NULL;
+static int g_sort_col = 0;
+static int g_sort_dir = 0;
+
+/**
+ * cmp_stream_col - unified column comparator for streams
+ *
+ * Compares two streams by the column specified in
+ * g_sort_col. Uses g_sort_dir to flip order.
+ * Elements a,b are pointers to long (sindex values).
+ */
+static int cmp_stream_col(const void *a, const void *b)
 {
-    long indexA = *(const long*)a;
-    long indexB = *(const long*)b;
-    return strcmp(g_streaminfo_qsort[indexA].sname, g_streaminfo_qsort[indexB].sname);
+    long idxA = *(const long *)a;
+    long idxB = *(const long *)b;
+    int res = 0;
+
+    STREAMINFO *siA = &g_streaminfo_qsort[idxA];
+    STREAMINFO *siB = &g_streaminfo_qsort[idxB];
+
+    imageID IDA = siA->ID;
+    imageID IDB = siB->ID;
+
+    /* Streams with no valid ID sort to the bottom */
+    if (IDA < 0 && IDB < 0) return 0;
+    if (IDA < 0) return 1;
+    if (IDB < 0) return -1;
+
+    IMAGE_METADATA *mdA = g_sort_images[IDA].md;
+    IMAGE_METADATA *mdB = g_sort_images[IDB].md;
+
+    if (mdA == NULL && mdB == NULL) return 0;
+    if (mdA == NULL) return 1;
+    if (mdB == NULL) return -1;
+
+    switch (g_sort_col)
+    {
+    case STREAM_SORT_NAME:
+        res = strcmp(siA->sname, siB->sname);
+        break;
+
+    case STREAM_SORT_TYPE:
+        res = (siA->datatype < siB->datatype)
+              ? -1
+              : (siA->datatype > siB->datatype)
+                ? 1 : 0;
+        break;
+
+    case STREAM_SORT_SIZE:
+    {
+        uint64_t neA = mdA->nelement;
+        uint64_t neB = mdB->nelement;
+        res = (neA < neB) ? -1
+              : (neA > neB) ? 1 : 0;
+        break;
+    }
+
+    case STREAM_SORT_CNT0:
+    {
+        uint64_t c0A = mdA->cnt0;
+        uint64_t c0B = mdB->cnt0;
+        res = (c0A < c0B) ? -1
+              : (c0A > c0B) ? 1 : 0;
+        break;
+    }
+
+    case STREAM_SORT_CPID:
+        res = (mdA->creatorPID < mdB->creatorPID)
+              ? -1
+              : (mdA->creatorPID > mdB->creatorPID)
+                ? 1 : 0;
+        break;
+
+    case STREAM_SORT_OPID:
+        res = (mdA->ownerPID < mdB->ownerPID)
+              ? -1
+              : (mdA->ownerPID > mdB->ownerPID)
+                ? 1 : 0;
+        break;
+
+    case STREAM_SORT_FREQ:
+        res = (siA->frequ_disp < siB->frequ_disp)
+              ? -1
+              : (siA->frequ_disp > siB->frequ_disp)
+                ? 1 : 0;
+        break;
+    }
+
+    if (g_sort_dir == 1)
+    {
+        res = -res;
+    }
+    return res;
 }
 
 /**
@@ -472,6 +583,8 @@ errno_t streamCTRL_CTRLscreen(void)
     sTUIparam.DISPLAY_ALL_SEMS = 1; // Display all semaphores / just the first 2.
     sTUIparam.fuserScan = 0;
     sTUIparam.SORT_TOGGLE = 0;
+    sTUIparam.sort_col = STREAM_SORT_NONE;
+    sTUIparam.sort_dir = 0;
     sTUIparam.frequ = 10.0; // Hz
 
 
@@ -747,9 +860,12 @@ errno_t streamCTRL_CTRLscreen(void)
             TUI_printfw("============ DISPLAY");
             TUI_newline();
             print_help_entry("+/-", "Increase/decrease display frequency");
+            print_help_entry("]", "Cycle sort column (name,type,size...)");
+            print_help_entry("[", "Toggle sort direction (asc/desc)");
             print_help_entry("1", "Sort by stream name (alphabetical)");
             print_help_entry("2", "Sort by recently updated");
             print_help_entry("3", "Sort by process access");
+            print_help_entry("4", "Sort by frequency (descending)");
             print_help_entry("s", "Show 3 semaphores / all semaphores");
             print_help_entry("r", "Force full screen redraw");
             print_help_entry("F", "Set match string pattern");
@@ -818,6 +934,42 @@ errno_t streamCTRL_CTRLscreen(void)
             }
             else
             {
+                /* Sort status indicator */
+                static const char *sort_col_names[] = {
+                    "", "NAME", "TYPE", "SIZE",
+                    "CNT0", "CPID", "OPID", "FREQ"
+                };
+
+                if (sTUIparam.sort_col > 0
+                    && sTUIparam.sort_col
+                       <= STREAM_NB_SORT_COLS)
+                {
+                    screenprint_setcolor(6);
+                    TUI_printfw(
+                        "[SORT: %s %s]  ",
+                        sort_col_names[
+                            sTUIparam.sort_col],
+                        sTUIparam.sort_dir
+                            ? "DESC" : "ASC");
+                    screenprint_unsetcolor(6);
+                }
+                else if (sTUIparam.SORTING > 0)
+                {
+                    screenprint_setcolor(6);
+                    TUI_printfw(
+                        "[SORT: mode %d]  ",
+                        sTUIparam.SORTING);
+                    screenprint_unsetcolor(6);
+                }
+
+                screenprint_setbold();
+                TUI_printfw("]");
+                screenprint_unsetbold();
+                TUI_printfw(" cycle col  ");
+                screenprint_setbold();
+                TUI_printfw("[");
+                screenprint_unsetbold();
+                TUI_printfw(" flip dir");
                 TUI_newline();
             }
 
@@ -962,100 +1114,97 @@ errno_t streamCTRL_CTRLscreen(void)
             }
             DispName_NBchar = max_name_len + 2;
 
-            if(sTUIparam.SORTING == 1)  // alphabetical sorting
+            /* ---- Column-based sort (new) ---- */
+            if (sTUIparam.sort_col > STREAM_SORT_NONE
+                && sTUIparam.SORTING == 0)
             {
-                long *larray;
-                larray = (long *) malloc(sizeof(long) * sTUIparam.NBsindex);
-                for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
-                {
-                    larray[sindex] = sindex;
-                }
-
                 g_streaminfo_qsort = streaminfo;
-                qsort(larray, sTUIparam.NBsindex, sizeof(long), cmp_stream_name);
+                g_sort_images = streamCTRLimages;
+                g_sort_col = sTUIparam.sort_col;
+                g_sort_dir = sTUIparam.sort_dir;
 
-                for(long dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
-                {
-                    sTUIparam.ssindex[dindex] = larray[dindex];
-                }
-                free(larray);
+                qsort(sTUIparam.ssindex,
+                      sTUIparam.NBsindex,
+                      sizeof(long),
+                      cmp_stream_col);
             }
 
-            DEBUG_TRACEPOINT(" ");
+            /* ---- Legacy sort mode 1: alphabetical ---- */
+            if (sTUIparam.SORTING == 1)
+            {
+                g_streaminfo_qsort = streaminfo;
+                g_sort_images = streamCTRLimages;
+                g_sort_col = STREAM_SORT_NAME;
+                g_sort_dir = 0;
 
-            if((sTUIparam.SORTING == 2) ||
-                    (sTUIparam.SORTING == 3)) // recent update and process access
+                qsort(sTUIparam.ssindex,
+                      sTUIparam.NBsindex,
+                      sizeof(long),
+                      cmp_stream_col);
+            }
+
+            /* ---- Legacy sort modes 2/3: update recency ---- */
+            if ((sTUIparam.SORTING == 2) ||
+                    (sTUIparam.SORTING == 3))
             {
                 long   *larray;
                 double *varray;
-                larray = (long *) malloc(sizeof(long) * sTUIparam.NBsindex);
-                varray = (double *) malloc(sizeof(double) * sTUIparam.NBsindex);
+                larray = (long *) malloc(
+                    sizeof(long) * sTUIparam.NBsindex);
+                varray = (double *) malloc(
+                    sizeof(double) * sTUIparam.NBsindex);
 
-                if(sTUIparam.SORT_TOGGLE == 1)
+                if (sTUIparam.SORT_TOGGLE == 1)
                 {
-                    for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
+                    for (long i = 0;
+                         i < sTUIparam.NBsindex; i++)
                     {
-                        streaminfo[sindex].updatevalue_frozen =
-                            streaminfo[sindex].updatevalue;
+                        long si = sTUIparam.ssindex[i];
+                        streaminfo[si]
+                            .updatevalue_frozen =
+                            streaminfo[si].updatevalue;
                     }
 
-                    if(sTUIparam.SORTING == 3)
+                    if (sTUIparam.SORTING == 3)
                     {
-                        for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
+                        for (long i = 0;
+                             i < sTUIparam.NBsindex; i++)
                         {
-                            streaminfo[sindex].updatevalue_frozen +=
-                                10000.0 * streaminfo[sindex].streamOpenPID_cnt1;
+                            long si =
+                                sTUIparam.ssindex[i];
+                            streaminfo[si]
+                                .updatevalue_frozen +=
+                                10000.0 *
+                                streaminfo[si]
+                                    .streamOpenPID_cnt1;
                         }
                     }
 
                     sTUIparam.SORT_TOGGLE = 0;
                 }
 
-                for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
+                for (long i = 0;
+                     i < sTUIparam.NBsindex; i++)
                 {
-                    larray[sindex] = sindex;
-                    varray[sindex] = streaminfo[sindex].updatevalue_frozen;
+                    long si = sTUIparam.ssindex[i];
+                    larray[i] = si;
+                    varray[i] =
+                        streaminfo[si]
+                            .updatevalue_frozen;
                 }
 
-                if(sTUIparam.NBsindex > 1)
+                if (sTUIparam.NBsindex > 1)
                 {
-                    quick_sort2l(varray, larray, sTUIparam.NBsindex);
+                    quick_sort2l(varray, larray,
+                                 sTUIparam.NBsindex);
                 }
 
-                for(long dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
+                for (long i = 0;
+                     i < sTUIparam.NBsindex; i++)
                 {
-                    sTUIparam.ssindex[sTUIparam.NBsindex - dindex - 1] = larray[dindex];
-                }
-
-                free(larray);
-                free(varray);
-            }
-
-            DEBUG_TRACEPOINT(" ");
-
-            if(sTUIparam.SORTING == 4) // sort by 1-sec averaged frequency
-            {
-                long   *larray;
-                double *varray;
-                larray = (long *) malloc(sizeof(long) * sTUIparam.NBsindex);
-                varray = (double *) malloc(sizeof(double) * sTUIparam.NBsindex);
-
-                for(long sindex = 0; sindex < sTUIparam.NBsindex; sindex++)
-                {
-                    larray[sindex] = sindex;
-                    varray[sindex] = streaminfo[sindex].frequ_disp;
-                }
-
-                if(sTUIparam.NBsindex > 1)
-                {
-                    quick_sort2l(varray, larray, sTUIparam.NBsindex);
-                }
-
-                /* Highest frequency first (reverse order). */
-                for(long dindex = 0; dindex < sTUIparam.NBsindex; dindex++)
-                {
-                    sTUIparam.ssindex[sTUIparam.NBsindex - dindex - 1] =
-                        larray[dindex];
+                    sTUIparam.ssindex[
+                        sTUIparam.NBsindex - i - 1] =
+                        larray[i];
                 }
 
                 free(larray);
@@ -1133,6 +1282,63 @@ errno_t streamCTRL_CTRLscreen(void)
             // DISPLAY
             //
             //
+
+            /* Column header row with sort indicators */
+            if (sTUIparam.DisplayMode < DISPLAY_MODE_FUSER)
+            {
+                /* Column labels and their sort IDs */
+                struct {
+                    const char *label;
+                    int col_id;
+                    int width;
+                } cols[] = {
+                    {"NAME",  STREAM_SORT_NAME, DispName_NBchar},
+                    {"TYPE",  STREAM_SORT_TYPE, 4},
+                    {"SIZE",  STREAM_SORT_SIZE, DispSize_NBchar},
+                    {"CNT0",  STREAM_SORT_CNT0, Dispcnt0_NBchar+2},
+                    {"CPID",  STREAM_SORT_CPID, 9},
+                    {"OPID",  STREAM_SORT_OPID, 9},
+                    {"FREQ",  STREAM_SORT_FREQ, 9},
+                };
+                int ncols = 7;
+
+                /* inode placeholder */
+                TUI_printfw("          ");
+
+                for (int ci = 0; ci < ncols; ci++)
+                {
+                    int is_active =
+                        (cols[ci].col_id ==
+                         sTUIparam.sort_col);
+
+                    if (is_active)
+                    {
+                        screenprint_setbold();
+                        screenprint_setcolor(6);
+                    }
+
+                    char arrow = ' ';
+                    if (is_active)
+                    {
+                        arrow = sTUIparam.sort_dir
+                                ? '\x19' : '\x18';
+                    }
+
+                    TUI_printfw("%-*.*s%c",
+                                cols[ci].width - 1,
+                                cols[ci].width - 1,
+                                cols[ci].label,
+                                arrow);
+
+                    if (is_active)
+                    {
+                        screenprint_unsetcolor(6);
+                        screenprint_unsetbold();
+                    }
+                }
+
+                TUI_newline();
+            }
 
             int DisplayFlag = 0;
 
