@@ -16,6 +16,7 @@
 #define OVERVIEW_THEME_H
 
 #include "overview_ansi.h"
+#include "overview_data.h"
 
 /* =========================================================
  * RGB color struct
@@ -38,7 +39,9 @@ typedef struct
 #define OV_BG_HEADER      (ov_rgb_t){  40,  44,  58 }
 #define OV_BG_SELECTED    (ov_rgb_t){  50,  60,  90 }
 #define OV_BG_RELATED     (ov_rgb_t){  38,  50,  42 }  /* soft green tint for related items */
+#define OV_BG_FROZEN      (ov_rgb_t){  40,  90, 140 }  /* bright blue tint for frozen selection */
 #define OV_BG_HOVER       (ov_rgb_t){  38,  42,  55 }
+#define OV_BG_PID_MATCH   (ov_rgb_t){  50, 180,  50 }  /* green bg for PID match */
 
 /* Foreground — text */
 #define OV_FG_TITLE       (ov_rgb_t){ 130, 170, 255 }
@@ -57,6 +60,7 @@ typedef struct
 #define OV_FG_IDLE        (ov_rgb_t){ 130, 140, 160 }
 #define OV_FG_WARN        (ov_rgb_t){ 255, 180,   0 }
 #define OV_FG_ERROR       (ov_rgb_t){ 240,  60,  60 }
+#define OV_FG_ZOMBIE      (ov_rgb_t){ 180, 120,  40 }
 
 /* Foreground — graph */
 #define OV_FG_CONN        (ov_rgb_t){ 100, 130, 180 }
@@ -116,6 +120,28 @@ static inline void ov_theme_fg(ov_rgb_t c)
 static inline void ov_theme_bg(ov_rgb_t c)
 {
     ov_buf_bg(c.r, c.g, c.b);
+}
+
+/**
+ * ov_pid_color - uniform PID coloring.
+ *
+ * Returns OV_FG_ACTIVE for alive processes,
+ * OV_FG_ZOMBIE for zombie processes,
+ * OV_FG_DIM for dead/zero PIDs.
+ */
+static inline ov_rgb_t ov_pid_color(pid_t pid)
+{
+    if (pid <= 0)
+    {
+        return OV_FG_DIM;
+    }
+    ov_pid_status_t st = pid_get_status(pid);
+    switch (st)
+    {
+    case OV_PID_ALIVE:  return OV_FG_ACTIVE;
+    case OV_PID_ZOMBIE: return OV_FG_ZOMBIE;
+    default:            return OV_FG_DIM;
+    }
 }
 
 /* =========================================================
