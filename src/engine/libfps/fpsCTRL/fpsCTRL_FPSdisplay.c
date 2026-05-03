@@ -96,14 +96,62 @@ errno_t fpsCTRL_FPSdisplay(
             }
         }
         
-        // Simple string sort if sort_mode == 1
-        if (fpsCTRLvar->sort_mode == 1) {
-            for (int i = 0; i < num_filtered - 1; i++) {
-                for (int j = i + 1; j < num_filtered; j++) {
-                    if (strcasecmp(keywnode[filtered_children[i]].keyword[fpsCTRLvar->currentlevel], 
-                                   keywnode[filtered_children[j]].keyword[fpsCTRLvar->currentlevel]) > 0) {
-                        int tmp = filtered_children[i];
-                        filtered_children[i] = filtered_children[j];
+        // Sort filtered children
+        // mode 1: alphabetical  mode 2: by FPS status
+        if (fpsCTRLvar->sort_mode == 1
+            || fpsCTRLvar->sort_mode == 2)
+        {
+            for (int i = 0;
+                 i < num_filtered - 1; i++)
+            {
+                for (int j = i + 1;
+                     j < num_filtered; j++)
+                {
+                    int swap = 0;
+                    int ki = filtered_children[i];
+                    int kj = filtered_children[j];
+
+                    if (fpsCTRLvar->sort_mode == 1)
+                    {
+                        /* A-Z by keyword */
+                        swap = (strcasecmp(
+                            keywnode[ki].keyword[
+                                fpsCTRLvar
+                                    ->currentlevel],
+                            keywnode[kj].keyword[
+                                fpsCTRLvar
+                                    ->currentlevel])
+                                > 0);
+                    }
+                    else
+                    {
+                        /* By FPS status bitmask
+                         * (higher status first) */
+                        int fi = keywnode[ki].fpsindex;
+                        int fj = keywnode[kj].fpsindex;
+                        uint32_t si = 0;
+                        uint32_t sj = 0;
+                        if (fi >= 0
+                            && fpsarray[fi].md)
+                        {
+                            si = fpsarray[fi]
+                                     .md->status;
+                        }
+                        if (fj >= 0
+                            && fpsarray[fj].md)
+                        {
+                            sj = fpsarray[fj]
+                                     .md->status;
+                        }
+                        swap = (si < sj);
+                    }
+
+                    if (swap)
+                    {
+                        int tmp =
+                            filtered_children[i];
+                        filtered_children[i] =
+                            filtered_children[j];
                         filtered_children[j] = tmp;
                     }
                 }
