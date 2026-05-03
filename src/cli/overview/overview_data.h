@@ -114,6 +114,9 @@ typedef struct
     int      proctrace_trigmode[IMAGE_NB_PROCTRACE];
     int      proctrace_status[IMAGE_NB_PROCTRACE];
 
+    /* static string cache */
+    char     size_str[32];
+
     /* sparkline history */
     float    spark_rate[OV_SPARKLINE_LEN];
     int      spark_idx;
@@ -139,6 +142,8 @@ typedef struct
     uint32_t md_status;
     pid_t    confpid;
     pid_t    runpid;
+    
+    long     mem_rss_kb;
     int      conf_alive;
     int      run_alive;
 
@@ -186,9 +191,10 @@ typedef struct
     uint64_t triggermissed_cumul;
     int      MeasureTiming;
 
-    /* CPU */
+    /* CPU & Memory */
     int      rt_priority;
     float    cpu_used;
+    long     mem_rss_kb;
 
     /* sparkline history */
     float    spark_cpu[OV_SPARKLINE_LEN];
@@ -420,5 +426,13 @@ int ov_filter_build(
     int          count,
     int         *out,
     int          max_out);
+/**
+ * ov_model_export_snapshot - dump model to a text file.
+ * @m: model to export
+ *
+ * Writes a timestamped snapshot to /tmp/milkCTRL_snapshot_*.txt
+ * containing all streams, processes, and FPS entries.
+ */
+void ov_model_export_snapshot(const OV_MODEL *m);
 
 #endif /* OVERVIEW_DATA_H */
